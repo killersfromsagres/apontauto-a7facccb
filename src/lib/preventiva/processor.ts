@@ -228,8 +228,7 @@ export function processPreventiva(rows: RawRow[], opts: ProcessOptions = {}): Pr
         os.equipe = refrigTeamForPredio(os.predio);
         break;
       case "Civil":
-        // Fill hidraulica by keyword first, defer Civil/Chaveiro balancing
-        if (isHidraulica(partial[partial.indexOf(os)] as unknown as RawRow) || isHidraulica(rawFromProcessed(os))) {
+        if (isHidraulica(rawFromProcessed(os))) {
           os.equipe = "Hidráulica";
         } else {
           civilPool.push(os);
