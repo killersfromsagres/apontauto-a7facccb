@@ -9,91 +9,92 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PreventivaRouteImport } from './routes/preventiva'
-import { Route as OutrosRouteImport } from './routes/outros'
-import { Route as LimpezaRouteImport } from './routes/limpeza'
-import { Route as JardinagemRouteImport } from './routes/jardinagem'
-import { Route as CorretivaRouteImport } from './routes/corretiva'
-import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
-import { Route as AbastecimentoRouteImport } from './routes/abastecimento'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
+import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
+import { Route as AuthenticatedLimpezaRouteImport } from './routes/_authenticated/limpeza'
+import { Route as AuthenticatedJardinagemRouteImport } from './routes/_authenticated/jardinagem'
+import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
 
-const PreventivaRoute = PreventivaRouteImport.update({
-  id: '/preventiva',
-  path: '/preventiva',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OutrosRoute = OutrosRouteImport.update({
-  id: '/outros',
-  path: '/outros',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LimpezaRoute = LimpezaRouteImport.update({
-  id: '/limpeza',
-  path: '/limpeza',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const JardinagemRoute = JardinagemRouteImport.update({
-  id: '/jardinagem',
-  path: '/jardinagem',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CorretivaRoute = CorretivaRouteImport.update({
-  id: '/corretiva',
-  path: '/corretiva',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
-  id: '/configuracoes',
-  path: '/configuracoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AbastecimentoRoute = AbastecimentoRouteImport.update({
-  id: '/abastecimento',
-  path: '/abastecimento',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/_authenticated/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPreventivaRoute = AuthenticatedPreventivaRouteImport.update({
+  id: '/_authenticated/preventiva',
+  path: '/preventiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
+  id: '/_authenticated/outros',
+  path: '/outros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedLimpezaRoute = AuthenticatedLimpezaRouteImport.update({
+  id: '/_authenticated/limpeza',
+  path: '/limpeza',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedJardinagemRoute = AuthenticatedJardinagemRouteImport.update({
+  id: '/_authenticated/jardinagem',
+  path: '/jardinagem',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
+  id: '/_authenticated/corretiva',
+  path: '/corretiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/_authenticated/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AuthenticatedAbastecimentoRoute =
+  AuthenticatedAbastecimentoRouteImport.update({
+    id: '/_authenticated/abastecimento',
+    path: '/abastecimento',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/abastecimento': typeof AbastecimentoRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/corretiva': typeof CorretivaRoute
-  '/jardinagem': typeof JardinagemRoute
-  '/limpeza': typeof LimpezaRoute
-  '/outros': typeof OutrosRoute
-  '/preventiva': typeof PreventivaRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/jardinagem': typeof AuthenticatedJardinagemRoute
+  '/limpeza': typeof AuthenticatedLimpezaRoute
+  '/outros': typeof AuthenticatedOutrosRoute
+  '/preventiva': typeof AuthenticatedPreventivaRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/abastecimento': typeof AbastecimentoRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/corretiva': typeof CorretivaRoute
-  '/jardinagem': typeof JardinagemRoute
-  '/limpeza': typeof LimpezaRoute
-  '/outros': typeof OutrosRoute
-  '/preventiva': typeof PreventivaRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/jardinagem': typeof AuthenticatedJardinagemRoute
+  '/limpeza': typeof AuthenticatedLimpezaRoute
+  '/outros': typeof AuthenticatedOutrosRoute
+  '/preventiva': typeof AuthenticatedPreventivaRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/abastecimento': typeof AbastecimentoRoute
-  '/configuracoes': typeof ConfiguracoesRoute
-  '/corretiva': typeof CorretivaRoute
-  '/jardinagem': typeof JardinagemRoute
-  '/limpeza': typeof LimpezaRoute
-  '/outros': typeof OutrosRoute
-  '/preventiva': typeof PreventivaRoute
+  '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
+  '/_authenticated/jardinagem': typeof AuthenticatedJardinagemRoute
+  '/_authenticated/limpeza': typeof AuthenticatedLimpezaRoute
+  '/_authenticated/outros': typeof AuthenticatedOutrosRoute
+  '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/abastecimento'
     | '/configuracoes'
     | '/corretiva'
@@ -101,9 +102,9 @@ export interface FileRouteTypes {
     | '/limpeza'
     | '/outros'
     | '/preventiva'
+    | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/abastecimento'
     | '/configuracoes'
     | '/corretiva'
@@ -111,99 +112,100 @@ export interface FileRouteTypes {
     | '/limpeza'
     | '/outros'
     | '/preventiva'
+    | '/'
   id:
     | '__root__'
-    | '/'
-    | '/abastecimento'
-    | '/configuracoes'
-    | '/corretiva'
-    | '/jardinagem'
-    | '/limpeza'
-    | '/outros'
-    | '/preventiva'
+    | '/_authenticated/abastecimento'
+    | '/_authenticated/configuracoes'
+    | '/_authenticated/corretiva'
+    | '/_authenticated/jardinagem'
+    | '/_authenticated/limpeza'
+    | '/_authenticated/outros'
+    | '/_authenticated/preventiva'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AbastecimentoRoute: typeof AbastecimentoRoute
-  ConfiguracoesRoute: typeof ConfiguracoesRoute
-  CorretivaRoute: typeof CorretivaRoute
-  JardinagemRoute: typeof JardinagemRoute
-  LimpezaRoute: typeof LimpezaRoute
-  OutrosRoute: typeof OutrosRoute
-  PreventivaRoute: typeof PreventivaRoute
+  AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
+  AuthenticatedJardinagemRoute: typeof AuthenticatedJardinagemRoute
+  AuthenticatedLimpezaRoute: typeof AuthenticatedLimpezaRoute
+  AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
+  AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/preventiva': {
-      id: '/preventiva'
-      path: '/preventiva'
-      fullPath: '/preventiva'
-      preLoaderRoute: typeof PreventivaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/outros': {
-      id: '/outros'
-      path: '/outros'
-      fullPath: '/outros'
-      preLoaderRoute: typeof OutrosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/limpeza': {
-      id: '/limpeza'
-      path: '/limpeza'
-      fullPath: '/limpeza'
-      preLoaderRoute: typeof LimpezaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/jardinagem': {
-      id: '/jardinagem'
-      path: '/jardinagem'
-      fullPath: '/jardinagem'
-      preLoaderRoute: typeof JardinagemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/corretiva': {
-      id: '/corretiva'
-      path: '/corretiva'
-      fullPath: '/corretiva'
-      preLoaderRoute: typeof CorretivaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/configuracoes': {
-      id: '/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof ConfiguracoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/abastecimento': {
-      id: '/abastecimento'
-      path: '/abastecimento'
-      fullPath: '/abastecimento'
-      preLoaderRoute: typeof AbastecimentoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/preventiva': {
+      id: '/_authenticated/preventiva'
+      path: '/preventiva'
+      fullPath: '/preventiva'
+      preLoaderRoute: typeof AuthenticatedPreventivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/outros': {
+      id: '/_authenticated/outros'
+      path: '/outros'
+      fullPath: '/outros'
+      preLoaderRoute: typeof AuthenticatedOutrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/limpeza': {
+      id: '/_authenticated/limpeza'
+      path: '/limpeza'
+      fullPath: '/limpeza'
+      preLoaderRoute: typeof AuthenticatedLimpezaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/jardinagem': {
+      id: '/_authenticated/jardinagem'
+      path: '/jardinagem'
+      fullPath: '/jardinagem'
+      preLoaderRoute: typeof AuthenticatedJardinagemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/corretiva': {
+      id: '/_authenticated/corretiva'
+      path: '/corretiva'
+      fullPath: '/corretiva'
+      preLoaderRoute: typeof AuthenticatedCorretivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/abastecimento': {
+      id: '/_authenticated/abastecimento'
+      path: '/abastecimento'
+      fullPath: '/abastecimento'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AbastecimentoRoute: AbastecimentoRoute,
-  ConfiguracoesRoute: ConfiguracoesRoute,
-  CorretivaRoute: CorretivaRoute,
-  JardinagemRoute: JardinagemRoute,
-  LimpezaRoute: LimpezaRoute,
-  OutrosRoute: OutrosRoute,
-  PreventivaRoute: PreventivaRoute,
+  AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
+  AuthenticatedJardinagemRoute: AuthenticatedJardinagemRoute,
+  AuthenticatedLimpezaRoute: AuthenticatedLimpezaRoute,
+  AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
+  AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

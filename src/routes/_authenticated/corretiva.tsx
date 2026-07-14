@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Wrench } from "lucide-react";
 
-export const Route = createFileRoute("/corretiva")({ component: Page });
+export const Route = createFileRoute("/_authenticated/corretiva")({ component: Page });
 
 function Page() {
   return (

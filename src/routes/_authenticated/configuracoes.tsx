@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useSettings, DEFAULT_SETTINGS, type AppSettings } from "@/lib/settings";
 
-export const Route = createFileRoute("/configuracoes")({ component: Page });
+export const Route = createFileRoute("/_authenticated/configuracoes")({ component: Page });
 
 function Page() {
   const [saved, setSaved] = useSettings();

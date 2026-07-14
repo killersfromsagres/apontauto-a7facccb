@@ -39,7 +39,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/outros")({ component: Page });
+export const Route = createFileRoute("/_authenticated/outros")({ component: Page });
 
 type Priority = "baixa" | "media" | "alta" | "critica";
 
