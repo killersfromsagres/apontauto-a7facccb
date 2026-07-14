@@ -15,6 +15,15 @@ import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Progress } from "@/components/ui/progress";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
@@ -138,6 +147,71 @@ function Dashboard() {
           </div>
         </GlassCard>
       </div>
+
+      <GlassCard delay={0.4}>
+        <div className="relative">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-semibold">Produtividade — últimas 7 semanas</h3>
+              <p className="text-xs text-muted-foreground">OS concluídas vs. programadas</p>
+            </div>
+            <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-500">
+              +8% no mês
+            </span>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer>
+              <AreaChart data={productivityData}>
+                <defs>
+                  <linearGradient id="gConc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="oklch(0.696 0.17 162.48)" stopOpacity={0.6} />
+                    <stop offset="100%" stopColor="oklch(0.696 0.17 162.48)" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gProg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="oklch(0.62 0.19 256)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="oklch(0.62 0.19 256)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="week" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis stroke="var(--muted-foreground)" fontSize={11} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="programadas"
+                  stroke="oklch(0.62 0.19 256)"
+                  fill="url(#gProg)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="concluidas"
+                  stroke="oklch(0.696 0.17 162.48)"
+                  fill="url(#gConc)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </GlassCard>
     </PageShell>
   );
 }
+
+const productivityData = [
+  { week: "S1", programadas: 120, concluidas: 108 },
+  { week: "S2", programadas: 135, concluidas: 121 },
+  { week: "S3", programadas: 128, concluidas: 119 },
+  { week: "S4", programadas: 142, concluidas: 133 },
+  { week: "S5", programadas: 138, concluidas: 129 },
+  { week: "S6", programadas: 151, concluidas: 145 },
+  { week: "S7", programadas: 147, concluidas: 140 },
+];

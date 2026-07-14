@@ -143,7 +143,7 @@ const detectCategory = (row: RawRow): Category => {
   return "Outros Serviços";
 };
 
-const isHidraulica = (row: RawRow) => {
+const isHidraulica = (row: RawRow, keywords: string[]) => {
   const bag = norm(
     [
       pick(row, "NOME OS", "DESCRIÇÃO", "DESCRICAO", "SERVIÇO", "SERVICO"),
@@ -153,14 +153,20 @@ const isHidraulica = (row: RawRow) => {
       pick(row, "TIPO"),
     ].join(" | "),
   );
-  return HIDRAULICA_KEYWORDS.some((k) => bag.includes(norm(k)));
+  return keywords.some((k) => bag.includes(norm(k)));
 };
 
-const refrigTeamForPredio = (predio: string): Team => {
+const refrigTeamForPredio = (
+  predio: string,
+  r1: string[],
+  r2: string[],
+  r3: string[],
+): Team => {
   const p = norm(predio);
-  if (REFRIG_1.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 1";
-  if (REFRIG_2.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 2";
-  if (REFRIG_3.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 3";
+  const match = (arr: string[]) => arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
+  if (match(r1)) return "Refrigeração 1";
+  if (match(r2)) return "Refrigeração 2";
+  if (match(r3)) return "Refrigeração 3";
   return "Refrigeração 1";
 };
 
@@ -168,6 +174,11 @@ const refrigTeamForPredio = (predio: string): Team => {
 
 export interface ProcessOptions {
   tipo?: "Preventiva" | "Corretiva";
+  siteAllowed?: string;
+  refrig1?: string[];
+  refrig2?: string[];
+  refrig3?: string[];
+  hidraulicaKeywords?: string[];
 }
 
 export interface ProcessResult {
@@ -180,12 +191,17 @@ export interface ProcessResult {
 
 export function processPreventiva(rows: RawRow[], opts: ProcessOptions = {}): ProcessResult {
   const tipo = opts.tipo ?? "Preventiva";
+  const siteAllowed = norm(opts.siteAllowed ?? SITE_ALLOWED);
+  const r1 = opts.refrig1 ?? REFRIG_1;
+  const r2 = opts.refrig2 ?? REFRIG_2;
+  const r3 = opts.refrig3 ?? REFRIG_3;
+  const keywords = opts.hidraulicaKeywords ?? HIDRAULICA_KEYWORDS;
   const filtered: RawRow[] = [];
   let discarded = 0;
 
   for (const row of rows) {
     const site = norm(pick(row, "SITE", "UNIDADE", "PLANTA", "LOCAL SITE"));
-    if (site && !site.includes(SITE_ALLOWED)) {
+    if (site && !site.includes(siteAllowed)) {
       discarded++;
       continue;
     }
@@ -225,10 +241,10 @@ export function processPreventiva(rows: RawRow[], opts: ProcessOptions = {}): Pr
         os.equipe = "Elétrica";
         break;
       case "Climatização e Refrigeração":
-        os.equipe = refrigTeamForPredio(os.predio);
+        os.equipe = refrigTeamForPredio(os.predio, r1, r2, r3);
         break;
       case "Civil":
-        if (isHidraulica(rawFromProcessed(os))) {
+        if (isHidraulica(rawFromProcessed(os), keywords)) {
           os.equipe = "Hidráulica";
         } else {
           civilPool.push(os);

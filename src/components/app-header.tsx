@@ -1,5 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./theme-toggle";
+import { SlaBell } from "./sla-bell";
 import logo from "@/assets/logo.png";
 
 export function AppHeader() {
@@ -10,12 +11,13 @@ export function AppHeader() {
         <img src={logo} alt="Logo Sistema de Apontamento" className="h-9 w-9 rounded-lg shadow-sm" />
         <div className="flex flex-col leading-tight">
           <h1 className="text-base font-semibold tracking-tight">Sistema de Apontamento</h1>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="hidden text-[11px] text-muted-foreground sm:block">
             Desenvolvido por: Dev Gabriel Vitor
           </p>
         </div>
       </div>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1">
+        <SlaBell />
         <ThemeToggle />
       </div>
     </header>

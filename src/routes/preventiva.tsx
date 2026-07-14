@@ -35,6 +35,7 @@ import {
   type ProcessResult,
   type Team,
 } from "@/lib/preventiva/processor";
+import { getSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/preventiva")({ component: Page });
 
@@ -54,7 +55,15 @@ function Page() {
       const wb = XLSX.read(buf, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
-      const res = processPreventiva(rows, { tipo: "Preventiva" });
+      const s = getSettings();
+      const res = processPreventiva(rows, {
+        tipo: "Preventiva",
+        siteAllowed: s.siteAllowed,
+        refrig1: s.refrig1,
+        refrig2: s.refrig2,
+        refrig3: s.refrig3,
+        hidraulicaKeywords: s.hidraulicaKeywords,
+      });
       setResult(res);
       setFileName(file.name);
       toast.success(
