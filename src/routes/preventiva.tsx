@@ -11,7 +11,9 @@ import {
   ClipboardCheck,
   Filter,
   Search,
+  Download,
 } from "lucide-react";
+import { generateProgramacaoWorkbook, downloadBlob } from "@/lib/preventiva/exporter";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
