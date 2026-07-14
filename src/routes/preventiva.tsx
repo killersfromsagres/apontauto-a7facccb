@@ -108,9 +108,26 @@ function Page() {
       description="Faça upload da planilha bruta — o sistema filtra DEMARCHI e distribui as OS entre as equipes automaticamente."
       actions={
         result && (
-          <Button variant="outline" onClick={reset}>
-            <X className="mr-2 h-4 w-4" /> Novo upload
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={async () => {
+                try {
+                  const blob = await generateProgramacaoWorkbook(result.ordered);
+                  const stamp = new Date().toISOString().slice(0, 10);
+                  downloadBlob(blob, `PROGRAMACAO_${stamp}.xlsx`);
+                  toast.success("Planilha PROGRAMAÇÃO gerada");
+                } catch (e) {
+                  console.error(e);
+                  toast.error("Falha ao gerar a planilha");
+                }
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" /> Baixar PROGRAMAÇÃO
+            </Button>
+            <Button variant="outline" onClick={reset}>
+              <X className="mr-2 h-4 w-4" /> Novo upload
+            </Button>
+          </div>
         )
       }
     >
