@@ -15,6 +15,15 @@ import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Progress } from "@/components/ui/progress";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/")({
   component: Dashboard,
