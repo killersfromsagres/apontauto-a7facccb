@@ -9,8 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PreventivaRouteImport } from './routes/preventiva'
+import { Route as OutrosRouteImport } from './routes/outros'
+import { Route as LimpezaRouteImport } from './routes/limpeza'
+import { Route as JardinagemRouteImport } from './routes/jardinagem'
+import { Route as CorretivaRouteImport } from './routes/corretiva'
+import { Route as ConfiguracoesRouteImport } from './routes/configuracoes'
+import { Route as AbastecimentoRouteImport } from './routes/abastecimento'
 import { Route as IndexRouteImport } from './routes/index'
 
+const PreventivaRoute = PreventivaRouteImport.update({
+  id: '/preventiva',
+  path: '/preventiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OutrosRoute = OutrosRouteImport.update({
+  id: '/outros',
+  path: '/outros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LimpezaRoute = LimpezaRouteImport.update({
+  id: '/limpeza',
+  path: '/limpeza',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JardinagemRoute = JardinagemRouteImport.update({
+  id: '/jardinagem',
+  path: '/jardinagem',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CorretivaRoute = CorretivaRouteImport.update({
+  id: '/corretiva',
+  path: '/corretiva',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfiguracoesRoute = ConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AbastecimentoRoute = AbastecimentoRouteImport.update({
+  id: '/abastecimento',
+  path: '/abastecimento',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +61,130 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/abastecimento': typeof AbastecimentoRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/corretiva': typeof CorretivaRoute
+  '/jardinagem': typeof JardinagemRoute
+  '/limpeza': typeof LimpezaRoute
+  '/outros': typeof OutrosRoute
+  '/preventiva': typeof PreventivaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/abastecimento': typeof AbastecimentoRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/corretiva': typeof CorretivaRoute
+  '/jardinagem': typeof JardinagemRoute
+  '/limpeza': typeof LimpezaRoute
+  '/outros': typeof OutrosRoute
+  '/preventiva': typeof PreventivaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/abastecimento': typeof AbastecimentoRoute
+  '/configuracoes': typeof ConfiguracoesRoute
+  '/corretiva': typeof CorretivaRoute
+  '/jardinagem': typeof JardinagemRoute
+  '/limpeza': typeof LimpezaRoute
+  '/outros': typeof OutrosRoute
+  '/preventiva': typeof PreventivaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/abastecimento'
+    | '/configuracoes'
+    | '/corretiva'
+    | '/jardinagem'
+    | '/limpeza'
+    | '/outros'
+    | '/preventiva'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/abastecimento'
+    | '/configuracoes'
+    | '/corretiva'
+    | '/jardinagem'
+    | '/limpeza'
+    | '/outros'
+    | '/preventiva'
+  id:
+    | '__root__'
+    | '/'
+    | '/abastecimento'
+    | '/configuracoes'
+    | '/corretiva'
+    | '/jardinagem'
+    | '/limpeza'
+    | '/outros'
+    | '/preventiva'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AbastecimentoRoute: typeof AbastecimentoRoute
+  ConfiguracoesRoute: typeof ConfiguracoesRoute
+  CorretivaRoute: typeof CorretivaRoute
+  JardinagemRoute: typeof JardinagemRoute
+  LimpezaRoute: typeof LimpezaRoute
+  OutrosRoute: typeof OutrosRoute
+  PreventivaRoute: typeof PreventivaRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/preventiva': {
+      id: '/preventiva'
+      path: '/preventiva'
+      fullPath: '/preventiva'
+      preLoaderRoute: typeof PreventivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/outros': {
+      id: '/outros'
+      path: '/outros'
+      fullPath: '/outros'
+      preLoaderRoute: typeof OutrosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/limpeza': {
+      id: '/limpeza'
+      path: '/limpeza'
+      fullPath: '/limpeza'
+      preLoaderRoute: typeof LimpezaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/jardinagem': {
+      id: '/jardinagem'
+      path: '/jardinagem'
+      fullPath: '/jardinagem'
+      preLoaderRoute: typeof JardinagemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/corretiva': {
+      id: '/corretiva'
+      path: '/corretiva'
+      fullPath: '/corretiva'
+      preLoaderRoute: typeof CorretivaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/configuracoes': {
+      id: '/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof ConfiguracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/abastecimento': {
+      id: '/abastecimento'
+      path: '/abastecimento'
+      fullPath: '/abastecimento'
+      preLoaderRoute: typeof AbastecimentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +197,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AbastecimentoRoute: AbastecimentoRoute,
+  ConfiguracoesRoute: ConfiguracoesRoute,
+  CorretivaRoute: CorretivaRoute,
+  JardinagemRoute: JardinagemRoute,
+  LimpezaRoute: LimpezaRoute,
+  OutrosRoute: OutrosRoute,
+  PreventivaRoute: PreventivaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

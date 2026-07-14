@@ -142,3 +142,10 @@
     color: var(--color-foreground);
   }
 }
+
+@utility app-bg {
+  background-image:
+    radial-gradient(circle at 12% 8%, color-mix(in oklch, var(--primary) 18%, transparent) 0%, transparent 45%),
+    radial-gradient(circle at 88% 92%, color-mix(in oklch, var(--chart-2) 22%, transparent) 0%, transparent 50%),
+    radial-gradient(circle at 60% 40%, color-mix(in oklch, var(--chart-4) 10%, transparent) 0%, transparent 60%);
+}
