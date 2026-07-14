@@ -123,18 +123,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full app-bg">
-            <AppSidebar />
-            <SidebarInset className="flex min-h-screen flex-1 flex-col bg-transparent">
-              <AppHeader />
-              <main className="flex-1">
-                <Outlet />
-              </main>
-            </SidebarInset>
-          </div>
-          <Toaster richColors position="top-right" />
-        </SidebarProvider>
+        <Outlet />
+        <Toaster richColors position="top-right" />
       </ThemeProvider>
     </QueryClientProvider>
   );
