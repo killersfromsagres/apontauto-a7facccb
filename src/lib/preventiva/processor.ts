@@ -174,6 +174,11 @@ const refrigTeamForPredio = (
 
 export interface ProcessOptions {
   tipo?: "Preventiva" | "Corretiva";
+  siteAllowed?: string;
+  refrig1?: string[];
+  refrig2?: string[];
+  refrig3?: string[];
+  hidraulicaKeywords?: string[];
 }
 
 export interface ProcessResult {
@@ -186,12 +191,17 @@ export interface ProcessResult {
 
 export function processPreventiva(rows: RawRow[], opts: ProcessOptions = {}): ProcessResult {
   const tipo = opts.tipo ?? "Preventiva";
+  const siteAllowed = norm(opts.siteAllowed ?? SITE_ALLOWED);
+  const r1 = opts.refrig1 ?? REFRIG_1;
+  const r2 = opts.refrig2 ?? REFRIG_2;
+  const r3 = opts.refrig3 ?? REFRIG_3;
+  const keywords = opts.hidraulicaKeywords ?? HIDRAULICA_KEYWORDS;
   const filtered: RawRow[] = [];
   let discarded = 0;
 
   for (const row of rows) {
     const site = norm(pick(row, "SITE", "UNIDADE", "PLANTA", "LOCAL SITE"));
-    if (site && !site.includes(SITE_ALLOWED)) {
+    if (site && !site.includes(siteAllowed)) {
       discarded++;
       continue;
     }
