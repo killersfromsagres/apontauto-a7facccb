@@ -143,7 +143,7 @@ const detectCategory = (row: RawRow): Category => {
   return "Outros Serviços";
 };
 
-const isHidraulica = (row: RawRow) => {
+const isHidraulica = (row: RawRow, keywords: string[]) => {
   const bag = norm(
     [
       pick(row, "NOME OS", "DESCRIÇÃO", "DESCRICAO", "SERVIÇO", "SERVICO"),
@@ -153,14 +153,20 @@ const isHidraulica = (row: RawRow) => {
       pick(row, "TIPO"),
     ].join(" | "),
   );
-  return HIDRAULICA_KEYWORDS.some((k) => bag.includes(norm(k)));
+  return keywords.some((k) => bag.includes(norm(k)));
 };
 
-const refrigTeamForPredio = (predio: string): Team => {
+const refrigTeamForPredio = (
+  predio: string,
+  r1: string[],
+  r2: string[],
+  r3: string[],
+): Team => {
   const p = norm(predio);
-  if (REFRIG_1.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 1";
-  if (REFRIG_2.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 2";
-  if (REFRIG_3.some((x) => norm(x) === p || p.startsWith(norm(x)))) return "Refrigeração 3";
+  const match = (arr: string[]) => arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
+  if (match(r1)) return "Refrigeração 1";
+  if (match(r2)) return "Refrigeração 2";
+  if (match(r3)) return "Refrigeração 3";
   return "Refrigeração 1";
 };
 
