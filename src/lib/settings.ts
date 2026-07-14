@@ -1,5 +1,7 @@
-// Runtime-editable configuration. Persisted in localStorage.
-// Processor and scheduler read from here so rules aren't hardcoded.
+// Runtime-editable configuration. Persisted in Lovable Cloud (single shared row).
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface AppSettings {
   siteAllowed: string;
@@ -8,13 +10,13 @@ export interface AppSettings {
   refrig3: string[];
   hidraulicaKeywords: string[];
   workingHours: {
-    morningStart: string; // HH:mm
+    morningStart: string;
     morningEnd: string;
     afternoonStart: string;
     afternoonEnd: string;
   };
   defaultTaskMinutes: number;
-  workdays: number[]; // 0=Sun..6=Sat
+  workdays: number[];
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -41,29 +43,45 @@ export const DEFAULT_SETTINGS: AppSettings = {
   workdays: [1, 2, 3, 4, 5],
 };
 
-const KEY = "app-settings:v1";
-
-let cache: AppSettings | null = null;
+let cache: AppSettings = DEFAULT_SETTINGS;
+let rowId: string | null = null;
+let loaded = false;
 const listeners = new Set<(s: AppSettings) => void>();
 
 export function getSettings(): AppSettings {
-  if (cache) return cache;
-  if (typeof window === "undefined") return DEFAULT_SETTINGS;
-  try {
-    const raw = localStorage.getItem(KEY);
-    cache = raw
-      ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
-      : DEFAULT_SETTINGS;
-  } catch {
-    cache = DEFAULT_SETTINGS;
-  }
-  return cache!;
+  return cache;
 }
 
-export function saveSettings(s: AppSettings) {
+export async function loadSettings(): Promise<AppSettings> {
+  if (loaded) return cache;
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("id, data")
+    .limit(1)
+    .maybeSingle();
+  if (!error && data) {
+    rowId = data.id;
+    cache = { ...DEFAULT_SETTINGS, ...(data.data as Partial<AppSettings>) };
+  }
+  loaded = true;
+  listeners.forEach((l) => l(cache));
+  return cache;
+}
+
+export async function saveSettings(s: AppSettings): Promise<void> {
   cache = s;
-  localStorage.setItem(KEY, JSON.stringify(s));
   listeners.forEach((l) => l(s));
+  if (rowId) {
+    await supabase.from("app_settings").update({ data: s as never }).eq("id", rowId);
+  } else {
+    const { data } = await supabase
+      .from("app_settings")
+      .insert({ data: s as never })
+      .select("id")
+      .single();
+    if (data) rowId = data.id;
+    loaded = true;
+  }
 }
 
 export function subscribeSettings(fn: (s: AppSettings) => void) {
@@ -71,10 +89,14 @@ export function subscribeSettings(fn: (s: AppSettings) => void) {
   return () => listeners.delete(fn);
 }
 
-// React hook
-import { useEffect, useState } from "react";
-export function useSettings(): [AppSettings, (s: AppSettings) => void] {
-  const [s, setS] = useState<AppSettings>(() => getSettings());
-  useEffect(() => subscribeSettings(setS) as unknown as () => void, []);
+export function useSettings(): [AppSettings, (s: AppSettings) => Promise<void>] {
+  const [s, setS] = useState<AppSettings>(cache);
+  useEffect(() => {
+    void loadSettings().then(setS);
+    const off = subscribeSettings(setS);
+    return () => {
+      off();
+    };
+  }, []);
   return [s, saveSettings];
 }
