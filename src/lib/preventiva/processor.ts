@@ -241,10 +241,10 @@ export function processPreventiva(rows: RawRow[], opts: ProcessOptions = {}): Pr
         os.equipe = "Elétrica";
         break;
       case "Climatização e Refrigeração":
-        os.equipe = refrigTeamForPredio(os.predio);
+        os.equipe = refrigTeamForPredio(os.predio, r1, r2, r3);
         break;
       case "Civil":
-        if (isHidraulica(rawFromProcessed(os))) {
+        if (isHidraulica(rawFromProcessed(os), keywords)) {
           os.equipe = "Hidráulica";
         } else {
           civilPool.push(os);
