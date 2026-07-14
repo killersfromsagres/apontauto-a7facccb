@@ -1,19 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PageShell } from "@/components/page-shell";
-import { GlassCard } from "@/components/glass-card";
-import { Sparkles } from "lucide-react";
+import { ApontamentoModule } from "@/components/apontamento-module";
 
-export const Route = createFileRoute("/limpeza")({ component: Page });
-
-function Page() {
-  return (
-    <PageShell title="Limpeza" description="Apontamentos de limpeza — Fase 4.">
-      <GlassCard>
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-          <Sparkles className="h-10 w-10 text-emerald-500" />
-          <h3 className="text-lg font-semibold">Em breve</h3>
-        </div>
-      </GlassCard>
-    </PageShell>
-  );
-}
+export const Route = createFileRoute("/limpeza")({
+  component: () => (
+    <ApontamentoModule
+      titulo="Limpeza"
+      descricao="Registro de apontamentos de limpeza com divisão automática de tempo."
+      accent="text-emerald-500"
+    />
+  ),
+});
