@@ -6,14 +6,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-
-interface Reminder {
-  id: string;
-  titulo: string;
-  data: string;
-  concluido: boolean;
-  prioridade: string;
-}
+import { listReminders, type Reminder } from "@/lib/reminders";
+import { supabase } from "@/integrations/supabase/client";
 
 function daysUntil(dateStr: string) {
   const t = new Date();
@@ -27,20 +21,27 @@ export function SlaBell() {
   const [items, setItems] = useState<Reminder[]>([]);
 
   useEffect(() => {
-    const load = () => {
+    let mounted = true;
+    const load = async () => {
       try {
-        const raw = JSON.parse(localStorage.getItem("outros-servicos:v1") || "[]");
-        setItems(raw);
+        const rows = await listReminders();
+        if (mounted) setItems(rows);
       } catch {
-        setItems([]);
+        /* ignore */
       }
     };
-    load();
-    window.addEventListener("storage", load);
-    const i = setInterval(load, 30_000);
+    void load();
+    const interval = setInterval(load, 60_000);
+    const channel = supabase
+      .channel("reminders-bell")
+      .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => {
+        void load();
+      })
+      .subscribe();
     return () => {
-      window.removeEventListener("storage", load);
-      clearInterval(i);
+      mounted = false;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -71,10 +72,7 @@ export function SlaBell() {
         ) : (
           <ul className="max-h-72 space-y-2 overflow-auto">
             {alerts.slice(0, 10).map((a) => (
-              <li
-                key={a.id}
-                className="rounded-md border border-border/60 bg-background/60 p-2"
-              >
+              <li key={a.id} className="rounded-md border border-border/60 bg-background/60 p-2">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium">{a.titulo}</p>
                   <span
