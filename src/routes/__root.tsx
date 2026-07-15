@@ -94,8 +94,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
       { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
