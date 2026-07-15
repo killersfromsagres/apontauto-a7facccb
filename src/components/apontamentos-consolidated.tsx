@@ -34,10 +34,39 @@ interface CategoriaState {
   osText: string;
 }
 
-const CATEGORIAS: { id: Categoria; label: string; icon: typeof Droplets; accent: string }[] = [
-  { id: "abastecimento", label: "Abastecimento", icon: Droplets, accent: "text-orange-500" },
-  { id: "limpeza", label: "Limpeza", icon: SprayCan, accent: "text-emerald-500" },
-  { id: "jardinagem", label: "Jardinagem", icon: Trees, accent: "text-green-600" },
+const CATEGORIAS: {
+  id: Categoria;
+  label: string;
+  icon: typeof Droplets;
+  accent: string;
+  options: import("@/lib/apontamento/apontamento").ApontamentoOptions;
+  hint?: string;
+}[] = [
+  {
+    id: "abastecimento",
+    label: "Abastecimento",
+    icon: Droplets,
+    accent: "text-orange-500",
+    // Dupla: todos os técnicos recebem as mesmas OS e horários.
+    options: { mode: "pair" },
+    hint: "Equipe em dupla — os dois técnicos recebem as mesmas OS e horários.",
+  },
+  {
+    id: "limpeza",
+    label: "Limpeza",
+    icon: SprayCan,
+    accent: "text-emerald-500",
+    // Jornada 06:00–13:00 em bloco único.
+    options: { workBlocks: [[6 * 60, 13 * 60]] },
+    hint: "Jornada padrão 06:00–13:00.",
+  },
+  {
+    id: "jardinagem",
+    label: "Jardinagem",
+    icon: Trees,
+    accent: "text-green-600",
+    options: {},
+  },
 ];
 
 const emptyState = (): CategoriaState => ({
