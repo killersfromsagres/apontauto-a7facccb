@@ -592,9 +592,8 @@ function ListView({
               const st = statusOf(it);
               const cells = buildMonthMap(it, execs as never, year);
               return (
+                <div key={it.id} id={`legal-row-${it.id}`}>
                 <GlassCard
-                  key={it.id}
-                  id={`legal-row-${it.id}`}
                   className={cn(
                     "relative overflow-hidden",
                     st === "vencido" && "ring-1 ring-red-500/30",
