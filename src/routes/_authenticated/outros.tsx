@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
@@ -12,6 +13,14 @@ import {
   Paperclip,
   X,
 } from "lucide-react";
+import {
+  listReminders,
+  createReminder,
+  updateReminder,
+  deleteReminder,
+  type Reminder,
+  type Priority,
+} from "@/lib/reminders";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
