@@ -32,7 +32,8 @@ function AuthPage() {
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+      // Só reage a login efetivo — INITIAL_SESSION já é tratado pelo beforeLoad da rota.
+      if (session && event === "SIGNED_IN") {
         navigate({ to: "/" });
       }
     });
