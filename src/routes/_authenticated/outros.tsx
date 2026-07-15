@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Paperclip,
   X,
+  Bell,
+  ShieldCheck,
 } from "lucide-react";
 import {
   listReminders,
@@ -21,6 +23,7 @@ import {
   type Reminder,
   type Priority,
 } from "@/lib/reminders";
+import { LegalItemsPanel } from "@/components/legal-items-panel";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -157,129 +160,148 @@ function Page() {
   return (
     <PageShell
       title="Outros Serviços"
-      description="Lembretes de atividades especiais: limpezas periódicas, inspeções, auditorias e serviços eventuais."
-      actions={
-        <Dialog
-          open={open}
-          onOpenChange={(v) => {
-            setOpen(v);
-            if (!v) setEditing(null);
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Novo lembrete
-            </Button>
-          </DialogTrigger>
-          <ReminderForm
-            initial={editing}
-            onSubmit={(r) => {
-              upsert(r);
-              setOpen(false);
-              setEditing(null);
-            }}
-          />
-        </Dialog>
-      }
+      description="Lembretes de atividades especiais e gestão de obrigações legais recorrentes."
     >
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Total" value={stats.total} tint="from-slate-500/20 to-slate-500/5" />
-        <Kpi label="Abertos" value={stats.abertos} tint="from-blue-500/25 to-blue-500/5" />
-        <Kpi
-          label="Vencendo em ≤3 dias"
-          value={stats.vencendo}
-          tint="from-amber-500/25 to-amber-500/5"
-        />
-        <Kpi label="Vencidos" value={stats.vencidos} tint="from-red-500/30 to-red-500/5" />
-      </div>
-
-      <Tabs defaultValue="list">
+      <Tabs defaultValue="lembretes">
         <TabsList>
-          <TabsTrigger value="list">
-            <ListIcon className="mr-2 h-4 w-4" /> Lista
+          <TabsTrigger value="lembretes">
+            <Bell className="mr-2 h-4 w-4" strokeWidth={1.75} /> Lembretes
           </TabsTrigger>
-          <TabsTrigger value="calendar">
-            <CalendarIcon className="mr-2 h-4 w-4" /> Calendário
+          <TabsTrigger value="legais">
+            <ShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.75} /> Painel de Itens Legais
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="mt-4">
-          <GlassCard>
-            {sorted.length === 0 ? (
-              <EmptyState onCreate={() => setOpen(true)} />
-            ) : (
-              <ul className="divide-y divide-border/60">
-                <AnimatePresence initial={false}>
-                  {sorted.map((r) => (
-                    <ReminderRow
-                      key={r.id}
-                      reminder={r}
-                      onToggle={() => toggle(r.id)}
-                      onEdit={() => {
-                        setEditing(r);
-                        setOpen(true);
-                      }}
-                      onRemove={() => remove(r.id)}
-                    />
-                  ))}
-                </AnimatePresence>
-              </ul>
-            )}
-          </GlassCard>
+        <TabsContent value="lembretes" className="mt-4 space-y-4">
+          <div className="flex justify-end">
+            <Dialog
+              open={open}
+              onOpenChange={(v) => {
+                setOpen(v);
+                if (!v) setEditing(null);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" /> Novo lembrete
+                </Button>
+              </DialogTrigger>
+              <ReminderForm
+                initial={editing}
+                onSubmit={(r) => {
+                  upsert(r);
+                  setOpen(false);
+                  setEditing(null);
+                }}
+              />
+            </Dialog>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Kpi label="Total" value={stats.total} tint="from-slate-500/20 to-slate-500/5" />
+            <Kpi label="Abertos" value={stats.abertos} tint="from-blue-500/25 to-blue-500/5" />
+            <Kpi
+              label="Vencendo em ≤3 dias"
+              value={stats.vencendo}
+              tint="from-amber-500/25 to-amber-500/5"
+            />
+            <Kpi label="Vencidos" value={stats.vencidos} tint="from-red-500/30 to-red-500/5" />
+          </div>
+
+          <Tabs defaultValue="list">
+            <TabsList>
+              <TabsTrigger value="list">
+                <ListIcon className="mr-2 h-4 w-4" /> Lista
+              </TabsTrigger>
+              <TabsTrigger value="calendar">
+                <CalendarIcon className="mr-2 h-4 w-4" /> Calendário
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="list" className="mt-4">
+              <GlassCard>
+                {sorted.length === 0 ? (
+                  <EmptyState onCreate={() => setOpen(true)} />
+                ) : (
+                  <ul className="divide-y divide-border/60">
+                    <AnimatePresence initial={false}>
+                      {sorted.map((r) => (
+                        <ReminderRow
+                          key={r.id}
+                          reminder={r}
+                          onToggle={() => toggle(r.id)}
+                          onEdit={() => {
+                            setEditing(r);
+                            setOpen(true);
+                          }}
+                          onRemove={() => remove(r.id)}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                )}
+              </GlassCard>
+            </TabsContent>
+
+            <TabsContent value="calendar" className="mt-4">
+              <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
+                <GlassCard>
+                  <Calendar
+                    mode="single"
+                    selected={calendarDate}
+                    onSelect={setCalendarDate}
+                    modifiers={{ hasReminder: highlightedDates }}
+                    modifiersClassNames={{
+                      hasReminder:
+                        "relative after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary",
+                    }}
+                    className="rounded-md"
+                  />
+                </GlassCard>
+                <GlassCard>
+                  <h3 className="mb-3 text-sm font-semibold">
+                    {calendarDate?.toLocaleDateString("pt-BR", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "long",
+                    })}
+                  </h3>
+                  {remindersOnSelectedDay.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      Nenhum lembrete para esta data.
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border/60">
+                      <AnimatePresence initial={false}>
+                        {remindersOnSelectedDay.map((r) => (
+                          <ReminderRow
+                            key={r.id}
+                            reminder={r}
+                            onToggle={() => toggle(r.id)}
+                            onEdit={() => {
+                              setEditing(r);
+                              setOpen(true);
+                            }}
+                            onRemove={() => remove(r.id)}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  )}
+                </GlassCard>
+              </div>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="calendar" className="mt-4">
-          <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-            <GlassCard>
-              <Calendar
-                mode="single"
-                selected={calendarDate}
-                onSelect={setCalendarDate}
-                modifiers={{ hasReminder: highlightedDates }}
-                modifiersClassNames={{
-                  hasReminder:
-                    "relative after:absolute after:bottom-1 after:left-1/2 after:h-1 after:w-1 after:-translate-x-1/2 after:rounded-full after:bg-primary",
-                }}
-                className="rounded-md"
-              />
-            </GlassCard>
-            <GlassCard>
-              <h3 className="mb-3 text-sm font-semibold">
-                {calendarDate?.toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                })}
-              </h3>
-              {remindersOnSelectedDay.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Nenhum lembrete para esta data.
-                </p>
-              ) : (
-                <ul className="divide-y divide-border/60">
-                  <AnimatePresence initial={false}>
-                    {remindersOnSelectedDay.map((r) => (
-                      <ReminderRow
-                        key={r.id}
-                        reminder={r}
-                        onToggle={() => toggle(r.id)}
-                        onEdit={() => {
-                          setEditing(r);
-                          setOpen(true);
-                        }}
-                        onRemove={() => remove(r.id)}
-                      />
-                    ))}
-                  </AnimatePresence>
-                </ul>
-              )}
-            </GlassCard>
-          </div>
+        <TabsContent value="legais" className="mt-4">
+          <LegalItemsPanel />
         </TabsContent>
       </Tabs>
     </PageShell>
   );
 }
+
 
 function Kpi({ label, value, tint }: { label: string; value: number; tint: string }) {
   return (

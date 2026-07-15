@@ -35,6 +35,48 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_items: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          periodicidade: string
+          proxima_execucao: string
+          responsavel: string | null
+          titulo: string
+          ultima_execucao: string | null
+          updated_at: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          periodicidade: string
+          proxima_execucao: string
+          responsavel?: string | null
+          titulo: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          periodicidade?: string
+          proxima_execucao?: string
+          responsavel?: string | null
+          titulo?: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
