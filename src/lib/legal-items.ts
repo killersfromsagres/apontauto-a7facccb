@@ -41,6 +41,7 @@ interface Row {
   titulo: string;
   descricao: string | null;
   empresa: string | null;
+  predio: string | null;
   observacoes: string | null;
   periodicidade: string;
   ultima_execucao: string | null;
@@ -57,6 +58,7 @@ function fromRow(r: Row): LegalItem {
     titulo: r.titulo,
     descricao: r.descricao ?? "",
     empresa: r.empresa ?? "",
+    predio: r.predio ?? "",
     observacoes: r.observacoes ?? "",
     periodicidade: (r.periodicidade as Periodicidade) ?? "anual",
     ultimaExecucao: r.ultima_execucao,
