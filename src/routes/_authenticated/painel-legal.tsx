@@ -1004,8 +1004,10 @@ function LegalItemForm({
 }) {
   const [titulo, setTitulo] = useState("");
   const [empresa, setEmpresa] = useState("");
+  const [predio, setPredio] = useState("");
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>("anual");
   const [dataInicio, setDataInicio] = useState(todayISO());
+  const [ultimaExecucao, setUltimaExecucao] = useState<string>("");
   const [agendamento, setAgendamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1014,19 +1016,29 @@ function LegalItemForm({
     if (editing) {
       setTitulo(editing.titulo);
       setEmpresa(editing.empresa);
+      setPredio(editing.predio);
       setPeriodicidade(editing.periodicidade);
       setDataInicio(editing.proximaExecucao || todayISO());
+      setUltimaExecucao(editing.ultimaExecucao ?? "");
       setAgendamento(editing.agendamento ?? "");
       setObservacoes(editing.observacoes);
     } else {
       setTitulo("");
       setEmpresa("");
+      setPredio("");
       setPeriodicidade("anual");
       setDataInicio(todayISO());
+      setUltimaExecucao("");
       setAgendamento("");
       setObservacoes("");
     }
   }, [editing, open]);
+
+  // Se última execução mudar e não houver próxima definida manualmente, sugerir próxima automática.
+  const autoNext = useMemo(() => {
+    if (!ultimaExecucao) return "";
+    return addMonths(ultimaExecucao, monthsFor(periodicidade));
+  }, [ultimaExecucao, periodicidade]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1036,30 +1048,34 @@ function LegalItemForm({
     }
     setSaving(true);
     try {
+      const proxima = dataInicio || autoNext || addMonths(todayISO(), monthsFor(periodicidade));
       if (editing) {
         await updateLegalItem(editing.id, {
           titulo: titulo.trim(),
           empresa: empresa.trim(),
+          predio: predio.trim(),
           periodicidade,
-          proximaExecucao: dataInicio,
+          ultimaExecucao: ultimaExecucao || null,
+          proximaExecucao: proxima,
           agendamento: agendamento || null,
           observacoes,
         });
-        toast.success("Item atualizado.");
+        toast.success("Item atualizado. Próxima execução agendada.");
       } else {
         await createLegalItem({
           titulo: titulo.trim(),
           empresa: empresa.trim(),
+          predio: predio.trim(),
           descricao: "",
           observacoes,
           periodicidade,
-          ultimaExecucao: null,
-          proximaExecucao: dataInicio || addMonths(todayISO(), monthsFor(periodicidade)),
+          ultimaExecucao: ultimaExecucao || null,
+          proximaExecucao: proxima,
           agendamento: agendamento || null,
           responsavel: "",
           concluido: false,
         });
-        toast.success("Item criado.");
+        toast.success("Item criado e agendado.");
       }
       onSaved();
       onOpenChange(false);
@@ -1081,9 +1097,15 @@ function LegalItemForm({
             <Label htmlFor="titulo">Tarefa</Label>
             <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Caixa d'água A160" required />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="empresa">Empresa</Label>
-            <Input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: Real Hidrojato" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="empresa">Empresa</Label>
+              <Input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: Real Hidrojato" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="predio">Prédio</Label>
+              <Input id="predio" value={predio} onChange={(e) => setPredio(e.target.value)} placeholder="Ex.: Torre A / Bloco 2" />
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -1098,17 +1120,39 @@ function LegalItemForm({
               </Select>
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="ult">Última execução</Label>
+              <Input id="ult" type="date" value={ultimaExecucao} onChange={(e) => setUltimaExecucao(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
               <Label htmlFor="ini">Próxima execução</Label>
               <Input id="ini" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required />
+              {autoNext && autoNext !== dataInicio && (
+                <button
+                  type="button"
+                  className="text-[11px] text-primary underline underline-offset-2"
+                  onClick={() => setDataInicio(autoNext)}
+                >
+                  Sugerir {new Date(autoNext + "T00:00:00").toLocaleDateString("pt-BR")} (base última + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()})
+                </button>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="agenda">Agendamento (opcional)</Label>
+              <Input id="agenda" type="date" value={agendamento} onChange={(e) => setAgendamento(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="agenda">Agendamento (opcional)</Label>
-            <Input id="agenda" type="date" value={agendamento} onChange={(e) => setAgendamento(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="obs">Observações</Label>
-            <Textarea id="obs" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} />
+            <Textarea
+              id="obs"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              rows={5}
+              className="min-h-28 whitespace-pre-wrap break-words leading-relaxed"
+              placeholder="Descreva livremente — pode usar várias linhas."
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
