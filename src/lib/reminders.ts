@@ -50,6 +50,7 @@ export async function listReminders(): Promise<Reminder[]> {
 }
 
 export async function createReminder(input: Omit<Reminder, "id" | "createdAt">): Promise<Reminder> {
+  const { data: userRes } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("reminders")
     .insert({
@@ -60,6 +61,7 @@ export async function createReminder(input: Omit<Reminder, "id" | "createdAt">):
       observacoes: input.observacoes,
       anexos: input.anexos as never,
       concluido: input.concluido,
+      created_by: userRes.user?.id ?? null,
     })
     .select("*")
     .single();
