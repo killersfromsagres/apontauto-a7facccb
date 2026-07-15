@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import * as XLSX from "xlsx";
+// xlsx is dynamically imported inside handleFile to keep it out of the initial route chunk.
 import { toast } from "sonner";
 import {
   Upload,
