@@ -38,16 +38,15 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border/50">
         <div className="flex items-center gap-2.5 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 transition-[padding,gap] duration-200 ease-out">
           <div className="relative shrink-0 transition-all duration-200 ease-out h-10 w-10 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-80" />
             <img
               src={logoAsset.url}
               alt="Apont Auto — Sistema Automático de Apontamento"
-              className="relative h-full w-full object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
+              className="relative h-full w-full object-contain"
               loading="eager"
             />
           </div>
           <div className="flex flex-col leading-tight overflow-hidden transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-gradient whitespace-nowrap">
+            <span className="shine-text font-display text-sm font-bold uppercase tracking-[0.18em] whitespace-nowrap">
               Apont Auto
             </span>
             <span className="shine-text font-mono text-[9px] uppercase tracking-[0.22em] whitespace-nowrap">
