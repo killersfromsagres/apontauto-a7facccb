@@ -93,17 +93,24 @@ function UsuariosPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="login">Login</Label>
               <Input
-                id="email"
-                type="email"
+                id="login"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@exemplo.com"
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9._-]{3,30}"
+                value={login}
+                onChange={(e) => setLogin(e.target.value.toLowerCase())}
+                placeholder="ex.: joao.silva"
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">
+                3-30 caracteres. Letras minúsculas, números e . _ -
+              </p>
             </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
