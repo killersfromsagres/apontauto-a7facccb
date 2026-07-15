@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
+import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
@@ -43,6 +44,12 @@ const AuthenticatedPreventivaRoute = AuthenticatedPreventivaRouteImport.update({
   path: '/preventiva',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedPainelLegalRoute =
+  AuthenticatedPainelLegalRouteImport.update({
+    id: '/painel-legal',
+    path: '/painel-legal',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   id: '/outros',
   path: '/outros',
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/outros': typeof AuthenticatedOutrosRoute
+  '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/outros': typeof AuthenticatedOutrosRoute
+  '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -94,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
+  '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/corretiva'
     | '/outros'
+    | '/painel-legal'
     | '/preventiva'
     | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/corretiva'
     | '/outros'
+    | '/painel-legal'
     | '/preventiva'
     | '/usuarios'
     | '/'
@@ -127,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
     | '/_authenticated/outros'
+    | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -174,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPreventivaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/painel-legal': {
+      id: '/_authenticated/painel-legal'
+      path: '/painel-legal'
+      fullPath: '/painel-legal'
+      preLoaderRoute: typeof AuthenticatedPainelLegalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/outros': {
       id: '/_authenticated/outros'
       path: '/outros'
@@ -210,6 +230,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
+  AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -220,6 +241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
+  AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
