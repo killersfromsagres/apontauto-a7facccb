@@ -19,11 +19,13 @@ export function PageShell({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-8"
     >
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h2>
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/40 pb-5">
+        <div className="min-w-0">
+          <h2 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+            <span className="text-gradient">{title}</span>
+          </h2>
           {description && (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
           )}
         </div>
         {actions}
