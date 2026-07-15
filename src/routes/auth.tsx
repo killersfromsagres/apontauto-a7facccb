@@ -204,6 +204,12 @@ function AuthPage() {
           Dev by:{" "}
           <span className="shine-text font-semibold">Gabriel Vitor</span>
         </p>
+        <nav className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/40">
+          <a href="/sobre" className="hover:text-white/70">Sobre</a>
+          <a href="/contato" className="hover:text-white/70">Contato</a>
+          <a href="/privacidade" className="hover:text-white/70">Privacidade</a>
+          <a href="/termos" className="hover:text-white/70">Termos</a>
+        </nav>
       </main>
     </div>
   );
