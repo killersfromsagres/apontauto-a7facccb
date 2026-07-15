@@ -14,11 +14,9 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
-import { Route as AuthenticatedLimpezaRouteImport } from './routes/_authenticated/limpeza'
-import { Route as AuthenticatedJardinagemRouteImport } from './routes/_authenticated/jardinagem'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
+import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -44,16 +42,6 @@ const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   path: '/outros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLimpezaRoute = AuthenticatedLimpezaRouteImport.update({
-  id: '/limpeza',
-  path: '/limpeza',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedJardinagemRoute = AuthenticatedJardinagemRouteImport.update({
-  id: '/jardinagem',
-  path: '/jardinagem',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   id: '/corretiva',
   path: '/corretiva',
@@ -65,31 +53,27 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAbastecimentoRoute =
-  AuthenticatedAbastecimentoRouteImport.update({
-    id: '/abastecimento',
-    path: '/abastecimento',
+const AuthenticatedApontamentosRoute =
+  AuthenticatedApontamentosRouteImport.update({
+    id: '/apontamentos',
+    path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
-  '/jardinagem': typeof AuthenticatedJardinagemRoute
-  '/limpeza': typeof AuthenticatedLimpezaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
-  '/jardinagem': typeof AuthenticatedJardinagemRoute
-  '/limpeza': typeof AuthenticatedLimpezaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/': typeof AuthenticatedIndexRoute
@@ -98,11 +82,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRoute
+  '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
-  '/_authenticated/jardinagem': typeof AuthenticatedJardinagemRoute
-  '/_authenticated/limpeza': typeof AuthenticatedLimpezaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -112,21 +94,17 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/abastecimento'
+    | '/apontamentos'
     | '/configuracoes'
     | '/corretiva'
-    | '/jardinagem'
-    | '/limpeza'
     | '/outros'
     | '/preventiva'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/abastecimento'
+    | '/apontamentos'
     | '/configuracoes'
     | '/corretiva'
-    | '/jardinagem'
-    | '/limpeza'
     | '/outros'
     | '/preventiva'
     | '/'
@@ -134,11 +112,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/abastecimento'
+    | '/_authenticated/apontamentos'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
-    | '/_authenticated/jardinagem'
-    | '/_authenticated/limpeza'
     | '/_authenticated/outros'
     | '/_authenticated/preventiva'
     | '/_authenticated/'
@@ -186,20 +162,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOutrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/limpeza': {
-      id: '/_authenticated/limpeza'
-      path: '/limpeza'
-      fullPath: '/limpeza'
-      preLoaderRoute: typeof AuthenticatedLimpezaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/jardinagem': {
-      id: '/_authenticated/jardinagem'
-      path: '/jardinagem'
-      fullPath: '/jardinagem'
-      preLoaderRoute: typeof AuthenticatedJardinagemRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/corretiva': {
       id: '/_authenticated/corretiva'
       path: '/corretiva'
@@ -214,33 +176,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/abastecimento': {
-      id: '/_authenticated/abastecimento'
-      path: '/abastecimento'
-      fullPath: '/abastecimento'
-      preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
+    '/_authenticated/apontamentos': {
+      id: '/_authenticated/apontamentos'
+      path: '/apontamentos'
+      fullPath: '/apontamentos'
+      preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRoute
+  AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
-  AuthenticatedJardinagemRoute: typeof AuthenticatedJardinagemRoute
-  AuthenticatedLimpezaRoute: typeof AuthenticatedLimpezaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRoute,
+  AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
-  AuthenticatedJardinagemRoute: AuthenticatedJardinagemRoute,
-  AuthenticatedLimpezaRoute: AuthenticatedLimpezaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
