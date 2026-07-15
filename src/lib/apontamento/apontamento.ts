@@ -168,5 +168,3 @@ export async function generateApontamentoWorkbook(
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
-
-export { downloadBlob };
