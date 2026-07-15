@@ -26,22 +26,22 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/50 bg-background/70 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/50 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:gap-3 sm:px-4">
       <SidebarTrigger />
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div className="relative shrink-0">
           <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-70" />
           <img
             src={logoAsset.url}
             alt="Planejador de Manutenção — insígnia"
-            className="relative h-11 w-11 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
+            className="relative h-9 w-9 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)] sm:h-11 sm:w-11"
             loading="eager"
             width={44}
             height={44}
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
-          <h1 className="truncate font-display text-base font-bold tracking-wide">
+          <h1 className="truncate font-display text-sm font-bold tracking-wide sm:text-base">
             <span className="text-gradient">Planejador de Manutenção</span>
           </h1>
           <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
@@ -49,7 +49,7 @@ export function AppHeader() {
           </p>
         </div>
       </div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
         {email && (
           <span className="hidden max-w-[200px] truncate rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs text-muted-foreground md:inline">
             {email}
