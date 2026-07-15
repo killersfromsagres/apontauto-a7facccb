@@ -2,6 +2,13 @@ import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Liquid Glass panel (iOS 26 language):
+ *  - translucent frosted fill (glass-surface utility handles blur + refraction)
+ *  - top edge highlight simulating light refraction (::before)
+ *  - continuous large radius (squircle-like)
+ *  - depth from layered blur, never from solid color fills
+ */
 export function GlassCard({
   children,
   className,
@@ -17,12 +24,11 @@ export function GlassCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, ease: "easeOut" }}
       className={cn(
-        "glass-surface relative overflow-hidden rounded-2xl p-6",
-        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px",
-        "before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent",
-        "after:pointer-events-none after:absolute after:-top-24 after:-right-16 after:h-48 after:w-48",
-        "after:rounded-full after:bg-primary/15 after:blur-3xl",
-        "transition-shadow hover:shadow-elegant",
+        "glass-surface relative overflow-hidden rounded-3xl p-6",
+        // top refraction highlight
+        "before:pointer-events-none before:absolute before:inset-x-4 before:top-0 before:h-px",
+        "before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent",
+        "transition-shadow duration-300 hover:shadow-elegant",
         className,
       )}
     >
