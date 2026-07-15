@@ -550,3 +550,16 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
     animation: none !important;
   }
 }
+
+/* Loading screen: barra indeterminada leve (CSS puro, ~60fps) */
+@keyframes loadingBarSlide {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
+.loading-bar {
+  animation: loadingBarSlide 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar { animation: none; }
+}
