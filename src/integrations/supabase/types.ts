@@ -123,6 +123,7 @@ export type Database = {
           meses_status: Json
           observacoes: string | null
           periodicidade: string
+          predio: string | null
           proxima_execucao: string
           responsavel: string | null
           titulo: string
@@ -140,6 +141,7 @@ export type Database = {
           meses_status?: Json
           observacoes?: string | null
           periodicidade: string
+          predio?: string | null
           proxima_execucao: string
           responsavel?: string | null
           titulo: string
@@ -157,6 +159,7 @@ export type Database = {
           meses_status?: Json
           observacoes?: string | null
           periodicidade?: string
+          predio?: string | null
           proxima_execucao?: string
           responsavel?: string | null
           titulo?: string
