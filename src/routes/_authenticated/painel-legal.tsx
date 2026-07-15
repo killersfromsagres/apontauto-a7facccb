@@ -235,12 +235,14 @@ function PainelLegalPage() {
     setFormOpen(true);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const { exportLegalXLSX } = await import("@/lib/legal-export");
     exportLegalXLSX(filtered, execs, year);
     toast.success("Planilha exportada.");
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const { exportLegalPDF } = await import("@/lib/legal-export");
     exportLegalPDF(filtered, execs, year);
     toast.success("PDF gerado.");
   };
