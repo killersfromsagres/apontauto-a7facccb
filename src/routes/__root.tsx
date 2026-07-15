@@ -99,11 +99,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon.ico" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "ApontAuto",
+          url: "https://apontauto.online",
+          logo: "https://apontauto.online/apontauto-logo.png",
+          description:
+            "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
+          founder: { "@type": "Person", name: "Gabriel Vitor" },
+          contactPoint: {
+            "@type": "ContactPoint",
+            email: "gabrielvlp33@gmail.com",
+            contactType: "customer support",
+            areaServed: "BR",
+            availableLanguage: ["Portuguese"],
+          },
+        }),
       },
     ],
   }),
