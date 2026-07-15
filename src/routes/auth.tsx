@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,16 +71,6 @@ function AuthPage() {
     }
   };
 
-  const google = async () => {
-    setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error("Falha ao entrar com Google");
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 app-bg">
@@ -136,18 +126,6 @@ function AuthPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">ou</span>
-            </div>
-          </div>
-
-          <Button type="button" variant="outline" className="w-full" onClick={google} disabled={loading}>
-            Continuar com Google
-          </Button>
 
           <p className="mt-6 text-center text-xs text-muted-foreground">
             Dev Gabriel Vitor · Sistema de Apontamento
