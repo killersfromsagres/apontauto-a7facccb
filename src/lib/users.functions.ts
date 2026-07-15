@@ -2,20 +2,29 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Role = "admin" | "user";
-type CreateUserInput = { email: string; password: string; fullName?: string; role: Role };
+type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
+
+const LOGIN_DOMAIN = "apontauto.local";
+const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
+
+export function loginToEmail(login: string) {
+  const l = login.trim().toLowerCase();
+  if (l.includes("@")) return l;
+  return `${l}@${LOGIN_DOMAIN}`;
+}
 
 function validate(input: unknown): CreateUserInput {
   if (!input || typeof input !== "object") throw new Error("Dados inválidos");
-  const { email, password, fullName, role } = input as Record<string, unknown>;
-  if (typeof email !== "string" || !/^\S+@\S+\.\S+$/.test(email.trim())) {
-    throw new Error("Informe um e-mail válido.");
+  const { login, password, fullName, role } = input as Record<string, unknown>;
+  if (typeof login !== "string" || !LOGIN_RE.test(login.trim().toLowerCase())) {
+    throw new Error("Login deve ter 3-30 caracteres (letras minúsculas, números, . _ -).");
   }
   if (typeof password !== "string" || password.length < 6) {
     throw new Error("A senha deve ter pelo menos 6 caracteres.");
   }
   const r: Role = role === "admin" ? "admin" : "user";
   return {
-    email: email.trim().toLowerCase(),
+    login: login.trim().toLowerCase(),
     password,
     fullName: typeof fullName === "string" ? fullName.trim() : undefined,
     role: r,
