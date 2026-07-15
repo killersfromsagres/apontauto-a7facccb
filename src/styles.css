@@ -602,20 +602,26 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   100% { transform: translateX(320%); }
 }
 
-/* Mascote — robô amistoso construído com divs */
+/* Mascote de Manutenção — técnico com capacete, chave inglesa e engrenagem */
 .mascot {
   --m-primary: hsl(var(--primary));
   --m-accent: hsl(var(--accent));
   --m-glow: hsl(var(--primary) / 0.55);
-  --m-body: hsl(var(--card));
+  --m-hat: #f5a524;          /* amarelo capacete */
+  --m-hat-dark: #b8791a;
+  --m-skin: #f2c9a3;
+  --m-skin-shadow: #d9a97f;
+  --m-suit: hsl(var(--primary) / 0.85);
+  --m-metal: #d5dbe3;
+  --m-metal-dark: #7a8494;
   --m-edge: hsl(var(--primary) / 0.6);
   position: relative;
-  width: 140px;
-  height: 160px;
+  width: 180px;
+  height: 190px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  filter: drop-shadow(0 12px 24px hsl(var(--primary) / 0.35));
+  filter: drop-shadow(0 14px 28px hsl(var(--primary) / 0.35));
 }
 .mascot-body {
   position: relative;
@@ -629,134 +635,233 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   position: absolute;
   bottom: -6px;
   left: 50%;
-  width: 72%;
+  width: 60%;
   height: 12px;
   border-radius: 50%;
   background: radial-gradient(ellipse, hsl(var(--primary) / 0.35), transparent 70%);
   transform: translateX(-50%);
   animation: mascotShadow 2.6s ease-in-out infinite;
 }
-.mascot-antenna {
+
+/* Engrenagem no fundo */
+.mascot-gear {
   position: absolute;
-  top: 0;
+  top: 8px;
   left: 50%;
-  width: 3px;
-  height: 22px;
-  background: var(--m-edge);
-  border-radius: 2px;
+  width: 150px;
+  height: 150px;
   transform: translateX(-50%);
+  animation: mascotSpin 6s linear infinite;
+  will-change: transform;
+  opacity: 0.35;
+  pointer-events: none;
 }
-.mascot-antenna-tip {
+.mascot-gear-tooth {
   position: absolute;
-  top: -6px;
+  top: 50%;
   left: 50%;
-  width: 12px;
-  height: 12px;
+  width: 20px;
+  height: 150px;
+  margin: -75px 0 0 -10px;
+  transform-origin: 50% 50%;
+  background:
+    linear-gradient(180deg, var(--m-primary) 0 18px, transparent 18px 132px, var(--m-primary) 132px 150px);
+  border-radius: 6px;
+}
+.mascot-gear-hole {
+  position: absolute;
+  inset: 30px;
   border-radius: 50%;
-  background: var(--m-accent);
-  transform: translateX(-50%);
-  box-shadow: 0 0 12px var(--m-glow), 0 0 24px var(--m-glow);
-  animation: mascotPulse 1.2s ease-in-out infinite;
+  border: 6px solid var(--m-primary);
+  background: transparent;
 }
+
+/* Capacete de segurança */
+.mascot-helmet {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  width: 96px;
+  height: 44px;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+.mascot-helmet::before {
+  content: "";
+  position: absolute;
+  inset: 0 6px 6px 6px;
+  background: linear-gradient(180deg, var(--m-hat) 0%, var(--m-hat-dark) 100%);
+  border-radius: 44px 44px 8px 8px / 42px 42px 8px 8px;
+  box-shadow: inset 0 -6px 8px rgba(0, 0, 0, 0.2), inset 0 4px 4px rgba(255, 255, 255, 0.25);
+}
+.mascot-helmet-crest {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  width: 8px;
+  height: 32px;
+  background: var(--m-hat-dark);
+  border-radius: 3px;
+  transform: translateX(-50%);
+  z-index: 1;
+}
+.mascot-helmet-brim {
+  position: absolute;
+  bottom: 0;
+  left: -4px;
+  right: -4px;
+  height: 10px;
+  background: linear-gradient(180deg, var(--m-hat) 0%, var(--m-hat-dark) 100%);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Cabeça (rosto) */
 .mascot-head {
   position: absolute;
-  top: 20px;
+  top: 38px;
   left: 50%;
-  width: 92px;
-  height: 76px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  border: 2px solid var(--m-edge);
+  width: 72px;
+  height: 60px;
+  border-radius: 22px 22px 26px 26px;
+  background: linear-gradient(180deg, var(--m-skin) 0%, var(--m-skin-shadow) 100%);
+  border: 2px solid rgba(0, 0, 0, 0.08);
   transform: translateX(-50%);
-  box-shadow: inset 0 -6px 12px hsl(var(--primary) / 0.15),
-    0 0 24px hsl(var(--primary) / 0.2);
+  box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.12);
+  z-index: 2;
 }
-.mascot-ear {
-  position: absolute;
-  top: 22px;
-  width: 8px;
-  height: 24px;
-  background: var(--m-edge);
-  border-radius: 4px;
-}
-.mascot-ear-l { left: -8px; }
-.mascot-ear-r { right: -8px; }
 .mascot-face {
   position: absolute;
-  inset: 12px 10px;
-  border-radius: 14px;
-  background: radial-gradient(ellipse at 50% 40%, hsl(var(--primary) / 0.18), hsl(var(--background)) 80%);
+  inset: 18px 8px 8px 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 14px;
-  overflow: hidden;
 }
 .mascot-eye {
-  width: 14px;
-  height: 14px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: var(--m-accent);
-  box-shadow: 0 0 10px var(--m-glow);
+  background: #1a1f2b;
   animation: mascotBlink 3.4s ease-in-out infinite;
   transform-origin: center;
 }
 .mascot-eye-r { animation-delay: 0.05s; }
 .mascot-mouth {
   position: absolute;
-  bottom: 10px;
+  bottom: 6px;
   left: 50%;
-  width: 26px;
-  height: 8px;
+  width: 20px;
+  height: 6px;
   border-bottom-left-radius: 20px;
   border-bottom-right-radius: 20px;
-  border: 2px solid var(--m-primary);
+  border: 2px solid #1a1f2b;
   border-top: 0;
   transform: translateX(-50%);
   animation: mascotSmile 2.6s ease-in-out infinite;
 }
+
+/* Torso (macacão) */
 .mascot-torso {
   position: absolute;
-  bottom: 0;
+  bottom: 4px;
   left: 50%;
-  width: 78px;
-  height: 46px;
-  border-radius: 14px 14px 10px 10px;
-  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
-  border: 2px solid var(--m-edge);
+  width: 108px;
+  height: 74px;
+  border-radius: 18px 18px 12px 12px;
+  background: linear-gradient(180deg, var(--m-suit) 0%, hsl(var(--primary) / 0.65) 100%);
+  border: 2px solid hsl(var(--primary) / 0.5);
   transform: translateX(-50%);
-  box-shadow: inset 0 -4px 10px hsl(var(--primary) / 0.15);
+  box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.2), 0 0 24px hsl(var(--primary) / 0.25);
+  z-index: 2;
 }
-.mascot-chest {
+.mascot-strap {
   position: absolute;
-  top: 10px;
+  top: -6px;
+  width: 12px;
+  height: 24px;
+  background: hsl(var(--primary) / 0.9);
+  border-radius: 4px;
+}
+.mascot-strap-l { left: 20px; transform: rotate(-8deg); }
+.mascot-strap-r { right: 20px; transform: rotate(8deg); }
+.mascot-badge {
+  position: absolute;
+  top: 22px;
   left: 50%;
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   background: var(--m-accent);
   transform: translateX(-50%);
   box-shadow: 0 0 12px var(--m-glow), inset 0 0 6px rgba(0, 0, 0, 0.25);
   animation: mascotPulse 1.4s ease-in-out infinite;
 }
-.mascot-arm {
+
+/* Braço com chave inglesa */
+.mascot-arm-wrench {
   position: absolute;
-  top: 6px;
-  width: 10px;
-  height: 30px;
-  background: var(--m-edge);
+  bottom: 38px;
+  right: 6px;
+  width: 44px;
+  height: 80px;
+  transform-origin: 50% 8px;
+  animation: mascotWrenchSwing 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 3;
+  will-change: transform;
+}
+.mascot-arm-limb {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 14px;
+  height: 34px;
+  background: linear-gradient(180deg, var(--m-suit) 0%, hsl(var(--primary) / 0.7) 100%);
+  border-radius: 8px;
+  transform: translateX(-50%);
+  border: 2px solid hsl(var(--primary) / 0.5);
+}
+.mascot-wrench {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  width: 14px;
+  height: 52px;
+  background: linear-gradient(180deg, var(--m-metal) 0%, var(--m-metal-dark) 100%);
+  border-radius: 4px;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.mascot-wrench-head {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  width: 32px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--m-metal) 0%, var(--m-metal-dark) 100%);
   border-radius: 6px;
-  transform-origin: 50% 0%;
-}
-.mascot-arm-l {
-  left: -10px;
-  animation: mascotArmL 2.6s ease-in-out infinite;
-}
-.mascot-arm-r {
-  right: -10px;
-  animation: mascotArmR 2.6s ease-in-out infinite;
+  transform: translateX(-50%);
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% 100%, 68% 100%, 68% 55%, 32% 55%, 32% 100%, 0% 100%
+  );
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
 }
 
+/* Faíscas */
+.mascot-spark {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--m-accent);
+  box-shadow: 0 0 8px var(--m-accent), 0 0 14px var(--m-glow);
+  opacity: 0;
+}
+.mascot-spark-1 { bottom: -4px; left: 6px;  animation: mascotSpark 1.6s ease-out infinite; }
+.mascot-spark-2 { bottom: -8px; left: 22px; animation: mascotSpark 1.6s ease-out 0.2s infinite; }
+.mascot-spark-3 { bottom: -2px; left: 34px; animation: mascotSpark 1.6s ease-out 0.4s infinite; }
+
+/* Keyframes */
 @keyframes mascotFloat {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-8px); }
@@ -774,16 +879,21 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   95%           { transform: scaleY(0.1); }
 }
 @keyframes mascotSmile {
-  0%, 100% { height: 8px; width: 26px; }
-  50%      { height: 10px; width: 30px; }
+  0%, 100% { height: 6px; width: 20px; }
+  50%      { height: 8px; width: 24px; }
 }
-@keyframes mascotArmL {
-  0%, 100% { transform: rotate(6deg); }
-  50%      { transform: rotate(-14deg); }
+@keyframes mascotSpin {
+  from { transform: translateX(-50%) rotate(0deg); }
+  to   { transform: translateX(-50%) rotate(360deg); }
 }
-@keyframes mascotArmR {
-  0%, 100% { transform: rotate(-6deg); }
-  50%      { transform: rotate(14deg); }
+@keyframes mascotWrenchSwing {
+  0%, 100% { transform: rotate(-18deg); }
+  50%      { transform: rotate(24deg); }
+}
+@keyframes mascotSpark {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  30%  { opacity: 1; transform: translate(0, -6px) scale(1); }
+  100% { opacity: 0; transform: translate(4px, -16px) scale(0.2); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -791,15 +901,16 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   .loading-bar-shine,
   .mascot-body,
   .mascot-shadow,
-  .mascot-antenna-tip,
-  .mascot-chest,
+  .mascot-gear,
+  .mascot-badge,
   .mascot-eye,
   .mascot-mouth,
-  .mascot-arm-l,
-  .mascot-arm-r {
+  .mascot-arm-wrench,
+  .mascot-spark {
     animation: none !important;
   }
 }
+
 
 
 /* ============================================================
