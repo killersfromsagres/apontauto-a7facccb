@@ -401,13 +401,13 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 .metallic-shine {
   background: linear-gradient(
     100deg,
-    #b8c5d1 0%,
-    #ffffff 20%,
-    #e8f4ff 35%,
-    #7dd3fc 50%,
-    #e8f4ff 65%,
-    #ffffff 80%,
-    #b8c5d1 100%
+    #7a5a1e 0%,
+    #d4af37 20%,
+    #fff2b8 35%,
+    #ffd700 50%,
+    #fff2b8 65%,
+    #d4af37 80%,
+    #7a5a1e 100%
   );
   background-size: 200% 100%;
   background-position: 100% 0;
