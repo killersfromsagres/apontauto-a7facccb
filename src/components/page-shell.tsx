@@ -12,10 +12,10 @@ export function PageShell({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mx-auto w-full max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-8">
-      <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-5">
+    <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-8">
+      <div className="flex min-w-0 flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-5">
         <div className="min-w-0">
-          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+          <h2 className="font-display text-xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
             <span className="text-gradient break-words">{title}</span>
           </h2>
           {description && (
@@ -30,7 +30,7 @@ export function PageShell({
           </div>
         )}
       </div>
-      {children}
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }

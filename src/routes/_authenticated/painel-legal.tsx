@@ -254,7 +254,7 @@ function PainelLegalPage() {
     >
       {/* Cabeçalho de ações — mais compacto */}
       <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 text-primary ring-1 ring-primary/30 shadow-[0_0_18px_-4px_rgba(59,130,246,0.55)]">
             <ShieldCheck className="h-4.5 w-4.5" strokeWidth={2} />
           </div>
@@ -262,7 +262,7 @@ function PainelLegalPage() {
             <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               Painel
             </p>
-            <h2 className="truncate font-display text-base font-bold tracking-wide sm:text-lg">
+            <h2 className="truncate font-display text-sm font-bold tracking-wide sm:text-base lg:text-lg">
               PAINEL DE ITENS LEGAIS
             </h2>
           </div>
@@ -277,8 +277,9 @@ function PainelLegalPage() {
                 "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "lista" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
+              aria-label="Lista"
             >
-              <ListIcon className="h-3.5 w-3.5" /> Lista
+              <ListIcon className="h-3.5 w-3.5" /> <span className="hidden xs:inline sm:inline">Lista</span>
             </button>
             <button
               onClick={() => setView("calendario")}
@@ -286,21 +287,23 @@ function PainelLegalPage() {
                 "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "calendario" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
+              aria-label="Calendário"
             >
-              <CalendarDays className="h-3.5 w-3.5" /> Calendário
+              <CalendarDays className="h-3.5 w-3.5" /> <span className="hidden xs:inline sm:inline">Calendário</span>
             </button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} className="h-8">
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Excel
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-8 px-2 sm:px-3" aria-label="Exportar Excel">
+            <Download className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">Excel</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-8">
-            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-8 px-2 sm:px-3" aria-label="Exportar PDF">
+            <FileDown className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">PDF</span>
           </Button>
-          <Button size="sm" onClick={openCreate} className="h-8">
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> Novo item
+          <Button size="sm" onClick={openCreate} className="h-8 px-2 sm:px-3">
+            <Plus className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">Novo item</span><span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </div>
+
 
 
       {/* Filtros */}
