@@ -137,7 +137,7 @@ function AuthPage() {
 
           {/* Logo */}
           <div className="auth-logo-in mb-6 flex flex-col items-center">
-            <div className="auth-logo-shine relative grid h-44 w-44 place-items-center overflow-hidden">
+            <div className="relative mx-auto grid h-56 w-56 place-items-center sm:h-64 sm:w-64">
               <img
                 src={logo.url}
                 alt="PCM · Planejador de Manutenção"
