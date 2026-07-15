@@ -8,6 +8,7 @@ export interface LegalItem {
   titulo: string;
   descricao: string;
   empresa: string;
+  predio: string;
   observacoes: string;
   periodicidade: Periodicidade;
   ultimaExecucao: string | null; // YYYY-MM-DD
@@ -40,6 +41,7 @@ interface Row {
   titulo: string;
   descricao: string | null;
   empresa: string | null;
+  predio: string | null;
   observacoes: string | null;
   periodicidade: string;
   ultima_execucao: string | null;
@@ -56,6 +58,7 @@ function fromRow(r: Row): LegalItem {
     titulo: r.titulo,
     descricao: r.descricao ?? "",
     empresa: r.empresa ?? "",
+    predio: r.predio ?? "",
     observacoes: r.observacoes ?? "",
     periodicidade: (r.periodicidade as Periodicidade) ?? "anual",
     ultimaExecucao: r.ultima_execucao,
@@ -160,6 +163,7 @@ export async function createLegalItem(
       titulo: input.titulo,
       descricao: input.descricao || null,
       empresa: input.empresa || null,
+      predio: input.predio || null,
       observacoes: input.observacoes || null,
       periodicidade: input.periodicidade,
       ultima_execucao: input.ultimaExecucao,
@@ -180,6 +184,7 @@ export async function updateLegalItem(id: string, patch: Partial<LegalItem>): Pr
   if (patch.titulo !== undefined) payload.titulo = patch.titulo;
   if (patch.descricao !== undefined) payload.descricao = patch.descricao || null;
   if (patch.empresa !== undefined) payload.empresa = patch.empresa || null;
+  if (patch.predio !== undefined) payload.predio = patch.predio || null;
   if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
   if (patch.periodicidade !== undefined) payload.periodicidade = patch.periodicidade;
   if (patch.ultimaExecucao !== undefined) payload.ultima_execucao = patch.ultimaExecucao;

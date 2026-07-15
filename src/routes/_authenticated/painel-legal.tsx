@@ -21,6 +21,13 @@ import {
   Minus,
   ChevronLeft,
   ChevronRight,
+  Droplets,
+  Wind,
+  ChefHat,
+  Waves,
+  FileText,
+  Building2,
+  FileDown,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -72,7 +79,7 @@ import {
 } from "@/lib/legal-items";
 import { LegalAttachmentsModal } from "@/components/legal/legal-attachments-modal";
 import { useLegalAlerts, type LegalAlert } from "@/hooks/use-legal-alerts";
-import { exportLegalXLSX } from "@/lib/legal-export";
+import { exportLegalXLSX, exportLegalPDF } from "@/lib/legal-export";
 
 export const Route = createFileRoute("/_authenticated/painel-legal")({
   component: PainelLegalPage,
@@ -105,6 +112,37 @@ function fmt(d: string | null | undefined) {
   if (!d) return "—";
   const dt = new Date(d + "T00:00:00");
   return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+/** Detecta ícone visual do tipo de tarefa a partir do título. */
+function TaskTypeIcon({ titulo, className }: { titulo: string; className?: string }) {
+  const t = titulo.toLowerCase();
+  const cls = cn("h-4 w-4", className);
+  if (/(caixa\s*d['’]?\s*[áa]gua|reservat[óo]rio|potabilidade)/.test(t))
+    return <Droplets className={cn(cls, "text-sky-400")} strokeWidth={1.8} />;
+  if (/(caixa\s*de\s*gordura|gordura|esgoto|efluente)/.test(t))
+    return <Waves className={cn(cls, "text-amber-500")} strokeWidth={1.8} />;
+  if (/(coifa|exaust[ãa]o|chamin[ée])/.test(t))
+    return <ChefHat className={cn(cls, "text-orange-400")} strokeWidth={1.8} />;
+  if (/(an[áa]lise\s*de\s*ar|qualidade\s*do\s*ar|ar\s*condicionado|climatiza[çc][ãa]o|pmoc)/.test(t))
+    return <Wind className={cn(cls, "text-cyan-400")} strokeWidth={1.8} />;
+  return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
+}
+
+/** Nome da empresa com brilho sutil. */
+function CompanyName({ name, className }: { name: string; className?: string }) {
+  if (!name) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span
+      className={cn(
+        "bg-gradient-to-r from-primary/90 via-white to-primary/90 bg-clip-text font-semibold text-transparent",
+        "[text-shadow:0_0_14px_rgba(59,130,246,0.35)]",
+        className,
+      )}
+    >
+      {name}
+    </span>
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -201,57 +239,66 @@ function PainelLegalPage() {
     toast.success("Planilha exportada.");
   };
 
+  const handleExportPDF = () => {
+    exportLegalPDF(filtered, execs, year);
+    toast.success("PDF gerado.");
+  };
+
   return (
     <PageShell
       title="Painel de Itens Legais"
       description="Controle de tarefas legais e recorrentes, execução mensal e certificados."
     >
-      {/* Cabeçalho de ações */}
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      {/* Cabeçalho de ações — mais compacto */}
+      <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-            <ShieldCheck className="h-5 w-5" strokeWidth={1.75} />
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 text-primary ring-1 ring-primary/30 shadow-[0_0_18px_-4px_rgba(59,130,246,0.55)]">
+            <ShieldCheck className="h-4.5 w-4.5" strokeWidth={2} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               Painel
             </p>
-            <h2 className="truncate font-display text-lg font-bold tracking-wide sm:text-xl">
+            <h2 className="truncate font-display text-base font-bold tracking-wide sm:text-lg">
               PAINEL DE ITENS LEGAIS
             </h2>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <AlertsBell alerts={alerts} onFocus={(id) => document.getElementById(`legal-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
           <div className="flex overflow-hidden rounded-lg border border-border/60 bg-card/40">
             <button
               onClick={() => setView("lista")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-sm transition",
+                "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "lista" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
             >
-              <ListIcon className="h-4 w-4" /> Lista
+              <ListIcon className="h-3.5 w-3.5" /> Lista
             </button>
             <button
               onClick={() => setView("calendario")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-sm transition",
+                "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "calendario" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
             >
-              <CalendarDays className="h-4 w-4" /> Calendário
+              <CalendarDays className="h-3.5 w-3.5" /> Calendário
             </button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="mr-1.5 h-4 w-4" /> Exportar
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-8">
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Excel
           </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" /> Novo item
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-8">
+            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+          </Button>
+          <Button size="sm" onClick={openCreate} className="h-8">
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Novo item
           </Button>
         </div>
       </div>
+
 
       {/* Filtros */}
       <GlassCard className="mb-4">
@@ -511,11 +558,12 @@ function ListView({
 
           {/* Tabela — desktop */}
           <GlassCard className="hidden overflow-x-auto p-0 lg:block">
-            <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-sm">
+            <table className="w-full min-w-[1200px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                   <Th>Tarefa</Th>
                   <Th>Empresa</Th>
+                  <Th>Prédio</Th>
                   <Th>Última</Th>
                   <Th>Próxima</Th>
                   <Th>Agendamento</Th>
@@ -546,10 +594,18 @@ function ListView({
                       <Td>
                         <div className="flex items-center gap-2">
                           <span className={cn("h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
+                          <TaskTypeIcon titulo={it.titulo} />
                           <span className="font-medium">{it.titulo}</span>
                         </div>
                       </Td>
-                      <Td className="text-muted-foreground">{it.empresa || "—"}</Td>
+                      <Td><CompanyName name={it.empresa} /></Td>
+                      <Td className="text-muted-foreground">
+                        {it.predio ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Building2 className="h-3.5 w-3.5 opacity-70" /> {it.predio}
+                          </span>
+                        ) : "—"}
+                      </Td>
                       <Td>{fmt(it.ultimaExecucao)}</Td>
                       <Td>{fmt(it.proximaExecucao)}</Td>
                       <Td>{fmt(it.agendamento)}</Td>
@@ -575,7 +631,7 @@ function ListView({
                 {g.items.length === 0 && (
                   <tr>
                     <td
-                      colSpan={7 + MONTHS_SHORT.length}
+                      colSpan={8 + MONTHS_SHORT.length}
                       className="px-4 py-6 text-center text-sm text-muted-foreground"
                     >
                       Nenhuma tarefa cadastrada.
@@ -610,9 +666,16 @@ function ListView({
                   <div className="pl-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">{it.titulo}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {it.empresa || "—"} · {PERIODICIDADE_LABEL[it.periodicidade]}
+                        <p className="flex items-center gap-1.5 font-semibold">
+                          <TaskTypeIcon titulo={it.titulo} />
+                          <span className="truncate">{it.titulo}</span>
+                        </p>
+                        <p className="mt-0.5 truncate text-xs">
+                          <CompanyName name={it.empresa} className="text-xs" />
+                          <span className="text-muted-foreground"> · {PERIODICIDADE_LABEL[it.periodicidade]}</span>
+                          {it.predio && (
+                            <span className="text-muted-foreground"> · {it.predio}</span>
+                          )}
                         </p>
                       </div>
                       <StatusBadge status={st} />
@@ -622,6 +685,11 @@ function ListView({
                       <MiniInfo label="Próxima" value={fmt(it.proximaExecucao)} />
                       <MiniInfo label="Agenda" value={fmt(it.agendamento)} />
                     </div>
+                    {it.observacoes && (
+                      <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-muted/20 p-2 text-xs leading-relaxed text-muted-foreground">
+                        {it.observacoes}
+                      </p>
+                    )}
                     <div className="mt-3 grid grid-cols-12 gap-1">
                       {cells.map((c, i) => (
                         <div key={i} className="flex flex-col items-center gap-0.5">
@@ -813,32 +881,32 @@ function CalendarView({
   const daySelected = selected ? eventsByDay.get(selected) ?? [] : [];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-      <GlassCard>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => change(-1)}>
-              <ChevronLeft className="h-4 w-4" />
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,480px)_1fr]">
+      <GlassCard className="p-3 sm:p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" onClick={() => change(-1)} className="h-7 w-7">
+              <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <p className="min-w-40 text-center font-semibold">
+            <p className="min-w-32 text-center text-sm font-semibold">
               {MONTHS_FULL[month]} <span className="text-muted-foreground">{year}</span>
             </p>
-            <Button variant="outline" size="icon" onClick={() => change(1)}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={() => change(1)} className="h-7 w-7">
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
             Hoje
           </Button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-            <div key={d} className="py-1">{d}</div>
+            <div key={d} className="py-0.5">{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5">
           {cells.map((c, i) => {
-            if (!c.date) return <div key={i} className="aspect-square rounded-lg" />;
+            if (!c.date) return <div key={i} className="aspect-square rounded-md" />;
             const evs = eventsByDay.get(c.date) ?? [];
             const isToday = c.date === todayISO();
             const isSel = c.date === selected;
@@ -852,18 +920,18 @@ function CalendarView({
                 key={i}
                 onClick={() => setSelected(c.date)}
                 className={cn(
-                  "relative flex aspect-square flex-col items-center justify-start gap-1 rounded-lg border border-transparent p-1.5 text-xs transition",
+                  "relative flex aspect-square flex-col items-center justify-start gap-0.5 rounded-md border border-transparent p-1 text-[11px] transition",
                   "hover:border-border/60 hover:bg-muted/30",
                   isToday && "ring-1 ring-primary/60",
                   isSel && "border-primary/70 bg-primary/10",
                 )}
               >
-                <span className={cn("font-medium", isToday && "text-primary")}>{c.day}</span>
+                <span className={cn("font-medium leading-none", isToday && "text-primary")}>{c.day}</span>
                 {evs.length > 0 && worstStatus && (
                   <div className="flex flex-wrap items-center justify-center gap-0.5">
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusMeta[worstStatus].dot)} />
                     {evs.length > 1 && (
-                      <span className="text-[9px] text-muted-foreground">{evs.length}</span>
+                      <span className="text-[8px] leading-none text-muted-foreground">{evs.length}</span>
                     )}
                   </div>
                 )}
@@ -872,6 +940,7 @@ function CalendarView({
           })}
         </div>
       </GlassCard>
+
 
       <GlassCard>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -935,8 +1004,10 @@ function LegalItemForm({
 }) {
   const [titulo, setTitulo] = useState("");
   const [empresa, setEmpresa] = useState("");
+  const [predio, setPredio] = useState("");
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>("anual");
   const [dataInicio, setDataInicio] = useState(todayISO());
+  const [ultimaExecucao, setUltimaExecucao] = useState<string>("");
   const [agendamento, setAgendamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -945,19 +1016,29 @@ function LegalItemForm({
     if (editing) {
       setTitulo(editing.titulo);
       setEmpresa(editing.empresa);
+      setPredio(editing.predio);
       setPeriodicidade(editing.periodicidade);
       setDataInicio(editing.proximaExecucao || todayISO());
+      setUltimaExecucao(editing.ultimaExecucao ?? "");
       setAgendamento(editing.agendamento ?? "");
       setObservacoes(editing.observacoes);
     } else {
       setTitulo("");
       setEmpresa("");
+      setPredio("");
       setPeriodicidade("anual");
       setDataInicio(todayISO());
+      setUltimaExecucao("");
       setAgendamento("");
       setObservacoes("");
     }
   }, [editing, open]);
+
+  // Se última execução mudar e não houver próxima definida manualmente, sugerir próxima automática.
+  const autoNext = useMemo(() => {
+    if (!ultimaExecucao) return "";
+    return addMonths(ultimaExecucao, monthsFor(periodicidade));
+  }, [ultimaExecucao, periodicidade]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -967,30 +1048,34 @@ function LegalItemForm({
     }
     setSaving(true);
     try {
+      const proxima = dataInicio || autoNext || addMonths(todayISO(), monthsFor(periodicidade));
       if (editing) {
         await updateLegalItem(editing.id, {
           titulo: titulo.trim(),
           empresa: empresa.trim(),
+          predio: predio.trim(),
           periodicidade,
-          proximaExecucao: dataInicio,
+          ultimaExecucao: ultimaExecucao || null,
+          proximaExecucao: proxima,
           agendamento: agendamento || null,
           observacoes,
         });
-        toast.success("Item atualizado.");
+        toast.success("Item atualizado. Próxima execução agendada.");
       } else {
         await createLegalItem({
           titulo: titulo.trim(),
           empresa: empresa.trim(),
+          predio: predio.trim(),
           descricao: "",
           observacoes,
           periodicidade,
-          ultimaExecucao: null,
-          proximaExecucao: dataInicio || addMonths(todayISO(), monthsFor(periodicidade)),
+          ultimaExecucao: ultimaExecucao || null,
+          proximaExecucao: proxima,
           agendamento: agendamento || null,
           responsavel: "",
           concluido: false,
         });
-        toast.success("Item criado.");
+        toast.success("Item criado e agendado.");
       }
       onSaved();
       onOpenChange(false);
@@ -1012,9 +1097,15 @@ function LegalItemForm({
             <Label htmlFor="titulo">Tarefa</Label>
             <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Caixa d'água A160" required />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="empresa">Empresa</Label>
-            <Input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: Real Hidrojato" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="empresa">Empresa</Label>
+              <Input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: Real Hidrojato" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="predio">Prédio</Label>
+              <Input id="predio" value={predio} onChange={(e) => setPredio(e.target.value)} placeholder="Ex.: Torre A / Bloco 2" />
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -1029,17 +1120,39 @@ function LegalItemForm({
               </Select>
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="ult">Última execução</Label>
+              <Input id="ult" type="date" value={ultimaExecucao} onChange={(e) => setUltimaExecucao(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
               <Label htmlFor="ini">Próxima execução</Label>
               <Input id="ini" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required />
+              {autoNext && autoNext !== dataInicio && (
+                <button
+                  type="button"
+                  className="text-[11px] text-primary underline underline-offset-2"
+                  onClick={() => setDataInicio(autoNext)}
+                >
+                  Sugerir {new Date(autoNext + "T00:00:00").toLocaleDateString("pt-BR")} (base última + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()})
+                </button>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="agenda">Agendamento (opcional)</Label>
+              <Input id="agenda" type="date" value={agendamento} onChange={(e) => setAgendamento(e.target.value)} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="agenda">Agendamento (opcional)</Label>
-            <Input id="agenda" type="date" value={agendamento} onChange={(e) => setAgendamento(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="obs">Observações</Label>
-            <Textarea id="obs" value={observacoes} onChange={(e) => setObservacoes(e.target.value)} rows={3} />
+            <Textarea
+              id="obs"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              rows={5}
+              className="min-h-28 whitespace-pre-wrap break-words leading-relaxed"
+              placeholder="Descreva livremente — pode usar várias linhas."
+            />
           </div>
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
