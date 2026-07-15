@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
 
 export function PageShell({
   title,
@@ -13,12 +12,7 @@ export function PageShell({
   actions?: ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="mx-auto w-full max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-8"
-    >
+    <div className="mx-auto w-full max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-8">
       <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-5">
         <div className="min-w-0">
           <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
@@ -37,6 +31,6 @@ export function PageShell({
         )}
       </div>
       {children}
-    </motion.div>
+    </div>
   );
 }
