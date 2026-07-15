@@ -87,13 +87,14 @@ export function ApontamentosConsolidated() {
   const update = (cat: Categoria, patch: Partial<CategoriaState>) =>
     setStates((prev) => ({ ...prev, [cat]: { ...prev[cat], ...patch } }));
 
-  const buildRows = (s: CategoriaState): ApontamentoRow[] => {
+  const buildRows = (cat: Categoria, s: CategoriaState): ApontamentoRow[] => {
     const osList = s.osText
       .split(/\r?\n|,|;/)
       .map((v) => v.trim())
       .filter(Boolean);
     if (!s.tecnicos.length || !s.data || !osList.length) return [];
-    return calcularApontamento({ tecnicos: s.tecnicos, data: s.data, osList });
+    const opts = CATEGORIAS.find((c) => c.id === cat)!.options;
+    return calcularApontamento({ tecnicos: s.tecnicos, data: s.data, osList }, opts);
   };
 
   const rowsByCat = useMemo(
