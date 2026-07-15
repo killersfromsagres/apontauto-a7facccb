@@ -159,6 +159,8 @@ export function ApontamentosConsolidated() {
             <CategoriaEditor
               label={c.label}
               accent={c.accent}
+              hint={c.hint}
+              options={c.options}
               state={states[c.id]}
               rows={rowsByCat[c.id]}
               onChange={(patch) => update(c.id, patch)}
