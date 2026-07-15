@@ -1,42 +1,42 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { getIsAdmin } from "@/lib/users.functions";
 
+/**
+ * Retorna se o usuário logado é admin. Compartilha o cache via React Query
+ * (uma única chamada por sessão, revalidada apenas no SIGNED_IN/OUT/USER_UPDATED).
+ */
 export function useIsAdmin() {
+  const qc = useQueryClient();
   const check = useServerFn(getIsAdmin);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    const run = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        if (!cancelled) {
-          setIsAdmin(false);
-          setLoading(false);
-        }
-        return;
-      }
+  const { data, isLoading } = useQuery({
+    queryKey: ["is-admin"],
+    // Sem sessão ⇒ resolve como false imediatamente, sem tocar a rede.
+    queryFn: async () => {
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session) return false;
       try {
         const res = await check();
-        if (!cancelled) setIsAdmin(Boolean(res?.isAdmin));
+        return Boolean(res?.isAdmin);
       } catch {
-        if (!cancelled) setIsAdmin(false);
-      } finally {
-        if (!cancelled) setLoading(false);
+        return false;
       }
-    };
-    run();
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") run();
-    });
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [check]);
+    },
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+  });
 
-  return { isAdmin, loading };
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        qc.invalidateQueries({ queryKey: ["is-admin"] });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [qc]);
+
+  return { isAdmin: Boolean(data), loading: isLoading };
 }
