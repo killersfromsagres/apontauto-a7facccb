@@ -48,6 +48,16 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (mode === "signup") {
+      const okLen = password.length === 6;
+      const onlyDigits = /^[0-9]{6}$/.test(password);
+      const onlyLetters = /^[a-zA-Z]{6}$/.test(password);
+      if (!okLen || (!onlyDigits && !onlyLetters)) {
+        triggerShake();
+        toast.error("A senha deve ter exatamente 6 caracteres — só números ou só letras.");
+        return;
+      }
+    }
     setLoading(true);
     try {
       if (mode === "signup") {
@@ -60,8 +70,15 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Conta criada! Você já pode entrar.");
-        setMode("signin");
+        // Auto-login: se a confirmação de e-mail estiver desativada, a sessão
+        // já vem no signUp. Caso contrário, tentamos entrar com as credenciais.
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) throw signInError;
+        }
+        toast.success("Conta criada! Redirecionando…");
+        navigate({ to: "/" });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -74,6 +91,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   const forgotPassword = async () => {
     if (!email) {
