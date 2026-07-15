@@ -21,7 +21,7 @@ type Role = "admin" | "user";
 function UsuariosPage() {
   const { isAdmin, loading: checking } = useIsAdmin();
   const create = useServerFn(createAppUser);
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<Role>("user");
@@ -31,9 +31,9 @@ function UsuariosPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await create({ data: { email, password, fullName: fullName || undefined, role } });
-      toast.success(`Usuário ${email} criado como ${role === "admin" ? "administrador" : "usuário"}.`);
-      setEmail("");
+      await create({ data: { login, password, fullName: fullName || undefined, role } });
+      toast.success(`Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`);
+      setLogin("");
       setPassword("");
       setFullName("");
       setRole("user");
