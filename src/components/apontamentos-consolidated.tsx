@@ -99,9 +99,9 @@ export function ApontamentosConsolidated() {
 
   const rowsByCat = useMemo(
     () => ({
-      abastecimento: buildRows(states.abastecimento),
-      limpeza: buildRows(states.limpeza),
-      jardinagem: buildRows(states.jardinagem),
+      abastecimento: buildRows("abastecimento", states.abastecimento),
+      limpeza: buildRows("limpeza", states.limpeza),
+      jardinagem: buildRows("jardinagem", states.jardinagem),
     }),
     [states],
   );
