@@ -8,6 +8,7 @@ export interface LegalItem {
   titulo: string;
   descricao: string;
   empresa: string;
+  predio: string;
   observacoes: string;
   periodicidade: Periodicidade;
   ultimaExecucao: string | null; // YYYY-MM-DD
