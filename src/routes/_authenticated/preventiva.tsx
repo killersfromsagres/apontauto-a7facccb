@@ -158,7 +158,7 @@ function Page() {
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
                 onClick={() => inputRef.current?.click()}
-                className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-16 text-center transition-all ${
+                className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all sm:p-12 md:p-16 ${
                   dragOver
                     ? "border-primary bg-primary/5"
                     : "border-border/60 hover:border-primary/50 hover:bg-accent/30"
@@ -250,12 +250,12 @@ function Page() {
 
             <GlassCard>
               <Tabs defaultValue="table">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                  <TabsList>
-                    <TabsTrigger value="table">Tabela</TabsTrigger>
-                    <TabsTrigger value="category">Por Categoria</TabsTrigger>
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                  <TabsList className="w-full sm:w-auto">
+                    <TabsTrigger value="table" className="flex-1 sm:flex-none">Tabela</TabsTrigger>
+                    <TabsTrigger value="category" className="flex-1 sm:flex-none">Por Categoria</TabsTrigger>
                   </TabsList>
-                  <div className="relative w-full max-w-xs">
+                  <div className="relative w-full sm:max-w-xs">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Buscar OS, prédio, ativo…"

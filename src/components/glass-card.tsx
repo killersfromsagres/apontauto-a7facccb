@@ -24,7 +24,7 @@ export function GlassCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, ease: "easeOut" }}
       className={cn(
-        "glass-surface relative overflow-hidden rounded-3xl p-6",
+        "glass-surface relative overflow-hidden rounded-2xl p-4 sm:rounded-3xl sm:p-6",
         // top refraction highlight
         "before:pointer-events-none before:absolute before:inset-x-4 before:top-0 before:h-px",
         "before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent",

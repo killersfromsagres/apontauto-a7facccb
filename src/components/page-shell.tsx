@@ -17,18 +17,24 @@ export function PageShell({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-8"
+      className="mx-auto w-full max-w-7xl space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-8"
     >
-      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border/40 pb-5">
+      <div className="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-5">
         <div className="min-w-0">
-          <h2 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            <span className="text-gradient">{title}</span>
+          <h2 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl md:text-4xl">
+            <span className="text-gradient break-words">{title}</span>
           </h2>
           {description && (
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <p className="mt-1.5 max-w-2xl text-xs text-muted-foreground sm:mt-2 sm:text-sm">
+              {description}
+            </p>
           )}
         </div>
-        {actions}
+        {actions && (
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
+            {actions}
+          </div>
+        )}
       </div>
       {children}
     </motion.div>
