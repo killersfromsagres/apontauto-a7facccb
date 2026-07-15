@@ -244,13 +244,20 @@ function CategoriaEditor({
             </Label>
             <div className="flex gap-2">
               <Input
-                placeholder="Ex.: 12345"
+                placeholder="Ex.: 12345 (cole vários — separa automático)"
                 value={state.tecInput}
                 onChange={(e) => onChange({ tecInput: e.target.value })}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === ",") {
                     e.preventDefault();
                     addTecnicos(state.tecInput);
+                  }
+                }}
+                onPaste={(e) => {
+                  const text = e.clipboardData.getData("text");
+                  if (/[\n\r,;\t]/.test(text)) {
+                    e.preventDefault();
+                    addTecnicos(text);
                   }
                 }}
                 onBlur={() => state.tecInput && addTecnicos(state.tecInput)}
