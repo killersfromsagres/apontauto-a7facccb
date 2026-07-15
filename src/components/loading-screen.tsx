@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import pmRank from "@/assets/pm-rank.png.asset.json";
+import pmRank from "@/assets/apont-auto-logo.png.asset.json";
 
 /**
  * Loading screen elegante e minimalista.
@@ -97,7 +97,7 @@ export function LoadingScreen() {
 
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm font-semibold tracking-widest text-foreground/90">
-                PCM
+                APONT AUTO
               </p>
               <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
                 Carregando
