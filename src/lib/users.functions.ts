@@ -22,7 +22,7 @@ function validate(input: unknown): CreateUserInput {
   };
 }
 
-async function assertCallerIsAdmin(supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any, userId: string) {
+async function assertCallerIsAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Apenas administradores podem executar esta ação.");
