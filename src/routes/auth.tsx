@@ -75,7 +75,7 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 app-bg">
       <div className="w-full max-w-md">
-        <GlassCard className="p-8">
+        <GlassCard className="p-5 sm:p-8">
           <div className="mb-6 text-center">
             <h1 className="text-2xl font-bold">Sistema de Apontamento</h1>
             <p className="mt-1 text-sm text-muted-foreground">Gestão de manutenção industrial</p>
