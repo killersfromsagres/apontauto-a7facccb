@@ -551,18 +551,256 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   }
 }
 
-/* Loading screen: barra indeterminada leve (CSS puro, ~60fps) */
-@keyframes loadingBarSlide {
-  0%   { transform: translateX(-120%); }
-  100% { transform: translateX(340%); }
+/* ============================================================
+   Loading screen — mascote CSS + barra fluida (GPU only)
+   ============================================================ */
+
+/* Barra de progresso: trilho + preenchimento fluido + brilho */
+.loading-track {
+  background: hsl(var(--muted) / 0.4);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.15);
 }
-.loading-bar {
-  animation: loadingBarSlide 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+.loading-bar-fluid {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.35) 20%,
+    hsl(var(--primary)) 50%,
+    hsl(var(--accent)) 75%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: loadingFlow 1.6s linear infinite;
+  will-change: background-position, transform;
+}
+.loading-bar-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 40%;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  filter: blur(2px);
+  animation: loadingShine 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform;
 }
-@media (prefers-reduced-motion: reduce) {
-  .loading-bar { animation: none; }
+@keyframes loadingFlow {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
+@keyframes loadingShine {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+
+/* Mascote — robô amistoso construído com divs */
+.mascot {
+  --m-primary: hsl(var(--primary));
+  --m-accent: hsl(var(--accent));
+  --m-glow: hsl(var(--primary) / 0.55);
+  --m-body: hsl(var(--card));
+  --m-edge: hsl(var(--primary) / 0.6);
+  position: relative;
+  width: 140px;
+  height: 160px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  filter: drop-shadow(0 12px 24px hsl(var(--primary) / 0.35));
+}
+.mascot-body {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  animation: mascotFloat 2.6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+.mascot-shadow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  width: 72%;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, hsl(var(--primary) / 0.35), transparent 70%);
+  transform: translateX(-50%);
+  animation: mascotShadow 2.6s ease-in-out infinite;
+}
+.mascot-antenna {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 3px;
+  height: 22px;
+  background: var(--m-edge);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.mascot-antenna-tip {
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--m-accent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 12px var(--m-glow), 0 0 24px var(--m-glow);
+  animation: mascotPulse 1.2s ease-in-out infinite;
+}
+.mascot-head {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  width: 92px;
+  height: 76px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  border: 2px solid var(--m-edge);
+  transform: translateX(-50%);
+  box-shadow: inset 0 -6px 12px hsl(var(--primary) / 0.15),
+    0 0 24px hsl(var(--primary) / 0.2);
+}
+.mascot-ear {
+  position: absolute;
+  top: 22px;
+  width: 8px;
+  height: 24px;
+  background: var(--m-edge);
+  border-radius: 4px;
+}
+.mascot-ear-l { left: -8px; }
+.mascot-ear-r { right: -8px; }
+.mascot-face {
+  position: absolute;
+  inset: 12px 10px;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 50% 40%, hsl(var(--primary) / 0.18), hsl(var(--background)) 80%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  overflow: hidden;
+}
+.mascot-eye {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--m-accent);
+  box-shadow: 0 0 10px var(--m-glow);
+  animation: mascotBlink 3.4s ease-in-out infinite;
+  transform-origin: center;
+}
+.mascot-eye-r { animation-delay: 0.05s; }
+.mascot-mouth {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  width: 26px;
+  height: 8px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  border: 2px solid var(--m-primary);
+  border-top: 0;
+  transform: translateX(-50%);
+  animation: mascotSmile 2.6s ease-in-out infinite;
+}
+.mascot-torso {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 78px;
+  height: 46px;
+  border-radius: 14px 14px 10px 10px;
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--muted)) 100%);
+  border: 2px solid var(--m-edge);
+  transform: translateX(-50%);
+  box-shadow: inset 0 -4px 10px hsl(var(--primary) / 0.15);
+}
+.mascot-chest {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--m-accent);
+  transform: translateX(-50%);
+  box-shadow: 0 0 12px var(--m-glow), inset 0 0 6px rgba(0, 0, 0, 0.25);
+  animation: mascotPulse 1.4s ease-in-out infinite;
+}
+.mascot-arm {
+  position: absolute;
+  top: 6px;
+  width: 10px;
+  height: 30px;
+  background: var(--m-edge);
+  border-radius: 6px;
+  transform-origin: 50% 0%;
+}
+.mascot-arm-l {
+  left: -10px;
+  animation: mascotArmL 2.6s ease-in-out infinite;
+}
+.mascot-arm-r {
+  right: -10px;
+  animation: mascotArmR 2.6s ease-in-out infinite;
+}
+
+@keyframes mascotFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+@keyframes mascotShadow {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.7; }
+  50%      { transform: translateX(-50%) scale(0.82); opacity: 0.4; }
+}
+@keyframes mascotPulse {
+  0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+  50%      { transform: translateX(-50%) scale(1.15); opacity: 0.85; }
+}
+@keyframes mascotBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95%           { transform: scaleY(0.1); }
+}
+@keyframes mascotSmile {
+  0%, 100% { height: 8px; width: 26px; }
+  50%      { height: 10px; width: 30px; }
+}
+@keyframes mascotArmL {
+  0%, 100% { transform: rotate(6deg); }
+  50%      { transform: rotate(-14deg); }
+}
+@keyframes mascotArmR {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(14deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar-fluid,
+  .loading-bar-shine,
+  .mascot-body,
+  .mascot-shadow,
+  .mascot-antenna-tip,
+  .mascot-chest,
+  .mascot-eye,
+  .mascot-mouth,
+  .mascot-arm-l,
+  .mascot-arm-r {
+    animation: none !important;
+  }
+}
+
 
 /* ============================================================
    Global card + button polish — "marcante" tier

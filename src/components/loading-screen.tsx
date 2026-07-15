@@ -1,13 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import pmRank from "@/assets/apontauto-logo.png.asset.json";
 
 /**
- * Loading screen elegante e minimalista.
- * - Sem boot delay artificial: se a rota inicial já hidratou, nada aparece.
- * - Só mostra em transições de rota que ultrapassem 250ms (evita flicker).
- * - Ignora refetches em background (realtime/focus) para não piscar.
+ * Loading screen com mascote animado em CSS puro.
+ * - Sem imagens: mascote-robô construído com divs + CSS.
+ * - Só aparece em transições > 250ms (sem flicker).
+ * - GPU-friendly: transform/opacity/filter apenas.
  */
 export function LoadingScreen() {
   const routerLoading = useRouterState({
@@ -43,35 +42,50 @@ export function LoadingScreen() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background"
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background px-4"
           style={{
             backgroundImage:
-              "radial-gradient(ellipse at 50% 30%, hsl(var(--primary) / 0.12), transparent 60%), radial-gradient(ellipse at 50% 90%, hsl(var(--accent) / 0.08), transparent 55%)",
+              "radial-gradient(ellipse at 50% 30%, hsl(var(--primary) / 0.14), transparent 60%), radial-gradient(ellipse at 50% 90%, hsl(var(--accent) / 0.08), transparent 55%)",
           }}
           aria-live="polite"
           aria-busy="true"
         >
-          <div className="relative flex flex-col items-center gap-6">
-            <div className="relative flex h-28 w-28 items-center justify-center">
-              <span className="absolute inset-0 rounded-full bg-primary/25 blur-2xl animate-pulse" />
-              <img
-                src={pmRank.url}
-                alt=""
-                className="relative h-24 w-24 select-none object-contain drop-shadow-[0_0_18px_hsl(var(--primary)/0.45)]"
-                draggable={false}
-                width={96}
-                height={96}
-              />
+          <div className="relative flex flex-col items-center gap-8">
+            {/* Mascote CSS */}
+            <div className="mascot" aria-hidden>
+              <div className="mascot-shadow" />
+              <div className="mascot-body">
+                <div className="mascot-antenna">
+                  <span className="mascot-antenna-tip" />
+                </div>
+                <div className="mascot-head">
+                  <div className="mascot-face">
+                    <span className="mascot-eye mascot-eye-l" />
+                    <span className="mascot-eye mascot-eye-r" />
+                    <span className="mascot-mouth" />
+                  </div>
+                  <span className="mascot-ear mascot-ear-l" />
+                  <span className="mascot-ear mascot-ear-r" />
+                </div>
+                <div className="mascot-torso">
+                  <span className="mascot-chest" />
+                  <span className="mascot-arm mascot-arm-l" />
+                  <span className="mascot-arm mascot-arm-r" />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm font-semibold tracking-widest text-foreground/90">PCM</p>
-              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Carregando</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">
+                Carregando
+              </p>
             </div>
 
-            {/* Barra de progresso indeterminada (CSS puro, sem setInterval) */}
-            <div className="relative h-1 w-56 overflow-hidden rounded-full bg-muted/50">
-              <span className="loading-bar absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-primary via-primary to-accent" />
+            {/* Barra de progresso animada */}
+            <div className="loading-track relative h-1.5 w-64 max-w-[80vw] overflow-hidden rounded-full">
+              <span className="loading-bar-fluid" />
+              <span className="loading-bar-shine" />
             </div>
           </div>
         </motion.div>
