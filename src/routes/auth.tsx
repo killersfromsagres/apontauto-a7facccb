@@ -20,8 +20,8 @@ export const Route = createFileRoute("/auth")({
   }),
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getSession();
-    if (data.session) throw redirect({ to: "/" });
+    const { data } = await supabase.auth.getUser();
+    if (data.user) throw redirect({ to: "/" });
   },
   component: AuthPage,
 });
