@@ -184,6 +184,7 @@ export async function updateLegalItem(id: string, patch: Partial<LegalItem>): Pr
   if (patch.titulo !== undefined) payload.titulo = patch.titulo;
   if (patch.descricao !== undefined) payload.descricao = patch.descricao || null;
   if (patch.empresa !== undefined) payload.empresa = patch.empresa || null;
+  if (patch.predio !== undefined) payload.predio = patch.predio || null;
   if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes || null;
   if (patch.periodicidade !== undefined) payload.periodicidade = patch.periodicidade;
   if (patch.ultimaExecucao !== undefined) payload.ultima_execucao = patch.ultimaExecucao;
