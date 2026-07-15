@@ -97,7 +97,8 @@ function composeDate(dateStr: string, mins: number): Date {
   const [y, m, d] = dateStr.split("-").map(Number);
   const h = Math.floor(mins / 60);
   const mm = mins % 60;
-  return new Date(y, m - 1, d, h, mm, 0);
+  // Use UTC so ExcelJS preserva o horário exato (evita deslocamento por fuso).
+  return new Date(Date.UTC(y, m - 1, d, h, mm, 0));
 }
 
 export async function generateApontamentoWorkbook(
