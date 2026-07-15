@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/gps-logo.png.asset.json";
+import logoAsset from "@/assets/pm-rank.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
