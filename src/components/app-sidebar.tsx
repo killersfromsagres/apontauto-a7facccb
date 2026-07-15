@@ -56,7 +56,11 @@ export function AppSidebar() {
               src={logoAsset.url}
               alt="Apont Auto — Sistema Automático de Apontamento"
               className="relative h-full w-full object-contain"
+              width={40}
+              height={40}
+              decoding="async"
               loading="eager"
+              fetchPriority="high"
             />
           </div>
           <div className="flex flex-col leading-tight overflow-hidden transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
