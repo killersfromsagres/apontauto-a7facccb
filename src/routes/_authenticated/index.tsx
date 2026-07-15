@@ -6,8 +6,8 @@ import {
   TrendingUp,
   CalendarClock,
   Wrench,
-  Fuel,
-  Sparkles,
+  Droplets,
+  SprayCan,
   Trees,
   ClipboardList,
 } from "lucide-react";
@@ -29,34 +29,38 @@ export const Route = createFileRoute("/_authenticated/")({
   component: Dashboard,
 });
 
+/**
+ * KPIs — Liquid Glass: sem fundo colorido chapado. O acento vem apenas
+ * do ícone (traço fino, cor semântica) sobre um puck de vidro.
+ */
 const kpis = [
   {
     label: "OS Pendentes",
     value: "128",
     delta: "+12 hoje",
     icon: ClipboardCheck,
-    accent: "from-blue-500/25 to-cyan-500/10",
+    tint: "text-sky-400",
   },
   {
     label: "SLA Próximo do Vencimento",
     value: "17",
     delta: "próximas 48h",
     icon: AlertTriangle,
-    accent: "from-amber-500/25 to-orange-500/10",
+    tint: "text-amber-400",
   },
   {
     label: "Equipes Ativas",
     value: "7",
     delta: "de 7 disponíveis",
     icon: Users,
-    accent: "from-emerald-500/25 to-teal-500/10",
+    tint: "text-emerald-400",
   },
   {
     label: "Produtividade Semanal",
     value: "92%",
     delta: "+4% vs. semana anterior",
     icon: TrendingUp,
-    accent: "from-fuchsia-500/25 to-purple-500/10",
+    tint: "text-fuchsia-400",
   },
 ];
 
@@ -70,13 +74,14 @@ const teamLoad = [
   { name: "Refrigeração 3", value: 48, color: "bg-cyan-500" },
 ];
 
+// Ícones semânticos: água (abastecimento), borrifador (limpeza), árvore (jardinagem)
 const modules = [
-  { title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-blue-500" },
-  { title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-500" },
-  { title: "Abastecimento", to: "/abastecimento", icon: Fuel, tint: "text-orange-500" },
-  { title: "Limpeza", to: "/limpeza", icon: Sparkles, tint: "text-emerald-500" },
-  { title: "Jardinagem", to: "/jardinagem", icon: Trees, tint: "text-green-600" },
-  { title: "Outros Serviços", to: "/outros", icon: ClipboardList, tint: "text-purple-500" },
+  { title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-400" },
+  { title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-400" },
+  { title: "Abastecimento", to: "/abastecimento", icon: Droplets, tint: "text-cyan-400" },
+  { title: "Limpeza", to: "/limpeza", icon: SprayCan, tint: "text-emerald-400" },
+  { title: "Jardinagem", to: "/jardinagem", icon: Trees, tint: "text-green-400" },
+  { title: "Outros Serviços", to: "/outros", icon: ClipboardList, tint: "text-purple-400" },
 ];
 
 function Dashboard() {
@@ -88,7 +93,6 @@ function Dashboard() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((kpi, i) => (
           <GlassCard key={kpi.label} delay={i * 0.05}>
-            <div className={`absolute inset-0 bg-gradient-to-br ${kpi.accent} opacity-60`} />
             <div className="relative flex items-start justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -97,8 +101,8 @@ function Dashboard() {
                 <p className="mt-2 text-3xl font-semibold tracking-tight">{kpi.value}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{kpi.delta}</p>
               </div>
-              <div className="rounded-xl border border-border/60 bg-background/50 p-2 backdrop-blur">
-                <kpi.icon className="h-5 w-5" />
+              <div className="glass-tile rounded-2xl p-2.5">
+                <kpi.icon className={`h-5 w-5 ${kpi.tint}`} strokeWidth={1.75} />
               </div>
             </div>
           </GlassCard>
@@ -137,9 +141,9 @@ function Dashboard() {
                 <Link
                   key={m.to}
                   to={m.to}
-                  className="group flex flex-col items-start gap-2 rounded-xl border border-border/60 bg-background/40 p-3 transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-background/70"
+                  className="glass-tile group flex flex-col items-start gap-2 rounded-2xl p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40"
                 >
-                  <m.icon className={`h-5 w-5 ${m.tint}`} />
+                  <m.icon className={`h-5 w-5 ${m.tint}`} strokeWidth={1.75} />
                   <span className="text-sm font-medium">{m.title}</span>
                 </Link>
               ))}
