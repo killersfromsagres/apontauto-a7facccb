@@ -642,6 +642,7 @@ function ListView({
                     </div>
                   </div>
                 </GlassCard>
+                </div>
               );
             })}
             {g.items.length === 0 && (
