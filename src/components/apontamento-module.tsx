@@ -236,10 +236,10 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
                     <TableRow key={i}>
                       <TableCell className="font-mono text-xs">{r.tecnico}</TableCell>
                       <TableCell className="whitespace-nowrap text-xs">
-                        {r.dataInicio.toLocaleString("pt-BR")}
+                        {r.dataInicio.toLocaleString("pt-BR", { timeZone: "UTC" })}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-xs">
-                        {r.dataFinal.toLocaleString("pt-BR")}
+                        {r.dataFinal.toLocaleString("pt-BR", { timeZone: "UTC" })}
                       </TableCell>
                       <TableCell className="font-mono text-xs">{r.os}</TableCell>
                     </TableRow>
