@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
+import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
@@ -42,6 +43,11 @@ const AuthenticatedPreventivaRoute = AuthenticatedPreventivaRouteImport.update({
   path: '/preventiva',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
+  id: '/outros',
+  path: '/outros',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   id: '/corretiva',
   path: '/corretiva',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/outros': typeof AuthenticatedOutrosRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/outros': typeof AuthenticatedOutrosRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
+  '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/apontamentos'
     | '/configuracoes'
     | '/corretiva'
+    | '/outros'
     | '/preventiva'
     | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/apontamentos'
     | '/configuracoes'
     | '/corretiva'
+    | '/outros'
     | '/preventiva'
     | '/usuarios'
     | '/'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/_authenticated/apontamentos'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
+    | '/_authenticated/outros'
     | '/_authenticated/preventiva'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -162,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPreventivaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/outros': {
+      id: '/_authenticated/outros'
+      path: '/outros'
+      fullPath: '/outros'
+      preLoaderRoute: typeof AuthenticatedOutrosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corretiva': {
       id: '/_authenticated/corretiva'
       path: '/corretiva'
@@ -190,6 +209,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
+  AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -199,6 +219,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
+  AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
