@@ -114,6 +114,37 @@ function fmt(d: string | null | undefined) {
   return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+/** Detecta ícone visual do tipo de tarefa a partir do título. */
+function TaskTypeIcon({ titulo, className }: { titulo: string; className?: string }) {
+  const t = titulo.toLowerCase();
+  const cls = cn("h-4 w-4", className);
+  if (/(caixa\s*d['’]?\s*[áa]gua|reservat[óo]rio|potabilidade)/.test(t))
+    return <Droplets className={cn(cls, "text-sky-400")} strokeWidth={1.8} />;
+  if (/(caixa\s*de\s*gordura|gordura|esgoto|efluente)/.test(t))
+    return <Waves className={cn(cls, "text-amber-500")} strokeWidth={1.8} />;
+  if (/(coifa|exaust[ãa]o|chamin[ée])/.test(t))
+    return <ChefHat className={cn(cls, "text-orange-400")} strokeWidth={1.8} />;
+  if (/(an[áa]lise\s*de\s*ar|qualidade\s*do\s*ar|ar\s*condicionado|climatiza[çc][ãa]o|pmoc)/.test(t))
+    return <Wind className={cn(cls, "text-cyan-400")} strokeWidth={1.8} />;
+  return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
+}
+
+/** Nome da empresa com brilho sutil. */
+function CompanyName({ name, className }: { name: string; className?: string }) {
+  if (!name) return <span className="text-muted-foreground">—</span>;
+  return (
+    <span
+      className={cn(
+        "bg-gradient-to-r from-primary/90 via-white to-primary/90 bg-clip-text font-semibold text-transparent",
+        "[text-shadow:0_0_14px_rgba(59,130,246,0.35)]",
+        className,
+      )}
+    >
+      {name}
+    </span>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Página                                                                    */
 /* -------------------------------------------------------------------------- */
