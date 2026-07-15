@@ -72,13 +72,18 @@ export async function saveSettings(s: AppSettings): Promise<void> {
   cache = s;
   listeners.forEach((l) => l(s));
   if (rowId) {
-    await supabase.from("app_settings").update({ data: s as never }).eq("id", rowId);
+    const { error } = await supabase
+      .from("app_settings")
+      .update({ data: s as never })
+      .eq("id", rowId);
+    if (error) throw error;
   } else {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("app_settings")
       .insert({ data: s as never })
       .select("id")
       .single();
+    if (error) throw error;
     if (data) rowId = data.id;
     loaded = true;
   }

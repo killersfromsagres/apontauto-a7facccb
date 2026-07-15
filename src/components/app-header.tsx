@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
@@ -10,6 +11,7 @@ import logoAsset from "@/assets/pm-rank.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,8 +23,13 @@ export function AppHeader() {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    try {
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      await supabase.auth.signOut();
+    } finally {
+      navigate({ to: "/auth", replace: true });
+    }
   };
 
   return (

@@ -111,17 +111,19 @@ const pick = (row: RawRow, ...keys: string[]) => {
 
 const parseSLA = (v: string): { iso: string; ts: number } => {
   if (!v) return { iso: "", ts: Number.MAX_SAFE_INTEGER };
-  // Excel serial number
+  // Excel serial number → construir em horário local (meio-dia) para evitar shift de TZ
   const asNum = Number(v);
   if (!Number.isNaN(asNum) && asNum > 20000 && asNum < 80000) {
-    const d = new Date(Math.round((asNum - 25569) * 86400 * 1000));
-    return { iso: d.toISOString(), ts: d.getTime() };
+    const utcMs = Math.round((asNum - 25569) * 86400 * 1000);
+    const u = new Date(utcMs);
+    const date = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12, 0, 0);
+    return { iso: date.toISOString(), ts: date.getTime() };
   }
   const br = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
-    const date = new Date(year, Number(m) - 1, Number(d));
+    const date = new Date(year, Number(m) - 1, Number(d), 12, 0, 0);
     return { iso: date.toISOString(), ts: date.getTime() };
   }
   const iso = new Date(v);
