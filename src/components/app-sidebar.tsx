@@ -18,7 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logoAsset from "@/assets/apont-auto-logo.png.asset.json";
+import logoAsset from "@/assets/pm-rank.png.asset.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -36,16 +36,24 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader className="border-b border-sidebar-border/50">
-        <div className="flex flex-col items-center gap-1 px-2 py-3 group-data-[collapsible=icon]:py-2 transition-[padding] duration-200 ease-out">
-          <img
-            src={logoAsset.url}
-            alt="Apont Auto"
-            className="relative h-16 w-auto object-contain drop-shadow-[0_0_10px_rgba(56,189,248,0.35)] transition-all duration-200 ease-out group-data-[collapsible=icon]:h-9"
-            loading="eager"
-          />
-          <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-primary/70 group-data-[collapsible=icon]:hidden">
-            Dev · Gabriel Vitor
-          </span>
+        <div className="flex items-center gap-2.5 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 transition-[padding,gap] duration-200 ease-out">
+          <div className="relative shrink-0 transition-all duration-200 ease-out h-10 w-10 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-80" />
+            <img
+              src={logoAsset.url}
+              alt="Planejador de Manutenção — insígnia"
+              className="relative h-full w-full object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
+              loading="eager"
+            />
+          </div>
+          <div className="flex flex-col leading-tight overflow-hidden transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-gradient whitespace-nowrap">
+              Planejador
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-primary/80 whitespace-nowrap">
+              Manutenção · PM
+            </span>
+          </div>
         </div>
       </SidebarHeader>
 
