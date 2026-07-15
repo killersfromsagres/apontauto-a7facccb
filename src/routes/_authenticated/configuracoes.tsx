@@ -17,10 +17,22 @@ export const Route = createFileRoute("/_authenticated/configuracoes")({ componen
 function Page() {
   const [saved, setSaved] = useSettings();
   const [draft, setDraft] = useState<AppSettings>(saved);
+  const [dirty, setDirty] = useState(false);
 
-  const patch = (p: Partial<AppSettings>) => setDraft((d) => ({ ...d, ...p }));
-  const patchHours = (p: Partial<AppSettings["workingHours"]>) =>
+  // Sincroniza o rascunho quando as configurações reais chegam do backend
+  // (o hook devolve DEFAULT_SETTINGS de forma síncrona e atualiza depois).
+  useEffect(() => {
+    if (!dirty) setDraft(saved);
+  }, [saved, dirty]);
+
+  const patch = (p: Partial<AppSettings>) => {
+    setDirty(true);
+    setDraft((d) => ({ ...d, ...p }));
+  };
+  const patchHours = (p: Partial<AppSettings["workingHours"]>) => {
+    setDirty(true);
     setDraft((d) => ({ ...d, workingHours: { ...d.workingHours, ...p } }));
+  };
 
   const commit = () => {
     setSaved(draft);
