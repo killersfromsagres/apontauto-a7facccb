@@ -247,6 +247,46 @@
   box-shadow: var(--shadow-glow);
 }
 
+@utility scroll-fluid {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--primary) 55%, transparent) transparent;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--primary) 65%, transparent),
+      color-mix(in oklab, var(--primary-glow, var(--primary)) 45%, transparent)
+    );
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background 0.2s ease;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--primary) 85%, transparent),
+      color-mix(in oklab, var(--primary-glow, var(--primary)) 65%, transparent)
+    );
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
+
 /* NEXUS-PRO:WATERMARK-HIDE:START */
 /* Overlay do badge oficial ocultado por conflito com UI custom.
    Bloco idempotente gerenciado pela extensão Nexus Pro.

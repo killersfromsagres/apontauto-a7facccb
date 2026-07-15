@@ -267,9 +267,9 @@ function Page() {
                 </div>
 
                 <TabsContent value="table">
-                  <div className="overflow-x-auto rounded-lg border border-border/60">
+                  <div className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60">
                     <Table>
-                      <TableHeader>
+                      <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
                         <TableRow>
                           <TableHead>OS</TableHead>
                           <TableHead>Nome OS</TableHead>
@@ -283,6 +283,7 @@ function Page() {
                           <TableHead>Equipamento</TableHead>
                         </TableRow>
                       </TableHeader>
+
                       <TableBody>
                         {filtered.slice(0, 500).map((o, i) => (
                           <TableRow key={`${o.ordemServico}-${i}`}>

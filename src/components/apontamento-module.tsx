@@ -220,10 +220,10 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="overflow-x-auto rounded-lg border border-border/60"
+              className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60"
             >
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 backdrop-blur-md">
                   <TableRow>
                     <TableHead className="bg-[#FA8072] text-black">Técnico</TableHead>
                     <TableHead className="bg-[#7CC77C] text-black">Data Início</TableHead>
@@ -231,6 +231,7 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
                     <TableHead className="bg-[#D8B4FE] text-black">OS</TableHead>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody>
                   {rows.map((r, i) => (
                     <TableRow key={i}>
