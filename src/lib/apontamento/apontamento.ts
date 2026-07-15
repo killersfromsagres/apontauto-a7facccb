@@ -61,33 +61,41 @@ function splitEvenly<T>(items: T[], parts: number): T[][] {
 
 function programarTecnico(tecnico: string, data: string, osChunk: string[]): ApontamentoRow[] {
   const count = osChunk.length;
-  const perOS = Math.floor(TOTAL_MINUTES / count);
+  if (!count) return [];
   const rows: ApontamentoRow[] = [];
 
-  let blockIdx = 0;
-  let cursor = WORK_BLOCKS[0][0];
+  const blockSizes = WORK_BLOCKS.map(([a, b]) => b - a);
+  const totalBlockMin = blockSizes.reduce((a, b) => a + b, 0);
 
-  for (let i = 0; i < count; i++) {
-    while (blockIdx < WORK_BLOCKS.length && cursor + perOS > WORK_BLOCKS[blockIdx][1]) {
-      blockIdx++;
-      if (blockIdx < WORK_BLOCKS.length) cursor = WORK_BLOCKS[blockIdx][0];
+  // Distribui as OS entre os blocos de trabalho proporcionalmente à duração
+  const perBlock = blockSizes.map((size) => Math.floor((count * size) / totalBlockMin));
+  let assigned = perBlock.reduce((a, b) => a + b, 0);
+  let rr = 0;
+  while (assigned < count) {
+    perBlock[rr % perBlock.length]++;
+    assigned++;
+    rr++;
+  }
+
+  let osIdx = 0;
+  for (let b = 0; b < WORK_BLOCKS.length; b++) {
+    const n = perBlock[b];
+    if (!n) continue;
+    const [blockStart, blockEnd] = WORK_BLOCKS[b];
+    const dur = blockEnd - blockStart;
+    const per = Math.floor(dur / n);
+    let cursor = blockStart;
+    for (let k = 0; k < n; k++) {
+      const start = cursor;
+      const end = k === n - 1 ? blockEnd : cursor + per;
+      rows.push({
+        tecnico,
+        dataInicio: composeDate(data, start),
+        dataFinal: composeDate(data, end),
+        os: osChunk[osIdx++],
+      });
+      cursor = end;
     }
-    if (blockIdx >= WORK_BLOCKS.length) break;
-
-    const start = cursor;
-    const end =
-      i === count - 1 && blockIdx === WORK_BLOCKS.length - 1
-        ? WORK_BLOCKS[blockIdx][1]
-        : cursor + perOS;
-
-    rows.push({
-      tecnico,
-      dataInicio: composeDate(data, start),
-      dataFinal: composeDate(data, end),
-      os: osChunk[i],
-    });
-
-    cursor = end;
   }
 
   return rows;
