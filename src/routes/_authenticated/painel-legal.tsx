@@ -239,57 +239,66 @@ function PainelLegalPage() {
     toast.success("Planilha exportada.");
   };
 
+  const handleExportPDF = () => {
+    exportLegalPDF(filtered, execs, year);
+    toast.success("PDF gerado.");
+  };
+
   return (
     <PageShell
       title="Painel de Itens Legais"
       description="Controle de tarefas legais e recorrentes, execução mensal e certificados."
     >
-      {/* Cabeçalho de ações */}
-      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      {/* Cabeçalho de ações — mais compacto */}
+      <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-            <ShieldCheck className="h-5 w-5" strokeWidth={1.75} />
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-primary/30 to-primary/10 text-primary ring-1 ring-primary/30 shadow-[0_0_18px_-4px_rgba(59,130,246,0.55)]">
+            <ShieldCheck className="h-4.5 w-4.5" strokeWidth={2} />
           </div>
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
               Painel
             </p>
-            <h2 className="truncate font-display text-lg font-bold tracking-wide sm:text-xl">
+            <h2 className="truncate font-display text-base font-bold tracking-wide sm:text-lg">
               PAINEL DE ITENS LEGAIS
             </h2>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <AlertsBell alerts={alerts} onFocus={(id) => document.getElementById(`legal-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
           <div className="flex overflow-hidden rounded-lg border border-border/60 bg-card/40">
             <button
               onClick={() => setView("lista")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-sm transition",
+                "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "lista" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
             >
-              <ListIcon className="h-4 w-4" /> Lista
+              <ListIcon className="h-3.5 w-3.5" /> Lista
             </button>
             <button
               onClick={() => setView("calendario")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 text-sm transition",
+                "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
                 view === "calendario" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
               )}
             >
-              <CalendarDays className="h-4 w-4" /> Calendário
+              <CalendarDays className="h-3.5 w-3.5" /> Calendário
             </button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport}>
-            <Download className="mr-1.5 h-4 w-4" /> Exportar
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-8">
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Excel
           </Button>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 h-4 w-4" /> Novo item
+          <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-8">
+            <FileDown className="mr-1.5 h-3.5 w-3.5" /> PDF
+          </Button>
+          <Button size="sm" onClick={openCreate} className="h-8">
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Novo item
           </Button>
         </div>
       </div>
+
 
       {/* Filtros */}
       <GlassCard className="mb-4">
