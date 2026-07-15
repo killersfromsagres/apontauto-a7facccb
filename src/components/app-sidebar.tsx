@@ -2,10 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   CalendarClock,
   Wrench,
-  Droplets,
-  SprayCan,
-  Trees,
   ClipboardList,
+  ClipboardCheck,
   Settings,
   LayoutDashboard,
 } from "lucide-react";
@@ -26,9 +24,7 @@ const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Programação Preventiva", url: "/preventiva", icon: CalendarClock },
   { title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
-  { title: "Abastecimento", url: "/abastecimento", icon: Droplets },
-  { title: "Limpeza", url: "/limpeza", icon: SprayCan },
-  { title: "Jardinagem", url: "/jardinagem", icon: Trees },
+  { title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
   { title: "Outros Serviços", url: "/outros", icon: ClipboardList },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
