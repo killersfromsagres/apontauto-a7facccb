@@ -398,34 +398,6 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 
 .auth-logo-in { animation: logoIn 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-.metallic-shine {
-  background: linear-gradient(
-    100deg,
-    #7a5a1e 0%,
-    #d4af37 20%,
-    #fff2b8 35%,
-    #ffd700 50%,
-    #fff2b8 65%,
-    #d4af37 80%,
-    #7a5a1e 100%
-  );
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: metallicSweep 3.5s ease-in-out infinite;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-@keyframes metallicSweep {
-  0% { background-position: 100% 0; }
-  100% { background-position: -100% 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .metallic-shine { animation: none; background-position: 50% 0; }
-}
 
 
 .auth-shake { animation: shakeX 450ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
