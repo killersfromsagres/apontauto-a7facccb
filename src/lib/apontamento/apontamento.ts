@@ -150,11 +150,18 @@ export async function generateApontamentoWorkbook(
     };
   });
 
+  const bodyFills = ["FFFCAFA7", "FFB7EDB7", "FFB7EDB7", "FFD8B4FE"];
   for (const r of rows) {
     const row = ws.addRow([r.tecnico, r.dataInicio, r.dataFinal, r.os]);
     row.getCell(2).numFmt = "dd/mm/yyyy hh:mm";
     row.getCell(3).numFmt = "dd/mm/yyyy hh:mm";
-    row.eachCell((cell) => {
+    row.eachCell((cell, col) => {
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: bodyFills[col - 1] },
+      };
+      cell.font = { color: { argb: "FF000000" } };
       cell.alignment = { vertical: "middle", horizontal: "left" };
       cell.border = {
         top: { style: "hair", color: { argb: "FFCBD5E1" } },
