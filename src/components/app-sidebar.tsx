@@ -28,7 +28,7 @@ const baseItems = [
   { title: "Programação Preventiva", url: "/preventiva", icon: CalendarClock },
   { title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
   { title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
-  { title: "Outros Serviços", url: "/outros", icon: ClipboardList },
+  { title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
