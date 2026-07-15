@@ -1,4 +1,3 @@
-import { lazy, Suspense } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -62,5 +61,3 @@ export default function ProductivityChart() {
     </ResponsiveContainer>
   );
 }
-
-export { lazy, Suspense };
