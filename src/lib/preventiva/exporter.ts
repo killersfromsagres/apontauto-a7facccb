@@ -25,6 +25,7 @@ export async function generateProgramacaoWorkbook(
   ordered: ProcessedOS[],
 ): Promise<Blob> {
   const scheduled = scheduleOS(ordered);
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Apontamento";
   wb.created = new Date();
