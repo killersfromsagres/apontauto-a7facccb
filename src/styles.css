@@ -329,8 +329,8 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   100% { transform: translate3d(6%, 8%, 0) scale(1); }
 }
 @keyframes gridDrift {
-  0%   { background-position: 0 0, 0 0; }
-  100% { background-position: 60px 60px, 60px 60px; }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(60px, 60px, 0); }
 }
 @keyframes shine {
   0%   { background-position: -200% 0; }
