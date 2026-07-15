@@ -63,10 +63,10 @@ export const createAppUser = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
+      email: loginToEmail(data.login),
       password: data.password,
       email_confirm: true,
-      user_metadata: data.fullName ? { full_name: data.fullName } : undefined,
+      user_metadata: { login: data.login, ...(data.fullName ? { full_name: data.fullName } : {}) },
     });
     if (error) throw new Error(error.message);
     const newId = created.user?.id;
