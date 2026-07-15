@@ -21,6 +21,14 @@ import {
   Minus,
   ChevronLeft,
   ChevronRight,
+  ChevronRight,
+  Droplets,
+  Wind,
+  ChefHat,
+  Waves,
+  FileText,
+  Building2,
+  FileDown,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
