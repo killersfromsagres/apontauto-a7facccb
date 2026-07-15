@@ -42,20 +42,22 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border/50">
         <div className="flex items-center gap-2.5 px-2 py-3">
           <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-80" />
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-80" />
             <img
               src={logoAsset.url}
-              alt="Grupo GPS · Planejador de Manutenção"
-              className="relative h-9 w-9 rounded-lg object-contain bg-background/40 ring-1 ring-primary/30"
+              alt="Planejador de Manutenção — insígnia"
+              className="relative h-10 w-10 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
               loading="eager"
-              width={36}
-              height={36}
+              width={40}
+              height={40}
             />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="font-display text-sm font-bold tracking-wider">Grupo GPS</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-primary/80">
-              Planejador · Manutenção
+            <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-gradient">
+              Planejador
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-primary/80">
+              Manutenção · PM
             </span>
           </div>
         </div>
