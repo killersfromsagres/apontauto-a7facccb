@@ -175,12 +175,16 @@ export function ApontamentosConsolidated() {
 function CategoriaEditor({
   label,
   accent,
+  hint,
+  options,
   state,
   rows,
   onChange,
 }: {
   label: string;
   accent: string;
+  hint?: string;
+  options: import("@/lib/apontamento/apontamento").ApontamentoOptions;
   state: CategoriaState;
   rows: ApontamentoRow[];
   onChange: (patch: Partial<CategoriaState>) => void;
@@ -208,8 +212,17 @@ function CategoriaEditor({
   const removeTecnico = (id: string) =>
     onChange({ tecnicos: state.tecnicos.filter((t) => t !== id) });
 
-  const osPorTecnico = state.tecnicos.length ? Math.ceil(osList.length / state.tecnicos.length) : 0;
-  const minPorOs = osPorTecnico ? Math.floor(480 / osPorTecnico) : 0;
+  const isPair = options.mode === "pair";
+  const totalMin = (options.workBlocks ?? [[8 * 60, 12 * 60], [13 * 60, 17 * 60]]).reduce(
+    (s, [a, b]) => s + (b - a),
+    0,
+  );
+  const osPorTecnico = state.tecnicos.length
+    ? isPair
+      ? osList.length
+      : Math.ceil(osList.length / state.tecnicos.length)
+    : 0;
+  const minPorOs = osPorTecnico ? Math.floor(totalMin / osPorTecnico) : 0;
 
   const clear = () =>
     onChange({ tecnicos: [], tecInput: "", osText: "" });
@@ -219,6 +232,11 @@ function CategoriaEditor({
       <GlassCard>
         <div className="space-y-4">
           <h3 className={`text-sm font-semibold uppercase tracking-wider ${accent}`}>{label}</h3>
+          {hint && (
+            <p className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground">
+              {hint}
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
