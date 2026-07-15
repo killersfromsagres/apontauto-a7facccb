@@ -20,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -42,13 +42,17 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border/50">
         <div className="flex items-center gap-2.5 px-2 py-3">
           <div className="relative shrink-0">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-70" />
-            <img src={logo} alt="Logo" className="relative h-8 w-8 rounded-lg ring-1 ring-white/10" />
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-80" />
+            <img
+              src={logoAsset.url}
+              alt="PCM · Planejador de Manutenção"
+              className="relative h-9 w-9 rounded-lg object-cover ring-1 ring-primary/30"
+            />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="font-display text-sm font-semibold tracking-tight">Apontamento</span>
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-              Manutenção Industrial
+            <span className="font-display text-sm font-bold tracking-wider">PCM</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-primary/80">
+              Planejador · Manutenção
             </span>
           </div>
         </div>

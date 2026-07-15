@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -30,19 +30,19 @@ export function AppHeader() {
       <SidebarTrigger />
       <div className="flex min-w-0 items-center gap-3">
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-60" />
+          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-70" />
           <img
-            src={logo}
-            alt="Logo Sistema de Apontamento"
-            className="relative h-9 w-9 rounded-lg ring-1 ring-white/10"
+            src={logoAsset.url}
+            alt="PCM · Planejador de Manutenção"
+            className="relative h-10 w-10 rounded-lg object-cover ring-1 ring-primary/30"
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
-          <h1 className="truncate font-display text-base font-semibold tracking-tight">
-            Sistema de Apontamento
+          <h1 className="truncate font-display text-base font-bold tracking-wide">
+            PCM <span className="text-gradient">· Planejador de Manutenção</span>
           </h1>
-          <p className="hidden text-[11px] text-muted-foreground sm:block">
-            Desenvolvido por Dev Gabriel Vitor
+          <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
+            &lt;/&gt; Dev Gabriel Vitor
           </p>
         </div>
       </div>
