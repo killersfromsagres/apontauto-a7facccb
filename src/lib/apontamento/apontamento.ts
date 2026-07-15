@@ -9,7 +9,7 @@ export interface ApontamentoRow {
 }
 
 export interface ApontamentoInput {
-  tecnico: string;
+  tecnicos: string[]; // IDs / matrículas
   data: string; // YYYY-MM-DD
   osList: string[];
 }
@@ -21,17 +21,53 @@ const WORK_BLOCKS: [number, number][] = [
 
 const TOTAL_MINUTES = WORK_BLOCKS.reduce((s, [a, b]) => s + (b - a), 0); // 480
 
-export function calcularApontamento({ tecnico, data, osList }: ApontamentoInput): ApontamentoRow[] {
-  const count = osList.length;
-  if (count === 0) return [];
-  const perOS = Math.floor(TOTAL_MINUTES / count);
+/**
+ * Distribui OS sequencialmente entre os técnicos.
+ * Cada técnico recebe um lote de OS e completa sua carga horária (480 min)
+ * dividida entre as OS do lote. As OS não se repetem entre técnicos.
+ */
+export function calcularApontamento({
+  tecnicos,
+  data,
+  osList,
+}: ApontamentoInput): ApontamentoRow[] {
+  const techs = tecnicos.map((t) => t.trim()).filter(Boolean);
+  if (techs.length === 0 || osList.length === 0) return [];
 
+  const chunks = splitEvenly(osList, techs.length);
   const rows: ApontamentoRow[] = [];
+
+  techs.forEach((tecnico, i) => {
+    const osChunk = chunks[i];
+    if (!osChunk?.length) return;
+    rows.push(...programarTecnico(tecnico, data, osChunk));
+  });
+
+  return rows;
+}
+
+function splitEvenly<T>(items: T[], parts: number): T[][] {
+  const out: T[][] = Array.from({ length: parts }, () => []);
+  const base = Math.floor(items.length / parts);
+  const extra = items.length % parts;
+  let idx = 0;
+  for (let i = 0; i < parts; i++) {
+    const size = base + (i < extra ? 1 : 0);
+    out[i] = items.slice(idx, idx + size);
+    idx += size;
+  }
+  return out;
+}
+
+function programarTecnico(tecnico: string, data: string, osChunk: string[]): ApontamentoRow[] {
+  const count = osChunk.length;
+  const perOS = Math.floor(TOTAL_MINUTES / count);
+  const rows: ApontamentoRow[] = [];
+
   let blockIdx = 0;
   let cursor = WORK_BLOCKS[0][0];
 
   for (let i = 0; i < count; i++) {
-    // If not enough room in current block, jump to next block
     while (blockIdx < WORK_BLOCKS.length && cursor + perOS > WORK_BLOCKS[blockIdx][1]) {
       blockIdx++;
       if (blockIdx < WORK_BLOCKS.length) cursor = WORK_BLOCKS[blockIdx][0];
@@ -39,15 +75,16 @@ export function calcularApontamento({ tecnico, data, osList }: ApontamentoInput)
     if (blockIdx >= WORK_BLOCKS.length) break;
 
     const start = cursor;
-    const end = i === count - 1 && blockIdx === WORK_BLOCKS.length - 1
-      ? WORK_BLOCKS[blockIdx][1]
-      : cursor + perOS;
+    const end =
+      i === count - 1 && blockIdx === WORK_BLOCKS.length - 1
+        ? WORK_BLOCKS[blockIdx][1]
+        : cursor + perOS;
 
     rows.push({
       tecnico,
       dataInicio: composeDate(data, start),
       dataFinal: composeDate(data, end),
-      os: osList[i],
+      os: osChunk[i],
     });
 
     cursor = end;
