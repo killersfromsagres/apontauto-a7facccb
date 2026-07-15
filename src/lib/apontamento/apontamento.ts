@@ -111,8 +111,8 @@ export async function generateApontamentoWorkbook(
 
   ws.columns = [
     { key: "tecnico", width: 22 },
-    { key: "ini", width: 20 },
-    { key: "fim", width: 20 },
+    { key: "ini", width: 20, style: { numFmt: "dd/mm/yyyy hh:mm" } },
+    { key: "fim", width: 20, style: { numFmt: "dd/mm/yyyy hh:mm" } },
     { key: "os", width: 40 },
   ];
 
