@@ -558,11 +558,12 @@ function ListView({
 
           {/* Tabela — desktop */}
           <GlassCard className="hidden overflow-x-auto p-0 lg:block">
-            <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-sm">
+            <table className="w-full min-w-[1200px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
                   <Th>Tarefa</Th>
                   <Th>Empresa</Th>
+                  <Th>Prédio</Th>
                   <Th>Última</Th>
                   <Th>Próxima</Th>
                   <Th>Agendamento</Th>
@@ -593,10 +594,18 @@ function ListView({
                       <Td>
                         <div className="flex items-center gap-2">
                           <span className={cn("h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
+                          <TaskTypeIcon titulo={it.titulo} />
                           <span className="font-medium">{it.titulo}</span>
                         </div>
                       </Td>
-                      <Td className="text-muted-foreground">{it.empresa || "—"}</Td>
+                      <Td><CompanyName name={it.empresa} /></Td>
+                      <Td className="text-muted-foreground">
+                        {it.predio ? (
+                          <span className="inline-flex items-center gap-1">
+                            <Building2 className="h-3.5 w-3.5 opacity-70" /> {it.predio}
+                          </span>
+                        ) : "—"}
+                      </Td>
                       <Td>{fmt(it.ultimaExecucao)}</Td>
                       <Td>{fmt(it.proximaExecucao)}</Td>
                       <Td>{fmt(it.agendamento)}</Td>
@@ -622,7 +631,7 @@ function ListView({
                 {g.items.length === 0 && (
                   <tr>
                     <td
-                      colSpan={7 + MONTHS_SHORT.length}
+                      colSpan={8 + MONTHS_SHORT.length}
                       className="px-4 py-6 text-center text-sm text-muted-foreground"
                     >
                       Nenhuma tarefa cadastrada.
