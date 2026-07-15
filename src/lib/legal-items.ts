@@ -78,6 +78,7 @@ export async function listLegalItems(): Promise<LegalItem[]> {
 export async function createLegalItem(
   input: Omit<LegalItem, "id" | "createdAt">,
 ): Promise<LegalItem> {
+  const { data: userRes } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("legal_items" as never)
     .insert({
@@ -88,6 +89,7 @@ export async function createLegalItem(
       proxima_execucao: input.proximaExecucao,
       responsavel: input.responsavel || null,
       concluido: input.concluido,
+      created_by: userRes.user?.id ?? null,
     } as never)
     .select("*")
     .single();
