@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { Lock, Eye, EyeOff, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/apontauto-logo.png.asset.json";
@@ -23,10 +23,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -48,18 +46,10 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (mode === "signup") {
-      const valid = /^[a-zA-Z0-9]{6,}$/.test(password);
-      if (!valid) {
-        triggerShake();
-        toast.error("A senha deve ter pelo menos 6 caracteres (apenas números ou letras).");
-        return;
-      }
-    }
     setLoading(true);
     try {
       // Atalho: admin/admin entra na conta do planejador
-      if (mode === "signin" && email.trim().toLowerCase() === "admin" && password === "admin") {
+      if (email.trim().toLowerCase() === "admin" && password === "admin") {
         const { error } = await supabase.auth.signInWithPassword({
           email: "gabrielvlp33@gmail.com",
           password: "Eliana159951",
@@ -68,30 +58,9 @@ function AuthPage() {
         toast.success("Bem-vindo!");
         return;
       }
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { full_name: name },
-          },
-        });
-        if (error) throw error;
-        // Auto-login: se a confirmação de e-mail estiver desativada, a sessão
-        // já vem no signUp. Caso contrário, tentamos entrar com as credenciais.
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-          if (signInError) throw signInError;
-        }
-        toast.success("Conta criada! Redirecionando…");
-        navigate({ to: "/" });
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Bem-vindo!");
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("Bem-vindo!");
     } catch (err) {
       triggerShake();
       toast.error(err instanceof Error ? err.message : "Falha ao autenticar");
@@ -99,7 +68,6 @@ function AuthPage() {
       setLoading(false);
     }
   };
-
 
   const forgotPassword = async () => {
     if (!email) {
@@ -145,77 +113,29 @@ function AuthPage() {
                 draggable={false}
               />
             </div>
-            <h1 className="-mt-1 text-center text-xl font-semibold tracking-tight text-white">
-              {mode === "signin" ? "Sistema Exclusivo" : "Criar sua conta"}
+            <h1 className="-mt-6 text-center text-xl font-semibold tracking-tight text-white sm:-mt-8">
+              Sistema Exclusivo
             </h1>
             <p className="mt-1 text-center text-sm text-white/60">
-              {mode === "signin"
-                ? "Acesse ou crie sua conta para continuar"
-                : "Preencha os dados para começar"}
+              Faça seu login para continuar
             </p>
           </div>
 
-
-          {/* Toggle */}
-          <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1 text-sm">
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className={`rounded-lg px-3 py-2 font-medium transition-all ${
-                mode === "signin"
-                  ? "bg-white/10 text-white shadow-inner"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`rounded-lg px-3 py-2 font-medium transition-all ${
-                mode === "signup"
-                  ? "bg-white/10 text-white shadow-inner"
-                  : "text-white/60 hover:text-white"
-              }`}
-            >
-              Criar conta
-            </button>
-          </div>
-
           <form onSubmit={submit} className="space-y-4" noValidate>
-            {mode === "signup" && (
-              <div className="auth-field">
-                <User className="auth-icon" size={18} />
-                <input
-                  id="name"
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder=" "
-                  className="auth-input"
-                  autoComplete="name"
-                />
-                <label htmlFor="name" className="auth-label">
-                  Nome completo
-                </label>
-              </div>
-            )}
-
             <div className="auth-field">
-              <Mail className="auth-icon" size={18} />
+              <UserRound className="auth-icon" size={18} />
               <input
                 id="email"
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder=" "
                 className="auth-input"
-                autoComplete="email"
+                autoComplete="username"
               />
               <label htmlFor="email" className="auth-label">
-                E-mail
+                Usuário
               </label>
             </div>
 
@@ -225,14 +145,11 @@ function AuthPage() {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 required
-                minLength={mode === "signup" ? 6 : undefined}
-                pattern={mode === "signup" ? "^[a-zA-Z0-9]{6,}$" : undefined}
-                title={mode === "signup" ? "A senha deve ter pelo menos 6 caracteres (apenas números ou letras)" : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder=" "
                 className="auth-input pr-11"
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                autoComplete="current-password"
               />
               <label htmlFor="password" className="auth-label">
                 Senha
@@ -247,36 +164,32 @@ function AuthPage() {
               </button>
             </div>
 
-            {mode === "signin" && (
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex cursor-pointer select-none items-center gap-2 text-white/70">
-                  <input
-                    type="checkbox"
-                    className="auth-checkbox"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  Lembrar-me
-                </label>
-                <button
-                  type="button"
-                  onClick={forgotPassword}
-                  className="text-cyan-300/90 transition-colors hover:text-cyan-200"
-                >
-                  Esqueceu a senha?
-                </button>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-sm">
+              <label className="flex cursor-pointer select-none items-center gap-2 text-white/70">
+                <input
+                  type="checkbox"
+                  className="auth-checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                Lembrar-me
+              </label>
+              <button
+                type="button"
+                onClick={forgotPassword}
+                className="text-cyan-300/90 transition-colors hover:text-cyan-200"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
 
             <button type="submit" className="auth-btn" disabled={loading}>
               {loading ? (
                 <span className="dots inline-flex items-center justify-center text-white">
                   <span /><span /><span />
                 </span>
-              ) : mode === "signin" ? (
-                "Entrar"
               ) : (
-                "Criar conta"
+                "Entrar"
               )}
             </button>
           </form>
