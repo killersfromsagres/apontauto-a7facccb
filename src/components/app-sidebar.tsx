@@ -6,6 +6,7 @@ import {
   ClipboardCheck,
   Settings,
   LayoutDashboard,
+  UserPlus,
 } from "lucide-react";
 import {
   Sidebar,
@@ -26,6 +27,7 @@ const items = [
   { title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
   { title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
   { title: "Outros Serviços", url: "/outros", icon: ClipboardList },
+  { title: "Usuários", url: "/usuarios", icon: UserPlus },
   { title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
