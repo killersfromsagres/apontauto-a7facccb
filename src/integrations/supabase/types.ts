@@ -35,13 +35,93 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_item_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          item_id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          item_id: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          item_id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_item_attachments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "legal_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legal_item_executions: {
+        Row: {
+          created_at: string
+          data_execucao: string
+          executado_por: string | null
+          id: string
+          item_id: string
+          observacao: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_execucao: string
+          executado_por?: string | null
+          id?: string
+          item_id: string
+          observacao?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_execucao?: string
+          executado_por?: string | null
+          id?: string
+          item_id?: string
+          observacao?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_item_executions_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "legal_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legal_items: {
         Row: {
+          agendamento: string | null
           concluido: boolean
           created_at: string
           created_by: string | null
           descricao: string | null
+          empresa: string | null
           id: string
+          meses_status: Json
+          observacoes: string | null
           periodicidade: string
           proxima_execucao: string
           responsavel: string | null
@@ -50,11 +130,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agendamento?: string | null
           concluido?: boolean
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          empresa?: string | null
           id?: string
+          meses_status?: Json
+          observacoes?: string | null
           periodicidade: string
           proxima_execucao: string
           responsavel?: string | null
@@ -63,11 +147,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agendamento?: string | null
           concluido?: boolean
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          empresa?: string | null
           id?: string
+          meses_status?: Json
+          observacoes?: string | null
           periodicidade?: string
           proxima_execucao?: string
           responsavel?: string | null
