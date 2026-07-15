@@ -60,6 +60,16 @@ function AuthPage() {
     }
     setLoading(true);
     try {
+      // Atalho: admin/admin entra na conta do planejador
+      if (mode === "signin" && email.trim().toLowerCase() === "admin" && password === "admin") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: "gabrielvlp33@gmail.com",
+          password: "Eliana159951",
+        });
+        if (error) throw error;
+        toast.success("Bem-vindo!");
+        return;
+      }
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
