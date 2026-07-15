@@ -158,7 +158,7 @@ function Page() {
                 onDragLeave={() => setDragOver(false)}
                 onDrop={onDrop}
                 onClick={() => inputRef.current?.click()}
-                className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-16 text-center transition-all ${
+                className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all sm:p-12 md:p-16 ${
                   dragOver
                     ? "border-primary bg-primary/5"
                     : "border-border/60 hover:border-primary/50 hover:bg-accent/30"
