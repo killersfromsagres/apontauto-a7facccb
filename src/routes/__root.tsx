@@ -100,6 +100,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico" },
+      // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
+      { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
+      // Reduz latência da primeira chamada auth/DB
+      { rel: "preconnect", href: "https://uthidybbrziwvktknryr.supabase.co", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://uthidybbrziwvktknryr.supabase.co" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
