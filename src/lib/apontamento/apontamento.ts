@@ -105,11 +105,11 @@ function programarTecnico(
     if (!n) continue;
     const [blockStart, blockEnd] = workBlocks[b];
     const dur = blockEnd - blockStart;
-    const per = Math.floor(dur / n);
+    const durations = randomSplit(n, dur);
     let cursor = blockStart;
     for (let k = 0; k < n; k++) {
       const start = cursor;
-      const end = k === n - 1 ? blockEnd : cursor + per;
+      const end = k === n - 1 ? blockEnd : cursor + durations[k];
       rows.push({
         tecnico,
         dataInicio: composeDate(data, start),
@@ -121,6 +121,43 @@ function programarTecnico(
   }
 
   return rows;
+}
+
+/**
+ * Divide `total` minutos em `n` partes inteiras que somam exatamente `total`,
+ * com variação aleatória controlada para evitar horários idênticos entre
+ * técnicos/dias. Respeita um piso mínimo por OS e mantém a duração média.
+ */
+function randomSplit(n: number, total: number): number[] {
+  if (n <= 0) return [];
+  if (n === 1) return [total];
+  const avg = total / n;
+  const minMin = Math.max(5, Math.floor(avg * 0.6));
+  const maxMin = Math.max(minMin + 1, Math.ceil(avg * 1.4));
+
+  // Pesos aleatórios em torno de 1.0 (±30%) — média se aproxima do tempo padrão.
+  const weights = Array.from({ length: n }, () => 0.7 + Math.random() * 0.6);
+  const sumW = weights.reduce((a, b) => a + b, 0);
+  const durs = weights.map((w) =>
+    Math.max(minMin, Math.min(maxMin, Math.round((w / sumW) * total))),
+  );
+
+  // Ajusta o arredondamento para bater exatamente com o total.
+  let diff = total - durs.reduce((a, b) => a + b, 0);
+  let guard = 0;
+  while (diff !== 0 && guard < n * 200) {
+    const idx = Math.floor(Math.random() * n);
+    const step = diff > 0 ? 1 : -1;
+    const next = durs[idx] + step;
+    if (next >= minMin && next <= maxMin) {
+      durs[idx] = next;
+      diff -= step;
+    }
+    guard++;
+  }
+  // Se ainda sobrou diferença (limites apertados), joga no último item.
+  if (diff !== 0) durs[n - 1] += diff;
+  return durs;
 }
 
 function composeDate(dateStr: string, mins: number): Date {
