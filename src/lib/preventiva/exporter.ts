@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+export { downloadBlob } from "@/lib/download";
 import { TEAM_COLORS, type Team, type ProcessedOS } from "./processor";
 import { scheduleOS, type ScheduledOS } from "./scheduler";
 
@@ -24,6 +24,7 @@ export async function generateProgramacaoWorkbook(
   ordered: ProcessedOS[],
 ): Promise<Blob> {
   const scheduled = scheduleOS(ordered);
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Apontamento";
   wb.created = new Date();
@@ -136,17 +137,6 @@ function needsDarkText(hex: string): boolean {
   const b = parseInt(h.substring(4, 6), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.6;
-}
-
-export function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 export type { ScheduledOS };

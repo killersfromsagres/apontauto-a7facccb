@@ -1,5 +1,4 @@
-import ExcelJS from "exceljs";
-import { downloadBlob } from "@/lib/preventiva/exporter";
+export { downloadBlob } from "@/lib/download";
 
 export interface ApontamentoRow {
   tecnico: string;
@@ -113,6 +112,7 @@ export async function generateApontamentoWorkbook(
   titulo: string,
   rows: ApontamentoRow[],
 ): Promise<Blob> {
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Apontamento";
   const ws = wb.addWorksheet(titulo, { views: [{ state: "frozen", ySplit: 1 }] });
@@ -168,5 +168,3 @@ export async function generateApontamentoWorkbook(
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
 }
-
-export { downloadBlob };
