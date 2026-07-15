@@ -217,6 +217,9 @@ function AuthPage() {
                 type={showPassword ? "text" : "password"}
                 required
                 minLength={mode === "signup" ? 6 : undefined}
+                maxLength={mode === "signup" ? 6 : undefined}
+                pattern={mode === "signup" ? "^([0-9]{6}|[a-zA-Z]{6})$" : undefined}
+                title={mode === "signup" ? "6 caracteres — apenas números ou apenas letras" : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder=" "
