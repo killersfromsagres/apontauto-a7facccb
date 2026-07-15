@@ -13,33 +13,51 @@ export interface ApontamentoInput {
   osList: string[];
 }
 
-const WORK_BLOCKS: [number, number][] = [
+const DEFAULT_WORK_BLOCKS: [number, number][] = [
   [8 * 60, 12 * 60],
   [13 * 60, 17 * 60],
 ];
 
-const TOTAL_MINUTES = WORK_BLOCKS.reduce((s, [a, b]) => s + (b - a), 0); // 480
+export type ApontamentoMode = "split" | "pair";
+
+export interface ApontamentoOptions {
+  /** Blocos de trabalho em minutos desde 00:00. Ex.: [[360, 780]] = 06:00-13:00 */
+  workBlocks?: [number, number][];
+  /**
+   * "split" (padrão): distribui as OS entre os técnicos, sem repetir.
+   * "pair": todos os técnicos recebem TODAS as OS e o mesmo horário (dupla).
+   */
+  mode?: ApontamentoMode;
+}
 
 /**
- * Distribui OS sequencialmente entre os técnicos.
- * Cada técnico recebe um lote de OS e completa sua carga horária (480 min)
- * dividida entre as OS do lote. As OS não se repetem entre técnicos.
+ * Distribui OS entre os técnicos conforme o modo escolhido.
+ * - split: cada técnico recebe um lote exclusivo de OS.
+ * - pair: todos os técnicos recebem as mesmas OS e horários (trabalho em dupla).
  */
-export function calcularApontamento({
-  tecnicos,
-  data,
-  osList,
-}: ApontamentoInput): ApontamentoRow[] {
+export function calcularApontamento(
+  { tecnicos, data, osList }: ApontamentoInput,
+  options: ApontamentoOptions = {},
+): ApontamentoRow[] {
   const techs = tecnicos.map((t) => t.trim()).filter(Boolean);
   if (techs.length === 0 || osList.length === 0) return [];
+  const blocks = options.workBlocks ?? DEFAULT_WORK_BLOCKS;
+  const mode = options.mode ?? "split";
 
-  const chunks = splitEvenly(osList, techs.length);
   const rows: ApontamentoRow[] = [];
 
+  if (mode === "pair") {
+    for (const tecnico of techs) {
+      rows.push(...programarTecnico(tecnico, data, osList, blocks));
+    }
+    return rows;
+  }
+
+  const chunks = splitEvenly(osList, techs.length);
   techs.forEach((tecnico, i) => {
     const osChunk = chunks[i];
     if (!osChunk?.length) return;
-    rows.push(...programarTecnico(tecnico, data, osChunk));
+    rows.push(...programarTecnico(tecnico, data, osChunk, blocks));
   });
 
   return rows;
@@ -58,12 +76,17 @@ function splitEvenly<T>(items: T[], parts: number): T[][] {
   return out;
 }
 
-function programarTecnico(tecnico: string, data: string, osChunk: string[]): ApontamentoRow[] {
+function programarTecnico(
+  tecnico: string,
+  data: string,
+  osChunk: string[],
+  workBlocks: [number, number][],
+): ApontamentoRow[] {
   const count = osChunk.length;
   if (!count) return [];
   const rows: ApontamentoRow[] = [];
 
-  const blockSizes = WORK_BLOCKS.map(([a, b]) => b - a);
+  const blockSizes = workBlocks.map(([a, b]) => b - a);
   const totalBlockMin = blockSizes.reduce((a, b) => a + b, 0);
 
   // Distribui as OS entre os blocos de trabalho proporcionalmente à duração
@@ -77,10 +100,10 @@ function programarTecnico(tecnico: string, data: string, osChunk: string[]): Apo
   }
 
   let osIdx = 0;
-  for (let b = 0; b < WORK_BLOCKS.length; b++) {
+  for (let b = 0; b < workBlocks.length; b++) {
     const n = perBlock[b];
     if (!n) continue;
-    const [blockStart, blockEnd] = WORK_BLOCKS[b];
+    const [blockStart, blockEnd] = workBlocks[b];
     const dur = blockEnd - blockStart;
     const per = Math.floor(dur / n);
     let cursor = blockStart;

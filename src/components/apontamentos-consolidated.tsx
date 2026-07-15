@@ -34,10 +34,39 @@ interface CategoriaState {
   osText: string;
 }
 
-const CATEGORIAS: { id: Categoria; label: string; icon: typeof Droplets; accent: string }[] = [
-  { id: "abastecimento", label: "Abastecimento", icon: Droplets, accent: "text-orange-500" },
-  { id: "limpeza", label: "Limpeza", icon: SprayCan, accent: "text-emerald-500" },
-  { id: "jardinagem", label: "Jardinagem", icon: Trees, accent: "text-green-600" },
+const CATEGORIAS: {
+  id: Categoria;
+  label: string;
+  icon: typeof Droplets;
+  accent: string;
+  options: import("@/lib/apontamento/apontamento").ApontamentoOptions;
+  hint?: string;
+}[] = [
+  {
+    id: "abastecimento",
+    label: "Abastecimento",
+    icon: Droplets,
+    accent: "text-orange-500",
+    // Dupla: todos os técnicos recebem as mesmas OS e horários.
+    options: { mode: "pair" },
+    hint: "Equipe em dupla — os dois técnicos recebem as mesmas OS e horários.",
+  },
+  {
+    id: "limpeza",
+    label: "Limpeza",
+    icon: SprayCan,
+    accent: "text-emerald-500",
+    // Jornada 06:00–13:00 em bloco único.
+    options: { workBlocks: [[6 * 60, 13 * 60]] },
+    hint: "Jornada padrão 06:00–13:00.",
+  },
+  {
+    id: "jardinagem",
+    label: "Jardinagem",
+    icon: Trees,
+    accent: "text-green-600",
+    options: {},
+  },
 ];
 
 const emptyState = (): CategoriaState => ({
@@ -58,20 +87,21 @@ export function ApontamentosConsolidated() {
   const update = (cat: Categoria, patch: Partial<CategoriaState>) =>
     setStates((prev) => ({ ...prev, [cat]: { ...prev[cat], ...patch } }));
 
-  const buildRows = (s: CategoriaState): ApontamentoRow[] => {
+  const buildRows = (cat: Categoria, s: CategoriaState): ApontamentoRow[] => {
     const osList = s.osText
       .split(/\r?\n|,|;/)
       .map((v) => v.trim())
       .filter(Boolean);
     if (!s.tecnicos.length || !s.data || !osList.length) return [];
-    return calcularApontamento({ tecnicos: s.tecnicos, data: s.data, osList });
+    const opts = CATEGORIAS.find((c) => c.id === cat)!.options;
+    return calcularApontamento({ tecnicos: s.tecnicos, data: s.data, osList }, opts);
   };
 
   const rowsByCat = useMemo(
     () => ({
-      abastecimento: buildRows(states.abastecimento),
-      limpeza: buildRows(states.limpeza),
-      jardinagem: buildRows(states.jardinagem),
+      abastecimento: buildRows("abastecimento", states.abastecimento),
+      limpeza: buildRows("limpeza", states.limpeza),
+      jardinagem: buildRows("jardinagem", states.jardinagem),
     }),
     [states],
   );
@@ -129,6 +159,8 @@ export function ApontamentosConsolidated() {
             <CategoriaEditor
               label={c.label}
               accent={c.accent}
+              hint={c.hint}
+              options={c.options}
               state={states[c.id]}
               rows={rowsByCat[c.id]}
               onChange={(patch) => update(c.id, patch)}
@@ -143,12 +175,16 @@ export function ApontamentosConsolidated() {
 function CategoriaEditor({
   label,
   accent,
+  hint,
+  options,
   state,
   rows,
   onChange,
 }: {
   label: string;
   accent: string;
+  hint?: string;
+  options: import("@/lib/apontamento/apontamento").ApontamentoOptions;
   state: CategoriaState;
   rows: ApontamentoRow[];
   onChange: (patch: Partial<CategoriaState>) => void;
@@ -176,8 +212,17 @@ function CategoriaEditor({
   const removeTecnico = (id: string) =>
     onChange({ tecnicos: state.tecnicos.filter((t) => t !== id) });
 
-  const osPorTecnico = state.tecnicos.length ? Math.ceil(osList.length / state.tecnicos.length) : 0;
-  const minPorOs = osPorTecnico ? Math.floor(480 / osPorTecnico) : 0;
+  const isPair = options.mode === "pair";
+  const totalMin = (options.workBlocks ?? [[8 * 60, 12 * 60], [13 * 60, 17 * 60]]).reduce(
+    (s, [a, b]) => s + (b - a),
+    0,
+  );
+  const osPorTecnico = state.tecnicos.length
+    ? isPair
+      ? osList.length
+      : Math.ceil(osList.length / state.tecnicos.length)
+    : 0;
+  const minPorOs = osPorTecnico ? Math.floor(totalMin / osPorTecnico) : 0;
 
   const clear = () =>
     onChange({ tecnicos: [], tecInput: "", osText: "" });
@@ -187,6 +232,11 @@ function CategoriaEditor({
       <GlassCard>
         <div className="space-y-4">
           <h3 className={`text-sm font-semibold uppercase tracking-wider ${accent}`}>{label}</h3>
+          {hint && (
+            <p className="rounded-md border border-border/60 bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground">
+              {hint}
+            </p>
+          )}
 
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
