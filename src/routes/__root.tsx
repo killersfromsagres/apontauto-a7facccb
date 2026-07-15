@@ -82,24 +82,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "PCM (Planejador de Manutenção): programação preventiva, corretiva, abastecimento, limpeza e jardinagem com distribuição inteligente de OS por equipe.",
+          "Sistema de Apontamento by: Gabriel Vitor",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "PCM · Planejador de Manutenção" },
+      { property: "og:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
       {
         property: "og:description",
-        content: "Sistema PCM: distribuição automática de OS, cálculo de carga horária por técnico e geração de planilhas.",
+        content: "Sistema de Apontamento by: Gabriel Vitor",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "PCM · Planejador de Manutenção" },
-      { name: "twitter:description", content: "Sistema PCM: distribuição automática de OS, cálculo de carga horária por técnico e geração de planilhas." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6667d455-11eb-48c4-a197-c08e25c98bef/id-preview-d5779526--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app-1784073674410.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6667d455-11eb-48c4-a197-c08e25c98bef/id-preview-d5779526--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app-1784073674410.png" },
+      { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
