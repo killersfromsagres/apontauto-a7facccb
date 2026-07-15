@@ -76,12 +76,17 @@ function splitEvenly<T>(items: T[], parts: number): T[][] {
   return out;
 }
 
-function programarTecnico(tecnico: string, data: string, osChunk: string[]): ApontamentoRow[] {
+function programarTecnico(
+  tecnico: string,
+  data: string,
+  osChunk: string[],
+  workBlocks: [number, number][],
+): ApontamentoRow[] {
   const count = osChunk.length;
   if (!count) return [];
   const rows: ApontamentoRow[] = [];
 
-  const blockSizes = WORK_BLOCKS.map(([a, b]) => b - a);
+  const blockSizes = workBlocks.map(([a, b]) => b - a);
   const totalBlockMin = blockSizes.reduce((a, b) => a + b, 0);
 
   // Distribui as OS entre os blocos de trabalho proporcionalmente à duração
@@ -95,10 +100,10 @@ function programarTecnico(tecnico: string, data: string, osChunk: string[]): Apo
   }
 
   let osIdx = 0;
-  for (let b = 0; b < WORK_BLOCKS.length; b++) {
+  for (let b = 0; b < workBlocks.length; b++) {
     const n = perBlock[b];
     if (!n) continue;
-    const [blockStart, blockEnd] = WORK_BLOCKS[b];
+    const [blockStart, blockEnd] = workBlocks[b];
     const dur = blockEnd - blockStart;
     const per = Math.floor(dur / n);
     let cursor = blockStart;
