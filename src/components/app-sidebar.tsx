@@ -38,31 +38,49 @@ export function AppSidebar() {
   const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader className="border-b border-sidebar-border/50">
-        <div className="flex items-center gap-2 px-2 py-2">
-          <img src={logo} alt="Logo" className="h-8 w-8 rounded-md" />
+        <div className="flex items-center gap-2.5 px-2 py-3">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-70" />
+            <img src={logo} alt="Logo" className="relative h-8 w-8 rounded-lg ring-1 ring-white/10" />
+          </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold">Apontamento</span>
-            <span className="text-[10px] text-muted-foreground">Manutenção Industrial</span>
+            <span className="font-display text-sm font-semibold tracking-tight">Apontamento</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Manutenção Industrial
+            </span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Módulos</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+            Módulos
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {items.map((item) => {
+                const active = isActive(item.url);
+                return (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={active}
+                      tooltip={item.title}
+                      className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
+                    >
+                      <Link to={item.url} className="flex items-center gap-3">
+                        {active && (
+                          <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+                        )}
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

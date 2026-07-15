@@ -17,12 +17,16 @@ export function GlassCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, ease: "easeOut" }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm backdrop-blur-xl",
-        "before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/5 before:to-transparent",
+        "glass-surface relative overflow-hidden rounded-2xl p-6",
+        "before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px",
+        "before:bg-gradient-to-r before:from-transparent before:via-primary/40 before:to-transparent",
+        "after:pointer-events-none after:absolute after:-top-24 after:-right-16 after:h-48 after:w-48",
+        "after:rounded-full after:bg-primary/15 after:blur-3xl",
+        "transition-shadow hover:shadow-elegant",
         className,
       )}
     >
-      {children}
+      <div className="relative z-10">{children}</div>
     </motion.div>
   );
 }
