@@ -108,8 +108,8 @@ function AuthPage() {
           />
 
           {/* Logo */}
-          <div className="auth-logo-in mb-6 flex flex-col items-center">
-            <div className="relative mx-auto grid h-56 w-56 place-items-center sm:h-64 sm:w-64">
+          <div className="auth-logo-in mb-4 flex flex-col items-center sm:mb-6">
+            <div className="relative mx-auto grid h-40 w-40 place-items-center xs:h-48 xs:w-48 sm:h-56 sm:w-56 md:h-64 md:w-64">
               <img
                 src={logo.url}
                 alt="PCM · Planejador de Manutenção"
@@ -117,7 +117,7 @@ function AuthPage() {
                 draggable={false}
               />
             </div>
-            <h1 className="-mt-6 text-center text-xl font-semibold tracking-tight text-white sm:-mt-8">
+            <h1 className="-mt-4 text-center text-lg font-semibold tracking-tight text-white sm:-mt-6 sm:text-xl md:-mt-8">
               Sistema Exclusivo
             </h1>
             <p className="mt-1 text-center text-sm text-white/60">

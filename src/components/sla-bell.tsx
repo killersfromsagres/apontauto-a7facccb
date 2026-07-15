@@ -62,7 +62,7 @@ export function SlaBell() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-[min(20rem,calc(100vw-1rem))]">
         <p className="mb-2 text-sm font-semibold">SLA & Lembretes</p>
         {alerts.length === 0 ? (
           <p className="py-4 text-center text-xs text-muted-foreground">

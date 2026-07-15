@@ -271,16 +271,16 @@ function Page() {
                     <Table>
                       <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
                         <TableRow>
-                          <TableHead>OS</TableHead>
-                          <TableHead>Nome OS</TableHead>
-                          <TableHead>Prédio</TableHead>
-                          <TableHead>Andar</TableHead>
-                          <TableHead>Local</TableHead>
-                          <TableHead>Tipo</TableHead>
-                          <TableHead>Equipe</TableHead>
-                          <TableHead>SLA</TableHead>
-                          <TableHead>Ativo</TableHead>
-                          <TableHead>Equipamento</TableHead>
+                          <TableHead className="whitespace-nowrap">OS</TableHead>
+                          <TableHead className="whitespace-nowrap">Nome OS</TableHead>
+                          <TableHead className="whitespace-nowrap">Prédio</TableHead>
+                          <TableHead className="whitespace-nowrap">Andar</TableHead>
+                          <TableHead className="whitespace-nowrap">Local</TableHead>
+                          <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                          <TableHead className="whitespace-nowrap">Equipe</TableHead>
+                          <TableHead className="whitespace-nowrap">SLA</TableHead>
+                          <TableHead className="whitespace-nowrap">Ativo</TableHead>
+                          <TableHead className="whitespace-nowrap">Equipamento</TableHead>
                         </TableRow>
                       </TableHeader>
 

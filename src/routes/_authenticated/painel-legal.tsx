@@ -1094,7 +1094,7 @@ function LegalItemForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto sm:w-full">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar item legal" : "Novo item legal"}</DialogTitle>
         </DialogHeader>
