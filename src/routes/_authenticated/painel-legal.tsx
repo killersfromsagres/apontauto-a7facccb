@@ -79,7 +79,7 @@ import {
 } from "@/lib/legal-items";
 import { LegalAttachmentsModal } from "@/components/legal/legal-attachments-modal";
 import { useLegalAlerts, type LegalAlert } from "@/hooks/use-legal-alerts";
-import { exportLegalXLSX } from "@/lib/legal-export";
+import { exportLegalXLSX, exportLegalPDF } from "@/lib/legal-export";
 
 export const Route = createFileRoute("/_authenticated/painel-legal")({
   component: PainelLegalPage,
