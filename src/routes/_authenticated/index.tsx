@@ -173,13 +173,3 @@ function Dashboard() {
     </PageShell>
   );
 }
-
-const productivityData = [
-  { week: "S1", programadas: 120, concluidas: 108 },
-  { week: "S2", programadas: 135, concluidas: 121 },
-  { week: "S3", programadas: 128, concluidas: 119 },
-  { week: "S4", programadas: 142, concluidas: 133 },
-  { week: "S5", programadas: 138, concluidas: 129 },
-  { week: "S6", programadas: 151, concluidas: 145 },
-  { week: "S7", programadas: 147, concluidas: 140 },
-];
