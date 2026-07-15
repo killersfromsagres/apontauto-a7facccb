@@ -21,7 +21,7 @@ type Role = "admin" | "user";
 function UsuariosPage() {
   const { isAdmin, loading: checking } = useIsAdmin();
   const create = useServerFn(createAppUser);
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<Role>("user");
@@ -31,9 +31,9 @@ function UsuariosPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await create({ data: { email, password, fullName: fullName || undefined, role } });
-      toast.success(`Usuário ${email} criado como ${role === "admin" ? "administrador" : "usuário"}.`);
-      setEmail("");
+      await create({ data: { login, password, fullName: fullName || undefined, role } });
+      toast.success(`Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`);
+      setLogin("");
       setPassword("");
       setFullName("");
       setRole("user");
@@ -93,17 +93,24 @@ function UsuariosPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="login">Login</Label>
               <Input
-                id="email"
-                type="email"
+                id="login"
+                type="text"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@exemplo.com"
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9._-]{3,30}"
+                value={login}
+                onChange={(e) => setLogin(e.target.value.toLowerCase())}
+                placeholder="ex.: joao.silva"
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">
+                3-30 caracteres. Letras minúsculas, números e . _ -
+              </p>
             </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
