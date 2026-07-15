@@ -1,15 +1,10 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { GlassCard } from "@/components/glass-card";
+import logo from "@/assets/logo.png.asset.json";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -32,7 +27,10 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -42,6 +40,11 @@ function AuthPage() {
     });
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  const triggerShake = () => {
+    setShake(true);
+    window.setTimeout(() => setShake(false), 500);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,73 +68,197 @@ function AuthPage() {
         toast.success("Bem-vindo!");
       }
     } catch (err) {
+      triggerShake();
       toast.error(err instanceof Error ? err.message : "Falha ao autenticar");
     } finally {
       setLoading(false);
     }
   };
 
+  const forgotPassword = async () => {
+    if (!email) {
+      toast.info("Informe seu e-mail acima para receber o link de redefinição.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) toast.error(error.message);
+    else toast.success("E-mail de redefinição enviado.");
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4 app-bg">
-      <div className="w-full max-w-md">
-        <GlassCard className="p-5 sm:p-8">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold">Sistema de Apontamento</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Gestão de manutenção industrial</p>
+    <div className="auth-bg relative flex min-h-screen items-center justify-center px-4 py-10">
+      {/* animated grid overlay */}
+      <div className="auth-grid" aria-hidden />
+
+      <main className="relative z-10 w-full max-w-md">
+        {/* Glass card */}
+        <div
+          className={`relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-9 ${
+            shake ? "auth-shake" : ""
+          }`}
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+          }}
+        >
+          {/* subtle top highlight */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          />
+
+          {/* Logo */}
+          <div className="auth-logo-in mb-6 flex flex-col items-center">
+            <div className="grid h-24 w-24 place-items-center rounded-2xl bg-white/5 p-3 ring-1 ring-white/10 shadow-[0_10px_30px_-10px_rgba(56,189,248,0.5)]">
+              <img
+                src={logo.url}
+                alt="PCM · Planejador de Manutenção"
+                className="h-full w-full object-contain"
+                draggable={false}
+              />
+            </div>
+            <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-white">
+              {mode === "signin" ? "Bem-vindo de volta" : "Criar sua conta"}
+            </h1>
+            <p className="mt-1 text-center text-sm text-white/60">
+              {mode === "signin"
+                ? "Acesse sua conta para continuar"
+                : "Preencha os dados para começar"}
+            </p>
           </div>
 
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Entrar</TabsTrigger>
-              <TabsTrigger value="signup">Criar conta</TabsTrigger>
-            </TabsList>
+          {/* Toggle */}
+          <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1 text-sm">
+            <button
+              type="button"
+              onClick={() => setMode("signin")}
+              className={`rounded-lg px-3 py-2 font-medium transition-all ${
+                mode === "signin"
+                  ? "bg-white/10 text-white shadow-inner"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("signup")}
+              className={`rounded-lg px-3 py-2 font-medium transition-all ${
+                mode === "signup"
+                  ? "bg-white/10 text-white shadow-inner"
+                  : "text-white/60 hover:text-white"
+              }`}
+            >
+              Criar conta
+            </button>
+          </div>
 
-            <TabsContent value="signin" className="mt-4">
-              <form onSubmit={submit} className="space-y-3">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="password">Senha</Label>
-                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Entrar
-                </Button>
-              </form>
-            </TabsContent>
+          <form onSubmit={submit} className="space-y-4" noValidate>
+            {mode === "signup" && (
+              <div className="auth-field">
+                <User className="auth-icon" size={18} />
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder=" "
+                  className="auth-input"
+                  autoComplete="name"
+                />
+                <label htmlFor="name" className="auth-label">
+                  Nome completo
+                </label>
+              </div>
+            )}
 
-            <TabsContent value="signup" className="mt-4">
-              <form onSubmit={submit} className="space-y-3">
-                <div>
-                  <Label htmlFor="name">Nome</Label>
-                  <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="email2">Email</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="password2">Senha</Label>
-                  <Input id="password2" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Criar conta
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+            <div className="auth-field">
+              <Mail className="auth-icon" size={18} />
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder=" "
+                className="auth-input"
+                autoComplete="email"
+              />
+              <label htmlFor="email" className="auth-label">
+                E-mail
+              </label>
+            </div>
 
+            <div className="auth-field">
+              <Lock className="auth-icon" size={18} />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={mode === "signup" ? 6 : undefined}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder=" "
+                className="auth-input pr-11"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              />
+              <label htmlFor="password" className="auth-label">
+                Senha
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="auth-eye"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Dev Gabriel Vitor · Sistema de Apontamento
-          </p>
-        </GlassCard>
-      </div>
+            {mode === "signin" && (
+              <div className="flex items-center justify-between text-sm">
+                <label className="flex cursor-pointer select-none items-center gap-2 text-white/70">
+                  <input
+                    type="checkbox"
+                    className="auth-checkbox"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
+                  Lembrar-me
+                </label>
+                <button
+                  type="button"
+                  onClick={forgotPassword}
+                  className="text-cyan-300/90 transition-colors hover:text-cyan-200"
+                >
+                  Esqueceu a senha?
+                </button>
+              </div>
+            )}
+
+            <button type="submit" className="auth-btn" disabled={loading}>
+              {loading ? (
+                <span className="dots inline-flex items-center justify-center text-white">
+                  <span /><span /><span />
+                </span>
+              ) : mode === "signin" ? (
+                "Entrar"
+              ) : (
+                "Criar conta"
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs tracking-wide text-white/50">
+          Dev by:{" "}
+          <span className="shine-text font-semibold">Gabriel Vitor</span>
+        </p>
+      </main>
     </div>
   );
 }
