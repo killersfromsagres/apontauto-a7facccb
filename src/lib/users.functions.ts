@@ -77,5 +77,5 @@ export const createAppUser = createServerFn({ method: "POST" })
       .insert({ user_id: newId, role: data.role });
     if (roleError) throw new Error(roleError.message);
 
-    return { id: newId, email: created.user?.email, role: data.role };
+    return { id: newId, login: data.login, role: data.role };
   });
