@@ -19,7 +19,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logoAsset from "@/assets/apontauto-logo.png.asset.json";
+const logoAsset = { url: "/apontauto-logo.png" };
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAllowedMenus } from "@/hooks/use-allowed-menus";

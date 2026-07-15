@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Lock, Eye, EyeOff, UserRound } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/apontauto-logo.png.asset.json";
+const logo = { url: "/apontauto-logo.png" };
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
