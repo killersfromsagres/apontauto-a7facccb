@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/pm-rank.png.asset.json";
+import logoAsset from "@/assets/apontauto-logo.png.asset.json";
 
 const ADMIN_EMAIL = "gabrielvlp33@gmail.com";
 
@@ -48,14 +48,13 @@ export function AppHeader() {
       <SidebarTrigger />
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-70" />
           <img
             src={logoAsset.url}
-            alt="Planejador de Manutenção — insígnia"
-            className="relative h-9 w-9 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)] sm:h-11 sm:w-11"
+            alt="Apont Auto — Sistema Automático de Apontamento"
+            className="relative h-10 w-10 object-contain sm:h-12 sm:w-12"
             loading="eager"
-            width={44}
-            height={44}
+            width={48}
+            height={48}
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
