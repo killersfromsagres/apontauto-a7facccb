@@ -60,107 +60,107 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Light theme — clean canvas tinted toward indigo */
+/* Light theme — clean canvas with cool electric-blue accents */
 :root {
   --radius: 0.75rem;
 
-  --background: oklch(0.985 0.005 275);
-  --foreground: oklch(0.16 0.04 275);
+  --background: oklch(0.985 0.006 240);
+  --foreground: oklch(0.16 0.05 245);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.04 275);
+  --card-foreground: oklch(0.16 0.05 245);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.04 275);
+  --popover-foreground: oklch(0.16 0.05 245);
 
-  --primary: oklch(0.55 0.22 275);
-  --primary-foreground: oklch(0.99 0.005 275);
-  --primary-glow: oklch(0.72 0.19 285);
+  --primary: oklch(0.58 0.22 245);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --primary-glow: oklch(0.78 0.16 230);
 
-  --secondary: oklch(0.96 0.015 275);
-  --secondary-foreground: oklch(0.22 0.06 275);
+  --secondary: oklch(0.96 0.02 240);
+  --secondary-foreground: oklch(0.22 0.07 245);
 
-  --muted: oklch(0.96 0.012 275);
-  --muted-foreground: oklch(0.5 0.03 275);
+  --muted: oklch(0.96 0.015 240);
+  --muted-foreground: oklch(0.5 0.03 245);
 
-  --accent: oklch(0.94 0.03 285);
-  --accent-foreground: oklch(0.25 0.09 275);
+  --accent: oklch(0.94 0.04 235);
+  --accent-foreground: oklch(0.25 0.1 245);
 
   --destructive: oklch(0.6 0.23 27);
-  --destructive-foreground: oklch(0.99 0.005 275);
+  --destructive-foreground: oklch(0.99 0.005 240);
 
-  --border: oklch(0.9 0.015 275);
-  --input: oklch(0.9 0.015 275);
-  --ring: oklch(0.55 0.22 275);
+  --border: oklch(0.9 0.02 240);
+  --input: oklch(0.9 0.02 240);
+  --ring: oklch(0.58 0.22 245);
 
-  --chart-1: oklch(0.55 0.22 275);
-  --chart-2: oklch(0.7 0.15 220);
+  --chart-1: oklch(0.58 0.22 245);
+  --chart-2: oklch(0.75 0.16 220);
   --chart-3: oklch(0.72 0.18 155);
   --chart-4: oklch(0.78 0.17 65);
   --chart-5: oklch(0.65 0.22 20);
 
-  --sidebar: oklch(0.98 0.008 275);
-  --sidebar-foreground: oklch(0.2 0.05 275);
-  --sidebar-primary: oklch(0.55 0.22 275);
-  --sidebar-primary-foreground: oklch(0.99 0.005 275);
-  --sidebar-accent: oklch(0.94 0.02 275);
-  --sidebar-accent-foreground: oklch(0.25 0.09 275);
-  --sidebar-border: oklch(0.9 0.015 275);
-  --sidebar-ring: oklch(0.55 0.22 275);
+  --sidebar: oklch(0.98 0.01 240);
+  --sidebar-foreground: oklch(0.2 0.06 245);
+  --sidebar-primary: oklch(0.58 0.22 245);
+  --sidebar-primary-foreground: oklch(0.99 0.005 240);
+  --sidebar-accent: oklch(0.94 0.025 240);
+  --sidebar-accent-foreground: oklch(0.25 0.1 245);
+  --sidebar-border: oklch(0.9 0.02 240);
+  --sidebar-ring: oklch(0.58 0.22 245);
 
-  --shadow-elegant: 0 10px 30px -12px color-mix(in oklch, var(--primary) 25%, transparent);
-  --shadow-glow: 0 0 60px -10px color-mix(in oklch, var(--primary-glow) 45%, transparent);
+  --shadow-elegant: 0 10px 30px -12px color-mix(in oklch, var(--primary) 30%, transparent);
+  --shadow-glow: 0 0 60px -10px color-mix(in oklch, var(--primary-glow) 50%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
 }
 
-/* Dark theme — the hero experience: Midnight Indigo */
+/* Dark theme — the hero experience: PCM Neon Grid on deep black */
 .dark {
-  --background: oklch(0.09 0.03 275);
-  --foreground: oklch(0.97 0.008 275);
+  --background: oklch(0.06 0.02 245);
+  --foreground: oklch(0.97 0.01 235);
 
-  --card: oklch(0.17 0.055 275);
-  --card-foreground: oklch(0.97 0.008 275);
+  --card: oklch(0.14 0.045 245);
+  --card-foreground: oklch(0.97 0.01 235);
 
-  --popover: oklch(0.17 0.055 275);
-  --popover-foreground: oklch(0.97 0.008 275);
+  --popover: oklch(0.14 0.045 245);
+  --popover-foreground: oklch(0.97 0.01 235);
 
-  --primary: oklch(0.62 0.22 275);
-  --primary-foreground: oklch(0.99 0.005 275);
-  --primary-glow: oklch(0.78 0.18 285);
+  --primary: oklch(0.68 0.2 240);
+  --primary-foreground: oklch(0.08 0.02 245);
+  --primary-glow: oklch(0.82 0.16 225);
 
-  --secondary: oklch(0.22 0.06 275);
-  --secondary-foreground: oklch(0.97 0.008 275);
+  --secondary: oklch(0.2 0.06 245);
+  --secondary-foreground: oklch(0.97 0.01 235);
 
-  --muted: oklch(0.2 0.05 275);
-  --muted-foreground: oklch(0.72 0.035 275);
+  --muted: oklch(0.18 0.05 245);
+  --muted-foreground: oklch(0.72 0.04 235);
 
-  --accent: oklch(0.28 0.09 275);
-  --accent-foreground: oklch(0.97 0.008 275);
+  --accent: oklch(0.28 0.1 240);
+  --accent-foreground: oklch(0.97 0.01 235);
 
   --destructive: oklch(0.68 0.2 22);
-  --destructive-foreground: oklch(0.99 0.005 275);
+  --destructive-foreground: oklch(0.99 0.005 240);
 
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.62 0.22 275);
+  --ring: oklch(0.68 0.2 240);
 
-  --chart-1: oklch(0.68 0.22 275);
-  --chart-2: oklch(0.75 0.15 210);
+  --chart-1: oklch(0.7 0.2 240);
+  --chart-2: oklch(0.78 0.15 210);
   --chart-3: oklch(0.75 0.18 155);
   --chart-4: oklch(0.8 0.17 65);
   --chart-5: oklch(0.7 0.22 20);
 
-  --sidebar: oklch(0.12 0.04 275);
-  --sidebar-foreground: oklch(0.9 0.02 275);
-  --sidebar-primary: oklch(0.62 0.22 275);
-  --sidebar-primary-foreground: oklch(0.99 0.005 275);
-  --sidebar-accent: oklch(0.22 0.08 275);
-  --sidebar-accent-foreground: oklch(0.97 0.008 275);
+  --sidebar: oklch(0.09 0.03 245);
+  --sidebar-foreground: oklch(0.9 0.025 235);
+  --sidebar-primary: oklch(0.68 0.2 240);
+  --sidebar-primary-foreground: oklch(0.08 0.02 245);
+  --sidebar-accent: oklch(0.22 0.08 245);
+  --sidebar-accent-foreground: oklch(0.97 0.01 235);
   --sidebar-border: oklch(1 0 0 / 6%);
-  --sidebar-ring: oklch(0.62 0.22 275);
+  --sidebar-ring: oklch(0.68 0.2 240);
 
-  --shadow-elegant: 0 20px 50px -20px color-mix(in oklch, var(--primary) 55%, transparent);
-  --shadow-glow: 0 0 80px -10px color-mix(in oklch, var(--primary-glow) 55%, transparent);
+  --shadow-elegant: 0 20px 50px -20px color-mix(in oklch, var(--primary) 60%, transparent);
+  --shadow-glow: 0 0 80px -10px color-mix(in oklch, var(--primary-glow) 60%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
 }
 
