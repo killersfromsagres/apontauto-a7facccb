@@ -23,7 +23,9 @@ import {
   type Reminder,
   type Priority,
 } from "@/lib/reminders";
-import { LegalItemsPanel } from "@/components/legal-items-panel";
+const LegalItemsPanel = lazy(() =>
+  import("@/components/legal-items-panel").then((m) => ({ default: m.LegalItemsPanel })),
+);
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
