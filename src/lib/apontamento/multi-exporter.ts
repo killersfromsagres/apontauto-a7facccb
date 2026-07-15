@@ -20,15 +20,15 @@ export async function generateApontamentosMultiSheetWorkbook(
     const ws = wb.addWorksheet(titulo, { views: [{ state: "frozen", ySplit: 1 }] });
     ws.columns = [
       { key: "tecnico", width: 22 },
-      { key: "ini", width: 20, style: { numFmt: "dd/mm/yyyy hh:mm" } },
-      { key: "fim", width: 20, style: { numFmt: "dd/mm/yyyy hh:mm" } },
-      { key: "os", width: 40 },
+      { key: "ini", width: 22, style: { numFmt: "dd/mm/yyyy hh:mm" } },
+      { key: "fim", width: 22, style: { numFmt: "dd/mm/yyyy hh:mm" } },
+      { key: "os", width: 44 },
     ];
 
     const headerRow = ws.addRow(headers);
-    headerRow.height = 26;
+    headerRow.height = 30;
     headerRow.alignment = { vertical: "middle", horizontal: "center" };
-    headerRow.font = { bold: true, color: { argb: "FF000000" } };
+    headerRow.font = { bold: true, size: 13, color: { argb: "FF000000" } };
     headerRow.eachCell((cell, col) => {
       cell.fill = {
         type: "pattern",
@@ -45,6 +45,7 @@ export async function generateApontamentosMultiSheetWorkbook(
 
     for (const r of rows) {
       const row = ws.addRow([r.tecnico, r.dataInicio, r.dataFinal, r.os]);
+      row.height = 20;
       row.getCell(2).numFmt = "dd/mm/yyyy hh:mm";
       row.getCell(3).numFmt = "dd/mm/yyyy hh:mm";
       row.eachCell((cell, col) => {
@@ -53,8 +54,8 @@ export async function generateApontamentosMultiSheetWorkbook(
           pattern: "solid",
           fgColor: { argb: bodyFills[col - 1] },
         };
-        cell.font = { color: { argb: "FF000000" } };
-        cell.alignment = { vertical: "middle", horizontal: "left" };
+        cell.font = { size: 12, color: { argb: "FF000000" } };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
         cell.border = {
           top: { style: "hair", color: { argb: "FFCBD5E1" } },
           bottom: { style: "hair", color: { argb: "FFCBD5E1" } },
