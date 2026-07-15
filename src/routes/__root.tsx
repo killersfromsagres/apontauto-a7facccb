@@ -119,7 +119,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen overflow-x-hidden">
         {children}
         <Scripts />
       </body>
