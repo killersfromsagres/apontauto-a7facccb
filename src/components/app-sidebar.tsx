@@ -20,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
