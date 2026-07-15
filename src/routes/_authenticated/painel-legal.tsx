@@ -21,7 +21,6 @@ import {
   Minus,
   ChevronLeft,
   ChevronRight,
-  ChevronRight,
   Droplets,
   Wind,
   ChefHat,
