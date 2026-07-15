@@ -163,6 +163,7 @@ export async function createLegalItem(
       titulo: input.titulo,
       descricao: input.descricao || null,
       empresa: input.empresa || null,
+      predio: input.predio || null,
       observacoes: input.observacoes || null,
       periodicidade: input.periodicidade,
       ultima_execucao: input.ultimaExecucao,
