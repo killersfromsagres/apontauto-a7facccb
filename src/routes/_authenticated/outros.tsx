@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Paperclip,
   X,
+  Bell,
+  ShieldCheck,
 } from "lucide-react";
 import {
   listReminders,
@@ -21,6 +23,7 @@ import {
   type Reminder,
   type Priority,
 } from "@/lib/reminders";
+import { LegalItemsPanel } from "@/components/legal-items-panel";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
