@@ -75,7 +75,7 @@ const modules = [
   { title: "Abastecimento", to: "/apontamentos", icon: Droplets, tint: "text-cyan-400" },
   { title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
   { title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
-  { title: "Outros Serviços", to: "/outros", icon: ClipboardList, tint: "text-purple-400" },
+  { title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
 ];
 
 function Dashboard() {
