@@ -297,7 +297,13 @@ function Page() {
         </TabsContent>
 
         <TabsContent value="legais" className="mt-4">
-          <LegalItemsPanel />
+          <Suspense
+            fallback={
+              <div className="glass-surface h-40 animate-pulse rounded-3xl" aria-hidden />
+            }
+          >
+            <LegalItemsPanel />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </PageShell>
