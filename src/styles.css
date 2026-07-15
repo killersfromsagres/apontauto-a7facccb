@@ -307,3 +307,10 @@ iframe[src*="lovable.dev/badge"] {
   height: 0 !important;
 }
 /* NEXUS-PRO:WATERMARK-HIDE:END */
+
+/* Global responsive guardrails — evita overflow horizontal em qualquer viewport. */
+html, body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+img, svg, video, canvas { max-width: 100%; height: auto; }
