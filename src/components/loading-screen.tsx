@@ -24,14 +24,20 @@ export function LoadingScreen() {
 
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     if (routerLoading) {
       timerRef.current = setTimeout(() => setShowRouteLoader(true), 250);
     } else {
-      if (timerRef.current) clearTimeout(timerRef.current);
       setShowRouteLoader(false);
     }
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [routerLoading]);
 
