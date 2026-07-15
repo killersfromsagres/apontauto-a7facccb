@@ -77,22 +77,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Sistema de Apontamento — Manutenção Industrial" },
+      { title: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
       {
         name: "description",
         content:
-          "SaaS de gestão de manutenção industrial: upload de planilhas, distribuição automática de OS e programação inteligente por equipe.",
+          "PCM (Planejador de Manutenção): programação preventiva, corretiva, abastecimento, limpeza e jardinagem com distribuição inteligente de OS por equipe.",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "Sistema de Apontamento — Manutenção Industrial" },
+      { property: "og:title", content: "PCM · Planejador de Manutenção" },
       {
         property: "og:description",
-        content: "SaaS de gestão de manutenção industrial: upload de planilhas, distribuição automática de OS e programação inteligente por equipe.",
+        content: "Sistema PCM: distribuição automática de OS, cálculo de carga horária por técnico e geração de planilhas.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Sistema de Apontamento — Manutenção Industrial" },
-      { name: "twitter:description", content: "SaaS de gestão de manutenção industrial: upload de planilhas, distribuição automática de OS e programação inteligente por equipe." },
+      { name: "twitter:title", content: "PCM · Planejador de Manutenção" },
+      { name: "twitter:description", content: "Sistema PCM: distribuição automática de OS, cálculo de carga horária por técnico e geração de planilhas." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6667d455-11eb-48c4-a197-c08e25c98bef/id-preview-d5779526--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app-1784073674410.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/6667d455-11eb-48c4-a197-c08e25c98bef/id-preview-d5779526--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app-1784073674410.png" },
     ],
@@ -103,7 +103,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
       },
     ],
   }),
