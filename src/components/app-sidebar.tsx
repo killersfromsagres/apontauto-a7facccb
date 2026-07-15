@@ -2,7 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   CalendarClock,
   Wrench,
-  ClipboardList,
+  ShieldCheck,
   ClipboardCheck,
   Settings,
   LayoutDashboard,
