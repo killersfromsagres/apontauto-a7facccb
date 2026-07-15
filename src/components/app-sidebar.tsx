@@ -18,7 +18,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logoAsset from "@/assets/pm-rank.png.asset.json";
+import logoAsset from "@/assets/apontauto-logo.png.asset.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -41,17 +41,17 @@ export function AppSidebar() {
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-80" />
             <img
               src={logoAsset.url}
-              alt="Planejador de Manutenção — insígnia"
+              alt="Apont Auto — Sistema Automático de Apontamento"
               className="relative h-full w-full object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
               loading="eager"
             />
           </div>
           <div className="flex flex-col leading-tight overflow-hidden transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
             <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-gradient whitespace-nowrap">
-              Planejador
+              Apont Auto
             </span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-primary/80 whitespace-nowrap">
-              Manutenção · PM
+            <span className="shine-text font-mono text-[9px] uppercase tracking-[0.22em] whitespace-nowrap">
+              Gabriel Vitor
             </span>
           </div>
         </div>
