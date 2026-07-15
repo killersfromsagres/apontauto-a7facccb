@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { Bell } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Popover,
   PopoverContent,
@@ -18,38 +19,36 @@ function daysUntil(dateStr: string) {
 }
 
 export function SlaBell() {
-  const [items, setItems] = useState<Reminder[]>([]);
+  const qc = useQueryClient();
+  // Shares cache with /outros page — no duplicated fetch.
+  const { data: items = [] } = useQuery<Reminder[]>({
+    queryKey: ["reminders"],
+    queryFn: listReminders,
+    staleTime: 60_000,
+  });
 
+  // Realtime only; no polling.
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        const rows = await listReminders();
-        if (mounted) setItems(rows);
-      } catch {
-        /* ignore */
-      }
-    };
-    void load();
-    const interval = setInterval(load, 60_000);
     const channel = supabase
       .channel("reminders-bell")
       .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => {
-        void load();
+        qc.invalidateQueries({ queryKey: ["reminders"] });
       })
       .subscribe();
     return () => {
-      mounted = false;
-      clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [qc]);
 
-  const alerts = items
-    .filter((r) => !r.concluido)
-    .map((r) => ({ ...r, dias: daysUntil(r.data) }))
-    .filter((r) => r.dias <= 3)
-    .sort((a, b) => a.dias - b.dias);
+  const alerts = useMemo(
+    () =>
+      items
+        .filter((r) => !r.concluido)
+        .map((r) => ({ ...r, dias: daysUntil(r.data) }))
+        .filter((r) => r.dias <= 3)
+        .sort((a, b) => a.dias - b.dias),
+    [items],
+  );
 
   return (
     <Popover>

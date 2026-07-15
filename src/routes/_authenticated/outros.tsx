@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,7 +23,9 @@ import {
   type Reminder,
   type Priority,
 } from "@/lib/reminders";
-import { LegalItemsPanel } from "@/components/legal-items-panel";
+const LegalItemsPanel = lazy(() =>
+  import("@/components/legal-items-panel").then((m) => ({ default: m.LegalItemsPanel })),
+);
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -295,7 +297,13 @@ function Page() {
         </TabsContent>
 
         <TabsContent value="legais" className="mt-4">
-          <LegalItemsPanel />
+          <Suspense
+            fallback={
+              <div className="glass-surface h-40 animate-pulse rounded-3xl" aria-hidden />
+            }
+          >
+            <LegalItemsPanel />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </PageShell>
