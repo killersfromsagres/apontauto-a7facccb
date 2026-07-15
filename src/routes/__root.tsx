@@ -78,22 +78,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { title: "Apont Auto · Sistema Automático de Apontamento — Dev Gabriel Vitor" },
       {
         name: "description",
         content:
-          "Sistema de Apontamento by: Gabriel Vitor",
+          "Apont Auto — sistema automático de apontamento por Gabriel Vitor.",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { property: "og:title", content: "Apont Auto · Sistema Automático de Apontamento" },
       {
         property: "og:description",
-        content: "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Apont Auto — sistema automático de apontamento por Gabriel Vitor.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
-      { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
+      { name: "twitter:title", content: "Apont Auto · Sistema Automático de Apontamento" },
+      { name: "twitter:description", content: "Apont Auto — sistema automático de apontamento por Gabriel Vitor." },
       { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
       { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/3bd5973d-7f75-4d54-a960-56f1c7b2ac26" },
     ],
