@@ -137,7 +137,7 @@ function AuthPage() {
 
           {/* Logo */}
           <div className="auth-logo-in mb-6 flex flex-col items-center">
-            <div className="grid h-44 w-44 place-items-center">
+            <div className="auth-logo-shine relative grid h-44 w-44 place-items-center overflow-hidden">
               <img
                 src={logo.url}
                 alt="PCM · Planejador de Manutenção"
@@ -145,15 +145,16 @@ function AuthPage() {
                 draggable={false}
               />
             </div>
-            <h1 className="mt-4 text-center text-xl font-semibold tracking-tight text-white">
-              {mode === "signin" ? "Bem-vindo de volta" : "Criar sua conta"}
+            <h1 className="-mt-1 text-center text-xl font-semibold tracking-tight text-white">
+              {mode === "signin" ? "Sistema Exclusivo" : "Criar sua conta"}
             </h1>
             <p className="mt-1 text-center text-sm text-white/60">
               {mode === "signin"
-                ? "Acesse sua conta para continuar"
+                ? "Acesse ou crie sua conta para continuar"
                 : "Preencha os dados para começar"}
             </p>
           </div>
+
 
           {/* Toggle */}
           <div className="mb-5 grid grid-cols-2 gap-1 rounded-xl border border-white/10 bg-white/5 p-1 text-sm">
