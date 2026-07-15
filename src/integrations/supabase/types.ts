@@ -170,18 +170,21 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed_menus: string[] | null
           created_at: string
           full_name: string | null
           id: string
           updated_at: string
         }
         Insert: {
+          allowed_menus?: string[] | null
           created_at?: string
           full_name?: string | null
           id: string
           updated_at?: string
         }
         Update: {
+          allowed_menus?: string[] | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -257,6 +260,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

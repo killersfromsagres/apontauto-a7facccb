@@ -22,23 +22,30 @@ import {
 import logoAsset from "@/assets/apontauto-logo.png.asset.json";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useAllowedMenus } from "@/hooks/use-allowed-menus";
 
 const baseItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Programação Preventiva", url: "/preventiva", icon: CalendarClock },
-  { title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
-  { title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
-  { title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
-  { title: "Configurações", url: "/configuracoes", icon: Settings },
+  { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { key: "preventiva", title: "Programação Preventiva", url: "/preventiva", icon: CalendarClock },
+  { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
+  { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
+  { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
+  { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
-const adminItem = { title: "Usuários", url: "/usuarios", icon: UserPlus };
+const adminItem = { key: "usuarios", title: "Usuários", url: "/usuarios", icon: UserPlus };
 
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
   const { isAdmin } = useIsAdmin();
-  const items = isAdmin ? [...baseItems, adminItem] : baseItems;
+  const { allowed } = useAllowedMenus();
+
+  // Admin sempre vê tudo. Para usuários comuns, `allowed = null` = todos.
+  const visible = baseItems.filter((it) =>
+    isAdmin ? true : !allowed || allowed.includes(it.key),
+  );
+  const items = isAdmin ? [...visible, adminItem] : visible;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
