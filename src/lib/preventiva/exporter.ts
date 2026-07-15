@@ -1,4 +1,5 @@
-import ExcelJS from "exceljs";
+import type ExcelJSNs from "exceljs";
+export { downloadBlob } from "@/lib/download";
 import { TEAM_COLORS, type Team, type ProcessedOS } from "./processor";
 import { scheduleOS, type ScheduledOS } from "./scheduler";
 
