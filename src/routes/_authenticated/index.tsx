@@ -10,7 +10,7 @@ import {
   Droplets,
   SprayCan,
   Trees,
-  ClipboardList,
+  ShieldCheck,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
