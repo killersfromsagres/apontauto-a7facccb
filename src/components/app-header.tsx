@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.png";
+import logoAsset from "@/assets/logo.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
