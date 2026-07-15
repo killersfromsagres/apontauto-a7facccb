@@ -1,35 +1,46 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { useIsFetching } from "@tanstack/react-query";
 import pmRank from "@/assets/pm-rank.png.asset.json";
 
 /**
  * Loading screen elegante e minimalista.
- * - Aparece no boot inicial da app e durante navegações/loaders longos.
- * - Faz fade-in / fade-out suave (framer-motion) — não bloqueia interação além do necessário.
- * - Barra de progresso realista baseada em requisições ativas (react-query + router).
+ * - Boot inicial (~400ms) para evitar flash de conteúdo não-hidratado.
+ * - Transições de rota apenas quando durarem >250ms (evita flicker em navegações rápidas).
+ * - Ignora refetches em background (realtime/focus) para não piscar durante uso normal.
  */
 export function LoadingScreen() {
-  const routerLoading = useRouterState({ select: (s) => s.isLoading || s.isTransitioning });
-  const fetching = useIsFetching();
+  const routerLoading = useRouterState({
+    select: (s) => s.isLoading || s.isTransitioning,
+  });
   const [booted, setBooted] = useState(false);
+  const [showRouteLoader, setShowRouteLoader] = useState(false);
   const [progress, setProgress] = useState(8);
 
-  // Boot inicial — mostra por pelo menos 500ms para evitar flash.
   useEffect(() => {
-    const t = setTimeout(() => setBooted(true), 500);
+    const t = setTimeout(() => setBooted(true), 400);
     return () => clearTimeout(t);
   }, []);
 
-  const active = !booted || routerLoading || fetching > 0;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (routerLoading) {
+      timerRef.current = setTimeout(() => setShowRouteLoader(true), 250);
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setShowRouteLoader(false);
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [routerLoading]);
 
-  // Progresso pseudo-real: incrementa em direção a 90% enquanto há atividade,
-  // fecha em 100% quando termina.
+  const active = !booted || showRouteLoader;
+
   useEffect(() => {
     if (!active) {
       setProgress(100);
-      const t = setTimeout(() => setProgress(8), 500);
+      const t = setTimeout(() => setProgress(8), 400);
       return () => clearTimeout(t);
     }
     const id = setInterval(() => {
