@@ -398,29 +398,6 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 
 .auth-logo-in { animation: logoIn 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
-.auth-logo-shine::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 70%
-  );
-  transform: translateX(-120%);
-  animation: logoShine 3.2s ease-in-out infinite;
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-@keyframes logoShine {
-  0% { transform: translateX(-120%); }
-  60% { transform: translateX(120%); }
-  100% { transform: translateX(120%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .auth-logo-shine::after { animation: none; display: none; }
-}
 
 .auth-shake { animation: shakeX 450ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
 
