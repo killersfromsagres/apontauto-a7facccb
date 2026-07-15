@@ -9,18 +9,29 @@ import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/pm-rank.png.asset.json";
 
+const ADMIN_EMAIL = "gabrielvlp33@gmail.com";
+
 export function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState<string | null>(null);
+  const [fullName, setFullName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    supabase.auth.getUser().then(({ data }) => {
+      setEmail(data.user?.email ?? null);
+      setFullName((data.user?.user_metadata?.full_name as string | undefined) ?? null);
+    });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setEmail(s?.user?.email ?? null);
+      setFullName((s?.user?.user_metadata?.full_name as string | undefined) ?? null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  const isAdmin = email?.toLowerCase() === ADMIN_EMAIL;
+  const title = isAdmin ? "Planejador de Manutenção" : "Colaborador";
+  const displayName = isAdmin ? "Dev Gabriel Vitor" : (fullName ?? email ?? "");
 
   const signOut = async () => {
     try {
@@ -49,11 +60,17 @@ export function AppHeader() {
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
           <h1 className="truncate font-display text-sm font-bold tracking-wide sm:text-base">
-            <span className="text-gradient">Planejador de Manutenção</span>
+            <span className="text-gradient">{title}</span>
           </h1>
-          <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
-            &lt;/&gt; Dev Gabriel Vitor
-          </p>
+          {isAdmin ? (
+            <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
+              &lt;/&gt; Dev <span className="shine-text font-semibold">Gabriel Vitor</span>
+            </p>
+          ) : displayName ? (
+            <p className="hidden truncate font-mono text-[10px] uppercase tracking-[0.2em] text-white sm:block">
+              {displayName}
+            </p>
+          ) : null}
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
