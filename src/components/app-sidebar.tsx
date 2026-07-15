@@ -2,8 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   CalendarClock,
   Wrench,
-  Fuel,
-  Sparkles,
+  Droplets,
+  SprayCan,
   Trees,
   ClipboardList,
   Settings,
