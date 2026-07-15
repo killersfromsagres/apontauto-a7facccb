@@ -5,14 +5,16 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system — "Midnight Indigo"
- * Palette: #0a0a1a bg · #141432 surface · #1e1e5a border/deep · #4f46e5 primary
- * Typography: Space Grotesk (display) · DM Sans (body)
+ * Design system — "PCM Neon Grid"
+ * Inspirado na identidade PCM: azul-elétrico neon sobre preto profundo, circuit aesthetic.
+ * Palette: #030712 bg · #0b1220 surface · #1e40af border · #1e90ff primary · #38bdf8 glow
+ * Typography: Space Grotesk (display) · DM Sans (body) · JetBrains Mono (mono/tech)
  */
 
 @theme inline {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
