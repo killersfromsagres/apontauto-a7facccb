@@ -50,22 +50,6 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/outros")({ component: Page });
 
-type Priority = "baixa" | "media" | "alta" | "critica";
-
-interface Reminder {
-  id: string;
-  titulo: string;
-  categoria: string;
-  data: string; // YYYY-MM-DD
-  prioridade: Priority;
-  observacoes: string;
-  anexos: string[]; // file names only
-  concluido: boolean;
-  createdAt: number;
-}
-
-const STORAGE_KEY = "outros-servicos:v1";
-
 const CATEGORIAS = [
   "Limpeza de Caixa d'Água",
   "Caixa de Gordura",
@@ -82,19 +66,6 @@ const PRIORIDADE_META: Record<Priority, { label: string; color: string; ring: st
   critica: { label: "Crítica", color: "bg-red-500", ring: "ring-red-500/30" },
 };
 
-function loadReminders(): Reminder[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveReminders(r: Reminder[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(r));
-}
-
 function daysUntil(dateStr: string): number {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -103,32 +74,51 @@ function daysUntil(dateStr: string): number {
 }
 
 function Page() {
-  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const qc = useQueryClient();
+  const { data: reminders = [] } = useQuery({
+    queryKey: ["reminders"],
+    queryFn: listReminders,
+  });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Reminder | null>(null);
   const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
 
-  useEffect(() => setReminders(loadReminders()), []);
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["reminders"] });
 
-  const persist = (next: Reminder[]) => {
-    setReminders(next);
-    saveReminders(next);
+  const upsert = async (r: Reminder) => {
+    try {
+      const exists = reminders.some((x) => x.id === r.id);
+      if (exists) {
+        await updateReminder(r.id, r);
+      } else {
+        await createReminder(r);
+      }
+      invalidate();
+      toast.success(exists ? "Lembrete atualizado" : "Lembrete criado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar");
+    }
   };
 
-  const upsert = (r: Reminder) => {
-    const exists = reminders.some((x) => x.id === r.id);
-    const next = exists ? reminders.map((x) => (x.id === r.id ? r : x)) : [...reminders, r];
-    persist(next);
-    toast.success(exists ? "Lembrete atualizado" : "Lembrete criado");
+  const remove = async (id: string) => {
+    try {
+      await deleteReminder(id);
+      invalidate();
+      toast.success("Lembrete removido");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao remover");
+    }
   };
 
-  const remove = (id: string) => {
-    persist(reminders.filter((r) => r.id !== id));
-    toast.success("Lembrete removido");
-  };
-
-  const toggle = (id: string) => {
-    persist(reminders.map((r) => (r.id === id ? { ...r, concluido: !r.concluido } : r)));
+  const toggle = async (id: string) => {
+    const r = reminders.find((x) => x.id === id);
+    if (!r) return;
+    try {
+      await updateReminder(id, { concluido: !r.concluido });
+      invalidate();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha");
+    }
   };
 
   const sorted = useMemo(
