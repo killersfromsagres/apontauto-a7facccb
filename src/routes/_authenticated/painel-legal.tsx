@@ -79,7 +79,8 @@ import {
 } from "@/lib/legal-items";
 import { LegalAttachmentsModal } from "@/components/legal/legal-attachments-modal";
 import { useLegalAlerts, type LegalAlert } from "@/hooks/use-legal-alerts";
-import { exportLegalXLSX, exportLegalPDF } from "@/lib/legal-export";
+// legal-export é dinamicamente importado só quando o usuário clica em exportar
+// (retira xlsx + jspdf + autotable do chunk inicial da rota).
 
 export const Route = createFileRoute("/_authenticated/painel-legal")({
   component: PainelLegalPage,
@@ -234,12 +235,14 @@ function PainelLegalPage() {
     setFormOpen(true);
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    const { exportLegalXLSX } = await import("@/lib/legal-export");
     exportLegalXLSX(filtered, execs, year);
     toast.success("Planilha exportada.");
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
+    const { exportLegalPDF } = await import("@/lib/legal-export");
     exportLegalPDF(filtered, execs, year);
     toast.success("PDF gerado.");
   };

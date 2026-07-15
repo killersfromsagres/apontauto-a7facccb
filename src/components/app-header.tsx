@@ -18,11 +18,13 @@ export function AppHeader() {
   const [fullName, setFullName] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-      setFullName((data.user?.user_metadata?.full_name as string | undefined) ?? null);
+    // getSession lê do storage local — sem round-trip. RLS no servidor continua sendo a autoridade real.
+    supabase.auth.getSession().then(({ data }) => {
+      setEmail(data.session?.user?.email ?? null);
+      setFullName((data.session?.user?.user_metadata?.full_name as string | undefined) ?? null);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       setEmail(s?.user?.email ?? null);
       setFullName((s?.user?.user_metadata?.full_name as string | undefined) ?? null);
     });
