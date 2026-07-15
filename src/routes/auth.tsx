@@ -113,7 +113,7 @@ function AuthPage() {
       <main className="relative z-10 w-full max-w-md">
         {/* Glass card */}
         <div
-          className={`relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl sm:p-9 ${
+          className={`relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:p-9 ${
             shake ? "auth-shake" : ""
           }`}
           style={{
