@@ -666,9 +666,16 @@ function ListView({
                   <div className="pl-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">{it.titulo}</p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {it.empresa || "—"} · {PERIODICIDADE_LABEL[it.periodicidade]}
+                        <p className="flex items-center gap-1.5 font-semibold">
+                          <TaskTypeIcon titulo={it.titulo} />
+                          <span className="truncate">{it.titulo}</span>
+                        </p>
+                        <p className="mt-0.5 truncate text-xs">
+                          <CompanyName name={it.empresa} className="text-xs" />
+                          <span className="text-muted-foreground"> · {PERIODICIDADE_LABEL[it.periodicidade]}</span>
+                          {it.predio && (
+                            <span className="text-muted-foreground"> · {it.predio}</span>
+                          )}
                         </p>
                       </div>
                       <StatusBadge status={st} />
@@ -678,6 +685,11 @@ function ListView({
                       <MiniInfo label="Próxima" value={fmt(it.proximaExecucao)} />
                       <MiniInfo label="Agenda" value={fmt(it.agendamento)} />
                     </div>
+                    {it.observacoes && (
+                      <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-muted/20 p-2 text-xs leading-relaxed text-muted-foreground">
+                        {it.observacoes}
+                      </p>
+                    )}
                     <div className="mt-3 grid grid-cols-12 gap-1">
                       {cells.map((c, i) => (
                         <div key={i} className="flex flex-col items-center gap-0.5">
