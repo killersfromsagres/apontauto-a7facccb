@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /apontamentos
+Disallow: /corretiva
+Disallow: /preventiva
+Disallow: /outros
+Disallow: /painel-legal
+Disallow: /configuracoes
+Disallow: /usuarios
+
+Sitemap: https://apontauto.online/sitemap.xml
