@@ -20,7 +20,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoAsset from "@/assets/gps-logo.png.asset.json";
 
 const items = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -45,12 +45,15 @@ export function AppSidebar() {
             <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-80" />
             <img
               src={logoAsset.url}
-              alt="PCM · Planejador de Manutenção"
-              className="relative h-9 w-9 rounded-lg object-cover ring-1 ring-primary/30"
+              alt="Grupo GPS · Planejador de Manutenção"
+              className="relative h-9 w-9 rounded-lg object-contain bg-background/40 ring-1 ring-primary/30"
+              loading="eager"
+              width={36}
+              height={36}
             />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="font-display text-sm font-bold tracking-wider">PCM</span>
+            <span className="font-display text-sm font-bold tracking-wider">Grupo GPS</span>
             <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-primary/80">
               Planejador · Manutenção
             </span>

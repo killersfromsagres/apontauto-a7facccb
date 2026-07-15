@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoAsset from "@/assets/gps-logo.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -33,13 +33,16 @@ export function AppHeader() {
           <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-70" />
           <img
             src={logoAsset.url}
-            alt="PCM · Planejador de Manutenção"
-            className="relative h-10 w-10 rounded-lg object-cover ring-1 ring-primary/30"
+            alt="Grupo GPS · Planejador de Manutenção"
+            className="relative h-10 w-10 rounded-lg object-contain bg-background/40 ring-1 ring-primary/30"
+            loading="eager"
+            width={40}
+            height={40}
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
           <h1 className="truncate font-display text-base font-bold tracking-wide">
-            PCM <span className="text-gradient">· Planejador de Manutenção</span>
+            Grupo GPS <span className="text-gradient">· Planejador de Manutenção</span>
           </h1>
           <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
             &lt;/&gt; Dev Gabriel Vitor
