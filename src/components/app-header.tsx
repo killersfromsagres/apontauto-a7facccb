@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/gps-logo.png.asset.json";
+import logoAsset from "@/assets/pm-rank.png.asset.json";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -30,19 +30,19 @@ export function AppHeader() {
       <SidebarTrigger />
       <div className="flex min-w-0 items-center gap-3">
         <div className="relative shrink-0">
-          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-primary to-primary-glow blur-md opacity-70" />
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/60 to-primary-glow/40 blur-lg opacity-70" />
           <img
             src={logoAsset.url}
-            alt="Grupo GPS · Planejador de Manutenção"
-            className="relative h-10 w-10 rounded-lg object-contain bg-background/40 ring-1 ring-primary/30"
+            alt="Planejador de Manutenção — insígnia"
+            className="relative h-11 w-11 object-contain drop-shadow-[0_0_8px_rgba(56,189,248,0.35)]"
             loading="eager"
-            width={40}
-            height={40}
+            width={44}
+            height={44}
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
           <h1 className="truncate font-display text-base font-bold tracking-wide">
-            Grupo GPS <span className="text-gradient">· Planejador de Manutenção</span>
+            <span className="text-gradient">Planejador de Manutenção</span>
           </h1>
           <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
             &lt;/&gt; Dev Gabriel Vitor
