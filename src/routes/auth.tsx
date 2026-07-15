@@ -146,7 +146,11 @@ function AuthPage() {
               />
             </div>
             <h1 className="-mt-1 text-center text-xl font-semibold tracking-tight text-white">
-              {mode === "signin" ? "Sistema Exclusivo" : "Criar sua conta"}
+              {mode === "signin" ? (
+                <>Sistema <span className="metallic-shine">Exclusivo</span></>
+              ) : (
+                "Criar sua conta"
+              )}
             </h1>
             <p className="mt-1 text-center text-sm text-white/60">
               {mode === "signin"
