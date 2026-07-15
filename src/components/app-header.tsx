@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/apontauto-logo.png.asset.json";
+const logoAsset = { url: "/apontauto-logo.png" };
 
 const ADMIN_EMAIL = "gabrielvlp33@gmail.com";
 
