@@ -55,6 +55,8 @@ export function AppHeader() {
             alt="Apont Auto — Sistema Automático de Apontamento"
             className="relative h-10 w-10 object-contain sm:h-12 sm:w-12"
             loading="eager"
+            decoding="async"
+            fetchPriority="high"
             width={48}
             height={48}
           />
