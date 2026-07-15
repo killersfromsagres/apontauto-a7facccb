@@ -881,32 +881,32 @@ function CalendarView({
   const daySelected = selected ? eventsByDay.get(selected) ?? [] : [];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-      <GlassCard>
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={() => change(-1)}>
-              <ChevronLeft className="h-4 w-4" />
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,480px)_1fr]">
+      <GlassCard className="p-3 sm:p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" onClick={() => change(-1)} className="h-7 w-7">
+              <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <p className="min-w-40 text-center font-semibold">
+            <p className="min-w-32 text-center text-sm font-semibold">
               {MONTHS_FULL[month]} <span className="text-muted-foreground">{year}</span>
             </p>
-            <Button variant="outline" size="icon" onClick={() => change(1)}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={() => change(1)} className="h-7 w-7">
+              <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
             Hoje
           </Button>
         </div>
-        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-            <div key={d} className="py-1">{d}</div>
+            <div key={d} className="py-0.5">{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5">
           {cells.map((c, i) => {
-            if (!c.date) return <div key={i} className="aspect-square rounded-lg" />;
+            if (!c.date) return <div key={i} className="aspect-square rounded-md" />;
             const evs = eventsByDay.get(c.date) ?? [];
             const isToday = c.date === todayISO();
             const isSel = c.date === selected;
@@ -920,18 +920,18 @@ function CalendarView({
                 key={i}
                 onClick={() => setSelected(c.date)}
                 className={cn(
-                  "relative flex aspect-square flex-col items-center justify-start gap-1 rounded-lg border border-transparent p-1.5 text-xs transition",
+                  "relative flex aspect-square flex-col items-center justify-start gap-0.5 rounded-md border border-transparent p-1 text-[11px] transition",
                   "hover:border-border/60 hover:bg-muted/30",
                   isToday && "ring-1 ring-primary/60",
                   isSel && "border-primary/70 bg-primary/10",
                 )}
               >
-                <span className={cn("font-medium", isToday && "text-primary")}>{c.day}</span>
+                <span className={cn("font-medium leading-none", isToday && "text-primary")}>{c.day}</span>
                 {evs.length > 0 && worstStatus && (
                   <div className="flex flex-wrap items-center justify-center gap-0.5">
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusMeta[worstStatus].dot)} />
                     {evs.length > 1 && (
-                      <span className="text-[9px] text-muted-foreground">{evs.length}</span>
+                      <span className="text-[8px] leading-none text-muted-foreground">{evs.length}</span>
                     )}
                   </div>
                 )}
@@ -940,6 +940,7 @@ function CalendarView({
           })}
         </div>
       </GlassCard>
+
 
       <GlassCard>
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
