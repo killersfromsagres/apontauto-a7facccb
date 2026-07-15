@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ApontamentoModule } from "@/components/apontamento-module";
 
-export const Route = createFileRoute("/jardinagem")({
+export const Route = createFileRoute("/_authenticated/jardinagem")({
   component: () => (
     <ApontamentoModule
       titulo="Jardinagem"

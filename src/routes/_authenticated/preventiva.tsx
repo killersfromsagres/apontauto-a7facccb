@@ -37,7 +37,7 @@ import {
 } from "@/lib/preventiva/processor";
 import { getSettings } from "@/lib/settings";
 
-export const Route = createFileRoute("/preventiva")({ component: Page });
+export const Route = createFileRoute("/_authenticated/preventiva")({ component: Page });
 
 function Page() {
   const [fileName, setFileName] = useState<string | null>(null);

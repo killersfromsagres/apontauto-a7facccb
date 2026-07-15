@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_settings: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reminders: {
+        Row: {
+          anexos: Json
+          categoria: string
+          concluido: boolean
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          observacoes: string | null
+          prioridade: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          anexos?: Json
+          categoria: string
+          concluido?: boolean
+          created_at?: string
+          created_by?: string | null
+          data: string
+          id?: string
+          observacoes?: string | null
+          prioridade?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          anexos?: Json
+          categoria?: string
+          concluido?: boolean
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacoes?: string | null
+          prioridade?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

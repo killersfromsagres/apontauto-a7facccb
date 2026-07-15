@@ -1,9 +1,30 @@
+import { useEffect, useState } from "react";
+import { LogOut } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 export function AppHeader() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+      setEmail(s?.user?.email ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border/60 bg-background/60 px-4 backdrop-blur-xl">
       <SidebarTrigger />
@@ -17,8 +38,16 @@ export function AppHeader() {
         </div>
       </div>
       <div className="ml-auto flex items-center gap-1">
+        {email && (
+          <span className="hidden max-w-[180px] truncate text-xs text-muted-foreground md:inline">
+            {email}
+          </span>
+        )}
         <SlaBell />
         <ThemeToggle />
+        <Button variant="ghost" size="icon" aria-label="Sair" onClick={signOut}>
+          <LogOut className="h-5 w-5" />
+        </Button>
       </div>
     </header>
   );
