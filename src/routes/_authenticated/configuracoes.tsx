@@ -36,12 +36,14 @@ function Page() {
 
   const commit = () => {
     setSaved(draft);
+    setDirty(false);
     toast.success("Configurações salvas");
   };
 
   const reset = () => {
     setDraft(DEFAULT_SETTINGS);
     setSaved(DEFAULT_SETTINGS);
+    setDirty(false);
     toast.success("Configurações restauradas para o padrão");
   };
 
