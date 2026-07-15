@@ -37,6 +37,8 @@ const adminItem = { title: "Usuários", url: "/usuarios", icon: UserPlus };
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
+  const { isAdmin } = useIsAdmin();
+  const items = isAdmin ? [...baseItems, adminItem] : baseItems;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
