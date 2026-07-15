@@ -1,13 +1,10 @@
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import type { ReactNode, CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Liquid Glass panel (iOS 26 language):
- *  - translucent frosted fill (glass-surface utility handles blur + refraction)
- *  - top edge highlight simulating light refraction (::before)
- *  - continuous large radius (squircle-like)
- *  - depth from layered blur, never from solid color fills
+ * Liquid Glass panel — CSS-only entrance animation (sem framer-motion)
+ * para evitar overhead de JS quando o componente é usado em grande
+ * quantidade nas dashboards.
  */
 export function GlassCard({
   children,
@@ -18,14 +15,14 @@ export function GlassCard({
   className?: string;
   delay?: number;
 }) {
+  const style: CSSProperties | undefined =
+    delay > 0 ? { animationDelay: `${delay}s` } : undefined;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay, ease: "easeOut" }}
+    <div
+      style={style}
       className={cn(
-        "glass-surface relative overflow-hidden rounded-2xl p-4 sm:rounded-3xl sm:p-6",
-        // top refraction highlight
+        "glass-surface animate-fade-in relative overflow-hidden rounded-2xl p-4 sm:rounded-3xl sm:p-6",
         "before:pointer-events-none before:absolute before:inset-x-4 before:top-0 before:h-px",
         "before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent",
         "transition-shadow duration-300 hover:shadow-elegant",
@@ -33,6 +30,6 @@ export function GlassCard({
       )}
     >
       <div className="relative z-10">{children}</div>
-    </motion.div>
+    </div>
   );
 }
