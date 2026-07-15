@@ -49,12 +49,10 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === "signup") {
-      const okLen = password.length === 6;
-      const onlyDigits = /^[0-9]{6}$/.test(password);
-      const onlyLetters = /^[a-zA-Z]{6}$/.test(password);
-      if (!okLen || (!onlyDigits && !onlyLetters)) {
+      const valid = /^[a-zA-Z0-9]{6,}$/.test(password);
+      if (!valid) {
         triggerShake();
-        toast.error("A senha deve ter exatamente 6 caracteres — só números ou só letras.");
+        toast.error("A senha deve ter pelo menos 6 caracteres (apenas números ou letras).");
         return;
       }
     }
