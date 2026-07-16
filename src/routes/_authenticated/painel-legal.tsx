@@ -632,10 +632,9 @@ function ListView({
                       )}
                     >
                       <Td>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
-                          <TaskTypeIcon titulo={it.titulo} />
-                          <span className="font-medium">{it.titulo}</span>
+                        <div className="flex items-start gap-2">
+                          <span className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
+                          <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} />
                         </div>
                       </Td>
                       <Td><CompanyName name={it.empresa} /></Td>
