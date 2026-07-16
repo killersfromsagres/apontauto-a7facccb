@@ -1196,7 +1196,18 @@ function Dashboard({
                 return (
                   <div
                     key={r.os}
-                    className="group animate-fade-in flex max-h-[220px] flex-col rounded-xl border border-red-500/30 bg-background/60 p-3 shadow-sm transition-shadow hover:shadow-md"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedPriority(r)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedPriority(r);
+                      }
+                    }}
+                    className={`priority-card group animate-fade-in flex max-h-[220px] flex-col rounded-xl border border-red-500/30 bg-background/60 p-3 focus:outline-none focus:ring-2 focus:ring-red-500/60 ${
+                      nivel >= 2 ? "priority-card-alto" : nivel === 1 ? "priority-card-medio" : ""
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex min-w-0 flex-1 flex-col">
@@ -1214,26 +1225,30 @@ function Dashboard({
                             {dias}d
                           </Badge>
                         </div>
-                        <ScrollArea className="mt-1 max-h-[140px] scroll-smooth pr-1">
-                          <div className="text-sm font-medium" title={r.nome}>
-                            {r.nome}
-                          </div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {r.predio} · {r.andar} · {r.espaco}
-                          </div>
-                          <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
-                            <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-                            <span className="whitespace-pre-wrap break-words">
-                              {r.motivo_prioridade}
-                            </span>
-                          </div>
-                        </ScrollArea>
+                        <div className="mt-1 line-clamp-2 text-sm font-medium" title={r.nome}>
+                          {r.nome}
+                        </div>
+                        <div className="mt-0.5 text-xs text-muted-foreground">
+                          {r.predio} · {r.andar} · {r.espaco}
+                        </div>
+                        <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
+                          <span className="line-clamp-2 break-words">
+                            {r.motivo_prioridade}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                          Clique para ver detalhes
+                        </div>
                       </div>
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 flex-none"
-                        onClick={() => onFinalizar(r)}
+                        className="relative z-10 h-7 flex-none"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFinalizar(r);
+                        }}
                         title="Marcar como finalizado"
                       >
                         <CheckCircle2 className="h-4 w-4 text-emerald-500" />
