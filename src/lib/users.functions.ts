@@ -73,6 +73,25 @@ export const getMyAllowedMenus = createServerFn({ method: "GET" })
   });
 
 /**
+ * Retorna admin + menus permitidos numa única chamada (metade dos requests
+ * na inicialização do layout autenticado).
+ */
+export const getMyAccess = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [adminRes, menusRes] = await Promise.all([
+      context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+      context.supabase.rpc("get_my_allowed_menus"),
+    ]);
+    if (adminRes.error) throw new Error(adminRes.error.message);
+    if (menusRes.error) throw new Error(menusRes.error.message);
+    return {
+      isAdmin: Boolean(adminRes.data),
+      allowed: (menusRes.data as string[] | null) ?? null,
+    };
+  });
+
+/**
  * Cria um novo usuário no backend com e-mail já confirmado e atribui o papel escolhido.
  */
 export const createAppUser = createServerFn({ method: "POST" })
