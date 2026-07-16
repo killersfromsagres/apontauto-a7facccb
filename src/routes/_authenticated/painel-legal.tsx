@@ -184,6 +184,30 @@ function TaskNameButton({
   );
 }
 
+/** Marcações persistentes de itens (compartilhado por Lista e Calendário). */
+function useMarkedLegal() {
+  const [marked, setMarked] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem("legal-calendar-marked");
+      return raw ? new Set<string>(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const persist = (s: Set<string>) => {
+    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
+  };
+  const toggleMark = (id: string) =>
+    setMarked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      persist(next);
+      return next;
+    });
+  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
+  return { marked, toggleMark, clearMarks };
+}
+
+
 /* -------------------------------------------------------------------------- */
 /*  Página                                                                    */
 /* -------------------------------------------------------------------------- */
@@ -201,6 +225,8 @@ function PainelLegalPage() {
   const [editing, setEditing] = useState<LegalItem | null>(null);
   const [attachItem, setAttachItem] = useState<LegalItem | null>(null);
   const { isAdmin } = useIsAdmin();
+  const { marked, toggleMark, clearMarks } = useMarkedLegal();
+  const [onlyMarked, setOnlyMarked] = useState(false);
 
 
   const { data: items = [], isLoading } = useQuery({
@@ -225,6 +251,7 @@ function PainelLegalPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((it) => {
+      if (onlyMarked && !marked.has(it.id)) return false;
       if (empresaFilter !== "todas" && it.empresa !== empresaFilter) return false;
       if (periodicidadeFilter !== "todas" && it.periodicidade !== periodicidadeFilter) return false;
       if (statusFilter !== "todos" && statusOf(it) !== statusFilter) return false;
@@ -232,7 +259,7 @@ function PainelLegalPage() {
         return false;
       return true;
     });
-  }, [items, search, empresaFilter, periodicidadeFilter, statusFilter]);
+  }, [items, search, empresaFilter, periodicidadeFilter, statusFilter, onlyMarked, marked]);
 
   const alerts = useLegalAlerts(items);
 
@@ -310,6 +337,21 @@ function PainelLegalPage() {
 
         <div className="flex flex-wrap items-center gap-1.5">
           <AlertsBell alerts={alerts} onFocus={(id) => document.getElementById(`legal-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+          <Button
+            variant={onlyMarked ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyMarked((v) => !v)}
+            className="h-8 px-2 sm:px-3"
+            title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
+          >
+            <Star className={cn("h-3.5 w-3.5 sm:mr-1.5", onlyMarked && "fill-amber-400 text-amber-400")} />
+            <span className="hidden sm:inline">{onlyMarked ? "Só marcadas" : "Todas"}</span>
+            {marked.size > 0 && (
+              <span className="ml-1 rounded-md bg-amber-400/20 px-1 text-[10px] font-bold text-amber-400">
+                {marked.size}
+              </span>
+            )}
+          </Button>
           <div className="flex overflow-hidden rounded-lg border border-border/60 bg-card/40">
             <button
               onClick={() => setView("lista")}
@@ -445,13 +487,24 @@ function PainelLegalPage() {
           setYear={setYear}
           group={group}
           isAdmin={isAdmin}
+          marked={marked}
+          onToggleMark={toggleMark}
           onComplete={handleComplete}
           onEdit={openEdit}
           onDelete={handleDelete}
           onAttach={setAttachItem}
         />
       ) : (
-        <CalendarView items={filtered} onOpenItem={setAttachItem} onComplete={handleComplete} />
+        <CalendarView
+          items={filtered}
+          onOpenItem={setAttachItem}
+          onComplete={handleComplete}
+          marked={marked}
+          onToggleMark={toggleMark}
+          onClearMarks={clearMarks}
+          onlyMarked={onlyMarked}
+          onToggleOnlyMarked={() => setOnlyMarked((v) => !v)}
+        />
       )}
 
       <LegalAttachmentsModal
@@ -550,6 +603,8 @@ function ListView({
   setYear,
   group,
   isAdmin,
+  marked,
+  onToggleMark,
   onComplete,
   onEdit,
   onDelete,
@@ -562,6 +617,8 @@ function ListView({
   setYear: (y: number) => void;
   group: "nenhum" | "empresa" | "periodicidade";
   isAdmin: boolean;
+  marked: Set<string>;
+  onToggleMark: (id: string) => void;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -668,6 +725,8 @@ function ListView({
                           item={it}
                           attachCount={attCounts[it.id] ?? 0}
                           isAdmin={isAdmin}
+                          isMarked={marked.has(it.id)}
+                          onToggleMark={onToggleMark}
                           onComplete={onComplete}
                           onEdit={onEdit}
                           onDelete={onDelete}
@@ -749,6 +808,8 @@ function ListView({
                         item={it}
                         attachCount={attCounts[it.id] ?? 0}
                         isAdmin={isAdmin}
+                        isMarked={marked.has(it.id)}
+                        onToggleMark={onToggleMark}
                         onComplete={onComplete}
                         onEdit={onEdit}
                         onDelete={onDelete}
@@ -835,6 +896,8 @@ function RowActions({
   item,
   attachCount,
   isAdmin,
+  isMarked,
+  onToggleMark,
   onComplete,
   onEdit,
   onDelete,
@@ -843,6 +906,8 @@ function RowActions({
   item: LegalItem;
   attachCount: number;
   isAdmin: boolean;
+  isMarked: boolean;
+  onToggleMark: (id: string) => void;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -850,6 +915,19 @@ function RowActions({
 }) {
   return (
     <div className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => onToggleMark(item.id)}
+        title={isMarked ? "Desmarcar" : "Marcar"}
+        className={cn(
+          "grid h-8 w-8 place-items-center rounded-md border transition",
+          isMarked
+            ? "border-amber-400/60 bg-amber-400/15 text-amber-400"
+            : "border-transparent text-muted-foreground hover:border-amber-400/40 hover:text-amber-400",
+        )}
+      >
+        <Star className={cn("h-4 w-4", isMarked && "fill-amber-400")} />
+      </button>
       <Button size="sm" variant="ghost" onClick={() => onComplete(item)} title="Marcar como concluído">
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
       </Button>
@@ -887,41 +965,28 @@ function CalendarView({
   items,
   onOpenItem,
   onComplete,
+  marked,
+  onToggleMark,
+  onClearMarks,
+  onlyMarked,
+  onToggleOnlyMarked,
 }: {
   items: LegalItem[];
   onOpenItem: (it: LegalItem) => void;
   onComplete: (it: LegalItem) => void;
+  marked: Set<string>;
+  onToggleMark: (id: string) => void;
+  onClearMarks: () => void;
+  onlyMarked: boolean;
+  onToggleOnlyMarked: () => void;
 }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState<string | null>(null);
-  const [onlyMarked, setOnlyMarked] = useState(false);
-  const [marked, setMarked] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = window.localStorage.getItem("legal-calendar-marked");
-      return raw ? new Set<string>(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
-  });
 
-  const persist = (s: Set<string>) => {
-    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
-  };
-  const toggleMark = (id: string) => {
-    setMarked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      persist(next);
-      return next;
-    });
-  };
-  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
+  const visibleItems = items;
 
-  const visibleItems = useMemo(
-    () => (onlyMarked ? items.filter((it) => marked.has(it.id)) : items),
-    [items, onlyMarked, marked],
-  );
 
   const eventsByDay = useMemo(() => {
     const m = new Map<string, LegalItem[]>();
@@ -1042,7 +1107,7 @@ function CalendarView({
             <Button
               size="sm"
               variant={onlyMarked ? "default" : "outline"}
-              onClick={() => setOnlyMarked((v) => !v)}
+              onClick={onToggleOnlyMarked}
               className="h-8"
               title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
             >
@@ -1050,7 +1115,7 @@ function CalendarView({
               {onlyMarked ? "Só marcadas" : "Todas"}
             </Button>
             {markedCount > 0 && (
-              <Button size="sm" variant="ghost" onClick={clearMarks} className="h-8" title="Limpar marcações">
+              <Button size="sm" variant="ghost" onClick={onClearMarks} className="h-8" title="Limpar marcações">
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -1087,7 +1152,7 @@ function CalendarView({
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => toggleMark(it.id)}
+                        onClick={() => onToggleMark(it.id)}
                         title={isMarked ? "Desmarcar" : "Marcar"}
                         className={cn(
                           "grid h-7 w-7 place-items-center rounded-md border transition",
