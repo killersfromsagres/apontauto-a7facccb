@@ -225,6 +225,8 @@ function PainelLegalPage() {
   const [editing, setEditing] = useState<LegalItem | null>(null);
   const [attachItem, setAttachItem] = useState<LegalItem | null>(null);
   const { isAdmin } = useIsAdmin();
+  const { marked, toggleMark, clearMarks } = useMarkedLegal();
+  const [onlyMarked, setOnlyMarked] = useState(false);
 
 
   const { data: items = [], isLoading } = useQuery({
