@@ -992,7 +992,22 @@ function TaludeDetail({
             <SelectItem value="finalizado">Finalizado</SelectItem>
           </SelectContent>
         </Select>
+        <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={onCycleStatus} disabled={saving}>
+          Avançar status (ciclar cor)
+        </Button>
       </div>
+
+      <div className="rounded-lg border border-border/60 bg-muted/30 p-2">
+        <Label className="text-[10px] uppercase">Avançar data ({talude.status === "finalizado" ? "próxima" : talude.status === "em_execucao" ? "conclusão" : "programada"})</Label>
+        <div className="mt-1 grid grid-cols-4 gap-1">
+          {[1, 7, 30, talude.periodicidade_dias || 180].map((d, i) => (
+            <Button key={i} size="sm" variant="outline" onClick={() => onBumpDate(d)} disabled={saving}>
+              +{d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
 
       <div>
         <Label className="text-[10px] uppercase">Nome / identificação</Label>
