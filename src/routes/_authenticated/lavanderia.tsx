@@ -318,6 +318,26 @@ function LavanderiaPage() {
     downloadBlob(blob, `LAVANDERIA_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  const [clearing, setClearing] = useState(false);
+  async function clearAll() {
+    setClearing(true);
+    try {
+      const del1 = await supabase.from("lavanderia_eventos").delete().not("codigo", "is", null);
+      if (del1.error) throw del1.error;
+      const del2 = await supabase.from("lavanderia_pecas").delete().not("codigo", "is", null);
+      if (del2.error) throw del2.error;
+      const del3 = await supabase.from("lavanderia_colaboradores").delete().not("matricula", "is", null);
+      if (del3.error) throw del3.error;
+      toast.success("Conteúdo da lavanderia apagado com sucesso.");
+      await refresh();
+    } catch (e) {
+      console.error(e);
+      toast.error((e as Error)?.message ?? "Falha ao limpar conteúdo");
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <PageShell
       title="Controle de Lavanderia"
