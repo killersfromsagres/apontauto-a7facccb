@@ -65,8 +65,12 @@ const CATEGORIAS: {
     label: "Jardinagem",
     icon: Trees,
     accent: "text-green-600",
-    options: {},
+    // Jornada única 08:00–17:00 para garantir que todos os colaboradores
+    // encerrem o expediente às 17:00.
+    options: { workBlocks: [[8 * 60, 17 * 60]] },
+    hint: "Jornada 08:00–17:00 — todos os colaboradores encerram às 17:00.",
   },
+
 ];
 
 const emptyState = (): CategoriaState => ({
