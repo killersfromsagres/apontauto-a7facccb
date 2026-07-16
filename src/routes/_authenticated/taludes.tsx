@@ -59,7 +59,7 @@ import {
   deleteTalude,
   verifyAndRepairMap,
 } from "@/lib/taludes.functions";
-import { STATUS_META, exportMapPNG, type TaludeStatus } from "@/lib/taludes/export";
+import { STATUS_META, type TaludeStatus } from "@/lib/taludes/constants";
 import referenceMap from "@/assets/demarchi-taludes.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
@@ -518,6 +518,7 @@ function TaludesPage() {
     if (!map || !imageUrl) return;
     try {
       toast.info("Gerando PNG…");
+      const { exportMapPNG } = await import("@/lib/taludes/export");
       const blob = await exportMapPNG({
         imageUrl,
         mapName: map.nome,

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
+
 import { toast } from "sonner";
 import {
   Plus,
@@ -443,27 +443,23 @@ function PainelLegalPage() {
           </Select>
         </div>
 
-        <AnimatePresence>
-          {suggestGroup && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200"
-            >
-              <FilterIcon className="h-4 w-4" />
-              <span>
-                A lista está grande ({filtered.length} itens). Que tal agrupar?
-              </span>
-              <Button size="sm" variant="secondary" onClick={() => setGroup("empresa")}>
-                Por empresa
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => setGroup("periodicidade")}>
-                Por periodicidade
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {suggestGroup && (
+          <div
+            className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200 animate-in fade-in slide-in-from-top-1 duration-200"
+          >
+            <FilterIcon className="h-4 w-4" />
+            <span>
+              A lista está grande ({filtered.length} itens). Que tal agrupar?
+            </span>
+            <Button size="sm" variant="secondary" onClick={() => setGroup("empresa")}>
+              Por empresa
+            </Button>
+            <Button size="sm" variant="secondary" onClick={() => setGroup("periodicidade")}>
+              Por periodicidade
+            </Button>
+          </div>
+        )}
+
 
         {group !== "nenhum" && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
