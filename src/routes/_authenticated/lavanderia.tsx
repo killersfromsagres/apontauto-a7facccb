@@ -455,12 +455,12 @@ function LavanderiaPage() {
 
         <TabsContent value="dashboard">
           <DashboardView
-            pecas={pecasFull}
-            totalHigienizacao={totalHigienizacao}
-            totalAtrasadas={totalAtrasadas}
-            totalRetornadas={totalRetornadas}
+            eventos={eventos}
+            pecaByCodigo={pecaByCodigo}
+            colabByMat={colabByMat}
           />
         </TabsContent>
+
       </Tabs>
     </PageShell>
   );
