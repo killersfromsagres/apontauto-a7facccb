@@ -621,6 +621,14 @@ function BackorderPage() {
             backorder={backorderAbertas}
             finalizadas={finalizadas}
             targetPct={targetPct}
+            priorityRows={priorityRows}
+            lastScanAt={config.last_scan_at}
+            scanning={scanning}
+            onRescan={() => runScan(config, rows, false)}
+            onExportPriorities={exportPrioridades}
+            onPrintPriorities={printPrioridades}
+            onOpenConfig={() => setConfigOpen(true)}
+            onFinalizar={(r) => toggleFinalizado(r, true)}
           />
         </TabsContent>
 
@@ -628,6 +636,12 @@ function BackorderPage() {
           <PowerBIView />
         </TabsContent>
       </Tabs>
+      <PriorityConfigDialog
+        open={configOpen}
+        onOpenChange={setConfigOpen}
+        config={config}
+        onSave={saveConfig}
+      />
     </PageShell>
   );
 }
