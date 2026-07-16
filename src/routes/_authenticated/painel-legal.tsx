@@ -205,6 +205,8 @@ function useMarkedLegal() {
     });
   const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
   return { marked, toggleMark, clearMarks };
+}
+
 
 /* -------------------------------------------------------------------------- */
 /*  Página                                                                    */
