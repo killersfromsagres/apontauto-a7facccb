@@ -22,7 +22,6 @@ import {
   equipesRelacionadas,
   EQUIPE_COLOR,
   type Equipe,
-  type TriagedOS,
 } from "@/lib/preventiva/triage";
 import { sliceIntoWeeks, weeksUntilEndOfMonth } from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
@@ -350,6 +349,3 @@ function ProgramacaoPage() {
   );
 }
 
-export function _forTypecheck(_: TriagedOS) {
-  return _;
-}

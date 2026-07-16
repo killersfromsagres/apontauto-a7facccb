@@ -26,7 +26,8 @@ import { useAllowedMenus } from "@/hooks/use-allowed-menus";
 
 const baseItems = [
   { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { key: "preventiva", title: "Programação Preventiva", url: "/preventiva", icon: CalendarClock },
+  { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
+  { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
   { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
   { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
   { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
