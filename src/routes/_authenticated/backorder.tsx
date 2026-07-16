@@ -176,10 +176,17 @@ function BackorderPage() {
     setLoading(false);
   }, []);
 
+  const [assetsMap, setAssetsMap] = useState<AssetsMap>(new Map());
+  const loadAssets = useCallback(async () => {
+    const { data } = await supabase.from("assets_ref").select("ativo, denominacao");
+    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string }>) ?? []));
+  }, []);
+
   useEffect(() => {
     void loadConfig();
+    void loadAssets();
     void refresh();
-  }, [loadConfig, refresh]);
+  }, [loadConfig, loadAssets, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
