@@ -161,9 +161,9 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
         if (c.key === "ativo" && ativoNaoLocalizado) color = NAO_LOCALIZADO_COLOR;
 
         cell.font = {
-          name: APTOS_SEMIBOLD,
+          name: APTOS_EXTRABOLD,
           bold: true,
-          size: 13,
+          size: 15,
           color: { argb: color },
         };
         cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
@@ -174,7 +174,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
           right: { style: "thin", color: { argb: "FFBFBFBF" } },
         };
       });
-      row.height = 34;
+      row.height = 40;
       rowIdx++;
     }
   }
