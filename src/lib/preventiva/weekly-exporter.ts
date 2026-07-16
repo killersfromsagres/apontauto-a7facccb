@@ -14,21 +14,21 @@ const HEADER_BG_L2 = argbFromHex("#2B3095");
 const NAO_LOCALIZADO_COLOR = argbFromHex("#FF0000");
 
 const COLUMNS = [
-  { key: "os", label: "OS", width: 12 },
-  { key: "nome", label: "Nome", width: 34 },
-  { key: "predio", label: "Prédio", width: 12 },
-  { key: "andar", label: "Andar", width: 10 },
+  { key: "os", label: "OS", width: 10 },
+  { key: "nome", label: "Nome", width: 38 },
+  { key: "predio", label: "Prédio", width: 10 },
+  { key: "andar", label: "Andar", width: 9 },
   { key: "espaco", label: "Espaço", width: 22 },
-  { key: "atividade", label: "Atividade", width: 14 },
-  { key: "sla", label: "Término SLA", width: 14 },
+  { key: "atividade", label: "Atividade", width: 12 },
+  { key: "sla", label: "Término SLA", width: 13 },
   { key: "equipe", label: "Equipe", width: 22 },
   { key: "ativo", label: "Ativo", width: 22 },
-  { key: "outros", label: "Outros", width: 16 },
-  { key: "seg", label: "SEGUNDA", width: 8, day: 0 },
-  { key: "ter", label: "TERÇA", width: 8, day: 1 },
-  { key: "qua", label: "QUARTA", width: 8, day: 2 },
-  { key: "qui", label: "QUINTA", width: 8, day: 3 },
-  { key: "sex", label: "SEXTA", width: 8, day: 4 },
+  { key: "outros", label: "Outros", width: 14 },
+  { key: "seg", label: "SEGUNDA", width: 6, day: 0 },
+  { key: "ter", label: "TERÇA", width: 6, day: 1 },
+  { key: "qua", label: "QUARTA", width: 6, day: 2 },
+  { key: "qui", label: "QUINTA", width: 6, day: 3 },
+  { key: "sex", label: "SEXTA", width: 6, day: 4 },
 ];
 
 function textColorForBg(hex: string): string {
@@ -74,9 +74,9 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
   const titleCell = ws.getCell(1, 1);
   titleCell.value = `${input.titulo}  ·  ${input.week.label}`;
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG_L1 } };
-  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 22, color: { argb: "FFFFFFFF" } };
+  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 16, color: { argb: "FFFFFFFF" } };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 40;
+  ws.getRow(1).height = 32;
 
   // Linha 2 — cabeçalho
   const headerRow = ws.getRow(2);
@@ -88,7 +88,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
-      size: isDay ? 28 : 20,
+      size: isDay ? 12 : 11,
       color: { argb: "FFFFFFFF" },
     };
     cell.alignment = {
@@ -104,7 +104,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       right: { style: "thin", color: { argb: "FF000000" } },
     };
   });
-  headerRow.height = 90;
+  headerRow.height = 70;
 
   // Corpo — por equipe na ordem obrigatória
   const atividade = input.atividadePadrao ?? "Preventiva";
