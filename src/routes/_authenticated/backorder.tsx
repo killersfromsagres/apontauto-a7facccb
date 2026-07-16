@@ -16,7 +16,7 @@ import {
   Settings2,
   Printer,
   ShieldAlert,
-  Sparkles,
+  
   TrendingDown,
   TrendingUp,
   CheckCircle2,
