@@ -74,9 +74,9 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
   const titleCell = ws.getCell(1, 1);
   titleCell.value = `${input.titulo}  ·  ${input.week.label}`;
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG_L1 } };
-  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 20, color: { argb: "FFFFFFFF" } };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 32;
+  ws.getRow(1).height = 38;
 
   // Linha 2 — cabeçalho
   const headerRow = ws.getRow(2);
@@ -88,7 +88,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
-      size: isDay ? 12 : 11,
+      size: isDay ? 14 : 13,
       color: { argb: "FFFFFFFF" },
     };
     cell.alignment = {
@@ -104,7 +104,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       right: { style: "thin", color: { argb: "FF000000" } },
     };
   });
-  headerRow.height = 70;
+  headerRow.height = 80;
 
   // Corpo — por equipe na ordem obrigatória
   const atividade = input.atividadePadrao ?? "Preventiva";
