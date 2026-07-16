@@ -323,6 +323,7 @@ function BackorderPage() {
         if (error) throw error;
       }
       toast.success(`Base de Ativos atualizada: ${parsed.length} registros.`);
+      await loadAssets();
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Falha ao importar Ativos");
