@@ -725,6 +725,8 @@ function ListView({
                           item={it}
                           attachCount={attCounts[it.id] ?? 0}
                           isAdmin={isAdmin}
+                          isMarked={marked.has(it.id)}
+                          onToggleMark={onToggleMark}
                           onComplete={onComplete}
                           onEdit={onEdit}
                           onDelete={onDelete}
