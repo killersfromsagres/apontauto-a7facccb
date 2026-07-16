@@ -140,6 +140,19 @@ function TaludesPage() {
     }
   }, [mapsQuery.data, selectedMapId]);
 
+  // Migração de nome legado do mapa de referência
+  useEffect(() => {
+    const legacy = mapsQuery.data?.find(
+      (m: { id: string; nome: string }) => m.nome === "DEMARCHI — Referência",
+    );
+    if (!legacy) return;
+    supabase
+      .from("talude_maps")
+      .update({ nome: "Mapa site Sherwin Williams - Demarchi" })
+      .eq("id", legacy.id)
+      .then(() => qc.invalidateQueries({ queryKey: ["talude-maps"] }));
+  }, [mapsQuery.data, qc]);
+
   const detailQuery = useQuery({
     queryKey: ["talude-map-detail", selectedMapId],
     queryFn: () => detailFn({ data: { id: selectedMapId! } }),
