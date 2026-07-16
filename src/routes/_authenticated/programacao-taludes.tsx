@@ -63,6 +63,12 @@ import {
   type ClimaConfig,
 } from "@/lib/taludes-programacao/clima";
 import { exportProgramacaoXLSX, type ProgRow } from "@/lib/taludes-programacao/export";
+import {
+  listarEvidencias,
+  registrarEvidencia,
+  removerEvidencia,
+  type ChuvaEvidencia,
+} from "@/lib/taludes-programacao/evidencias";
 
 export const Route = createFileRoute("/_authenticated/programacao-taludes")({
   head: () => ({
