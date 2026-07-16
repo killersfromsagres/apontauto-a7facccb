@@ -353,6 +353,36 @@ function LavanderiaPage() {
           <Button onClick={downloadExcel} disabled={pecasFull.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar planilha Excel
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={clearing || importing}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {clearing ? "Limpando…" : "Limpar conteúdo"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todo o conteúdo da lavanderia?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação remove permanentemente a matriz de colaboradores, as peças cadastradas
+                  e todo o histórico de movimentação. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void clearAll()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sim, apagar tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="ghost" size="icon" onClick={() => void refresh()} title="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
