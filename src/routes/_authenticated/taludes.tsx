@@ -615,14 +615,13 @@ function TaludesPage() {
         <div className="flex flex-wrap gap-2">
           {mapsQuery.data && mapsQuery.data.length > 0 && (
             <Select value={selectedMapId ?? undefined} onValueChange={setSelectedMapId}>
-              <SelectTrigger className="min-w-[200px]">
+              <SelectTrigger className="min-w-[280px] max-w-[420px]">
                 <SelectValue placeholder="Selecionar mapa" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[420px]">
                 {mapsQuery.data.map((m: { id: string; nome: string }) => (
                   <SelectItem key={m.id} value={m.id}>
-
-                    {m.nome}
+                    <span className="block truncate">{m.nome}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
