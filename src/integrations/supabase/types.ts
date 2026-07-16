@@ -234,6 +234,104 @@ export type Database = {
         }
         Relationships: []
       }
+      talude_maps: {
+        Row: {
+          created_at: string
+          id: string
+          image_height: number | null
+          image_path: string
+          image_width: number | null
+          nome: string
+          owner_id: string
+          periodicidade_dias: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_height?: number | null
+          image_path: string
+          image_width?: number | null
+          nome: string
+          owner_id: string
+          periodicidade_dias?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_height?: number | null
+          image_path?: string
+          image_width?: number | null
+          nome?: string
+          owner_id?: string
+          periodicidade_dias?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      taludes: {
+        Row: {
+          created_at: string
+          data_conclusao: string | null
+          data_execucao: string | null
+          data_programada: string | null
+          id: string
+          map_id: string
+          nome: string | null
+          numero: number
+          observacoes: string | null
+          owner_id: string
+          periodicidade_dias: number | null
+          polygon: Json
+          proxima_data: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_conclusao?: string | null
+          data_execucao?: string | null
+          data_programada?: string | null
+          id?: string
+          map_id: string
+          nome?: string | null
+          numero: number
+          observacoes?: string | null
+          owner_id: string
+          periodicidade_dias?: number | null
+          polygon?: Json
+          proxima_data?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_conclusao?: string | null
+          data_execucao?: string | null
+          data_programada?: string | null
+          id?: string
+          map_id?: string
+          nome?: string | null
+          numero?: number
+          observacoes?: string | null
+          owner_id?: string
+          periodicidade_dias?: number | null
+          polygon?: Json
+          proxima_data?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taludes_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "talude_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
