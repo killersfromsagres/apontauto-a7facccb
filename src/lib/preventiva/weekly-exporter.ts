@@ -115,7 +115,6 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     if (!bucket || bucket.os.length === 0) continue;
 
     const bg = argbFromHex(EQUIPE_COLOR[equipe]);
-    const textColor = textColorForBg(EQUIPE_COLOR[equipe]);
     const isClima = equipe.startsWith("CLIMAT");
 
     // Mapa OS→dia (índice 0..4)
@@ -160,28 +159,44 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       COLUMNS.forEach((c, i) => {
         const cell = row.getCell(i + 1);
         cell.value = values[c.key];
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
-        // Coluna OS = sempre branco. Coluna Ativo (se não localizado) = vermelho.
-        let color = c.key === "os" ? "FFFFFFFF" : textColor;
+
+        // Só a coluna OS carrega a cor da equipe; demais ficam sem preenchimento.
+        if (c.key === "os") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        }
+
+        let color = c.key === "os" ? "FFFFFFFF" : "FF000000";
         if (c.key === "ativo" && ativoNaoLocalizado) color = NAO_LOCALIZADO_COLOR;
+
         cell.font = {
           name: APTOS_SEMIBOLD,
           bold: true,
-          size: 11,
+          size: 13,
           color: { argb: color },
         };
         cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
         cell.border = {
-          top: { style: "hair", color: { argb: "FF000000" } },
-          bottom: { style: "hair", color: { argb: "FF000000" } },
-          left: { style: "hair", color: { argb: "FF000000" } },
-          right: { style: "hair", color: { argb: "FF000000" } },
+          top: { style: "thin", color: { argb: "FFBFBFBF" } },
+          bottom: { style: "thin", color: { argb: "FFBFBFBF" } },
+          left: { style: "thin", color: { argb: "FFBFBFBF" } },
+          right: { style: "thin", color: { argb: "FFBFBFBF" } },
         };
       });
-      row.height = 28;
+      row.height = 34;
       rowIdx++;
     }
   }
+
+  // Configuração de impressão — paisagem, ajustar à largura da página.
+  ws.pageSetup = {
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9, // A4
+    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    printTitlesRow: "1:2",
+  };
 
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], {
