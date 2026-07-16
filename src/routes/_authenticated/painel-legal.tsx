@@ -603,11 +603,11 @@ function ListView({
           )}
 
           {/* Tabela — desktop */}
-          <GlassCard className="hidden overflow-x-auto p-0 lg:block">
-            <table className="w-full min-w-[1200px] border-separate border-spacing-0 text-sm">
+          <GlassCard className="hidden overflow-x-auto p-2 lg:block">
+            <table className="w-full min-w-[1320px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <Th>Tarefa</Th>
+                  <Th className="min-w-[260px]">Tarefa</Th>
                   <Th>Empresa</Th>
                   <Th>Prédio</Th>
                   <Th>Última</Th>
