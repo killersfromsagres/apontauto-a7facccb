@@ -896,10 +896,36 @@ function CalendarView({
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState<string | null>(null);
+  const [onlyMarked, setOnlyMarked] = useState(false);
+  const [marked, setMarked] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem("legal-calendar-marked");
+      return raw ? new Set<string>(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+
+  const persist = (s: Set<string>) => {
+    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
+  };
+  const toggleMark = (id: string) => {
+    setMarked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      persist(next);
+      return next;
+    });
+  };
+  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
+
+  const visibleItems = useMemo(
+    () => (onlyMarked ? items.filter((it) => marked.has(it.id)) : items),
+    [items, onlyMarked, marked],
+  );
 
   const eventsByDay = useMemo(() => {
     const m = new Map<string, LegalItem[]>();
-    for (const it of items) {
+    for (const it of visibleItems) {
       const push = (key: string | null) => {
         if (!key) return;
         const d = new Date(key + "T00:00:00");
@@ -912,7 +938,7 @@ function CalendarView({
       push(it.agendamento);
     }
     return m;
-  }, [items, year, month]);
+  }, [visibleItems, year, month]);
 
   const first = new Date(year, month, 1);
   const startWeekday = first.getDay();
@@ -932,6 +958,7 @@ function CalendarView({
   };
 
   const daySelected = selected ? eventsByDay.get(selected) ?? [] : [];
+  const markedCount = marked.size;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,480px)_1fr]">
@@ -963,6 +990,7 @@ function CalendarView({
             const evs = eventsByDay.get(c.date) ?? [];
             const isToday = c.date === todayISO();
             const isSel = c.date === selected;
+            const hasMarked = evs.some((e) => marked.has(e.id));
             const worstStatus: LegalStatus | null = evs.length
               ? (evs.map((e) => statusOf(e)).sort((a, b) =>
                   order(b) - order(a),
@@ -980,6 +1008,9 @@ function CalendarView({
                 )}
               >
                 <span className={cn("font-medium leading-none", isToday && "text-primary")}>{c.day}</span>
+                {hasMarked && (
+                  <Star className="absolute right-0.5 top-0.5 h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                )}
                 {evs.length > 0 && worstStatus && (
                   <div className="flex flex-wrap items-center justify-center gap-0.5">
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusMeta[worstStatus].dot)} />
@@ -996,39 +1027,91 @@ function CalendarView({
 
 
       <GlassCard>
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {selected ? fmt(selected) : "Selecione um dia"}
-        </p>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {selected ? fmt(selected) : "Selecione um dia"}
+            </p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground">
+              <Star className="mr-1 inline h-3 w-3 fill-amber-400 text-amber-400" />
+              {markedCount} marcada(s)
+              {onlyMarked && " · exibindo só marcadas"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant={onlyMarked ? "default" : "outline"}
+              onClick={() => setOnlyMarked((v) => !v)}
+              className="h-8"
+              title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
+            >
+              {onlyMarked ? <EyeOff className="mr-1.5 h-3.5 w-3.5" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}
+              {onlyMarked ? "Só marcadas" : "Todas"}
+            </Button>
+            {markedCount > 0 && (
+              <Button size="sm" variant="ghost" onClick={clearMarks} className="h-8" title="Limpar marcações">
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+
         {!selected ? (
           <p className="text-sm text-muted-foreground">Clique num dia para ver as tarefas.</p>
         ) : daySelected.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma tarefa neste dia.</p>
+          <p className="text-sm text-muted-foreground">
+            {onlyMarked ? "Nenhuma tarefa marcada neste dia." : "Nenhuma tarefa neste dia."}
+          </p>
         ) : (
           <ul className="space-y-2">
-            {daySelected.map((it) => (
-              <li
-                key={it.id}
-                className="rounded-lg border border-border/50 bg-card/40 p-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{it.titulo}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {it.empresa || "—"} · {PERIODICIDADE_LABEL[it.periodicidade]}
-                    </p>
+            {daySelected.map((it) => {
+              const isMarked = marked.has(it.id);
+              return (
+                <li
+                  key={it.id}
+                  className={cn(
+                    "rounded-lg border p-3 transition",
+                    isMarked
+                      ? "border-amber-400/50 bg-amber-400/5 shadow-[0_0_0_1px_rgba(251,191,36,0.15)_inset]"
+                      : "border-border/50 bg-card/40",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{it.titulo}</p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {it.empresa || "—"} · {PERIODICIDADE_LABEL[it.periodicidade]}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleMark(it.id)}
+                        title={isMarked ? "Desmarcar" : "Marcar"}
+                        className={cn(
+                          "grid h-7 w-7 place-items-center rounded-md border transition",
+                          isMarked
+                            ? "border-amber-400/60 bg-amber-400/15 text-amber-400"
+                            : "border-border/60 text-muted-foreground hover:border-amber-400/50 hover:text-amber-400",
+                        )}
+                      >
+                        <Star className={cn("h-3.5 w-3.5", isMarked && "fill-amber-400")} />
+                      </button>
+                      <StatusBadge status={statusOf(it)} />
+                    </div>
                   </div>
-                  <StatusBadge status={statusOf(it)} />
-                </div>
-                <div className="mt-2 flex flex-wrap gap-1">
-                  <Button size="sm" variant="secondary" onClick={() => onComplete(it)}>
-                    <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Concluir
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => onOpenItem(it)}>
-                    <Paperclip className="mr-1 h-3.5 w-3.5" /> Certificados
-                  </Button>
-                </div>
-              </li>
-            ))}
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <Button size="sm" variant="secondary" onClick={() => onComplete(it)}>
+                      <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Concluir
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => onOpenItem(it)}>
+                      <Paperclip className="mr-1 h-3.5 w-3.5" /> Certificados
+                    </Button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </GlassCard>
