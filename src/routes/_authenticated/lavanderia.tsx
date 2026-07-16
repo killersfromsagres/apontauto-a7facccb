@@ -455,12 +455,12 @@ function LavanderiaPage() {
 
         <TabsContent value="dashboard">
           <DashboardView
-            pecas={pecasFull}
-            totalHigienizacao={totalHigienizacao}
-            totalAtrasadas={totalAtrasadas}
-            totalRetornadas={totalRetornadas}
+            eventos={eventos}
+            pecaByCodigo={pecaByCodigo}
+            colabByMat={colabByMat}
           />
         </TabsContent>
+
       </Tabs>
     </PageShell>
   );
@@ -757,23 +757,79 @@ function GiroView({ pecas }: { pecas: LavExportPeca[] }) {
 
 const PIE_COLORS = ["#2B3095", "#0ea5e9", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#14b8a6"];
 
+type PeriodoTipo = "tudo" | "semana" | "mes" | "custom";
+
 function DashboardView({
-  pecas,
-  totalHigienizacao,
-  totalAtrasadas,
-  totalRetornadas,
+  eventos,
+  pecaByCodigo,
+  colabByMat,
 }: {
-  pecas: LavExportPeca[];
-  totalHigienizacao: number;
-  totalAtrasadas: number;
-  totalRetornadas: number;
+  eventos: EvRow[];
+  pecaByCodigo: Map<string, PecaRow>;
+  colabByMat: Map<string, ColabRow>;
 }) {
   const dashRef = useRef<HTMLDivElement>(null);
+  const [periodo, setPeriodo] = useState<PeriodoTipo>("tudo");
+  const [dtInicio, setDtInicio] = useState<string>("");
+  const [dtFim, setDtFim] = useState<string>("");
+
+  const range = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const toISO = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    if (periodo === "semana") {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 6);
+      return { ini: toISO(start), fim: toISO(today) };
+    }
+    if (periodo === "mes") {
+      const start = new Date(today);
+      start.setDate(start.getDate() - 29);
+      return { ini: toISO(start), fim: toISO(today) };
+    }
+    if (periodo === "custom" && dtInicio && dtFim) {
+      return { ini: dtInicio, fim: dtFim };
+    }
+    return null;
+  }, [periodo, dtInicio, dtFim]);
+
+  const eventosFiltrados = useMemo(() => {
+    if (!range) return eventos;
+    return eventos.filter((e) => e.data >= range.ini && e.data <= range.fim);
+  }, [eventos, range]);
+
+  const states = useMemo(() => computePecaStates(eventosFiltrados), [eventosFiltrados]);
+
+  const pecas: LavExportPeca[] = useMemo(() => {
+    const list: LavExportPeca[] = [];
+    for (const [codigo, s] of states) {
+      const peca = pecaByCodigo.get(codigo);
+      const colab = peca?.matricula ? colabByMat.get(peca.matricula) : undefined;
+      list.push({
+        ...s,
+        matricula: peca?.matricula ?? null,
+        nome: colab?.nome ?? "Não cadastrado",
+        tipoPeca: peca?.tipo_peca || "Não informado",
+        setor: peca?.setor || colab?.setor || "Não informado",
+      });
+    }
+    return list;
+  }, [states, pecaByCodigo, colabByMat]);
+
+  const totalHigienizacao = pecas.filter((p) => p.status === "em_higienizacao").length;
+  const totalAtrasadas = pecas.filter((p) => p.status === "atrasada").length;
+  const totalRetornadas = pecas.filter((p) => p.status === "retornada").length;
 
   const foraGiroCount = useMemo(
     () => pecas.filter((p) => p.status === "atrasada" && p.diasAtraso > 7).length,
     [pecas],
   );
+
 
   const giroColaborador = useMemo(() => {
     const m = new Map<string, number>();
@@ -822,11 +878,48 @@ function DashboardView({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoTipo)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tudo">Todo o período</SelectItem>
+              <SelectItem value="semana">Últimos 7 dias</SelectItem>
+              <SelectItem value="mes">Últimos 30 dias</SelectItem>
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {periodo === "custom" && (
+            <>
+              <Input
+                type="date"
+                value={dtInicio}
+                onChange={(e) => setDtInicio(e.target.value)}
+                className="w-[160px]"
+              />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input
+                type="date"
+                value={dtFim}
+                onChange={(e) => setDtFim(e.target.value)}
+                className="w-[160px]"
+              />
+            </>
+          )}
+          {range && (
+            <span className="text-xs text-muted-foreground">
+              {fmtBR(range.ini)} — {fmtBR(range.fim)}
+            </span>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={downloadPNG}>
           <ImageIcon className="mr-2 h-4 w-4" /> Baixar PNG
         </Button>
       </div>
+
+
 
       <div ref={dashRef} className="space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
