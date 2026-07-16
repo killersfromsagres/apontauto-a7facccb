@@ -365,6 +365,45 @@ function BackorderPage() {
     );
   }
 
+  async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
+    // Se o "ativo" mudar e nenhum override manual for enviado para
+    // predio/andar/espaço, aplicamos a fórmula (assets_ref).
+    const next: Partial<BOSRow> = { ...patch };
+    if (
+      patch.ativo !== undefined &&
+      patch.ativo !== r.ativo &&
+      patch.predio === undefined &&
+      patch.andar === undefined &&
+      patch.espaco === undefined
+    ) {
+      const resolved = resolveAtivo(assetsMap, patch.ativo);
+      next.predio = resolved.predio;
+      next.andar = resolved.andar;
+      next.espaco = resolved.espaco;
+    }
+    if (patch.atividade && patch.atividade !== r.atividade) {
+      next.atividade_manual = true;
+      next.equipe = CATEGORIA_TO_EQUIPE[patch.atividade as Categoria];
+    }
+    const { error } = await supabase
+      .from("backorder_os")
+      .update(next as never)
+      .eq("os", r.os);
+    if (error) {
+      toast.error("Falha ao salvar alterações");
+      return false;
+    }
+    if (patch.atividade && patch.atividade !== r.atividade) {
+      await supabase
+        .from("backorder_atividade_override")
+        .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
+    }
+    setRows((prev) => prev.map((x) => (x.os === r.os ? { ...x, ...next } : x)));
+    toast.success("Chamado atualizado");
+    return true;
+  }
+
+
   async function exportar() {
     const rowsExp: BackorderRow[] = filtered.map((r) => ({
       os: r.os,
