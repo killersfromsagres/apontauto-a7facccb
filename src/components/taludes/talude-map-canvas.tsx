@@ -23,11 +23,8 @@ function StatusIcon({ status, className }: { status: TaludeStatus; className?: s
     status === "programado" ? Clock : status === "em_execucao" ? Loader2 : CheckCircle2;
   return (
     <Icon
-      className={cn(
-        "h-3.5 w-3.5",
-        status === "em_execucao" && "animate-spin-slow",
-        className,
-      )}
+      className={cn("h-3.5 w-3.5", status === "em_execucao" && "animate-spin", className)}
+      style={status === "em_execucao" ? { animationDuration: "3s" } : undefined}
     />
   );
 }
