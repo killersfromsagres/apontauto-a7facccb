@@ -546,6 +546,7 @@ function ListView({
   year,
   setYear,
   group,
+  isAdmin,
   onComplete,
   onEdit,
   onDelete,
@@ -557,6 +558,7 @@ function ListView({
   year: number;
   setYear: (y: number) => void;
   group: "nenhum" | "empresa" | "periodicidade";
+  isAdmin: boolean;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
