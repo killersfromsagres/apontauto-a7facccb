@@ -740,7 +740,8 @@ function DashboardView({
         </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <GlassCard title="Giro por colaborador (top 10)">
+          <GlassCard>
+            <h3 className="mb-2 text-sm font-semibold">Giro por colaborador (top 10)</h3>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={giroColaborador} margin={{ top: 8, right: 16, left: 0, bottom: 32 }}>
@@ -761,7 +762,8 @@ function DashboardView({
             </div>
           </GlassCard>
 
-          <GlassCard title="Giro por tipo de peça">
+          <GlassCard>
+            <h3 className="mb-2 text-sm font-semibold">Giro por tipo de peça</h3>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -777,7 +779,8 @@ function DashboardView({
             </div>
           </GlassCard>
 
-          <GlassCard title="Giro por setor" className="lg:col-span-2">
+          <GlassCard className="lg:col-span-2">
+            <h3 className="mb-2 text-sm font-semibold">Giro por setor</h3>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={giroSetor} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
