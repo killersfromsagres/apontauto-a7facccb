@@ -28,6 +28,9 @@ import {
   FileText,
   Building2,
   FileDown,
+  Star,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
