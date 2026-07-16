@@ -489,7 +489,10 @@ function BackorderPage() {
       .from("backorder_prioridade_config" as never)
       .update(payload as never)
       .eq("id", 1);
-    if (error) return toast.error("Falha ao salvar configuração");
+    if (error) {
+      toast.error("Falha ao salvar configuração");
+      return;
+    }
     setConfig(next);
     toast.success("Configuração salva");
     await runScan(next, rows, false);
