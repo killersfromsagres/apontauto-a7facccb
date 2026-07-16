@@ -14,21 +14,21 @@ const HEADER_BG_L2 = argbFromHex("#2B3095");
 const NAO_LOCALIZADO_COLOR = argbFromHex("#FF0000");
 
 const COLUMNS = [
-  { key: "os", label: "OS", width: 10 },
-  { key: "nome", label: "Nome", width: 38 },
-  { key: "predio", label: "Prédio", width: 10 },
-  { key: "andar", label: "Andar", width: 9 },
-  { key: "espaco", label: "Espaço", width: 22 },
-  { key: "atividade", label: "Atividade", width: 12 },
-  { key: "sla", label: "Término SLA", width: 13 },
-  { key: "equipe", label: "Equipe", width: 22 },
-  { key: "ativo", label: "Ativo", width: 22 },
-  { key: "outros", label: "Outros", width: 14 },
-  { key: "seg", label: "SEGUNDA", width: 6, day: 0 },
-  { key: "ter", label: "TERÇA", width: 6, day: 1 },
-  { key: "qua", label: "QUARTA", width: 6, day: 2 },
-  { key: "qui", label: "QUINTA", width: 6, day: 3 },
-  { key: "sex", label: "SEXTA", width: 6, day: 4 },
+  { key: "os", label: "OS", width: 14 },
+  { key: "nome", label: "Nome", width: 46 },
+  { key: "predio", label: "Prédio", width: 13 },
+  { key: "andar", label: "Andar", width: 11 },
+  { key: "espaco", label: "Espaço", width: 28 },
+  { key: "atividade", label: "Atividade", width: 15 },
+  { key: "sla", label: "Término SLA", width: 16 },
+  { key: "equipe", label: "Equipe", width: 28 },
+  { key: "ativo", label: "Ativo", width: 26 },
+  { key: "outros", label: "Outros", width: 16 },
+  { key: "seg", label: "SEGUNDA", width: 7, day: 0 },
+  { key: "ter", label: "TERÇA", width: 7, day: 1 },
+  { key: "qua", label: "QUARTA", width: 7, day: 2 },
+  { key: "qui", label: "QUINTA", width: 7, day: 3 },
+  { key: "sex", label: "SEXTA", width: 7, day: 4 },
 ];
 
 function textColorForBg(hex: string): string {
