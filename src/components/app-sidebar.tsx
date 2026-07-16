@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   UserPlus,
   Mountain,
+  PackageX,
 } from "lucide-react";
 import {
   Sidebar,
