@@ -435,14 +435,7 @@ function DashboardView({
               <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-30} textAnchor="end" height={60} />
               <YAxis tick={{ fontSize: 10 }} />
               <RTooltip />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {porAtividade.map((entry) => (
-                  <cell
-                    // recharts <Cell/>; using dynamic tag avoids extra import
-                    key={entry.name}
-                  />
-                ))}
-              </Bar>
+              <Bar dataKey="value" fill="#3b82f6" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
