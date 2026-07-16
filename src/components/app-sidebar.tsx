@@ -9,6 +9,7 @@ import {
   UserPlus,
   Mountain,
   PackageX,
+  Shirt,
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +31,7 @@ const baseItems = [
   { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
   { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
   { key: "backorder", title: "Backorder de Corretivas", url: "/backorder", icon: PackageX },
+  { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: Shirt },
   { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
   { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
   { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },

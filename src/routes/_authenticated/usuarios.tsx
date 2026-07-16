@@ -54,6 +54,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   dashboard: "Dashboard",
   programacao: "Programação Semanal",
   backorder: "Backorder de Corretivas",
+  lavanderia: "Controle de Lavanderia",
   preventiva: "Programação Preventiva",
   corretiva: "Programação Corretiva",
   taludes: "Programação de Taludes",

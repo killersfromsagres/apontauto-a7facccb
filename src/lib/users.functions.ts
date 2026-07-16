@@ -11,6 +11,7 @@ export const MENU_KEYS = [
   "dashboard",
   "programacao",
   "backorder",
+  "lavanderia",
   "preventiva",
   "corretiva",
   "taludes",
