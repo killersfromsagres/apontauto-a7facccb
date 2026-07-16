@@ -134,7 +134,13 @@ export async function readMatrizFile(file: File): Promise<MatrizRow[]> {
     if (!colabRaw || !codigo) continue;
     const c = parseColaborador(colabRaw);
     if (!c) continue;
-    out.push({ matricula: c.matricula, nome: c.nome, codigo });
+    out.push({
+      matricula: c.matricula,
+      nome: c.nome,
+      codigo,
+      categoria: c.categoria,
+      setor: c.setor,
+    });
   }
   return out;
 }
