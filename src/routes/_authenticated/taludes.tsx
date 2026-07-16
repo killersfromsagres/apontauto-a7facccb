@@ -19,6 +19,7 @@ import {
   ZoomIn,
   ZoomOut,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Tooltip,
