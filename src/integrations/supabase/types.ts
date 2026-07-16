@@ -556,6 +556,111 @@ export type Database = {
           },
         ]
       }
+      taludes_clima_config: {
+        Row: {
+          id: boolean
+          latitude: number
+          limite_mm_chuva: number
+          limite_prob_chuva: number
+          longitude: number
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          latitude?: number
+          limite_mm_chuva?: number
+          limite_prob_chuva?: number
+          longitude?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          latitude?: number
+          limite_mm_chuva?: number
+          limite_prob_chuva?: number
+          longitude?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      taludes_clima_snapshot: {
+        Row: {
+          atualizado_em: string
+          choveu: boolean
+          condicao: string | null
+          data: string
+          precipitacao_mm_prev: number | null
+          precipitacao_mm_real: number | null
+          prob_chuva_prev: number | null
+          temp_max: number | null
+          temp_min: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          choveu?: boolean
+          condicao?: string | null
+          data: string
+          precipitacao_mm_prev?: number | null
+          precipitacao_mm_real?: number | null
+          prob_chuva_prev?: number | null
+          temp_max?: number | null
+          temp_min?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          choveu?: boolean
+          condicao?: string | null
+          data?: string
+          precipitacao_mm_prev?: number | null
+          precipitacao_mm_real?: number | null
+          prob_chuva_prev?: number | null
+          temp_max?: number | null
+          temp_min?: number | null
+        }
+        Relationships: []
+      }
+      taludes_programacao: {
+        Row: {
+          created_at: string
+          data_programada: string
+          equipe: string
+          id: string
+          observacoes: string
+          os_atividade: string
+          situacao: Database["public"]["Enums"]["talude_situacao"]
+          talude: string
+          tipo_servico: Database["public"]["Enums"]["talude_tipo_servico"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_programada: string
+          equipe?: string
+          id?: string
+          observacoes?: string
+          os_atividade: string
+          situacao?: Database["public"]["Enums"]["talude_situacao"]
+          talude: string
+          tipo_servico?: Database["public"]["Enums"]["talude_tipo_servico"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_programada?: string
+          equipe?: string
+          id?: string
+          observacoes?: string
+          os_atividade?: string
+          situacao?: Database["public"]["Enums"]["talude_situacao"]
+          talude?: string
+          tipo_servico?: Database["public"]["Enums"]["talude_tipo_servico"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -593,6 +698,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      talude_situacao: "programado" | "realizado" | "adiado_chuva" | "cancelado"
+      talude_tipo_servico:
+        | "rocada"
+        | "contencao"
+        | "drenagem"
+        | "inspecao"
+        | "plantio"
+        | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -721,6 +834,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      talude_situacao: ["programado", "realizado", "adiado_chuva", "cancelado"],
+      talude_tipo_servico: [
+        "rocada",
+        "contencao",
+        "drenagem",
+        "inspecao",
+        "plantio",
+        "outro",
+      ],
     },
   },
 } as const
