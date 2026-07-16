@@ -892,6 +892,8 @@ function RowActions({
   item,
   attachCount,
   isAdmin,
+  isMarked,
+  onToggleMark,
   onComplete,
   onEdit,
   onDelete,
@@ -900,6 +902,8 @@ function RowActions({
   item: LegalItem;
   attachCount: number;
   isAdmin: boolean;
+  isMarked: boolean;
+  onToggleMark: (id: string) => void;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -907,6 +911,19 @@ function RowActions({
 }) {
   return (
     <div className="inline-flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => onToggleMark(item.id)}
+        title={isMarked ? "Desmarcar" : "Marcar"}
+        className={cn(
+          "grid h-8 w-8 place-items-center rounded-md border transition",
+          isMarked
+            ? "border-amber-400/60 bg-amber-400/15 text-amber-400"
+            : "border-transparent text-muted-foreground hover:border-amber-400/40 hover:text-amber-400",
+        )}
+      >
+        <Star className={cn("h-4 w-4", isMarked && "fill-amber-400")} />
+      </button>
       <Button size="sm" variant="ghost" onClick={() => onComplete(item)} title="Marcar como concluído">
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
       </Button>
