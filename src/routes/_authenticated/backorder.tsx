@@ -1180,7 +1180,7 @@ function Dashboard({
             </p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[70vh] scroll-smooth pr-2 md:max-h-[560px]">
+          <PriorityScroller total={priorityOrdered.length}>
             <div className="grid gap-2 md:grid-cols-2">
               {priorityOrdered.map((r) => {
                 const dias = daysBetween(r.data_solicitacao);
@@ -1258,10 +1258,10 @@ function Dashboard({
                 );
               })}
             </div>
-          </ScrollArea>
-
+          </PriorityScroller>
         )}
       </GlassCard>
+
 
       <PriorityDetailDialog
         row={selectedPriority}
