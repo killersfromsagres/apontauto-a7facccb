@@ -723,7 +723,7 @@ function TaludeDetail({
     data_execucao: talude.data_execucao ?? "",
     data_conclusao: talude.data_conclusao ?? "",
     proxima_data: talude.proxima_data ?? "",
-    periodicidade_dias: talude.periodicidade_dias ?? "",
+    periodicidade_dias: talude.periodicidade_dias == null ? "" : String(talude.periodicidade_dias),
     observacoes: talude.observacoes ?? "",
   });
 
