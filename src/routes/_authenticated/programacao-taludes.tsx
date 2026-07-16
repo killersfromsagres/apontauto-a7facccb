@@ -463,6 +463,8 @@ function ProgramacaoTaludesPage() {
             <span>Fonte: Open-Meteo</span>
           </div>
         </GlassCard>
+        </div>
+
 
         {/* Tabela */}
         <GlassCard>
