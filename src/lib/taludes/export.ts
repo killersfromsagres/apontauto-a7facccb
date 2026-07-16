@@ -43,9 +43,9 @@ export async function exportMapPNG(opts: {
   taludes: ExportTalude[];
 }): Promise<Blob> {
   const img = await loadImage(opts.imageUrl);
-  const HEADER_H = 90;
-  const FOOTER_H = 130;
-  const scale = Math.min(1, 2000 / Math.max(img.width, 1));
+  const HEADER_H = 110;
+  const FOOTER_H = 150;
+  const scale = Math.min(1.5, 3200 / Math.max(img.width, 1));
   const W = Math.round(img.width * scale);
   const H = Math.round(img.height * scale);
   const canvas = document.createElement("canvas");
