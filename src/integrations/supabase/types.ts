@@ -128,6 +128,95 @@ export type Database = {
         }
         Relationships: []
       }
+      lavanderia_colaboradores: {
+        Row: {
+          created_at: string
+          matricula: string
+          nome: string
+          setor: string | null
+          tipo_peca_padrao: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          matricula: string
+          nome: string
+          setor?: string | null
+          tipo_peca_padrao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          matricula?: string
+          nome?: string
+          setor?: string | null
+          tipo_peca_padrao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lavanderia_eventos: {
+        Row: {
+          codigo: string
+          criado_por: string | null
+          data: string
+          id: string
+          imported_at: string
+          tipo: string
+        }
+        Insert: {
+          codigo: string
+          criado_por?: string | null
+          data: string
+          id?: string
+          imported_at?: string
+          tipo: string
+        }
+        Update: {
+          codigo?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          imported_at?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
+      lavanderia_pecas: {
+        Row: {
+          codigo: string
+          created_at: string
+          matricula: string | null
+          setor: string | null
+          tipo_peca: string
+          updated_at: string
+        }
+        Insert: {
+          codigo: string
+          created_at?: string
+          matricula?: string | null
+          setor?: string | null
+          tipo_peca?: string
+          updated_at?: string
+        }
+        Update: {
+          codigo?: string
+          created_at?: string
+          matricula?: string | null
+          setor?: string | null
+          tipo_peca?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lavanderia_pecas_matricula_fkey"
+            columns: ["matricula"]
+            isOneToOne: false
+            referencedRelation: "lavanderia_colaboradores"
+            referencedColumns: ["matricula"]
+          },
+        ]
+      }
       legal_item_attachments: {
         Row: {
           created_at: string
