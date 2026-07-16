@@ -617,8 +617,9 @@ function TaludesPage() {
                 <SelectValue placeholder="Selecionar mapa" />
               </SelectTrigger>
               <SelectContent>
-                {mapsQuery.data.map((m) => (
+                {mapsQuery.data.map((m: { id: string; nome: string }) => (
                   <SelectItem key={m.id} value={m.id}>
+
                     {m.nome}
                   </SelectItem>
                 ))}
