@@ -464,7 +464,7 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&amp;_thead_th]:sticky [&amp;_thead_th]:top-0 [&amp;_thead_th]:z-10 [&amp;_thead_th]:bg-background/95 [&amp;_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -562,7 +562,7 @@ function HistoricoView({
           className="pl-8"
         />
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&amp;_thead_th]:sticky [&amp;_thead_th]:top-0 [&amp;_thead_th]:z-10 [&amp;_thead_th]:bg-background/95 [&amp;_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -651,7 +651,7 @@ function GiroView({ pecas }: { pecas: LavExportPeca[] }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&amp;_thead_th]:sticky [&amp;_thead_th]:top-0 [&amp;_thead_th]:z-10 [&amp;_thead_th]:bg-background/95 [&amp;_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
