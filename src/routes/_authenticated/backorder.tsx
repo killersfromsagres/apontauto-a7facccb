@@ -1178,7 +1178,7 @@ function Dashboard({
             </p>
           </div>
         ) : (
-          <ScrollArea className="max-h-[420px] pr-2">
+          <ScrollArea className="max-h-[70vh] scroll-smooth pr-2 md:max-h-[560px]">
             <div className="grid gap-2 md:grid-cols-2">
               {priorityOrdered.map((r) => {
                 const dias = daysBetween(r.data_solicitacao);
@@ -1194,11 +1194,11 @@ function Dashboard({
                 return (
                   <div
                     key={r.os}
-                    className="group animate-fade-in rounded-xl border border-red-500/30 bg-background/60 p-3 shadow-sm transition-shadow hover:shadow-md"
+                    className="group animate-fade-in flex max-h-[220px] flex-col rounded-xl border border-red-500/30 bg-background/60 p-3 shadow-sm transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
                           <Badge className={`${nivelColor} ${alertaClass}`}>
                             <Flame className="mr-0.5 h-3 w-3" />
@@ -1212,16 +1212,20 @@ function Dashboard({
                             {dias}d
                           </Badge>
                         </div>
-                        <div className="mt-1 truncate text-sm font-medium" title={r.nome}>
-                          {r.nome}
-                        </div>
-                        <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {r.predio} · {r.andar} · {r.espaco}
-                        </div>
-                        <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
-                          <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-                          <span className="line-clamp-2">{r.motivo_prioridade}</span>
-                        </div>
+                        <ScrollArea className="mt-1 max-h-[140px] scroll-smooth pr-1">
+                          <div className="text-sm font-medium" title={r.nome}>
+                            {r.nome}
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">
+                            {r.predio} · {r.andar} · {r.espaco}
+                          </div>
+                          <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
+                            <span className="whitespace-pre-wrap break-words">
+                              {r.motivo_prioridade}
+                            </span>
+                          </div>
+                        </ScrollArea>
                       </div>
                       <Button
                         size="sm"
@@ -1238,6 +1242,7 @@ function Dashboard({
               })}
             </div>
           </ScrollArea>
+
         )}
       </GlassCard>
 
