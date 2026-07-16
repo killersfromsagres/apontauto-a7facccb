@@ -1082,6 +1082,7 @@ function TaludesPage() {
           )}
         </div>
       </div>
+      <AuditReportDialog report={auditReport} onClose={() => setAuditReport(null)} />
     </PageShell>
   );
 }
