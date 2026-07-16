@@ -25,7 +25,6 @@ import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 
 const TermosRoute = TermosRouteImport.update({
@@ -110,11 +109,6 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
-  id: '/backorder',
-  path: '/backorder',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedApontamentosRoute =
   AuthenticatedApontamentosRouteImport.update({
     id: '/apontamentos',
@@ -131,7 +125,6 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/backorder': typeof AuthenticatedBackorderRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -149,7 +142,6 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/backorder': typeof AuthenticatedBackorderRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -170,7 +162,6 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
@@ -192,7 +183,6 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/apontamentos'
-    | '/backorder'
     | '/configuracoes'
     | '/corretiva'
     | '/outros'
@@ -210,7 +200,6 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/apontamentos'
-    | '/backorder'
     | '/configuracoes'
     | '/corretiva'
     | '/outros'
@@ -230,7 +219,6 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/_authenticated/apontamentos'
-    | '/_authenticated/backorder'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
     | '/_authenticated/outros'
@@ -366,13 +354,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/backorder': {
-      id: '/_authenticated/backorder'
-      path: '/backorder'
-      fullPath: '/backorder'
-      preLoaderRoute: typeof AuthenticatedBackorderRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/apontamentos': {
       id: '/_authenticated/apontamentos'
       path: '/apontamentos'
@@ -385,7 +366,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
-  AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
@@ -399,7 +379,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
-  AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
