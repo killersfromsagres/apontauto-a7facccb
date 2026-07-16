@@ -886,6 +886,8 @@ function TaludesPage() {
                 onPatch={(patch) => updateMutation.mutate({ id: selected.id, ...patch })}
                 onRedraw={() => startRedraw(selected)}
                 onDelete={() => removeTalude(selected)}
+                onBumpDate={(days) => bumpDate(selected, days)}
+                onCycleStatus={() => cycleStatus(selected)}
                 saving={updateMutation.isPending}
               />
             </GlassCard>
@@ -902,6 +904,8 @@ function TaludeDetail({
   onPatch,
   onRedraw,
   onDelete,
+  onBumpDate,
+  onCycleStatus,
   saving,
 }: {
   talude: TaludeRow;
@@ -909,6 +913,8 @@ function TaludeDetail({
   onPatch: (patch: Partial<TaludeRow>) => void;
   onRedraw: () => void;
   onDelete: () => void;
+  onBumpDate: (days: number) => void;
+  onCycleStatus: () => void;
   saving: boolean;
 }) {
   const [local, setLocal] = useState({
