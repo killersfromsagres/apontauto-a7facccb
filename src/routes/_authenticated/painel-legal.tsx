@@ -823,6 +823,7 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function RowActions({
   item,
   attachCount,
+  isAdmin,
   onComplete,
   onEdit,
   onDelete,
@@ -830,6 +831,7 @@ function RowActions({
 }: {
   item: LegalItem;
   attachCount: number;
+  isAdmin: boolean;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -846,18 +848,22 @@ function RowActions({
           <span className="ml-1 text-[10px] font-semibold text-primary">{attachCount}</span>
         )}
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => onEdit(item)} title="Editar">
-        <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => onDelete(item)}
-        title="Excluir"
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      {isAdmin && (
+        <>
+          <Button size="sm" variant="ghost" onClick={() => onEdit(item)} title="Editar">
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onDelete(item)}
+            title="Excluir"
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
