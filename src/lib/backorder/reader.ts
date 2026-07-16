@@ -73,7 +73,13 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
     const status = pick(r, "STATUS RESUMIDO", "STATUS");
     const abertura = pick(r, "DATA/HORA ABERTURA", "DATA ABERTURA", "ABERTURA");
     const sla = pick(r, "PRAZO SLA", "TERMINO SLA", "TÉRMINO SLA", "DATA LIMITE");
-    const criticidade = pick(r, "CRITICIDADE");
+    const solicitante = pick(
+      r,
+      "DENOMINAÇÃO DO SOLICITANTE",
+      "DENOMINACAO DO SOLICITANTE",
+      "SOLICITANTE",
+      "NOME DO SOLICITANTE",
+    );
 
     const atividade = classifyBackorder({
       descricao,
@@ -95,10 +101,11 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       equipe: CATEGORIA_TO_EQUIPE[atividade],
       termino_sla: parseDateISO(sla),
       data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
-      outros: criticidade,
+      outros: solicitante,
       finalizado,
       status_origem: status,
     });
+
   }
   return out;
 }

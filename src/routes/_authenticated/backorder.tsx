@@ -434,6 +434,15 @@ function TableView({
   onToggle: (r: BOSRow, next: boolean) => void;
   onCategoria: (r: BOSRow, c: Categoria) => void;
 }) {
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [rows.length, search, filterCat, order]);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visible = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <GlassCard>
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -469,9 +478,40 @@ function TableView({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          {rows.length === 0
+            ? "0 registros"
+            : `Mostrando ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, rows.length)} de ${rows.length}`}
+        </span>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              ← Anterior
+            </Button>
+            <span className="font-mono">
+              {currentPage}/{totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            >
+              Próxima →
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             <TableRow>
               <TableHead className="w-10">✓</TableHead>
               <TableHead>OS</TableHead>
@@ -480,9 +520,9 @@ function TableView({
               <TableHead>Andar</TableHead>
               <TableHead>Espaço</TableHead>
               <TableHead>Atividade</TableHead>
-              <TableHead>Término SLA</TableHead>
+              <TableHead>Data</TableHead>
               <TableHead>Equipe</TableHead>
-              <TableHead>Ativo</TableHead>
+              <TableHead>Solicitante</TableHead>
               <TableHead>Dias</TableHead>
             </TableRow>
           </TableHeader>
@@ -493,14 +533,14 @@ function TableView({
                   Carregando…
                 </TableCell>
               </TableRow>
-            ) : rows.length === 0 ? (
+            ) : visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={11} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhuma OS.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => {
+              visible.map((r) => {
                 const dias = daysBetween(r.data_solicitacao);
                 const isBackorder = dias > 30;
                 return (
@@ -547,7 +587,9 @@ function TableView({
                       {r.termino_sla ? new Date(r.termino_sla).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
                     <TableCell className="text-xs">{r.equipe}</TableCell>
-                    <TableCell className="font-mono text-[11px]">{r.ativo}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-xs" title={r.outros}>
+                      {r.outros}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
@@ -571,6 +613,7 @@ function TableView({
           </TableBody>
         </Table>
       </div>
+
     </GlassCard>
   );
 }
