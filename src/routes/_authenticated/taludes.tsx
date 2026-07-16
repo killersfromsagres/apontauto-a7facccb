@@ -600,6 +600,15 @@ function TaludesPage() {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            onClick={() => runAudit(false)}
+            disabled={!map || auditing}
+            title="Verificar e reparar inconsistências"
+          >
+            <ShieldCheck className={`mr-2 h-4 w-4 ${auditing ? "animate-pulse" : ""}`} />
+            {auditing ? "Auditando…" : "Auditoria"}
+          </Button>
           <Button variant="outline" onClick={doExport} disabled={!imageUrl || taludes.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar PNG
           </Button>
