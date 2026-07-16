@@ -593,6 +593,13 @@ function BackorderPage() {
     );
   }
 
+  const [selectedBackorder, setSelectedBackorder] = useState<BOSRow | null>(null);
+  // Mantém o item aberto sincronizado com o estado global (após salvar/finalizar).
+  const selectedBackorderLive = useMemo(
+    () => (selectedBackorder ? rows.find((r) => r.os === selectedBackorder.os) ?? null : null),
+    [selectedBackorder, rows],
+  );
+
   return (
     <PageShell
       title="Backorder de Corretivas"
