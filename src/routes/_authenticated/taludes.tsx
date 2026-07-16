@@ -16,7 +16,16 @@ import {
   Save,
   AlertTriangle,
   MapPin,
+  ZoomIn,
+  ZoomOut,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
