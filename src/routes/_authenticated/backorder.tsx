@@ -11,6 +11,17 @@ import {
   ArrowUpDown,
   BarChart3,
   Search,
+  AlertTriangle,
+  Flame,
+  Settings2,
+  Printer,
+  ShieldAlert,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  CheckCircle2,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import {
   BarChart,
