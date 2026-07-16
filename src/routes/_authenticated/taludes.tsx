@@ -175,8 +175,18 @@ function TaludesPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   const createRefMap = async () => {
+    if (creating) return;
     setCreating(true);
     try {
+      // Idempotência: se já existe um mapa de referência, apenas selecione-o.
+      const existing = mapsQuery.data?.find(
+        (m) => m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
+      );
+      if (existing) {
+        setSelectedMapId(existing.id);
+        toast.success("Mapa de referência selecionado");
+        return;
+      }
       const m = await createFn({
         data: {
           nome: "DEMARCHI — Referência",
@@ -188,7 +198,9 @@ function TaludesPage() {
       setSelectedMapId(m.id);
       toast.success("Mapa de referência criado");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao criar mapa");
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[taludes] createRefMap failed", e);
+      toast.error(`Falha ao carregar mapa padrão: ${msg}`);
     } finally {
       setCreating(false);
     }
