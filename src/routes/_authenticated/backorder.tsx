@@ -69,7 +69,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap } from "@/lib/backorder/assets";
+import { makeAssetsMap, resolveAtivo, type AssetsMap } from "@/lib/backorder/assets";
 import {
   CATEGORIAS,
   CATEGORIA_COLOR,
