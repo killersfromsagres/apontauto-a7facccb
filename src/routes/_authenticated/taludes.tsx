@@ -115,13 +115,14 @@ const fmtBr = (iso: string | null) => {
 
 function TaludesPage() {
   const qc = useQueryClient();
-  const listFn = useServerFn(listMaps);
-  const detailFn = useServerFn(getMapDetail);
-  const createFn = useServerFn(createMap);
-  const deleteMapFn = useServerFn(deleteMap);
-  const upsertFn = useServerFn(upsertTalude);
-  const deleteFn = useServerFn(deleteTalude);
-  const verifyFn = useServerFn(verifyAndRepairMap);
+  const listFn = listMaps;
+  const detailFn = getMapDetail;
+  const createFn = createMap;
+  const deleteMapFn = deleteMap;
+  const upsertFn = upsertTalude;
+  const deleteFn = deleteTalude;
+  const verifyFn = verifyAndRepairMap;
+
   const [auditing, setAuditing] = useState(false);
   const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
 
