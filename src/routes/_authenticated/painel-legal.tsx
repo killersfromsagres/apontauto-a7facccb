@@ -130,19 +130,53 @@ function TaskTypeIcon({ titulo, className }: { titulo: string; className?: strin
   return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
 }
 
-/** Nome da empresa com brilho sutil. */
+/** Nome da empresa com efeito de luz percorrendo o texto. */
 function CompanyName({ name, className }: { name: string; className?: string }) {
   if (!name) return <span className="text-muted-foreground">—</span>;
   return (
     <span
       className={cn(
-        "bg-gradient-to-r from-primary/90 via-white to-primary/90 bg-clip-text font-semibold text-transparent",
-        "[text-shadow:0_0_14px_rgba(59,130,246,0.35)]",
+        "inline-block bg-clip-text font-semibold text-transparent",
         className,
       )}
+      style={{
+        backgroundImage:
+          "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 35%, #ffffff 50%, hsl(var(--primary)) 65%, hsl(var(--primary)) 100%)",
+        backgroundSize: "220% 100%",
+        animation: "shine 3.6s linear infinite",
+      }}
     >
       {name}
     </span>
+  );
+}
+
+/** Botão com nome completo da tarefa (sem truncar). */
+function TaskNameButton({
+  titulo,
+  onClick,
+  className,
+}: {
+  titulo: string;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={titulo}
+      className={cn(
+        "group inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/50 bg-card/50 px-2 py-1 text-left text-sm font-medium",
+        "shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] transition",
+        "hover:border-primary/60 hover:bg-primary/10 hover:text-primary",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        className,
+      )}
+    >
+      <TaskTypeIcon titulo={titulo} className="shrink-0" />
+      <span className="whitespace-normal break-words leading-snug">{titulo}</span>
+    </button>
   );
 }
 
