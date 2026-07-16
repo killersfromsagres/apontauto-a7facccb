@@ -452,14 +452,57 @@ function TaludesPage() {
     updateMutation.mutate({ id: t.id, [field]: addDays(base, days) } as Partial<TaludeRow> & { id: string });
   };
 
+  const clearResidualUIFor = (id: string) => {
+    setSelectedTaludeId((cur) => (cur === id ? null : cur));
+    setHoverId((cur) => (cur === id ? null : cur));
+    setZoomedTaludeId((cur) => (cur === id ? null : cur));
+    if (editingPolygonFor === id) {
+      setEditingPolygonFor(null);
+      setDrawingPoints([]);
+      setDrawingNumero("");
+    }
+  };
+
   const removeTalude = async (t: TaludeRow) => {
     if (!confirm(`Excluir talude ${t.numero}?`)) return;
     try {
       await deleteFn({ data: { id: t.id } });
+      clearResidualUIFor(t.id);
       if (map) await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
-      setSelectedTaludeId(null);
+      toast.success(`Talude ${t.numero} removido`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao excluir");
+    }
+  };
+
+  const runAudit = async (dryRun = false) => {
+    if (!map) return;
+    setAuditing(true);
+    try {
+      const report = await verifyFn({ data: { map_id: map.id, dry_run: dryRun } });
+      setAuditReport(report);
+      await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+      // Also purge UI state for any talude that no longer exists after the audit
+      const stillExists = new Set(taludes.map((x) => x.id));
+      if (selectedTaludeId && !stillExists.has(selectedTaludeId)) setSelectedTaludeId(null);
+      if (hoverId && !stillExists.has(hoverId)) setHoverId(null);
+      if (zoomedTaludeId && !stillExists.has(zoomedTaludeId)) setZoomedTaludeId(null);
+      if (editingPolygonFor && !stillExists.has(editingPolygonFor)) {
+        setEditingPolygonFor(null);
+        setDrawingPoints([]);
+      }
+      const totalIssues = report.checks.length;
+      if (totalIssues === 0) {
+        toast.success("Nenhum problema encontrado ✓");
+      } else {
+        toast.success(
+          `Auditoria: ${report.fixed.length} correções aplicadas · ${report.unresolved.length} pendente(s)`,
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha na auditoria");
+    } finally {
+      setAuditing(false);
     }
   };
 
