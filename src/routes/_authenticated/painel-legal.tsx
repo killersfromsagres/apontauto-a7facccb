@@ -705,10 +705,7 @@ function ListView({
                   <div className="pl-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 font-semibold">
-                          <TaskTypeIcon titulo={it.titulo} />
-                          <span className="truncate">{it.titulo}</span>
-                        </p>
+                        <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} className="w-full" />
                         <p className="mt-0.5 truncate text-xs">
                           <CompanyName name={it.empresa} className="text-xs" />
                           <span className="text-muted-foreground"> · {PERIODICIDADE_LABEL[it.periodicidade]}</span>
