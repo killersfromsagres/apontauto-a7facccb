@@ -184,6 +184,28 @@ function TaskNameButton({
   );
 }
 
+/** Marcações persistentes de itens (compartilhado por Lista e Calendário). */
+function useMarkedLegal() {
+  const [marked, setMarked] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem("legal-calendar-marked");
+      return raw ? new Set<string>(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  });
+  const persist = (s: Set<string>) => {
+    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
+  };
+  const toggleMark = (id: string) =>
+    setMarked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      persist(next);
+      return next;
+    });
+  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
+  return { marked, toggleMark, clearMarks };
+
 /* -------------------------------------------------------------------------- */
 /*  Página                                                                    */
 /* -------------------------------------------------------------------------- */
