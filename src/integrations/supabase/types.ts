@@ -35,6 +35,99 @@ export type Database = {
         }
         Relationships: []
       }
+      assets_ref: {
+        Row: {
+          ativo: string
+          denominacao: string
+          updated_at: string
+        }
+        Insert: {
+          ativo: string
+          denominacao?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: string
+          denominacao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backorder_atividade_override: {
+        Row: {
+          atividade: string
+          os: string
+          updated_at: string
+        }
+        Insert: {
+          atividade: string
+          os: string
+          updated_at?: string
+        }
+        Update: {
+          atividade?: string
+          os?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backorder_os: {
+        Row: {
+          andar: string
+          atividade: string
+          atividade_manual: boolean
+          ativo: string
+          atualizado_em: string
+          criado_em: string
+          data_finalizacao: string | null
+          data_solicitacao: string
+          equipe: string
+          espaco: string
+          finalizado: boolean
+          nome: string
+          os: string
+          outros: string
+          predio: string
+          termino_sla: string | null
+        }
+        Insert: {
+          andar?: string
+          atividade?: string
+          atividade_manual?: boolean
+          ativo?: string
+          atualizado_em?: string
+          criado_em?: string
+          data_finalizacao?: string | null
+          data_solicitacao: string
+          equipe?: string
+          espaco?: string
+          finalizado?: boolean
+          nome?: string
+          os: string
+          outros?: string
+          predio?: string
+          termino_sla?: string | null
+        }
+        Update: {
+          andar?: string
+          atividade?: string
+          atividade_manual?: boolean
+          ativo?: string
+          atualizado_em?: string
+          criado_em?: string
+          data_finalizacao?: string | null
+          data_solicitacao?: string
+          equipe?: string
+          espaco?: string
+          finalizado?: boolean
+          nome?: string
+          os?: string
+          outros?: string
+          predio?: string
+          termino_sla?: string | null
+        }
+        Relationships: []
+      }
       legal_item_attachments: {
         Row: {
           created_at: string
