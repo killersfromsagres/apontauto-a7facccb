@@ -677,6 +677,14 @@ function BackorderPage() {
           />
         </TabsContent>
 
+        <TabsContent value="backorder">
+          <BackorderPanel
+            rows={backorderAbertas}
+            onSelect={setSelectedBackorder}
+            onFinalizar={(r) => toggleFinalizado(r, true)}
+          />
+        </TabsContent>
+
         <TabsContent value="finalizados">
           <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
         </TabsContent>
