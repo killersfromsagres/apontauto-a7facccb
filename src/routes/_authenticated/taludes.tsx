@@ -140,6 +140,19 @@ function TaludesPage() {
     }
   }, [mapsQuery.data, selectedMapId]);
 
+  // Migração de nome legado do mapa de referência
+  useEffect(() => {
+    const legacy = mapsQuery.data?.find(
+      (m: { id: string; nome: string }) => m.nome === "DEMARCHI — Referência",
+    );
+    if (!legacy) return;
+    supabase
+      .from("talude_maps")
+      .update({ nome: "Mapa site Sherwin Williams - Demarchi" })
+      .eq("id", legacy.id)
+      .then(() => qc.invalidateQueries({ queryKey: ["talude-maps"] }));
+  }, [mapsQuery.data, qc]);
+
   const detailQuery = useQuery({
     queryKey: ["talude-map-detail", selectedMapId],
     queryFn: () => detailFn({ data: { id: selectedMapId! } }),
@@ -182,7 +195,9 @@ function TaludesPage() {
       // Idempotência: se já existe um mapa de referência, apenas selecione-o.
       const existing = mapsQuery.data?.find(
         (m: { id: string; image_path: string; nome: string }) =>
-          m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
+          m.image_path === referenceMap.url ||
+          m.nome === "Mapa site Sherwin Williams - Demarchi" ||
+          m.nome === "DEMARCHI — Referência",
       );
 
       if (existing) {
@@ -192,7 +207,7 @@ function TaludesPage() {
       }
       const m = await createFn({
         data: {
-          nome: "DEMARCHI — Referência",
+          nome: "Mapa site Sherwin Williams - Demarchi",
           image_path: referenceMap.url,
           periodicidade_dias: 180,
         },
@@ -587,7 +602,7 @@ function TaludesPage() {
             </div>
             <div className="space-y-3 rounded-xl border border-dashed border-border/60 p-4">
               <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Mapa padrão aprimorado
+                Mapa site Sherwin Williams - Demarchi
               </h3>
               <p className="text-xs text-muted-foreground">
                 Carrega a planta oficial da unidade DEMARCHI já otimizada, pronta para demarcação
@@ -595,7 +610,7 @@ function TaludesPage() {
               </p>
               <Button onClick={createRefMap} disabled={creating} variant="secondary" className="w-full">
                 <MapPin className="mr-2 h-4 w-4" />
-                Carregar mapa padrão aprimorado
+                Carregar Mapa site Sherwin Williams - Demarchi
               </Button>
             </div>
 
@@ -613,14 +628,13 @@ function TaludesPage() {
         <div className="flex flex-wrap gap-2">
           {mapsQuery.data && mapsQuery.data.length > 0 && (
             <Select value={selectedMapId ?? undefined} onValueChange={setSelectedMapId}>
-              <SelectTrigger className="min-w-[200px]">
+              <SelectTrigger className="min-w-[280px] max-w-[420px]">
                 <SelectValue placeholder="Selecionar mapa" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-w-[420px]">
                 {mapsQuery.data.map((m: { id: string; nome: string }) => (
                   <SelectItem key={m.id} value={m.id}>
-
-                    {m.nome}
+                    <span className="block truncate">{m.nome}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
