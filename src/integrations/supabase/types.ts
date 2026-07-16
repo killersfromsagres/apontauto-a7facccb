@@ -84,10 +84,14 @@ export type Database = {
           equipe: string
           espaco: string
           finalizado: boolean
+          is_prioridade: boolean
+          motivo_prioridade: string | null
           nome: string
           os: string
           outros: string
           predio: string
+          prioridade_nivel: number
+          prioridade_scanned_at: string | null
           termino_sla: string | null
         }
         Insert: {
@@ -102,10 +106,14 @@ export type Database = {
           equipe?: string
           espaco?: string
           finalizado?: boolean
+          is_prioridade?: boolean
+          motivo_prioridade?: string | null
           nome?: string
           os: string
           outros?: string
           predio?: string
+          prioridade_nivel?: number
+          prioridade_scanned_at?: string | null
           termino_sla?: string | null
         }
         Update: {
@@ -120,11 +128,45 @@ export type Database = {
           equipe?: string
           espaco?: string
           finalizado?: boolean
+          is_prioridade?: boolean
+          motivo_prioridade?: string | null
           nome?: string
           os?: string
           outros?: string
           predio?: string
+          prioridade_nivel?: number
+          prioridade_scanned_at?: string | null
           termino_sla?: string | null
+        }
+        Relationships: []
+      }
+      backorder_prioridade_config: {
+        Row: {
+          dias_forca_prioridade: number
+          familias_habilitadas: Json
+          id: number
+          keyword_rules: Json
+          last_scan_at: string | null
+          predios_sensiveis: Json
+          updated_at: string
+        }
+        Insert: {
+          dias_forca_prioridade?: number
+          familias_habilitadas?: Json
+          id?: number
+          keyword_rules?: Json
+          last_scan_at?: string | null
+          predios_sensiveis?: Json
+          updated_at?: string
+        }
+        Update: {
+          dias_forca_prioridade?: number
+          familias_habilitadas?: Json
+          id?: number
+          keyword_rules?: Json
+          last_scan_at?: string | null
+          predios_sensiveis?: Json
+          updated_at?: string
         }
         Relationships: []
       }

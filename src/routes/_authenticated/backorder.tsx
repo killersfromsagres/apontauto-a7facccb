@@ -11,6 +11,17 @@ import {
   ArrowUpDown,
   BarChart3,
   Search,
+  AlertTriangle,
+  Flame,
+  Settings2,
+  Printer,
+  ShieldAlert,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  CheckCircle2,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import {
   BarChart,
@@ -62,6 +73,18 @@ import {
 } from "@/lib/backorder/classify";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
+import {
+  DEFAULT_CONFIG,
+  scanAll,
+  type PriorityConfig,
+  type KeywordRule,
+  type PredioSensivel,
+} from "@/lib/backorder/priority";
+import { generatePriorityExport, openPriorityPrintView } from "@/lib/backorder/priority-export";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/_authenticated/backorder")({
   component: BackorderPage,
@@ -82,6 +105,9 @@ interface BOSRow {
   outros: string;
   finalizado: boolean;
   data_finalizacao: string | null;
+  is_prioridade?: boolean;
+  motivo_prioridade?: string | null;
+  prioridade_nivel?: number;
 }
 
 const POWERBI_URL =
@@ -103,9 +129,36 @@ function BackorderPage() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("__all__");
   const [importing, setImporting] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [config, setConfig] = useState<PriorityConfig>(DEFAULT_CONFIG);
+  const [configOpen, setConfigOpen] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const targetPct = TARGET_PCT_DEFAULT;
+
+  const loadConfig = useCallback(async () => {
+    const { data } = await supabase
+      .from("backorder_prioridade_config" as never)
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (data) {
+      const d = data as {
+        predios_sensiveis: PredioSensivel[];
+        keyword_rules: KeywordRule[];
+        dias_forca_prioridade: number;
+        familias_habilitadas: Record<string, boolean>;
+        last_scan_at: string | null;
+      };
+      setConfig({
+        predios_sensiveis: d.predios_sensiveis ?? DEFAULT_CONFIG.predios_sensiveis,
+        keyword_rules: d.keyword_rules ?? DEFAULT_CONFIG.keyword_rules,
+        dias_forca_prioridade: d.dias_forca_prioridade ?? DEFAULT_CONFIG.dias_forca_prioridade,
+        familias_habilitadas: d.familias_habilitadas ?? DEFAULT_CONFIG.familias_habilitadas,
+        last_scan_at: d.last_scan_at ?? null,
+      });
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -119,8 +172,9 @@ function BackorderPage() {
   }, []);
 
   useEffect(() => {
+    void loadConfig();
     void refresh();
-  }, [refresh]);
+  }, [loadConfig, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
@@ -318,6 +372,175 @@ function BackorderPage() {
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  // ----- Motor de priorização -----
+
+  const runScan = useCallback(
+    async (cfg: PriorityConfig, currentRows: BOSRow[], silent = false) => {
+      setScanning(true);
+      try {
+        const abertosScan = currentRows.filter((r) => !r.finalizado);
+        const results = scanAll(
+          abertosScan.map((r) => ({
+            os: r.os,
+            nome: r.nome,
+            ativo: r.ativo,
+            predio: r.predio,
+            espaco: r.espaco,
+            outros: r.outros,
+            atividade: r.atividade,
+            data_solicitacao: r.data_solicitacao,
+            finalizado: r.finalizado,
+          })),
+          cfg,
+        );
+        const byOs = new Map(results.map((r) => [r.os, r]));
+        const changed: typeof results = [];
+        for (const r of currentRows) {
+          const res = byOs.get(r.os) ?? {
+            os: r.os,
+            is_prioridade: false,
+            motivo_prioridade: null,
+            prioridade_nivel: 0,
+          };
+          const prev = {
+            is_prioridade: !!r.is_prioridade,
+            motivo_prioridade: r.motivo_prioridade ?? null,
+            prioridade_nivel: r.prioridade_nivel ?? 0,
+          };
+          if (
+            prev.is_prioridade !== res.is_prioridade ||
+            prev.motivo_prioridade !== res.motivo_prioridade ||
+            prev.prioridade_nivel !== res.prioridade_nivel
+          ) {
+            changed.push(res);
+          }
+        }
+
+        const now = new Date().toISOString();
+        // Persistir alterações em paralelo, em lotes
+        const BATCH = 25;
+        for (let i = 0; i < changed.length; i += BATCH) {
+          const slice = changed.slice(i, i + BATCH);
+          await Promise.all(
+            slice.map((c) =>
+              supabase
+                .from("backorder_os")
+                .update({
+                  is_prioridade: c.is_prioridade,
+                  motivo_prioridade: c.motivo_prioridade,
+                  prioridade_nivel: c.prioridade_nivel,
+                  prioridade_scanned_at: now,
+                } as never)
+                .eq("os", c.os),
+            ),
+          );
+        }
+        // Atualiza timestamp global
+        await supabase
+          .from("backorder_prioridade_config" as never)
+          .update({ last_scan_at: now } as never)
+          .eq("id", 1);
+
+        setConfig((c) => ({ ...c, last_scan_at: now }));
+        setRows((prev) =>
+          prev.map((r) => {
+            const res = byOs.get(r.os);
+            if (!res) return r;
+            return {
+              ...r,
+              is_prioridade: res.is_prioridade,
+              motivo_prioridade: res.motivo_prioridade,
+              prioridade_nivel: res.prioridade_nivel,
+            };
+          }),
+        );
+        if (!silent) {
+          const total = results.filter((r) => r.is_prioridade).length;
+          toast.success(`Varredura concluída — ${total} chamado(s) prioritário(s).`);
+        }
+      } catch (e: unknown) {
+        console.error(e);
+        toast.error("Falha ao executar varredura de prioridades");
+      } finally {
+        setScanning(false);
+      }
+    },
+    [],
+  );
+
+  // Re-scan quando dados mudam (após refresh)
+  const lastRowsRef = useRef<string>("");
+  useEffect(() => {
+    if (loading || rows.length === 0) return;
+    const sig = rows.map((r) => `${r.os}:${r.finalizado ? 1 : 0}`).join("|");
+    if (sig === lastRowsRef.current) return;
+    lastRowsRef.current = sig;
+    void runScan(config, rows, true);
+  }, [rows, loading, config, runScan]);
+
+  async function saveConfig(next: PriorityConfig) {
+    const payload = {
+      predios_sensiveis: next.predios_sensiveis,
+      keyword_rules: next.keyword_rules,
+      dias_forca_prioridade: next.dias_forca_prioridade,
+      familias_habilitadas: next.familias_habilitadas,
+    };
+    const { error } = await supabase
+      .from("backorder_prioridade_config" as never)
+      .update(payload as never)
+      .eq("id", 1);
+    if (error) {
+      toast.error("Falha ao salvar configuração");
+      return;
+    }
+    setConfig(next);
+    toast.success("Configuração salva");
+    await runScan(next, rows, false);
+  }
+
+  const priorityRows = useMemo(() => rows.filter((r) => !r.finalizado && r.is_prioridade), [rows]);
+
+  async function exportPrioridades() {
+    if (priorityRows.length === 0) return toast.warning("Nenhum chamado prioritário no momento.");
+    const rowsExp = priorityRows.map((r) => ({
+      os: r.os,
+      nome: r.nome,
+      ativo: r.ativo,
+      predio: r.predio,
+      andar: r.andar,
+      espaco: r.espaco,
+      equipe: r.equipe,
+      termino_sla: r.termino_sla,
+      data_solicitacao: r.data_solicitacao,
+      outros: r.outros,
+      motivo_prioridade: r.motivo_prioridade ?? "",
+      prioridade_nivel: r.prioridade_nivel ?? 0,
+    }));
+    const blob = await generatePriorityExport({ titulo: "DEMARCHI", rows: rowsExp });
+    downloadBlob(blob, `PRIORIDADES_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function printPrioridades() {
+    if (priorityRows.length === 0) return toast.warning("Nenhum chamado prioritário no momento.");
+    openPriorityPrintView(
+      "DEMARCHI",
+      priorityRows.map((r) => ({
+        os: r.os,
+        nome: r.nome,
+        ativo: r.ativo,
+        predio: r.predio,
+        andar: r.andar,
+        espaco: r.espaco,
+        equipe: r.equipe,
+        termino_sla: r.termino_sla,
+        data_solicitacao: r.data_solicitacao,
+        outros: r.outros,
+        motivo_prioridade: r.motivo_prioridade ?? "",
+        prioridade_nivel: r.prioridade_nivel ?? 0,
+      })),
+    );
+  }
+
   return (
     <PageShell
       title="Backorder de Corretivas"
@@ -329,6 +552,9 @@ function BackorderPage() {
           </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" /> Importar planilha
+          </Button>
+          <Button variant="outline" onClick={() => setConfigOpen(true)}>
+            <Settings2 className="mr-2 h-4 w-4" /> Prioridades
           </Button>
           <Button onClick={exportar} disabled={filtered.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Exportar
@@ -398,6 +624,14 @@ function BackorderPage() {
             backorder={backorderAbertas}
             finalizadas={finalizadas}
             targetPct={targetPct}
+            priorityRows={priorityRows}
+            lastScanAt={config.last_scan_at}
+            scanning={scanning}
+            onRescan={() => runScan(config, rows, false)}
+            onExportPriorities={exportPrioridades}
+            onPrintPriorities={printPrioridades}
+            onOpenConfig={() => setConfigOpen(true)}
+            onFinalizar={(r) => toggleFinalizado(r, true)}
           />
         </TabsContent>
 
@@ -405,6 +639,12 @@ function BackorderPage() {
           <PowerBIView />
         </TabsContent>
       </Tabs>
+      <PriorityConfigDialog
+        open={configOpen}
+        onOpenChange={setConfigOpen}
+        config={config}
+        onSave={saveConfig}
+      />
     </PageShell>
   );
 }
@@ -680,15 +920,67 @@ function Dashboard({
   backorder,
   finalizadas,
   targetPct,
+  priorityRows,
+  lastScanAt,
+  scanning,
+  onRescan,
+  onExportPriorities,
+  onPrintPriorities,
+  onOpenConfig,
+  onFinalizar,
 }: {
   abertas: BOSRow[];
   backorder: BOSRow[];
   finalizadas: BOSRow[];
   targetPct: number;
+  priorityRows: BOSRow[];
+  lastScanAt: string | null;
+  scanning: boolean;
+  onRescan: () => void;
+  onExportPriorities: () => void;
+  onPrintPriorities: () => void;
+  onOpenConfig: () => void;
+  onFinalizar: (r: BOSRow) => void;
 }) {
-  const total = abertas.length;
-  const pct = total === 0 ? 0 : (backorder.length / total) * 100;
+  const totalCorretivas = abertas.length + finalizadas.length;
+  const pct = totalCorretivas === 0 ? 0 : (backorder.length / totalCorretivas) * 100;
   const dentroMeta = pct <= targetPct;
+  const proximoLimite = pct > targetPct - 1 && pct <= targetPct;
+  const statusColor = dentroMeta
+    ? proximoLimite
+      ? "#F59E0B"
+      : "#10B981"
+    : "#EF4444";
+
+  // Comparativo período anterior (últimos 30 dias vs 30 anteriores) — baseia-se
+  // em backorders "criadas" (data_solicitacao > 30d atrás quando aberta).
+  const now = Date.now();
+  const ms30 = 30 * 86400 * 1000;
+  const backAtual = backorder.length;
+  const backAnterior = useMemo(
+    () =>
+      abertas.filter((r) => {
+        const t = new Date(r.data_solicitacao).getTime();
+        return now - t > 60 * 86400 * 1000 && now - t <= 90 * 86400 * 1000;
+      }).length +
+      finalizadas.filter((r) => {
+        const t = new Date(r.data_solicitacao).getTime();
+        return now - t > 60 * 86400 * 1000 && now - t <= 90 * 86400 * 1000;
+      }).length,
+    [abertas, finalizadas, now],
+  );
+  const delta = backAtual - backAnterior;
+
+  const priorityOrdered = useMemo(
+    () =>
+      [...priorityRows].sort((a, b) => {
+        const ta = new Date(a.data_solicitacao).getTime();
+        const tb = new Date(b.data_solicitacao).getTime();
+        if (ta !== tb) return ta - tb;
+        return (b.prioridade_nivel ?? 0) - (a.prioridade_nivel ?? 0);
+      }),
+    [priorityRows],
+  );
 
   const porCategoria = useMemo(() => {
     const map = new Map<string, number>();
@@ -708,6 +1000,24 @@ function Dashboard({
     return Object.entries(b).map(([name, value]) => ({ name, value }));
   }, [backorder]);
 
+  const evolucao = useMemo(() => {
+    // Últimos 6 meses: quantas OS eram backorder ativas naquele mês (data_solicitacao > 30d)
+    const buckets: Array<{ name: string; value: number }> = [];
+    const nowD = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(nowD.getFullYear(), nowD.getMonth() - i, 1);
+      const start = d.getTime();
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 1).getTime();
+      const label = d.toLocaleDateString("pt-BR", { month: "short" });
+      const count = [...abertas, ...finalizadas].filter((r) => {
+        const t = new Date(r.data_solicitacao).getTime();
+        return t + 30 * 86400 * 1000 <= end && t < end && (r.finalizado ? true : t < end);
+      }).length;
+      buckets.push({ name: label, value: count });
+    }
+    return buckets;
+  }, [abertas, finalizadas]);
+
   const porPredio = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of backorder) {
@@ -720,157 +1030,565 @@ function Dashboard({
       .slice(0, 10);
   }, [backorder]);
 
-  const porCriticidade = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const r of backorder) {
-      const k = r.outros || "—";
-      map.set(k, (map.get(k) ?? 0) + 1);
-    }
-    return [...map.entries()].map(([name, value]) => ({ name, value }));
-  }, [backorder]);
+  const propPrio = useMemo(() => {
+    const p = priorityRows.length;
+    const np = Math.max(0, abertas.length - p);
+    return [
+      { name: "Prioritários", value: p },
+      { name: "Regulares", value: np },
+    ];
+  }, [priorityRows, abertas]);
 
-  const gaugeData = [{ name: "pct", value: Math.min(pct, 100), fill: dentroMeta ? "#10B981" : "#EF4444" }];
+  const gaugeData = [{ name: "pct", value: Math.min(pct, 100), fill: statusColor }];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      {/* KPI Principal */}
-      <GlassCard className="lg:col-span-1">
-        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          % de Backorder
-        </div>
-        <div className="mt-1 text-[10px] text-muted-foreground">
-          Meta: até {targetPct}%
-        </div>
-        <div className="mt-3 h-[220px]">
-          <ResponsiveContainer>
-            <RadialBarChart
-              innerRadius="70%"
-              outerRadius="100%"
-              data={gaugeData}
-              startAngle={90}
-              endAngle={-270}
-            >
-              <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-              <RadialBar background dataKey="value" cornerRadius={16} />
-            </RadialBarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="-mt-32 text-center">
-          <div
-            className={`text-4xl font-bold ${dentroMeta ? "text-emerald-500" : "text-red-500"}`}
-          >
-            {pct.toFixed(1)}%
+    <div className="space-y-4">
+      {/* 2.1 Cabeçalho de status */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <GlassCard className="lg:col-span-1">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            % de Backorder
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {backorder.length} de {total} OS abertas
+          <div className="mt-1 text-[10px] text-muted-foreground">Meta: até {targetPct}%</div>
+          <div className="relative mt-3 h-[200px]">
+            <ResponsiveContainer>
+              <RadialBarChart
+                innerRadius="70%"
+                outerRadius="100%"
+                data={gaugeData}
+                startAngle={90}
+                endAngle={-270}
+              >
+                <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                <RadialBar background dataKey="value" cornerRadius={16} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+              <div className="text-4xl font-bold" style={{ color: statusColor }}>
+                {pct.toFixed(1)}%
+              </div>
+              <div className="mt-1 text-[10px] text-muted-foreground">
+                {backorder.length} de {totalCorretivas} OS
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="mt-24 flex justify-center">
-          <Badge
-            className={
-              dentroMeta ? "bg-emerald-500/20 text-emerald-600" : "bg-red-500/20 text-red-600"
-            }
-          >
-            {dentroMeta ? "Dentro da meta" : "Acima da meta"}
-          </Badge>
-        </div>
-      </GlassCard>
-
-      {/* Categoria */}
-      <GlassCard className="lg:col-span-2">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Distribuição por categoria
-        </h3>
-        <div className="h-[260px]">
-          <ResponsiveContainer>
-            <BarChart data={porCategoria}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" fontSize={11} />
-              <YAxis fontSize={11} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                {porCategoria.map((c) => (
-                  <Cell key={c.name} fill={c.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </GlassCard>
-
-      {/* Aging */}
-      <GlassCard>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Aging (dias em aberto)
-        </h3>
-        <div className="h-[220px]">
-          <ResponsiveContainer>
-            <BarChart data={aging}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="name" fontSize={11} />
-              <YAxis fontSize={11} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3B82F6" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </GlassCard>
-
-      {/* Ranking Prédio */}
-      <GlassCard className="lg:col-span-2">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Top 10 prédios
-        </h3>
-        <div className="h-[220px]">
-          <ResponsiveContainer>
-            <BarChart data={porPredio} layout="vertical" margin={{ left: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis type="number" fontSize={11} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" fontSize={11} width={100} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#8B5CF6" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </GlassCard>
-
-      {/* Criticidade */}
-      <GlassCard>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Por criticidade
-        </h3>
-        <div className="h-[220px]">
-          <ResponsiveContainer>
-            <PieChart>
-              <Pie data={porCriticidade} dataKey="value" nameKey="name" outerRadius={80} label>
-                {porCriticidade.map((_, i) => (
-                  <Cell key={i} fill={["#EF4444", "#F59E0B", "#3B82F6", "#10B981", "#64748B"][i % 5]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </GlassCard>
-
-      {/* Contadores */}
-      <GlassCard className="lg:col-span-2">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-3xl font-bold text-red-500">{backorder.length}</div>
-            <div className="text-xs text-muted-foreground">Em backorder</div>
+          <div className="mt-2 flex justify-center">
+            <Badge style={{ backgroundColor: `${statusColor}22`, color: statusColor }}>
+              {dentroMeta ? (proximoLimite ? "Próximo do limite" : "Dentro da meta") : "Acima da meta"}
+            </Badge>
           </div>
-          <div>
-            <div className="text-3xl font-bold text-amber-500">{abertas.length - backorder.length}</div>
-            <div className="text-xs text-muted-foreground">Abertas &lt; 30d</div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Comparativo mensal
           </div>
-          <div>
-            <div className="text-3xl font-bold text-emerald-500">{finalizadas.length}</div>
-            <div className="text-xs text-muted-foreground">Finalizadas</div>
+          <div className="mt-4 flex items-center gap-3">
+            {delta > 0 ? (
+              <TrendingUp className="h-10 w-10 text-red-500" />
+            ) : delta < 0 ? (
+              <TrendingDown className="h-10 w-10 text-emerald-500" />
+            ) : (
+              <ArrowUpDown className="h-10 w-10 text-muted-foreground" />
+            )}
+            <div>
+              <div className="text-3xl font-bold">
+                {delta >= 0 ? "+" : ""}
+                {delta}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                vs. período anterior ({backAnterior} → {backAtual})
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="text-2xl font-bold text-red-500">{abertas.length}</div>
+              <div className="text-[10px] text-muted-foreground">Aberto</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-emerald-500">{finalizadas.length}</div>
+              <div className="text-[10px] text-muted-foreground">Finalizado</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-orange-500">{priorityRows.length}</div>
+              <div className="text-[10px] text-muted-foreground">Prioridades</div>
+            </div>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Motor de Priorização
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-orange-500" />
+            <div className="text-sm">
+              Última verificação:{" "}
+              <span className="font-medium">
+                {lastScanAt ? new Date(lastScanAt).toLocaleString("pt-BR") : "—"}
+              </span>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" onClick={onRescan} disabled={scanning}>
+              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`} />
+              Atualizar varredura
+            </Button>
+            <Button size="sm" variant="outline" onClick={onOpenConfig}>
+              <Settings2 className="mr-1.5 h-3.5 w-3.5" /> Configurar
+            </Button>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* 2.2 Chamados Prioritários */}
+      <GlassCard className="border-2 border-red-500/40 bg-red-500/5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-red-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider">
+              Chamados Prioritários
+            </h3>
+            <Badge className="bg-red-500 text-white">{priorityOrdered.length}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={onPrintPriorities}>
+              <Printer className="mr-1.5 h-3.5 w-3.5" /> Imprimir
+            </Button>
+            <Button size="sm" onClick={onExportPriorities}>
+              <Download className="mr-1.5 h-3.5 w-3.5" /> Exportar .xlsx
+            </Button>
           </div>
         </div>
+        {priorityOrdered.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-8 text-center">
+            <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
+            <p className="text-sm text-muted-foreground">
+              Nenhum chamado prioritário no momento.
+            </p>
+          </div>
+        ) : (
+          <ScrollArea className="max-h-[420px] pr-2">
+            <div className="grid gap-2 md:grid-cols-2">
+              {priorityOrdered.map((r) => {
+                const dias = daysBetween(r.data_solicitacao);
+                const nivelColor =
+                  (r.prioridade_nivel ?? 0) >= 3
+                    ? "bg-red-500 text-white"
+                    : (r.prioridade_nivel ?? 0) === 2
+                      ? "bg-orange-500 text-white"
+                      : "bg-amber-500 text-white";
+                return (
+                  <div
+                    key={r.os}
+                    className="group animate-fade-in rounded-xl border border-red-500/30 bg-background/60 p-3 shadow-sm transition-shadow hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
+                          <Badge className={nivelColor}>
+                            <Flame className="mr-0.5 h-3 w-3" />
+                            {(r.prioridade_nivel ?? 0) >= 3
+                              ? "Crítico"
+                              : (r.prioridade_nivel ?? 0) === 2
+                                ? "Alto"
+                                : "Médio"}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {dias}d
+                          </Badge>
+                        </div>
+                        <div className="mt-1 truncate text-sm font-medium" title={r.nome}>
+                          {r.nome}
+                        </div>
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {r.predio} · {r.andar} · {r.espaco}
+                        </div>
+                        <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
+                          <span className="line-clamp-2">{r.motivo_prioridade}</span>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 flex-none"
+                        onClick={() => onFinalizar(r)}
+                        title="Marcar como finalizado"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        )}
       </GlassCard>
+
+      {/* 2.3 Gráficos analíticos */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <GlassCard className="lg:col-span-2">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Distribuição por categoria
+          </h3>
+          <div className="h-[240px]">
+            <ResponsiveContainer>
+              <BarChart data={porCategoria}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="name" fontSize={11} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {porCategoria.map((c) => (
+                    <Cell key={c.name} fill={c.color} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Prioritários vs. Regulares
+          </h3>
+          <div className="h-[240px]">
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie data={propPrio} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} label>
+                  <Cell fill="#EF4444" />
+                  <Cell fill="#3B82F6" />
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Aging (dias em aberto)
+          </h3>
+          <div className="h-[220px]">
+            <ResponsiveContainer>
+              <BarChart data={aging}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="name" fontSize={11} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#F59E0B" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="lg:col-span-2">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Evolução mensal do backorder
+          </h3>
+          <div className="h-[220px]">
+            <ResponsiveContainer>
+              <BarChart data={evolucao}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="name" fontSize={11} />
+                <YAxis fontSize={11} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard className="lg:col-span-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Top 10 prédios/andares com mais backorder
+          </h3>
+          <div className="h-[260px]">
+            <ResponsiveContainer>
+              <BarChart data={porPredio} layout="vertical" margin={{ left: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis type="number" fontSize={11} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" fontSize={11} width={100} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#06B6D4" radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* 2.4 Rodapé de ações */}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="outline" onClick={onRescan} disabled={scanning}>
+          <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`} />
+          Atualizar varredura de prioridades
+        </Button>
+        <Button variant="outline" onClick={onPrintPriorities}>
+          <Printer className="mr-1.5 h-3.5 w-3.5" /> Imprimir Programação de Prioridades
+        </Button>
+        <Button onClick={onExportPriorities}>
+          <Download className="mr-1.5 h-3.5 w-3.5" /> Exportar Prioridades .xlsx
+        </Button>
+      </div>
     </div>
+  );
+}
+
+// ---------- Config Dialog ----------
+
+function PriorityConfigDialog({
+  open,
+  onOpenChange,
+  config,
+  onSave,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  config: PriorityConfig;
+  onSave: (c: PriorityConfig) => void | Promise<void>;
+}) {
+  const [draft, setDraft] = useState<PriorityConfig>(config);
+  useEffect(() => {
+    if (open) setDraft(config);
+  }, [open, config]);
+
+  function updateFamilia(k: string, v: boolean) {
+    setDraft((d) => ({ ...d, familias_habilitadas: { ...d.familias_habilitadas, [k]: v } }));
+  }
+  function updatePredio(i: number, patch: Partial<PredioSensivel>) {
+    setDraft((d) => ({
+      ...d,
+      predios_sensiveis: d.predios_sensiveis.map((p, idx) => (idx === i ? { ...p, ...patch } : p)),
+    }));
+  }
+  function addPredio() {
+    setDraft((d) => ({
+      ...d,
+      predios_sensiveis: [...d.predios_sensiveis, { predio: "", motivo: "", nivel: 2 }],
+    }));
+  }
+  function removePredio(i: number) {
+    setDraft((d) => ({
+      ...d,
+      predios_sensiveis: d.predios_sensiveis.filter((_, idx) => idx !== i),
+    }));
+  }
+  function updateRule(i: number, patch: Partial<KeywordRule>) {
+    setDraft((d) => ({
+      ...d,
+      keyword_rules: d.keyword_rules.map((r, idx) => (idx === i ? { ...r, ...patch } : r)),
+    }));
+  }
+  function addRule() {
+    setDraft((d) => ({
+      ...d,
+      keyword_rules: [
+        ...d.keyword_rules,
+        { familia: "custom", label: "Nova regra", nivel: 2, keywords: [] },
+      ],
+    }));
+  }
+  function removeRule(i: number) {
+    setDraft((d) => ({ ...d, keyword_rules: d.keyword_rules.filter((_, idx) => idx !== i) }));
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-orange-500" />
+            Motor de Priorização — Configuração
+          </DialogTitle>
+        </DialogHeader>
+        <ScrollArea className="max-h-[65vh] pr-4">
+          <div className="space-y-6">
+            {/* Famílias */}
+            <section>
+              <h4 className="mb-2 text-sm font-semibold">Famílias de critério</h4>
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
+                {(
+                  [
+                    ["higiene", "Higiene/Saúde"],
+                    ["cozinha", "Áreas sensíveis"],
+                    ["seguranca", "Segurança/Risco"],
+                    ["criticidade", "Criticidade original"],
+                    ["tempo", "Tempo em aberto"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <label
+                    key={k}
+                    className="flex items-center justify-between rounded-lg border border-border/60 p-2 text-xs"
+                  >
+                    <span>{label}</span>
+                    <Switch
+                      checked={draft.familias_habilitadas[k] !== false}
+                      onCheckedChange={(v) => updateFamilia(k, Boolean(v))}
+                    />
+                  </label>
+                ))}
+              </div>
+            </section>
+
+            {/* Dias */}
+            <section>
+              <h4 className="mb-2 text-sm font-semibold">Tempo que força priorização</h4>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  className="w-24"
+                  value={draft.dias_forca_prioridade}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      dias_forca_prioridade: Math.max(1, Number(e.target.value) || 60),
+                    }))
+                  }
+                />
+                <span className="text-xs text-muted-foreground">dias em aberto</span>
+              </div>
+            </section>
+
+            {/* Prédios sensíveis */}
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-sm font-semibold">Prédios/locais sensíveis</h4>
+                <Button size="sm" variant="outline" onClick={addPredio}>
+                  <Plus className="mr-1 h-3 w-3" /> Adicionar
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {draft.predios_sensiveis.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Nenhum prédio cadastrado.</p>
+                )}
+                {draft.predios_sensiveis.map((p, i) => (
+                  <div key={i} className="grid grid-cols-12 items-center gap-2 rounded-lg border border-border/60 p-2">
+                    <Input
+                      className="col-span-3"
+                      placeholder="Prédio (ex.: C70)"
+                      value={p.predio}
+                      onChange={(e) => updatePredio(i, { predio: e.target.value })}
+                    />
+                    <Input
+                      className="col-span-6"
+                      placeholder="Motivo (ex.: Cozinha)"
+                      value={p.motivo}
+                      onChange={(e) => updatePredio(i, { motivo: e.target.value })}
+                    />
+                    <Select
+                      value={String(p.nivel)}
+                      onValueChange={(v) => updatePredio(i, { nivel: Number(v) })}
+                    >
+                      <SelectTrigger className="col-span-2 h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Médio</SelectItem>
+                        <SelectItem value="2">Alto</SelectItem>
+                        <SelectItem value="3">Crítico</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="col-span-1"
+                      onClick={() => removePredio(i)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Palavras-gatilho */}
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-sm font-semibold">Palavras/expressões-gatilho</h4>
+                <Button size="sm" variant="outline" onClick={addRule}>
+                  <Plus className="mr-1 h-3 w-3" /> Adicionar regra
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {draft.keyword_rules.map((r, i) => (
+                  <div key={i} className="rounded-lg border border-border/60 p-3">
+                    <div className="grid grid-cols-12 items-center gap-2">
+                      <Input
+                        className="col-span-4"
+                        placeholder="Família (higiene, seguranca...)"
+                        value={r.familia}
+                        onChange={(e) => updateRule(i, { familia: e.target.value })}
+                      />
+                      <Input
+                        className="col-span-5"
+                        placeholder="Rótulo (Higiene/Saúde)"
+                        value={r.label}
+                        onChange={(e) => updateRule(i, { label: e.target.value })}
+                      />
+                      <Select
+                        value={String(r.nivel)}
+                        onValueChange={(v) => updateRule(i, { nivel: Number(v) })}
+                      >
+                        <SelectTrigger className="col-span-2 h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Médio</SelectItem>
+                          <SelectItem value="2">Alto</SelectItem>
+                          <SelectItem value="3">Crítico</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="col-span-1"
+                        onClick={() => removeRule(i)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                      </Button>
+                    </div>
+                    <div className="mt-2">
+                      <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Palavras (separadas por vírgula)
+                      </Label>
+                      <Input
+                        value={r.keywords.join(", ")}
+                        onChange={(e) =>
+                          updateRule(i, {
+                            keywords: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          })
+                        }
+                        placeholder="entupimento, vazamento de esgoto..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              await onSave(draft);
+              onOpenChange(false);
+            }}
+          >
+            Salvar e re-executar varredura
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
