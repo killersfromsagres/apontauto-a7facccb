@@ -196,6 +196,8 @@ function PainelLegalPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<LegalItem | null>(null);
   const [attachItem, setAttachItem] = useState<LegalItem | null>(null);
+  const { isAdmin } = useIsAdmin();
+
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["legal-items"],
