@@ -19,6 +19,7 @@ import {
   ZoomIn,
   ZoomOut,
   Info,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Tooltip,
@@ -40,6 +41,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadBlob } from "@/lib/download";
 import {
@@ -49,6 +57,7 @@ import {
   deleteMap,
   upsertTalude,
   deleteTalude,
+  verifyAndRepairMap,
 } from "@/lib/taludes.functions";
 import { STATUS_META, exportMapPNG, type TaludeStatus } from "@/lib/taludes/export";
 import referenceMap from "@/assets/demarchi-taludes.png.asset.json";
@@ -112,6 +121,9 @@ function TaludesPage() {
   const deleteMapFn = useServerFn(deleteMap);
   const upsertFn = useServerFn(upsertTalude);
   const deleteFn = useServerFn(deleteTalude);
+  const verifyFn = useServerFn(verifyAndRepairMap);
+  const [auditing, setAuditing] = useState(false);
+  const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
 
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
@@ -448,14 +460,57 @@ function TaludesPage() {
     updateMutation.mutate({ id: t.id, [field]: addDays(base, days) } as Partial<TaludeRow> & { id: string });
   };
 
+  const clearResidualUIFor = (id: string) => {
+    setSelectedTaludeId((cur) => (cur === id ? null : cur));
+    setHoverId((cur) => (cur === id ? null : cur));
+    setZoomedTaludeId((cur) => (cur === id ? null : cur));
+    if (editingPolygonFor === id) {
+      setEditingPolygonFor(null);
+      setDrawingPoints([]);
+      setDrawingNumero("");
+    }
+  };
+
   const removeTalude = async (t: TaludeRow) => {
     if (!confirm(`Excluir talude ${t.numero}?`)) return;
     try {
       await deleteFn({ data: { id: t.id } });
+      clearResidualUIFor(t.id);
       if (map) await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
-      setSelectedTaludeId(null);
+      toast.success(`Talude ${t.numero} removido`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao excluir");
+    }
+  };
+
+  const runAudit = async (dryRun = false) => {
+    if (!map) return;
+    setAuditing(true);
+    try {
+      const report = await verifyFn({ data: { map_id: map.id, dry_run: dryRun } });
+      setAuditReport(report);
+      await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+      // Also purge UI state for any talude that no longer exists after the audit
+      const stillExists = new Set(taludes.map((x) => x.id));
+      if (selectedTaludeId && !stillExists.has(selectedTaludeId)) setSelectedTaludeId(null);
+      if (hoverId && !stillExists.has(hoverId)) setHoverId(null);
+      if (zoomedTaludeId && !stillExists.has(zoomedTaludeId)) setZoomedTaludeId(null);
+      if (editingPolygonFor && !stillExists.has(editingPolygonFor)) {
+        setEditingPolygonFor(null);
+        setDrawingPoints([]);
+      }
+      const totalIssues = report.checks.length;
+      if (totalIssues === 0) {
+        toast.success("Nenhum problema encontrado ✓");
+      } else {
+        toast.success(
+          `Auditoria: ${report.fixed.length} correções aplicadas · ${report.unresolved.length} pendente(s)`,
+        );
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha na auditoria");
+    } finally {
+      setAuditing(false);
     }
   };
 
@@ -553,6 +608,15 @@ function TaludesPage() {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            onClick={() => runAudit(false)}
+            disabled={!map || auditing}
+            title="Verificar e reparar inconsistências"
+          >
+            <ShieldCheck className={`mr-2 h-4 w-4 ${auditing ? "animate-pulse" : ""}`} />
+            {auditing ? "Auditando…" : "Auditoria"}
+          </Button>
           <Button variant="outline" onClick={doExport} disabled={!imageUrl || taludes.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar PNG
           </Button>
@@ -1025,6 +1089,7 @@ function TaludesPage() {
           )}
         </div>
       </div>
+      <AuditReportDialog report={auditReport} onClose={() => setAuditReport(null)} />
     </PageShell>
   );
 }
@@ -1199,5 +1264,95 @@ function TaludeDetail({
         {saving ? "Salvando…" : "Salvar alterações"}
       </Button>
     </div>
+  );
+}
+
+function AuditReportDialog({
+  report,
+  onClose,
+}: {
+  report: Awaited<ReturnType<typeof verifyAndRepairMap>> | null;
+  onClose: () => void;
+}) {
+  const open = report !== null;
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Relatório de auditoria
+          </DialogTitle>
+          <DialogDescription>
+            {report && (
+              <>
+                {report.total} talude(s) analisado(s) em{" "}
+                {new Date(report.finishedAt).toLocaleTimeString("pt-BR")}
+                {report.dryRun && " · modo simulação (nenhuma correção aplicada)"}
+              </>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {report && (
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                <div className="text-2xl font-bold">{report.checks.length}</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Verificações
+                </div>
+              </div>
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">
+                <div className="text-2xl font-bold">{report.fixed.length}</div>
+                <div className="text-[10px] uppercase tracking-widest">Corrigidas</div>
+              </div>
+              <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3 text-orange-700 dark:text-orange-300">
+                <div className="text-2xl font-bold">{report.unresolved.length}</div>
+                <div className="text-[10px] uppercase tracking-widest">Pendentes</div>
+              </div>
+            </div>
+
+            {report.fixed.length > 0 && (
+              <section>
+                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Correções aplicadas
+                </h4>
+                <ul className="space-y-1">
+                  {report.fixed.map((e, i) => (
+                    <li key={i} className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2.5 py-1.5 text-xs">
+                      <div className="font-medium">{e.message}</div>
+                      {e.action && <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">{e.action}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {report.unresolved.length > 0 && (
+              <section>
+                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Requer atenção manual
+                </h4>
+                <ul className="space-y-1">
+                  {report.unresolved.map((e, i) => (
+                    <li key={i} className="rounded-md border border-orange-500/30 bg-orange-500/5 px-2.5 py-1.5 text-xs">
+                      {e.numero != null && <strong>Talude {e.numero}: </strong>}
+                      {e.message}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {report.checks.length === 0 && (
+              <p className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-300">
+                ✓ Nenhuma inconsistência encontrada. Tudo em ordem.
+              </p>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
