@@ -409,7 +409,7 @@ function DashboardView({
                 {pct.toFixed(1)}%
               </span>
               <span className="text-xs text-muted-foreground">
-                {ativos.length} de {ativos.length + finalizados.filter((r) => !r.finalizado).length + (ativos.length ? 0 : 0)} OS abertas
+                {ativos.length} OS em backorder
               </span>
             </div>
           </div>
