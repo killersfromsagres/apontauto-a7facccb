@@ -983,6 +983,8 @@ function Dashboard({
     [priorityRows],
   );
 
+  const [selectedPriority, setSelectedPriority] = useState<BOSRow | null>(null);
+
   const porCategoria = useMemo(() => {
     const map = new Map<string, number>();
     for (const r of backorder) map.set(r.atividade, (map.get(r.atividade) ?? 0) + 1);
