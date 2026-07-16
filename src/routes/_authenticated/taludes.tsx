@@ -49,6 +49,7 @@ import {
   deleteMap,
   upsertTalude,
   deleteTalude,
+  verifyAndRepairMap,
 } from "@/lib/taludes.functions";
 import { STATUS_META, exportMapPNG, type TaludeStatus } from "@/lib/taludes/export";
 import referenceMap from "@/assets/demarchi-taludes.png.asset.json";
