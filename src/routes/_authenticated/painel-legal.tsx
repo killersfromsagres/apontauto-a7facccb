@@ -131,18 +131,18 @@ function TaskTypeIcon({ titulo, className }: { titulo: string; className?: strin
   return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
 }
 
-/** Nome da empresa com efeito de luz percorrendo o texto. */
+/** Nome da empresa em branco negrito com luz passando pelas letras. */
 function CompanyName({ name, className }: { name: string; className?: string }) {
   if (!name) return <span className="text-muted-foreground">—</span>;
   return (
     <span
       className={cn(
-        "inline-block bg-clip-text font-semibold text-transparent",
+        "inline-block bg-clip-text font-bold text-transparent",
         className,
       )}
       style={{
         backgroundImage:
-          "linear-gradient(110deg, var(--primary) 0%, var(--primary) 35%, #ffffff 50%, var(--primary) 65%, var(--primary) 100%)",
+          "linear-gradient(110deg, #ffffff 0%, #ffffff 40%, rgba(191,219,254,0.95) 50%, #ffffff 60%, #ffffff 100%)",
         backgroundSize: "220% 100%",
         animation: "shine 3.6s linear infinite",
       }}
