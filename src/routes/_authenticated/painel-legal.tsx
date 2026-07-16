@@ -1094,7 +1094,7 @@ function CalendarView({
               {onlyMarked ? "Só marcadas" : "Todas"}
             </Button>
             {markedCount > 0 && (
-              <Button size="sm" variant="ghost" onClick={clearMarks} className="h-8" title="Limpar marcações">
+              <Button size="sm" variant="ghost" onClick={onClearMarks} className="h-8" title="Limpar marcações">
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -1131,7 +1131,7 @@ function CalendarView({
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => toggleMark(it.id)}
+                        onClick={() => onToggleMark(it.id)}
                         title={isMarked ? "Desmarcar" : "Marcar"}
                         className={cn(
                           "grid h-7 w-7 place-items-center rounded-md border transition",
