@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+
 import { toast } from "sonner";
 import { CalendarIcon, Download, Plus, Trash2, UserCog, X, Droplets, SprayCan, Trees } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
@@ -373,11 +373,7 @@ function CategoriaEditor({
             <p className="text-sm">Preencha o formulário para gerar a distribuição de horários.</p>
           </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60"
-          >
+          <div className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60 animate-in fade-in-0 duration-300">
             <Table>
               <TableHeader className="sticky top-0 z-10 backdrop-blur-md">
                 <TableRow>
@@ -402,7 +398,8 @@ function CategoriaEditor({
                 ))}
               </TableBody>
             </Table>
-          </motion.div>
+          </div>
+
         )}
       </GlassCard>
     </div>
