@@ -13,7 +13,6 @@ export const MENU_KEYS = [
   "corretiva",
   "apontamentos",
   "painel-legal",
-  "taludes",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];

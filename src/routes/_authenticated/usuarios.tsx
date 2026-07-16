@@ -56,7 +56,6 @@ const MENU_LABELS: Record<MenuKey, string> = {
   corretiva: "Programação Corretiva",
   apontamentos: "Apontamentos",
   "painel-legal": "Painel de Itens Legais",
-  taludes: "Programação de Taludes",
   configuracoes: "Configurações",
 };
 
