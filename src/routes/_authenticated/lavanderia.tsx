@@ -170,12 +170,40 @@ function LavanderiaPage() {
         toast.warning("Nenhuma linha reconhecida na Matriz.");
         return;
       }
-      const colabMap = new Map<string, { matricula: string; nome: string }>();
-      const pecaRows: Array<{ codigo: string; matricula: string }> = [];
+
+      // Validação: agrupa por matrícula e detecta códigos duplicados / vazios.
+      const colabMap = new Map<
+        string,
+        { matricula: string; nome: string; setor: string | null }
+      >();
+      const codigoSeen = new Map<string, string>(); // codigo -> matricula
+      const pecaRows: Array<{ codigo: string; matricula: string; setor: string | null }> = [];
+      const duplicados: string[] = [];
+      const contagemCat: Record<string, number> = {
+        colaborador: 0,
+        reserva: 0,
+        visitante: 0,
+        avulso: 0,
+      };
+
       for (const r of rows) {
-        colabMap.set(r.matricula, { matricula: r.matricula, nome: r.nome });
-        pecaRows.push({ codigo: r.codigo, matricula: r.matricula });
+        if (!colabMap.has(r.matricula)) {
+          colabMap.set(r.matricula, {
+            matricula: r.matricula,
+            nome: r.nome,
+            setor: r.setor,
+          });
+          contagemCat[r.categoria] = (contagemCat[r.categoria] ?? 0) + 1;
+        }
+        const prev = codigoSeen.get(r.codigo);
+        if (prev && prev !== r.matricula) {
+          duplicados.push(r.codigo);
+          continue;
+        }
+        codigoSeen.set(r.codigo, r.matricula);
+        pecaRows.push({ codigo: r.codigo, matricula: r.matricula, setor: r.setor });
       }
+
       const colabPayload = Array.from(colabMap.values());
       for (let i = 0; i < colabPayload.length; i += 500) {
         const { error } = await supabase
@@ -189,8 +217,10 @@ function LavanderiaPage() {
           .upsert(pecaRows.slice(i, i + 500), { onConflict: "codigo" });
         if (error) throw error;
       }
+
       toast.success(
-        `Matriz importada: ${colabPayload.length} colaborador(es), ${pecaRows.length} peça(s).`,
+        `Matriz importada · ${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s) · ${pecaRows.length} código(s) de barras${duplicados.length ? ` · ${duplicados.length} código(s) duplicado(s) ignorado(s)` : ""}.`,
+        { duration: 6000 },
       );
       await refresh();
     } catch (e) {
@@ -213,7 +243,6 @@ function LavanderiaPage() {
         toast.warning("Nenhum evento reconhecido nos arquivos.");
         return;
       }
-      // Dedup local antes do upsert
       const seen = new Set<string>();
       const dedup = all.filter((e) => {
         const k = `${e.codigo}|${e.tipo}|${e.data}`;
@@ -222,7 +251,6 @@ function LavanderiaPage() {
         return true;
       });
 
-      // Garante cadastro mínimo de peças que ainda não estão em lavanderia_pecas
       const pecasSet = new Set(pecas.map((p) => p.codigo));
       const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter(
         (c) => !pecasSet.has(c),
@@ -237,7 +265,6 @@ function LavanderiaPage() {
         }
       }
 
-      // Insere eventos (dedup por UNIQUE)
       let inseridos = 0;
       let ignorados = 0;
       for (let i = 0; i < dedup.length; i += 500) {
@@ -251,12 +278,10 @@ function LavanderiaPage() {
         ignorados += chunk.length - ins;
       }
       toast.success(
-        `Importado: ${inseridos} novo(s), ${ignorados} duplicado(s) ignorado(s). Arquivos: ${files.length}.`,
+        `Movimentação importada · ${inseridos} evento(s) novo(s), ${ignorados} duplicado(s) ignorado(s)${novasPecas.length ? ` · ${novasPecas.length} código(s) novo(s) cadastrado(s)` : ""}.`,
+        { duration: 6000 },
       );
       await refresh();
-
-      // Excel automático pós-importação
-      await downloadExcel();
     } catch (e) {
       console.error(e);
       toast.error((e as Error)?.message ?? "Falha ao importar movimentação");
