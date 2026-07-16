@@ -7,6 +7,7 @@ import {
   Settings,
   LayoutDashboard,
   UserPlus,
+  Mountain,
 } from "lucide-react";
 import {
   Sidebar,
@@ -29,10 +30,12 @@ const baseItems = [
   { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
   { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
   { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
+  { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
   { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
   { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
   { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
 ];
+
 
 const adminItem = { key: "usuarios", title: "Usuários", url: "/usuarios", icon: UserPlus };
 
