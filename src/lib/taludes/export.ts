@@ -98,7 +98,6 @@ export async function exportMapPNG(opts: {
     const c = centroid(t.polygon);
     const cx = (c.x / 100) * W;
     const cy = HEADER_H + (c.y / 100) * H;
-    const label = `T${String(t.numero).padStart(2, "0")}`;
     const dateStr =
       t.status === "finalizado"
         ? `Próx: ${fmtBr(t.proxima_data)}`
@@ -106,26 +105,31 @@ export async function exportMapPNG(opts: {
           ? `Exec: ${fmtBr(t.data_execucao)}`
           : `Prog: ${fmtBr(t.data_programada)}`;
 
-    ctx.font = "bold 20px system-ui, sans-serif";
-    const m1 = ctx.measureText(label);
-    ctx.font = "12px system-ui, sans-serif";
-    const m2 = ctx.measureText(dateStr);
-    const boxW = Math.max(m1.width, m2.width) + 16;
-    const boxH = 46;
-    ctx.fillStyle = meta.fill;
-    roundRect(ctx, cx - boxW / 2, cy - boxH / 2, boxW, boxH, 8);
-    ctx.fill();
-    ctx.strokeStyle = meta.stroke;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.fillStyle = meta.text;
-    ctx.font = "bold 18px system-ui, sans-serif";
+    // Big yellow number with dark outline (matches original hand-drawn style)
+    ctx.font = "900 44px system-ui, -apple-system, Segoe UI, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(label, cx, cy - 6);
-    ctx.font = "11px system-ui, sans-serif";
-    ctx.fillText(dateStr, cx, cy + 12);
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 8;
+    ctx.strokeText(String(t.numero), cx, cy - 8);
+    ctx.fillStyle = "#fde047";
+    ctx.fillText(String(t.numero), cx, cy - 8);
+
+    // Small date pill under the number
+    ctx.font = "600 13px system-ui, sans-serif";
+    const dm = ctx.measureText(dateStr);
+    const pillW = dm.width + 14;
+    const pillH = 20;
+    const pillX = cx - pillW / 2;
+    const pillY = cy + 18;
+    ctx.fillStyle = "rgba(15,23,42,0.85)";
+    roundRect(ctx, pillX, pillY, pillW, pillH, 6);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(dateStr, cx, pillY + pillH / 2 + 1);
     ctx.textAlign = "start";
+    ctx.textBaseline = "alphabetic";
   }
 
   // footer / legend
