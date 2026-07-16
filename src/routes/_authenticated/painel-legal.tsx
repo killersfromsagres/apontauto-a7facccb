@@ -251,6 +251,7 @@ function PainelLegalPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter((it) => {
+      if (onlyMarked && !marked.has(it.id)) return false;
       if (empresaFilter !== "todas" && it.empresa !== empresaFilter) return false;
       if (periodicidadeFilter !== "todas" && it.periodicidade !== periodicidadeFilter) return false;
       if (statusFilter !== "todos" && statusOf(it) !== statusFilter) return false;
@@ -258,7 +259,7 @@ function PainelLegalPage() {
         return false;
       return true;
     });
-  }, [items, search, empresaFilter, periodicidadeFilter, statusFilter]);
+  }, [items, search, empresaFilter, periodicidadeFilter, statusFilter, onlyMarked, marked]);
 
   const alerts = useLegalAlerts(items);
 
