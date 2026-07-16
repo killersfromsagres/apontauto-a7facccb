@@ -337,8 +337,37 @@ function ProgramacaoTaludesPage() {
           </div>
         )}
 
+        {/* Alerta explícito de chuva HOJE — interrupção de atividades */}
+        {hojeStatus?.nivel === "chuva" && (
+          <div className="rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 to-red-600/10 px-4 py-3 shadow-lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <CloudRain className="mt-0.5 h-6 w-6 shrink-0 text-red-500 animate-pulse" />
+                <div>
+                  <p className="font-display text-base font-bold text-red-700 dark:text-red-300">
+                    Atividades de talude interrompidas por chuva
+                  </p>
+                  <p className="text-xs text-red-800/90 dark:text-red-200/90">
+                    {hojeStatus.motivo} — registre a evidência para o histórico do dia.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleRegistrarEvidencia}
+                disabled={registrandoEvid}
+                className="shrink-0"
+              >
+                {registrandoEvid ? "Registrando…" : "Registrar evidência de chuva"}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Painel climático */}
-        <GlassCard className="space-y-4">
+        <GlassCard className="space-y-4" ref={climaPanelRef}>
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               {clima && <ClimaIcon code={wmoIcone(0)} className="h-10 w-10" />}
