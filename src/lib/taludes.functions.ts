@@ -209,9 +209,17 @@ export const verifyAndRepairMap = createServerFn({ method: "POST" })
     const fixed: AuditEntry[] = [];
     const unresolved: AuditEntry[] = [];
     const toDelete: string[] = [];
-    const patches = new Map<string, Record<string, unknown>>();
+    type Patch = {
+      numero?: number;
+      data_programada?: string | null;
+      data_execucao?: string | null;
+      data_conclusao?: string | null;
+      proxima_data?: string | null;
+      periodicidade_dias?: number | null;
+    };
+    const patches = new Map<string, Patch>();
 
-    const patch = (id: string, delta: Record<string, unknown>) => {
+    const patch = (id: string, delta: Patch) => {
       const cur = patches.get(id) ?? {};
       patches.set(id, { ...cur, ...delta });
     };
