@@ -113,6 +113,9 @@ function TaludesPage() {
   const deleteMapFn = useServerFn(deleteMap);
   const upsertFn = useServerFn(upsertTalude);
   const deleteFn = useServerFn(deleteTalude);
+  const verifyFn = useServerFn(verifyAndRepairMap);
+  const [auditing, setAuditing] = useState(false);
+  const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
 
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
