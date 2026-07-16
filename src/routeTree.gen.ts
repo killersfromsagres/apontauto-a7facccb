@@ -29,6 +29,7 @@ import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -134,6 +135,11 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicClimaRoute = ApiPublicClimaRouteImport.update({
+  id: '/api/public/clima',
+  path: '/api/public/clima',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/public/clima': typeof ApiPublicClimaRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/clima': typeof ApiPublicClimaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/clima': typeof ApiPublicClimaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/programacao-taludes'
     | '/taludes'
     | '/usuarios'
+    | '/api/public/clima'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/taludes'
     | '/usuarios'
     | '/'
+    | '/api/public/clima'
   id:
     | '__root__'
     | '/_authenticated'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
+    | '/api/public/clima'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -275,6 +287,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
+  ApiPublicClimaRoute: typeof ApiPublicClimaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/clima': {
+      id: '/api/public/clima'
+      path: '/api/public/clima'
+      fullPath: '/api/public/clima'
+      preLoaderRoute: typeof ApiPublicClimaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -465,6 +485,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
+  ApiPublicClimaRoute: ApiPublicClimaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

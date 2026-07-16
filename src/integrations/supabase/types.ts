@@ -556,6 +556,45 @@ export type Database = {
           },
         ]
       }
+      taludes_chuva_evidencias: {
+        Row: {
+          condicao: string | null
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          imagem_data_url: string
+          mensagem: string
+          precipitacao_mm: number | null
+          prob_chuva: number | null
+          temperatura: number | null
+        }
+        Insert: {
+          condicao?: string | null
+          created_at?: string
+          created_by?: string | null
+          data: string
+          id?: string
+          imagem_data_url: string
+          mensagem: string
+          precipitacao_mm?: number | null
+          prob_chuva?: number | null
+          temperatura?: number | null
+        }
+        Update: {
+          condicao?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          imagem_data_url?: string
+          mensagem?: string
+          precipitacao_mm?: number | null
+          prob_chuva?: number | null
+          temperatura?: number | null
+        }
+        Relationships: []
+      }
       taludes_clima_config: {
         Row: {
           id: boolean
