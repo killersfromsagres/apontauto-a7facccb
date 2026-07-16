@@ -944,41 +944,31 @@ function CalendarView({
   items,
   onOpenItem,
   onComplete,
+  marked,
+  onToggleMark,
+  onClearMarks,
+  onlyMarked,
+  onToggleOnlyMarked,
 }: {
   items: LegalItem[];
   onOpenItem: (it: LegalItem) => void;
   onComplete: (it: LegalItem) => void;
+  marked: Set<string>;
+  onToggleMark: (id: string) => void;
+  onClearMarks: () => void;
+  onlyMarked: boolean;
+  onToggleOnlyMarked: () => void;
 }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [selected, setSelected] = useState<string | null>(null);
-  const [onlyMarked, setOnlyMarked] = useState(false);
-  const [marked, setMarked] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = window.localStorage.getItem("legal-calendar-marked");
-      return raw ? new Set<string>(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
-  });
 
-  const persist = (s: Set<string>) => {
-    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
-  };
-  const toggleMark = (id: string) => {
-    setMarked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      persist(next);
-      return next;
-    });
-  };
-  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
-
-  const visibleItems = useMemo(
-    () => (onlyMarked ? items.filter((it) => marked.has(it.id)) : items),
-    [items, onlyMarked, marked],
-  );
+  const visibleItems = items;
+  const toggleMark = onToggleMark;
+  const clearMarks = onClearMarks;
+  const setOnlyMarked = (_: unknown) => onToggleOnlyMarked();
+  // (mantido: onlyMarked vem do pai, itens já filtrados na página)
 
   const eventsByDay = useMemo(() => {
     const m = new Map<string, LegalItem[]>();
