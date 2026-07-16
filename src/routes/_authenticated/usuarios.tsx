@@ -52,8 +52,11 @@ type Role = "admin" | "user";
 
 const MENU_LABELS: Record<MenuKey, string> = {
   dashboard: "Dashboard",
+  programacao: "Programação Semanal",
+  backorder: "Backorder de Corretivas",
   preventiva: "Programação Preventiva",
   corretiva: "Programação Corretiva",
+  taludes: "Programação de Taludes",
   apontamentos: "Apontamentos",
   "painel-legal": "Painel de Itens Legais",
   configuracoes: "Configurações",

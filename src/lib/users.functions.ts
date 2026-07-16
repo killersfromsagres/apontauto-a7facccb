@@ -9,8 +9,11 @@ const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
 
 export const MENU_KEYS = [
   "dashboard",
+  "programacao",
+  "backorder",
   "preventiva",
   "corretiva",
+  "taludes",
   "apontamentos",
   "painel-legal",
   "configuracoes",
