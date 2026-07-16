@@ -152,3 +152,283 @@ export const deleteTalude = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ─────────────────────────────────────────────────────────────
+// Rotina de auditoria e reparo automático para um mapa
+// Detecta inconsistências, aplica correções seguras e retorna
+// um log detalhado (checks / fixed / unresolved) para exibição.
+// ─────────────────────────────────────────────────────────────
+type AuditEntry = {
+  taludeId: string | null;
+  numero: number | null;
+  code: string;
+  message: string;
+  action?: string;
+};
+
+function addDaysIso(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export const verifyAndRepairMap = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { map_id: string; dry_run?: boolean }) =>
+    z.object({ map_id: z.string().uuid(), dry_run: z.boolean().optional() }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    const startedAt = new Date().toISOString();
+    const dryRun = data.dry_run ?? false;
+
+    const [{ data: map, error: mapErr }, { data: rows, error: listErr }] = await Promise.all([
+      context.supabase
+        .from("talude_maps")
+        .select("id, periodicidade_dias")
+        .eq("id", data.map_id)
+        .maybeSingle(),
+      context.supabase.from("taludes").select("*").eq("map_id", data.map_id).order("numero"),
+    ]);
+    if (mapErr) throw new Error(mapErr.message);
+    if (listErr) throw new Error(listErr.message);
+    if (!map) throw new Error("Mapa não encontrado");
+
+    const taludes = (rows ?? []) as Array<{
+      id: string;
+      numero: number;
+      polygon: unknown;
+      status: "programado" | "em_execucao" | "finalizado";
+      data_programada: string | null;
+      data_execucao: string | null;
+      data_conclusao: string | null;
+      proxima_data: string | null;
+      periodicidade_dias: number | null;
+    }>;
+
+    const checks: AuditEntry[] = [];
+    const fixed: AuditEntry[] = [];
+    const unresolved: AuditEntry[] = [];
+    const toDelete: string[] = [];
+    const patches = new Map<string, Record<string, unknown>>();
+
+    const patch = (id: string, delta: Record<string, unknown>) => {
+      const cur = patches.get(id) ?? {};
+      patches.set(id, { ...cur, ...delta });
+    };
+
+    // 1. Polígonos inválidos ou corrompidos
+    for (const t of taludes) {
+      const poly = Array.isArray(t.polygon) ? (t.polygon as Array<{ x: unknown; y: unknown }>) : null;
+      const valid =
+        poly !== null &&
+        poly.length >= 3 &&
+        poly.every(
+          (p) =>
+            typeof p?.x === "number" &&
+            typeof p?.y === "number" &&
+            Number.isFinite(p.x) &&
+            Number.isFinite(p.y) &&
+            p.x >= 0 && p.x <= 100 && p.y >= 0 && p.y <= 100,
+        );
+      if (!valid) {
+        checks.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "invalid_polygon",
+          message: `Talude ${t.numero}: polígono inválido (${Array.isArray(poly) ? poly.length : 0} pontos)`,
+        });
+        unresolved.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "invalid_polygon",
+          message: "Requer redesenho manual da área",
+        });
+      }
+    }
+
+    // 2. Numeração duplicada — manter o mais antigo (menor created_at implícito pela ordem)
+    const byNumero = new Map<number, typeof taludes>();
+    for (const t of taludes) {
+      const list = byNumero.get(t.numero) ?? [];
+      list.push(t);
+      byNumero.set(t.numero, list);
+    }
+    for (const [numero, list] of byNumero) {
+      if (list.length > 1) {
+        checks.push({
+          taludeId: null,
+          numero,
+          code: "duplicate_numero",
+          message: `Número ${numero} duplicado em ${list.length} taludes`,
+        });
+        const usedNumbers = new Set(taludes.map((x) => x.numero));
+        for (let i = 1; i < list.length; i++) {
+          let candidate = 1;
+          while (usedNumbers.has(candidate)) candidate++;
+          usedNumbers.add(candidate);
+          patch(list[i].id, { numero: candidate });
+          fixed.push({
+            taludeId: list[i].id,
+            numero: list[i].numero,
+            code: "duplicate_numero",
+            message: `Renumerado para ${candidate}`,
+            action: `numero: ${list[i].numero} → ${candidate}`,
+          });
+        }
+      }
+    }
+
+    // 3. Datas inconsistentes — se inversas, corrige preservando a maior janela
+    for (const t of taludes) {
+      const dp = t.data_programada;
+      const de = t.data_execucao;
+      const dc = t.data_conclusao;
+
+      if (dp && de && de < dp) {
+        checks.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "date_order",
+          message: `Talude ${t.numero}: execução (${de}) anterior à programada (${dp})`,
+        });
+        patch(t.id, { data_programada: de });
+        fixed.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "date_order",
+          message: "Programada ajustada para coincidir com execução",
+          action: `data_programada: ${dp} → ${de}`,
+        });
+      }
+      if (de && dc && dc < de) {
+        checks.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "date_order",
+          message: `Talude ${t.numero}: conclusão (${dc}) anterior à execução (${de})`,
+        });
+        patch(t.id, { data_execucao: dc });
+        fixed.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "date_order",
+          message: "Execução ajustada para coincidir com conclusão",
+          action: `data_execucao: ${de} → ${dc}`,
+        });
+      }
+    }
+
+    // 4. Periodicidade ausente/negativa
+    for (const t of taludes) {
+      if (t.periodicidade_dias == null || t.periodicidade_dias <= 0) {
+        const fallback = map.periodicidade_dias ?? 180;
+        checks.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "missing_periodicity",
+          message: `Talude ${t.numero}: periodicidade ausente`,
+        });
+        patch(t.id, { periodicidade_dias: fallback });
+        fixed.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "missing_periodicity",
+          message: `Definida periodicidade padrão do mapa`,
+          action: `periodicidade_dias: → ${fallback}`,
+        });
+      }
+    }
+
+    // 5. Finalizado sem proxima_data — recomputar
+    for (const t of taludes) {
+      if (t.status === "finalizado") {
+        const base = t.data_conclusao || t.data_execucao || t.data_programada;
+        const per = (patches.get(t.id)?.periodicidade_dias as number | undefined) ??
+          t.periodicidade_dias ??
+          map.periodicidade_dias ??
+          180;
+        if (!t.proxima_data && base) {
+          checks.push({
+            taludeId: t.id,
+            numero: t.numero,
+            code: "missing_next_date",
+            message: `Talude ${t.numero}: finalizado sem próxima data`,
+          });
+          const next = addDaysIso(base, per);
+          patch(t.id, { proxima_data: next });
+          fixed.push({
+            taludeId: t.id,
+            numero: t.numero,
+            code: "missing_next_date",
+            message: `Próxima data calculada`,
+            action: `proxima_data: → ${next} (base ${base} + ${per}d)`,
+          });
+        }
+        if (!t.data_conclusao && !t.data_execucao && !t.data_programada) {
+          unresolved.push({
+            taludeId: t.id,
+            numero: t.numero,
+            code: "finalizado_no_dates",
+            message: "Finalizado sem qualquer data de referência",
+          });
+        }
+      }
+    }
+
+    // 6. Em execução sem data_execucao — assume hoje
+    for (const t of taludes) {
+      if (t.status === "em_execucao" && !t.data_execucao) {
+        checks.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "missing_exec_date",
+          message: `Talude ${t.numero}: em execução sem data de início`,
+        });
+        const todayIso = new Date().toISOString().slice(0, 10);
+        patch(t.id, { data_execucao: todayIso });
+        fixed.push({
+          taludeId: t.id,
+          numero: t.numero,
+          code: "missing_exec_date",
+          message: "Data de execução definida como hoje",
+          action: `data_execucao: → ${todayIso}`,
+        });
+      }
+    }
+
+    // Aplica correções
+    let applied = 0;
+    let deleted = 0;
+    if (!dryRun) {
+      for (const [id, delta] of patches) {
+        const { error } = await context.supabase.from("taludes").update(delta).eq("id", id);
+        if (error) {
+          unresolved.push({
+            taludeId: id,
+            numero: null,
+            code: "update_failed",
+            message: `Falha ao aplicar correção: ${error.message}`,
+          });
+        } else {
+          applied++;
+        }
+      }
+      for (const id of toDelete) {
+        const { error } = await context.supabase.from("taludes").delete().eq("id", id);
+        if (!error) deleted++;
+      }
+    }
+
+    return {
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      dryRun,
+      total: taludes.length,
+      checks,
+      fixed,
+      unresolved,
+      applied,
+      deleted,
+    };
+  });
+
