@@ -84,20 +84,21 @@ export async function upsertTalude(args: {
 }) {
   const d = args.data;
   const owner_id = await currentUserId();
-  const payload: Record<string, unknown> = {
+  const payload = {
     owner_id,
     map_id: d.map_id,
     numero: d.numero,
     nome: d.nome ?? null,
-    polygon: d.polygon,
+    polygon: d.polygon as unknown as never,
+    ...(d.status !== undefined ? { status: d.status } : {}),
+    ...(d.data_programada !== undefined ? { data_programada: d.data_programada } : {}),
+    ...(d.data_execucao !== undefined ? { data_execucao: d.data_execucao } : {}),
+    ...(d.data_conclusao !== undefined ? { data_conclusao: d.data_conclusao } : {}),
+    ...(d.proxima_data !== undefined ? { proxima_data: d.proxima_data } : {}),
+    ...(d.periodicidade_dias !== undefined ? { periodicidade_dias: d.periodicidade_dias } : {}),
+    ...(d.observacoes !== undefined ? { observacoes: d.observacoes } : {}),
   };
-  if (d.status !== undefined) payload.status = d.status;
-  if (d.data_programada !== undefined) payload.data_programada = d.data_programada;
-  if (d.data_execucao !== undefined) payload.data_execucao = d.data_execucao;
-  if (d.data_conclusao !== undefined) payload.data_conclusao = d.data_conclusao;
-  if (d.proxima_data !== undefined) payload.proxima_data = d.proxima_data;
-  if (d.periodicidade_dias !== undefined) payload.periodicidade_dias = d.periodicidade_dias;
-  if (d.observacoes !== undefined) payload.observacoes = d.observacoes;
+
 
   if (d.id) {
     const { data: row, error } = await supabase
