@@ -434,6 +434,15 @@ function TableView({
   onToggle: (r: BOSRow, next: boolean) => void;
   onCategoria: (r: BOSRow, c: Categoria) => void;
 }) {
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(1);
+  useEffect(() => {
+    setPage(1);
+  }, [rows.length, search, filterCat, order]);
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const visible = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <GlassCard>
       <div className="mb-3 flex flex-wrap items-center gap-2">
