@@ -878,11 +878,48 @@ function DashboardView({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={periodo} onValueChange={(v) => setPeriodo(v as PeriodoTipo)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tudo">Todo o período</SelectItem>
+              <SelectItem value="semana">Últimos 7 dias</SelectItem>
+              <SelectItem value="mes">Últimos 30 dias</SelectItem>
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          {periodo === "custom" && (
+            <>
+              <Input
+                type="date"
+                value={dtInicio}
+                onChange={(e) => setDtInicio(e.target.value)}
+                className="w-[160px]"
+              />
+              <span className="text-xs text-muted-foreground">até</span>
+              <Input
+                type="date"
+                value={dtFim}
+                onChange={(e) => setDtFim(e.target.value)}
+                className="w-[160px]"
+              />
+            </>
+          )}
+          {range && (
+            <span className="text-xs text-muted-foreground">
+              {fmtBR(range.ini)} — {fmtBR(range.fim)}
+            </span>
+          )}
+        </div>
         <Button variant="outline" size="sm" onClick={downloadPNG}>
           <ImageIcon className="mr-2 h-4 w-4" /> Baixar PNG
         </Button>
       </div>
+
+
 
       <div ref={dashRef} className="space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
