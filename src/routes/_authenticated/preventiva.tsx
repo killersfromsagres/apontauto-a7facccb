@@ -344,11 +344,11 @@ function Page() {
                 </TabsContent>
               </Tabs>
             </GlassCard>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
     </PageShell>
   );
+
 }
 
 function SummaryCard({
