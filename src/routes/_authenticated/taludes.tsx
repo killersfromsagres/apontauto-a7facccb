@@ -181,8 +181,10 @@ function TaludesPage() {
     try {
       // Idempotência: se já existe um mapa de referência, apenas selecione-o.
       const existing = mapsQuery.data?.find(
-        (m) => m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
+        (m: { id: string; image_path: string; nome: string }) =>
+          m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
       );
+
       if (existing) {
         setSelectedMapId(existing.id);
         toast.success("Mapa de referência selecionado");
