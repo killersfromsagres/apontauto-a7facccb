@@ -1259,3 +1259,93 @@ function TaludeDetail({
     </div>
   );
 }
+
+function AuditReportDialog({
+  report,
+  onClose,
+}: {
+  report: Awaited<ReturnType<typeof verifyAndRepairMap>> | null;
+  onClose: () => void;
+}) {
+  const open = report !== null;
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Relatório de auditoria
+          </DialogTitle>
+          <DialogDescription>
+            {report && (
+              <>
+                {report.total} talude(s) analisado(s) em{" "}
+                {new Date(report.finishedAt).toLocaleTimeString("pt-BR")}
+                {report.dryRun && " · modo simulação (nenhuma correção aplicada)"}
+              </>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {report && (
+          <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1 text-sm">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg border border-border/50 bg-muted/30 p-3">
+                <div className="text-2xl font-bold">{report.checks.length}</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Verificações
+                </div>
+              </div>
+              <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-emerald-700 dark:text-emerald-300">
+                <div className="text-2xl font-bold">{report.fixed.length}</div>
+                <div className="text-[10px] uppercase tracking-widest">Corrigidas</div>
+              </div>
+              <div className="rounded-lg border border-orange-500/40 bg-orange-500/10 p-3 text-orange-700 dark:text-orange-300">
+                <div className="text-2xl font-bold">{report.unresolved.length}</div>
+                <div className="text-[10px] uppercase tracking-widest">Pendentes</div>
+              </div>
+            </div>
+
+            {report.fixed.length > 0 && (
+              <section>
+                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Correções aplicadas
+                </h4>
+                <ul className="space-y-1">
+                  {report.fixed.map((e, i) => (
+                    <li key={i} className="rounded-md border border-emerald-500/30 bg-emerald-500/5 px-2.5 py-1.5 text-xs">
+                      <div className="font-medium">{e.message}</div>
+                      {e.action && <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">{e.action}</div>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {report.unresolved.length > 0 && (
+              <section>
+                <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-orange-600 dark:text-orange-400">
+                  <AlertTriangle className="h-3.5 w-3.5" /> Requer atenção manual
+                </h4>
+                <ul className="space-y-1">
+                  {report.unresolved.map((e, i) => (
+                    <li key={i} className="rounded-md border border-orange-500/30 bg-orange-500/5 px-2.5 py-1.5 text-xs">
+                      {e.numero != null && <strong>Talude {e.numero}: </strong>}
+                      {e.message}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {report.checks.length === 0 && (
+              <p className="rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-300">
+                ✓ Nenhuma inconsistência encontrada. Tudo em ordem.
+              </p>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
