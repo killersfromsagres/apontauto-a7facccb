@@ -11,7 +11,19 @@ import {
   RefreshCw,
   Image as ImageIcon,
   ClipboardList,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   BarChart,
   Bar,
@@ -306,6 +318,26 @@ function LavanderiaPage() {
     downloadBlob(blob, `LAVANDERIA_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  const [clearing, setClearing] = useState(false);
+  async function clearAll() {
+    setClearing(true);
+    try {
+      const del1 = await supabase.from("lavanderia_eventos").delete().not("codigo", "is", null);
+      if (del1.error) throw del1.error;
+      const del2 = await supabase.from("lavanderia_pecas").delete().not("codigo", "is", null);
+      if (del2.error) throw del2.error;
+      const del3 = await supabase.from("lavanderia_colaboradores").delete().not("matricula", "is", null);
+      if (del3.error) throw del3.error;
+      toast.success("Conteúdo da lavanderia apagado com sucesso.");
+      await refresh();
+    } catch (e) {
+      console.error(e);
+      toast.error((e as Error)?.message ?? "Falha ao limpar conteúdo");
+    } finally {
+      setClearing(false);
+    }
+  }
+
   return (
     <PageShell
       title="Controle de Lavanderia"
@@ -321,6 +353,36 @@ function LavanderiaPage() {
           <Button onClick={downloadExcel} disabled={pecasFull.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar planilha Excel
           </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={clearing || importing}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                {clearing ? "Limpando…" : "Limpar conteúdo"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todo o conteúdo da lavanderia?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação remove permanentemente a matriz de colaboradores, as peças cadastradas
+                  e todo o histórico de movimentação. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void clearAll()}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Sim, apagar tudo
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="ghost" size="icon" onClick={() => void refresh()} title="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
