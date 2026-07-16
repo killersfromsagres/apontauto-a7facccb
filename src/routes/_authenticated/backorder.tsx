@@ -17,6 +17,9 @@ import {
   Printer,
   ShieldAlert,
   Sparkles,
+} from "lucide-react";
+import priorityEngineIcon from "@/assets/priority-engine-icon.png";
+import {
   TrendingDown,
   TrendingUp,
   CheckCircle2,
