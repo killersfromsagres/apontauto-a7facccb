@@ -16,7 +16,16 @@ import {
   Save,
   AlertTriangle,
   MapPin,
+  ZoomIn,
+  ZoomOut,
+  Info,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -234,6 +243,11 @@ function TaludesPage() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => {
+    setImgLoaded(false);
+  }, [imageUrl]);
 
   const map = detailQuery.data?.map;
   const taludes = ((detailQuery.data?.taludes ?? []) as unknown) as TaludeRow[];
@@ -552,21 +566,40 @@ function TaludesPage() {
         {/* ── Mapa ── */}
         <GlassCard>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              {(["programado", "em_execucao", "finalizado"] as TaludeStatus[]).map((s) => {
-                const meta = STATUS_META[s];
-                const Icon = statusIcon[s];
-                return (
-                  <span
-                    key={s}
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-white"
-                    style={{ background: meta.fill }}
-                  >
-                    <Icon className="h-3 w-3" /> {meta.label}
-                  </span>
-                );
-              })}
-            </div>
+            <TooltipProvider delayDuration={150}>
+              <div className="animate-fade-in flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2 py-1 shadow-sm backdrop-blur">
+                <Info className="h-3 w-3 text-muted-foreground" />
+                <span className="mr-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Status
+                </span>
+                {(["programado", "em_execucao", "finalizado"] as TaludeStatus[]).map((s) => {
+                  const meta = STATUS_META[s];
+                  const Icon = statusIcon[s];
+                  return (
+                    <Tooltip key={s}>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-flex cursor-help items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-transform hover:scale-105"
+                          style={{ background: meta.fill }}
+                        >
+                          <span
+                            className="inline-block h-2 w-2 rounded-full ring-2 ring-white/40"
+                            style={{ background: "#fff" }}
+                          />
+                          <Icon className="h-3 w-3" />
+                          {meta.label}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        {s === "programado" && "Talude planejado, aguardando execução."}
+                        {s === "em_execucao" && "Manutenção em andamento no talude."}
+                        {s === "finalizado" && "Serviço concluído. Próxima data calculada automaticamente."}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </TooltipProvider>
             <div className="ml-auto flex items-center gap-2">
               {drawingNumero || editingPolygonFor ? (
                 <>
@@ -647,188 +680,286 @@ function TaludesPage() {
             </div>
           )}
 
-          <div className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5">
-            {imageUrl ? (
-              <div className="relative w-full">
-                <img src={imageUrl} alt={map?.nome} className="block h-auto w-full select-none" draggable={false} />
-                <svg
-                  ref={svgRef}
-                  onClick={handleMapClick}
-                  onPointerMove={handleSvgPointerMove}
-                  onPointerUp={handleSvgPointerUp}
-                  onPointerLeave={handleSvgPointerUp}
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  className={`absolute inset-0 h-full w-full ${drawingNumero || editingPolygonFor ? "cursor-crosshair" : ""}`}
-                >
-                  {taludes.map((t) => {
-                    if (t.polygon.length < 3) return null;
-                    const meta = STATUS_META[t.status];
-                    const isSel = t.id === selectedTaludeId;
-                    const isHover = t.id === hoverId;
-                    const isEditing = t.id === editingPolygonFor;
-                    if (isEditing) return null;
-                    const pts = t.polygon.map((p) => `${p.x},${p.y}`).join(" ");
-                    const cx = t.polygon.reduce((a, p) => a + p.x, 0) / t.polygon.length;
-                    const cy = t.polygon.reduce((a, p) => a + p.y, 0) / t.polygon.length;
-                    return (
-                      <g
-                        key={t.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (drawingNumero || editingPolygonFor) return;
-                          if (selectedTaludeId === t.id) {
-                            cycleStatus(t);
-                          } else {
-                            setSelectedTaludeId(t.id);
-                          }
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedTaludeId(t.id);
-                          cycleStatus(t);
-                        }}
-                        onMouseEnter={(e) => {
-                          setHoverId(t.id);
-                          const p = clickToPct(e);
-                          if (p) setHoverPos(p);
-                        }}
-                        onMouseMove={(e) => {
-                          const p = clickToPct(e);
-                          if (p) setHoverPos(p);
-                        }}
-                        onMouseLeave={() => {
-                          setHoverId((cur) => (cur === t.id ? null : cur));
-                        }}
-                        className="cursor-pointer"
+          {(() => {
+            // ─── zoom & transform ───
+            const zoomTarget =
+              taludes.find((x) => x.id === (editingPolygonFor || zoomedTaludeId)) || null;
+            let transform: string | undefined;
+            let originStr: string | undefined;
+            if (zoomTarget && zoomTarget.polygon.length >= 3) {
+              let minX = 100, minY = 100, maxX = 0, maxY = 0;
+              for (const p of zoomTarget.polygon) {
+                if (p.x < minX) minX = p.x;
+                if (p.y < minY) minY = p.y;
+                if (p.x > maxX) maxX = p.x;
+                if (p.y > maxY) maxY = p.y;
+              }
+              const w = Math.max(4, maxX - minX);
+              const h = Math.max(4, maxY - minY);
+              const cx = (minX + maxX) / 2;
+              const cy = (minY + maxY) / 2;
+              const s = Math.min(4.5, 80 / Math.max(w, h));
+              originStr = `${cx}% ${cy}%`;
+              transform = `translate(${50 - cx}%, ${50 - cy}%) scale(${s})`;
+            }
+            return (
+              <div className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5">
+                {/* zoom toolbar */}
+                {imageUrl && (
+                  <div className="pointer-events-none absolute right-2 top-2 z-20 flex flex-col gap-1">
+                    {zoomedTaludeId || editingPolygonFor ? (
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="pointer-events-auto h-8 w-8 shadow-lg"
+                        onClick={() => setZoomedTaludeId(null)}
+                        title="Sair do zoom"
                       >
-                        <polygon
-                          points={pts}
-                          fill={meta.fill}
-                          fillOpacity={isSel ? 0.6 : isHover ? 0.55 : 0.4}
-                          stroke={meta.stroke}
-                          strokeWidth={isSel || isHover ? 0.55 : 0.3}
-                          strokeLinejoin="round"
-                          style={{
-                            transition: "fill 300ms ease, fill-opacity 300ms ease, stroke-width 200ms ease",
-                            filter:
-                              t.status === "em_execucao"
-                                ? "drop-shadow(0 0 0.6px rgba(245,158,11,0.9))"
-                                : isHover || isSel
-                                  ? "drop-shadow(0 0 0.5px rgba(0,0,0,0.55))"
-                                  : undefined,
-                            animation: t.status === "em_execucao" ? "taludePulse 2s ease-in-out infinite" : undefined,
-                          }}
-                        />
-                        {/* number label — amarelo com contorno escuro (estilo mapa original) */}
-                        <text
-                          x={cx}
-                          y={cy - 1.2}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="3"
-                          fontWeight="900"
-                          fill="#fde047"
-                          style={{ pointerEvents: "none", paintOrder: "stroke" }}
-                          stroke="#0f172a"
-                          strokeWidth="0.55"
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      selected && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="pointer-events-auto h-8 w-8 shadow-lg"
+                          onClick={() => setZoomedTaludeId(selected.id)}
+                          title={`Aproximar no talude ${selected.numero}`}
                         >
-                          {t.numero}
-                        </text>
-                        {/* date label under number */}
-                        {(() => {
-                          const dateIso =
-                            t.status === "finalizado"
-                              ? t.proxima_data || t.data_conclusao
-                              : t.status === "em_execucao"
-                                ? t.data_execucao
-                                : t.data_programada;
-                          if (!dateIso) return null;
-                          const [y, m, d] = dateIso.split("T")[0].split("-");
-                          return (
+                          <ZoomIn className="h-4 w-4" />
+                        </Button>
+                      )
+                    )}
+                  </div>
+                )}
+                {imageUrl ? (
+                  <div
+                    className="relative w-full"
+                    style={{
+                      transform,
+                      transformOrigin: originStr,
+                      transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      willChange: "transform",
+                    }}
+                  >
+                    {!imgLoaded && (
+                      <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40" />
+                    )}
+                    <img
+                      src={imageUrl}
+                      alt={map?.nome}
+                      className="block h-auto w-full select-none"
+                      draggable={false}
+                      loading="eager"
+                      decoding="async"
+                      fetchPriority="high"
+                      onLoad={() => setImgLoaded(true)}
+                    />
+                    <svg
+                      ref={svgRef}
+                      onClick={handleMapClick}
+                      onPointerMove={handleSvgPointerMove}
+                      onPointerUp={handleSvgPointerUp}
+                      onPointerLeave={handleSvgPointerUp}
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="none"
+                      className={`absolute inset-0 h-full w-full ${drawingNumero || editingPolygonFor ? "cursor-crosshair" : ""}`}
+                    >
+                      {taludes.map((t) => {
+                        if (t.polygon.length < 3) return null;
+                        const meta = STATUS_META[t.status];
+                        const isSel = t.id === selectedTaludeId;
+                        const isHover = t.id === hoverId;
+                        const isEditing = t.id === editingPolygonFor;
+                        if (isEditing) return null;
+                        const pts = t.polygon.map((p) => `${p.x},${p.y}`).join(" ");
+                        const cx = t.polygon.reduce((a, p) => a + p.x, 0) / t.polygon.length;
+                        const cy = t.polygon.reduce((a, p) => a + p.y, 0) / t.polygon.length;
+                        return (
+                          <g
+                            key={t.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (drawingNumero || editingPolygonFor) return;
+                              if (selectedTaludeId === t.id) {
+                                cycleStatus(t);
+                              } else {
+                                setSelectedTaludeId(t.id);
+                              }
+                            }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTaludeId(t.id);
+                              cycleStatus(t);
+                            }}
+                            onMouseEnter={(e) => {
+                              setHoverId(t.id);
+                              const p = clickToPct(e);
+                              if (p) setHoverPos(p);
+                            }}
+                            onMouseMove={(e) => {
+                              const p = clickToPct(e);
+                              if (p) setHoverPos(p);
+                            }}
+                            onMouseLeave={() => {
+                              setHoverId((cur) => (cur === t.id ? null : cur));
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <polygon
+                              points={pts}
+                              fill={meta.fill}
+                              fillOpacity={isSel ? 0.72 : isHover ? 0.62 : 0.5}
+                              stroke={meta.stroke}
+                              strokeWidth={isSel || isHover ? 0.6 : 0.35}
+                              strokeLinejoin="round"
+                              style={{
+                                transition: "fill 300ms ease, fill-opacity 300ms ease, stroke-width 200ms ease",
+                                filter:
+                                  t.status === "em_execucao"
+                                    ? `drop-shadow(0 0 0.7px ${meta.glow})`
+                                    : isHover || isSel
+                                      ? `drop-shadow(0 0 0.6px ${meta.glow})`
+                                      : undefined,
+                                animation: t.status === "em_execucao" ? "taludePulse 2s ease-in-out infinite" : undefined,
+                              }}
+                            />
+                            {/* number label — amarelo com contorno escuro (estilo mapa original) */}
                             <text
                               x={cx}
-                              y={cy + 1.8}
+                              y={cy}
                               textAnchor="middle"
                               dominantBaseline="middle"
-                              fontSize="1.5"
-                              fontWeight="700"
-                              fill="#ffffff"
+                              fontSize="3"
+                              fontWeight="900"
+                              fill="#fde047"
                               style={{ pointerEvents: "none", paintOrder: "stroke" }}
                               stroke="#0f172a"
-                              strokeWidth="0.35"
+                              strokeWidth="0.55"
                             >
-                              {`${d}/${m}/${y.slice(2)}`}
+                              {t.numero}
                             </text>
-                          );
-                        })()}
-                      </g>
-                    );
-                  })}
-                  {/* drawing / editing preview with draggable vertices */}
-                  {drawingPoints.length > 0 && (
-                    <>
-                      <polygon
-                        points={drawingPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-                        fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                        fillOpacity="0.25"
-                        stroke={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                        strokeWidth="0.35"
-                        strokeDasharray="0.8,0.6"
-                      />
-                      {drawingPoints.map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={p.x}
-                          cy={p.y}
-                          r={draggingIdx === i ? 1.1 : 0.85}
-                          fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                          stroke="#fff"
-                          strokeWidth="0.15"
-                          style={{ cursor: "grab", touchAction: "none" }}
-                          onPointerDown={(e) => handleVertexPointerDown(i, e)}
-                          onContextMenu={(e) => removeVertex(i, e)}
-                        />
-                      ))}
-                    </>
-                  )}
-                </svg>
-                {/* Hover tooltip (HTML, positioned in % over image) */}
-                {hoverId && hoverPos && !editingPolygonFor && !drawingNumero && (() => {
-                  const t = taludes.find((x) => x.id === hoverId);
-                  if (!t) return null;
-                  const meta = STATUS_META[t.status];
-                  const left = Math.min(hoverPos.x, 75);
-                  const top = Math.min(hoverPos.y + 2, 90);
-                  return (
-                    <div
-                      className="pointer-events-none absolute z-10 min-w-[160px] rounded-md border border-border/60 bg-background/95 p-2 text-[11px] shadow-lg backdrop-blur"
-                      style={{ left: `${left}%`, top: `${top}%` }}
-                    >
-                      <div className="mb-1 flex items-center gap-1.5 font-semibold">
-                        <span
-                          className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: meta.fill }}
-                        />
-                        Talude {t.numero} — {meta.label}
-                      </div>
-                      <div className="space-y-0.5 text-muted-foreground">
-                        <div>Prog: <strong className="text-foreground">{fmtBr(t.data_programada)}</strong></div>
-                        <div>Exec: <strong className="text-foreground">{fmtBr(t.data_execucao)}</strong></div>
-                        <div>Conc: <strong className="text-foreground">{fmtBr(t.data_conclusao)}</strong></div>
-                        <div>Próx: <strong className="text-foreground">{fmtBr(t.proxima_data)}</strong></div>
-                      </div>
-                    </div>
-                  );
-                })()}
-                <style>{`@keyframes taludePulse { 0%,100% { fill-opacity: 0.4 } 50% { fill-opacity: 0.65 } }`}</style>
+                          </g>
+                        );
+                      })}
+                      {/* drawing / editing preview with draggable vertices */}
+                      {drawingPoints.length > 0 && (
+                        <>
+                          <polygon
+                            points={drawingPoints.map((p) => `${p.x},${p.y}`).join(" ")}
+                            fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                            fillOpacity="0.25"
+                            stroke={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                            strokeWidth="0.35"
+                            strokeDasharray="0.8,0.6"
+                          />
+                          {drawingPoints.map((p, i) => (
+                            <circle
+                              key={i}
+                              cx={p.x}
+                              cy={p.y}
+                              r={draggingIdx === i ? 1.1 : 0.85}
+                              fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                              stroke="#fff"
+                              strokeWidth="0.15"
+                              style={{ cursor: "grab", touchAction: "none" }}
+                              onPointerDown={(e) => handleVertexPointerDown(i, e)}
+                              onContextMenu={(e) => removeVertex(i, e)}
+                            />
+                          ))}
+                        </>
+                      )}
+                    </svg>
+
+                    {/* ─── Modern floating date pills (HTML, crisp typography) ─── */}
+                    {taludes.map((t) => {
+                      if (t.polygon.length < 3) return null;
+                      const dateIso =
+                        t.status === "finalizado"
+                          ? t.proxima_data || t.data_conclusao
+                          : t.status === "em_execucao"
+                            ? t.data_execucao
+                            : t.data_programada;
+                      if (!dateIso) return null;
+                      const cx = t.polygon.reduce((a, p) => a + p.x, 0) / t.polygon.length;
+                      const cy = t.polygon.reduce((a, p) => a + p.y, 0) / t.polygon.length;
+                      const isSel = t.id === selectedTaludeId;
+                      const meta = STATUS_META[t.status];
+                      const prefix =
+                        t.status === "finalizado" ? "Próx" : t.status === "em_execucao" ? "Exec" : "Prog";
+                      return (
+                        <div
+                          key={`pill-${t.id}`}
+                          className="pointer-events-none absolute z-[5] -translate-x-1/2 animate-fade-in"
+                          style={{
+                            left: `${cx}%`,
+                            top: `${cy}%`,
+                            transform: `translate(-50%, calc(-50% + ${isSel ? 34 : 26}px))`,
+                            transition: "transform 300ms ease",
+                          }}
+                        >
+                          <div
+                            className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide text-white shadow-[0_2px_10px_rgba(0,0,0,0.35)] backdrop-blur-sm ring-1 ring-white/20 ${
+                              isSel ? "scale-125" : ""
+                            }`}
+                            style={{
+                              background: "rgba(15,23,42,0.88)",
+                              transition: "transform 300ms ease, box-shadow 300ms ease",
+                            }}
+                          >
+                            <span
+                              className="inline-block h-1.5 w-1.5 rounded-full"
+                              style={{ background: meta.fill, boxShadow: `0 0 6px ${meta.glow}` }}
+                            />
+                            <span className="opacity-70">{prefix}</span>
+                            <span>{fmtBr(dateIso)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Hover tooltip (HTML, positioned in % over image) */}
+                    {hoverId && hoverPos && !editingPolygonFor && !drawingNumero && (() => {
+                      const t = taludes.find((x) => x.id === hoverId);
+                      if (!t) return null;
+                      const meta = STATUS_META[t.status];
+                      const left = Math.min(hoverPos.x, 75);
+                      const top = Math.min(hoverPos.y + 2, 90);
+                      return (
+                        <div
+                          className="pointer-events-none absolute z-10 min-w-[170px] animate-fade-in rounded-lg border border-border/60 bg-background/95 p-2.5 text-[11px] shadow-xl backdrop-blur"
+                          style={{ left: `${left}%`, top: `${top}%` }}
+                        >
+                          <div className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold">
+                            <span
+                              className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/50"
+                              style={{ background: meta.fill, boxShadow: `0 0 8px ${meta.glow}` }}
+                            />
+                            Talude {t.numero}
+                            <span className="ml-auto text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                              {meta.label}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-muted-foreground">
+                            <div>Prog: <strong className="text-foreground">{fmtBr(t.data_programada)}</strong></div>
+                            <div>Exec: <strong className="text-foreground">{fmtBr(t.data_execucao)}</strong></div>
+                            <div>Conc: <strong className="text-foreground">{fmtBr(t.data_conclusao)}</strong></div>
+                            <div>Próx: <strong className="text-foreground">{fmtBr(t.proxima_data)}</strong></div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <style>{`@keyframes taludePulse { 0%,100% { fill-opacity: 0.5 } 50% { fill-opacity: 0.78 } }`}</style>
+                  </div>
+                ) : (
+                  <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Carregando mapa…
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
-                Carregando mapa…
-              </div>
-            )}
-          </div>
+            );
+          })()}
         </GlassCard>
 
         {/* ── Sidebar taludes ── */}
