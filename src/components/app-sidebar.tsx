@@ -29,6 +29,7 @@ import { useAllowedMenus } from "@/hooks/use-allowed-menus";
 const baseItems = [
   { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
   { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
+  { key: "backorder", title: "Backorder de Corretivas", url: "/backorder", icon: PackageX },
   { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
   { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
   { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
