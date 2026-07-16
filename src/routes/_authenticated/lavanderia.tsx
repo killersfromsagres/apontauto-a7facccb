@@ -358,6 +358,12 @@ function LavanderiaPage() {
               {totalHigienizacao + totalAtrasadas}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="matriz">
+            <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Matriz
+            <Badge variant="secondary" className="ml-2">
+              {colabs.length}
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="historico">
             <History className="mr-1.5 h-3.5 w-3.5" /> Histórico
           </TabsTrigger>
@@ -371,6 +377,10 @@ function LavanderiaPage() {
 
         <TabsContent value="abertas">
           <AbertasView loading={loading} pecas={pecasFull} />
+        </TabsContent>
+
+        <TabsContent value="matriz">
+          <MatrizView colabs={colabs} pecas={pecas} />
         </TabsContent>
 
         <TabsContent value="historico">
