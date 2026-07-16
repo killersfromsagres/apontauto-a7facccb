@@ -141,63 +141,59 @@ function Page() {
         )
       }
     >
-      <AnimatePresence mode="wait">
-        {!result ? (
-          <motion.div
-            key="upload"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-          >
-            <GlassCard>
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                onClick={() => inputRef.current?.click()}
-                className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all sm:p-12 md:p-16 ${
-                  dragOver
-                    ? "border-primary bg-primary/5"
-                    : "border-border/60 hover:border-primary/50 hover:bg-accent/30"
-                }`}
-              >
-                <div className="rounded-2xl bg-primary/10 p-4">
-                  <Upload className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    Arraste a planilha ou clique para selecionar
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Formato aceito: .xlsx — o processamento é feito no navegador.
-                  </p>
-                </div>
-                {loading && (
-                  <p className="text-sm text-primary animate-pulse">Processando…</p>
-                )}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleFile(f);
-                  }}
-                />
+      {!result ? (
+        <div
+          key="upload"
+          className="animate-in fade-in slide-in-from-bottom-1 duration-200"
+        >
+          <GlassCard>
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={onDrop}
+              onClick={() => inputRef.current?.click()}
+              className={`relative flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-8 text-center transition-all sm:p-12 md:p-16 ${
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border/60 hover:border-primary/50 hover:bg-accent/30"
+              }`}
+            >
+              <div className="rounded-2xl bg-primary/10 p-4">
+                <Upload className="h-8 w-8 text-primary" />
               </div>
-            </GlassCard>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="result"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
+              <div>
+                <h3 className="text-lg font-semibold">
+                  Arraste a planilha ou clique para selecionar
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Formato aceito: .xlsx — o processamento é feito no navegador.
+                </p>
+              </div>
+              {loading && (
+                <p className="text-sm text-primary animate-pulse">Processando…</p>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleFile(f);
+                }}
+              />
+            </div>
+          </GlassCard>
+        </div>
+      ) : (
+        <div
+          key="result"
+          className="space-y-6 animate-in fade-in slide-in-from-bottom-1 duration-200"
+        >
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <SummaryCard
                 icon={<FileSpreadsheet className="h-5 w-5" />}
