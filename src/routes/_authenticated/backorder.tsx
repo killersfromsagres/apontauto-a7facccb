@@ -1182,12 +1182,15 @@ function Dashboard({
             <div className="grid gap-2 md:grid-cols-2">
               {priorityOrdered.map((r) => {
                 const dias = daysBetween(r.data_solicitacao);
+                const nivel = r.prioridade_nivel ?? 0;
                 const nivelColor =
-                  (r.prioridade_nivel ?? 0) >= 3
+                  nivel >= 3
                     ? "bg-red-500 text-white"
-                    : (r.prioridade_nivel ?? 0) === 2
+                    : nivel === 2
                       ? "bg-orange-500 text-white"
                       : "bg-amber-500 text-white";
+                const alertaClass =
+                  nivel >= 2 ? "alerta-alto" : nivel === 1 ? "alerta-medio" : "";
                 return (
                   <div
                     key={r.os}
@@ -1197,7 +1200,7 @@ function Dashboard({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
-                          <Badge className={nivelColor}>
+                          <Badge className={`${nivelColor} ${alertaClass}`}>
                             <Flame className="mr-0.5 h-3 w-3" />
                             {(r.prioridade_nivel ?? 0) >= 3
                               ? "Crítico"
