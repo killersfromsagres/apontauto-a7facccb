@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   Trash2,
   Plus,
+  ArrowUp,
 } from "lucide-react";
 import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
