@@ -966,3 +966,137 @@ const PrintableProgramacao = ({
     </div>
   </div>
 );
+
+function EvidenciasChuvaCard({
+  evidencias,
+  onRemove,
+}: {
+  evidencias: ChuvaEvidencia[];
+  onRemove: (id: string) => Promise<void>;
+}) {
+  const [preview, setPreview] = useState<ChuvaEvidencia | null>(null);
+  return (
+    <GlassCard>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-lg font-semibold">
+            Evidências de chuva registradas
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Registros formais de interrupção de atividades por mau tempo — com print, data e mensagem explícita.
+          </p>
+        </div>
+        <Badge variant="outline" className="shrink-0">
+          {evidencias.length} registro{evidencias.length === 1 ? "" : "s"}
+        </Badge>
+      </div>
+
+      {evidencias.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
+          Nenhuma evidência registrada ainda. Quando o painel indicar chuva hoje, use o botão
+          "Registrar evidência de chuva".
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {evidencias.map((ev) => (
+            <div
+              key={ev.id}
+              className="group flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/30"
+            >
+              <button
+                type="button"
+                onClick={() => setPreview(ev)}
+                className="relative block h-32 w-full overflow-hidden bg-slate-900"
+              >
+                <img
+                  src={ev.imagem_data_url}
+                  alt={`Evidência de chuva em ${fmtBR(ev.data)}`}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
+                  <CloudRain className="h-3.5 w-3.5" />
+                  {fmtBR(ev.data)}
+                </div>
+              </button>
+              <div className="flex flex-1 flex-col gap-2 p-3">
+                <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
+                <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span>
+                    {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"} ·{" "}
+                    {ev.condicao ?? "—"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm("Remover esta evidência?")) void onRemove(ev.id);
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              Evidência de chuva — {preview ? fmtBR(preview.data) : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {preview && (
+            <div className="space-y-3">
+              <img
+                src={preview.imagem_data_url}
+                alt="Evidência"
+                className="w-full rounded-lg border border-border/50"
+              />
+              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
+                {preview.mensagem}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+                <div>
+                  <div className="font-semibold text-foreground">Data</div>
+                  {fmtBR(preview.data)}
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">Temperatura</div>
+                  {preview.temperatura != null ? `${Math.round(preview.temperatura)}°C` : "—"}
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">Condição</div>
+                  {preview.condicao ?? "—"}
+                </div>
+                <div>
+                  <div className="font-semibold text-foreground">Prob. chuva</div>
+                  {preview.prob_chuva != null ? `${preview.prob_chuva}%` : "—"}
+                </div>
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Registrado em {new Date(preview.created_at).toLocaleString("pt-BR")}
+              </div>
+              <div className="flex justify-end">
+                <a
+                  href={preview.imagem_data_url}
+                  download={`evidencia-chuva-taludes-${preview.data}.png`}
+                >
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Baixar imagem
+                  </Button>
+                </a>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </GlassCard>
+  );
+}
