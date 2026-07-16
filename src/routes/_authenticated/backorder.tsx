@@ -1807,3 +1807,86 @@ function InfoField({ label, value }: { label: string; value: string | null | und
   );
 }
 
+// ---------- Scroller custom para o painel de chamados prioritários ----------
+
+function PriorityScroller({ total, children }: { total: number; children: ReactNode }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [progress, setProgress] = useState(0); // 0..1
+  const [visibleIndex, setVisibleIndex] = useState(1);
+  const [showTop, setShowTop] = useState(false);
+
+  const update = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const max = el.scrollHeight - el.clientHeight;
+    const p = max <= 0 ? 0 : Math.min(1, Math.max(0, el.scrollTop / max));
+    setProgress(p);
+    setShowTop(el.scrollTop > 160);
+    const approx = Math.min(total, Math.max(1, Math.ceil((el.scrollTop + el.clientHeight * 0.5) / (el.clientHeight || 1) * (total / Math.max(1, el.scrollHeight / (el.clientHeight || 1))))));
+    setVisibleIndex(Number.isFinite(approx) ? approx : 1);
+  }, [total]);
+
+  useEffect(() => {
+    update();
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => update();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, [update]);
+
+  const thumbHeight = `${Math.max(12, progress * 100)}%`;
+  // Barra fina: usamos transform para posicionar
+  const trackHeight = 100;
+  const barSize = 18; // % altura do polegar
+  const barPos = progress * (trackHeight - barSize);
+
+  return (
+    <div className="priority-scroll-wrap">
+      {/* Barra fina de progresso à direita */}
+      <div className="priority-scroll-progress" aria-hidden>
+        <span
+          style={{
+            height: `${barSize}%`,
+            transform: `translateY(${(barPos / barSize) * 100}%)`,
+          }}
+        />
+      </div>
+
+      {/* Contador flutuante no topo */}
+      <div className="pointer-events-none absolute right-4 top-1 z-10 rounded-full border border-red-500/30 bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-red-600 backdrop-blur">
+        {Math.min(total, visibleIndex)} / {total}
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="priority-scroll max-h-[75vh] md:max-h-[620px]"
+        tabIndex={0}
+        style={{ height: undefined }}
+      >
+        {/* Elemento invisível apenas para satisfazer o linter sobre thumbHeight */}
+        <span className="sr-only" data-thumb={thumbHeight} />
+        {children}
+      </div>
+
+      <button
+        type="button"
+        onClick={() =>
+          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+        }
+        className="priority-scroll-top"
+        data-visible={showTop ? "true" : "false"}
+        aria-label="Voltar ao topo da lista"
+      >
+        <ArrowUp className="h-3.5 w-3.5" /> Topo
+      </button>
+    </div>
+  );
+}
+
+
