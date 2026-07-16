@@ -1680,3 +1680,129 @@ function PowerBIView() {
     </GlassCard>
   );
 }
+
+// ---------- Modal de detalhes de chamado prioritário ----------
+
+function PriorityDetailDialog({
+  row,
+  onClose,
+  onFinalizar,
+}: {
+  row: BOSRow | null;
+  onClose: () => void;
+  onFinalizar: (r: BOSRow) => void;
+}) {
+  const open = row !== null;
+  const nivel = row?.prioridade_nivel ?? 0;
+  const nivelLabel = nivel >= 3 ? "Crítico" : nivel === 2 ? "Alto" : nivel === 1 ? "Médio" : "—";
+  const nivelBg =
+    nivel >= 3
+      ? "from-red-600 via-red-500 to-orange-500"
+      : nivel === 2
+        ? "from-orange-500 via-amber-500 to-yellow-500"
+        : "from-amber-400 via-yellow-400 to-amber-300";
+  const dias = row ? Math.max(0, Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000)) : 0;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl overflow-hidden p-0">
+        {row && (
+          <>
+            <div className={`relative bg-gradient-to-br ${nivelBg} px-6 py-5 text-white`}>
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
+              <div className="relative flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest opacity-90">
+                    <Flame className="h-3.5 w-3.5" /> Prioridade {nivelLabel}
+                  </div>
+                  <DialogHeader className="space-y-1 text-left">
+                    <DialogTitle className="text-lg font-semibold leading-tight text-white">
+                      OS {row.os}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="mt-1 text-sm opacity-95">{row.equipe || "Sem equipe"}</div>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <Badge className="bg-white/20 text-white backdrop-blur">{dias} dias em aberto</Badge>
+                  {row.termino_sla && (
+                    <Badge className="bg-white/15 text-white backdrop-blur">
+                      SLA: {new Date(row.termino_sla).toLocaleDateString("pt-BR")}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <ScrollArea className="max-h-[60vh] scroll-smooth">
+              <div className="space-y-4 px-6 py-5">
+                <section>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    Descrição do chamado
+                  </div>
+                  <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                    {row.nome || "—"}
+                  </p>
+                </section>
+
+                {row.motivo_prioridade && (
+                  <section className="rounded-xl border border-red-500/30 bg-red-500/5 p-3">
+                    <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-red-600">
+                      <AlertTriangle className="h-3 w-3" /> Motivo da prioridade
+                    </div>
+                    <p className="whitespace-pre-wrap break-words text-sm text-red-700 dark:text-red-300">
+                      {row.motivo_prioridade}
+                    </p>
+                  </section>
+                )}
+
+                <section className="grid gap-3 sm:grid-cols-2">
+                  <InfoField label="Prédio" value={row.predio} />
+                  <InfoField label="Andar" value={row.andar} />
+                  <InfoField label="Espaço" value={row.espaco} />
+                  <InfoField label="Ativo" value={row.ativo} />
+                  <InfoField label="Atividade" value={row.atividade} />
+                  <InfoField
+                    label="Solicitado em"
+                    value={new Date(row.data_solicitacao).toLocaleDateString("pt-BR")}
+                  />
+                </section>
+
+                {row.outros && (
+                  <section>
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      Outras informações
+                    </div>
+                    <p className="whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 text-sm">
+                      {row.outros}
+                    </p>
+                  </section>
+                )}
+              </div>
+            </ScrollArea>
+
+            <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-3">
+              <Button variant="outline" onClick={onClose}>
+                Fechar
+              </Button>
+              <Button onClick={() => onFinalizar(row)}>
+                <CheckCircle2 className="mr-1.5 h-4 w-4" /> Marcar como finalizado
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InfoField({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-background/40 p-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-0.5 break-words text-sm">{value || "—"}</div>
+    </div>
+  );
+}
+
