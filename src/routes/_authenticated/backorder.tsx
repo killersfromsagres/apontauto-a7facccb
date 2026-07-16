@@ -1263,6 +1263,17 @@ function Dashboard({
         )}
       </GlassCard>
 
+      <PriorityDetailDialog
+        row={selectedPriority}
+        onClose={() => setSelectedPriority(null)}
+        onFinalizar={(r) => {
+          onFinalizar(r);
+          setSelectedPriority(null);
+        }}
+      />
+
+
+
       {/* 2.3 Gráficos analíticos */}
       <div className="grid gap-4 lg:grid-cols-3">
         <GlassCard className="lg:col-span-2">
