@@ -487,13 +487,24 @@ function PainelLegalPage() {
           setYear={setYear}
           group={group}
           isAdmin={isAdmin}
+          marked={marked}
+          onToggleMark={toggleMark}
           onComplete={handleComplete}
           onEdit={openEdit}
           onDelete={handleDelete}
           onAttach={setAttachItem}
         />
       ) : (
-        <CalendarView items={filtered} onOpenItem={setAttachItem} onComplete={handleComplete} />
+        <CalendarView
+          items={filtered}
+          onOpenItem={setAttachItem}
+          onComplete={handleComplete}
+          marked={marked}
+          onToggleMark={toggleMark}
+          onClearMarks={clearMarks}
+          onlyMarked={onlyMarked}
+          onToggleOnlyMarked={() => setOnlyMarked((v) => !v)}
+        />
       )}
 
       <LegalAttachmentsModal
