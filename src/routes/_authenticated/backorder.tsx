@@ -16,13 +16,14 @@ import {
   Settings2,
   Printer,
   ShieldAlert,
-  Sparkles,
+  
   TrendingDown,
   TrendingUp,
   CheckCircle2,
   Trash2,
   Plus,
 } from "lucide-react";
+import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
   BarChart,
   Bar,
@@ -1122,7 +1123,15 @@ function Dashboard({
             Motor de Priorização
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-orange-500" />
+            <img
+              src={priorityEngineIcon}
+              alt=""
+              aria-hidden
+              width={20}
+              height={20}
+              loading="lazy"
+              className="h-5 w-5 drop-shadow-[0_0_6px_rgba(249,115,22,0.45)]"
+            />
             <div className="text-sm">
               Última verificação:{" "}
               <span className="font-medium">
@@ -1173,12 +1182,15 @@ function Dashboard({
             <div className="grid gap-2 md:grid-cols-2">
               {priorityOrdered.map((r) => {
                 const dias = daysBetween(r.data_solicitacao);
+                const nivel = r.prioridade_nivel ?? 0;
                 const nivelColor =
-                  (r.prioridade_nivel ?? 0) >= 3
+                  nivel >= 3
                     ? "bg-red-500 text-white"
-                    : (r.prioridade_nivel ?? 0) === 2
+                    : nivel === 2
                       ? "bg-orange-500 text-white"
                       : "bg-amber-500 text-white";
+                const alertaClass =
+                  nivel >= 2 ? "alerta-alto" : nivel === 1 ? "alerta-medio" : "";
                 return (
                   <div
                     key={r.os}
@@ -1188,7 +1200,7 @@ function Dashboard({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
-                          <Badge className={nivelColor}>
+                          <Badge className={`${nivelColor} ${alertaClass}`}>
                             <Flame className="mr-0.5 h-3 w-3" />
                             {(r.prioridade_nivel ?? 0) >= 3
                               ? "Crítico"
@@ -1401,7 +1413,15 @@ function PriorityConfigDialog({
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-orange-500" />
+            <img
+              src={priorityEngineIcon}
+              alt=""
+              aria-hidden
+              width={16}
+              height={16}
+              loading="lazy"
+              className="h-4 w-4"
+            />
             Motor de Priorização — Configuração
           </DialogTitle>
         </DialogHeader>
