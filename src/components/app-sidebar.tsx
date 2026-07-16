@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   UserPlus,
   Mountain,
+  MountainSnow,
   PackageX,
   Shirt,
 } from "lucide-react";
