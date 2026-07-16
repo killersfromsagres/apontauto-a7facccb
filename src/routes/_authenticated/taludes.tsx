@@ -231,6 +231,9 @@ function TaludesPage() {
   const [drawingNumero, setDrawingNumero] = useState<string>("");
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [editingPolygonFor, setEditingPolygonFor] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
 
   const map = detailQuery.data?.map;
   const taludes = ((detailQuery.data?.taludes ?? []) as unknown) as TaludeRow[];
@@ -243,22 +246,72 @@ function TaludesPage() {
     );
   }, [taludes]);
 
+  const overlaps = useMemo(() => {
+    const bbox = (poly: Point[]) => {
+      let minX = 100, minY = 100, maxX = 0, maxY = 0;
+      for (const p of poly) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      }
+      return { minX, minY, maxX, maxY };
+    };
+    const pairs: Array<[number, number]> = [];
+    const list = taludes.filter((t) => t.polygon.length >= 3);
+    const boxes = list.map((t) => ({ n: t.numero, b: bbox(t.polygon) }));
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i].b;
+        const b = boxes[j].b;
+        const overlapArea =
+          Math.max(0, Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)) *
+          Math.max(0, Math.min(a.maxY, b.maxY) - Math.max(a.minY, b.minY));
+        const minArea = Math.min(
+          (a.maxX - a.minX) * (a.maxY - a.minY),
+          (b.maxX - b.minX) * (b.maxY - b.minY),
+        ) || 1;
+        if (overlapArea / minArea > 0.35) pairs.push([boxes[i].n, boxes[j].n]);
+      }
+    }
+    return pairs;
+  }, [taludes]);
+
   const svgRef = useRef<SVGSVGElement>(null);
-  const clickToPct = (e: React.MouseEvent) => {
+  const clickToPct = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
+      x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)),
     };
   };
 
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor) return;
+    if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
     setDrawingPoints((prev) => [...prev, p]);
+  };
+
+  const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    setDraggingIdx(idx);
+  };
+  const handleSvgPointerMove = (e: React.PointerEvent) => {
+    if (draggingIdx === null) return;
+    const p = clickToPct(e);
+    if (!p) return;
+    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? p : pt)));
+  };
+  const handleSvgPointerUp = () => setDraggingIdx(null);
+  const removeVertex = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const finishPolygon = async () => {
@@ -318,10 +371,10 @@ function TaludesPage() {
 
   const startRedraw = (t: TaludeRow) => {
     setEditingPolygonFor(t.id);
-    setDrawingPoints([]);
+    setDrawingPoints(t.polygon.map((p) => ({ ...p })));
     setDrawingNumero("");
     setSelectedTaludeId(t.id);
-    toast.info(`Redesenhando talude ${t.numero} — clique para adicionar pontos, ≥3 pontos`);
+    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
   };
 
   const updateMutation = useMutation({
@@ -538,9 +591,41 @@ function TaludesPage() {
           </div>
 
           {alerts.length > 0 && (
-            <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+            <div className="mb-2 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
               <AlertTriangle className="h-4 w-4" />
               {alerts.length} talude(s) com data programada vencida — atualize o status.
+            </div>
+          )}
+          {overlaps.length > 0 && (
+            <div className="mb-3 flex items-center gap-2 rounded-lg border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-xs text-orange-700 dark:text-orange-300">
+              <AlertTriangle className="h-4 w-4" />
+              Áreas sobrepostas: {overlaps.map(([a, b]) => `T${a}↔T${b}`).join(", ")}
+            </div>
+          )}
+
+          {/* quick number chips */}
+          {taludes.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-1">
+              {taludes
+                .slice()
+                .sort((a, b) => a.numero - b.numero)
+                .map((t) => {
+                  const meta = STATUS_META[t.status];
+                  const isSel = t.id === selectedTaludeId;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setSelectedTaludeId(t.id)}
+                      className={`h-7 min-w-[28px] rounded-md px-2 text-[11px] font-bold text-white transition-transform hover:scale-110 ${
+                        isSel ? "ring-2 ring-primary ring-offset-1" : ""
+                      }`}
+                      style={{ background: meta.fill }}
+                      title={`Talude ${t.numero} — ${meta.label}`}
+                    >
+                      {t.numero}
+                    </button>
+                  );
+                })}
             </div>
           )}
 
@@ -551,6 +636,9 @@ function TaludesPage() {
                 <svg
                   ref={svgRef}
                   onClick={handleMapClick}
+                  onPointerMove={handleSvgPointerMove}
+                  onPointerUp={handleSvgPointerUp}
+                  onPointerLeave={handleSvgPointerUp}
                   viewBox="0 0 100 100"
                   preserveAspectRatio="none"
                   className={`absolute inset-0 h-full w-full ${drawingNumero || editingPolygonFor ? "cursor-crosshair" : ""}`}
@@ -559,6 +647,7 @@ function TaludesPage() {
                     if (t.polygon.length < 3) return null;
                     const meta = STATUS_META[t.status];
                     const isSel = t.id === selectedTaludeId;
+                    const isHover = t.id === hoverId;
                     const isEditing = t.id === editingPolygonFor;
                     if (isEditing) return null;
                     const pts = t.polygon.map((p) => `${p.x},${p.y}`).join(" ");
@@ -571,61 +660,112 @@ function TaludesPage() {
                           e.stopPropagation();
                           setSelectedTaludeId(t.id);
                         }}
-                        className="cursor-pointer transition-opacity"
-                        style={{ opacity: isSel ? 1 : 0.9 }}
+                        onMouseEnter={(e) => {
+                          setHoverId(t.id);
+                          const p = clickToPct(e);
+                          if (p) setHoverPos(p);
+                        }}
+                        onMouseMove={(e) => {
+                          const p = clickToPct(e);
+                          if (p) setHoverPos(p);
+                        }}
+                        onMouseLeave={() => {
+                          setHoverId((cur) => (cur === t.id ? null : cur));
+                        }}
+                        className="cursor-pointer"
                       >
                         <polygon
                           points={pts}
                           fill={meta.fill}
-                          fillOpacity={isSel ? 0.55 : 0.4}
+                          fillOpacity={isSel ? 0.6 : isHover ? 0.55 : 0.4}
                           stroke={meta.stroke}
-                          strokeWidth={isSel ? 0.5 : 0.3}
+                          strokeWidth={isSel || isHover ? 0.55 : 0.3}
                           strokeLinejoin="round"
                           style={{
                             transition: "fill-opacity 300ms ease, stroke-width 200ms ease",
                             filter:
                               t.status === "em_execucao"
                                 ? "drop-shadow(0 0 0.6px rgba(245,158,11,0.9))"
-                                : isSel
-                                  ? "drop-shadow(0 0 0.4px rgba(0,0,0,0.5))"
+                                : isHover || isSel
+                                  ? "drop-shadow(0 0 0.5px rgba(0,0,0,0.55))"
                                   : undefined,
                             animation: t.status === "em_execucao" ? "taludePulse 2s ease-in-out infinite" : undefined,
                           }}
                         />
+                        {/* number label — amarelo com contorno escuro (estilo mapa original) */}
                         <text
                           x={cx}
                           y={cy}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize="2.2"
-                          fontWeight="700"
-                          fill={meta.text}
+                          fontSize="3"
+                          fontWeight="900"
+                          fill="#fde047"
                           style={{ pointerEvents: "none", paintOrder: "stroke" }}
-                          stroke={meta.stroke}
-                          strokeWidth="0.15"
+                          stroke="#0f172a"
+                          strokeWidth="0.55"
                         >
-                          T{String(t.numero).padStart(2, "0")}
+                          {t.numero}
                         </text>
                       </g>
                     );
                   })}
-                  {/* drawing preview */}
+                  {/* drawing / editing preview with draggable vertices */}
                   {drawingPoints.length > 0 && (
                     <>
                       <polygon
                         points={drawingPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-                        fill="#ef4444"
+                        fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
                         fillOpacity="0.25"
-                        stroke="#ef4444"
+                        stroke={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
                         strokeWidth="0.35"
                         strokeDasharray="0.8,0.6"
                       />
                       {drawingPoints.map((p, i) => (
-                        <circle key={i} cx={p.x} cy={p.y} r="0.6" fill="#ef4444" />
+                        <circle
+                          key={i}
+                          cx={p.x}
+                          cy={p.y}
+                          r={draggingIdx === i ? 1.1 : 0.85}
+                          fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                          stroke="#fff"
+                          strokeWidth="0.15"
+                          style={{ cursor: "grab", touchAction: "none" }}
+                          onPointerDown={(e) => handleVertexPointerDown(i, e)}
+                          onContextMenu={(e) => removeVertex(i, e)}
+                        />
                       ))}
                     </>
                   )}
                 </svg>
+                {/* Hover tooltip (HTML, positioned in % over image) */}
+                {hoverId && hoverPos && !editingPolygonFor && !drawingNumero && (() => {
+                  const t = taludes.find((x) => x.id === hoverId);
+                  if (!t) return null;
+                  const meta = STATUS_META[t.status];
+                  const left = Math.min(hoverPos.x, 75);
+                  const top = Math.min(hoverPos.y + 2, 90);
+                  return (
+                    <div
+                      className="pointer-events-none absolute z-10 min-w-[160px] rounded-md border border-border/60 bg-background/95 p-2 text-[11px] shadow-lg backdrop-blur"
+                      style={{ left: `${left}%`, top: `${top}%` }}
+                    >
+                      <div className="mb-1 flex items-center gap-1.5 font-semibold">
+                        <span
+                          className="inline-block h-2 w-2 rounded-full"
+                          style={{ background: meta.fill }}
+                        />
+                        Talude {t.numero} — {meta.label}
+                      </div>
+                      <div className="space-y-0.5 text-muted-foreground">
+                        <div>Prog: <strong className="text-foreground">{fmtBr(t.data_programada)}</strong></div>
+                        <div>Exec: <strong className="text-foreground">{fmtBr(t.data_execucao)}</strong></div>
+                        <div>Conc: <strong className="text-foreground">{fmtBr(t.data_conclusao)}</strong></div>
+                        <div>Próx: <strong className="text-foreground">{fmtBr(t.proxima_data)}</strong></div>
+                      </div>
+                    </div>
+                  );
+                })()}
                 <style>{`@keyframes taludePulse { 0%,100% { fill-opacity: 0.4 } 50% { fill-opacity: 0.65 } }`}</style>
               </div>
             ) : (
