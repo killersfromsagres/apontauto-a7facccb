@@ -142,7 +142,7 @@ function CompanyName({ name, className }: { name: string; className?: string }) 
       )}
       style={{
         backgroundImage:
-          "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 35%, #ffffff 50%, hsl(var(--primary)) 65%, hsl(var(--primary)) 100%)",
+          "linear-gradient(110deg, var(--primary) 0%, var(--primary) 35%, #ffffff 50%, var(--primary) 65%, var(--primary) 100%)",
         backgroundSize: "220% 100%",
         animation: "shine 3.6s linear infinite",
       }}
