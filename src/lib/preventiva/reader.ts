@@ -66,7 +66,7 @@ const norm = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-const trim = (v: unknown) => String(v ?? "").trim();
+
 
 function pick(row: Record<string, unknown>, ...keys: string[]): string {
   const map = new Map<string, unknown>();
