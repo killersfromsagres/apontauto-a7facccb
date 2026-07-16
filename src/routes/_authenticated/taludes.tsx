@@ -416,6 +416,24 @@ function TaludesPage() {
     updateMutation.mutate(patch);
   };
 
+  const cycleStatus = (t: TaludeRow) => {
+    const order: TaludeStatus[] = ["programado", "em_execucao", "finalizado"];
+    const next = order[(order.indexOf(t.status) + 1) % order.length];
+    changeStatus(t, next);
+    toast.success(`Talude ${t.numero}: ${STATUS_META[next].label}`);
+  };
+
+  const bumpDate = (t: TaludeRow, days: number) => {
+    const field: "data_programada" | "data_conclusao" | "proxima_data" =
+      t.status === "finalizado"
+        ? "proxima_data"
+        : t.status === "em_execucao"
+          ? "data_conclusao"
+          : "data_programada";
+    const base = (t[field] as string | null) || today();
+    updateMutation.mutate({ id: t.id, [field]: addDays(base, days) } as Partial<TaludeRow> & { id: string });
+  };
+
   const removeTalude = async (t: TaludeRow) => {
     if (!confirm(`Excluir talude ${t.numero}?`)) return;
     try {
