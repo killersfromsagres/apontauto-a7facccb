@@ -23,6 +23,9 @@ import {
   Trash2,
   Plus,
   ArrowUp,
+  Save,
+  ClipboardList,
+  User,
 } from "lucide-react";
 import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
