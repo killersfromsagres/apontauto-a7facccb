@@ -745,6 +745,7 @@ function ListView({
                       <RowActions
                         item={it}
                         attachCount={attCounts[it.id] ?? 0}
+                        isAdmin={isAdmin}
                         onComplete={onComplete}
                         onEdit={onEdit}
                         onDelete={onDelete}
