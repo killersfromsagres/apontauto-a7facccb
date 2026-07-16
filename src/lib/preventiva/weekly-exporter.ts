@@ -80,7 +80,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
-      size: isDay ? 14 : 13,
+      size: isDay ? 15 : 15,
       color: { argb: "FFFFFFFF" },
     };
     cell.alignment = {
@@ -96,7 +96,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       right: { style: "thin", color: { argb: "FF000000" } },
     };
   });
-  headerRow.height = 80;
+  headerRow.height = 68;
 
   // Corpo — por equipe na ordem obrigatória
   const atividade = input.atividadePadrao ?? "Preventiva";
