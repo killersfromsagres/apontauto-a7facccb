@@ -234,7 +234,7 @@ function TaludesPage() {
   const [editingPolygonFor, setEditingPolygonFor] = useState<string | null>(null);
 
   const map = detailQuery.data?.map;
-  const taludes = (detailQuery.data?.taludes ?? []) as TaludeRow[];
+  const taludes = ((detailQuery.data?.taludes ?? []) as unknown) as TaludeRow[];
   const selected = taludes.find((t) => t.id === selectedTaludeId) || null;
 
   const alerts = useMemo(() => {
