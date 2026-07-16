@@ -109,20 +109,21 @@ export const upsertTalude = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ context, data }) => {
-    const payload: Record<string, unknown> = {
+    const payload = {
       owner_id: context.userId,
       map_id: data.map_id,
       numero: data.numero,
       nome: data.nome ?? null,
       polygon: data.polygon,
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.data_programada !== undefined ? { data_programada: data.data_programada } : {}),
+      ...(data.data_execucao !== undefined ? { data_execucao: data.data_execucao } : {}),
+      ...(data.data_conclusao !== undefined ? { data_conclusao: data.data_conclusao } : {}),
+      ...(data.proxima_data !== undefined ? { proxima_data: data.proxima_data } : {}),
+      ...(data.periodicidade_dias !== undefined ? { periodicidade_dias: data.periodicidade_dias } : {}),
+      ...(data.observacoes !== undefined ? { observacoes: data.observacoes } : {}),
     };
-    if (data.status !== undefined) payload.status = data.status;
-    if (data.data_programada !== undefined) payload.data_programada = data.data_programada;
-    if (data.data_execucao !== undefined) payload.data_execucao = data.data_execucao;
-    if (data.data_conclusao !== undefined) payload.data_conclusao = data.data_conclusao;
-    if (data.proxima_data !== undefined) payload.proxima_data = data.proxima_data;
-    if (data.periodicidade_dias !== undefined) payload.periodicidade_dias = data.periodicidade_dias;
-    if (data.observacoes !== undefined) payload.observacoes = data.observacoes;
+
 
     if (data.id) {
       const { data: row, error } = await context.supabase
