@@ -676,7 +676,17 @@ function TaludesPage() {
                         key={t.id}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (drawingNumero || editingPolygonFor) return;
+                          if (selectedTaludeId === t.id) {
+                            cycleStatus(t);
+                          } else {
+                            setSelectedTaludeId(t.id);
+                          }
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
                           setSelectedTaludeId(t.id);
+                          cycleStatus(t);
                         }}
                         onMouseEnter={(e) => {
                           setHoverId(t.id);
@@ -700,7 +710,7 @@ function TaludesPage() {
                           strokeWidth={isSel || isHover ? 0.55 : 0.3}
                           strokeLinejoin="round"
                           style={{
-                            transition: "fill-opacity 300ms ease, stroke-width 200ms ease",
+                            transition: "fill 300ms ease, fill-opacity 300ms ease, stroke-width 200ms ease",
                             filter:
                               t.status === "em_execucao"
                                 ? "drop-shadow(0 0 0.6px rgba(245,158,11,0.9))"
@@ -713,7 +723,7 @@ function TaludesPage() {
                         {/* number label — amarelo com contorno escuro (estilo mapa original) */}
                         <text
                           x={cx}
-                          y={cy}
+                          y={cy - 1.2}
                           textAnchor="middle"
                           dominantBaseline="middle"
                           fontSize="3"
@@ -725,6 +735,33 @@ function TaludesPage() {
                         >
                           {t.numero}
                         </text>
+                        {/* date label under number */}
+                        {(() => {
+                          const dateIso =
+                            t.status === "finalizado"
+                              ? t.proxima_data || t.data_conclusao
+                              : t.status === "em_execucao"
+                                ? t.data_execucao
+                                : t.data_programada;
+                          if (!dateIso) return null;
+                          const [y, m, d] = dateIso.split("T")[0].split("-");
+                          return (
+                            <text
+                              x={cx}
+                              y={cy + 1.8}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize="1.5"
+                              fontWeight="700"
+                              fill="#ffffff"
+                              style={{ pointerEvents: "none", paintOrder: "stroke" }}
+                              stroke="#0f172a"
+                              strokeWidth="0.35"
+                            >
+                              {`${d}/${m}/${y.slice(2)}`}
+                            </text>
+                          );
+                        })()}
                       </g>
                     );
                   })}
