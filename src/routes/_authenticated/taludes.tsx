@@ -243,6 +243,11 @@ function TaludesPage() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  useEffect(() => {
+    setImgLoaded(false);
+  }, [imageUrl]);
 
   const map = detailQuery.data?.map;
   const taludes = ((detailQuery.data?.taludes ?? []) as unknown) as TaludeRow[];
