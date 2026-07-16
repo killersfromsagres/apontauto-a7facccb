@@ -366,7 +366,9 @@ function ProgramacaoTaludesPage() {
         )}
 
         {/* Painel climático */}
-        <GlassCard className="space-y-4" ref={climaPanelRef}>
+        <div ref={climaPanelRef}>
+        <GlassCard className="space-y-4">
+
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
