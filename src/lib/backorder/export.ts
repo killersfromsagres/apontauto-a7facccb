@@ -7,18 +7,20 @@ const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
 const HEADER_BG_L1 = argb("#002060");
 const HEADER_BG_L2 = argb("#2B3095");
 
+// Largura solicitada: 219 px. Excel usa "character units" (~7 px cada).
+const COL_WIDTH = 31.28;
 const COLUMNS = [
-  { key: "os", label: "OS", width: 16 },
-  { key: "nome", label: "Nome", width: 60 },
-  { key: "predio", label: "Prédio", width: 22 },
-  { key: "andar", label: "Andar", width: 22 },
-  { key: "espaco", label: "Espaço", width: 34 },
-  { key: "atividade", label: "Atividade", width: 18 },
-  { key: "termino_sla", label: "Término SLA", width: 18 },
-  { key: "equipe", label: "Equipe", width: 26 },
-  { key: "ativo", label: "Ativo", width: 22 },
-  { key: "outros", label: "Outros", width: 18 },
+  { key: "os", label: "OS", width: COL_WIDTH },
+  { key: "nome", label: "Nome", width: COL_WIDTH },
+  { key: "predio", label: "Prédio", width: COL_WIDTH },
+  { key: "andar", label: "Andar", width: COL_WIDTH },
+  { key: "espaco", label: "Espaço", width: COL_WIDTH },
+  { key: "atividade", label: "Atividade", width: COL_WIDTH },
+  { key: "data", label: "Data", width: COL_WIDTH },
+  { key: "equipe", label: "Equipe", width: COL_WIDTH },
+  { key: "solicitante", label: "Solicitante", width: COL_WIDTH },
 ];
+
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
