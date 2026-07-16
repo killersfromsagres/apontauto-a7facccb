@@ -129,9 +129,36 @@ function BackorderPage() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("__all__");
   const [importing, setImporting] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [config, setConfig] = useState<PriorityConfig>(DEFAULT_CONFIG);
+  const [configOpen, setConfigOpen] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const targetPct = TARGET_PCT_DEFAULT;
+
+  const loadConfig = useCallback(async () => {
+    const { data } = await supabase
+      .from("backorder_prioridade_config" as never)
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+    if (data) {
+      const d = data as {
+        predios_sensiveis: PredioSensivel[];
+        keyword_rules: KeywordRule[];
+        dias_forca_prioridade: number;
+        familias_habilitadas: Record<string, boolean>;
+        last_scan_at: string | null;
+      };
+      setConfig({
+        predios_sensiveis: d.predios_sensiveis ?? DEFAULT_CONFIG.predios_sensiveis,
+        keyword_rules: d.keyword_rules ?? DEFAULT_CONFIG.keyword_rules,
+        dias_forca_prioridade: d.dias_forca_prioridade ?? DEFAULT_CONFIG.dias_forca_prioridade,
+        familias_habilitadas: d.familias_habilitadas ?? DEFAULT_CONFIG.familias_habilitadas,
+        last_scan_at: d.last_scan_at ?? null,
+      });
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -145,8 +172,9 @@ function BackorderPage() {
   }, []);
 
   useEffect(() => {
+    void loadConfig();
     void refresh();
-  }, [refresh]);
+  }, [loadConfig, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
