@@ -8,7 +8,6 @@ export type Atividade =
   | "Elétrica"
   | "Hidráulica"
   | "Pintura"
-  | "Pintura"
   | "Gerenciamento"
   | "Outros Serviços";
 
