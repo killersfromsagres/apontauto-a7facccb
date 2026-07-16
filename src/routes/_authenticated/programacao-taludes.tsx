@@ -229,6 +229,7 @@ function ProgramacaoTaludesPage() {
   };
 
   const printableRef = useRef<HTMLDivElement>(null);
+  const climaPanelRef = useRef<HTMLDivElement>(null);
   const handleExportImage = async () => {
     if (!printableRef.current) return;
     const { toPng } = await import("html-to-image");
@@ -244,6 +245,49 @@ function ProgramacaoTaludesPage() {
     } catch (e) {
       toast.error("Falha ao gerar imagem");
       console.error(e);
+    }
+  };
+
+  // Evidência de chuva: captura print do painel do clima + salva no histórico.
+  const evidenciasQ = useQuery({
+    queryKey: ["taludes-chuva-evidencias"],
+    queryFn: () => listarEvidencias(50),
+    staleTime: 60_000,
+  });
+  const [registrandoEvid, setRegistrandoEvid] = useState(false);
+  const handleRegistrarEvidencia = async () => {
+    if (!clima || !climaPanelRef.current) return;
+    setRegistrandoEvid(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(climaPanelRef.current, {
+        pixelRatio: 2,
+        backgroundColor: "#0b1220",
+      });
+      const hoje = todayISO();
+      const diaHoje = clima.dias.find((d) => d.data === hoje);
+      const mm = diaHoje?.precipitacao_mm_real ?? diaHoje?.precipitacao_mm_prev ?? clima.agora.prob_chuva;
+      await registrarEvidencia({
+        data: hoje,
+        mensagem:
+          "Atividades de talude interrompidas devido a chuva — condição climática desfavorável registrada como evidência.",
+        imagem_data_url: dataUrl,
+        temperatura: clima.agora.temperatura,
+        condicao: clima.agora.condicao,
+        precipitacao_mm: typeof mm === "number" ? mm : null,
+        prob_chuva: clima.agora.prob_chuva,
+      });
+      // Também baixa a imagem para o operador
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `evidencia-chuva-taludes-${hoje}.png`;
+      a.click();
+      toast.success("Evidência de chuva registrada");
+      qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRegistrandoEvid(false);
     }
   };
 
