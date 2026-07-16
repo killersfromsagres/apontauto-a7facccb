@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { CalendarIcon, Download, Plus, Trash2, UserCog, X, Droplets, SprayCan, Trees } from "lucide-react";
@@ -76,13 +76,40 @@ const emptyState = (): CategoriaState => ({
   osText: "",
 });
 
-export function ApontamentosConsolidated() {
-  const [active, setActive] = useState<Categoria>("abastecimento");
-  const [states, setStates] = useState<Record<Categoria, CategoriaState>>({
+const STORAGE_KEY = "apontauto:apontamentos-manual:v1";
+
+function loadStates(): Record<Categoria, CategoriaState> {
+  const base = {
     abastecimento: emptyState(),
     limpeza: emptyState(),
     jardinagem: emptyState(),
-  });
+  };
+  if (typeof window === "undefined") return base;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return base;
+    const parsed = JSON.parse(raw) as Partial<Record<Categoria, CategoriaState>>;
+    return {
+      abastecimento: { ...base.abastecimento, ...(parsed.abastecimento ?? {}) },
+      limpeza: { ...base.limpeza, ...(parsed.limpeza ?? {}) },
+      jardinagem: { ...base.jardinagem, ...(parsed.jardinagem ?? {}) },
+    };
+  } catch {
+    return base;
+  }
+}
+
+export function ApontamentosConsolidated() {
+  const [active, setActive] = useState<Categoria>("abastecimento");
+  const [states, setStates] = useState<Record<Categoria, CategoriaState>>(loadStates);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+    } catch {
+      /* quota exceeded — ignore */
+    }
+  }, [states]);
 
   const update = (cat: Categoria, patch: Partial<CategoriaState>) =>
     setStates((prev) => ({ ...prev, [cat]: { ...prev[cat], ...patch } }));
