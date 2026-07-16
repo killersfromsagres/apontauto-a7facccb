@@ -14,31 +14,23 @@ const HEADER_BG_L2 = argbFromHex("#2B3095");
 const NAO_LOCALIZADO_COLOR = argbFromHex("#FF0000");
 
 const COLUMNS = [
-  { key: "os", label: "OS", width: 10 },
-  { key: "nome", label: "Nome", width: 38 },
-  { key: "predio", label: "Prédio", width: 10 },
-  { key: "andar", label: "Andar", width: 9 },
-  { key: "espaco", label: "Espaço", width: 22 },
-  { key: "atividade", label: "Atividade", width: 12 },
-  { key: "sla", label: "Término SLA", width: 13 },
-  { key: "equipe", label: "Equipe", width: 22 },
-  { key: "ativo", label: "Ativo", width: 22 },
-  { key: "outros", label: "Outros", width: 14 },
-  { key: "seg", label: "SEGUNDA", width: 6, day: 0 },
-  { key: "ter", label: "TERÇA", width: 6, day: 1 },
-  { key: "qua", label: "QUARTA", width: 6, day: 2 },
-  { key: "qui", label: "QUINTA", width: 6, day: 3 },
-  { key: "sex", label: "SEXTA", width: 6, day: 4 },
+  { key: "os", label: "OS", width: 14 },
+  { key: "nome", label: "Nome", width: 46 },
+  { key: "predio", label: "Prédio", width: 13 },
+  { key: "andar", label: "Andar", width: 11 },
+  { key: "espaco", label: "Espaço", width: 28 },
+  { key: "atividade", label: "Atividade", width: 15 },
+  { key: "sla", label: "Término SLA", width: 16 },
+  { key: "equipe", label: "Equipe", width: 28 },
+  { key: "ativo", label: "Ativo", width: 26 },
+  { key: "outros", label: "Outros", width: 16 },
+  { key: "seg", label: "SEGUNDA", width: 7, day: 0 },
+  { key: "ter", label: "TERÇA", width: 7, day: 1 },
+  { key: "qua", label: "QUARTA", width: 7, day: 2 },
+  { key: "qui", label: "QUINTA", width: 7, day: 3 },
+  { key: "sex", label: "SEXTA", width: 7, day: 4 },
 ];
 
-function textColorForBg(hex: string): string {
-  const h = hex.replace("#", "");
-  const r = parseInt(h.substring(0, 2), 16);
-  const g = parseInt(h.substring(2, 4), 16);
-  const b = parseInt(h.substring(4, 6), 16);
-  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return lum > 0.6 ? "FF000000" : "FFFFFFFF";
-}
 
 function formatSLA(iso: string): string {
   if (!iso) return "";
@@ -74,9 +66,9 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
   const titleCell = ws.getCell(1, 1);
   titleCell.value = `${input.titulo}  ·  ${input.week.label}`;
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG_L1 } };
-  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 16, color: { argb: "FFFFFFFF" } };
+  titleCell.font = { name: APTOS_EXTRABOLD, bold: true, size: 20, color: { argb: "FFFFFFFF" } };
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 32;
+  ws.getRow(1).height = 38;
 
   // Linha 2 — cabeçalho
   const headerRow = ws.getRow(2);
@@ -88,7 +80,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
-      size: isDay ? 12 : 11,
+      size: isDay ? 14 : 13,
       color: { argb: "FFFFFFFF" },
     };
     cell.alignment = {
@@ -104,7 +96,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       right: { style: "thin", color: { argb: "FF000000" } },
     };
   });
-  headerRow.height = 70;
+  headerRow.height = 80;
 
   // Corpo — por equipe na ordem obrigatória
   const atividade = input.atividadePadrao ?? "Preventiva";
@@ -115,7 +107,6 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
     if (!bucket || bucket.os.length === 0) continue;
 
     const bg = argbFromHex(EQUIPE_COLOR[equipe]);
-    const textColor = textColorForBg(EQUIPE_COLOR[equipe]);
     const isClima = equipe.startsWith("CLIMAT");
 
     // Mapa OS→dia (índice 0..4)
@@ -160,28 +151,44 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       COLUMNS.forEach((c, i) => {
         const cell = row.getCell(i + 1);
         cell.value = values[c.key];
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
-        // Coluna OS = sempre branco. Coluna Ativo (se não localizado) = vermelho.
-        let color = c.key === "os" ? "FFFFFFFF" : textColor;
+
+        // Só a coluna OS carrega a cor da equipe; demais ficam sem preenchimento.
+        if (c.key === "os") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        }
+
+        let color = c.key === "os" ? "FFFFFFFF" : "FF000000";
         if (c.key === "ativo" && ativoNaoLocalizado) color = NAO_LOCALIZADO_COLOR;
+
         cell.font = {
           name: APTOS_SEMIBOLD,
           bold: true,
-          size: 11,
+          size: 13,
           color: { argb: color },
         };
         cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
         cell.border = {
-          top: { style: "hair", color: { argb: "FF000000" } },
-          bottom: { style: "hair", color: { argb: "FF000000" } },
-          left: { style: "hair", color: { argb: "FF000000" } },
-          right: { style: "hair", color: { argb: "FF000000" } },
+          top: { style: "thin", color: { argb: "FFBFBFBF" } },
+          bottom: { style: "thin", color: { argb: "FFBFBFBF" } },
+          left: { style: "thin", color: { argb: "FFBFBFBF" } },
+          right: { style: "thin", color: { argb: "FFBFBFBF" } },
         };
       });
-      row.height = 28;
+      row.height = 34;
       rowIdx++;
     }
   }
+
+  // Configuração de impressão — paisagem, ajustar à largura da página.
+  ws.pageSetup = {
+    orientation: "landscape",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9, // A4
+    margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    printTitlesRow: "1:2",
+  };
 
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], {
