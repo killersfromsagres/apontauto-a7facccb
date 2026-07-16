@@ -965,10 +965,7 @@ function CalendarView({
   const [selected, setSelected] = useState<string | null>(null);
 
   const visibleItems = items;
-  const toggleMark = onToggleMark;
-  const clearMarks = onClearMarks;
-  const setOnlyMarked = (_: unknown) => onToggleOnlyMarked();
-  // (mantido: onlyMarked vem do pai, itens já filtrados na página)
+
 
   const eventsByDay = useMemo(() => {
     const m = new Map<string, LegalItem[]>();
