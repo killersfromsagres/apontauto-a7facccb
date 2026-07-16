@@ -716,6 +716,15 @@ function BackorderPage() {
         config={config}
         onSave={saveConfig}
       />
+      <BackorderDetailDialog
+        row={selectedBackorderLive}
+        onClose={() => setSelectedBackorder(null)}
+        onSave={updateRow}
+        onFinalizar={async (r) => {
+          await toggleFinalizado(r, true);
+          setSelectedBackorder(null);
+        }}
+      />
     </PageShell>
   );
 }
