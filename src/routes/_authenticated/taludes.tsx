@@ -60,7 +60,7 @@ import {
   verifyAndRepairMap,
 } from "@/lib/taludes.functions";
 import { STATUS_META, type TaludeStatus } from "@/lib/taludes/constants";
-import referenceMap from "@/assets/demarchi-taludes.png.asset.json";
+import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
   head: () => ({
@@ -572,17 +572,18 @@ function TaludesPage() {
             </div>
             <div className="space-y-3 rounded-xl border border-dashed border-border/60 p-4">
               <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Ou usar o mapa DEMARCHI
+                Mapa padrão aprimorado
               </h3>
               <p className="text-xs text-muted-foreground">
-                Carrega a planta de referência já anexada, com numeração 1–10 já visível para
-                demarcação manual.
+                Carrega a planta oficial da unidade DEMARCHI já otimizada, pronta para demarcação
+                dos taludes.
               </p>
               <Button onClick={createRefMap} disabled={creating} variant="secondary" className="w-full">
                 <MapPin className="mr-2 h-4 w-4" />
-                Usar mapa de referência
+                Carregar mapa padrão aprimorado
               </Button>
             </div>
+
           </div>
         </GlassCard>
       </PageShell>
