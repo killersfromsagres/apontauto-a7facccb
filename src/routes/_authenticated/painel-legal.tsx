@@ -78,6 +78,7 @@ import {
   type LegalStatus,
 } from "@/lib/legal-items";
 import { LegalAttachmentsModal } from "@/components/legal/legal-attachments-modal";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useLegalAlerts, type LegalAlert } from "@/hooks/use-legal-alerts";
 // legal-export é dinamicamente importado só quando o usuário clica em exportar
 // (retira xlsx + jspdf + autotable do chunk inicial da rota).
@@ -130,19 +131,53 @@ function TaskTypeIcon({ titulo, className }: { titulo: string; className?: strin
   return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
 }
 
-/** Nome da empresa com brilho sutil. */
+/** Nome da empresa com efeito de luz percorrendo o texto. */
 function CompanyName({ name, className }: { name: string; className?: string }) {
   if (!name) return <span className="text-muted-foreground">—</span>;
   return (
     <span
       className={cn(
-        "bg-gradient-to-r from-primary/90 via-white to-primary/90 bg-clip-text font-semibold text-transparent",
-        "[text-shadow:0_0_14px_rgba(59,130,246,0.35)]",
+        "inline-block bg-clip-text font-semibold text-transparent",
         className,
       )}
+      style={{
+        backgroundImage:
+          "linear-gradient(110deg, hsl(var(--primary)) 0%, hsl(var(--primary)) 35%, #ffffff 50%, hsl(var(--primary)) 65%, hsl(var(--primary)) 100%)",
+        backgroundSize: "220% 100%",
+        animation: "shine 3.6s linear infinite",
+      }}
     >
       {name}
     </span>
+  );
+}
+
+/** Botão com nome completo da tarefa (sem truncar). */
+function TaskNameButton({
+  titulo,
+  onClick,
+  className,
+}: {
+  titulo: string;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={titulo}
+      className={cn(
+        "group inline-flex max-w-full items-center gap-1.5 rounded-md border border-border/50 bg-card/50 px-2 py-1 text-left text-sm font-medium",
+        "shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] transition",
+        "hover:border-primary/60 hover:bg-primary/10 hover:text-primary",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        className,
+      )}
+    >
+      <TaskTypeIcon titulo={titulo} className="shrink-0" />
+      <span className="whitespace-normal break-words leading-snug">{titulo}</span>
+    </button>
   );
 }
 
@@ -162,6 +197,8 @@ function PainelLegalPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<LegalItem | null>(null);
   const [attachItem, setAttachItem] = useState<LegalItem | null>(null);
+  const { isAdmin } = useIsAdmin();
+
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["legal-items"],
@@ -404,6 +441,7 @@ function PainelLegalPage() {
           year={year}
           setYear={setYear}
           group={group}
+          isAdmin={isAdmin}
           onComplete={handleComplete}
           onEdit={openEdit}
           onDelete={handleDelete}
@@ -508,6 +546,7 @@ function ListView({
   year,
   setYear,
   group,
+  isAdmin,
   onComplete,
   onEdit,
   onDelete,
@@ -519,6 +558,7 @@ function ListView({
   year: number;
   setYear: (y: number) => void;
   group: "nenhum" | "empresa" | "periodicidade";
+  isAdmin: boolean;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -563,11 +603,11 @@ function ListView({
           )}
 
           {/* Tabela — desktop */}
-          <GlassCard className="hidden overflow-x-auto p-0 lg:block">
-            <table className="w-full min-w-[1200px] border-separate border-spacing-0 text-sm">
+          <GlassCard className="hidden overflow-x-auto p-2 lg:block">
+            <table className="w-full min-w-[1320px] border-separate border-spacing-0 text-sm">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <Th>Tarefa</Th>
+                  <Th className="min-w-[260px]">Tarefa</Th>
                   <Th>Empresa</Th>
                   <Th>Prédio</Th>
                   <Th>Última</Th>
@@ -598,10 +638,9 @@ function ListView({
                       )}
                     >
                       <Td>
-                        <div className="flex items-center gap-2">
-                          <span className={cn("h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
-                          <TaskTypeIcon titulo={it.titulo} />
-                          <span className="font-medium">{it.titulo}</span>
+                        <div className="flex items-start gap-2">
+                          <span className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
+                          <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} />
                         </div>
                       </Td>
                       <Td><CompanyName name={it.empresa} /></Td>
@@ -625,6 +664,7 @@ function ListView({
                         <RowActions
                           item={it}
                           attachCount={attCounts[it.id] ?? 0}
+                          isAdmin={isAdmin}
                           onComplete={onComplete}
                           onEdit={onEdit}
                           onDelete={onDelete}
@@ -672,10 +712,7 @@ function ListView({
                   <div className="pl-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 font-semibold">
-                          <TaskTypeIcon titulo={it.titulo} />
-                          <span className="truncate">{it.titulo}</span>
-                        </p>
+                        <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} className="w-full" />
                         <p className="mt-0.5 truncate text-xs">
                           <CompanyName name={it.empresa} className="text-xs" />
                           <span className="text-muted-foreground"> · {PERIODICIDADE_LABEL[it.periodicidade]}</span>
@@ -708,6 +745,7 @@ function ListView({
                       <RowActions
                         item={it}
                         attachCount={attCounts[it.id] ?? 0}
+                        isAdmin={isAdmin}
                         onComplete={onComplete}
                         onEdit={onEdit}
                         onDelete={onDelete}
@@ -793,6 +831,7 @@ function MiniInfo({ label, value }: { label: string; value: string }) {
 function RowActions({
   item,
   attachCount,
+  isAdmin,
   onComplete,
   onEdit,
   onDelete,
@@ -800,6 +839,7 @@ function RowActions({
 }: {
   item: LegalItem;
   attachCount: number;
+  isAdmin: boolean;
   onComplete: (it: LegalItem) => void;
   onEdit: (it: LegalItem) => void;
   onDelete: (it: LegalItem) => void;
@@ -816,18 +856,22 @@ function RowActions({
           <span className="ml-1 text-[10px] font-semibold text-primary">{attachCount}</span>
         )}
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => onEdit(item)} title="Editar">
-        <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => onDelete(item)}
-        title="Excluir"
-        className="text-destructive hover:text-destructive"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      {isAdmin && (
+        <>
+          <Button size="sm" variant="ghost" onClick={() => onEdit(item)} title="Editar">
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onDelete(item)}
+            title="Excluir"
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
