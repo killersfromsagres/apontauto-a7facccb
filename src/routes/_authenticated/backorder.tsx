@@ -649,6 +649,10 @@ function BackorderPage() {
             <PackageX className="mr-1.5 h-3.5 w-3.5" /> Em aberto
             <Badge variant="secondary" className="ml-2">{abertas.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="backorder">
+            <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Backorder
+            <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="finalizados">
             Finalizados <Badge variant="secondary" className="ml-2">{finalizadas.length}</Badge>
           </TabsTrigger>
