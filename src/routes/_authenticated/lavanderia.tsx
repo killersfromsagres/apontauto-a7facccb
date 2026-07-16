@@ -319,7 +319,7 @@ function LavanderiaPage() {
             <Upload className="mr-2 h-4 w-4" /> Importar Movimentação
           </Button>
           <Button onClick={downloadExcel} disabled={pecasFull.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Exportar Excel
+            <Download className="mr-2 h-4 w-4" /> Baixar planilha Excel
           </Button>
           <Button variant="ghost" size="icon" onClick={() => void refresh()} title="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
