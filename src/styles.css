@@ -1244,3 +1244,25 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 }
 .priority-scroll-top:hover { filter: brightness(1.1); }
 
+
+/* Performance: respeitar preferência de movimento reduzido — desliga animações pesadas. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile: reduzir custo do backdrop-filter (blur é caro em GPUs móveis) */
+@media (max-width: 640px) {
+  .glass-card,
+  .glass-tile,
+  header[class*="backdrop-blur"] {
+    backdrop-filter: blur(10px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+  }
+}

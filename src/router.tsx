@@ -22,6 +22,9 @@ export const getRouter = () => {
     defaultPreload: "intent",
     defaultPreloadDelay: 40,
     defaultPreloadStaleTime: 0,
+    // Suaviza transição: só mostra pending após 200ms e por no mínimo 300ms.
+    defaultPendingMs: 200,
+    defaultPendingMinMs: 300,
   });
 
   return router;
