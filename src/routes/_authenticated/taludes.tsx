@@ -518,6 +518,7 @@ function TaludesPage() {
     if (!map || !imageUrl) return;
     try {
       toast.info("Gerando PNG…");
+      const { exportMapPNG } = await import("@/lib/taludes/export");
       const blob = await exportMapPNG({
         imageUrl,
         mapName: map.nome,
