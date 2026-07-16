@@ -351,7 +351,7 @@ export const verifyAndRepairMap = createServerFn({ method: "POST" })
     for (const t of taludes) {
       if (t.status === "finalizado") {
         const base = t.data_conclusao || t.data_execucao || t.data_programada;
-        const per = (patches.get(t.id)?.periodicidade_dias as number | undefined) ??
+        const per = patches.get(t.id)?.periodicidade_dias ??
           t.periodicidade_dias ??
           map.periodicidade_dias ??
           180;
