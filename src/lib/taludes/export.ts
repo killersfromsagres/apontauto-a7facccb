@@ -1,5 +1,6 @@
 export { STATUS_META, type TaludeStatus } from "./constants";
-import type { TaludeStatus } from "./constants";
+import { STATUS_META, type TaludeStatus } from "./constants";
+
 
 
 interface ExportTalude {
