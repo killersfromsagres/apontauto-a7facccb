@@ -76,12 +76,12 @@ export async function generateBackorderExport(input: {
       predio: r.predio,
       andar: r.andar,
       espaco: r.espaco,
-      atividade: r.atividade,
-      termino_sla: fmtDate(r.termino_sla),
+      atividade: "Corretiva",
+      data: fmtDate(r.termino_sla),
       equipe: r.equipe,
-      ativo: r.ativo,
-      outros: r.outros,
+      solicitante: r.outros,
     };
+
     COLUMNS.forEach((c, i) => {
       const cell = row.getCell(i + 1);
       cell.value = values[c.key];
