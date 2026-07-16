@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+
 import { toast } from "sonner";
 import {
   Upload,
@@ -115,13 +115,14 @@ const fmtBr = (iso: string | null) => {
 
 function TaludesPage() {
   const qc = useQueryClient();
-  const listFn = useServerFn(listMaps);
-  const detailFn = useServerFn(getMapDetail);
-  const createFn = useServerFn(createMap);
-  const deleteMapFn = useServerFn(deleteMap);
-  const upsertFn = useServerFn(upsertTalude);
-  const deleteFn = useServerFn(deleteTalude);
-  const verifyFn = useServerFn(verifyAndRepairMap);
+  const listFn = listMaps;
+  const detailFn = getMapDetail;
+  const createFn = createMap;
+  const deleteMapFn = deleteMap;
+  const upsertFn = upsertTalude;
+  const deleteFn = deleteTalude;
+  const verifyFn = verifyAndRepairMap;
+
   const [auditing, setAuditing] = useState(false);
   const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
 
@@ -180,8 +181,10 @@ function TaludesPage() {
     try {
       // Idempotência: se já existe um mapa de referência, apenas selecione-o.
       const existing = mapsQuery.data?.find(
-        (m) => m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
+        (m: { id: string; image_path: string; nome: string }) =>
+          m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
       );
+
       if (existing) {
         setSelectedMapId(existing.id);
         toast.success("Mapa de referência selecionado");
@@ -614,8 +617,9 @@ function TaludesPage() {
                 <SelectValue placeholder="Selecionar mapa" />
               </SelectTrigger>
               <SelectContent>
-                {mapsQuery.data.map((m) => (
+                {mapsQuery.data.map((m: { id: string; nome: string }) => (
                   <SelectItem key={m.id} value={m.id}>
+
                     {m.nome}
                   </SelectItem>
                 ))}
