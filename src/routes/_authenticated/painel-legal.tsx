@@ -441,6 +441,7 @@ function PainelLegalPage() {
           year={year}
           setYear={setYear}
           group={group}
+          isAdmin={isAdmin}
           onComplete={handleComplete}
           onEdit={openEdit}
           onDelete={handleDelete}
