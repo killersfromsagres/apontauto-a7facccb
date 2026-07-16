@@ -231,6 +231,9 @@ function TaludesPage() {
   const [drawingNumero, setDrawingNumero] = useState<string>("");
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [editingPolygonFor, setEditingPolygonFor] = useState<string | null>(null);
+  const [hoverId, setHoverId] = useState<string | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
 
   const map = detailQuery.data?.map;
   const taludes = ((detailQuery.data?.taludes ?? []) as unknown) as TaludeRow[];
@@ -243,22 +246,72 @@ function TaludesPage() {
     );
   }, [taludes]);
 
+  const overlaps = useMemo(() => {
+    const bbox = (poly: Point[]) => {
+      let minX = 100, minY = 100, maxX = 0, maxY = 0;
+      for (const p of poly) {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y > maxY) maxY = p.y;
+      }
+      return { minX, minY, maxX, maxY };
+    };
+    const pairs: Array<[number, number]> = [];
+    const list = taludes.filter((t) => t.polygon.length >= 3);
+    const boxes = list.map((t) => ({ n: t.numero, b: bbox(t.polygon) }));
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i].b;
+        const b = boxes[j].b;
+        const overlapArea =
+          Math.max(0, Math.min(a.maxX, b.maxX) - Math.max(a.minX, b.minX)) *
+          Math.max(0, Math.min(a.maxY, b.maxY) - Math.max(a.minY, b.minY));
+        const minArea = Math.min(
+          (a.maxX - a.minX) * (a.maxY - a.minY),
+          (b.maxX - b.minX) * (b.maxY - b.minY),
+        ) || 1;
+        if (overlapArea / minArea > 0.35) pairs.push([boxes[i].n, boxes[j].n]);
+      }
+    }
+    return pairs;
+  }, [taludes]);
+
   const svgRef = useRef<SVGSVGElement>(null);
-  const clickToPct = (e: React.MouseEvent) => {
+  const clickToPct = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
     if (!svg) return null;
     const rect = svg.getBoundingClientRect();
     return {
-      x: ((e.clientX - rect.left) / rect.width) * 100,
-      y: ((e.clientY - rect.top) / rect.height) * 100,
+      x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)),
     };
   };
 
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor) return;
+    if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
     setDrawingPoints((prev) => [...prev, p]);
+  };
+
+  const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    setDraggingIdx(idx);
+  };
+  const handleSvgPointerMove = (e: React.PointerEvent) => {
+    if (draggingIdx === null) return;
+    const p = clickToPct(e);
+    if (!p) return;
+    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? p : pt)));
+  };
+  const handleSvgPointerUp = () => setDraggingIdx(null);
+  const removeVertex = (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const finishPolygon = async () => {
@@ -318,10 +371,10 @@ function TaludesPage() {
 
   const startRedraw = (t: TaludeRow) => {
     setEditingPolygonFor(t.id);
-    setDrawingPoints([]);
+    setDrawingPoints(t.polygon.map((p) => ({ ...p })));
     setDrawingNumero("");
     setSelectedTaludeId(t.id);
-    toast.info(`Redesenhando talude ${t.numero} — clique para adicionar pontos, ≥3 pontos`);
+    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
   };
 
   const updateMutation = useMutation({
