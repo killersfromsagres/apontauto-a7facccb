@@ -589,7 +589,7 @@ function TaludesPage() {
             </div>
             <div className="space-y-3 rounded-xl border border-dashed border-border/60 p-4">
               <h3 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-                Mapa padrão aprimorado
+                Mapa site Sherwin Williams - Demarchi
               </h3>
               <p className="text-xs text-muted-foreground">
                 Carrega a planta oficial da unidade DEMARCHI já otimizada, pronta para demarcação
@@ -597,7 +597,7 @@ function TaludesPage() {
               </p>
               <Button onClick={createRefMap} disabled={creating} variant="secondary" className="w-full">
                 <MapPin className="mr-2 h-4 w-4" />
-                Carregar mapa padrão aprimorado
+                Carregar Mapa site Sherwin Williams - Demarchi
               </Button>
             </div>
 
