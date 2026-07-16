@@ -23,6 +23,7 @@ import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenti
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
+import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
@@ -99,6 +100,11 @@ const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   path: '/outros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLavanderiaRoute = AuthenticatedLavanderiaRouteImport.update({
+  id: '/lavanderia',
+  path: '/lavanderia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   id: '/corretiva',
   path: '/corretiva',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -173,6 +181,7 @@ export interface FileRoutesById {
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
+  '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/configuracoes'
     | '/corretiva'
+    | '/lavanderia'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/configuracoes'
     | '/corretiva'
+    | '/lavanderia'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -233,6 +244,7 @@ export interface FileRouteTypes {
     | '/_authenticated/backorder'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
+    | '/_authenticated/lavanderia'
     | '/_authenticated/outros'
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
@@ -352,6 +364,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOutrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lavanderia': {
+      id: '/_authenticated/lavanderia'
+      path: '/lavanderia'
+      fullPath: '/lavanderia'
+      preLoaderRoute: typeof AuthenticatedLavanderiaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corretiva': {
       id: '/_authenticated/corretiva'
       path: '/corretiva'
@@ -388,6 +407,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
+  AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
@@ -402,6 +422,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
+  AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
