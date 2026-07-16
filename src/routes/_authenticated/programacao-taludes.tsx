@@ -587,6 +587,21 @@ function ProgramacaoTaludesPage() {
         {/* Histórico */}
         <HistoricoClima clima={clima} rows={rows} />
 
+        {/* Evidências de chuva registradas */}
+        <EvidenciasChuvaCard
+          evidencias={evidenciasQ.data ?? []}
+          onRemove={async (id) => {
+            try {
+              await removerEvidencia(id);
+              toast.success("Evidência removida");
+              qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
+            } catch (e) {
+              toast.error((e as Error).message);
+            }
+          }}
+        />
+
+
         {/* Config admin */}
         {isAdmin && clima && <ConfigCard config={clima.config} onSaved={() => climaQ.refetch()} />}
       </div>
