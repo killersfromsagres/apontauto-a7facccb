@@ -78,6 +78,7 @@ import {
   type LegalStatus,
 } from "@/lib/legal-items";
 import { LegalAttachmentsModal } from "@/components/legal/legal-attachments-modal";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useLegalAlerts, type LegalAlert } from "@/hooks/use-legal-alerts";
 // legal-export é dinamicamente importado só quando o usuário clica em exportar
 // (retira xlsx + jspdf + autotable do chunk inicial da rota).
