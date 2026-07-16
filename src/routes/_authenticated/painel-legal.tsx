@@ -1089,7 +1089,7 @@ function CalendarView({
             <Button
               size="sm"
               variant={onlyMarked ? "default" : "outline"}
-              onClick={() => setOnlyMarked((v) => !v)}
+              onClick={onToggleOnlyMarked}
               className="h-8"
               title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
             >
