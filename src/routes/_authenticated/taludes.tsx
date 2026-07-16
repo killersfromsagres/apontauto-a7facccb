@@ -416,6 +416,24 @@ function TaludesPage() {
     updateMutation.mutate(patch);
   };
 
+  const cycleStatus = (t: TaludeRow) => {
+    const order: TaludeStatus[] = ["programado", "em_execucao", "finalizado"];
+    const next = order[(order.indexOf(t.status) + 1) % order.length];
+    changeStatus(t, next);
+    toast.success(`Talude ${t.numero}: ${STATUS_META[next].label}`);
+  };
+
+  const bumpDate = (t: TaludeRow, days: number) => {
+    const field: "data_programada" | "data_conclusao" | "proxima_data" =
+      t.status === "finalizado"
+        ? "proxima_data"
+        : t.status === "em_execucao"
+          ? "data_conclusao"
+          : "data_programada";
+    const base = (t[field] as string | null) || today();
+    updateMutation.mutate({ id: t.id, [field]: addDays(base, days) } as Partial<TaludeRow> & { id: string });
+  };
+
   const removeTalude = async (t: TaludeRow) => {
     if (!confirm(`Excluir talude ${t.numero}?`)) return;
     try {
@@ -658,7 +676,17 @@ function TaludesPage() {
                         key={t.id}
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (drawingNumero || editingPolygonFor) return;
+                          if (selectedTaludeId === t.id) {
+                            cycleStatus(t);
+                          } else {
+                            setSelectedTaludeId(t.id);
+                          }
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
                           setSelectedTaludeId(t.id);
+                          cycleStatus(t);
                         }}
                         onMouseEnter={(e) => {
                           setHoverId(t.id);
@@ -682,7 +710,7 @@ function TaludesPage() {
                           strokeWidth={isSel || isHover ? 0.55 : 0.3}
                           strokeLinejoin="round"
                           style={{
-                            transition: "fill-opacity 300ms ease, stroke-width 200ms ease",
+                            transition: "fill 300ms ease, fill-opacity 300ms ease, stroke-width 200ms ease",
                             filter:
                               t.status === "em_execucao"
                                 ? "drop-shadow(0 0 0.6px rgba(245,158,11,0.9))"
@@ -695,7 +723,7 @@ function TaludesPage() {
                         {/* number label — amarelo com contorno escuro (estilo mapa original) */}
                         <text
                           x={cx}
-                          y={cy}
+                          y={cy - 1.2}
                           textAnchor="middle"
                           dominantBaseline="middle"
                           fontSize="3"
@@ -707,6 +735,33 @@ function TaludesPage() {
                         >
                           {t.numero}
                         </text>
+                        {/* date label under number */}
+                        {(() => {
+                          const dateIso =
+                            t.status === "finalizado"
+                              ? t.proxima_data || t.data_conclusao
+                              : t.status === "em_execucao"
+                                ? t.data_execucao
+                                : t.data_programada;
+                          if (!dateIso) return null;
+                          const [y, m, d] = dateIso.split("T")[0].split("-");
+                          return (
+                            <text
+                              x={cx}
+                              y={cy + 1.8}
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fontSize="1.5"
+                              fontWeight="700"
+                              fill="#ffffff"
+                              style={{ pointerEvents: "none", paintOrder: "stroke" }}
+                              stroke="#0f172a"
+                              strokeWidth="0.35"
+                            >
+                              {`${d}/${m}/${y.slice(2)}`}
+                            </text>
+                          );
+                        })()}
                       </g>
                     );
                   })}
@@ -831,6 +886,8 @@ function TaludesPage() {
                 onPatch={(patch) => updateMutation.mutate({ id: selected.id, ...patch })}
                 onRedraw={() => startRedraw(selected)}
                 onDelete={() => removeTalude(selected)}
+                onBumpDate={(days) => bumpDate(selected, days)}
+                onCycleStatus={() => cycleStatus(selected)}
                 saving={updateMutation.isPending}
               />
             </GlassCard>
@@ -847,6 +904,8 @@ function TaludeDetail({
   onPatch,
   onRedraw,
   onDelete,
+  onBumpDate,
+  onCycleStatus,
   saving,
 }: {
   talude: TaludeRow;
@@ -854,6 +913,8 @@ function TaludeDetail({
   onPatch: (patch: Partial<TaludeRow>) => void;
   onRedraw: () => void;
   onDelete: () => void;
+  onBumpDate: (days: number) => void;
+  onCycleStatus: () => void;
   saving: boolean;
 }) {
   const [local, setLocal] = useState({
@@ -931,7 +992,22 @@ function TaludeDetail({
             <SelectItem value="finalizado">Finalizado</SelectItem>
           </SelectContent>
         </Select>
+        <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={onCycleStatus} disabled={saving}>
+          Avançar status (ciclar cor)
+        </Button>
       </div>
+
+      <div className="rounded-lg border border-border/60 bg-muted/30 p-2">
+        <Label className="text-[10px] uppercase">Avançar data ({talude.status === "finalizado" ? "próxima" : talude.status === "em_execucao" ? "conclusão" : "programada"})</Label>
+        <div className="mt-1 grid grid-cols-4 gap-1">
+          {[1, 7, 30, talude.periodicidade_dias || 180].map((d, i) => (
+            <Button key={i} size="sm" variant="outline" onClick={() => onBumpDate(d)} disabled={saving}>
+              +{d}d
+            </Button>
+          ))}
+        </div>
+      </div>
+
 
       <div>
         <Label className="text-[10px] uppercase">Nome / identificação</Label>
