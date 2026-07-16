@@ -372,6 +372,172 @@ function BackorderPage() {
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
+  // ----- Motor de priorização -----
+
+  const runScan = useCallback(
+    async (cfg: PriorityConfig, currentRows: BOSRow[], silent = false) => {
+      setScanning(true);
+      try {
+        const abertosScan = currentRows.filter((r) => !r.finalizado);
+        const results = scanAll(
+          abertosScan.map((r) => ({
+            os: r.os,
+            nome: r.nome,
+            ativo: r.ativo,
+            predio: r.predio,
+            espaco: r.espaco,
+            outros: r.outros,
+            atividade: r.atividade,
+            data_solicitacao: r.data_solicitacao,
+            finalizado: r.finalizado,
+          })),
+          cfg,
+        );
+        const byOs = new Map(results.map((r) => [r.os, r]));
+        const changed: typeof results = [];
+        for (const r of currentRows) {
+          const res = byOs.get(r.os) ?? {
+            os: r.os,
+            is_prioridade: false,
+            motivo_prioridade: null,
+            prioridade_nivel: 0,
+          };
+          const prev = {
+            is_prioridade: !!r.is_prioridade,
+            motivo_prioridade: r.motivo_prioridade ?? null,
+            prioridade_nivel: r.prioridade_nivel ?? 0,
+          };
+          if (
+            prev.is_prioridade !== res.is_prioridade ||
+            prev.motivo_prioridade !== res.motivo_prioridade ||
+            prev.prioridade_nivel !== res.prioridade_nivel
+          ) {
+            changed.push(res);
+          }
+        }
+
+        const now = new Date().toISOString();
+        // Persistir alterações em paralelo, em lotes
+        const BATCH = 25;
+        for (let i = 0; i < changed.length; i += BATCH) {
+          const slice = changed.slice(i, i + BATCH);
+          await Promise.all(
+            slice.map((c) =>
+              supabase
+                .from("backorder_os")
+                .update({
+                  is_prioridade: c.is_prioridade,
+                  motivo_prioridade: c.motivo_prioridade,
+                  prioridade_nivel: c.prioridade_nivel,
+                  prioridade_scanned_at: now,
+                } as never)
+                .eq("os", c.os),
+            ),
+          );
+        }
+        // Atualiza timestamp global
+        await supabase
+          .from("backorder_prioridade_config" as never)
+          .update({ last_scan_at: now } as never)
+          .eq("id", 1);
+
+        setConfig((c) => ({ ...c, last_scan_at: now }));
+        setRows((prev) =>
+          prev.map((r) => {
+            const res = byOs.get(r.os);
+            if (!res) return r;
+            return {
+              ...r,
+              is_prioridade: res.is_prioridade,
+              motivo_prioridade: res.motivo_prioridade,
+              prioridade_nivel: res.prioridade_nivel,
+            };
+          }),
+        );
+        if (!silent) {
+          const total = results.filter((r) => r.is_prioridade).length;
+          toast.success(`Varredura concluída — ${total} chamado(s) prioritário(s).`);
+        }
+      } catch (e: unknown) {
+        console.error(e);
+        toast.error("Falha ao executar varredura de prioridades");
+      } finally {
+        setScanning(false);
+      }
+    },
+    [],
+  );
+
+  // Re-scan quando dados mudam (após refresh)
+  const lastRowsRef = useRef<string>("");
+  useEffect(() => {
+    if (loading || rows.length === 0) return;
+    const sig = rows.map((r) => `${r.os}:${r.finalizado ? 1 : 0}`).join("|");
+    if (sig === lastRowsRef.current) return;
+    lastRowsRef.current = sig;
+    void runScan(config, rows, true);
+  }, [rows, loading, config, runScan]);
+
+  async function saveConfig(next: PriorityConfig) {
+    const payload = {
+      predios_sensiveis: next.predios_sensiveis,
+      keyword_rules: next.keyword_rules,
+      dias_forca_prioridade: next.dias_forca_prioridade,
+      familias_habilitadas: next.familias_habilitadas,
+    };
+    const { error } = await supabase
+      .from("backorder_prioridade_config" as never)
+      .update(payload as never)
+      .eq("id", 1);
+    if (error) return toast.error("Falha ao salvar configuração");
+    setConfig(next);
+    toast.success("Configuração salva");
+    await runScan(next, rows, false);
+  }
+
+  const priorityRows = useMemo(() => rows.filter((r) => !r.finalizado && r.is_prioridade), [rows]);
+
+  async function exportPrioridades() {
+    if (priorityRows.length === 0) return toast.warning("Nenhum chamado prioritário no momento.");
+    const rowsExp = priorityRows.map((r) => ({
+      os: r.os,
+      nome: r.nome,
+      ativo: r.ativo,
+      predio: r.predio,
+      andar: r.andar,
+      espaco: r.espaco,
+      equipe: r.equipe,
+      termino_sla: r.termino_sla,
+      data_solicitacao: r.data_solicitacao,
+      outros: r.outros,
+      motivo_prioridade: r.motivo_prioridade ?? "",
+      prioridade_nivel: r.prioridade_nivel ?? 0,
+    }));
+    const blob = await generatePriorityExport({ titulo: "DEMARCHI", rows: rowsExp });
+    downloadBlob(blob, `PRIORIDADES_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  }
+
+  function printPrioridades() {
+    if (priorityRows.length === 0) return toast.warning("Nenhum chamado prioritário no momento.");
+    openPriorityPrintView(
+      "DEMARCHI",
+      priorityRows.map((r) => ({
+        os: r.os,
+        nome: r.nome,
+        ativo: r.ativo,
+        predio: r.predio,
+        andar: r.andar,
+        espaco: r.espaco,
+        equipe: r.equipe,
+        termino_sla: r.termino_sla,
+        data_solicitacao: r.data_solicitacao,
+        outros: r.outros,
+        motivo_prioridade: r.motivo_prioridade ?? "",
+        prioridade_nivel: r.prioridade_nivel ?? 0,
+      })),
+    );
+  }
+
   return (
     <PageShell
       title="Backorder de Corretivas"
