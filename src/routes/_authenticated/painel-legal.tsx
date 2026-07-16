@@ -123,7 +123,7 @@ function fmt(d: string | null | undefined) {
 function TaskTypeIcon({ titulo, className }: { titulo: string; className?: string }) {
   const t = titulo.toLowerCase();
   const cls = cn("h-4 w-4", className);
-  if (/(caixa\s*d['’]?\s*[áa]gua|reservat[óo]rio|potabilidade)/.test(t))
+  if (/(caixa[s]?\s*d['’`\s]?\s*[áa]gua|caixa[s]?\s*de\s*[áa]gua|reservat[óo]rio|potabilidade|pot[áa]vel|cisterna|hidrossanit)/.test(t))
     return <Droplets className={cn(cls, "text-sky-400")} strokeWidth={1.8} />;
   if (/(caixa\s*de\s*gordura|gordura|esgoto|efluente)/.test(t))
     return <Waves className={cn(cls, "text-amber-500")} strokeWidth={1.8} />;
