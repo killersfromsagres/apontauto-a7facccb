@@ -23,6 +23,9 @@ import {
   Trash2,
   Plus,
   ArrowUp,
+  Save,
+  ClipboardList,
+  User,
 } from "lucide-react";
 import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
@@ -66,7 +69,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap } from "@/lib/backorder/assets";
+import { makeAssetsMap, resolveAtivo, type AssetsMap } from "@/lib/backorder/assets";
 import {
   CATEGORIAS,
   CATEGORIA_COLOR,
@@ -173,10 +176,17 @@ function BackorderPage() {
     setLoading(false);
   }, []);
 
+  const [assetsMap, setAssetsMap] = useState<AssetsMap>(new Map());
+  const loadAssets = useCallback(async () => {
+    const { data } = await supabase.from("assets_ref").select("ativo, denominacao");
+    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string }>) ?? []));
+  }, []);
+
   useEffect(() => {
     void loadConfig();
+    void loadAssets();
     void refresh();
-  }, [loadConfig, refresh]);
+  }, [loadConfig, loadAssets, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
@@ -313,6 +323,7 @@ function BackorderPage() {
         if (error) throw error;
       }
       toast.success(`Base de Ativos atualizada: ${parsed.length} registros.`);
+      await loadAssets();
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Falha ao importar Ativos");
@@ -353,6 +364,45 @@ function BackorderPage() {
       prev.map((x) => (x.os === r.os ? { ...x, atividade, atividade_manual: true, equipe } : x)),
     );
   }
+
+  async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
+    // Se o "ativo" mudar e nenhum override manual for enviado para
+    // predio/andar/espaço, aplicamos a fórmula (assets_ref).
+    const next: Partial<BOSRow> = { ...patch };
+    if (
+      patch.ativo !== undefined &&
+      patch.ativo !== r.ativo &&
+      patch.predio === undefined &&
+      patch.andar === undefined &&
+      patch.espaco === undefined
+    ) {
+      const resolved = resolveAtivo(assetsMap, patch.ativo);
+      next.predio = resolved.predio;
+      next.andar = resolved.andar;
+      next.espaco = resolved.espaco;
+    }
+    if (patch.atividade && patch.atividade !== r.atividade) {
+      next.atividade_manual = true;
+      next.equipe = CATEGORIA_TO_EQUIPE[patch.atividade as Categoria];
+    }
+    const { error } = await supabase
+      .from("backorder_os")
+      .update(next as never)
+      .eq("os", r.os);
+    if (error) {
+      toast.error("Falha ao salvar alterações");
+      return false;
+    }
+    if (patch.atividade && patch.atividade !== r.atividade) {
+      await supabase
+        .from("backorder_atividade_override")
+        .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
+    }
+    setRows((prev) => prev.map((x) => (x.os === r.os ? { ...x, ...next } : x)));
+    toast.success("Chamado atualizado");
+    return true;
+  }
+
 
   async function exportar() {
     const rowsExp: BackorderRow[] = filtered.map((r) => ({
@@ -543,6 +593,13 @@ function BackorderPage() {
     );
   }
 
+  const [selectedBackorder, setSelectedBackorder] = useState<BOSRow | null>(null);
+  // Mantém o item aberto sincronizado com o estado global (após salvar/finalizar).
+  const selectedBackorderLive = useMemo(
+    () => (selectedBackorder ? rows.find((r) => r.os === selectedBackorder.os) ?? null : null),
+    [selectedBackorder, rows],
+  );
+
   return (
     <PageShell
       title="Backorder de Corretivas"
@@ -592,6 +649,10 @@ function BackorderPage() {
             <PackageX className="mr-1.5 h-3.5 w-3.5" /> Em aberto
             <Badge variant="secondary" className="ml-2">{abertas.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="backorder">
+            <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Backorder
+            <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
+          </TabsTrigger>
           <TabsTrigger value="finalizados">
             Finalizados <Badge variant="secondary" className="ml-2">{finalizadas.length}</Badge>
           </TabsTrigger>
@@ -613,6 +674,14 @@ function BackorderPage() {
             setOrder={setOrder}
             onToggle={toggleFinalizado}
             onCategoria={updateAtividade}
+          />
+        </TabsContent>
+
+        <TabsContent value="backorder">
+          <BackorderPanel
+            rows={backorderAbertas}
+            onSelect={setSelectedBackorder}
+            onFinalizar={(r) => toggleFinalizado(r, true)}
           />
         </TabsContent>
 
@@ -646,6 +715,15 @@ function BackorderPage() {
         onOpenChange={setConfigOpen}
         config={config}
         onSave={saveConfig}
+      />
+      <BackorderDetailDialog
+        row={selectedBackorderLive}
+        onClose={() => setSelectedBackorder(null)}
+        onSave={updateRow}
+        onFinalizar={async (r) => {
+          await toggleFinalizado(r, true);
+          setSelectedBackorder(null);
+        }}
       />
     </PageShell>
   );
@@ -1888,5 +1966,343 @@ function PriorityScroller({ total, children }: { total: number; children: ReactN
     </div>
   );
 }
+
+// ---------- Painel de Backorder (cards clicáveis, mesmo estilo dos prioritários) ----------
+
+function BackorderPanel({
+  rows,
+  onSelect,
+  onFinalizar,
+}: {
+  rows: BOSRow[];
+  onSelect: (r: BOSRow) => void;
+  onFinalizar: (r: BOSRow) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const ordered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = q
+      ? rows.filter(
+          (r) =>
+            r.os.toLowerCase().includes(q) ||
+            r.nome.toLowerCase().includes(q) ||
+            (r.predio ?? "").toLowerCase().includes(q) ||
+            (r.outros ?? "").toLowerCase().includes(q),
+        )
+      : rows;
+    return [...list].sort(
+      (a, b) => new Date(a.data_solicitacao).getTime() - new Date(b.data_solicitacao).getTime(),
+    );
+  }, [rows, query]);
+
+  return (
+    <GlassCard className="border-2 border-orange-500/40 bg-orange-500/5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-orange-500" />
+          <h3 className="text-sm font-bold uppercase tracking-wider">
+            Backorder — OS em aberto há mais de 30 dias
+          </h3>
+          <Badge className="bg-orange-500 text-white">{ordered.length}</Badge>
+        </div>
+        <div className="relative w-full max-w-xs">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar OS, prédio, solicitante…"
+            className="pl-8"
+          />
+        </div>
+      </div>
+
+      {ordered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-8 text-center">
+          <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
+          <p className="text-sm text-muted-foreground">Nenhum backorder no momento.</p>
+        </div>
+      ) : (
+        <PriorityScroller total={ordered.length}>
+          <div className="grid gap-2 md:grid-cols-2">
+            {ordered.map((r) => {
+              const dias = daysBetween(r.data_solicitacao);
+              const nivelClass =
+                dias > 90
+                  ? "border-red-500/40 bg-red-500/5"
+                  : dias > 60
+                    ? "border-orange-500/40 bg-orange-500/5"
+                    : "border-amber-500/40 bg-amber-500/5";
+              const diasBadge =
+                dias > 90
+                  ? "bg-red-500 text-white"
+                  : dias > 60
+                    ? "bg-orange-500 text-white"
+                    : "bg-amber-500 text-white";
+              return (
+                <div
+                  key={r.os}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelect(r)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onSelect(r);
+                    }
+                  }}
+                  className={`priority-card group animate-fade-in flex max-h-[220px] flex-col rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/60 ${nivelClass}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-1 flex-col">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
+                        <Badge className={diasBadge}>
+                          <Flame className="mr-0.5 h-3 w-3" />
+                          {dias}d
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="text-[10px]"
+                          style={{
+                            borderColor: `${CATEGORIA_COLOR[r.atividade as Categoria] ?? "#64748B"}55`,
+                            color: CATEGORIA_COLOR[r.atividade as Categoria] ?? "#64748B",
+                          }}
+                        >
+                          {r.atividade}
+                        </Badge>
+                      </div>
+                      <div className="mt-1 line-clamp-2 text-sm font-medium" title={r.nome}>
+                        {r.nome || "—"}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
+                      </div>
+                      {r.outros && (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          <User className="h-3 w-3" />
+                          <span className="line-clamp-1">{r.outros}</span>
+                        </div>
+                      )}
+                      <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                        Clique para editar
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="relative z-10 h-7 flex-none"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onFinalizar(r);
+                      }}
+                      title="Marcar como finalizado"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </PriorityScroller>
+      )}
+    </GlassCard>
+  );
+}
+
+// ---------- Modal de edição/detalhes de Backorder ----------
+
+function BackorderDetailDialog({
+  row,
+  onClose,
+  onSave,
+  onFinalizar,
+}: {
+  row: BOSRow | null;
+  onClose: () => void;
+  onSave: (r: BOSRow, patch: Partial<BOSRow>) => Promise<boolean>;
+  onFinalizar: (r: BOSRow) => void | Promise<void>;
+}) {
+  const open = row !== null;
+  const [draft, setDraft] = useState<Partial<BOSRow>>({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (row) setDraft({});
+  }, [row?.os]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!row) {
+    return (
+      <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+        <DialogContent className="max-w-2xl" />
+      </Dialog>
+    );
+  }
+
+  const merged: BOSRow = { ...row, ...draft } as BOSRow;
+  const dias = Math.max(0, Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000));
+  const dirty = Object.keys(draft).length > 0;
+
+  const bg =
+    dias > 90
+      ? "from-red-600 via-red-500 to-orange-500"
+      : dias > 60
+        ? "from-orange-500 via-amber-500 to-yellow-500"
+        : "from-amber-400 via-yellow-400 to-amber-300";
+
+  function patch<K extends keyof BOSRow>(k: K, v: BOSRow[K]) {
+    setDraft((d) => ({ ...d, [k]: v }));
+  }
+
+  async function handleSave() {
+    if (!dirty) return;
+    setSaving(true);
+    const ok = await onSave(row!, draft);
+    setSaving(false);
+    if (ok) setDraft({});
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl overflow-hidden p-0">
+        <div className={`relative bg-gradient-to-br ${bg} px-6 py-5 text-white`}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.35),transparent_60%)]" />
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest opacity-90">
+                <ClipboardList className="h-3.5 w-3.5" /> Backorder · {row.atividade}
+              </div>
+              <DialogHeader className="space-y-1 text-left">
+                <DialogTitle className="text-lg font-semibold leading-tight text-white">
+                  OS {row.os}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mt-1 text-sm opacity-95">{row.equipe || "Sem equipe"}</div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <Badge className="bg-white/20 text-white backdrop-blur">{dias} dias em aberto</Badge>
+              {row.termino_sla && (
+                <Badge className="bg-white/15 text-white backdrop-blur">
+                  SLA: {new Date(row.termino_sla).toLocaleDateString("pt-BR")}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <ScrollArea className="max-h-[62vh]">
+          <div className="space-y-4 px-6 py-5">
+            <FieldBlock label="Descrição do chamado">
+              <Input
+                value={merged.nome ?? ""}
+                onChange={(e) => patch("nome", e.target.value)}
+                placeholder="Descrição da OS"
+              />
+            </FieldBlock>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FieldBlock label="Ativo (aplica fórmula ao mudar)">
+                <Input
+                  value={merged.ativo ?? ""}
+                  onChange={(e) => patch("ativo", e.target.value.toUpperCase())}
+                  placeholder="Ex.: C70A0203"
+                />
+              </FieldBlock>
+              <FieldBlock label="Atividade">
+                <Select
+                  value={merged.atividade as string}
+                  onValueChange={(v) => patch("atividade", v as Categoria)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIAS.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        <span className="flex items-center gap-1.5">
+                          <span
+                            className="h-2 w-2 rounded-full"
+                            style={{ background: CATEGORIA_COLOR[c] }}
+                          />
+                          {c}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldBlock>
+              <FieldBlock label="Prédio">
+                <Input
+                  value={merged.predio ?? ""}
+                  onChange={(e) => patch("predio", e.target.value)}
+                />
+              </FieldBlock>
+              <FieldBlock label="Andar">
+                <Input
+                  value={merged.andar ?? ""}
+                  onChange={(e) => patch("andar", e.target.value)}
+                />
+              </FieldBlock>
+              <FieldBlock label="Espaço" className="sm:col-span-2">
+                <Input
+                  value={merged.espaco ?? ""}
+                  onChange={(e) => patch("espaco", e.target.value)}
+                />
+              </FieldBlock>
+              <FieldBlock label="Solicitante" className="sm:col-span-2">
+                <Input
+                  value={merged.outros ?? ""}
+                  onChange={(e) => patch("outros", e.target.value)}
+                  placeholder="Nome de quem abriu o chamado"
+                />
+              </FieldBlock>
+            </div>
+
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              Solicitado em{" "}
+              <span className="font-medium text-foreground">
+                {new Date(row.data_solicitacao).toLocaleDateString("pt-BR")}
+              </span>
+              . As edições aqui atualizam a base e são refletidas ao exportar a planilha corrigida.
+            </div>
+          </div>
+        </ScrollArea>
+
+        <DialogFooter className="gap-2 border-t bg-muted/30 px-6 py-3">
+          <Button variant="ghost" onClick={onClose}>
+            Fechar
+          </Button>
+          <Button variant="outline" onClick={() => onFinalizar(row)}>
+            <CheckCircle2 className="mr-1.5 h-4 w-4" /> Finalizar
+          </Button>
+          <Button onClick={handleSave} disabled={!dirty || saving}>
+            <Save className="mr-1.5 h-4 w-4" />
+            {saving ? "Salvando…" : "Salvar alterações"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FieldBlock({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 
 
