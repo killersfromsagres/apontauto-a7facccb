@@ -182,7 +182,9 @@ function TaludesPage() {
       // Idempotência: se já existe um mapa de referência, apenas selecione-o.
       const existing = mapsQuery.data?.find(
         (m: { id: string; image_path: string; nome: string }) =>
-          m.image_path === referenceMap.url || m.nome === "DEMARCHI — Referência",
+          m.image_path === referenceMap.url ||
+          m.nome === "Mapa site Sherwin Williams - Demarchi" ||
+          m.nome === "DEMARCHI — Referência",
       );
 
       if (existing) {
@@ -192,7 +194,7 @@ function TaludesPage() {
       }
       const m = await createFn({
         data: {
-          nome: "DEMARCHI — Referência",
+          nome: "Mapa site Sherwin Williams - Demarchi",
           image_path: referenceMap.url,
           periodicidade_dias: 180,
         },
