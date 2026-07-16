@@ -856,3 +856,169 @@ function StatCard({
     </GlassCard>
   );
 }
+
+// ---------------- Matriz ----------------
+
+type CategoriaFiltro = "todas" | "colaborador" | "reserva" | "visitante" | "avulso";
+
+function classifyMatricula(
+  matricula: string,
+  setor: string | null,
+): Exclude<CategoriaFiltro, "todas"> {
+  if (matricula.startsWith("RESERVA__")) return "reserva";
+  if (matricula.startsWith("VISITANTE__")) return "visitante";
+  if (matricula.startsWith("AVULSO__")) return "avulso";
+  if (/^\d{3,}$/.test(matricula)) return "colaborador";
+  // Fallback via setor conhecido
+  const s = (setor ?? "").toLowerCase();
+  if (s.includes("reserva")) return "reserva";
+  if (s.includes("visitante")) return "visitante";
+  if (s) return "avulso";
+  return "colaborador";
+}
+
+const CAT_LABEL: Record<Exclude<CategoriaFiltro, "todas">, string> = {
+  colaborador: "Colaborador",
+  reserva: "Reserva",
+  visitante: "Visitante",
+  avulso: "Avulso",
+};
+
+const CAT_BADGE: Record<Exclude<CategoriaFiltro, "todas">, string> = {
+  colaborador: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  reserva: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+  visitante: "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400",
+  avulso: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+};
+
+function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] }) {
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState<CategoriaFiltro>("todas");
+
+  const pecasPorMat = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const p of pecas) {
+      if (!p.matricula) continue;
+      const arr = m.get(p.matricula) ?? [];
+      arr.push(p.codigo);
+      m.set(p.matricula, arr);
+    }
+    return m;
+  }, [pecas]);
+
+  const enriched = useMemo(
+    () =>
+      colabs.map((c) => ({
+        ...c,
+        categoria: classifyMatricula(c.matricula, c.setor),
+        totalPecas: pecasPorMat.get(c.matricula)?.length ?? 0,
+      })),
+    [colabs, pecasPorMat],
+  );
+
+  const counts = useMemo(() => {
+    const acc = { colaborador: 0, reserva: 0, visitante: 0, avulso: 0 };
+    for (const r of enriched) acc[r.categoria]++;
+    return acc;
+  }, [enriched]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return enriched
+      .filter((r) => (cat === "todas" ? true : r.categoria === cat))
+      .filter(
+        (r) =>
+          !q ||
+          r.nome.toLowerCase().includes(q) ||
+          r.matricula.toLowerCase().includes(q) ||
+          (r.setor ?? "").toLowerCase().includes(q),
+      )
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [enriched, search, cat]);
+
+  return (
+    <GlassCard>
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => (
+          <button
+            key={k}
+            onClick={() => setCat(k)}
+            className={`rounded-xl border border-border/60 p-3 text-left transition ${
+              cat === k ? "ring-2 ring-primary" : "hover:bg-muted/40"
+            }`}
+          >
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              {CAT_LABEL[k]}
+            </div>
+            <div className="mt-1 text-2xl font-bold">{counts[k]}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar nome, matrícula ou setor…"
+            className="pl-8"
+          />
+        </div>
+        <Select value={cat} onValueChange={(v) => setCat(v as CategoriaFiltro)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as categorias</SelectItem>
+            <SelectItem value="colaborador">Colaboradores</SelectItem>
+            <SelectItem value="reserva">Reservas</SelectItem>
+            <SelectItem value="visitante">Visitantes</SelectItem>
+            <SelectItem value="avulso">Avulsos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome / Item</TableHead>
+              <TableHead>Matrícula</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Setor</TableHead>
+              <TableHead className="text-right">Códigos de barras</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhum registro encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((r) => (
+                <TableRow key={r.matricula}>
+                  <TableCell className="font-medium">{r.nome}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {r.categoria === "colaborador" ? r.matricula : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
+                    >
+                      {CAT_LABEL[r.categoria]}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm">{r.setor ?? "—"}</TableCell>
+                  <TableCell className="text-right font-semibold">{r.totalPecas}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </GlassCard>
+  );
+}
