@@ -73,6 +73,18 @@ import {
 } from "@/lib/backorder/classify";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
+import {
+  DEFAULT_CONFIG,
+  scanAll,
+  type PriorityConfig,
+  type KeywordRule,
+  type PredioSensivel,
+} from "@/lib/backorder/priority";
+import { generatePriorityExport, openPriorityPrintView } from "@/lib/backorder/priority-export";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Route = createFileRoute("/_authenticated/backorder")({
   component: BackorderPage,
@@ -93,6 +105,9 @@ interface BOSRow {
   outros: string;
   finalizado: boolean;
   data_finalizacao: string | null;
+  is_prioridade?: boolean;
+  motivo_prioridade?: string | null;
+  prioridade_nivel?: number;
 }
 
 const POWERBI_URL =
