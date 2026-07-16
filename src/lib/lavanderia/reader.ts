@@ -5,10 +5,14 @@
 
 import { toISODate } from "./schedule";
 
+export type Categoria = "colaborador" | "reserva" | "visitante" | "avulso";
+
 export interface MatrizRow {
   matricula: string;
   nome: string;
   codigo: string;
+  categoria: Categoria;
+  setor: string | null;
 }
 
 export interface EventoRow {
@@ -24,13 +28,58 @@ const normHeader = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-function parseColaborador(raw: string): { nome: string; matricula: string } | null {
+function slugKey(prefix: string, raw: string): string {
+  const s = normHeader(raw).replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  return `${prefix}__${s}`.slice(0, 60);
+}
+
+function categorize(rawUpper: string): { categoria: Categoria; setor: string } | null {
+  if (/^RESERVA\b/.test(rawUpper)) return { categoria: "reserva", setor: "Reserva" };
+  if (/^VISITANTE\b/.test(rawUpper)) return { categoria: "visitante", setor: "Visitante" };
+  if (/^TOALHA\b/.test(rawUpper)) return { categoria: "avulso", setor: "Toalhas" };
+  if (/^CENTRO DE TREINAMENTO/.test(rawUpper))
+    return { categoria: "avulso", setor: "Centro de Treinamento" };
+  if (/^RICARDO GAZMENGA/.test(rawUpper)) return { categoria: "avulso", setor: "Itens avulsos" };
+  return null;
+}
+
+/**
+ * Distingue colaborador real (com matrícula numérica) de itens avulsos
+ * (reservas, visitantes, toalhas), gerando matrícula sintética estável
+ * para os últimos — sem misturar com matrículas reais.
+ */
+function parseColaborador(
+  raw: string,
+): { nome: string; matricula: string; categoria: Categoria; setor: string | null } | null {
   const s = String(raw ?? "").trim();
   if (!s) return null;
-  // Formato "NOME - MATRICULA" ou "NOME – MATRICULA"
-  const m = s.match(/^(.*?)[\s\-–—]+([0-9A-Za-z]+)\s*$/);
-  if (m) return { nome: m[1].trim(), matricula: m[2].trim() };
-  return { nome: s, matricula: s };
+  const upper = normHeader(s);
+
+  const cat = categorize(upper);
+  if (cat) {
+    return {
+      nome: s.replace(/\s+/g, " "),
+      matricula: slugKey(cat.categoria.toUpperCase(), s),
+      categoria: cat.categoria,
+      setor: cat.setor,
+    };
+  }
+
+  const m = s.match(/^(.*?)[\s\-–—:]+(\d{3,})\s*$/);
+  if (m) {
+    return {
+      nome: m[1].trim().replace(/\s+/g, " "),
+      matricula: m[2].trim(),
+      categoria: "colaborador",
+      setor: null,
+    };
+  }
+  return {
+    nome: s.replace(/\s+/g, " "),
+    matricula: slugKey("AVULSO", s),
+    categoria: "avulso",
+    setor: "Itens avulsos",
+  };
 }
 
 function excelSerialToDate(n: number): Date | null {
@@ -85,7 +134,13 @@ export async function readMatrizFile(file: File): Promise<MatrizRow[]> {
     if (!colabRaw || !codigo) continue;
     const c = parseColaborador(colabRaw);
     if (!c) continue;
-    out.push({ matricula: c.matricula, nome: c.nome, codigo });
+    out.push({
+      matricula: c.matricula,
+      nome: c.nome,
+      codigo,
+      categoria: c.categoria,
+      setor: c.setor,
+    });
   }
   return out;
 }

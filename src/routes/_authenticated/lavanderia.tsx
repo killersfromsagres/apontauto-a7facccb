@@ -170,12 +170,40 @@ function LavanderiaPage() {
         toast.warning("Nenhuma linha reconhecida na Matriz.");
         return;
       }
-      const colabMap = new Map<string, { matricula: string; nome: string }>();
-      const pecaRows: Array<{ codigo: string; matricula: string }> = [];
+
+      // Validação: agrupa por matrícula e detecta códigos duplicados / vazios.
+      const colabMap = new Map<
+        string,
+        { matricula: string; nome: string; setor: string | null }
+      >();
+      const codigoSeen = new Map<string, string>(); // codigo -> matricula
+      const pecaRows: Array<{ codigo: string; matricula: string; setor: string | null }> = [];
+      const duplicados: string[] = [];
+      const contagemCat: Record<string, number> = {
+        colaborador: 0,
+        reserva: 0,
+        visitante: 0,
+        avulso: 0,
+      };
+
       for (const r of rows) {
-        colabMap.set(r.matricula, { matricula: r.matricula, nome: r.nome });
-        pecaRows.push({ codigo: r.codigo, matricula: r.matricula });
+        if (!colabMap.has(r.matricula)) {
+          colabMap.set(r.matricula, {
+            matricula: r.matricula,
+            nome: r.nome,
+            setor: r.setor,
+          });
+          contagemCat[r.categoria] = (contagemCat[r.categoria] ?? 0) + 1;
+        }
+        const prev = codigoSeen.get(r.codigo);
+        if (prev && prev !== r.matricula) {
+          duplicados.push(r.codigo);
+          continue;
+        }
+        codigoSeen.set(r.codigo, r.matricula);
+        pecaRows.push({ codigo: r.codigo, matricula: r.matricula, setor: r.setor });
       }
+
       const colabPayload = Array.from(colabMap.values());
       for (let i = 0; i < colabPayload.length; i += 500) {
         const { error } = await supabase
@@ -189,8 +217,10 @@ function LavanderiaPage() {
           .upsert(pecaRows.slice(i, i + 500), { onConflict: "codigo" });
         if (error) throw error;
       }
+
       toast.success(
-        `Matriz importada: ${colabPayload.length} colaborador(es), ${pecaRows.length} peça(s).`,
+        `Matriz importada · ${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s) · ${pecaRows.length} código(s) de barras${duplicados.length ? ` · ${duplicados.length} código(s) duplicado(s) ignorado(s)` : ""}.`,
+        { duration: 6000 },
       );
       await refresh();
     } catch (e) {
@@ -213,7 +243,6 @@ function LavanderiaPage() {
         toast.warning("Nenhum evento reconhecido nos arquivos.");
         return;
       }
-      // Dedup local antes do upsert
       const seen = new Set<string>();
       const dedup = all.filter((e) => {
         const k = `${e.codigo}|${e.tipo}|${e.data}`;
@@ -222,7 +251,6 @@ function LavanderiaPage() {
         return true;
       });
 
-      // Garante cadastro mínimo de peças que ainda não estão em lavanderia_pecas
       const pecasSet = new Set(pecas.map((p) => p.codigo));
       const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter(
         (c) => !pecasSet.has(c),
@@ -237,7 +265,6 @@ function LavanderiaPage() {
         }
       }
 
-      // Insere eventos (dedup por UNIQUE)
       let inseridos = 0;
       let ignorados = 0;
       for (let i = 0; i < dedup.length; i += 500) {
@@ -251,12 +278,10 @@ function LavanderiaPage() {
         ignorados += chunk.length - ins;
       }
       toast.success(
-        `Importado: ${inseridos} novo(s), ${ignorados} duplicado(s) ignorado(s). Arquivos: ${files.length}.`,
+        `Movimentação importada · ${inseridos} evento(s) novo(s), ${ignorados} duplicado(s) ignorado(s)${novasPecas.length ? ` · ${novasPecas.length} código(s) novo(s) cadastrado(s)` : ""}.`,
+        { duration: 6000 },
       );
       await refresh();
-
-      // Excel automático pós-importação
-      await downloadExcel();
     } catch (e) {
       console.error(e);
       toast.error((e as Error)?.message ?? "Falha ao importar movimentação");
@@ -294,7 +319,7 @@ function LavanderiaPage() {
             <Upload className="mr-2 h-4 w-4" /> Importar Movimentação
           </Button>
           <Button onClick={downloadExcel} disabled={pecasFull.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Exportar Excel
+            <Download className="mr-2 h-4 w-4" /> Baixar planilha Excel
           </Button>
           <Button variant="ghost" size="icon" onClick={() => void refresh()} title="Atualizar">
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -333,6 +358,12 @@ function LavanderiaPage() {
               {totalHigienizacao + totalAtrasadas}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="matriz">
+            <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Matriz
+            <Badge variant="secondary" className="ml-2">
+              {colabs.length}
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="historico">
             <History className="mr-1.5 h-3.5 w-3.5" /> Histórico
           </TabsTrigger>
@@ -346,6 +377,10 @@ function LavanderiaPage() {
 
         <TabsContent value="abertas">
           <AbertasView loading={loading} pecas={pecasFull} />
+        </TabsContent>
+
+        <TabsContent value="matriz">
+          <MatrizView colabs={colabs} pecas={pecas} />
         </TabsContent>
 
         <TabsContent value="historico">
@@ -429,7 +464,7 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -527,7 +562,7 @@ function HistoricoView({
           className="pl-8"
         />
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -616,7 +651,7 @@ function GiroView({ pecas }: { pecas: LavExportPeca[] }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -818,6 +853,172 @@ function StatCard({
     <GlassCard>
       <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={`mt-1 text-3xl font-bold ${toneCls}`}>{value}</div>
+    </GlassCard>
+  );
+}
+
+// ---------------- Matriz ----------------
+
+type CategoriaFiltro = "todas" | "colaborador" | "reserva" | "visitante" | "avulso";
+
+function classifyMatricula(
+  matricula: string,
+  setor: string | null,
+): Exclude<CategoriaFiltro, "todas"> {
+  if (matricula.startsWith("RESERVA__")) return "reserva";
+  if (matricula.startsWith("VISITANTE__")) return "visitante";
+  if (matricula.startsWith("AVULSO__")) return "avulso";
+  if (/^\d{3,}$/.test(matricula)) return "colaborador";
+  // Fallback via setor conhecido
+  const s = (setor ?? "").toLowerCase();
+  if (s.includes("reserva")) return "reserva";
+  if (s.includes("visitante")) return "visitante";
+  if (s) return "avulso";
+  return "colaborador";
+}
+
+const CAT_LABEL: Record<Exclude<CategoriaFiltro, "todas">, string> = {
+  colaborador: "Colaborador",
+  reserva: "Reserva",
+  visitante: "Visitante",
+  avulso: "Avulso",
+};
+
+const CAT_BADGE: Record<Exclude<CategoriaFiltro, "todas">, string> = {
+  colaborador: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+  reserva: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+  visitante: "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400",
+  avulso: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+};
+
+function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] }) {
+  const [search, setSearch] = useState("");
+  const [cat, setCat] = useState<CategoriaFiltro>("todas");
+
+  const pecasPorMat = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const p of pecas) {
+      if (!p.matricula) continue;
+      const arr = m.get(p.matricula) ?? [];
+      arr.push(p.codigo);
+      m.set(p.matricula, arr);
+    }
+    return m;
+  }, [pecas]);
+
+  const enriched = useMemo(
+    () =>
+      colabs.map((c) => ({
+        ...c,
+        categoria: classifyMatricula(c.matricula, c.setor),
+        totalPecas: pecasPorMat.get(c.matricula)?.length ?? 0,
+      })),
+    [colabs, pecasPorMat],
+  );
+
+  const counts = useMemo(() => {
+    const acc = { colaborador: 0, reserva: 0, visitante: 0, avulso: 0 };
+    for (const r of enriched) acc[r.categoria]++;
+    return acc;
+  }, [enriched]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return enriched
+      .filter((r) => (cat === "todas" ? true : r.categoria === cat))
+      .filter(
+        (r) =>
+          !q ||
+          r.nome.toLowerCase().includes(q) ||
+          r.matricula.toLowerCase().includes(q) ||
+          (r.setor ?? "").toLowerCase().includes(q),
+      )
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [enriched, search, cat]);
+
+  return (
+    <GlassCard>
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(Object.keys(counts) as Array<keyof typeof counts>).map((k) => (
+          <button
+            key={k}
+            onClick={() => setCat(k)}
+            className={`rounded-xl border border-border/60 p-3 text-left transition ${
+              cat === k ? "ring-2 ring-primary" : "hover:bg-muted/40"
+            }`}
+          >
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              {CAT_LABEL[k]}
+            </div>
+            <div className="mt-1 text-2xl font-bold">{counts[k]}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar nome, matrícula ou setor…"
+            className="pl-8"
+          />
+        </div>
+        <Select value={cat} onValueChange={(v) => setCat(v as CategoriaFiltro)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todas">Todas as categorias</SelectItem>
+            <SelectItem value="colaborador">Colaboradores</SelectItem>
+            <SelectItem value="reserva">Reservas</SelectItem>
+            <SelectItem value="visitante">Visitantes</SelectItem>
+            <SelectItem value="avulso">Avulsos</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome / Item</TableHead>
+              <TableHead>Matrícula</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Setor</TableHead>
+              <TableHead className="text-right">Códigos de barras</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-sm text-muted-foreground">
+                  Nenhum registro encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((r) => (
+                <TableRow key={r.matricula}>
+                  <TableCell className="font-medium">{r.nome}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {r.categoria === "colaborador" ? r.matricula : "—"}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
+                    >
+                      {CAT_LABEL[r.categoria]}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-sm">{r.setor ?? "—"}</TableCell>
+                  <TableCell className="text-right font-semibold">{r.totalPecas}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </GlassCard>
   );
 }
