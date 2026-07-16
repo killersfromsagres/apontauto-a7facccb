@@ -167,7 +167,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
         cell.font = {
           name: APTOS_SEMIBOLD,
           bold: true,
-          size: 42,
+          size: 11,
           color: { argb: color },
         };
         cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
@@ -178,8 +178,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
           right: { style: "hair", color: { argb: "FF000000" } },
         };
       });
-      // Altura para caber Aptos 42 com wrap
-      row.height = 90;
+      row.height = 28;
       rowIdx++;
     }
   }
