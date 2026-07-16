@@ -7,6 +7,7 @@ import {
   Settings,
   LayoutDashboard,
   UserPlus,
+  Mountain,
 } from "lucide-react";
 import {
   Sidebar,

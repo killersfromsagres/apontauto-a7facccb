@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
@@ -68,6 +69,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTaludesRoute = AuthenticatedTaludesRouteImport.update({
+  id: '/taludes',
+  path: '/taludes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedProgramacaoRoute =
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
+  '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesByTo {
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
+  '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
+  '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/painel-legal'
     | '/preventiva'
     | '/programacao'
+    | '/taludes'
     | '/usuarios'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/painel-legal'
     | '/preventiva'
     | '/programacao'
+    | '/taludes'
     | '/usuarios'
     | '/'
   id:
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
     | '/_authenticated/programacao'
+    | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -293,6 +305,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/taludes': {
+      id: '/_authenticated/taludes'
+      path: '/taludes'
+      fullPath: '/taludes'
+      preLoaderRoute: typeof AuthenticatedTaludesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/programacao': {
       id: '/_authenticated/programacao'
       path: '/programacao'
@@ -353,6 +372,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
+  AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -365,6 +385,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
+  AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
