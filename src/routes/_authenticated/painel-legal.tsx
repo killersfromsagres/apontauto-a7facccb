@@ -337,6 +337,21 @@ function PainelLegalPage() {
 
         <div className="flex flex-wrap items-center gap-1.5">
           <AlertsBell alerts={alerts} onFocus={(id) => document.getElementById(`legal-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+          <Button
+            variant={onlyMarked ? "default" : "outline"}
+            size="sm"
+            onClick={() => setOnlyMarked((v) => !v)}
+            className="h-8 px-2 sm:px-3"
+            title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
+          >
+            <Star className={cn("h-3.5 w-3.5 sm:mr-1.5", onlyMarked && "fill-amber-400 text-amber-400")} />
+            <span className="hidden sm:inline">{onlyMarked ? "Só marcadas" : "Todas"}</span>
+            {marked.size > 0 && (
+              <span className="ml-1 rounded-md bg-amber-400/20 px-1 text-[10px] font-bold text-amber-400">
+                {marked.size}
+              </span>
+            )}
+          </Button>
           <div className="flex overflow-hidden rounded-lg border border-border/60 bg-card/40">
             <button
               onClick={() => setView("lista")}
