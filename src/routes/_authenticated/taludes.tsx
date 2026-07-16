@@ -566,21 +566,40 @@ function TaludesPage() {
         {/* ── Mapa ── */}
         <GlassCard>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-2 text-xs">
-              {(["programado", "em_execucao", "finalizado"] as TaludeStatus[]).map((s) => {
-                const meta = STATUS_META[s];
-                const Icon = statusIcon[s];
-                return (
-                  <span
-                    key={s}
-                    className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium text-white"
-                    style={{ background: meta.fill }}
-                  >
-                    <Icon className="h-3 w-3" /> {meta.label}
-                  </span>
-                );
-              })}
-            </div>
+            <TooltipProvider delayDuration={150}>
+              <div className="animate-fade-in flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2 py-1 shadow-sm backdrop-blur">
+                <Info className="h-3 w-3 text-muted-foreground" />
+                <span className="mr-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Status
+                </span>
+                {(["programado", "em_execucao", "finalizado"] as TaludeStatus[]).map((s) => {
+                  const meta = STATUS_META[s];
+                  const Icon = statusIcon[s];
+                  return (
+                    <Tooltip key={s}>
+                      <TooltipTrigger asChild>
+                        <span
+                          className="inline-flex cursor-help items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm transition-transform hover:scale-105"
+                          style={{ background: meta.fill }}
+                        >
+                          <span
+                            className="inline-block h-2 w-2 rounded-full ring-2 ring-white/40"
+                            style={{ background: "#fff" }}
+                          />
+                          <Icon className="h-3 w-3" />
+                          {meta.label}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="text-xs">
+                        {s === "programado" && "Talude planejado, aguardando execução."}
+                        {s === "em_execucao" && "Manutenção em andamento no talude."}
+                        {s === "finalizado" && "Serviço concluído. Próxima data calculada automaticamente."}
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            </TooltipProvider>
             <div className="ml-auto flex items-center gap-2">
               {drawingNumero || editingPolygonFor ? (
                 <>
