@@ -984,7 +984,7 @@ function TaludesPage() {
                       onPointerLeave={handleSvgPointerUp}
                       viewBox="0 0 100 100"
                       preserveAspectRatio="none"
-                      className={`absolute inset-0 h-full w-full ${drawingNumero || editingPolygonFor ? "cursor-crosshair" : ""}`}
+                      className={`absolute inset-0 h-full w-full ${isDrawing ? "cursor-crosshair" : ""}`}
                     >
                       {taludes.map((t) => {
                         if (t.polygon.length < 3) return null;
