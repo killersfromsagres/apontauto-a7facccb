@@ -23,7 +23,7 @@ const FALLBACK_ENDPOINT =
   "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m,rain,is_day" +
   "&hourly=temperature_2m,apparent_temperature,precipitation_probability,rain,weather_code,cloud_cover,wind_speed_10m" +
   "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,rain_sum,wind_speed_10m_max" +
-  "&forecast_days=2" +
+  "&forecast_days=7" +
   `&timezone=${encodeURIComponent(WEATHER_LOCATION.timezone)}` +
   "&utm_source=apontauto.lovable.app";
 
