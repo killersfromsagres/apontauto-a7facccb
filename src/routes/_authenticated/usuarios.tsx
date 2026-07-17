@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -318,6 +318,10 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
   const [localAllowed, setLocalAllowed] = useState<string[] | null>(user.allowedMenus);
   const isAdminUser = user.role === "admin";
   const allAllowed = localAllowed === null;
+
+  useEffect(() => {
+    setLocalAllowed(user.allowedMenus);
+  }, [user.allowedMenus]);
 
   const banMut = useMutation({
     mutationFn: async (banned: boolean) => setBanned({ data: { userId: user.id, banned } }),
