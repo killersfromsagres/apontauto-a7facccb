@@ -116,6 +116,7 @@ interface BOSRow {
   is_prioridade?: boolean;
   motivo_prioridade?: string | null;
   prioridade_nivel?: number;
+  revisao_manual?: boolean;
 }
 
 const POWERBI_URL =
