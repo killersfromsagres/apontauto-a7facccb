@@ -818,10 +818,12 @@ function TaludesPage() {
 
           {(() => {
             // ─── zoom & transform ───
+            const isDrawing = !!(drawingNumero || editingPolygonFor);
             const zoomTarget =
               taludes.find((x) => x.id === (editingPolygonFor || zoomedTaludeId)) || null;
             let transform: string | undefined;
             let originStr: string | undefined;
+            let usingAutoZoom = false;
             if (zoomTarget && zoomTarget.polygon.length >= 3) {
               let minX = 100, minY = 100, maxX = 0, maxY = 0;
               for (const p of zoomTarget.polygon) {
@@ -837,19 +839,84 @@ function TaludesPage() {
               const s = Math.min(4.5, 80 / Math.max(w, h));
               originStr = `${cx}% ${cy}%`;
               transform = `translate(${50 - cx}%, ${50 - cy}%) scale(${s})`;
+              usingAutoZoom = true;
+            } else {
+              originStr = "0 0";
+              transform = `translate(${view.tx}%, ${view.ty}%) scale(${view.scale})`;
             }
+
+            const canPan = !isDrawing && !usingAutoZoom && view.scale > 1;
+            const onPanDown = (e: React.PointerEvent) => {
+              if (!canPan) return;
+              if (e.button !== 0) return;
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              setPanState({ sx: e.clientX, sy: e.clientY, tx: view.tx, ty: view.ty, moved: false });
+            };
+            const onPanMove = (e: React.PointerEvent) => {
+              if (!panState) return;
+              const el = viewportRef.current;
+              if (!el) return;
+              const rect = el.getBoundingClientRect();
+              const dx = ((e.clientX - panState.sx) / rect.width) * 100;
+              const dy = ((e.clientY - panState.sy) / rect.height) * 100;
+              if (!panState.moved && (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3)) {
+                setPanState({ ...panState, moved: true });
+              }
+              setView((v) => ({ ...v, tx: panState.tx + dx, ty: panState.ty + dy }));
+            };
+            const onPanUp = () => setPanState(null);
+
             return (
-              <div className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5">
+              <div
+                ref={viewportRef}
+                className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5"
+                onPointerDown={onPanDown}
+                onPointerMove={onPanMove}
+                onPointerUp={onPanUp}
+                onPointerLeave={onPanUp}
+                style={{ cursor: canPan ? (panState ? "grabbing" : "grab") : undefined, touchAction: "none" }}
+              >
                 {/* zoom toolbar */}
                 {imageUrl && (
                   <div className="pointer-events-none absolute right-2 top-2 z-20 flex flex-col gap-1">
-                    {zoomedTaludeId || editingPolygonFor ? (
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="pointer-events-auto h-8 w-8 shadow-lg"
+                      onClick={() => zoomBy(1.25)}
+                      disabled={usingAutoZoom || view.scale >= 8}
+                      title="Aproximar (roda do mouse)"
+                    >
+                      <ZoomIn className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="pointer-events-auto h-8 w-8 shadow-lg"
+                      onClick={() => zoomBy(1 / 1.25)}
+                      disabled={usingAutoZoom || view.scale <= 1}
+                      title="Afastar"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    {!usingAutoZoom && view.scale > 1 && (
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="pointer-events-auto h-8 w-8 shadow-lg"
+                        onClick={resetView}
+                        title="Restaurar zoom"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {(zoomedTaludeId || editingPolygonFor) ? (
                       <Button
                         size="icon"
                         variant="secondary"
                         className="pointer-events-auto h-8 w-8 shadow-lg"
                         onClick={() => setZoomedTaludeId(null)}
-                        title="Sair do zoom"
+                        title="Sair do foco no talude"
                       >
                         <ZoomOut className="h-4 w-4" />
                       </Button>
@@ -860,9 +927,9 @@ function TaludesPage() {
                           variant="secondary"
                           className="pointer-events-auto h-8 w-8 shadow-lg"
                           onClick={() => setZoomedTaludeId(selected.id)}
-                          title={`Aproximar no talude ${selected.numero}`}
+                          title={`Focar no talude ${selected.numero}`}
                         >
-                          <ZoomIn className="h-4 w-4" />
+                          <MapPin className="h-4 w-4" />
                         </Button>
                       )
                     )}
@@ -874,12 +941,13 @@ function TaludesPage() {
                     style={{
                       transform,
                       transformOrigin: originStr,
-                      transition: "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      transition: panState ? "none" : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                       willChange: "transform",
                     }}
                   >
                     {!imgLoaded && (
                       <div className="absolute inset-0 z-10 animate-pulse bg-gradient-to-br from-muted/40 via-muted/20 to-muted/40" />
+
                     )}
                     <img
                       src={imageUrl}
