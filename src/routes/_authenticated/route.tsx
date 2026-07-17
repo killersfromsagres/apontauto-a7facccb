@@ -1,11 +1,14 @@
 import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { useMyAccess } from "@/hooks/use-my-access";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -45,8 +48,10 @@ function AccessGuard() {
       return;
     }
 
-    // Sem restrição customizada → acesso total somente após resposta válida do backend.
+    // Sem restrição customizada → acesso total.
     if (!access.allowed) return;
+    // Lista vazia: não redireciona (evita loop) — o layout mostra tela de retry.
+    if (access.allowed.length === 0) return;
 
     if (!access.allowed.includes(key)) {
       toast.error("Você não tem permissão para acessar essa página.");
@@ -72,6 +77,9 @@ function canRenderPath(pathname: string, access: ReturnType<typeof useMyAccess>[
 }
 
 function AccessFallback({ loading, noMenus }: { loading: boolean; noMenus: boolean }) {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center px-4 text-sm text-muted-foreground">
@@ -82,13 +90,34 @@ function AccessFallback({ loading, noMenus }: { loading: boolean; noMenus: boole
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
-      <div className="max-w-md space-y-2">
+      <div className="max-w-md space-y-4">
         <h1 className="text-lg font-semibold tracking-tight">Acesso restrito</h1>
         <p className="text-sm text-muted-foreground">
           {noMenus
-            ? "Nenhum módulo foi liberado para este usuário. Solicite a revisão das permissões ao administrador."
+            ? "Nenhum módulo foi liberado para este usuário. Se você acabou de entrar, tente recarregar as permissões — caso o problema persista, solicite ao administrador."
             : "Você não tem permissão para acessar este módulo."}
         </p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => qc.invalidateQueries({ queryKey: ["my-access"] })}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Recarregar permissões
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={async () => {
+              await qc.cancelQueries();
+              qc.clear();
+              await supabase.auth.signOut();
+              navigate({ to: "/auth", replace: true });
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Sair
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -115,3 +144,4 @@ function AuthenticatedLayout() {
     </SidebarProvider>
   );
 }
+
