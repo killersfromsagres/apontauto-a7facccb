@@ -1130,33 +1130,133 @@ function TaludesPage() {
                           </g>
                         );
                       })}
+                      {/* Reference grid while drawing/editing */}
+                      {isDrawing && (
+                        <g pointerEvents="none">
+                          {Array.from({ length: 9 }).map((_, i) => (
+                            <line
+                              key={`gv-${i}`}
+                              x1={(i + 1) * 10}
+                              y1={0}
+                              x2={(i + 1) * 10}
+                              y2={100}
+                              stroke="rgba(255,255,255,0.55)"
+                              strokeWidth={0.05}
+                              strokeDasharray="0.35,0.35"
+                            />
+                          ))}
+                          {Array.from({ length: 9 }).map((_, i) => (
+                            <line
+                              key={`gh-${i}`}
+                              x1={0}
+                              y1={(i + 1) * 10}
+                              x2={100}
+                              y2={(i + 1) * 10}
+                              stroke="rgba(255,255,255,0.55)"
+                              strokeWidth={0.05}
+                              strokeDasharray="0.35,0.35"
+                            />
+                          ))}
+                        </g>
+                      )}
                       {/* drawing / editing preview with draggable vertices */}
-                      {drawingPoints.length > 0 && (
+                      {drawingPoints.length > 0 && (() => {
+                        const accent = editingPolygonFor ? "#8b5cf6" : "#ef4444";
+                        return (
                         <>
                           <polygon
                             points={drawingPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-                            fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                            fillOpacity="0.25"
-                            stroke={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                            fill={accent}
+                            fillOpacity="0.22"
+                            stroke={accent}
                             strokeWidth="0.35"
                             strokeDasharray="0.8,0.6"
                           />
-                          {drawingPoints.map((p, i) => (
-                            <circle
-                              key={i}
-                              cx={p.x}
-                              cy={p.y}
-                              r={draggingIdx === i ? 0.55 : 0.4}
-                              fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                              stroke="#fff"
-                              strokeWidth="0.08"
-                              style={{ cursor: "grab", touchAction: "none" }}
-                              onPointerDown={(e) => handleVertexPointerDown(i, e)}
-                              onContextMenu={(e) => removeVertex(i, e)}
-                            />
-                          ))}
+                          {/* Midpoint insert markers */}
+                          {drawingPoints.length >= 2 && drawingPoints.map((p, i) => {
+                            const next = drawingPoints[(i + 1) % drawingPoints.length];
+                            const mx = (p.x + next.x) / 2;
+                            const my = (p.y + next.y) / 2;
+                            return (
+                              <g key={`mid-${i}`} style={{ cursor: "copy" }}
+                                onClick={(e) => { e.stopPropagation(); insertVertexAt(i, { x: mx, y: my }); }}
+                              >
+                                <circle cx={mx} cy={my} r={0.9} fill="transparent" />
+                                <circle cx={mx} cy={my} r={0.32} fill="#fff" stroke={accent} strokeWidth={0.1} opacity={0.85} />
+                                <line x1={mx - 0.18} y1={my} x2={mx + 0.18} y2={my} stroke={accent} strokeWidth={0.09} strokeLinecap="round" />
+                                <line x1={mx} y1={my - 0.18} x2={mx} y2={my + 0.18} stroke={accent} strokeWidth={0.09} strokeLinecap="round" />
+                              </g>
+                            );
+                          })}
+                          {/* Snap indicator */}
+                          {snapHint && (
+                            <g pointerEvents="none">
+                              <circle cx={snapHint.x} cy={snapHint.y} r={1.4} fill="none" stroke="#22d3ee" strokeWidth={0.12} strokeDasharray="0.4,0.3" />
+                              <circle cx={snapHint.x} cy={snapHint.y} r={0.25} fill="#22d3ee" />
+                            </g>
+                          )}
+                          {/* Vertex markers — halo + core + hit area */}
+                          {drawingPoints.map((p, i) => {
+                            const isDrag = draggingIdx === i;
+                            const isSel = selectedVertexIdx === i;
+                            return (
+                              <g key={`v-${i}`}>
+                                {(isDrag || isSel) && (
+                                  <circle cx={p.x} cy={p.y} r={1.15} fill={accent} fillOpacity={0.18} />
+                                )}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isDrag ? 0.6 : isSel ? 0.52 : 0.42}
+                                  fill="#ffffff"
+                                  stroke={accent}
+                                  strokeWidth={isDrag || isSel ? 0.2 : 0.16}
+                                />
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isDrag ? 0.3 : 0.22}
+                                  fill={accent}
+                                  pointerEvents="none"
+                                />
+                                {/* Enlarged transparent hit area for easier grab */}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={1.6}
+                                  fill="transparent"
+                                  style={{ cursor: isDrag ? "grabbing" : "grab", touchAction: "none" }}
+                                  onPointerDown={(e) => handleVertexPointerDown(i, e)}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedVertexIdx(i); }}
+                                  onContextMenu={(e) => removeVertex(i, e)}
+                                />
+                                {/* Small index label above vertex */}
+                                <text
+                                  x={p.x}
+                                  y={p.y - 1.4}
+                                  textAnchor="middle"
+                                  fontSize="1.4"
+                                  fontWeight="700"
+                                  fill="#0f172a"
+                                  stroke="#ffffff"
+                                  strokeWidth="0.3"
+                                  style={{ paintOrder: "stroke", pointerEvents: "none" }}
+                                >
+                                  {i + 1}
+                                </text>
+                              </g>
+                            );
+                          })}
+                          {/* Cursor crosshair while drawing (not dragging) */}
+                          {isDrawing && cursorPct && draggingIdx === null && (
+                            <g pointerEvents="none" opacity={0.85}>
+                              <line x1={cursorPct.x - 1.2} y1={cursorPct.y} x2={cursorPct.x + 1.2} y2={cursorPct.y} stroke={accent} strokeWidth={0.08} />
+                              <line x1={cursorPct.x} y1={cursorPct.y - 1.2} x2={cursorPct.x} y2={cursorPct.y + 1.2} stroke={accent} strokeWidth={0.08} />
+                            </g>
+                          )}
                         </>
-                      )}
+                        );
+                      })()}
                     </svg>
 
                     {/* ─── Modern floating date pills (HTML, crisp typography) ─── */}
