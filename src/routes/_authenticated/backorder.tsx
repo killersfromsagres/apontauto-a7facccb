@@ -74,7 +74,9 @@ import {
   CATEGORIAS,
   CATEGORIA_COLOR,
   CATEGORIA_TO_EQUIPE,
+  setDynamicRules,
   type Categoria,
+  type DynamicRule,
 } from "@/lib/backorder/classify";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
@@ -140,6 +142,7 @@ function BackorderPage() {
   const [configOpen, setConfigOpen] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
+  const instrucaoInputRef = useRef<HTMLInputElement>(null);
   const targetPct = TARGET_PCT_DEFAULT;
 
   const loadConfig = useCallback(async () => {
@@ -177,17 +180,38 @@ function BackorderPage() {
     setLoading(false);
   }, []);
 
-  const [assetsMap, setAssetsMap] = useState<AssetsMap>(new Map());
+  const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
-    const { data } = await supabase.from("assets_ref").select("ativo, denominacao");
-    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string }>) ?? []));
+    const { data } = await supabase
+      .from("assets_ref")
+      .select("ativo, denominacao, nivel, codigo_pai");
+    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
+  }, []);
+
+  const loadClassifierRules = useCallback(async () => {
+    const { data } = await supabase
+      .from("regras_classificacao_equipe")
+      .select("equipe, palavra_chave, fonte, prioridade, ativo")
+      .eq("ativo", true);
+    if (data && data.length > 0) {
+      setDynamicRules(
+        (data as Array<{ equipe: string; palavra_chave: string; fonte: string; prioridade: number }>)
+          .map((r) => ({
+            equipe: r.equipe as Categoria,
+            palavra_chave: r.palavra_chave,
+            fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
+            prioridade: r.prioridade,
+          })),
+      );
+    }
   }, []);
 
   useEffect(() => {
     void loadConfig();
     void loadAssets();
+    void loadClassifierRules();
     void refresh();
-  }, [loadConfig, loadAssets, refresh]);
+  }, [loadConfig, loadAssets, loadClassifierRules, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
@@ -223,12 +247,14 @@ function BackorderPage() {
   async function handleBackorderImport(file: File) {
     setImporting(true);
     try {
-      // 1) carrega assets_ref inteiro em memória
+      // 1) carrega assets_ref inteiro em memória (com hierarquia)
       const { data: assetsRaw, error: assetsErr } = await supabase
         .from("assets_ref")
-        .select("ativo, denominacao");
+        .select("ativo, denominacao, nivel, codigo_pai");
       if (assetsErr) throw assetsErr;
-      const assetsMap = makeAssetsMap((assetsRaw as Array<{ ativo: string; denominacao: string }>) ?? []);
+      const assetsMap = makeAssetsMap(
+        (assetsRaw as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? [],
+      );
 
       const parsed = await readBackorderFile(file, assetsMap);
       if (parsed.length === 0) {
@@ -312,6 +338,7 @@ function BackorderPage() {
           data_solicitacao: r.data_solicitacao,
           outros: r.outros,
           criticidade: r.criticidade ?? "",
+          revisao_manual: r.revisao_manual,
         }));
         const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
         if (error) throw error;
@@ -360,12 +387,20 @@ function BackorderPage() {
       }
 
       // Recalcula Prédio/Andar/Espaço de todos os chamados usando a base atualizada
-      const nextMap = makeAssetsMap(parsed.concat(
+      const nextMap = makeAssetsMap([
+        ...parsed,
         // preserva ativos que estavam no banco e não vieram no novo arquivo
-        Array.from(existMap.entries())
+        ...Array.from(existMap.entries())
           .filter(([k]) => !parsed.some((p) => p.ativo === k))
-          .map(([ativo, denominacao]) => ({ ativo, denominacao })),
-      ));
+          .map(([ativo, denominacao]) => ({
+            ativo,
+            denominacao,
+            nivel: "",
+            codigo_pai: null,
+            descricao_pai: "",
+            unidade_negocio: "",
+          })),
+      ]);
       setAssetsMap(nextMap);
 
       const { data: allRows } = await supabase.from("backorder_os").select("os, ativo, predio, andar, espaco");
@@ -408,18 +443,29 @@ function BackorderPage() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
     try {
-      const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
-      const map = makeAssetsMap((assetsRaw ?? []) as Array<{ ativo: string; denominacao: string }>);
+      const { data: assetsRaw } = await supabase
+        .from("assets_ref")
+        .select("ativo, denominacao, nivel, codigo_pai");
+      const map = makeAssetsMap(
+        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
+      );
       setAssetsMap(map);
       const { data: allRows } = await supabase
         .from("backorder_os")
-        .select("os, ativo, predio, andar, espaco");
-      const patches: Array<{ os: string; predio: string; andar: string; espaco: string }> = [];
-      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string }>) {
+        .select("os, ativo, predio, andar, espaco, revisao_manual");
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }> = [];
+      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }>) {
         if (!r.ativo) continue;
         const res = resolveAtivo(map, r.ativo);
-        if (res.predio !== r.predio || res.andar !== r.andar || res.espaco !== r.espaco) {
-          patches.push({ os: r.os, ...res });
+        const found = !!(res.predio || res.andar || res.espaco);
+        const revisao = !found;
+        if (
+          res.predio !== r.predio ||
+          res.andar !== r.andar ||
+          res.espaco !== r.espaco ||
+          revisao !== r.revisao_manual
+        ) {
+          patches.push({ os: r.os, ...res, revisao_manual: revisao });
         }
       }
       for (let i = 0; i < patches.length; i += 50) {
@@ -428,7 +474,7 @@ function BackorderPage() {
           slice.map((p) =>
             supabase
               .from("backorder_os")
-              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco })
+              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco, revisao_manual: p.revisao_manual })
               .eq("os", p.os),
           ),
         );
@@ -437,6 +483,41 @@ function BackorderPage() {
       if (patches.length > 0) await refresh();
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao reprocessar", { id: t });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  // Importa arquivo de instrução (JSON) com regras de classificação de equipe.
+  // Formato aceito:
+  //   { "keywords": [{ "equipe": "Pintura", "palavra_chave": "faixa", "fonte": "descricao", "prioridade": 20 }] }
+  async function handleInstrucaoImport(file: File) {
+    setImporting(true);
+    const t = toast.loading("Importando instrução…");
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const keywords: DynamicRule[] = Array.isArray(json?.keywords) ? json.keywords : [];
+      if (keywords.length === 0) {
+        toast.warning("Nenhuma regra encontrada no arquivo (esperado: chave \"keywords\").", { id: t });
+        return;
+      }
+      const rows = keywords.map((k) => ({
+        equipe: k.equipe,
+        palavra_chave: k.palavra_chave,
+        fonte: k.fonte === "categoria" ? "categoria" : "descricao",
+        prioridade: Number.isFinite(k.prioridade) ? k.prioridade : 100,
+        ativo: true,
+      }));
+      const { error } = await supabase
+        .from("regras_classificacao_equipe")
+        .upsert(rows, { onConflict: "equipe,palavra_chave,fonte" });
+      if (error) throw error;
+      await loadClassifierRules();
+      toast.success(`${rows.length} regra(s) importada(s). Rode "Reprocessar Chamados" para aplicar.`, { id: t });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao importar instrução", { id: t });
     } finally {
       setImporting(false);
     }
@@ -566,6 +647,7 @@ function BackorderPage() {
       criticidade: r.criticidade ?? "",
       finalizado: false,
       status_origem: "",
+      revisao_manual: false,
     }));
     const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
     const blob = await generateBackorderExport({
@@ -762,6 +844,9 @@ function BackorderPage() {
           <Button variant="outline" onClick={() => assetsInputRef.current?.click()} disabled={importing}>
             <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
           </Button>
+          <Button variant="outline" onClick={() => instrucaoInputRef.current?.click()} disabled={importing}>
+            <Upload className="mr-2 h-4 w-4" /> Importar Instrução
+          </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" /> Importar Backorder
           </Button>
@@ -798,6 +883,17 @@ function BackorderPage() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void handleAssetsImport(f);
+              e.currentTarget.value = "";
+            }}
+          />
+          <input
+            ref={instrucaoInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleInstrucaoImport(f);
               e.currentTarget.value = "";
             }}
           />

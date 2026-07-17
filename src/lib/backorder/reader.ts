@@ -1,7 +1,7 @@
 // Leitor de planilhas para o módulo Backorder de Corretivas.
 
 import { classifyBackorder, CATEGORIA_TO_EQUIPE, type Categoria } from "./classify";
-import { resolveAtivo, type AssetsMap } from "./assets";
+import { resolveAtivoTree, type AssetsMap } from "./assets";
 
 export interface BackorderRow {
   os: string;
@@ -18,6 +18,9 @@ export interface BackorderRow {
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   status_origem: string;
+  /** true quando o ativo não foi encontrado na base OU a classificação
+   *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
+  revisao_manual: boolean;
 }
 
 const norm = (v: unknown) =>
@@ -109,8 +112,9 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       servico,
     });
 
-    const { predio, andar, espaco } = resolveAtivo(assets, ativo);
+    const { predio, andar, espaco, found } = resolveAtivoTree(assets, ativo);
     const finalizado = /FINAL|CONCLU|ENCERR/.test(norm(status));
+    const revisao_manual = (!!ativo && !found) || atividade === "Outros";
 
     out.push({
       os,
@@ -127,20 +131,30 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       criticidade,
       finalizado,
       status_origem: status,
+      revisao_manual,
     });
 
   }
   return out;
 }
 
-export async function readAssetsFile(file: File): Promise<Array<{ ativo: string; denominacao: string }>> {
+export interface AssetImportRow {
+  ativo: string;
+  denominacao: string;
+  nivel: string;
+  codigo_pai: string | null;
+  descricao_pai: string;
+  unidade_negocio: string;
+}
+
+export async function readAssetsFile(file: File): Promise<AssetImportRow[]> {
   const XLSX = await import("xlsx");
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
   // Preferir aba chamada "ativos" — cai na primeira caso não exista.
   const name = wb.SheetNames.find((n) => norm(n).includes("ATIVO")) ?? wb.SheetNames[0];
   const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[name], { defval: "" });
-  const out: Array<{ ativo: string; denominacao: string }> = [];
+  const out: AssetImportRow[] = [];
   for (const r of raw) {
     const ativo = pick(r, "ATIVO", "CODIGO", "CÓDIGO", "TAG");
     const denominacao = pick(
@@ -153,8 +167,26 @@ export async function readAssetsFile(file: File): Promise<Array<{ ativo: string;
       "DESCRIÇÃO",
       "DESCRICAO",
     );
+    const nivel = pick(
+      r,
+      "DENOMINAÇÃO NÍVEL DE EMPRESA",
+      "DENOMINACAO NIVEL DE EMPRESA",
+      "NIVEL",
+      "NÍVEL",
+      "NIVEL DE EMPRESA",
+    );
+    const pai = pick(r, "ATIVO PAI", "CODIGO PAI", "CÓDIGO PAI", "PAI");
+    const descPai = pick(r, "DESCRIÇÃO ATIVO PAI", "DESCRICAO ATIVO PAI", "DESCRIÇÃO PAI", "DESCRICAO PAI");
+    const unidade = pick(r, "DENOMINAÇÃO UNIDADE NEGÓCIO", "DENOMINACAO UNIDADE NEGOCIO", "UNIDADE NEGOCIO", "UNIDADE");
     if (!ativo) continue;
-    out.push({ ativo: ativo.toUpperCase(), denominacao });
+    out.push({
+      ativo: ativo.toUpperCase(),
+      denominacao,
+      nivel,
+      codigo_pai: pai ? pai.toUpperCase() : null,
+      descricao_pai: descPai,
+      unidade_negocio: unidade,
+    });
   }
   return out;
 }
