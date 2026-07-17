@@ -290,6 +290,9 @@ function TaludesPage() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [selectedVertexIdx, setSelectedVertexIdx] = useState<number | null>(null);
+  const [cursorPct, setCursorPct] = useState<Point | null>(null);
+  const [snapHint, setSnapHint] = useState<Point | null>(null);
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
@@ -387,30 +390,70 @@ function TaludesPage() {
     };
   };
 
+  const SNAP_DIST = 1.2;
+  const snapPoint = (p: Point, ignoreIdx: number | null = null): { p: Point; snapped: boolean } => {
+    let best: { d: number; x: number; y: number } = { d: Infinity, x: p.x, y: p.y };
+    for (const t of taludes) {
+      if (t.id === editingPolygonFor) continue;
+      for (const v of t.polygon) {
+        const d = Math.hypot(v.x - p.x, v.y - p.y);
+        if (d < best.d) best = { d, x: v.x, y: v.y };
+      }
+    }
+    drawingPoints.forEach((v, i) => {
+      if (i === ignoreIdx) return;
+      const d = Math.hypot(v.x - p.x, v.y - p.y);
+      if (d < best.d) best = { d, x: v.x, y: v.y };
+    });
+    if (best.d <= SNAP_DIST) return { p: { x: best.x, y: best.y }, snapped: true };
+    return { p, snapped: false };
+  };
+
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
-    setDrawingPoints((prev) => [...prev, p]);
+    const { p: sp } = snapPoint(p);
+    setDrawingPoints((prev) => [...prev, sp]);
+    setSelectedVertexIdx(drawingPoints.length);
   };
 
   const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     setDraggingIdx(idx);
+    setSelectedVertexIdx(idx);
   };
   const handleSvgPointerMove = (e: React.PointerEvent) => {
-    if (draggingIdx === null) return;
     const p = clickToPct(e);
     if (!p) return;
-    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? p : pt)));
+    setCursorPct(p);
+    if (draggingIdx === null) {
+      setSnapHint(null);
+      return;
+    }
+    const { p: sp, snapped } = snapPoint(p, draggingIdx);
+    setSnapHint(snapped ? sp : null);
+    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? sp : pt)));
   };
-  const handleSvgPointerUp = () => setDraggingIdx(null);
+  const handleSvgPointerUp = () => {
+    setDraggingIdx(null);
+    setSnapHint(null);
+  };
   const removeVertex = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
+    setSelectedVertexIdx(null);
+  };
+  const insertVertexAt = (afterIdx: number, p: Point) => {
+    setDrawingPoints((prev) => {
+      const arr = [...prev];
+      arr.splice(afterIdx + 1, 0, p);
+      return arr;
+    });
+    setSelectedVertexIdx(afterIdx + 1);
   };
 
   const finishPolygon = async () => {
@@ -492,7 +535,31 @@ function TaludesPage() {
     setNumberPromptOpen(false);
     setPendingNumber("");
     setEditingPolygonFor(null);
+    setSelectedVertexIdx(null);
+    setSnapHint(null);
+    setCursorPct(null);
   };
+
+  // Keyboard shortcuts while drawing/editing polygon
+  useEffect(() => {
+    const isDrawing = !!(drawingNumero || editingPolygonFor || drawingNewMode);
+    if (!isDrawing) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelDrawing();
+      } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
+        e.preventDefault();
+        setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
+        setSelectedVertexIdx(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx]);
 
   const startRedraw = (t: TaludeRow) => {
     setEditingPolygonFor(t.id);
@@ -768,9 +835,38 @@ function TaludesPage() {
             <div className="ml-auto flex items-center gap-2">
               {drawingNewMode || drawingNumero || editingPolygonFor ? (
                 <>
-                  <span className="text-[11px] text-muted-foreground">
-                    Pontos: {drawingPoints.length} — clique no mapa para adicionar
-                  </span>
+                  <div className="animate-fade-in flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-medium shadow-sm backdrop-blur">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                    </span>
+                    <span className="font-semibold text-primary">
+                      {editingPolygonFor ? "Editando" : "Demarcando"}
+                    </span>
+                    <span className="text-muted-foreground">·</span>
+                    <span>
+                      <strong className="text-foreground">{drawingPoints.length}</strong> ponto{drawingPoints.length === 1 ? "" : "s"}
+                    </span>
+                    {cursorPct && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {cursorPct.x.toFixed(1)}, {cursorPct.y.toFixed(1)}
+                        </span>
+                      </>
+                    )}
+                    {snapHint && (
+                      <span className="ml-1 rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-300">
+                        snap
+                      </span>
+                    )}
+                  </div>
+                  <div className="hidden items-center gap-1 text-[10px] text-muted-foreground md:flex">
+                    <kbd className="rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">Del</kbd>
+                    <span>remove</span>
+                    <kbd className="ml-1 rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">Esc</kbd>
+                    <span>cancela</span>
+                  </div>
                   <Button size="sm" onClick={finishPolygon} disabled={drawingPoints.length < 3}>
                     <Save className="mr-1 h-3.5 w-3.5" /> Finalizar
                   </Button>
@@ -1063,33 +1159,133 @@ function TaludesPage() {
                           </g>
                         );
                       })}
+                      {/* Reference grid while drawing/editing */}
+                      {isDrawing && (
+                        <g pointerEvents="none">
+                          {Array.from({ length: 9 }).map((_, i) => (
+                            <line
+                              key={`gv-${i}`}
+                              x1={(i + 1) * 10}
+                              y1={0}
+                              x2={(i + 1) * 10}
+                              y2={100}
+                              stroke="rgba(255,255,255,0.55)"
+                              strokeWidth={0.05}
+                              strokeDasharray="0.35,0.35"
+                            />
+                          ))}
+                          {Array.from({ length: 9 }).map((_, i) => (
+                            <line
+                              key={`gh-${i}`}
+                              x1={0}
+                              y1={(i + 1) * 10}
+                              x2={100}
+                              y2={(i + 1) * 10}
+                              stroke="rgba(255,255,255,0.55)"
+                              strokeWidth={0.05}
+                              strokeDasharray="0.35,0.35"
+                            />
+                          ))}
+                        </g>
+                      )}
                       {/* drawing / editing preview with draggable vertices */}
-                      {drawingPoints.length > 0 && (
+                      {drawingPoints.length > 0 && (() => {
+                        const accent = editingPolygonFor ? "#8b5cf6" : "#ef4444";
+                        return (
                         <>
                           <polygon
                             points={drawingPoints.map((p) => `${p.x},${p.y}`).join(" ")}
-                            fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                            fillOpacity="0.25"
-                            stroke={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
+                            fill={accent}
+                            fillOpacity="0.22"
+                            stroke={accent}
                             strokeWidth="0.35"
                             strokeDasharray="0.8,0.6"
                           />
-                          {drawingPoints.map((p, i) => (
-                            <circle
-                              key={i}
-                              cx={p.x}
-                              cy={p.y}
-                              r={draggingIdx === i ? 0.55 : 0.4}
-                              fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
-                              stroke="#fff"
-                              strokeWidth="0.08"
-                              style={{ cursor: "grab", touchAction: "none" }}
-                              onPointerDown={(e) => handleVertexPointerDown(i, e)}
-                              onContextMenu={(e) => removeVertex(i, e)}
-                            />
-                          ))}
+                          {/* Midpoint insert markers */}
+                          {drawingPoints.length >= 2 && drawingPoints.map((p, i) => {
+                            const next = drawingPoints[(i + 1) % drawingPoints.length];
+                            const mx = (p.x + next.x) / 2;
+                            const my = (p.y + next.y) / 2;
+                            return (
+                              <g key={`mid-${i}`} style={{ cursor: "copy" }}
+                                onClick={(e) => { e.stopPropagation(); insertVertexAt(i, { x: mx, y: my }); }}
+                              >
+                                <circle cx={mx} cy={my} r={0.9} fill="transparent" />
+                                <circle cx={mx} cy={my} r={0.32} fill="#fff" stroke={accent} strokeWidth={0.1} opacity={0.85} />
+                                <line x1={mx - 0.18} y1={my} x2={mx + 0.18} y2={my} stroke={accent} strokeWidth={0.09} strokeLinecap="round" />
+                                <line x1={mx} y1={my - 0.18} x2={mx} y2={my + 0.18} stroke={accent} strokeWidth={0.09} strokeLinecap="round" />
+                              </g>
+                            );
+                          })}
+                          {/* Snap indicator */}
+                          {snapHint && (
+                            <g pointerEvents="none">
+                              <circle cx={snapHint.x} cy={snapHint.y} r={1.4} fill="none" stroke="#22d3ee" strokeWidth={0.12} strokeDasharray="0.4,0.3" />
+                              <circle cx={snapHint.x} cy={snapHint.y} r={0.25} fill="#22d3ee" />
+                            </g>
+                          )}
+                          {/* Vertex markers — halo + core + hit area */}
+                          {drawingPoints.map((p, i) => {
+                            const isDrag = draggingIdx === i;
+                            const isSel = selectedVertexIdx === i;
+                            return (
+                              <g key={`v-${i}`}>
+                                {(isDrag || isSel) && (
+                                  <circle cx={p.x} cy={p.y} r={1.15} fill={accent} fillOpacity={0.18} />
+                                )}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isDrag ? 0.6 : isSel ? 0.52 : 0.42}
+                                  fill="#ffffff"
+                                  stroke={accent}
+                                  strokeWidth={isDrag || isSel ? 0.2 : 0.16}
+                                />
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={isDrag ? 0.3 : 0.22}
+                                  fill={accent}
+                                  pointerEvents="none"
+                                />
+                                {/* Enlarged transparent hit area for easier grab */}
+                                <circle
+                                  cx={p.x}
+                                  cy={p.y}
+                                  r={1.6}
+                                  fill="transparent"
+                                  style={{ cursor: isDrag ? "grabbing" : "grab", touchAction: "none" }}
+                                  onPointerDown={(e) => handleVertexPointerDown(i, e)}
+                                  onClick={(e) => { e.stopPropagation(); setSelectedVertexIdx(i); }}
+                                  onContextMenu={(e) => removeVertex(i, e)}
+                                />
+                                {/* Small index label above vertex */}
+                                <text
+                                  x={p.x}
+                                  y={p.y - 1.4}
+                                  textAnchor="middle"
+                                  fontSize="1.4"
+                                  fontWeight="700"
+                                  fill="#0f172a"
+                                  stroke="#ffffff"
+                                  strokeWidth="0.3"
+                                  style={{ paintOrder: "stroke", pointerEvents: "none" }}
+                                >
+                                  {i + 1}
+                                </text>
+                              </g>
+                            );
+                          })}
+                          {/* Cursor crosshair while drawing (not dragging) */}
+                          {isDrawing && cursorPct && draggingIdx === null && (
+                            <g pointerEvents="none" opacity={0.85}>
+                              <line x1={cursorPct.x - 1.2} y1={cursorPct.y} x2={cursorPct.x + 1.2} y2={cursorPct.y} stroke={accent} strokeWidth={0.08} />
+                              <line x1={cursorPct.x} y1={cursorPct.y - 1.2} x2={cursorPct.x} y2={cursorPct.y + 1.2} stroke={accent} strokeWidth={0.08} />
+                            </g>
+                          )}
                         </>
-                      )}
+                        );
+                      })()}
                     </svg>
 
                     {/* ─── Modern floating date pills (HTML, crisp typography) ─── */}
