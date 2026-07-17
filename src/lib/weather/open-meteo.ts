@@ -23,10 +23,12 @@ const ENDPOINT =
 
 export type WeatherCurrent = {
   temperature_2m: number;
+  apparent_temperature: number;
   relative_humidity_2m: number;
   weather_code: number;
   cloud_cover: number;
   wind_speed_10m: number;
+  wind_gusts_10m: number;
   rain: number;
   is_day: number;
 };
@@ -34,6 +36,7 @@ export type WeatherCurrent = {
 export type WeatherHourly = {
   time: string[];
   temperature_2m: number[];
+  apparent_temperature: number[];
   precipitation_probability: number[];
   rain: number[];
   weather_code: number[];
@@ -46,8 +49,11 @@ export type WeatherDaily = {
   weather_code: number[];
   temperature_2m_max: number[];
   temperature_2m_min: number[];
+  apparent_temperature_max: number[];
+  apparent_temperature_min: number[];
   precipitation_probability_max: number[];
   rain_sum: number[];
+  wind_speed_10m_max: number[];
 };
 
 export type WeatherResponse = {
