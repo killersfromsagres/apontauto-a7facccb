@@ -187,11 +187,30 @@ function BackorderPage() {
     setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
   }, []);
 
+  const loadClassifierRules = useCallback(async () => {
+    const { data } = await supabase
+      .from("regras_classificacao_equipe")
+      .select("equipe, palavra_chave, fonte, prioridade, ativo")
+      .eq("ativo", true);
+    if (data && data.length > 0) {
+      setDynamicRules(
+        (data as Array<{ equipe: string; palavra_chave: string; fonte: string; prioridade: number }>)
+          .map((r) => ({
+            equipe: r.equipe as Categoria,
+            palavra_chave: r.palavra_chave,
+            fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
+            prioridade: r.prioridade,
+          })),
+      );
+    }
+  }, []);
+
   useEffect(() => {
     void loadConfig();
     void loadAssets();
+    void loadClassifierRules();
     void refresh();
-  }, [loadConfig, loadAssets, refresh]);
+  }, [loadConfig, loadAssets, loadClassifierRules, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
