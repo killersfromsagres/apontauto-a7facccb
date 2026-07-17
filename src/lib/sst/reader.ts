@@ -219,6 +219,19 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         errors.push({ sheet: sheet.name, row: r, message: `Data de vencimento inválida: "${cellString(rawVenc)}"` });
       }
 
+      // "Função" às vezes vem do CR do RH (ex.: "53937 - SP - LPG - BASF DEMARCHI - LIMPEZA").
+      // Extrai o último segmento após " - " para exibir apenas o cargo/atividade.
+      const funcaoRaw = cellString(pick("funcao"));
+      const funcao = funcaoRaw && funcaoRaw.includes(" - ")
+        ? funcaoRaw.split(" - ").pop()!.trim()
+        : funcaoRaw;
+
+      // Se a coluna "AGENDAMENTO" trouxer texto (não uma data), preserva em observação.
+      const agendRaw = pick("data_sugerida_agendamento");
+      const agendText = !parseFlexibleDate(agendRaw) ? cellString(agendRaw) : null;
+      const obsBase = cellString(pick("observacao"));
+      const observacao = [obsBase, agendText].filter(Boolean).join(" — ") || null;
+
       rows.push({
         empresa: cellString(pick("empresa")),
         filial: cellString(pick("filial")),
@@ -226,7 +239,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         matricula,
         cpf,
         nome,
-        funcao: cellString(pick("funcao")),
+        funcao,
         situacao: cellString(pick("situacao")),
         supervisor: cellString(pick("supervisor")),
         data_admissao: parseFlexibleDate(pick("data_admissao")),
@@ -235,7 +248,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         data_vencimento: dataVenc,
         data_sugerida_agendamento: dataSug,
         exame_realizado: truthy(pick("exame_realizado")) || !!dataExame,
-        observacao: cellString(pick("observacao")),
+        observacao,
       });
     }
   });
