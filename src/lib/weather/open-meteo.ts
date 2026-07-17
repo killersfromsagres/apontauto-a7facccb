@@ -14,19 +14,21 @@ const ENDPOINT =
   "https://api.open-meteo.com/v1/forecast" +
   `?latitude=${WEATHER_LOCATION.latitude}` +
   `&longitude=${WEATHER_LOCATION.longitude}` +
-  "&current=temperature_2m,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,rain,is_day" +
-  "&hourly=temperature_2m,precipitation_probability,rain,weather_code,cloud_cover,wind_speed_10m" +
-  "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,rain_sum" +
+  "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m,rain,is_day" +
+  "&hourly=temperature_2m,apparent_temperature,precipitation_probability,rain,weather_code,cloud_cover,wind_speed_10m" +
+  "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,rain_sum,wind_speed_10m_max" +
   "&forecast_days=2" +
   `&timezone=${encodeURIComponent(WEATHER_LOCATION.timezone)}` +
   "&utm_source=apontauto.lovable.app";
 
 export type WeatherCurrent = {
   temperature_2m: number;
+  apparent_temperature: number;
   relative_humidity_2m: number;
   weather_code: number;
   cloud_cover: number;
   wind_speed_10m: number;
+  wind_gusts_10m: number;
   rain: number;
   is_day: number;
 };
@@ -34,6 +36,7 @@ export type WeatherCurrent = {
 export type WeatherHourly = {
   time: string[];
   temperature_2m: number[];
+  apparent_temperature: number[];
   precipitation_probability: number[];
   rain: number[];
   weather_code: number[];
@@ -46,8 +49,11 @@ export type WeatherDaily = {
   weather_code: number[];
   temperature_2m_max: number[];
   temperature_2m_min: number[];
+  apparent_temperature_max: number[];
+  apparent_temperature_min: number[];
   precipitation_probability_max: number[];
   rain_sum: number[];
+  wind_speed_10m_max: number[];
 };
 
 export type WeatherResponse = {
