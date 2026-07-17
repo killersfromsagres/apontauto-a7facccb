@@ -109,6 +109,7 @@ function digits(s: string | null): string | null {
 
 export async function readSstXlsx(file: File): Promise<SstImportResult> {
   const buf = await file.arrayBuffer();
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
 
