@@ -126,6 +126,35 @@ export function resolveAtivoTree(index: AssetsIndex, ativo: string): ResolveResu
   };
 }
 
+/** Diagnóstico do Ativo para decidir badges "—" (não aplicável) vs "não encontrado".
+ *  Não faz adivinhação — usa exclusivamente a árvore real. */
+export function describeAtivo(index: AssetsIndex, ativo: string): {
+  found: boolean;
+  nivelSelf: NivelAtivo;
+  /** Campos em que "vazio" é esperado (o próprio Ativo já é aquele nível ou acima). */
+  naFields: { predio: boolean; andar: boolean; espaco: boolean };
+} {
+  const code = String(ativo ?? "").trim().toUpperCase();
+  const self = code ? index.byCodigo.get(code) : undefined;
+  if (!self) {
+    return {
+      found: false,
+      nivelSelf: "",
+      naFields: { predio: false, andar: false, espaco: false },
+    };
+  }
+  const nivel = self.nivel;
+  return {
+    found: true,
+    nivelSelf: nivel,
+    naFields: {
+      predio: nivel === "PLANTA",
+      andar: nivel === "PLANTA" || nivel === "PREDIO",
+      espaco: nivel === "PLANTA" || nivel === "PREDIO" || nivel === "ANDAR",
+    },
+  };
+}
+
 // -------------------------------------------------------------------
 // Compat com a API antiga (assets.ts anterior). Muitos call sites
 // ainda usam `makeAssetsMap` / `resolveAtivo` — mantemos como shim.
