@@ -670,7 +670,8 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
         </Button>
       </div>
 
-      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -841,7 +842,8 @@ function HistoricoView({
           </SelectContent>
         </Select>
       </div>
-      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -930,7 +932,7 @@ function GiroView({ pecas }: { pecas: LavExportPeca[] }) {
           </SelectContent>
         </Select>
       </div>
-      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
@@ -1511,7 +1513,7 @@ function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] })
         </Select>
       </div>
 
-      <div className="lavanderia-scroll max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
