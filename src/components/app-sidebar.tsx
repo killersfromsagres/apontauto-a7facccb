@@ -48,14 +48,18 @@ const adminItem = { key: "usuarios", title: "Usuários", url: "/usuarios", icon:
 export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
-  const { isAdmin } = useIsAdmin();
-  const { allowed } = useAllowedMenus();
+  const { isAdmin, loading: loadingAdmin } = useIsAdmin();
+  const { allowed, loading: loadingAllowed } = useAllowedMenus();
+  const loadingAccess = loadingAdmin || loadingAllowed;
 
-  // Admin sempre vê tudo. Para usuários comuns, `allowed = null` = todos.
-  const visible = baseItems.filter((it) =>
-    isAdmin ? true : !allowed || allowed.includes(it.key),
-  );
-  const items = isAdmin ? [...visible, adminItem] : visible;
+  // Enquanto o acesso carrega, não mostramos itens restringíveis para
+  // evitar o flash "vê tudo" antes da resposta do servidor.
+  const visible = loadingAccess
+    ? []
+    : baseItems.filter((it) =>
+        isAdmin ? true : !allowed || allowed.includes(it.key),
+      );
+  const items = !loadingAccess && isAdmin ? [...visible, adminItem] : visible;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
