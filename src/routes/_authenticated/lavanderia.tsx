@@ -1259,7 +1259,7 @@ function DashboardView({
         </GlassCard>
 
         <GlassCard>
-          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria · MBR</h3>
+          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             Comparativo consolidado entre Colaborador, Reserva, Visitante e Avulso.
           </p>
