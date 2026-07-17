@@ -283,7 +283,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         tipo_exame: cellString(pick("tipo_exame")),
         data_vencimento: dataVenc,
         data_sugerida_agendamento: dataSug,
-        exame_realizado: truthy(pick("exame_realizado")) || !!dataExame,
+        exame_realizado: !!dataExame,
         observacao,
         dados_extras,
       });
