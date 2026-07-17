@@ -15,6 +15,7 @@ export const MENU_KEYS = [
   "preventiva",
   "corretiva",
   "taludes",
+  "programacao-taludes",
   "apontamentos",
   "painel-legal",
   "configuracoes",

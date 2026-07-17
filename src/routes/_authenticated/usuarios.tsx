@@ -58,6 +58,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   preventiva: "Programação Preventiva",
   corretiva: "Programação Corretiva",
   taludes: "Programação de Taludes",
+  "programacao-taludes": "Programação de Taludes (Clima)",
   apontamentos: "Apontamentos",
   "painel-legal": "Painel de Itens Legais",
   configuracoes: "Configurações",
@@ -241,10 +242,11 @@ function UsersListCard() {
   const list = useServerFn(listAppUsers);
   const [filter, setFilter] = useState("");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["app-users"],
     queryFn: async () => (await list()).users as AppUser[],
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["app-users"] });
@@ -281,6 +283,16 @@ function UsersListCard() {
       {isLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando usuários…
+        </div>
+      ) : error ? (
+        <div className="space-y-2">
+          <p className="text-sm text-destructive">
+            Falha ao carregar usuários: {error instanceof Error ? error.message : String(error)}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            {isFetching ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+            Tentar novamente
+          </Button>
         </div>
       ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum usuário encontrado.</p>
