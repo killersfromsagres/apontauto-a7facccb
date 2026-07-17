@@ -1233,7 +1233,19 @@ function DashboardView({
                   height={54}
                 />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    color: "#111827",
+                    fontSize: 12,
+                    boxShadow: "0 8px 24px -6px rgba(0,0,0,0.15)",
+                  }}
+                  labelStyle={{ color: "#111827", fontWeight: 600 }}
+                  itemStyle={{ color: "#111827" }}
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                />
                 <Legend />
                 {(movView === "ambos" || movView === "saida") && (
                   <Bar dataKey="saidas" name="Saídas" fill="url(#gSai)" radius={[4, 4, 0, 0]} />
