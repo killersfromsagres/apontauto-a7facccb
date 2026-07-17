@@ -246,7 +246,7 @@ function BackorderPage() {
       // Preserva "finalizado" local (nunca reabrir automaticamente por reimport)
       const { data: existing } = await supabase
         .from("backorder_os")
-        .select("os, finalizado, atividade_manual, atividade, equipe, data_finalizacao");
+        .select("os, finalizado, atividade_manual, atividade, equipe, data_finalizacao, nome, ativo, predio, andar, espaco, data_solicitacao, termino_sla, outros, criticidade");
       const existMap = new Map<string, any>();
       (existing ?? []).forEach((e: any) => existMap.set(e.os, e));
 
@@ -269,13 +269,31 @@ function BackorderPage() {
           : prev?.atividade_manual
             ? prev.equipe
             : r.equipe;
-        toUpsert.push({
-          ...r,
-          atividade: atividade as Categoria,
-          equipe,
-        });
-        if (prev) atualizadas++;
-        else novas++;
+        const next = { ...r, atividade: atividade as Categoria, equipe };
+        if (prev) {
+          const sameISO = (a?: string | null, b?: string | null) =>
+            (a ? new Date(a).toISOString() : "") === (b ? new Date(b).toISOString() : "");
+          const identical =
+            prev.nome === next.nome &&
+            prev.ativo === next.ativo &&
+            prev.predio === next.predio &&
+            prev.andar === next.andar &&
+            prev.espaco === next.espaco &&
+            prev.atividade === next.atividade &&
+            prev.equipe === next.equipe &&
+            prev.outros === next.outros &&
+            (prev.criticidade ?? "") === (next.criticidade ?? "") &&
+            sameISO(prev.data_solicitacao, next.data_solicitacao) &&
+            sameISO(prev.termino_sla, next.termino_sla);
+          if (identical) {
+            ignoradas++;
+            continue;
+          }
+          atualizadas++;
+        } else {
+          novas++;
+        }
+        toUpsert.push(next);
       }
 
       // Upsert em lotes de 500
