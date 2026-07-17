@@ -326,6 +326,11 @@ function ClimaTempoPage() {
           </div>
         </GlassCard>
 
+        {/* Próximos dias úteis — rolagem horizontal */}
+        <WeatherForecastStrip />
+
+
+
         <div className="text-right text-[11px] text-muted-foreground">
           Última atualização:{" "}
           {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} · Fonte: Open-Meteo
