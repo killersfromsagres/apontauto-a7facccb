@@ -52,6 +52,7 @@ import {
   removerEvidencia,
   type ChuvaEvidencia,
 } from "@/lib/taludes-programacao/evidencias";
+import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
 
 export const Route = createFileRoute("/_authenticated/programacao-taludes")({
   head: () => ({
