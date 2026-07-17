@@ -1001,7 +1001,7 @@ function TaludesPage() {
                             key={t.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (drawingNumero || editingPolygonFor) return;
+                              if (isDrawing) return;
                               if (selectedTaludeId === t.id) {
                                 cycleStatus(t);
                               } else {
