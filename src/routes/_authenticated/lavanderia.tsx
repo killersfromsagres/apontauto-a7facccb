@@ -1511,15 +1511,15 @@ function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] })
         </Select>
       </div>
 
-      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome / Item</TableHead>
-              <TableHead>Matrícula</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Setor</TableHead>
-              <TableHead className="text-right">Códigos de barras</TableHead>
+              <TableHead className="text-center">Nome / Item</TableHead>
+              <TableHead className="text-center">Matrícula</TableHead>
+              <TableHead className="text-center">Categoria</TableHead>
+              <TableHead className="text-center">Setor</TableHead>
+              <TableHead className="text-center">Códigos de barras</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1530,23 +1530,32 @@ function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] })
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((r) => (
-                <TableRow key={r.matricula}>
-                  <TableCell className="font-medium">{r.nome}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {r.categoria === "colaborador" ? r.matricula : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
-                    >
-                      {CAT_LABEL[r.categoria]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm">{r.setor ?? "—"}</TableCell>
-                  <TableCell className="text-right font-semibold">{r.totalPecas}</TableCell>
-                </TableRow>
-              ))
+              filtered.map((r) => {
+                let displayNome = r.nome;
+                let displayMat: string = r.categoria === "colaborador" ? r.matricula : "—";
+                if (r.categoria !== "colaborador") {
+                  const m = r.nome.match(/^(.*)\s[-–—]\s([^-–—]+)\s*$/);
+                  if (m) {
+                    displayNome = m[1].trim();
+                    displayMat = m[2].trim();
+                  }
+                }
+                return (
+                  <TableRow key={r.matricula}>
+                    <TableCell className="text-center font-medium">{displayNome}</TableCell>
+                    <TableCell className="text-center font-mono text-xs">{displayMat}</TableCell>
+                    <TableCell className="text-center">
+                      <span
+                        className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
+                      >
+                        {CAT_LABEL[r.categoria]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center text-sm">{r.setor ?? "—"}</TableCell>
+                    <TableCell className="text-center font-semibold">{r.totalPecas}</TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
