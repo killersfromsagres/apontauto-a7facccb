@@ -1186,6 +1186,114 @@ function DashboardView({
           <StatCard label="Fora do giro (>7d)" value={foraGiroCount} tone="red" />
         </div>
 
+        <GlassCard>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold">Movimentações no período · MBR</h3>
+              <p className="text-xs text-muted-foreground">
+                Entradas e saídas registradas — selecione para comparar ou isolar cada fluxo.
+              </p>
+            </div>
+            <div className="flex gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+              {(["ambos", "saida", "entrada"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setMovView(v)}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                    movView === v
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v === "ambos" ? "Ambos" : v === "saida" ? "Saídas" : "Entradas"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={movTimeline} margin={{ top: 8, right: 16, left: 0, bottom: 32 }}>
+                <defs>
+                  <linearGradient id="gSai" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.55} />
+                  </linearGradient>
+                  <linearGradient id="gEnt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.55} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  interval="preserveStartEnd"
+                  angle={-30}
+                  textAnchor="end"
+                  height={54}
+                />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                {(movView === "ambos" || movView === "saida") && (
+                  <Bar dataKey="saidas" name="Saídas" fill="url(#gSai)" radius={[4, 4, 0, 0]} />
+                )}
+                {(movView === "ambos" || movView === "entrada") && (
+                  <Bar dataKey="entradas" name="Entradas" fill="url(#gEnt)" radius={[4, 4, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria · MBR</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Comparativo consolidado entre Colaborador, Reserva, Visitante e Avulso.
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {porCategoria.map((c, i) => (
+              <div
+                key={c.categoria}
+                className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/40 p-3"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                  />
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {c.categoria}
+                  </div>
+                </div>
+                <div className="mt-1 text-2xl font-bold">{c.giro}</div>
+                <div className="text-[11px] text-muted-foreground">ciclos concluídos</div>
+                <div className="mt-2 flex items-center justify-between text-xs">
+                  <span className="text-amber-600 dark:text-amber-400">↑ {c.saidas}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">↓ {c.entradas}</span>
+                  <span className="text-muted-foreground">Aberto {c.emAberto}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porCategoria} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="categoria" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="saidas" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="entradas" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="giro" name="Giro (ciclos)" fill="#2B3095" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+
+
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GlassCard>
             <h3 className="mb-2 text-sm font-semibold">Giro por colaborador (top 10)</h3>
