@@ -136,6 +136,17 @@ function LavanderiaPage() {
   const matrizInputRef = useRef<HTMLInputElement>(null);
   const movInputRef = useRef<HTMLInputElement>(null);
 
+  interface ValidationIssue {
+    level: "error" | "warning" | "info";
+    message: string;
+  }
+  interface ValidationReport {
+    origem: "Matriz" | "Movimentação";
+    resumo: string[];
+    issues: ValidationIssue[];
+  }
+  const [report, setReport] = useState<ValidationReport | null>(null);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     const [c, p, e] = await Promise.all([
