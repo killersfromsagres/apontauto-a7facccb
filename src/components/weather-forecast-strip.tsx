@@ -141,7 +141,7 @@ export function WeatherForecastStrip({
 
         <div
           ref={scrollRef}
-          className="scrollbar-none flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
+          className="scrollbar-none flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pt-4 pb-2"
           style={{ scrollbarWidth: "none" }}
         >
           {q.isLoading &&
