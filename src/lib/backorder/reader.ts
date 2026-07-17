@@ -112,8 +112,9 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       servico,
     });
 
-    const { predio, andar, espaco } = resolveAtivo(assets, ativo);
+    const { predio, andar, espaco, found } = resolveAtivoTree(assets, ativo);
     const finalizado = /FINAL|CONCLU|ENCERR/.test(norm(status));
+    const revisao_manual = (!!ativo && !found) || atividade === "Outros";
 
     out.push({
       os,
@@ -130,6 +131,7 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       criticidade,
       finalizado,
       status_origem: status,
+      revisao_manual,
     });
 
   }
