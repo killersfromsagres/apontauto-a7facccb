@@ -488,6 +488,9 @@ function TaludesPage() {
   const cancelDrawing = () => {
     setDrawingPoints([]);
     setDrawingNumero("");
+    setDrawingNewMode(false);
+    setNumberPromptOpen(false);
+    setPendingNumber("");
     setEditingPolygonFor(null);
   };
 
