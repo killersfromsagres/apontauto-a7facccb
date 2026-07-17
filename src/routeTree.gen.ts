@@ -28,6 +28,7 @@ import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -131,6 +132,11 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedClimaTempoRoute = AuthenticatedClimaTempoRouteImport.update({
+  id: '/clima-tempo',
+  path: '/clima-tempo',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
   id: '/backorder',
   path: '/backorder',
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -180,6 +187,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -205,6 +213,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
+  '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/apontamentos'
     | '/backorder'
+    | '/clima-tempo'
     | '/configuracoes'
     | '/corretiva'
     | '/lavanderia'
@@ -253,6 +263,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/apontamentos'
     | '/backorder'
+    | '/clima-tempo'
     | '/configuracoes'
     | '/corretiva'
     | '/lavanderia'
@@ -277,6 +288,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/_authenticated/apontamentos'
     | '/_authenticated/backorder'
+    | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
     | '/_authenticated/lavanderia'
@@ -438,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/clima-tempo': {
+      id: '/_authenticated/clima-tempo'
+      path: '/clima-tempo'
+      fullPath: '/clima-tempo'
+      preLoaderRoute: typeof AuthenticatedClimaTempoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/backorder': {
       id: '/_authenticated/backorder'
       path: '/backorder'
@@ -465,6 +484,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
+  AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
@@ -482,6 +502,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
+  AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,

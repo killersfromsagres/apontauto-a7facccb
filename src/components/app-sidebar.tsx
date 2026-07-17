@@ -13,6 +13,7 @@ import {
   PackageX,
   Shirt,
   HardHat,
+  CloudSun,
 } from "lucide-react";
 import {
   Sidebar,
