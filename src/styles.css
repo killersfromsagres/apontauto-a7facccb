@@ -1254,10 +1254,14 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 .lavanderia-scroll-scope [class*="overflow-y-auto"],
 .lavanderia-scroll-scope [class*="overflow-x-auto"] {
   scroll-behavior: smooth;
-  overscroll-behavior: contain;
+  /* overscroll-behavior: auto — permite que a roda do mouse continue
+     rolando a página quando o container interno chega ao fim ou não
+     tem conteúdo suficiente para rolar. */
+  overscroll-behavior: auto;
   scrollbar-color: #10b981 color-mix(in oklab, #10b981 10%, transparent);
   scrollbar-width: thin;
 }
+
 .lavanderia-scroll::-webkit-scrollbar,
 .lavanderia-scroll-scope *::-webkit-scrollbar {
   width: 10px;
