@@ -38,6 +38,7 @@ const COLUMNS: { key: keyof SstExportRow | "status" | "dias"; header: string; wi
 ];
 
 export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-aso.xlsx") {
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto — SST";
   const ws = wb.addWorksheet("Controle ASO", {
