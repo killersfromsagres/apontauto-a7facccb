@@ -6,7 +6,9 @@ import { getMyAccess } from "@/lib/users.functions";
 
 export type MyAccess = { isAdmin: boolean; allowed: string[] | null };
 
-const EMPTY: MyAccess = { isAdmin: false, allowed: null };
+// Falha fechada: `null` significa acesso total, então estados sem sessão,
+// erro de rede ou token ainda não anexado não podem cair em "ver tudo".
+const EMPTY: MyAccess = { isAdmin: false, allowed: [] };
 
 // Inscrição única global no auth: em vez de cada componente que usa
 // `useMyAccess` (sidebar, header, dashboards…) registrar seu próprio
