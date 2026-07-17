@@ -45,25 +45,18 @@ function getAuthEnv() {
   return { url, publishableKey };
 }
 
-function createUsersAdminClient() {
-  const { url } = getAuthEnv();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!serviceRoleKey) {
+async function createUsersAdminClient() {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Trigger the proxy to instantiate now so a missing env var throws here.
+    void supabaseAdmin.auth;
+    return supabaseAdmin;
+  } catch (err) {
+    console.error("[users.functions] admin client unavailable", err);
     throw new Error("Configuração administrativa do backend indisponível.");
   }
-
-  return createClient<Database>(url, serviceRoleKey, {
-    global: {
-      fetch: createSupabaseFetch(serviceRoleKey),
-    },
-    auth: {
-      storage: undefined,
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
 }
+
 
 const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const { url, publishableKey } = getAuthEnv();
