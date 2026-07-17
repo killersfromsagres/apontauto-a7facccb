@@ -45,25 +45,18 @@ function getAuthEnv() {
   return { url, publishableKey };
 }
 
-function createUsersAdminClient() {
-  const { url } = getAuthEnv();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!serviceRoleKey) {
+async function createUsersAdminClient() {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Trigger the proxy to instantiate now so a missing env var throws here.
+    void supabaseAdmin.auth;
+    return supabaseAdmin;
+  } catch (err) {
+    console.error("[users.functions] admin client unavailable", err);
     throw new Error("Configuração administrativa do backend indisponível.");
   }
-
-  return createClient<Database>(url, serviceRoleKey, {
-    global: {
-      fetch: createSupabaseFetch(serviceRoleKey),
-    },
-    auth: {
-      storage: undefined,
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
 }
+
 
 const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const { url, publishableKey } = getAuthEnv();
@@ -215,7 +208,7 @@ export const createAppUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
 
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: loginToEmail(data.login),
       password: data.password,
@@ -241,7 +234,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
   .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
 
     const { data: authList, error: authErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
@@ -300,7 +293,7 @@ export const deleteAppUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("Você não pode excluir sua própria conta.");
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -319,7 +312,7 @@ export const setUserBanned = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("Você não pode desativar sua própria conta.");
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.banned ? "876000h" : "none",
     } as any);
@@ -339,7 +332,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
     const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (isOwnerAdminEmail(target.user?.email)) {
       throw new Error("O administrador principal não pode perder o perfil admin.");
@@ -371,7 +364,7 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const supabaseAdmin = createUsersAdminClient();
+    const supabaseAdmin = await createUsersAdminClient();
     const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (isOwnerAdminEmail(target.user?.email)) {
       return { ok: true };
