@@ -776,7 +776,96 @@ function BackorderPage() {
         .from("backorder_atividade_override")
         .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
     }
-    setRows((prev) => prev.map((x) => (x.os === r.os ? { ...x, ...next } : x)));
+
+    // ── Aprendizado automático a partir de correções manuais ───────────
+    const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
+    const wasReview = r.revisao_manual;
+
+    // Local aprendido: se algum dos campos de local foi editado manualmente
+    // (ou recalculado a partir de novo ativo) e o chamado estava em revisão
+    // ou o ativo não existe na árvore.
+    const locChanged =
+      (next.predio !== undefined && next.predio !== r.predio) ||
+      (next.andar !== undefined && next.andar !== r.andar) ||
+      (next.espaco !== undefined && next.espaco !== r.espaco);
+    const tree = ativoKey ? resolveAtivoTree(assetsMap, ativoKey) : { predio: "", andar: "", espaco: "", found: false };
+    const willBePredio = next.predio ?? r.predio;
+    const willBeAndar = next.andar ?? r.andar;
+    const willBeEspaco = next.espaco ?? r.espaco;
+    const treeMismatch = !tree.found ||
+      tree.predio !== willBePredio ||
+      tree.andar !== willBeAndar ||
+      tree.espaco !== willBeEspaco;
+
+    if (ativoKey && locChanged && (wasReview || treeMismatch) && (willBePredio || willBeAndar || willBeEspaco)) {
+      const { data: user } = await supabase.auth.getUser();
+      const { error: lerr } = await supabase
+        .from("regras_aprendidas_localizacao")
+        .insert({
+          codigo_ativo: ativoKey,
+          predio: willBePredio ?? "",
+          andar: willBeAndar ?? "",
+          espaco: willBeEspaco ?? "",
+          origem_chamado_os: r.os,
+          criado_por: user.user?.id ?? null,
+          ativo: true,
+        });
+      if (!lerr) {
+        // Aplica em cascata a outros chamados com o mesmo ativo
+        const { data: siblings } = await supabase
+          .from("backorder_os")
+          .select("os")
+          .eq("ativo", ativoKey)
+          .neq("os", r.os)
+          .eq("finalizado", false);
+        const others = ((siblings ?? []) as Array<{ os: string }>).map((s) => s.os);
+        if (others.length > 0) {
+          await supabase
+            .from("backorder_os")
+            .update({
+              predio: willBePredio ?? "",
+              andar: willBeAndar ?? "",
+              espaco: willBeEspaco ?? "",
+              revisao_manual: false,
+              origem_predio_andar_espaco: "regra_aprendida",
+            } as never)
+            .in("os", others);
+        }
+        void loadLearnedRules();
+        toast.success(`Regra aprendida para ativo ${ativoKey}${others.length ? ` (aplicada a +${others.length} chamado(s))` : ""}`);
+      }
+    }
+
+    // Equipe aprendida por ativo
+    if (patch.atividade && patch.atividade !== r.atividade && ativoKey) {
+      const { data: user } = await supabase.auth.getUser();
+      await supabase.from("regras_aprendidas_equipe").insert({
+        codigo_ativo: ativoKey,
+        equipe: patch.atividade,
+        origem_chamado_os: r.os,
+        criado_por: user.user?.id ?? null,
+        ativo: true,
+      });
+      void loadLearnedRules();
+    }
+
+    // Marca chamado como resolvido (sai da revisão) quando local + equipe estão preenchidos
+    const nowHasLoc = !!(willBePredio || willBeAndar || willBeEspaco);
+    if (r.revisao_manual && nowHasLoc) {
+      await supabase.from("backorder_os").update({ revisao_manual: false } as never).eq("os", r.os);
+    }
+
+    setRows((prev) =>
+      prev.map((x) =>
+        x.os === r.os
+          ? {
+              ...x,
+              ...next,
+              revisao_manual: r.revisao_manual && nowHasLoc ? false : x.revisao_manual,
+            }
+          : x,
+      ),
+    );
     toast.success("Chamado atualizado");
     return true;
   }
