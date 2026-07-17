@@ -17,7 +17,11 @@ import {
   ClipboardCheck,
   HardHat,
   ExternalLink,
+  History,
+  Lock,
 } from "lucide-react";
+
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -330,12 +334,31 @@ function MiniMetric({
  * ============================================================ */
 const PT_SETTING_ID = "pt_taludes_liberada";
 
+type PTHistoricoItem = {
+  liberada_em: string;          // ISO — imutável, gerado no ato do registro
+  registrado_em: string;        // ISO — igual a liberada_em (auditoria)
+  registrado_por: string | null;
+  observacao?: string | null;
+};
+
 type PTData = {
-  liberada_em: string | null;
+  liberada_em: string | null;              // última liberação (espelha o último item do histórico)
   observacao?: string | null;
   atualizado_em?: string;
   atualizado_por?: string | null;
+  historico?: PTHistoricoItem[];
 };
+
+function fmtDataHora(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function PTCard() {
   const qc = useQueryClient();
@@ -348,54 +371,62 @@ function PTCard() {
         .eq("id", PT_SETTING_ID)
         .maybeSingle();
       if (error) throw error;
-      return (data?.data as PTData | undefined) ?? { liberada_em: null };
+      return (data?.data as PTData | undefined) ?? { liberada_em: null, historico: [] };
     },
     staleTime: 60_000,
   });
 
-  const [editing, setEditing] = useState(false);
-  const [valor, setValor] = useState<string>("");
   const [obs, setObs] = useState<string>("");
+  const [confirmando, setConfirmando] = useState(false);
 
-  useEffect(() => {
-    if (ptQ.data && !editing) {
-      setValor(ptQ.data.liberada_em ?? "");
-      setObs(ptQ.data.observacao ?? "");
-    }
-  }, [ptQ.data, editing]);
-
-  const salvarMut = useMutation({
-    mutationFn: async (payload: PTData) => {
+  const registrarMut = useMutation({
+    mutationFn: async (observacao: string | null) => {
       const { data: u } = await supabase.auth.getUser();
-      const record = {
-        id: PT_SETTING_ID,
-        data: {
-          ...payload,
-          atualizado_em: new Date().toISOString(),
-          atualizado_por: u.user?.email ?? u.user?.id ?? null,
-        } as unknown as never,
+      const quem = u.user?.email ?? u.user?.id ?? null;
+      const agora = new Date().toISOString();
+
+      // Recarrega o registro mais recente para evitar sobrescrever histórico concorrente
+      const { data: atual, error: readErr } = await supabase
+        .from("app_settings")
+        .select("data")
+        .eq("id", PT_SETTING_ID)
+        .maybeSingle();
+      if (readErr) throw readErr;
+
+      const anterior = (atual?.data as PTData | undefined) ?? { liberada_em: null, historico: [] };
+      const novoItem: PTHistoricoItem = {
+        liberada_em: agora,
+        registrado_em: agora,
+        registrado_por: quem,
+        observacao: observacao || null,
       };
-      const { error } = await supabase.from("app_settings").upsert(record);
+      const historico = [...(anterior.historico ?? []), novoItem];
+
+      const payload: PTData = {
+        liberada_em: agora,
+        observacao: observacao || null,
+        atualizado_em: agora,
+        atualizado_por: quem,
+        historico,
+      };
+
+      const { error } = await supabase
+        .from("app_settings")
+        .upsert({ id: PT_SETTING_ID, data: payload as unknown as never });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pt-taludes"] });
-      toast.success("PT atualizada");
-      setEditing(false);
+      toast.success("PT liberada — registro imutável salvo");
+      setObs("");
+      setConfirmando(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const liberada = ptQ.data?.liberada_em;
-  const liberadaFmt = liberada
-    ? new Date(liberada).toLocaleString("pt-BR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
+  const liberadaFmt = fmtDataHora(ptQ.data?.liberada_em);
+  const historico = ptQ.data?.historico ?? [];
+  const totalRegistros = historico.length;
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/5 via-transparent to-transparent px-4 py-3 backdrop-blur-sm transition-all hover:border-emerald-500/40">
@@ -408,6 +439,11 @@ function PTCard() {
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <ClipboardCheck className="h-3 w-3" />
               Permissão de Trabalho (PT)
+              {totalRegistros > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/60 px-1.5 py-[1px] text-[9px] font-medium text-muted-foreground">
+                  <Lock className="h-2.5 w-2.5" /> imutável
+                </span>
+              )}
             </div>
             <div className="mt-0.5 flex items-baseline gap-2">
               {liberadaFmt ? (
@@ -419,11 +455,11 @@ function PTCard() {
                 </>
               ) : (
                 <span className="text-sm italic text-muted-foreground">
-                  Ainda não liberada — registre a data e o horário.
+                  Nenhuma liberação registrada — a data e hora serão capturadas automaticamente.
                 </span>
               )}
             </div>
-            {ptQ.data?.observacao && !editing && (
+            {ptQ.data?.observacao && (
               <div className="mt-0.5 truncate text-xs text-muted-foreground">
                 {ptQ.data.observacao}
               </div>
@@ -431,31 +467,73 @@ function PTCard() {
           </div>
         </div>
 
-        {!editing && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="shrink-0 text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setEditing(true)}
-          >
-            {liberada ? "Alterar" : "Registrar"}
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {totalRegistros > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  <History className="h-3.5 w-3.5" />
+                  Histórico
+                  <span className="rounded-full bg-muted px-1.5 text-[10px] font-medium">
+                    {totalRegistros}
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="border-b border-border/40 px-3 py-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Histórico de liberações
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">
+                    Registros somente-leitura, ordenados do mais recente
+                  </div>
+                </div>
+                <div className="max-h-72 overflow-y-auto">
+                  {[...historico].reverse().map((h, i) => (
+                    <div
+                      key={`${h.registrado_em}-${i}`}
+                      className="flex flex-col gap-0.5 border-b border-border/30 px-3 py-2 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-medium text-foreground">
+                          {fmtDataHora(h.liberada_em)}
+                        </span>
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      </div>
+                      {h.registrado_por && (
+                        <span className="truncate text-[10px] text-muted-foreground">
+                          por {h.registrado_por}
+                        </span>
+                      )}
+                      {h.observacao && (
+                        <span className="text-[11px] text-muted-foreground">{h.observacao}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {!confirmando ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setConfirmando(true)}
+            >
+              Registrar liberação
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      {editing && (
-        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <div>
-            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Data e horário
-            </Label>
-            <Input
-              type="datetime-local"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              className="h-9"
-            />
-          </div>
+      {confirmando && (
+        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
               Observação (opcional)
@@ -465,32 +543,30 @@ function PTCard() {
               onChange={(e) => setObs(e.target.value)}
               placeholder="Ex.: PT nº 123 — equipe Alfa"
               className="h-9"
+              autoFocus
             />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              A data e o horário serão registrados agora e não poderão ser alterados.
+            </div>
           </div>
           <div className="flex items-end gap-2">
             <Button
               size="sm"
               variant="ghost"
               onClick={() => {
-                setEditing(false);
-                setValor(ptQ.data?.liberada_em ?? "");
-                setObs(ptQ.data?.observacao ?? "");
+                setConfirmando(false);
+                setObs("");
               }}
-              disabled={salvarMut.isPending}
+              disabled={registrarMut.isPending}
             >
               Cancelar
             </Button>
             <Button
               size="sm"
-              onClick={() =>
-                salvarMut.mutate({
-                  liberada_em: valor || null,
-                  observacao: obs || null,
-                })
-              }
-              disabled={salvarMut.isPending}
+              onClick={() => registrarMut.mutate(obs.trim() || null)}
+              disabled={registrarMut.isPending}
             >
-              Salvar
+              {registrarMut.isPending ? "Registrando…" : "Liberar agora"}
             </Button>
           </div>
         </div>
