@@ -14,7 +14,8 @@ export interface BackorderRow {
   equipe: string;
   termino_sla: string | null;
   data_solicitacao: string; // ISO
-  outros: string;
+  outros: string; // Solicitante (Denominação do Solicitante)
+  criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   status_origem: string;
 }
