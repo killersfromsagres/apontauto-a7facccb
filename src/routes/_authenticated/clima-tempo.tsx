@@ -181,10 +181,15 @@ function ClimaTempoPage() {
                 <div className="text-sm text-muted-foreground">{currentInfo.label}</div>
               </div>
             </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Sensação {current ? `${Math.round(current.apparent_temperature)}°` : "—"}
+            </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <Metric icon={<Cloud className="h-3.5 w-3.5" />} label="Nuvens" value={current ? `${Math.round(current.cloud_cover)}%` : "—"} />
-              <Metric icon={<Wind className="h-3.5 w-3.5" />} label="Vento" value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"} />
+              <Metric icon={<Thermometer className="h-3.5 w-3.5" />} label="Sensação" value={current ? `${Math.round(current.apparent_temperature)}°` : "—"} />
               <Metric icon={<Droplets className="h-3.5 w-3.5" />} label="Umidade" value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"} />
+              <Metric icon={<Wind className="h-3.5 w-3.5" />} label="Vento" value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"} />
+              <Metric icon={<Wind className="h-3.5 w-3.5" />} label="Rajadas" value={current ? `${current.wind_gusts_10m.toFixed(1)} km/h` : "—"} />
+              <Metric icon={<Cloud className="h-3.5 w-3.5" />} label="Nuvens" value={current ? `${Math.round(current.cloud_cover)}%` : "—"} />
               <Metric icon={<CloudRain className="h-3.5 w-3.5" />} label="Chuva atual" value={current ? `${current.rain.toFixed(1)} mm` : "—"} />
             </div>
           </GlassCard>
