@@ -71,12 +71,12 @@ const teamLoad = [
 
 // Ícones semânticos: água (abastecimento), borrifador (limpeza), árvore (jardinagem)
 const modules = [
-  { title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-400" },
-  { title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-400" },
-  { title: "Abastecimento", to: "/apontamentos", icon: Droplets, tint: "text-cyan-400" },
-  { title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
-  { title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
-  { title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
+  { key: "preventiva", title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-400" },
+  { key: "corretiva", title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-400" },
+  { key: "apontamentos", title: "Abastecimento", to: "/apontamentos", icon: Droplets, tint: "text-cyan-400" },
+  { key: "apontamentos", title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
+  { key: "apontamentos", title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
+  { key: "painel-legal", title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
 ];
 
 function Dashboard() {
