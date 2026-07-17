@@ -173,7 +173,7 @@ export function WeatherForecastStrip({
                 )}
               >
                 {isToday && (
-                  <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow">
+                  <span className="absolute right-2 top-2 z-10 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow">
                     Hoje
                   </span>
                 )}
