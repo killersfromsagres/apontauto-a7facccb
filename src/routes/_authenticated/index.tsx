@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Progress } from "@/components/ui/progress";
+import { useMyAccess } from "@/hooks/use-my-access";
 
 const ProductivityChart = lazy(() => import("@/components/productivity-chart"));
 
