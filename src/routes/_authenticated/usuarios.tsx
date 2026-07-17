@@ -316,6 +316,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [localAllowed, setLocalAllowed] = useState<string[] | null>(user.allowedMenus);
+  const isAdminUser = user.role === "admin";
   const allAllowed = localAllowed === null;
 
   const banMut = useMutation({
@@ -425,6 +426,11 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
 
       {expanded && (
         <div className="mt-4 space-y-3 rounded-lg border border-border/50 bg-background/40 p-3">
+          {isAdminUser && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              Administradores sempre mantêm acesso total, incluindo o menu Usuários.
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Itens de menu permitidos
@@ -432,6 +438,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             <label className="flex items-center gap-2 text-xs">
               <Checkbox
                 checked={allAllowed}
+                disabled={isAdminUser}
                 onCheckedChange={(v) => setLocalAllowed(v ? null : [...MENU_KEYS])}
               />
               Acesso total (todos os itens)
@@ -449,7 +456,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
                 >
                   <Checkbox
                     checked={checked}
-                    disabled={allAllowed}
+                    disabled={allAllowed || isAdminUser}
                     onCheckedChange={(v) => toggleMenu(key, Boolean(v))}
                   />
                   <span className="truncate">{MENU_LABELS[key]}</span>
@@ -458,7 +465,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             })}
           </div>
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => menusMut.mutate()} disabled={menusMut.isPending}>
+            <Button size="sm" onClick={() => menusMut.mutate()} disabled={menusMut.isPending || isAdminUser}>
               {menusMut.isPending ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : (

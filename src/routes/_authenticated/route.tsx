@@ -45,12 +45,12 @@ function AccessGuard() {
       return;
     }
 
-    // Sem restrição customizada → acesso total
+    // Sem restrição customizada → acesso total somente após resposta válida do backend.
     if (!access.allowed) return;
 
     if (!access.allowed.includes(key)) {
       toast.error("Você não tem permissão para acessar essa página.");
-      const fallback = access.allowed[0];
+      const fallback = access.allowed.find((item) => item !== "usuarios");
       const target =
         fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
       navigate({ to: target, replace: true });
