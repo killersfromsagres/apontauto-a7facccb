@@ -199,42 +199,56 @@ function LavanderiaPage() {
     setImporting(true);
     try {
       const rows: MatrizRow[] = await readMatrizFile(file);
+      const issues: ValidationIssue[] = [];
       if (rows.length === 0) {
         toast.warning("Nenhuma linha reconhecida na Matriz.");
+        setReport({
+          origem: "Matriz",
+          resumo: ["A planilha não continha linhas com colaborador e código de barras válidos."],
+          issues: [{ level: "error", message: "Verifique se a aba correta contém as colunas COLABORADOR e CODIGO BARRAS." }],
+        });
         return;
       }
 
-      // Validação: agrupa por matrícula e detecta códigos duplicados / vazios.
-      const colabMap = new Map<
-        string,
-        { matricula: string; nome: string; setor: string | null }
-      >();
-      const codigoSeen = new Map<string, string>(); // codigo -> matricula
+      const colabMap = new Map<string, { matricula: string; nome: string; setor: string | null }>();
+      const codigoSeen = new Map<string, string>();
+      const nomeParaMats = new Map<string, Set<string>>();
       const pecaRows: Array<{ codigo: string; matricula: string; setor: string | null }> = [];
       const duplicados: string[] = [];
-      const contagemCat: Record<string, number> = {
-        colaborador: 0,
-        reserva: 0,
-        visitante: 0,
-        avulso: 0,
-      };
+      const contagemCat: Record<string, number> = { colaborador: 0, reserva: 0, visitante: 0, avulso: 0 };
 
       for (const r of rows) {
+        // integridade básica
+        if (!r.nome?.trim() || !r.codigo?.trim() || !r.matricula?.trim()) {
+          issues.push({ level: "warning", message: `Linha ignorada por dados incompletos (codigo="${r.codigo}", nome="${r.nome}").` });
+          continue;
+        }
+        if (!/^[A-Za-z0-9\-_.]+$/.test(r.codigo)) {
+          issues.push({ level: "warning", message: `Código com caracteres suspeitos: "${r.codigo}".` });
+        }
+        const nomeK = r.nome.trim().toUpperCase();
+        const set = nomeParaMats.get(nomeK) ?? new Set<string>();
+        set.add(r.matricula);
+        nomeParaMats.set(nomeK, set);
+
         if (!colabMap.has(r.matricula)) {
-          colabMap.set(r.matricula, {
-            matricula: r.matricula,
-            nome: r.nome,
-            setor: r.setor,
-          });
+          colabMap.set(r.matricula, { matricula: r.matricula, nome: r.nome, setor: r.setor });
           contagemCat[r.categoria] = (contagemCat[r.categoria] ?? 0) + 1;
         }
         const prev = codigoSeen.get(r.codigo);
         if (prev && prev !== r.matricula) {
           duplicados.push(r.codigo);
+          issues.push({ level: "warning", message: `Código "${r.codigo}" aparece para matrículas diferentes (${prev} e ${r.matricula}). Mantido o primeiro.` });
           continue;
         }
         codigoSeen.set(r.codigo, r.matricula);
         pecaRows.push({ codigo: r.codigo, matricula: r.matricula, setor: r.setor });
+      }
+
+      for (const [nome, mats] of nomeParaMats) {
+        if (mats.size > 1) {
+          issues.push({ level: "info", message: `"${nome}" aparece com ${mats.size} matrículas: ${Array.from(mats).join(", ")}.` });
+        }
       }
 
       const colabPayload = Array.from(colabMap.values());
@@ -251,10 +265,13 @@ function LavanderiaPage() {
         if (error) throw error;
       }
 
-      toast.success(
-        `Matriz importada · ${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s) · ${pecaRows.length} código(s) de barras${duplicados.length ? ` · ${duplicados.length} código(s) duplicado(s) ignorado(s)` : ""}.`,
-        { duration: 6000 },
-      );
+      const resumo = [
+        `${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s).`,
+        `${pecaRows.length} código(s) de barras cadastrado(s).`,
+        duplicados.length ? `${duplicados.length} código(s) duplicado(s) ignorado(s).` : "Sem códigos duplicados.",
+      ];
+      toast.success(`Matriz importada · ${resumo[0]}`, { duration: 6000 });
+      setReport({ origem: "Matriz", resumo, issues });
       await refresh();
     } catch (e) {
       console.error(e);
@@ -272,10 +289,25 @@ function LavanderiaPage() {
         const evs = await readMovimentacaoFile(f);
         all.push(...evs);
       }
+      const issues: ValidationIssue[] = [];
       if (all.length === 0) {
         toast.warning("Nenhum evento reconhecido nos arquivos.");
+        setReport({
+          origem: "Movimentação",
+          resumo: ["Nenhum evento reconhecido."],
+          issues: [{ level: "error", message: "Confira se as colunas estão em pares Saída/Entrada com data na linha 2." }],
+        });
         return;
       }
+
+      // Validação de datas futuras e códigos inválidos
+      const hoje = new Date().toISOString().slice(0, 10);
+      let futuros = 0;
+      for (const e of all) {
+        if (e.data > hoje) futuros++;
+      }
+      if (futuros) issues.push({ level: "warning", message: `${futuros} evento(s) com data futura em relação a hoje.` });
+
       const seen = new Set<string>();
       const dedup = all.filter((e) => {
         const k = `${e.codigo}|${e.tipo}|${e.data}`;
@@ -283,17 +315,37 @@ function LavanderiaPage() {
         seen.add(k);
         return true;
       });
+      const duplicadosArq = all.length - dedup.length;
+      if (duplicadosArq) issues.push({ level: "info", message: `${duplicadosArq} evento(s) duplicado(s) dentro dos arquivos foram unificados.` });
+
+      // Sequência lógica por código (2 saídas seguidas sem entrada)
+      const porCodigo = new Map<string, EventoRow[]>();
+      for (const e of dedup) {
+        const arr = porCodigo.get(e.codigo) ?? [];
+        arr.push(e);
+        porCodigo.set(e.codigo, arr);
+      }
+      let seqQuebrada = 0;
+      for (const [, arr] of porCodigo) {
+        arr.sort((a, b) => a.data.localeCompare(b.data));
+        let last: "saida" | "entrada" | null = null;
+        for (const e of arr) {
+          if (e.tipo === last) seqQuebrada++;
+          last = e.tipo;
+        }
+      }
+      if (seqQuebrada) issues.push({ level: "info", message: `${seqQuebrada} movimento(s) sem par correspondente (duas saídas ou duas entradas seguidas).` });
 
       const pecasSet = new Set(pecas.map((p) => p.codigo));
-      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter(
-        (c) => !pecasSet.has(c),
-      );
+      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter((c) => !pecasSet.has(c));
       if (novasPecas.length) {
+        issues.push({
+          level: "warning",
+          message: `${novasPecas.length} código(s) não estavam na Matriz e foram cadastrados sem colaborador: ${novasPecas.slice(0, 10).join(", ")}${novasPecas.length > 10 ? "…" : ""}.`,
+        });
         for (let i = 0; i < novasPecas.length; i += 500) {
           const chunk = novasPecas.slice(i, i + 500).map((codigo) => ({ codigo }));
-          const { error } = await supabase
-            .from("lavanderia_pecas")
-            .upsert(chunk, { onConflict: "codigo" });
+          const { error } = await supabase.from("lavanderia_pecas").upsert(chunk, { onConflict: "codigo" });
           if (error) throw error;
         }
       }
@@ -310,10 +362,14 @@ function LavanderiaPage() {
         inseridos += ins;
         ignorados += chunk.length - ins;
       }
-      toast.success(
-        `Movimentação importada · ${inseridos} evento(s) novo(s), ${ignorados} duplicado(s) ignorado(s)${novasPecas.length ? ` · ${novasPecas.length} código(s) novo(s) cadastrado(s)` : ""}.`,
-        { duration: 6000 },
-      );
+
+      const resumo = [
+        `${inseridos} evento(s) novo(s) inserido(s).`,
+        `${ignorados} evento(s) já existiam e foram ignorados.`,
+        novasPecas.length ? `${novasPecas.length} código(s) novo(s) cadastrado(s).` : "Todos os códigos já constam na Matriz.",
+      ];
+      toast.success(`Movimentação importada · ${resumo[0]}`, { duration: 6000 });
+      setReport({ origem: "Movimentação", resumo, issues });
       await refresh();
     } catch (e) {
       console.error(e);
