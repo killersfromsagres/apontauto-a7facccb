@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
+import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
@@ -80,6 +81,12 @@ const AuthenticatedTaludesRoute = AuthenticatedTaludesRouteImport.update({
   path: '/taludes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSegurancaTrabalhoRoute =
+  AuthenticatedSegurancaTrabalhoRouteImport.update({
+    id: '/seguranca-trabalho',
+    path: '/seguranca-trabalho',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProgramacaoTaludesRoute =
   AuthenticatedProgramacaoTaludesRouteImport.update({
     id: '/programacao-taludes',
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
+    | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
     | '/api/public/clima'
@@ -250,6 +261,7 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
+    | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
     | '/'
@@ -273,6 +285,7 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva'
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-taludes'
+    | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
     | '/_authenticated/'
@@ -360,6 +373,13 @@ declare module '@tanstack/react-router' {
       path: '/taludes'
       fullPath: '/taludes'
       preLoaderRoute: typeof AuthenticatedTaludesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/seguranca-trabalho': {
+      id: '/_authenticated/seguranca-trabalho'
+      path: '/seguranca-trabalho'
+      fullPath: '/seguranca-trabalho'
+      preLoaderRoute: typeof AuthenticatedSegurancaTrabalhoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/programacao-taludes': {
@@ -453,6 +473,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
+  AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
@@ -469,6 +490,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
+  AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,

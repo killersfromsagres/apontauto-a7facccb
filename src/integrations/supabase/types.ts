@@ -587,6 +587,149 @@ export type Database = {
         }
         Relationships: []
       }
+      sst_aso_historico: {
+        Row: {
+          colaborador_id: string
+          created_at: string
+          criado_por: string | null
+          data_exame: string
+          data_vencimento: string | null
+          id: string
+          observacao: string | null
+          tipo_exame: string | null
+        }
+        Insert: {
+          colaborador_id: string
+          created_at?: string
+          criado_por?: string | null
+          data_exame: string
+          data_vencimento?: string | null
+          id?: string
+          observacao?: string | null
+          tipo_exame?: string | null
+        }
+        Update: {
+          colaborador_id?: string
+          created_at?: string
+          criado_por?: string | null
+          data_exame?: string
+          data_vencimento?: string | null
+          id?: string
+          observacao?: string | null
+          tipo_exame?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sst_aso_historico_colaborador_id_fkey"
+            columns: ["colaborador_id"]
+            isOneToOne: false
+            referencedRelation: "sst_colaboradores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sst_audit_log: {
+        Row: {
+          acao: string
+          colaborador_id: string | null
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          id: string
+          usuario_id: string | null
+        }
+        Insert: {
+          acao: string
+          colaborador_id?: string | null
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Update: {
+          acao?: string
+          colaborador_id?: string | null
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          id?: string
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
+      sst_colaboradores: {
+        Row: {
+          agendamento_confirmado: boolean
+          ativo: boolean
+          cliente: string | null
+          cpf: string | null
+          created_at: string
+          data_admissao: string | null
+          data_exame_realizado: string | null
+          data_sugerida_agendamento: string | null
+          data_vencimento: string | null
+          empresa: string | null
+          exame_realizado: boolean
+          filial: string | null
+          funcao: string | null
+          id: string
+          matricula: string | null
+          nome: string
+          observacao: string | null
+          situacao: string | null
+          supervisor: string | null
+          tipo_exame: string | null
+          updated_at: string
+        }
+        Insert: {
+          agendamento_confirmado?: boolean
+          ativo?: boolean
+          cliente?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_exame_realizado?: string | null
+          data_sugerida_agendamento?: string | null
+          data_vencimento?: string | null
+          empresa?: string | null
+          exame_realizado?: boolean
+          filial?: string | null
+          funcao?: string | null
+          id?: string
+          matricula?: string | null
+          nome: string
+          observacao?: string | null
+          situacao?: string | null
+          supervisor?: string | null
+          tipo_exame?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agendamento_confirmado?: boolean
+          ativo?: boolean
+          cliente?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_admissao?: string | null
+          data_exame_realizado?: string | null
+          data_sugerida_agendamento?: string | null
+          data_vencimento?: string | null
+          empresa?: string | null
+          exame_realizado?: boolean
+          filial?: string | null
+          funcao?: string | null
+          id?: string
+          matricula?: string | null
+          nome?: string
+          observacao?: string | null
+          situacao?: string | null
+          supervisor?: string | null
+          tipo_exame?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       talude_maps: {
         Row: {
           created_at: string
@@ -863,6 +1006,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      sst_can_access: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
