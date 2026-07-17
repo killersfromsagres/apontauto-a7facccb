@@ -421,18 +421,29 @@ function BackorderPage() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
     try {
-      const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
-      const map = makeAssetsMap((assetsRaw ?? []) as Array<{ ativo: string; denominacao: string }>);
+      const { data: assetsRaw } = await supabase
+        .from("assets_ref")
+        .select("ativo, denominacao, nivel, codigo_pai");
+      const map = makeAssetsMap(
+        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
+      );
       setAssetsMap(map);
       const { data: allRows } = await supabase
         .from("backorder_os")
-        .select("os, ativo, predio, andar, espaco");
-      const patches: Array<{ os: string; predio: string; andar: string; espaco: string }> = [];
-      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string }>) {
+        .select("os, ativo, predio, andar, espaco, revisao_manual");
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }> = [];
+      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }>) {
         if (!r.ativo) continue;
         const res = resolveAtivo(map, r.ativo);
-        if (res.predio !== r.predio || res.andar !== r.andar || res.espaco !== r.espaco) {
-          patches.push({ os: r.os, ...res });
+        const found = !!(res.predio || res.andar || res.espaco);
+        const revisao = !found;
+        if (
+          res.predio !== r.predio ||
+          res.andar !== r.andar ||
+          res.espaco !== r.espaco ||
+          revisao !== r.revisao_manual
+        ) {
+          patches.push({ os: r.os, ...res, revisao_manual: revisao });
         }
       }
       for (let i = 0; i < patches.length; i += 50) {
@@ -441,7 +452,7 @@ function BackorderPage() {
           slice.map((p) =>
             supabase
               .from("backorder_os")
-              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco })
+              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco, revisao_manual: p.revisao_manual })
               .eq("os", p.os),
           ),
         );
