@@ -1,5 +1,5 @@
 // Import de planilha ASO — merge incremental por CPF (fallback matrícula).
-import ExcelJS from "exceljs";
+// ExcelJS é carregado sob demanda (~500 KB) apenas quando o usuário importa uma planilha.
 import { computeVencimento, computeDataSugerida, parseFlexibleDate } from "./aso";
 
 export type SstImportRow = {
