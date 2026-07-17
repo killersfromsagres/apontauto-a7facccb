@@ -739,34 +739,107 @@ function HistoricoView({
   colabByMat: Map<string, ColabRow>;
 }) {
   const [query, setQuery] = useState("");
+  const [movFilter, setMovFilter] = useState<"todos" | "saida" | "entrada">("todos");
+
+  const emAberto = useMemo(() => {
+    // Códigos com saída pendente (sem entrada posterior)
+    const map = new Map<string, "saida" | "entrada">();
+    const sorted = [...eventos].sort((a, b) => a.data.localeCompare(b.data));
+    for (const e of sorted) map.set(e.codigo, e.tipo);
+    let s = 0;
+    for (const v of map.values()) if (v === "saida") s++;
+    return s;
+  }, [eventos]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return eventos.slice(-200).reverse();
-    return eventos
-      .filter((e) => {
-        const p = pecaByCodigo.get(e.codigo);
-        const c = p?.matricula ? colabByMat.get(p.matricula) : undefined;
-        return (
-          e.codigo.toLowerCase().includes(q) ||
-          (c?.nome ?? "").toLowerCase().includes(q) ||
-          (p?.matricula ?? "").toLowerCase().includes(q)
-        );
-      })
-      .slice()
-      .reverse();
-  }, [eventos, query, pecaByCodigo, colabByMat]);
+    const base = eventos.filter((e) => (movFilter === "todos" ? true : e.tipo === movFilter));
+    const searched = !q
+      ? base
+      : base.filter((e) => {
+          const p = pecaByCodigo.get(e.codigo);
+          const c = p?.matricula ? colabByMat.get(p.matricula) : undefined;
+          return (
+            e.codigo.toLowerCase().includes(q) ||
+            (c?.nome ?? "").toLowerCase().includes(q) ||
+            (p?.matricula ?? "").toLowerCase().includes(q)
+          );
+        });
+    return searched.slice(-500).reverse();
+  }, [eventos, query, pecaByCodigo, colabByMat, movFilter]);
+
+  const totalSaidas = eventos.filter((e) => e.tipo === "saida").length;
+  const totalEntradas = eventos.filter((e) => e.tipo === "entrada").length;
 
   return (
     <GlassCard>
-      <div className="mb-3 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar código ou colaborador…"
-          className="pl-8"
-        />
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <button
+          onClick={() => setMovFilter("todos")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "todos"
+              ? "border-primary/60 bg-primary/5 ring-2 ring-primary"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Em aberto</div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{emAberto}</span>
+            <span className="text-xs text-muted-foreground">peças sem retorno</span>
+          </div>
+        </button>
+        <button
+          onClick={() => setMovFilter("saida")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "saida"
+              ? "border-amber-500/60 bg-amber-500/10 ring-2 ring-amber-500"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+            <ArrowUpCircle className="h-3.5 w-3.5" /> Saídas
+          </div>
+          <div className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">
+            {totalSaidas}
+          </div>
+        </button>
+        <button
+          onClick={() => setMovFilter("entrada")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "entrada"
+              ? "border-emerald-500/60 bg-emerald-500/10 ring-2 ring-emerald-500"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+            <ArrowDownCircle className="h-3.5 w-3.5" /> Entradas
+          </div>
+          <div className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {totalEntradas}
+          </div>
+        </button>
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar código ou colaborador…"
+            className="pl-8"
+          />
+        </div>
+        <Select value={movFilter} onValueChange={(v) => setMovFilter(v as typeof movFilter)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os movimentos</SelectItem>
+            <SelectItem value="saida">Somente saídas</SelectItem>
+            <SelectItem value="entrada">Somente entradas</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
