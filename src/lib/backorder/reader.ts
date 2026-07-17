@@ -84,15 +84,16 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
 
   const out: BackorderRow[] = [];
   for (const r of raw) {
-    const os = pick(r, "OS", "CHAMADO", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO");
+    const os = pick(r, "OS", "NUMERO OS", "NUMERO DA OS", "N OS", "NRO OS", "CHAMADO", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO");
     if (!os) continue;
-    const descricao = pick(r, "DESCRIÇÃO OS", "DESCRICAO OS", "DESCRIÇÃO", "DESCRICAO", "NOME");
+    const descricao = pick(r, "DESCRIÇÃO OS", "DESCRICAO OS", "DESCRICAO DA OS", "DESCRIÇÃO DA OS", "DESCRIÇÃO", "DESCRICAO", "NOME");
     const categoriaOrig = pick(r, "CATEGORIA");
     const servico = pick(r, "SERVIÇO", "SERVICO");
-    const ativo = pick(r, "ATIVO");
+    const ativo = pick(r, "ATIVO", "CODIGO DO ATIVO", "CÓDIGO DO ATIVO", "COD ATIVO", "COD. ATIVO", "TAG");
     const status = pick(r, "STATUS RESUMIDO", "STATUS");
-    const abertura = pick(r, "DATA/HORA ABERTURA", "DATA ABERTURA", "ABERTURA");
+    const abertura = pick(r, "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "DATA ABERTURA", "DATA DE ABERTURA", "ABERTURA");
     const sla = pick(r, "PRAZO SLA", "TERMINO SLA", "TÉRMINO SLA", "DATA LIMITE");
+
     const solicitante = pick(
       r,
       "DENOMINAÇÃO DO SOLICITANTE",
