@@ -704,17 +704,8 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
 
       // pré-mapeia ids existentes por CPF para contar novos vs atualizados
       const cpfs = comCpf.map((r) => r.cpf as string);
-      if (cpfs.length) {
-        const CHUNK_LOOKUP = 500;
-        for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
-          const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
-          const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
-          (data ?? []).forEach((r) => { if (r.cpf) { importedIds.add(r.id); (idByCpfPre as Map<string, string>).set(r.cpf, r.id); } });
-        }
-      }
       const idByCpfPre = new Map<string, string>();
-      // (recomputa após lookup — a linha acima usa `idByCpfPre` que na verdade é declarada aqui)
-      {
+      if (cpfs.length) {
         const CHUNK_LOOKUP = 500;
         for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
           const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
