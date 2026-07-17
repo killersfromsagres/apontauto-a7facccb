@@ -108,7 +108,7 @@ export const getMyAccess = createServerFn({ method: "GET" })
  */
 export const createAppUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(validateCreate)
+  .validator(validateCreate)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
 
@@ -193,7 +193,7 @@ function requireUserId(input: unknown): { userId: string } {
  */
 export const deleteAppUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(requireUserId)
+  .validator(requireUserId)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("Você não pode excluir sua própria conta.");
@@ -208,7 +208,7 @@ export const deleteAppUser = createServerFn({ method: "POST" })
  */
 export const setUserBanned = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => {
+  .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const banned = Boolean((input as any)?.banned);
     return { userId, banned };
@@ -229,7 +229,7 @@ export const setUserBanned = createServerFn({ method: "POST" })
  */
 export const setUserRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => {
+  .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const role: Role = (input as any)?.role === "admin" ? "admin" : "user";
     return { userId, role };
@@ -255,7 +255,7 @@ export const setUserRole = createServerFn({ method: "POST" })
  */
 export const setUserAllowedMenus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => {
+  .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const raw = (input as any)?.allowed;
     let allowed: string[] | null = null;
