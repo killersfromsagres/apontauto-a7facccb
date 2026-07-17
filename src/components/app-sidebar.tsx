@@ -97,7 +97,10 @@ export const AppSidebar = memo(function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => {
-                const active = isActive(item.url);
+                const active =
+                  item.url === "/"
+                    ? currentPath === "/"
+                    : currentPath.startsWith(item.url);
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
@@ -123,4 +126,4 @@ export const AppSidebar = memo(function AppSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-}
+});
