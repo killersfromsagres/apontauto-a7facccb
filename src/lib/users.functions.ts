@@ -99,7 +99,7 @@ export const getMyAccess = createServerFn({ method: "GET" })
     const isAdmin = Boolean(adminRes.data) || isOwnerAdminEmail(email);
     return {
       isAdmin,
-      allowed: isAdmin ? null : ((menusRes.data as string[] | null) ?? []),
+      allowed: isAdmin ? null : (menusRes.data as string[] | null),
     };
   });
 
@@ -173,7 +173,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
           fullName: prof?.full_name ?? ((u.user_metadata as any)?.full_name ?? null),
           role,
           banned: Boolean((u as any).banned_until),
-          allowedMenus: role === "admin" ? null : (prof?.allowed_menus ?? []),
+          allowedMenus: role === "admin" ? null : (prof ? prof.allowed_menus : []),
           createdAt: u.created_at,
         };
       }),
