@@ -535,7 +535,31 @@ function TaludesPage() {
     setNumberPromptOpen(false);
     setPendingNumber("");
     setEditingPolygonFor(null);
+    setSelectedVertexIdx(null);
+    setSnapHint(null);
+    setCursorPct(null);
   };
+
+  // Keyboard shortcuts while drawing/editing polygon
+  useEffect(() => {
+    const isDrawing = !!(drawingNumero || editingPolygonFor || drawingNewMode);
+    if (!isDrawing) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        cancelDrawing();
+      } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
+        e.preventDefault();
+        setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
+        setSelectedVertexIdx(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx]);
 
   const startRedraw = (t: TaludeRow) => {
     setEditingPolygonFor(t.id);
