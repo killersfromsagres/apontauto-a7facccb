@@ -155,6 +155,14 @@ function digits(s: string | null): string | null {
   return d || null;
 }
 
+/** CPF é sempre 11 dígitos — planilhas exportadas como número perdem zeros à esquerda. */
+function normalizeCpf(s: string | null): string | null {
+  const d = digits(s);
+  if (!d) return null;
+  if (d.length > 11) return d.slice(-11);
+  return d.padStart(11, "0");
+}
+
 export async function readSstXlsx(file: File): Promise<SstImportResult> {
   const buf = await file.arrayBuffer();
   const { default: ExcelJS } = await import("exceljs");
