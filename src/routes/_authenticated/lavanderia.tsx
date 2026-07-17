@@ -489,7 +489,7 @@ function LavanderiaPage() {
         </div>
       }
     >
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full lavanderia-scroll-scope">
         <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="abertas">
             <Shirt className="mr-1.5 h-3.5 w-3.5" /> Em aberto
