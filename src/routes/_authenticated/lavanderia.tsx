@@ -539,6 +539,73 @@ function LavanderiaPage() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {report && report.issues.some((i) => i.level === "error") ? (
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              )}
+              Verificação de {report?.origem}
+            </DialogTitle>
+            <DialogDescription>
+              Relatório inteligente da última importação — revise antes de tomar decisões operacionais.
+            </DialogDescription>
+          </DialogHeader>
+          {report && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Resumo
+                </div>
+                <ul className="space-y-1 text-sm">
+                  {report.resumo.map((r, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Diagnóstico ({report.issues.length})
+                </div>
+                {report.issues.length === 0 ? (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                    Nenhuma inconsistência detectada. Dados prontos para uso.
+                  </div>
+                ) : (
+                  <ScrollArea className="h-64 rounded-xl border border-border/60">
+                    <ul className="divide-y divide-border/50">
+                      {report.issues.map((it, i) => {
+                        const color =
+                          it.level === "error"
+                            ? "text-red-600 dark:text-red-400"
+                            : it.level === "warning"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-sky-600 dark:text-sky-400";
+                        return (
+                          <li key={i} className="flex gap-2 px-3 py-2 text-sm">
+                            <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} />
+                            <span>{it.message}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </ScrollArea>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setReport(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
