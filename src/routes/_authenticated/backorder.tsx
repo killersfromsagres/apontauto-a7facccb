@@ -488,6 +488,41 @@ function BackorderPage() {
     }
   }
 
+  // Importa arquivo de instrução (JSON) com regras de classificação de equipe.
+  // Formato aceito:
+  //   { "keywords": [{ "equipe": "Pintura", "palavra_chave": "faixa", "fonte": "descricao", "prioridade": 20 }] }
+  async function handleInstrucaoImport(file: File) {
+    setImporting(true);
+    const t = toast.loading("Importando instrução…");
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const keywords: DynamicRule[] = Array.isArray(json?.keywords) ? json.keywords : [];
+      if (keywords.length === 0) {
+        toast.warning("Nenhuma regra encontrada no arquivo (esperado: chave \"keywords\").", { id: t });
+        return;
+      }
+      const rows = keywords.map((k) => ({
+        equipe: k.equipe,
+        palavra_chave: k.palavra_chave,
+        fonte: k.fonte === "categoria" ? "categoria" : "descricao",
+        prioridade: Number.isFinite(k.prioridade) ? k.prioridade : 100,
+        ativo: true,
+      }));
+      const { error } = await supabase
+        .from("regras_classificacao_equipe")
+        .upsert(rows, { onConflict: "equipe,palavra_chave,fonte" });
+      if (error) throw error;
+      await loadClassifierRules();
+      toast.success(`${rows.length} regra(s) importada(s). Rode "Reprocessar Chamados" para aplicar.`, { id: t });
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao importar instrução", { id: t });
+    } finally {
+      setImporting(false);
+    }
+  }
+
   // Valida a base: lista quantos chamados não conseguem resolver Prédio.
   async function handleValidarBase() {
     const t = toast.loading("Validando cobertura da base de ativos…");
