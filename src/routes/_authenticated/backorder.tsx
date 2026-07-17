@@ -231,6 +231,41 @@ function BackorderPage() {
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
+  const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
+
+  async function saveRule(rule: Partial<RuleRow> & { equipe: string; palavra_chave: string; fonte: "descricao" | "categoria" }) {
+    const payload = {
+      id: rule.id,
+      equipe: rule.equipe,
+      palavra_chave: rule.palavra_chave.trim(),
+      fonte: rule.fonte,
+      prioridade: rule.prioridade ?? 100,
+      ativo: rule.ativo ?? true,
+    };
+    if (!payload.palavra_chave) {
+      toast.error("Palavra-chave obrigatória");
+      return;
+    }
+    const { error } = await supabase
+      .from("regras_classificacao_equipe")
+      .upsert(payload, { onConflict: "equipe,palavra_chave,fonte" });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Regra salva");
+    await loadClassifierRules();
+  }
+
+  async function deleteRule(id: string) {
+    const { error } = await supabase.from("regras_classificacao_equipe").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Regra removida");
+    await loadClassifierRules();
+  }
 
   // Backorder = abertas com mais de 30 dias corridos
   const backorderAbertas = useMemo(
