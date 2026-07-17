@@ -668,7 +668,7 @@ function BackorderPage() {
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => assetsInputRef.current?.click()} disabled={importing}>
-            <Database className="mr-2 h-4 w-4" /> Importar Ativos
+            <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
           </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" /> Importar planilha
