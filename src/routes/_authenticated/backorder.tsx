@@ -319,13 +319,64 @@ function BackorderPage() {
         toast.warning("Nenhum ativo reconhecido na planilha.");
         return;
       }
+
+      // Base existente para calcular quantos são novos vs. atualizados
+      const { data: existingAssets } = await supabase.from("assets_ref").select("ativo, denominacao");
+      const existMap = new Map<string, string>();
+      (existingAssets ?? []).forEach((a: any) =>
+        existMap.set(String(a.ativo).toUpperCase(), String(a.denominacao ?? "")),
+      );
+      let novos = 0;
+      let atualizados = 0;
+      for (const a of parsed) {
+        const prev = existMap.get(a.ativo);
+        if (prev === undefined) novos++;
+        else if (prev !== a.denominacao) atualizados++;
+      }
+
+      // Upsert em lotes
       for (let i = 0; i < parsed.length; i += 1000) {
         const chunk = parsed.slice(i, i + 1000);
         const { error } = await supabase.from("assets_ref").upsert(chunk, { onConflict: "ativo" });
         if (error) throw error;
       }
-      toast.success(`Base de Ativos atualizada: ${parsed.length} registros.`);
-      await loadAssets();
+
+      // Recalcula Prédio/Andar/Espaço de todos os chamados usando a base atualizada
+      const nextMap = makeAssetsMap(parsed.concat(
+        // preserva ativos que estavam no banco e não vieram no novo arquivo
+        Array.from(existMap.entries())
+          .filter(([k]) => !parsed.some((p) => p.ativo === k))
+          .map(([ativo, denominacao]) => ({ ativo, denominacao })),
+      ));
+      setAssetsMap(nextMap);
+
+      const { data: allRows } = await supabase.from("backorder_os").select("os, ativo, predio, andar, espaco");
+      let recalculados = 0;
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string }> = [];
+      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string }>) {
+        if (!r.ativo) continue;
+        const res = resolveAtivo(nextMap, r.ativo);
+        if (res.predio !== r.predio || res.andar !== r.andar || res.espaco !== r.espaco) {
+          patches.push({ os: r.os, ...res });
+          recalculados++;
+        }
+      }
+      for (let i = 0; i < patches.length; i += 50) {
+        const slice = patches.slice(i, i + 50);
+        await Promise.all(
+          slice.map((p) =>
+            supabase
+              .from("backorder_os")
+              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco })
+              .eq("os", p.os),
+          ),
+        );
+      }
+
+      toast.success(
+        `Base de Ativos: ${novos} novo(s), ${atualizados} atualizado(s). ${recalculados} chamado(s) recalculado(s).`,
+      );
+      if (recalculados > 0) await refresh();
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Falha ao importar Ativos");
@@ -333,6 +384,7 @@ function BackorderPage() {
       setImporting(false);
     }
   }
+
 
   async function toggleFinalizado(r: BOSRow, next: boolean) {
     const { error } = await supabase
