@@ -137,9 +137,24 @@ function ClimaTempoPage() {
     >
       <div className="space-y-5">
         {q.isError && (
-          <div className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-200">
-            <AlertTriangle className="mr-2 inline h-4 w-4" />
-            Falha ao consultar o Open-Meteo. Tente atualizar em instantes.
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-200">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <div className="font-semibold">Falha ao consultar o Open-Meteo</div>
+                <div className="text-xs opacity-90">{(q.error as Error)?.message ?? "Erro desconhecido"}</div>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
+              <RefreshCw className={cn("mr-2 h-3.5 w-3.5", q.isFetching && "animate-spin")} />
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+
+        {q.isLoading && !data && (
+          <div className="rounded-lg border border-border/40 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
+            Carregando dados meteorológicos…
           </div>
         )}
 
