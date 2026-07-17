@@ -385,6 +385,80 @@ function BackorderPage() {
     }
   }
 
+  // Reprocessa Prédio/Andar/Espaço de todos os chamados usando a base atual.
+  async function handleReprocessarChamados() {
+    setImporting(true);
+    const t = toast.loading("Reprocessando chamados com a base inteligente…");
+    try {
+      const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
+      const map = makeAssetsMap((assetsRaw ?? []) as Array<{ ativo: string; denominacao: string }>);
+      setAssetsMap(map);
+      const { data: allRows } = await supabase
+        .from("backorder_os")
+        .select("os, ativo, predio, andar, espaco");
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string }> = [];
+      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string }>) {
+        if (!r.ativo) continue;
+        const res = resolveAtivo(map, r.ativo);
+        if (res.predio !== r.predio || res.andar !== r.andar || res.espaco !== r.espaco) {
+          patches.push({ os: r.os, ...res });
+        }
+      }
+      for (let i = 0; i < patches.length; i += 50) {
+        const slice = patches.slice(i, i + 50);
+        await Promise.all(
+          slice.map((p) =>
+            supabase
+              .from("backorder_os")
+              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco })
+              .eq("os", p.os),
+          ),
+        );
+      }
+      toast.success(`Reprocessado: ${patches.length} chamado(s) atualizado(s).`, { id: t });
+      if (patches.length > 0) await refresh();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao reprocessar", { id: t });
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  // Valida a base: lista quantos chamados não conseguem resolver Prédio.
+  async function handleValidarBase() {
+    const t = toast.loading("Validando cobertura da base de ativos…");
+    try {
+      const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo");
+      const codes = new Set(
+        ((assetsRaw ?? []) as Array<{ ativo: string }>).map((a) => a.ativo.toUpperCase()),
+      );
+      const { data: allRows } = await supabase
+        .from("backorder_os")
+        .select("os, ativo")
+        .eq("finalizado", false);
+      const faltantes = new Set<string>();
+      let semAtivo = 0;
+      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string }>) {
+        if (!r.ativo) { semAtivo++; continue; }
+        const p5 = r.ativo.slice(0, 5).toUpperCase();
+        if (!codes.has(p5)) faltantes.add(p5);
+      }
+      const total = (allRows ?? []).length;
+      const cobertos = total - semAtivo - faltantes.size;
+      toast.success(
+        `Base: ${codes.size} códigos • ${total} chamado(s) abertos • ${cobertos} com prédio, ${faltantes.size} prefixo(s) sem correspondência, ${semAtivo} sem ativo.`,
+        { id: t, duration: 8000 },
+      );
+      if (faltantes.size > 0) {
+        console.warn("Prefixos de ativo sem correspondência:", Array.from(faltantes));
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao validar base", { id: t });
+    }
+  }
+
+
+
 
   async function toggleFinalizado(r: BOSRow, next: boolean) {
     const { error } = await supabase
@@ -671,11 +745,19 @@ function BackorderPage() {
             <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
           </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
-            <Upload className="mr-2 h-4 w-4" /> Importar planilha
+            <Upload className="mr-2 h-4 w-4" /> Importar Backorder
+          </Button>
+          <Button variant="outline" onClick={handleReprocessarChamados} disabled={importing}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
+          </Button>
+          <Button variant="outline" onClick={handleValidarBase} disabled={importing}>
+            <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
           </Button>
           <Button variant="outline" onClick={() => setConfigOpen(true)}>
             <Settings2 className="mr-2 h-4 w-4" /> Prioridades
           </Button>
+
+
           <Button onClick={exportar} disabled={filtered.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Exportar
           </Button>
