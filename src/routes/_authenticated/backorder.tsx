@@ -3055,6 +3055,126 @@ function RevisaoPanel({
           </Table>
         </div>
       </GlassCard>
+
+      <GlassCard>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Regras aprendidas por Ativo</h3>
+          <p className="text-sm text-muted-foreground">
+            Correções manuais de Prédio/Andar/Espaço e Equipe viram regras permanentes,
+            aplicadas automaticamente aos próximos chamados do mesmo ativo.
+          </p>
+        </div>
+
+        <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+          Localização ({learnedLoc.length})
+        </div>
+        <div className="mb-6 overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Prédio · Andar · Espaço</TableHead>
+                <TableHead>OS origem</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead className="w-24 text-center">Chamados</TableHead>
+                <TableHead className="w-20">Ativa</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {learnedLoc.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma regra aprendida ainda — corrija um chamado em revisão para criar.
+                  </TableCell>
+                </TableRow>
+              )}
+              {learnedLoc.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.codigo_ativo}</TableCell>
+                  <TableCell className="text-sm">
+                    {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") || "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {r.origem_chamado_os ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.criado_em).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">{countByAtivo.get(r.codigo_ativo) ?? 0}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={r.ativo}
+                      onCheckedChange={(v) => onToggleLearnedLoc(r.id, !!v)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedLoc(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+          Equipe ({learnedTeam.length})
+        </div>
+        <div className="overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Equipe</TableHead>
+                <TableHead>OS origem</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead className="w-24 text-center">Chamados</TableHead>
+                <TableHead className="w-20">Ativa</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {learnedTeam.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma regra aprendida ainda.
+                  </TableCell>
+                </TableRow>
+              )}
+              {learnedTeam.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.codigo_ativo ?? "—"}</TableCell>
+                  <TableCell><Badge variant="outline">{r.equipe}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {r.origem_chamado_os ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.criado_em).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">{r.codigo_ativo ? (countByAtivo.get(r.codigo_ativo) ?? 0) : 0}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={r.ativo}
+                      onCheckedChange={(v) => onToggleLearnedTeam(r.id, !!v)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedTeam(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </GlassCard>
     </div>
   );
 }
