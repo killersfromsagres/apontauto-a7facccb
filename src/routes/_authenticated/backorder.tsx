@@ -116,12 +116,22 @@ interface BOSRow {
   is_prioridade?: boolean;
   motivo_prioridade?: string | null;
   prioridade_nivel?: number;
+  revisao_manual?: boolean;
 }
 
 const POWERBI_URL =
   "https://app.powerbi.com/view?r=eyJrIjoiNDhjOGJiZjMtYWM0YS00MGUyLTkyYzItMDgyMzM5OTMxNThmIiwidCI6IjQyODUyNWQ5LTIzYmQtNGY4Yy1hZmEyLTU2MDBmNDAxZjMyNiJ9";
 
 const TARGET_PCT_DEFAULT = 5;
+
+interface RuleRow {
+  id: string;
+  equipe: string;
+  palavra_chave: string;
+  fonte: "descricao" | "categoria";
+  prioridade: number;
+  ativo: boolean;
+}
 
 function daysBetween(iso: string): number {
   const d = new Date(iso).getTime();
@@ -188,21 +198,27 @@ function BackorderPage() {
     setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
   }, []);
 
+  const [rulesDB, setRulesDB] = useState<RuleRow[]>([]);
+
   const loadClassifierRules = useCallback(async () => {
     const { data } = await supabase
       .from("regras_classificacao_equipe")
-      .select("equipe, palavra_chave, fonte, prioridade, ativo")
-      .eq("ativo", true);
-    if (data && data.length > 0) {
+      .select("id, equipe, palavra_chave, fonte, prioridade, ativo")
+      .order("prioridade", { ascending: true });
+    const rows = (data ?? []) as RuleRow[];
+    setRulesDB(rows);
+    const active = rows.filter((r) => r.ativo);
+    if (active.length > 0) {
       setDynamicRules(
-        (data as Array<{ equipe: string; palavra_chave: string; fonte: string; prioridade: number }>)
-          .map((r) => ({
-            equipe: r.equipe as Categoria,
-            palavra_chave: r.palavra_chave,
-            fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
-            prioridade: r.prioridade,
-          })),
+        active.map((r) => ({
+          equipe: r.equipe as Categoria,
+          palavra_chave: r.palavra_chave,
+          fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
+          prioridade: r.prioridade,
+        })),
       );
+    } else {
+      setDynamicRules(null);
     }
   }, []);
 
@@ -215,6 +231,41 @@ function BackorderPage() {
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
+  const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
+
+  async function saveRule(rule: Partial<RuleRow> & { equipe: string; palavra_chave: string; fonte: "descricao" | "categoria" }) {
+    const payload = {
+      id: rule.id,
+      equipe: rule.equipe,
+      palavra_chave: rule.palavra_chave.trim(),
+      fonte: rule.fonte,
+      prioridade: rule.prioridade ?? 100,
+      ativo: rule.ativo ?? true,
+    };
+    if (!payload.palavra_chave) {
+      toast.error("Palavra-chave obrigatória");
+      return;
+    }
+    const { error } = await supabase
+      .from("regras_classificacao_equipe")
+      .upsert(payload, { onConflict: "equipe,palavra_chave,fonte" });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Regra salva");
+    await loadClassifierRules();
+  }
+
+  async function deleteRule(id: string) {
+    const { error } = await supabase.from("regras_classificacao_equipe").delete().eq("id", id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Regra removida");
+    await loadClassifierRules();
+  }
 
   // Backorder = abertas com mais de 30 dias corridos
   const backorderAbertas = useMemo(
@@ -916,6 +967,12 @@ function BackorderPage() {
           <TabsTrigger value="dashboard">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
+          <TabsTrigger value="revisao">
+            <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Revisão
+            {revisaoRows.length > 0 && (
+              <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="powerbi">Power BI</TabsTrigger>
         </TabsList>
 
@@ -960,6 +1017,18 @@ function BackorderPage() {
             onPrintPriorities={printPrioridades}
             onOpenConfig={() => setConfigOpen(true)}
             onFinalizar={(r) => toggleFinalizado(r, true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="revisao">
+          <RevisaoPanel
+            rows={revisaoRows}
+            rules={rulesDB}
+            onSelectRow={setSelectedBackorder}
+            onSaveRule={saveRule}
+            onDeleteRule={deleteRule}
+            onReprocessar={handleReprocessarChamados}
+            importing={importing}
           />
         </TabsContent>
 
@@ -2572,4 +2641,175 @@ function FieldBlock({
 }
 
 
+
+const EQUIPES_OPCOES: Categoria[] = ["Civil", "Chaveiro", "Refrigeração", "Elétrica", "Hidráulica", "Pintura", "Outros"];
+
+function RevisaoPanel({
+  rows,
+  rules,
+  onSelectRow,
+  onSaveRule,
+  onDeleteRule,
+  onReprocessar,
+  importing,
+}: {
+  rows: BOSRow[];
+  rules: RuleRow[];
+  onSelectRow: (r: BOSRow) => void;
+  onSaveRule: (r: Partial<RuleRow> & { equipe: string; palavra_chave: string; fonte: "descricao" | "categoria" }) => Promise<void>;
+  onDeleteRule: (id: string) => Promise<void>;
+  onReprocessar: () => Promise<void>;
+  importing: boolean;
+}) {
+  const [novo, setNovo] = useState<{ equipe: Categoria; palavra_chave: string; fonte: "descricao" | "categoria"; prioridade: number }>({
+    equipe: "Civil",
+    palavra_chave: "",
+    fonte: "descricao",
+    prioridade: 100,
+  });
+
+  return (
+    <div className="space-y-6">
+      <GlassCard>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Chamados em revisão manual</h3>
+            <p className="text-sm text-muted-foreground">
+              OS sem ativo reconhecido na árvore ou com classificação em fallback (Outros).
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={onReprocessar} disabled={importing}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar
+          </Button>
+        </div>
+        {rows.length === 0 ? (
+          <div className="rounded border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Nenhum chamado pendente de revisão.
+          </div>
+        ) : (
+          <div className="overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>OS</TableHead>
+                  <TableHead>Ativo</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Equipe</TableHead>
+                  <TableHead>Prédio/Andar/Espaço</TableHead>
+                  <TableHead className="w-24"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.os}>
+                    <TableCell className="font-mono text-xs">{r.os}</TableCell>
+                    <TableCell className="font-mono text-xs">{r.ativo}</TableCell>
+                    <TableCell className="max-w-[420px] truncate text-sm" title={r.nome}>{r.nome}</TableCell>
+                    <TableCell><Badge variant="secondary">{r.atividade}</Badge></TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") || "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => onSelectRow(r)}>
+                        Abrir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </GlassCard>
+
+      <GlassCard>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Regras de classificação de equipe</h3>
+          <p className="text-sm text-muted-foreground">
+            Palavras-chave avaliadas em ordem de prioridade (menor número = maior prioridade).
+            A primeira regra que casar define a equipe do chamado.
+          </p>
+        </div>
+
+        <div className="mb-4 grid grid-cols-1 gap-2 rounded border bg-muted/30 p-3 md:grid-cols-[1fr_1.5fr_1fr_100px_auto]">
+          <Select value={novo.equipe} onValueChange={(v) => setNovo({ ...novo, equipe: v as Categoria })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {EQUIPES_OPCOES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="palavra-chave (ex: fechadura)"
+            value={novo.palavra_chave}
+            onChange={(e) => setNovo({ ...novo, palavra_chave: e.target.value })}
+          />
+          <Select value={novo.fonte} onValueChange={(v) => setNovo({ ...novo, fonte: v as "descricao" | "categoria" })}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="descricao">Descrição</SelectItem>
+              <SelectItem value="categoria">Categoria</SelectItem>
+            </SelectContent>
+          </Select>
+          <Input
+            type="number"
+            value={novo.prioridade}
+            onChange={(e) => setNovo({ ...novo, prioridade: Number(e.target.value) || 100 })}
+          />
+          <Button
+            size="sm"
+            onClick={async () => {
+              await onSaveRule({ ...novo, ativo: true });
+              setNovo({ ...novo, palavra_chave: "" });
+            }}
+          >
+            <Plus className="mr-1 h-4 w-4" /> Adicionar
+          </Button>
+        </div>
+
+        <div className="overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-20">Prio</TableHead>
+                <TableHead>Equipe</TableHead>
+                <TableHead>Palavra-chave</TableHead>
+                <TableHead>Fonte</TableHead>
+                <TableHead className="w-24">Ativa</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rules.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma regra cadastrada — o motor cai no set padrão hardcoded.
+                  </TableCell>
+                </TableRow>
+              )}
+              {rules.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.prioridade}</TableCell>
+                  <TableCell><Badge variant="outline">{r.equipe}</Badge></TableCell>
+                  <TableCell className="font-mono text-sm">{r.palavra_chave}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.fonte}</TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={r.ativo}
+                      onCheckedChange={(v) => onSaveRule({ ...r, ativo: !!v })}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteRule(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </GlassCard>
+    </div>
+  );
+}
 
