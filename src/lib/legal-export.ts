@@ -46,7 +46,11 @@ export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[
   XLSX.writeFile(wb, `painel-itens-legais-${year}.xlsx`);
 }
 
-export function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
+export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
