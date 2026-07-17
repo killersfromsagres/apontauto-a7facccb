@@ -585,22 +585,7 @@ function SegurancaTrabalhoPage() {
           onClose={() => setExportOpen(false)}
           rows={exportRows()}
           totalAll={rows.length}
-          allRows={() =>
-            rows.map((r) => ({
-              nome: r.nome,
-              cpf: r.cpf,
-              matricula: r.matricula,
-              filial: r.filial,
-              cliente: r.cliente,
-              funcao: r.funcao,
-              supervisor: r.supervisor,
-              tipo_exame: r.tipo_exame,
-              data_exame_realizado: r.data_exame_realizado,
-              data_vencimento: r.data_vencimento,
-              data_sugerida_agendamento: r.data_sugerida_agendamento,
-              observacao: r.observacao,
-            }))
-          }
+          allRows={() => rows.map(toExport)}
         />
       )}
       {(editing || creating) && (
