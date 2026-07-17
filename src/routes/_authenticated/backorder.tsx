@@ -108,6 +108,7 @@ interface BOSRow {
   termino_sla: string | null;
   data_solicitacao: string;
   outros: string;
+  criticidade?: string;
   finalizado: boolean;
   data_finalizacao: string | null;
   is_prioridade?: boolean;
