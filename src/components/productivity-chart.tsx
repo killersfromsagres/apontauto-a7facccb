@@ -63,3 +63,5 @@ function ProductivityChart() {
     </ResponsiveContainer>
   );
 }
+
+export default memo(ProductivityChart);
