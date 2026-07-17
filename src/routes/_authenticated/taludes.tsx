@@ -766,7 +766,7 @@ function TaludesPage() {
               </div>
             </TooltipProvider>
             <div className="ml-auto flex items-center gap-2">
-              {drawingNumero || editingPolygonFor ? (
+              {drawingNewMode || drawingNumero || editingPolygonFor ? (
                 <>
                   <span className="text-[11px] text-muted-foreground">
                     Pontos: {drawingPoints.length} — clique no mapa para adicionar
@@ -779,29 +779,17 @@ function TaludesPage() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="Nº"
-                    className="h-8 w-16"
-                    value={drawingNumero}
-                    onChange={(e) => setDrawingNumero(e.target.value)}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (!drawingNumero) {
-                        toast.error("Informe o número do talude");
-                        return;
-                      }
-                      setDrawingPoints([]);
-                      toast.info("Clique no mapa para adicionar pontos (≥3)");
-                    }}
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setDrawingPoints([]);
+                    setDrawingNewMode(true);
+                    setDrawingNumero("");
+                    toast.info("Clique no mapa para adicionar pontos (≥3). O número será solicitado ao finalizar.");
+                  }}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
+                </Button>
               )}
             </div>
           </div>
