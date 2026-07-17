@@ -967,6 +967,12 @@ function BackorderPage() {
           <TabsTrigger value="dashboard">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
+          <TabsTrigger value="revisao">
+            <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Revisão
+            {revisaoRows.length > 0 && (
+              <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="powerbi">Power BI</TabsTrigger>
         </TabsList>
 
