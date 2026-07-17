@@ -11,6 +11,7 @@ import {
   SprayCan,
   Trees,
   ShieldCheck,
+  HardHat,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
@@ -77,6 +78,7 @@ const modules = [
   { key: "apontamentos", title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
   { key: "apontamentos", title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
   { key: "painel-legal", title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
+  { key: "seguranca-trabalho", title: "Segurança do Trabalho", to: "/seguranca-trabalho", icon: HardHat, tint: "text-orange-400" },
 ];
 
 function Dashboard() {
