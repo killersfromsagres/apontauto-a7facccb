@@ -753,6 +753,10 @@ function BackorderPage() {
           <Button variant="outline" onClick={handleValidarBase} disabled={importing}>
             <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
           </Button>
+          <Button variant="outline" onClick={() => setConfigOpen(true)}>
+            <Settings2 className="mr-2 h-4 w-4" /> Prioridades
+          </Button>
+
 
           <Button onClick={exportar} disabled={filtered.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Exportar
