@@ -545,7 +545,7 @@ function BackorderPage() {
     }
   }
 
-  // Reprocessa Prédio/Andar/Espaço de todos os chamados usando a base atual.
+  // Reprocessa Prédio/Andar/Espaço/Equipe usando árvore + regras aprendidas.
   async function handleReprocessarChamados() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
@@ -557,33 +557,77 @@ function BackorderPage() {
         (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
       );
       setAssetsMap(map);
+
+      await loadLearnedRules();
+      const [locRes, teamRes] = await Promise.all([
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+      ]);
+      const learnedIdx = buildLearnedIndex(
+        (locRes.data ?? []) as LearnedLocation[],
+        (teamRes.data ?? []) as LearnedTeam[],
+      );
+
       const { data: allRows } = await supabase
         .from("backorder_os")
-        .select("os, ativo, predio, andar, espaco, revisao_manual");
-      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }> = [];
-      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }>) {
+        .select("os, ativo, predio, andar, espaco, atividade, atividade_manual, revisao_manual, origem_predio_andar_espaco, origem_equipe");
+      type Row = {
+        os: string; ativo: string; predio: string; andar: string; espaco: string;
+        atividade: string; atividade_manual: boolean; revisao_manual: boolean;
+        origem_predio_andar_espaco: string; origem_equipe: string;
+      };
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; atividade?: string; equipe?: string; revisao_manual: boolean; origem_predio_andar_espaco: string; origem_equipe: string }> = [];
+      for (const r of (allRows ?? []) as Row[]) {
         if (!r.ativo) continue;
-        const res = resolveAtivo(map, r.ativo);
-        const found = !!(res.predio || res.andar || res.espaco);
-        const revisao = !found;
+        const tree = resolveAtivoTree(map, r.ativo);
+        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, (r.atividade as Categoria) || "Outros");
+
+        // Não sobrescreve equipe se atividade_manual = true
+        const nextAtiv = r.atividade_manual ? (r.atividade as Categoria) : applied.atividade;
+        const nextEquipe = r.atividade_manual
+          ? undefined
+          : CATEGORIA_TO_EQUIPE[applied.atividade];
+        const revisao = (applied.origem_predio_andar_espaco === "pendente")
+          || (!r.atividade_manual && applied.origem_equipe === "pendente");
+
         if (
-          res.predio !== r.predio ||
-          res.andar !== r.andar ||
-          res.espaco !== r.espaco ||
-          revisao !== r.revisao_manual
+          applied.predio !== r.predio ||
+          applied.andar !== r.andar ||
+          applied.espaco !== r.espaco ||
+          nextAtiv !== r.atividade ||
+          revisao !== r.revisao_manual ||
+          applied.origem_predio_andar_espaco !== r.origem_predio_andar_espaco ||
+          (r.atividade_manual ? "regra_aprendida" : applied.origem_equipe) !== r.origem_equipe
         ) {
-          patches.push({ os: r.os, ...res, revisao_manual: revisao });
+          patches.push({
+            os: r.os,
+            predio: applied.predio,
+            andar: applied.andar,
+            espaco: applied.espaco,
+            atividade: r.atividade_manual ? undefined : nextAtiv,
+            equipe: nextEquipe,
+            revisao_manual: revisao,
+            origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+            origem_equipe: r.atividade_manual ? "regra_aprendida" : applied.origem_equipe,
+          });
         }
       }
       for (let i = 0; i < patches.length; i += 50) {
         const slice = patches.slice(i, i + 50);
         await Promise.all(
-          slice.map((p) =>
-            supabase
-              .from("backorder_os")
-              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco, revisao_manual: p.revisao_manual })
-              .eq("os", p.os),
-          ),
+          slice.map((p) => {
+            const upd: Record<string, unknown> = {
+              predio: p.predio,
+              andar: p.andar,
+              espaco: p.espaco,
+              revisao_manual: p.revisao_manual,
+              origem_predio_andar_espaco: p.origem_predio_andar_espaco,
+              origem_equipe: p.origem_equipe,
+            };
+            if (p.atividade) upd.atividade = p.atividade;
+            if (p.equipe) upd.equipe = p.equipe;
+            return supabase.from("backorder_os").update(upd).eq("os", p.os);
+          }),
         );
       }
       toast.success(`Reprocessado: ${patches.length} chamado(s) atualizado(s).`, { id: t });
