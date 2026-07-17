@@ -12,7 +12,10 @@ import {
   Image as ImageIcon,
   ClipboardList,
   Trash2,
+  ArrowUp,
+  ChevronRight,
 } from "lucide-react";
+
 import {
   AlertDialog,
   AlertDialogAction,
