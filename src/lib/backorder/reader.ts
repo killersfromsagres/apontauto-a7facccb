@@ -27,15 +27,34 @@ const norm = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+/** Normalização "forte" — só letras e dígitos. Usada para casar
+ *  cabeçalhos aproximados (ignora espaços, pontuação, plural etc.). */
+const slug = (v: unknown) => norm(v).replace(/[^A-Z0-9]/g, "");
+
 function pick(row: Record<string, unknown>, ...keys: string[]): string {
-  const map = new Map<string, unknown>();
-  for (const k of Object.keys(row)) map.set(norm(k), row[k]);
+  const byNorm = new Map<string, unknown>();
+  const bySlug = new Map<string, unknown>();
+  for (const k of Object.keys(row)) {
+    byNorm.set(norm(k), row[k]);
+    bySlug.set(slug(k), row[k]);
+  }
   for (const k of keys) {
-    const v = map.get(norm(k));
+    const v = byNorm.get(norm(k)) ?? bySlug.get(slug(k));
     if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+  }
+  // Última tentativa: match por "contém" no slug (ex.: "NUMOS" contém "OS").
+  for (const k of keys) {
+    const target = slug(k);
+    if (!target) continue;
+    for (const [sk, sv] of bySlug) {
+      if (sk.includes(target) && sv !== undefined && sv !== null && String(sv).trim() !== "") {
+        return String(sv).trim();
+      }
+    }
   }
   return "";
 }
+
 
 function parseDateISO(v: string): string | null {
   if (!v) return null;
