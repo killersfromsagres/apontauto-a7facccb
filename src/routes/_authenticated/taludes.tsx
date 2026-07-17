@@ -1079,10 +1079,10 @@ function TaludesPage() {
                               key={i}
                               cx={p.x}
                               cy={p.y}
-                              r={draggingIdx === i ? 1.1 : 0.85}
+                              r={draggingIdx === i ? 0.55 : 0.4}
                               fill={editingPolygonFor ? "#8b5cf6" : "#ef4444"}
                               stroke="#fff"
-                              strokeWidth="0.15"
+                              strokeWidth="0.08"
                               style={{ cursor: "grab", touchAction: "none" }}
                               onPointerDown={(e) => handleVertexPointerDown(i, e)}
                               onContextMenu={(e) => removeVertex(i, e)}
