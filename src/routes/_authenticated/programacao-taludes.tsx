@@ -265,6 +265,13 @@ function ProgramacaoTaludesPage() {
           </GlassCard>
         </div>
 
+        {/* Próximos dias úteis */}
+        <WeatherForecastStrip
+          title="Previsão para os próximos dias úteis"
+          subtitle="Planejamento das atividades de talude — role para ver mais dias"
+        />
+
+
         {/* Inteligência operacional — atividades externas */}
         {alertExternal && (
           <GlassCard className="border border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent">
