@@ -116,7 +116,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
   const rows: SstImportRow[] = [];
   const errors: SstImportError[] = [];
 
-  wb.eachSheet((sheet) => {
+  wb.eachSheet((sheet: import("exceljs").Worksheet) => {
     // Localiza a linha de cabeçalho (procura nas primeiras 10 linhas).
     let headerRowIdx = -1;
     let headerMap: Partial<Record<keyof SstImportRow, number>> = {};
