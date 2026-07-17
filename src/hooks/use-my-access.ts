@@ -48,6 +48,17 @@ export function useMyAccess() {
     queryFn: async () => {
       const { data: s } = await supabase.auth.getSession();
       if (!s.session) return EMPTY;
+      const email = s.session.user?.email ?? null;
+      // Fallback fail-open EXCLUSIVO para o dono/admin principal: mesmo se o
+      // servidor falhar (RPC, rede, token), ele nunca fica preso em "acesso restrito".
+      if (isOwnerAdminEmail(email)) {
+        try {
+          const res = (await fetchFn()) as MyAccess;
+          return { ...res, isAdmin: true, allowed: null };
+        } catch {
+          return FULL_ADMIN;
+        }
+      }
       try {
         return (await fetchFn()) as MyAccess;
       } catch {
