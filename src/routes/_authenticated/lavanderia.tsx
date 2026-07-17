@@ -1075,6 +1075,46 @@ function DashboardView({
     return Array.from(m.entries()).map(([setor, giro]) => ({ setor, giro }));
   }, [pecas]);
 
+  const [movView, setMovView] = useState<"ambos" | "saida" | "entrada">("ambos");
+
+  const movTimeline = useMemo(() => {
+    const map = new Map<string, { data: string; saidas: number; entradas: number }>();
+    for (const e of eventosFiltrados) {
+      const cur = map.get(e.data) ?? { data: e.data, saidas: 0, entradas: 0 };
+      if (e.tipo === "saida") cur.saidas++;
+      else cur.entradas++;
+      map.set(e.data, cur);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => a.data.localeCompare(b.data))
+      .map((r) => ({ ...r, label: fmtBR(r.data) }));
+  }, [eventosFiltrados]);
+
+  const porCategoria = useMemo(() => {
+    const cats: Array<Exclude<CategoriaFiltro, "todas">> = [
+      "colaborador",
+      "reserva",
+      "visitante",
+      "avulso",
+    ];
+    const base = Object.fromEntries(
+      cats.map((k) => [k, { categoria: CAT_LABEL[k], giro: 0, emAberto: 0, saidas: 0, entradas: 0 }]),
+    ) as Record<Exclude<CategoriaFiltro, "todas">, { categoria: string; giro: number; emAberto: number; saidas: number; entradas: number }>;
+    for (const p of pecas) {
+      const cat = p.matricula ? classifyMatricula(p.matricula, p.setor) : "avulso";
+      base[cat].giro += p.giro;
+      if (p.status !== "retornada") base[cat].emAberto++;
+    }
+    for (const e of eventosFiltrados) {
+      const peca = pecaByCodigo.get(e.codigo);
+      const cat = peca?.matricula ? classifyMatricula(peca.matricula, peca.setor) : "avulso";
+      if (e.tipo === "saida") base[cat].saidas++;
+      else base[cat].entradas++;
+    }
+    return cats.map((k) => base[k]);
+  }, [pecas, eventosFiltrados, pecaByCodigo]);
+
+
   async function downloadPNG() {
     if (!dashRef.current) return;
     try {
