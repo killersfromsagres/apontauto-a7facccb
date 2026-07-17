@@ -100,6 +100,8 @@ export type Database = {
           is_prioridade: boolean
           motivo_prioridade: string | null
           nome: string
+          origem_equipe: string
+          origem_predio_andar_espaco: string
           os: string
           outros: string
           predio: string
@@ -124,6 +126,8 @@ export type Database = {
           is_prioridade?: boolean
           motivo_prioridade?: string | null
           nome?: string
+          origem_equipe?: string
+          origem_predio_andar_espaco?: string
           os: string
           outros?: string
           predio?: string
@@ -148,6 +152,8 @@ export type Database = {
           is_prioridade?: boolean
           motivo_prioridade?: string | null
           nome?: string
+          origem_equipe?: string
+          origem_predio_andar_espaco?: string
           os?: string
           outros?: string
           predio?: string
@@ -431,6 +437,78 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      regras_aprendidas_equipe: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          codigo_ativo: string | null
+          criado_em: string
+          criado_por: string | null
+          equipe: string
+          id: string
+          origem_chamado_os: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          codigo_ativo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          equipe: string
+          id?: string
+          origem_chamado_os?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          codigo_ativo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          equipe?: string
+          id?: string
+          origem_chamado_os?: string | null
+        }
+        Relationships: []
+      }
+      regras_aprendidas_localizacao: {
+        Row: {
+          andar: string
+          ativo: boolean
+          atualizado_em: string
+          codigo_ativo: string
+          criado_em: string
+          criado_por: string | null
+          espaco: string
+          id: string
+          origem_chamado_os: string | null
+          predio: string
+        }
+        Insert: {
+          andar?: string
+          ativo?: boolean
+          atualizado_em?: string
+          codigo_ativo: string
+          criado_em?: string
+          criado_por?: string | null
+          espaco?: string
+          id?: string
+          origem_chamado_os?: string | null
+          predio?: string
+        }
+        Update: {
+          andar?: string
+          ativo?: boolean
+          atualizado_em?: string
+          codigo_ativo?: string
+          criado_em?: string
+          criado_por?: string | null
+          espaco?: string
+          id?: string
+          origem_chamado_os?: string | null
+          predio?: string
         }
         Relationships: []
       }
