@@ -298,11 +298,3 @@ function ArrowBtn({
   );
 }
 
-interface Metric {
-  temperature: number;
-}
-// Silencing unused type-only helper; kept for possible extension.
-export type { Metric as _Metric };
-
-// Re-export icons in case consumers want them
-export { Thermometer };
