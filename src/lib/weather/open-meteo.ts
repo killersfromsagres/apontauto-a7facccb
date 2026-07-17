@@ -58,9 +58,20 @@ export type WeatherResponse = {
 };
 
 export async function fetchWeather(signal?: AbortSignal): Promise<WeatherResponse> {
-  const res = await fetch(ENDPOINT, { signal });
-  if (!res.ok) throw new Error(`Falha ao consultar Open-Meteo (${res.status})`);
-  const json = await res.json();
+  let res: Response;
+  try {
+    res = await fetch(ENDPOINT, { signal, cache: "no-store" });
+  } catch (e) {
+    throw new Error(`Sem conexão com a Open-Meteo: ${(e as Error).message}`);
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Open-Meteo respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`);
+  }
+  const json = (await res.json()) as Omit<WeatherResponse, "fetched_at">;
+  if (!json?.current || !json?.hourly?.temperature_2m) {
+    throw new Error("Resposta inválida do Open-Meteo (campos ausentes).");
+  }
   return { ...json, fetched_at: new Date().toISOString() };
 }
 
