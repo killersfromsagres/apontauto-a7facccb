@@ -1281,6 +1281,47 @@ function BackorderPage() {
 
 // ---------- Tabela principal ----------
 
+function LocationCell({
+  assetsMap,
+  ativo,
+  value,
+  field,
+  className,
+  title,
+}: {
+  assetsMap: AssetsMap;
+  ativo: string;
+  value: string;
+  field: "predio" | "andar" | "espaco";
+  className?: string;
+  title?: string;
+}) {
+  if (value) return <span className={className} title={title ?? value}>{value}</span>;
+  if (!ativo) return <span className="text-muted-foreground">—</span>;
+  const info = describeAtivo(assetsMap, ativo);
+  if (!info.found) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400"
+        title={`Ativo "${ativo}" não encontrado na base de ativos`}
+      >
+        Ativo não cadastrado
+      </span>
+    );
+  }
+  if (info.naFields[field]) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+        title={`Não aplicável — o Ativo é do nível ${info.nivelSelf || "raiz"}`}
+      >
+        —
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
+}
+
 function TableView({
   rows,
   loading,
