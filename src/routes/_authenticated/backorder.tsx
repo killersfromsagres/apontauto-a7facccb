@@ -69,7 +69,16 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap, resolveAtivo, type AssetsMap } from "@/lib/backorder/assets";
+import { makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import {
+  buildLearnedIndex,
+  applyLearnedToResolved,
+  learnedLocation,
+  learnedTeam,
+  type LearnedIndex,
+  type LearnedLocation,
+  type LearnedTeam,
+} from "@/lib/backorder/learned";
 import {
   CATEGORIAS,
   CATEGORIA_COLOR,
