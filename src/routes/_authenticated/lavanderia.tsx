@@ -25,6 +25,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertTriangle, CheckCircle2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import {
   BarChart,
   Bar,
   XAxis,
@@ -126,6 +136,17 @@ function LavanderiaPage() {
   const matrizInputRef = useRef<HTMLInputElement>(null);
   const movInputRef = useRef<HTMLInputElement>(null);
 
+  interface ValidationIssue {
+    level: "error" | "warning" | "info";
+    message: string;
+  }
+  interface ValidationReport {
+    origem: "Matriz" | "Movimentação";
+    resumo: string[];
+    issues: ValidationIssue[];
+  }
+  const [report, setReport] = useState<ValidationReport | null>(null);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     const [c, p, e] = await Promise.all([
@@ -178,42 +199,56 @@ function LavanderiaPage() {
     setImporting(true);
     try {
       const rows: MatrizRow[] = await readMatrizFile(file);
+      const issues: ValidationIssue[] = [];
       if (rows.length === 0) {
         toast.warning("Nenhuma linha reconhecida na Matriz.");
+        setReport({
+          origem: "Matriz",
+          resumo: ["A planilha não continha linhas com colaborador e código de barras válidos."],
+          issues: [{ level: "error", message: "Verifique se a aba correta contém as colunas COLABORADOR e CODIGO BARRAS." }],
+        });
         return;
       }
 
-      // Validação: agrupa por matrícula e detecta códigos duplicados / vazios.
-      const colabMap = new Map<
-        string,
-        { matricula: string; nome: string; setor: string | null }
-      >();
-      const codigoSeen = new Map<string, string>(); // codigo -> matricula
+      const colabMap = new Map<string, { matricula: string; nome: string; setor: string | null }>();
+      const codigoSeen = new Map<string, string>();
+      const nomeParaMats = new Map<string, Set<string>>();
       const pecaRows: Array<{ codigo: string; matricula: string; setor: string | null }> = [];
       const duplicados: string[] = [];
-      const contagemCat: Record<string, number> = {
-        colaborador: 0,
-        reserva: 0,
-        visitante: 0,
-        avulso: 0,
-      };
+      const contagemCat: Record<string, number> = { colaborador: 0, reserva: 0, visitante: 0, avulso: 0 };
 
       for (const r of rows) {
+        // integridade básica
+        if (!r.nome?.trim() || !r.codigo?.trim() || !r.matricula?.trim()) {
+          issues.push({ level: "warning", message: `Linha ignorada por dados incompletos (codigo="${r.codigo}", nome="${r.nome}").` });
+          continue;
+        }
+        if (!/^[A-Za-z0-9\-_.]+$/.test(r.codigo)) {
+          issues.push({ level: "warning", message: `Código com caracteres suspeitos: "${r.codigo}".` });
+        }
+        const nomeK = r.nome.trim().toUpperCase();
+        const set = nomeParaMats.get(nomeK) ?? new Set<string>();
+        set.add(r.matricula);
+        nomeParaMats.set(nomeK, set);
+
         if (!colabMap.has(r.matricula)) {
-          colabMap.set(r.matricula, {
-            matricula: r.matricula,
-            nome: r.nome,
-            setor: r.setor,
-          });
+          colabMap.set(r.matricula, { matricula: r.matricula, nome: r.nome, setor: r.setor });
           contagemCat[r.categoria] = (contagemCat[r.categoria] ?? 0) + 1;
         }
         const prev = codigoSeen.get(r.codigo);
         if (prev && prev !== r.matricula) {
           duplicados.push(r.codigo);
+          issues.push({ level: "warning", message: `Código "${r.codigo}" aparece para matrículas diferentes (${prev} e ${r.matricula}). Mantido o primeiro.` });
           continue;
         }
         codigoSeen.set(r.codigo, r.matricula);
         pecaRows.push({ codigo: r.codigo, matricula: r.matricula, setor: r.setor });
+      }
+
+      for (const [nome, mats] of nomeParaMats) {
+        if (mats.size > 1) {
+          issues.push({ level: "info", message: `"${nome}" aparece com ${mats.size} matrículas: ${Array.from(mats).join(", ")}.` });
+        }
       }
 
       const colabPayload = Array.from(colabMap.values());
@@ -230,10 +265,13 @@ function LavanderiaPage() {
         if (error) throw error;
       }
 
-      toast.success(
-        `Matriz importada · ${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s) · ${pecaRows.length} código(s) de barras${duplicados.length ? ` · ${duplicados.length} código(s) duplicado(s) ignorado(s)` : ""}.`,
-        { duration: 6000 },
-      );
+      const resumo = [
+        `${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s).`,
+        `${pecaRows.length} código(s) de barras cadastrado(s).`,
+        duplicados.length ? `${duplicados.length} código(s) duplicado(s) ignorado(s).` : "Sem códigos duplicados.",
+      ];
+      toast.success(`Matriz importada · ${resumo[0]}`, { duration: 6000 });
+      setReport({ origem: "Matriz", resumo, issues });
       await refresh();
     } catch (e) {
       console.error(e);
@@ -251,10 +289,25 @@ function LavanderiaPage() {
         const evs = await readMovimentacaoFile(f);
         all.push(...evs);
       }
+      const issues: ValidationIssue[] = [];
       if (all.length === 0) {
         toast.warning("Nenhum evento reconhecido nos arquivos.");
+        setReport({
+          origem: "Movimentação",
+          resumo: ["Nenhum evento reconhecido."],
+          issues: [{ level: "error", message: "Confira se as colunas estão em pares Saída/Entrada com data na linha 2." }],
+        });
         return;
       }
+
+      // Validação de datas futuras e códigos inválidos
+      const hoje = new Date().toISOString().slice(0, 10);
+      let futuros = 0;
+      for (const e of all) {
+        if (e.data > hoje) futuros++;
+      }
+      if (futuros) issues.push({ level: "warning", message: `${futuros} evento(s) com data futura em relação a hoje.` });
+
       const seen = new Set<string>();
       const dedup = all.filter((e) => {
         const k = `${e.codigo}|${e.tipo}|${e.data}`;
@@ -262,17 +315,37 @@ function LavanderiaPage() {
         seen.add(k);
         return true;
       });
+      const duplicadosArq = all.length - dedup.length;
+      if (duplicadosArq) issues.push({ level: "info", message: `${duplicadosArq} evento(s) duplicado(s) dentro dos arquivos foram unificados.` });
+
+      // Sequência lógica por código (2 saídas seguidas sem entrada)
+      const porCodigo = new Map<string, EventoRow[]>();
+      for (const e of dedup) {
+        const arr = porCodigo.get(e.codigo) ?? [];
+        arr.push(e);
+        porCodigo.set(e.codigo, arr);
+      }
+      let seqQuebrada = 0;
+      for (const [, arr] of porCodigo) {
+        arr.sort((a, b) => a.data.localeCompare(b.data));
+        let last: "saida" | "entrada" | null = null;
+        for (const e of arr) {
+          if (e.tipo === last) seqQuebrada++;
+          last = e.tipo;
+        }
+      }
+      if (seqQuebrada) issues.push({ level: "info", message: `${seqQuebrada} movimento(s) sem par correspondente (duas saídas ou duas entradas seguidas).` });
 
       const pecasSet = new Set(pecas.map((p) => p.codigo));
-      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter(
-        (c) => !pecasSet.has(c),
-      );
+      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter((c) => !pecasSet.has(c));
       if (novasPecas.length) {
+        issues.push({
+          level: "warning",
+          message: `${novasPecas.length} código(s) não estavam na Matriz e foram cadastrados sem colaborador: ${novasPecas.slice(0, 10).join(", ")}${novasPecas.length > 10 ? "…" : ""}.`,
+        });
         for (let i = 0; i < novasPecas.length; i += 500) {
           const chunk = novasPecas.slice(i, i + 500).map((codigo) => ({ codigo }));
-          const { error } = await supabase
-            .from("lavanderia_pecas")
-            .upsert(chunk, { onConflict: "codigo" });
+          const { error } = await supabase.from("lavanderia_pecas").upsert(chunk, { onConflict: "codigo" });
           if (error) throw error;
         }
       }
@@ -289,10 +362,14 @@ function LavanderiaPage() {
         inseridos += ins;
         ignorados += chunk.length - ins;
       }
-      toast.success(
-        `Movimentação importada · ${inseridos} evento(s) novo(s), ${ignorados} duplicado(s) ignorado(s)${novasPecas.length ? ` · ${novasPecas.length} código(s) novo(s) cadastrado(s)` : ""}.`,
-        { duration: 6000 },
-      );
+
+      const resumo = [
+        `${inseridos} evento(s) novo(s) inserido(s).`,
+        `${ignorados} evento(s) já existiam e foram ignorados.`,
+        novasPecas.length ? `${novasPecas.length} código(s) novo(s) cadastrado(s).` : "Todos os códigos já constam na Matriz.",
+      ];
+      toast.success(`Movimentação importada · ${resumo[0]}`, { duration: 6000 });
+      setReport({ origem: "Movimentação", resumo, issues });
       await refresh();
     } catch (e) {
       console.error(e);
@@ -462,6 +539,73 @@ function LavanderiaPage() {
         </TabsContent>
 
       </Tabs>
+
+      <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {report && report.issues.some((i) => i.level === "error") ? (
+                <AlertTriangle className="h-5 w-5 text-red-500" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              )}
+              Verificação de {report?.origem}
+            </DialogTitle>
+            <DialogDescription>
+              Relatório inteligente da última importação — revise antes de tomar decisões operacionais.
+            </DialogDescription>
+          </DialogHeader>
+          {report && (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Resumo
+                </div>
+                <ul className="space-y-1 text-sm">
+                  {report.resumo.map((r, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Diagnóstico ({report.issues.length})
+                </div>
+                {report.issues.length === 0 ? (
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+                    Nenhuma inconsistência detectada. Dados prontos para uso.
+                  </div>
+                ) : (
+                  <ScrollArea className="h-64 rounded-xl border border-border/60">
+                    <ul className="divide-y divide-border/50">
+                      {report.issues.map((it, i) => {
+                        const color =
+                          it.level === "error"
+                            ? "text-red-600 dark:text-red-400"
+                            : it.level === "warning"
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-sky-600 dark:text-sky-400";
+                        return (
+                          <li key={i} className="flex gap-2 px-3 py-2 text-sm">
+                            <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${color}`} />
+                            <span>{it.message}</span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </ScrollArea>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setReport(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }
@@ -595,34 +739,107 @@ function HistoricoView({
   colabByMat: Map<string, ColabRow>;
 }) {
   const [query, setQuery] = useState("");
+  const [movFilter, setMovFilter] = useState<"todos" | "saida" | "entrada">("todos");
+
+  const emAberto = useMemo(() => {
+    // Códigos com saída pendente (sem entrada posterior)
+    const map = new Map<string, "saida" | "entrada">();
+    const sorted = [...eventos].sort((a, b) => a.data.localeCompare(b.data));
+    for (const e of sorted) map.set(e.codigo, e.tipo);
+    let s = 0;
+    for (const v of map.values()) if (v === "saida") s++;
+    return s;
+  }, [eventos]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return eventos.slice(-200).reverse();
-    return eventos
-      .filter((e) => {
-        const p = pecaByCodigo.get(e.codigo);
-        const c = p?.matricula ? colabByMat.get(p.matricula) : undefined;
-        return (
-          e.codigo.toLowerCase().includes(q) ||
-          (c?.nome ?? "").toLowerCase().includes(q) ||
-          (p?.matricula ?? "").toLowerCase().includes(q)
-        );
-      })
-      .slice()
-      .reverse();
-  }, [eventos, query, pecaByCodigo, colabByMat]);
+    const base = eventos.filter((e) => (movFilter === "todos" ? true : e.tipo === movFilter));
+    const searched = !q
+      ? base
+      : base.filter((e) => {
+          const p = pecaByCodigo.get(e.codigo);
+          const c = p?.matricula ? colabByMat.get(p.matricula) : undefined;
+          return (
+            e.codigo.toLowerCase().includes(q) ||
+            (c?.nome ?? "").toLowerCase().includes(q) ||
+            (p?.matricula ?? "").toLowerCase().includes(q)
+          );
+        });
+    return searched.slice(-500).reverse();
+  }, [eventos, query, pecaByCodigo, colabByMat, movFilter]);
+
+  const totalSaidas = eventos.filter((e) => e.tipo === "saida").length;
+  const totalEntradas = eventos.filter((e) => e.tipo === "entrada").length;
 
   return (
     <GlassCard>
-      <div className="mb-3 relative">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar código ou colaborador…"
-          className="pl-8"
-        />
+      <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <button
+          onClick={() => setMovFilter("todos")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "todos"
+              ? "border-primary/60 bg-primary/5 ring-2 ring-primary"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="text-xs uppercase tracking-wider text-muted-foreground">Em aberto</div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold">{emAberto}</span>
+            <span className="text-xs text-muted-foreground">peças sem retorno</span>
+          </div>
+        </button>
+        <button
+          onClick={() => setMovFilter("saida")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "saida"
+              ? "border-amber-500/60 bg-amber-500/10 ring-2 ring-amber-500"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+            <ArrowUpCircle className="h-3.5 w-3.5" /> Saídas
+          </div>
+          <div className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">
+            {totalSaidas}
+          </div>
+        </button>
+        <button
+          onClick={() => setMovFilter("entrada")}
+          className={`rounded-xl border p-3 text-left transition ${
+            movFilter === "entrada"
+              ? "border-emerald-500/60 bg-emerald-500/10 ring-2 ring-emerald-500"
+              : "border-border/60 hover:bg-muted/40"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider text-muted-foreground">
+            <ArrowDownCircle className="h-3.5 w-3.5" /> Entradas
+          </div>
+          <div className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {totalEntradas}
+          </div>
+        </button>
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[220px] flex-1">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar código ou colaborador…"
+            className="pl-8"
+          />
+        </div>
+        <Select value={movFilter} onValueChange={(v) => setMovFilter(v as typeof movFilter)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os movimentos</SelectItem>
+            <SelectItem value="saida">Somente saídas</SelectItem>
+            <SelectItem value="entrada">Somente entradas</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
@@ -858,6 +1075,46 @@ function DashboardView({
     return Array.from(m.entries()).map(([setor, giro]) => ({ setor, giro }));
   }, [pecas]);
 
+  const [movView, setMovView] = useState<"ambos" | "saida" | "entrada">("ambos");
+
+  const movTimeline = useMemo(() => {
+    const map = new Map<string, { data: string; saidas: number; entradas: number }>();
+    for (const e of eventosFiltrados) {
+      const cur = map.get(e.data) ?? { data: e.data, saidas: 0, entradas: 0 };
+      if (e.tipo === "saida") cur.saidas++;
+      else cur.entradas++;
+      map.set(e.data, cur);
+    }
+    return Array.from(map.values())
+      .sort((a, b) => a.data.localeCompare(b.data))
+      .map((r) => ({ ...r, label: fmtBR(r.data) }));
+  }, [eventosFiltrados]);
+
+  const porCategoria = useMemo(() => {
+    const cats: Array<Exclude<CategoriaFiltro, "todas">> = [
+      "colaborador",
+      "reserva",
+      "visitante",
+      "avulso",
+    ];
+    const base = Object.fromEntries(
+      cats.map((k) => [k, { categoria: CAT_LABEL[k], giro: 0, emAberto: 0, saidas: 0, entradas: 0 }]),
+    ) as Record<Exclude<CategoriaFiltro, "todas">, { categoria: string; giro: number; emAberto: number; saidas: number; entradas: number }>;
+    for (const p of pecas) {
+      const cat = p.matricula ? classifyMatricula(p.matricula, p.setor) : "avulso";
+      base[cat].giro += p.giro;
+      if (p.status !== "retornada") base[cat].emAberto++;
+    }
+    for (const e of eventosFiltrados) {
+      const peca = pecaByCodigo.get(e.codigo);
+      const cat = peca?.matricula ? classifyMatricula(peca.matricula, peca.setor) : "avulso";
+      if (e.tipo === "saida") base[cat].saidas++;
+      else base[cat].entradas++;
+    }
+    return cats.map((k) => base[k]);
+  }, [pecas, eventosFiltrados, pecaByCodigo]);
+
+
   async function downloadPNG() {
     if (!dashRef.current) return;
     try {
@@ -928,6 +1185,114 @@ function DashboardView({
           <StatCard label="Atrasadas" value={totalAtrasadas} tone="red" />
           <StatCard label="Fora do giro (>7d)" value={foraGiroCount} tone="red" />
         </div>
+
+        <GlassCard>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-semibold">Movimentações no período · MBR</h3>
+              <p className="text-xs text-muted-foreground">
+                Entradas e saídas registradas — selecione para comparar ou isolar cada fluxo.
+              </p>
+            </div>
+            <div className="flex gap-1 rounded-lg border border-border/60 bg-muted/30 p-1">
+              {(["ambos", "saida", "entrada"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setMovView(v)}
+                  className={`rounded-md px-3 py-1 text-xs font-medium transition ${
+                    movView === v
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v === "ambos" ? "Ambos" : v === "saida" ? "Saídas" : "Entradas"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={movTimeline} margin={{ top: 8, right: 16, left: 0, bottom: 32 }}>
+                <defs>
+                  <linearGradient id="gSai" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.55} />
+                  </linearGradient>
+                  <linearGradient id="gEnt" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.55} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  interval="preserveStartEnd"
+                  angle={-30}
+                  textAnchor="end"
+                  height={54}
+                />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                {(movView === "ambos" || movView === "saida") && (
+                  <Bar dataKey="saidas" name="Saídas" fill="url(#gSai)" radius={[4, 4, 0, 0]} />
+                )}
+                {(movView === "ambos" || movView === "entrada") && (
+                  <Bar dataKey="entradas" name="Entradas" fill="url(#gEnt)" radius={[4, 4, 0, 0]} />
+                )}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria · MBR</h3>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Comparativo consolidado entre Colaborador, Reserva, Visitante e Avulso.
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {porCategoria.map((c, i) => (
+              <div
+                key={c.categoria}
+                className="rounded-xl border border-border/60 bg-gradient-to-br from-background to-muted/40 p-3"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}
+                  />
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {c.categoria}
+                  </div>
+                </div>
+                <div className="mt-1 text-2xl font-bold">{c.giro}</div>
+                <div className="text-[11px] text-muted-foreground">ciclos concluídos</div>
+                <div className="mt-2 flex items-center justify-between text-xs">
+                  <span className="text-amber-600 dark:text-amber-400">↑ {c.saidas}</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">↓ {c.entradas}</span>
+                  <span className="text-muted-foreground">Aberto {c.emAberto}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 h-72 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={porCategoria} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="categoria" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="saidas" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="entradas" name="Entradas" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="giro" name="Giro (ciclos)" fill="#2B3095" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GlassCard>
