@@ -732,12 +732,24 @@ function BackorderPage() {
     const equipe = CATEGORIA_TO_EQUIPE[atividade];
     const { error } = await supabase
       .from("backorder_os")
-      .update({ atividade, atividade_manual: true, equipe })
+      .update({ atividade, atividade_manual: true, equipe, origem_equipe: "regra_aprendida" } as never)
       .eq("os", r.os);
     if (error) return toast.error("Falha ao atualizar categoria");
     await supabase
       .from("backorder_atividade_override")
       .upsert({ os: r.os, atividade }, { onConflict: "os" });
+    // Aprende a equipe por ativo
+    if (r.ativo) {
+      const { data: user } = await supabase.auth.getUser();
+      await supabase.from("regras_aprendidas_equipe").insert({
+        codigo_ativo: r.ativo.trim().toUpperCase(),
+        equipe: atividade,
+        origem_chamado_os: r.os,
+        criado_por: user.user?.id ?? null,
+        ativo: true,
+      });
+      void loadLearnedRules();
+    }
     setRows((prev) =>
       prev.map((x) => (x.os === r.os ? { ...x, atividade, atividade_manual: true, equipe } : x)),
     );
