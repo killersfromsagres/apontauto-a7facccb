@@ -225,12 +225,14 @@ function BackorderPage() {
   async function handleBackorderImport(file: File) {
     setImporting(true);
     try {
-      // 1) carrega assets_ref inteiro em memória
+      // 1) carrega assets_ref inteiro em memória (com hierarquia)
       const { data: assetsRaw, error: assetsErr } = await supabase
         .from("assets_ref")
-        .select("ativo, denominacao");
+        .select("ativo, denominacao, nivel, codigo_pai");
       if (assetsErr) throw assetsErr;
-      const assetsMap = makeAssetsMap((assetsRaw as Array<{ ativo: string; denominacao: string }>) ?? []);
+      const assetsMap = makeAssetsMap(
+        (assetsRaw as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? [],
+      );
 
       const parsed = await readBackorderFile(file, assetsMap);
       if (parsed.length === 0) {
