@@ -609,9 +609,85 @@ function LavanderiaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <LavanderiaScrollHelpers />
     </PageShell>
   );
 }
+
+/**
+ * Utilitários de rolagem para o módulo Controle de Lavanderia.
+ *  • Botão "Voltar ao topo" flutuante quando a página é rolada.
+ *  • Indicador animado (→) em cada `.lavanderia-scroll` que tenha
+ *    conteúdo além da largura visível, incentivando o usuário a rolar
+ *    horizontalmente para ver todas as colunas. O indicador some sozinho
+ *    quando o usuário atinge o fim horizontal.
+ */
+function LavanderiaScrollHelpers() {
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 320);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Detecta overflow horizontal nas caixas roláveis e injeta uma dica
+  // "arraste para o lado". Usa MutationObserver para pegar tabelas que
+  // são criadas/removidas ao trocar de aba.
+  useEffect(() => {
+    const marker = "data-lav-hscroll-hint";
+
+    const sync = (el: HTMLElement) => {
+      const hasOverflow = el.scrollWidth - el.clientWidth > 4;
+      const atEnd = hasOverflow && el.scrollLeft + el.clientWidth >= el.scrollWidth - 4;
+      el.toggleAttribute(marker, hasOverflow && !atEnd);
+    };
+
+    const attach = (el: HTMLElement) => {
+      if ((el as HTMLElement & { __lavHooked?: boolean }).__lavHooked) return;
+      (el as HTMLElement & { __lavHooked?: boolean }).__lavHooked = true;
+      const handler = () => sync(el);
+      el.addEventListener("scroll", handler, { passive: true });
+      const ro = new ResizeObserver(handler);
+      ro.observe(el);
+      sync(el);
+    };
+
+    const scan = () => {
+      document.querySelectorAll<HTMLElement>(".lavanderia-scroll").forEach(attach);
+    };
+
+    scan();
+    const mo = new MutationObserver(() => scan());
+    mo.observe(document.body, { childList: true, subtree: true });
+    const interval = window.setInterval(scan, 1500);
+    return () => {
+      mo.disconnect();
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="lavanderia-back-to-top"
+        data-visible={showTop ? "true" : "false"}
+        aria-label="Voltar ao topo"
+      >
+        <ArrowUp className="h-4 w-4" />
+        <span>Topo</span>
+      </button>
+      {/* O indicador → é renderizado via CSS (::after) no atributo
+          data-lav-hscroll-hint aplicado dinamicamente acima. */}
+      <ChevronRight className="hidden" aria-hidden />
+    </>
+  );
+}
+
+
 
 // ---------------- Abertas ----------------
 
