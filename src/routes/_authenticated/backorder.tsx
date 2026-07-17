@@ -69,7 +69,16 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap, resolveAtivo, type AssetsMap } from "@/lib/backorder/assets";
+import { makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import {
+  buildLearnedIndex,
+  applyLearnedToResolved,
+  learnedLocation,
+  learnedTeam,
+  type LearnedIndex,
+  type LearnedLocation,
+  type LearnedTeam,
+} from "@/lib/backorder/learned";
 import {
   CATEGORIAS,
   CATEGORIA_COLOR,
@@ -199,6 +208,21 @@ function BackorderPage() {
   }, []);
 
   const [rulesDB, setRulesDB] = useState<RuleRow[]>([]);
+  const [learnedLoc, setLearnedLoc] = useState<LearnedLocation[]>([]);
+  const [learnedTeamRules, setLearnedTeamRules] = useState<LearnedTeam[]>([]);
+  const learnedIndex = useMemo<LearnedIndex>(
+    () => buildLearnedIndex(learnedLoc, learnedTeamRules),
+    [learnedLoc, learnedTeamRules],
+  );
+
+  const loadLearnedRules = useCallback(async () => {
+    const [loc, tm] = await Promise.all([
+      supabase.from("regras_aprendidas_localizacao").select("*").order("criado_em", { ascending: false }),
+      supabase.from("regras_aprendidas_equipe").select("*").order("criado_em", { ascending: false }),
+    ]);
+    setLearnedLoc(((loc.data ?? []) as LearnedLocation[]));
+    setLearnedTeamRules(((tm.data ?? []) as LearnedTeam[]));
+  }, []);
 
   const loadClassifierRules = useCallback(async () => {
     const { data } = await supabase
@@ -226,8 +250,9 @@ function BackorderPage() {
     void loadConfig();
     void loadAssets();
     void loadClassifierRules();
+    void loadLearnedRules();
     void refresh();
-  }, [loadConfig, loadAssets, loadClassifierRules, refresh]);
+  }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
@@ -331,22 +356,51 @@ function BackorderPage() {
       let atualizadas = 0;
       let ignoradas = 0;
 
-      const toUpsert: BackorderRow[] = [];
+      // Recarrega regras aprendidas (o motor precisa da versão mais atual)
+      const [locRes, teamRes] = await Promise.all([
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+      ]);
+      const learnedIdx = buildLearnedIndex(
+        (locRes.data ?? []) as LearnedLocation[],
+        (teamRes.data ?? []) as LearnedTeam[],
+      );
+
+      const toUpsert: Array<BackorderRow & {
+        origem_predio_andar_espaco: string;
+        origem_equipe: string;
+      }> = [];
       for (const r of parsed) {
         const prev = existMap.get(r.os);
-        // Se já está finalizado localmente, ignora reimport (mas garante upsert com finalizado=true)
         if (prev?.finalizado) {
           ignoradas++;
           continue;
         }
         const override = overrideMap.get(r.os);
-        const atividade = (override as Categoria | undefined) ?? (prev?.atividade_manual ? prev.atividade : r.atividade);
-        const equipe = override
+
+        // Aplica regra aprendida (prioridade sobre árvore) — mas nunca sobrescreve override manual
+        const tree = resolveAtivoTree(assetsMap, r.ativo);
+        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
+
+        const atividadeFinal = (override as Categoria | undefined)
+          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : applied.atividade);
+        const equipeFinal = override
           ? CATEGORIA_TO_EQUIPE[override as Categoria]
           : prev?.atividade_manual
             ? prev.equipe
-            : r.equipe;
-        const next = { ...r, atividade: atividade as Categoria, equipe };
+            : CATEGORIA_TO_EQUIPE[atividadeFinal];
+
+        const next = {
+          ...r,
+          predio: applied.predio || r.predio,
+          andar: applied.andar || r.andar,
+          espaco: applied.espaco || r.espaco,
+          atividade: atividadeFinal,
+          equipe: equipeFinal,
+          revisao_manual: applied.revisao_manual && !override && !prev?.atividade_manual,
+          origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : applied.origem_equipe,
+        };
         if (prev) {
           const sameISO = (a?: string | null, b?: string | null) =>
             (a ? new Date(a).toISOString() : "") === (b ? new Date(b).toISOString() : "");
@@ -390,6 +444,8 @@ function BackorderPage() {
           outros: r.outros,
           criticidade: r.criticidade ?? "",
           revisao_manual: r.revisao_manual,
+          origem_predio_andar_espaco: r.origem_predio_andar_espaco,
+          origem_equipe: r.origem_equipe,
         }));
         const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
         if (error) throw error;
@@ -489,7 +545,7 @@ function BackorderPage() {
     }
   }
 
-  // Reprocessa Prédio/Andar/Espaço de todos os chamados usando a base atual.
+  // Reprocessa Prédio/Andar/Espaço/Equipe usando árvore + regras aprendidas.
   async function handleReprocessarChamados() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
@@ -501,33 +557,77 @@ function BackorderPage() {
         (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
       );
       setAssetsMap(map);
+
+      await loadLearnedRules();
+      const [locRes, teamRes] = await Promise.all([
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+      ]);
+      const learnedIdx = buildLearnedIndex(
+        (locRes.data ?? []) as LearnedLocation[],
+        (teamRes.data ?? []) as LearnedTeam[],
+      );
+
       const { data: allRows } = await supabase
         .from("backorder_os")
-        .select("os, ativo, predio, andar, espaco, revisao_manual");
-      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }> = [];
-      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string; revisao_manual: boolean }>) {
+        .select("os, ativo, predio, andar, espaco, atividade, atividade_manual, revisao_manual, origem_predio_andar_espaco, origem_equipe");
+      type Row = {
+        os: string; ativo: string; predio: string; andar: string; espaco: string;
+        atividade: string; atividade_manual: boolean; revisao_manual: boolean;
+        origem_predio_andar_espaco: string; origem_equipe: string;
+      };
+      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; atividade?: string; equipe?: string; revisao_manual: boolean; origem_predio_andar_espaco: string; origem_equipe: string }> = [];
+      for (const r of (allRows ?? []) as Row[]) {
         if (!r.ativo) continue;
-        const res = resolveAtivo(map, r.ativo);
-        const found = !!(res.predio || res.andar || res.espaco);
-        const revisao = !found;
+        const tree = resolveAtivoTree(map, r.ativo);
+        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, (r.atividade as Categoria) || "Outros");
+
+        // Não sobrescreve equipe se atividade_manual = true
+        const nextAtiv = r.atividade_manual ? (r.atividade as Categoria) : applied.atividade;
+        const nextEquipe = r.atividade_manual
+          ? undefined
+          : CATEGORIA_TO_EQUIPE[applied.atividade];
+        const revisao = (applied.origem_predio_andar_espaco === "pendente")
+          || (!r.atividade_manual && applied.origem_equipe === "pendente");
+
         if (
-          res.predio !== r.predio ||
-          res.andar !== r.andar ||
-          res.espaco !== r.espaco ||
-          revisao !== r.revisao_manual
+          applied.predio !== r.predio ||
+          applied.andar !== r.andar ||
+          applied.espaco !== r.espaco ||
+          nextAtiv !== r.atividade ||
+          revisao !== r.revisao_manual ||
+          applied.origem_predio_andar_espaco !== r.origem_predio_andar_espaco ||
+          (r.atividade_manual ? "regra_aprendida" : applied.origem_equipe) !== r.origem_equipe
         ) {
-          patches.push({ os: r.os, ...res, revisao_manual: revisao });
+          patches.push({
+            os: r.os,
+            predio: applied.predio,
+            andar: applied.andar,
+            espaco: applied.espaco,
+            atividade: r.atividade_manual ? undefined : nextAtiv,
+            equipe: nextEquipe,
+            revisao_manual: revisao,
+            origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+            origem_equipe: r.atividade_manual ? "regra_aprendida" : applied.origem_equipe,
+          });
         }
       }
       for (let i = 0; i < patches.length; i += 50) {
         const slice = patches.slice(i, i + 50);
         await Promise.all(
-          slice.map((p) =>
-            supabase
-              .from("backorder_os")
-              .update({ predio: p.predio, andar: p.andar, espaco: p.espaco, revisao_manual: p.revisao_manual })
-              .eq("os", p.os),
-          ),
+          slice.map((p) => {
+            const upd: Record<string, unknown> = {
+              predio: p.predio,
+              andar: p.andar,
+              espaco: p.espaco,
+              revisao_manual: p.revisao_manual,
+              origem_predio_andar_espaco: p.origem_predio_andar_espaco,
+              origem_equipe: p.origem_equipe,
+            };
+            if (p.atividade) upd.atividade = p.atividade;
+            if (p.equipe) upd.equipe = p.equipe;
+            return supabase.from("backorder_os").update(upd as never).eq("os", p.os);
+          }),
         );
       }
       toast.success(`Reprocessado: ${patches.length} chamado(s) atualizado(s).`, { id: t });
@@ -632,12 +732,24 @@ function BackorderPage() {
     const equipe = CATEGORIA_TO_EQUIPE[atividade];
     const { error } = await supabase
       .from("backorder_os")
-      .update({ atividade, atividade_manual: true, equipe })
+      .update({ atividade, atividade_manual: true, equipe, origem_equipe: "regra_aprendida" } as never)
       .eq("os", r.os);
     if (error) return toast.error("Falha ao atualizar categoria");
     await supabase
       .from("backorder_atividade_override")
       .upsert({ os: r.os, atividade }, { onConflict: "os" });
+    // Aprende a equipe por ativo
+    if (r.ativo) {
+      const { data: user } = await supabase.auth.getUser();
+      await supabase.from("regras_aprendidas_equipe").insert({
+        codigo_ativo: r.ativo.trim().toUpperCase(),
+        equipe: atividade,
+        origem_chamado_os: r.os,
+        criado_por: user.user?.id ?? null,
+        ativo: true,
+      });
+      void loadLearnedRules();
+    }
     setRows((prev) =>
       prev.map((x) => (x.os === r.os ? { ...x, atividade, atividade_manual: true, equipe } : x)),
     );
@@ -676,7 +788,96 @@ function BackorderPage() {
         .from("backorder_atividade_override")
         .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
     }
-    setRows((prev) => prev.map((x) => (x.os === r.os ? { ...x, ...next } : x)));
+
+    // ── Aprendizado automático a partir de correções manuais ───────────
+    const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
+    const wasReview = r.revisao_manual;
+
+    // Local aprendido: se algum dos campos de local foi editado manualmente
+    // (ou recalculado a partir de novo ativo) e o chamado estava em revisão
+    // ou o ativo não existe na árvore.
+    const locChanged =
+      (next.predio !== undefined && next.predio !== r.predio) ||
+      (next.andar !== undefined && next.andar !== r.andar) ||
+      (next.espaco !== undefined && next.espaco !== r.espaco);
+    const tree = ativoKey ? resolveAtivoTree(assetsMap, ativoKey) : { predio: "", andar: "", espaco: "", found: false };
+    const willBePredio = next.predio ?? r.predio;
+    const willBeAndar = next.andar ?? r.andar;
+    const willBeEspaco = next.espaco ?? r.espaco;
+    const treeMismatch = !tree.found ||
+      tree.predio !== willBePredio ||
+      tree.andar !== willBeAndar ||
+      tree.espaco !== willBeEspaco;
+
+    if (ativoKey && locChanged && (wasReview || treeMismatch) && (willBePredio || willBeAndar || willBeEspaco)) {
+      const { data: user } = await supabase.auth.getUser();
+      const { error: lerr } = await supabase
+        .from("regras_aprendidas_localizacao")
+        .insert({
+          codigo_ativo: ativoKey,
+          predio: willBePredio ?? "",
+          andar: willBeAndar ?? "",
+          espaco: willBeEspaco ?? "",
+          origem_chamado_os: r.os,
+          criado_por: user.user?.id ?? null,
+          ativo: true,
+        });
+      if (!lerr) {
+        // Aplica em cascata a outros chamados com o mesmo ativo
+        const { data: siblings } = await supabase
+          .from("backorder_os")
+          .select("os")
+          .eq("ativo", ativoKey)
+          .neq("os", r.os)
+          .eq("finalizado", false);
+        const others = ((siblings ?? []) as Array<{ os: string }>).map((s) => s.os);
+        if (others.length > 0) {
+          await supabase
+            .from("backorder_os")
+            .update({
+              predio: willBePredio ?? "",
+              andar: willBeAndar ?? "",
+              espaco: willBeEspaco ?? "",
+              revisao_manual: false,
+              origem_predio_andar_espaco: "regra_aprendida",
+            } as never)
+            .in("os", others);
+        }
+        void loadLearnedRules();
+        toast.success(`Regra aprendida para ativo ${ativoKey}${others.length ? ` (aplicada a +${others.length} chamado(s))` : ""}`);
+      }
+    }
+
+    // Equipe aprendida por ativo
+    if (patch.atividade && patch.atividade !== r.atividade && ativoKey) {
+      const { data: user } = await supabase.auth.getUser();
+      await supabase.from("regras_aprendidas_equipe").insert({
+        codigo_ativo: ativoKey,
+        equipe: patch.atividade,
+        origem_chamado_os: r.os,
+        criado_por: user.user?.id ?? null,
+        ativo: true,
+      });
+      void loadLearnedRules();
+    }
+
+    // Marca chamado como resolvido (sai da revisão) quando local + equipe estão preenchidos
+    const nowHasLoc = !!(willBePredio || willBeAndar || willBeEspaco);
+    if (r.revisao_manual && nowHasLoc) {
+      await supabase.from("backorder_os").update({ revisao_manual: false } as never).eq("os", r.os);
+    }
+
+    setRows((prev) =>
+      prev.map((x) =>
+        x.os === r.os
+          ? {
+              ...x,
+              ...next,
+              revisao_manual: r.revisao_manual && nowHasLoc ? false : x.revisao_manual,
+            }
+          : x,
+      ),
+    );
     toast.success("Chamado atualizado");
     return true;
   }
@@ -1029,6 +1230,27 @@ function BackorderPage() {
             onDeleteRule={deleteRule}
             onReprocessar={handleReprocessarChamados}
             importing={importing}
+            learnedLoc={learnedLoc}
+            learnedTeam={learnedTeamRules}
+            allRows={rows}
+            onDeleteLearnedLoc={async (id) => {
+              await supabase.from("regras_aprendidas_localizacao").delete().eq("id", id);
+              await loadLearnedRules();
+              toast.success("Regra aprendida removida");
+            }}
+            onDeleteLearnedTeam={async (id) => {
+              await supabase.from("regras_aprendidas_equipe").delete().eq("id", id);
+              await loadLearnedRules();
+              toast.success("Regra aprendida removida");
+            }}
+            onToggleLearnedLoc={async (id, ativo) => {
+              await supabase.from("regras_aprendidas_localizacao").update({ ativo } as never).eq("id", id);
+              await loadLearnedRules();
+            }}
+            onToggleLearnedTeam={async (id, ativo) => {
+              await supabase.from("regras_aprendidas_equipe").update({ ativo } as never).eq("id", id);
+              await loadLearnedRules();
+            }}
           />
         </TabsContent>
 
@@ -2652,6 +2874,13 @@ function RevisaoPanel({
   onDeleteRule,
   onReprocessar,
   importing,
+  learnedLoc,
+  learnedTeam,
+  allRows,
+  onDeleteLearnedLoc,
+  onDeleteLearnedTeam,
+  onToggleLearnedLoc,
+  onToggleLearnedTeam,
 }: {
   rows: BOSRow[];
   rules: RuleRow[];
@@ -2660,7 +2889,24 @@ function RevisaoPanel({
   onDeleteRule: (id: string) => Promise<void>;
   onReprocessar: () => Promise<void>;
   importing: boolean;
+  learnedLoc: LearnedLocation[];
+  learnedTeam: LearnedTeam[];
+  allRows: BOSRow[];
+  onDeleteLearnedLoc: (id: string) => Promise<void>;
+  onDeleteLearnedTeam: (id: string) => Promise<void>;
+  onToggleLearnedLoc: (id: string, ativo: boolean) => Promise<void>;
+  onToggleLearnedTeam: (id: string, ativo: boolean) => Promise<void>;
 }) {
+  // Contagem de chamados por ativo aprendido (para "quantos essa regra resolveu")
+  const countByAtivo = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of allRows) {
+      const k = r.ativo?.trim().toUpperCase();
+      if (!k) continue;
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  }, [allRows]);
   const [novo, setNovo] = useState<{ equipe: Categoria; palavra_chave: string; fonte: "descricao" | "categoria"; prioridade: number }>({
     equipe: "Civil",
     palavra_chave: "",
@@ -2800,6 +3046,126 @@ function RevisaoPanel({
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => onDeleteRule(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </GlassCard>
+
+      <GlassCard>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold">Regras aprendidas por Ativo</h3>
+          <p className="text-sm text-muted-foreground">
+            Correções manuais de Prédio/Andar/Espaço e Equipe viram regras permanentes,
+            aplicadas automaticamente aos próximos chamados do mesmo ativo.
+          </p>
+        </div>
+
+        <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+          Localização ({learnedLoc.length})
+        </div>
+        <div className="mb-6 overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Prédio · Andar · Espaço</TableHead>
+                <TableHead>OS origem</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead className="w-24 text-center">Chamados</TableHead>
+                <TableHead className="w-20">Ativa</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {learnedLoc.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma regra aprendida ainda — corrija um chamado em revisão para criar.
+                  </TableCell>
+                </TableRow>
+              )}
+              {learnedLoc.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.codigo_ativo}</TableCell>
+                  <TableCell className="text-sm">
+                    {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") || "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {r.origem_chamado_os ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.criado_em).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">{countByAtivo.get(r.codigo_ativo) ?? 0}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={r.ativo}
+                      onCheckedChange={(v) => onToggleLearnedLoc(r.id, !!v)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedLoc(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">
+          Equipe ({learnedTeam.length})
+        </div>
+        <div className="overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ativo</TableHead>
+                <TableHead>Equipe</TableHead>
+                <TableHead>OS origem</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead className="w-24 text-center">Chamados</TableHead>
+                <TableHead className="w-20">Ativa</TableHead>
+                <TableHead className="w-20"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {learnedTeam.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhuma regra aprendida ainda.
+                  </TableCell>
+                </TableRow>
+              )}
+              {learnedTeam.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-mono text-xs">{r.codigo_ativo ?? "—"}</TableCell>
+                  <TableCell><Badge variant="outline">{r.equipe}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {r.origem_chamado_os ?? "—"}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(r.criado_em).toLocaleString("pt-BR")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline">{r.codigo_ativo ? (countByAtivo.get(r.codigo_ativo) ?? 0) : 0}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Checkbox
+                      checked={r.ativo}
+                      onCheckedChange={(v) => onToggleLearnedTeam(r.id, !!v)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedTeam(r.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
