@@ -191,12 +191,23 @@ export const getMyAccess = createServerFn({ method: "GET" })
       context.supabase.rpc("get_my_allowed_menus"),
     ]);
     if (adminRes.error) throw new Error(adminRes.error.message);
-    if (menusRes.error) throw new Error(menusRes.error.message);
     const isAdmin = Boolean(adminRes.data) || isOwnerAdminEmail(email);
-    return {
-      isAdmin,
-      allowed: isAdmin ? null : (menusRes.data as string[] | null),
-    };
+    if (isAdmin) return { isAdmin: true, allowed: null };
+
+    // Se a RPC falhar por qualquer motivo, cair para leitura direta do perfil
+    // via RLS (self-read). Nunca devolver `[]` implicitamente.
+    let allowed: string[] | null;
+    if (menusRes.error) {
+      const { data: prof } = await context.supabase
+        .from("profiles")
+        .select("allowed_menus")
+        .eq("id", context.userId)
+        .maybeSingle();
+      allowed = (prof?.allowed_menus as string[] | null | undefined) ?? null;
+    } else {
+      allowed = (menusRes.data as string[] | null) ?? null;
+    }
+    return { isAdmin: false, allowed };
   });
 
 /**
