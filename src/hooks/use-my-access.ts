@@ -46,8 +46,14 @@ export function useMyAccess() {
         return EMPTY;
       }
     },
-    staleTime: 5 * 60_000,
-    gcTime: 30 * 60_000,
+    // Sempre revalida ao montar / focar a aba para que alterações de
+    // permissões feitas pelo admin apareçam imediatamente na próxima
+    // navegação ou retorno à aba, sem depender de logout/login.
+    staleTime: 0,
+    gcTime: 5 * 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
