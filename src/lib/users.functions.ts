@@ -218,24 +218,9 @@ export const createAppUser = createServerFn({ method: "POST" })
   .validator(validateCreate)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-
-    const supabaseAdmin = await createUsersAdminClient();
-    const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: loginToEmail(data.login),
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { login: data.login, ...(data.fullName ? { full_name: data.fullName } : {}) },
-    });
-    if (error) throw new Error(error.message);
-    const newId = created.user?.id;
-    if (!newId) throw new Error("Falha ao criar usuário.");
-
-    const { error: roleError } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: newId, role: data.role });
-    if (roleError) throw new Error(roleError.message);
-
-    return { id: newId, login: data.login, role: data.role };
+    throw new Error("Criação de novos usuários está desativada neste sistema.");
+    // eslint-disable-next-line no-unreachable
+    return { id: "", login: data.login, role: data.role };
   });
 
 /**
