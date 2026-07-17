@@ -390,30 +390,70 @@ function TaludesPage() {
     };
   };
 
+  const SNAP_DIST = 1.2;
+  const snapPoint = (p: Point, ignoreIdx: number | null = null): { p: Point; snapped: boolean } => {
+    let best: { d: number; x: number; y: number } = { d: Infinity, x: p.x, y: p.y };
+    for (const t of taludes) {
+      if (t.id === editingPolygonFor) continue;
+      for (const v of t.polygon) {
+        const d = Math.hypot(v.x - p.x, v.y - p.y);
+        if (d < best.d) best = { d, x: v.x, y: v.y };
+      }
+    }
+    drawingPoints.forEach((v, i) => {
+      if (i === ignoreIdx) return;
+      const d = Math.hypot(v.x - p.x, v.y - p.y);
+      if (d < best.d) best = { d, x: v.x, y: v.y };
+    });
+    if (best.d <= SNAP_DIST) return { p: { x: best.x, y: best.y }, snapped: true };
+    return { p, snapped: false };
+  };
+
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
-    setDrawingPoints((prev) => [...prev, p]);
+    const { p: sp } = snapPoint(p);
+    setDrawingPoints((prev) => [...prev, sp]);
+    setSelectedVertexIdx(drawingPoints.length);
   };
 
   const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     setDraggingIdx(idx);
+    setSelectedVertexIdx(idx);
   };
   const handleSvgPointerMove = (e: React.PointerEvent) => {
-    if (draggingIdx === null) return;
     const p = clickToPct(e);
     if (!p) return;
-    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? p : pt)));
+    setCursorPct(p);
+    if (draggingIdx === null) {
+      setSnapHint(null);
+      return;
+    }
+    const { p: sp, snapped } = snapPoint(p, draggingIdx);
+    setSnapHint(snapped ? sp : null);
+    setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? sp : pt)));
   };
-  const handleSvgPointerUp = () => setDraggingIdx(null);
+  const handleSvgPointerUp = () => {
+    setDraggingIdx(null);
+    setSnapHint(null);
+  };
   const removeVertex = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
+    setSelectedVertexIdx(null);
+  };
+  const insertVertexAt = (afterIdx: number, p: Point) => {
+    setDrawingPoints((prev) => {
+      const arr = [...prev];
+      arr.splice(afterIdx + 1, 0, p);
+      return arr;
+    });
+    setSelectedVertexIdx(afterIdx + 1);
   };
 
   const finishPolygon = async () => {
