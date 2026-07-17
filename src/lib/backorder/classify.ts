@@ -1,9 +1,12 @@
 // Classificador automático de serviço para OS de backorder.
 // Ordem de decisão:
-//   1) Se a Categoria original mapeia direto para uma das 7 finais, usa.
+//   1) Se a Categoria original mapeia direto para uma das categorias finais, usa —
+//      exceto quando há sinais de Pintura na descrição (Pintura tem prioridade).
 //   2) Caso contrário, aplica regras de palavras-chave sobre a descrição
 //      (case-insensitive, sem acentos), na ordem declarada.
-//   3) Fallback → "Gerenciamento".
+//   3) Regra especial: se casou "Civil" e a descrição menciona pintura /
+//      demarcação / sinalização de piso, reclassifica como "Pintura".
+//   4) Fallback → "Outros" (para revisão manual).
 
 export const CATEGORIAS = [
   "Chaveiro",
@@ -13,6 +16,7 @@ export const CATEGORIAS = [
   "Hidráulica",
   "Pintura",
   "Gerenciamento",
+  "Outros",
 ] as const;
 export type Categoria = (typeof CATEGORIAS)[number];
 
@@ -24,6 +28,7 @@ export const CATEGORIA_COLOR: Record<Categoria, string> = {
   Hidráulica: "#3B82F6",
   Pintura: "#EC4899",
   Gerenciamento: "#64748B",
+  Outros: "#FBBF24",
 };
 
 const norm = (v: unknown) =>
@@ -35,74 +40,108 @@ const norm = (v: unknown) =>
 /** Mapeamento inicial da Categoria de origem → categoria final. */
 const CATEGORIA_ORIGEM: Array<[RegExp, Categoria]> = [
   [/chave/, "Chaveiro"],
-  [/civil/, "Civil"],
-  [/marcen/, "Civil"],
   [/climat|refrig|ar\s*condic/, "Refrigeração"],
   [/eletr/, "Elétrica"],
   [/hidr/, "Hidráulica"],
   [/pint/, "Pintura"],
+  [/civil|marcen/, "Civil"],
 ];
 
-/** Regras de palavras-chave, aplicadas em ordem. Primeira que casar vence. */
+/** Regras de palavras-chave, aplicadas em ordem. Primeira que casar vence.
+ *  Pintura vem antes de Civil de propósito, e há uma regra final que
+ *  reclassifica Civil→Pintura se a descrição mencionar pintura/demarcação. */
 export const KEYWORD_RULES: Array<{ categoria: Categoria; keywords: string[] }> = [
   {
     categoria: "Chaveiro",
-    keywords: ["chave", "copia de chave", "abrir porta", "fechadura", "segredo"],
+    keywords: ["chave", "fechadura", "cadeado", "trinco", "cilindro", "macaneta", "segredo", "abrir porta"],
   },
   {
     categoria: "Refrigeração",
     keywords: [
       "ar condicionado",
       "ar-condicionado",
-      "climatizacao",
-      "vazamento de ar",
-      "bebedouro",
-      "camara fria",
-      "exaustor",
       "split",
+      "climatizacao",
+      "geladeira",
+      "camara fria",
+      "freezer",
+      "chiller",
+      "bebedouro",
+      "refrigerador",
+      "vazamento de ar",
+      "exaustor",
     ],
   },
   {
     categoria: "Hidráulica",
     keywords: [
+      "hidraulica",
+      "vazamento",
       "torneira",
       "valvula",
-      "vazamento",
-      "ralo",
-      "entupimento",
+      "registro",
+      "encanamento",
       "esgoto",
       "caixa d'agua",
       "caixa dagua",
-      "acessorio sanitario",
-      "vaso sanitario",
+      "bomba",
+      "ralo",
       "descarga",
       "sifao",
       "mictorio",
+      "vaso sanitario",
+      "acessorio sanitario",
+      "entupimento",
     ],
   },
   {
     categoria: "Elétrica",
     keywords: [
+      "eletrica",
       "circuito eletrico",
-      "iluminacao",
-      "interruptor",
-      "luminaria",
       "tomada",
-      "lampada",
-      "cabo",
-      "fio",
-      "quadro eletrico",
       "disjuntor",
+      "lampada",
+      "iluminacao",
+      "quadro eletrico",
+      "cabo",
+      "fiacao",
+      "luminaria",
+      "interruptor",
       "reator",
+      "infraestrutura eletrica",
     ],
   },
   {
     categoria: "Pintura",
-    keywords: ["pintar", "pintura", "repintura", "tinta"],
+    keywords: [
+      "pintar",
+      "pintura",
+      "repintura",
+      "tinta",
+      "textura",
+      "verniz",
+      "demarcacao de piso",
+      "sinalizacao de piso",
+      "faixa de piso",
+    ],
   },
   {
     categoria: "Civil",
     keywords: [
+      "alvenaria",
+      "piso",
+      "parede",
+      "teto",
+      "forro",
+      "revestimento",
+      "telha",
+      "calcada",
+      "drywall",
+      "estrutural",
+      "trinca",
+      "gesso",
+      "reboco",
       "batente",
       "esquadria",
       "carpete",
@@ -115,27 +154,20 @@ export const KEYWORD_RULES: Array<{ categoria: Categoria; keywords: string[] }> 
       "dispenser",
       "retirar material",
       "marcenaria",
-      "alvenaria",
-      "gesso",
-      "forro",
-      "piso",
-      "revestimento",
-      "parede",
     ],
   },
-  {
-    categoria: "Gerenciamento",
-    keywords: [
-      "acompanhamento tecnico",
-      "apoio evento",
-      "os migrada",
-      "utilidades",
-      "limpeza",
-      "jardin",
-      "paisag",
-      "outros",
-    ],
-  },
+];
+
+/** Palavras que forçam Pintura mesmo que caia em Civil. */
+const PINTURA_OVERRIDE = [
+  "pintura",
+  "pintar",
+  "repintura",
+  "tinta",
+  "verniz",
+  "demarcacao de piso",
+  "sinalizacao de piso",
+  "faixa de piso",
 ];
 
 export function classifyBackorder(input: {
@@ -143,16 +175,35 @@ export function classifyBackorder(input: {
   categoria?: string;
   servico?: string;
 }): Categoria {
-  const cat = norm(input.categoria);
-  for (const [re, out] of CATEGORIA_ORIGEM) if (re.test(cat)) return out;
-
   const hay = [input.descricao, input.servico, input.categoria].map(norm).join(" | ");
-  for (const rule of KEYWORD_RULES) {
-    for (const kw of rule.keywords) {
-      if (hay.includes(norm(kw))) return rule.categoria;
+
+  let hit: Categoria | null = null;
+
+  // 1) Categoria de origem
+  const cat = norm(input.categoria);
+  for (const [re, out] of CATEGORIA_ORIGEM) {
+    if (re.test(cat)) {
+      hit = out;
+      break;
     }
   }
-  return "Gerenciamento";
+
+  // 2) Palavras-chave na descrição
+  if (!hit) {
+    for (const rule of KEYWORD_RULES) {
+      if (rule.keywords.some((kw) => hay.includes(norm(kw)))) {
+        hit = rule.categoria;
+        break;
+      }
+    }
+  }
+
+  // 3) Pintura tem prioridade sobre Civil
+  if (hit === "Civil" && PINTURA_OVERRIDE.some((kw) => hay.includes(norm(kw)))) {
+    return "Pintura";
+  }
+
+  return hit ?? "Outros";
 }
 
 /** Equipe sugerida a partir da categoria (editável na UI). */
@@ -164,4 +215,5 @@ export const CATEGORIA_TO_EQUIPE: Record<Categoria, string> = {
   Hidráulica: "HIDRÁULICA",
   Pintura: "CIVIL",
   Gerenciamento: "GERENCIAMENTO",
+  Outros: "REVISAR",
 };
