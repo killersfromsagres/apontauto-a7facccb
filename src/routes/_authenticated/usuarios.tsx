@@ -58,6 +58,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   preventiva: "Programação Preventiva",
   corretiva: "Programação Corretiva",
   taludes: "Programação de Taludes",
+  "programacao-taludes": "Programação de Taludes (Clima)",
   apontamentos: "Apontamentos",
   "painel-legal": "Painel de Itens Legais",
   configuracoes: "Configurações",
