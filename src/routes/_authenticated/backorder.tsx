@@ -293,6 +293,7 @@ function BackorderPage() {
           termino_sla: r.termino_sla,
           data_solicitacao: r.data_solicitacao,
           outros: r.outros,
+          criticidade: r.criticidade ?? "",
         }));
         const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
         if (error) throw error;
