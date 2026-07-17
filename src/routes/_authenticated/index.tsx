@@ -16,6 +16,7 @@ import { Link } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Progress } from "@/components/ui/progress";
+import { useMyAccess } from "@/hooks/use-my-access";
 
 const ProductivityChart = lazy(() => import("@/components/productivity-chart"));
 
@@ -70,15 +71,19 @@ const teamLoad = [
 
 // Ícones semânticos: água (abastecimento), borrifador (limpeza), árvore (jardinagem)
 const modules = [
-  { title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-400" },
-  { title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-400" },
-  { title: "Abastecimento", to: "/apontamentos", icon: Droplets, tint: "text-cyan-400" },
-  { title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
-  { title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
-  { title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
+  { key: "preventiva", title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-400" },
+  { key: "corretiva", title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-400" },
+  { key: "apontamentos", title: "Abastecimento", to: "/apontamentos", icon: Droplets, tint: "text-cyan-400" },
+  { key: "apontamentos", title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-400" },
+  { key: "apontamentos", title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-400" },
+  { key: "painel-legal", title: "Painel de Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-400" },
 ];
 
 function Dashboard() {
+  const { access } = useMyAccess();
+  const visibleModules = modules.filter(
+    (m) => access.isAdmin || !access.allowed || access.allowed.includes(m.key),
+  );
   return (
     <PageShell
       title="Dashboard"
@@ -131,9 +136,9 @@ function Dashboard() {
           <div className="relative">
             <h3 className="mb-4 text-base font-semibold">Acesso rápido</h3>
             <div className="grid grid-cols-2 gap-3">
-              {modules.map((m) => (
+              {visibleModules.map((m, idx) => (
                 <Link
-                  key={m.to}
+                  key={`${m.key}-${idx}`}
                   to={m.to}
                   className="glass-tile group flex flex-col items-start gap-2 rounded-2xl p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40"
                 >
@@ -141,6 +146,11 @@ function Dashboard() {
                   <span className="text-sm font-medium">{m.title}</span>
                 </Link>
               ))}
+              {visibleModules.length === 0 && (
+                <p className="col-span-2 text-xs text-muted-foreground">
+                  Nenhum atalho disponível para o seu perfil.
+                </p>
+              )}
             </div>
           </div>
         </GlassCard>
