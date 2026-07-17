@@ -122,7 +122,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       5: { cellWidth: 55, halign: "center" },
       6: { cellWidth: 55, halign: "center" },
     },
-    didParseCell: (data) => {
+    didParseCell: (data: any) => {
       // Meses coloridos
       if (data.section === "body" && data.column.index >= 7) {
         const v = String(data.cell.raw ?? "");
