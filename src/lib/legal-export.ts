@@ -18,7 +18,8 @@ function fmt(d: string | null | undefined) {
   return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
 }
 
-export function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
+export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
+  const XLSX = await import("xlsx");
   const rows = items.map((it) => {
     const cells = buildMonthMap(it, execs, year);
     const monthCols: Record<string, string> = {};
