@@ -792,6 +792,148 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
   );
 }
 
+// ---------- Diálogo Importar Cadastro de Funcionários ----------
+function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [parsing, setParsing] = useState(false);
+  const [preview, setPreview] = useState<Awaited<ReturnType<typeof readSstXlsx>> | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [insertMissing, setInsertMissing] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleParse(f: File) {
+    setParsing(true);
+    try {
+      setPreview(await readSstXlsx(f));
+    } catch (e) {
+      toast.error("Falha ao ler planilha: " + (e as Error).message);
+    } finally {
+      setParsing(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!preview) return;
+    setSaving(true);
+    try {
+      const cpfs = preview.rows.map((r) => r.cpf).filter((c): c is string => !!c);
+      const { data: existing } = cpfs.length
+        ? await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", cpfs)
+        : { data: [] as { id: string; cpf: string | null }[] };
+      const idByCpf = new Map((existing ?? []).map((r) => [r.cpf, r.id]));
+
+      let unificados = 0;
+      let novos = 0;
+      let semCpf = 0;
+
+      for (const r of preview.rows) {
+        if (!r.cpf) { semCpf++; continue; }
+        const id = idByCpf.get(r.cpf);
+        // Somente campos cadastrais — nunca toca em datas de exame/vencimento/tipo.
+        const cadastral = {
+          empresa: r.empresa,
+          filial: r.filial,
+          cliente: r.cliente,
+          matricula: r.matricula,
+          nome: r.nome,
+          funcao: r.funcao,
+          situacao: r.situacao,
+          supervisor: r.supervisor,
+          data_admissao: r.data_admissao,
+        };
+        if (id) {
+          const { error } = await supabase.from("sst_colaboradores").update(cadastral).eq("id", id);
+          if (error) throw error;
+          unificados++;
+        } else if (insertMissing) {
+          const { error } = await supabase
+            .from("sst_colaboradores")
+            .insert({ ...cadastral, cpf: r.cpf, ativo: true });
+          if (error) throw error;
+          novos++;
+        }
+      }
+
+      toast.success(
+        `Cadastro unificado: ${unificados} vinculado(s) por CPF, ${novos} novo(s)` +
+          (semCpf ? `, ${semCpf} linha(s) sem CPF ignorada(s)` : "") +
+          (preview.errors.length ? ` — ${preview.errors.length} aviso(s)` : ""),
+      );
+      onDone();
+      onClose();
+    } catch (e) {
+      toast.error("Erro ao salvar: " + (e as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Importar Cadastro de Funcionários</DialogTitle>
+          <DialogDescription>
+            Atualiza <strong>somente dados cadastrais</strong> (empresa, filial, função, supervisor, matrícula, admissão)
+            usando o <strong>CPF</strong> como chave. Datas e histórico de ASO permanecem intactos.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) { setFile(f); handleParse(f); }
+            }}
+          />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => inputRef.current?.click()}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              {file ? file.name : "Escolher arquivo"}
+            </Button>
+            {parsing && <span className="text-sm text-muted-foreground">Analisando…</span>}
+          </div>
+
+          {preview && (
+            <div className="space-y-2 rounded-lg border border-border/40 p-3">
+              <p className="text-sm">
+                <strong>{preview.rows.length}</strong> linha(s) válida(s).{" "}
+                {preview.errors.length > 0 && (
+                  <span className="text-amber-600">{preview.errors.length} aviso(s).</span>
+                )}
+              </p>
+              {preview.errors.length > 0 && (
+                <div className="max-h-32 overflow-auto rounded bg-muted/50 p-2 text-xs">
+                  {preview.errors.slice(0, 30).map((e, i) => (
+                    <div key={i}>
+                      <span className="text-muted-foreground">[{e.sheet} L{e.row}]</span> {e.message}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={insertMissing} onChange={(e) => setInsertMissing(e.target.checked)} />
+                <span>Inserir novos funcionários (sem ASO ainda) quando não houver correspondência por CPF</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={!preview || saving}>
+            {saving ? "Salvando…" : "Confirmar unificação"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ---------- Diálogo Exportar ----------
 function ExportDialog({
   onClose,
