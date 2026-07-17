@@ -1189,7 +1189,9 @@ function BackorderPage() {
             setOrder={setOrder}
             onToggle={toggleFinalizado}
             onCategoria={updateAtividade}
+            assetsMap={assetsMap}
           />
+
         </TabsContent>
 
         <TabsContent value="backorder">
