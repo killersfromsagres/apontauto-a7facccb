@@ -1,5 +1,5 @@
 // Exportação: XLSX (ExcelJS) + PDF (jsPDF) do Controle de ASO.
-import ExcelJS from "exceljs";
+// Vendors pesados (ExcelJS, jsPDF) são carregados sob demanda no clique de exportar.
 import { downloadBlob } from "@/lib/download";
 import { computeStatus, computeDiasAVencer, fmtBr, STATUS_COLOR, STATUS_LABEL, type AsoStatus } from "./aso";
 
@@ -38,6 +38,7 @@ const COLUMNS: { key: keyof SstExportRow | "status" | "dias"; header: string; wi
 ];
 
 export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-aso.xlsx") {
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto — SST";
   const ws = wb.addWorksheet("Controle ASO", {

@@ -1,6 +1,5 @@
-import * as XLSX from "xlsx";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+// Vendors pesados (xlsx, jsPDF) são carregados sob demanda apenas quando
+// o usuário clica em exportar — mantém o bundle inicial enxuto.
 import type { LegalItem, LegalExecution } from "@/lib/legal-items";
 import { buildMonthMap, statusOf } from "@/lib/legal-items";
 
@@ -19,7 +18,8 @@ function fmt(d: string | null | undefined) {
   return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
 }
 
-export function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
+export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
+  const XLSX = await import("xlsx");
   const rows = items.map((it) => {
     const cells = buildMonthMap(it, execs, year);
     const monthCols: Record<string, string> = {};
@@ -46,7 +46,11 @@ export function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], yea
   XLSX.writeFile(wb, `painel-itens-legais-${year}.xlsx`);
 }
 
-export function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
+export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -118,7 +122,7 @@ export function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year
       5: { cellWidth: 55, halign: "center" },
       6: { cellWidth: 55, halign: "center" },
     },
-    didParseCell: (data) => {
+    didParseCell: (data: any) => {
       // Meses coloridos
       if (data.section === "body" && data.column.index >= 7) {
         const v = String(data.cell.raw ?? "");

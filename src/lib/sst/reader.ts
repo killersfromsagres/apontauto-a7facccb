@@ -1,5 +1,5 @@
 // Import de planilha ASO — merge incremental por CPF (fallback matrícula).
-import ExcelJS from "exceljs";
+// ExcelJS é carregado sob demanda (~500 KB) apenas quando o usuário importa uma planilha.
 import { computeVencimento, computeDataSugerida, parseFlexibleDate } from "./aso";
 
 export type SstImportRow = {
@@ -109,13 +109,14 @@ function digits(s: string | null): string | null {
 
 export async function readSstXlsx(file: File): Promise<SstImportResult> {
   const buf = await file.arrayBuffer();
+  const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
 
   const rows: SstImportRow[] = [];
   const errors: SstImportError[] = [];
 
-  wb.eachSheet((sheet) => {
+  wb.eachSheet((sheet: import("exceljs").Worksheet) => {
     // Localiza a linha de cabeçalho (procura nas primeiras 10 linhas).
     let headerRowIdx = -1;
     let headerMap: Partial<Record<keyof SstImportRow, number>> = {};
