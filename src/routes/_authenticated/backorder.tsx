@@ -1230,6 +1230,27 @@ function BackorderPage() {
             onDeleteRule={deleteRule}
             onReprocessar={handleReprocessarChamados}
             importing={importing}
+            learnedLoc={learnedLoc}
+            learnedTeam={learnedTeamRules}
+            allRows={rows}
+            onDeleteLearnedLoc={async (id) => {
+              await supabase.from("regras_aprendidas_localizacao").delete().eq("id", id);
+              await loadLearnedRules();
+              toast.success("Regra aprendida removida");
+            }}
+            onDeleteLearnedTeam={async (id) => {
+              await supabase.from("regras_aprendidas_equipe").delete().eq("id", id);
+              await loadLearnedRules();
+              toast.success("Regra aprendida removida");
+            }}
+            onToggleLearnedLoc={async (id, ativo) => {
+              await supabase.from("regras_aprendidas_localizacao").update({ ativo } as never).eq("id", id);
+              await loadLearnedRules();
+            }}
+            onToggleLearnedTeam={async (id, ativo) => {
+              await supabase.from("regras_aprendidas_equipe").update({ ativo } as never).eq("id", id);
+              await loadLearnedRules();
+            }}
           />
         </TabsContent>
 
