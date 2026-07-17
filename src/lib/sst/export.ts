@@ -1,5 +1,5 @@
 // Exportação: XLSX (ExcelJS) + PDF (jsPDF) do Controle de ASO.
-import ExcelJS from "exceljs";
+// Vendors pesados (ExcelJS, jsPDF) são carregados sob demanda no clique de exportar.
 import { downloadBlob } from "@/lib/download";
 import { computeStatus, computeDiasAVencer, fmtBr, STATUS_COLOR, STATUS_LABEL, type AsoStatus } from "./aso";
 
