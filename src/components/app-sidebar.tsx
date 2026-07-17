@@ -46,21 +46,21 @@ const baseItems = [
 
 const adminItem = { key: "usuarios", title: "Usuários", url: "/usuarios", icon: UserPlus };
 
-export function AppSidebar() {
+export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
   const { allowed, loading: loadingAllowed } = useAllowedMenus();
   const loadingAccess = loadingAdmin || loadingAllowed;
 
   // Enquanto o acesso carrega, não mostramos itens restringíveis para
   // evitar o flash "vê tudo" antes da resposta do servidor.
-  const visible = loadingAccess
-    ? []
-    : baseItems.filter((it) =>
-        isAdmin ? true : !allowed || allowed.includes(it.key),
-      );
-  const items = !loadingAccess && isAdmin ? [...visible, adminItem] : visible;
+  const items = useMemo(() => {
+    if (loadingAccess) return [];
+    const visible = baseItems.filter((it) =>
+      isAdmin ? true : !allowed || allowed.includes(it.key),
+    );
+    return isAdmin ? [...visible, adminItem] : visible;
+  }, [loadingAccess, isAdmin, allowed]);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
