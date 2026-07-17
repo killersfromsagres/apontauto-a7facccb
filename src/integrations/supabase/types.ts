@@ -79,6 +79,7 @@ export type Database = {
           ativo: string
           atualizado_em: string
           criado_em: string
+          criticidade: string
           data_finalizacao: string | null
           data_solicitacao: string
           equipe: string
@@ -101,6 +102,7 @@ export type Database = {
           ativo?: string
           atualizado_em?: string
           criado_em?: string
+          criticidade?: string
           data_finalizacao?: string | null
           data_solicitacao: string
           equipe?: string
@@ -123,6 +125,7 @@ export type Database = {
           ativo?: string
           atualizado_em?: string
           criado_em?: string
+          criticidade?: string
           data_finalizacao?: string | null
           data_solicitacao?: string
           equipe?: string

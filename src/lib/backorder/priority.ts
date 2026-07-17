@@ -82,6 +82,7 @@ export interface ScanInputRow {
   predio: string;
   espaco: string;
   outros: string;
+  criticidade?: string;
   atividade: string;
   data_solicitacao: string;
   finalizado: boolean;
@@ -131,8 +132,8 @@ export function scanRow(row: ScanInputRow, cfg: PriorityConfig): ScanResult {
 
   // Criticidade original alta
   if (cfg.familias_habilitadas.criticidade !== false) {
-    const crit = norm(row.outros);
-    if (/emergenc|alta|urgen/.test(crit)) {
+    const crit = norm(row.criticidade ?? "");
+    if (/emergenc|alta|urgen|critic/.test(crit)) {
       hits.push({ label: "Criticidade original alta", nivel: 3 });
     }
   }

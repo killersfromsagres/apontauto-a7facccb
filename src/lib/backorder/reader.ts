@@ -14,7 +14,8 @@ export interface BackorderRow {
   equipe: string;
   termino_sla: string | null;
   data_solicitacao: string; // ISO
-  outros: string;
+  outros: string; // Solicitante (Denominação do Solicitante)
+  criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   status_origem: string;
 }
@@ -80,6 +81,7 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       "SOLICITANTE",
       "NOME DO SOLICITANTE",
     );
+    const criticidade = pick(r, "CRITICIDADE", "PRIORIDADE", "NÍVEL DE CRITICIDADE", "NIVEL DE CRITICIDADE");
 
     const atividade = classifyBackorder({
       descricao,
@@ -102,6 +104,7 @@ export async function readBackorderFile(file: File, assets: AssetsMap): Promise<
       termino_sla: parseDateISO(sla),
       data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
       outros: solicitante,
+      criticidade,
       finalizado,
       status_origem: status,
     });
