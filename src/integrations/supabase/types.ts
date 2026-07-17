@@ -38,17 +38,29 @@ export type Database = {
       assets_ref: {
         Row: {
           ativo: string
+          codigo_pai: string | null
           denominacao: string
+          descricao_pai: string
+          nivel: string
+          unidade_negocio: string
           updated_at: string
         }
         Insert: {
           ativo: string
+          codigo_pai?: string | null
           denominacao?: string
+          descricao_pai?: string
+          nivel?: string
+          unidade_negocio?: string
           updated_at?: string
         }
         Update: {
           ativo?: string
+          codigo_pai?: string | null
           denominacao?: string
+          descricao_pai?: string
+          nivel?: string
+          unidade_negocio?: string
           updated_at?: string
         }
         Relationships: []
@@ -93,6 +105,7 @@ export type Database = {
           predio: string
           prioridade_nivel: number
           prioridade_scanned_at: string | null
+          revisao_manual: boolean
           termino_sla: string | null
         }
         Insert: {
@@ -116,6 +129,7 @@ export type Database = {
           predio?: string
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
+          revisao_manual?: boolean
           termino_sla?: string | null
         }
         Update: {
@@ -139,6 +153,7 @@ export type Database = {
           predio?: string
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
+          revisao_manual?: boolean
           termino_sla?: string | null
         }
         Relationships: []
@@ -416,6 +431,39 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      regras_classificacao_equipe: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          criado_em: string
+          equipe: string
+          fonte: string
+          id: string
+          palavra_chave: string
+          prioridade: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          equipe: string
+          fonte?: string
+          id?: string
+          palavra_chave: string
+          prioridade?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          criado_em?: string
+          equipe?: string
+          fonte?: string
+          id?: string
+          palavra_chave?: string
+          prioridade?: number
         }
         Relationships: []
       }
