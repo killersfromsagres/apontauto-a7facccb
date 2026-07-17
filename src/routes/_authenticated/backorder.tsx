@@ -208,6 +208,21 @@ function BackorderPage() {
   }, []);
 
   const [rulesDB, setRulesDB] = useState<RuleRow[]>([]);
+  const [learnedLoc, setLearnedLoc] = useState<LearnedLocation[]>([]);
+  const [learnedTeamRules, setLearnedTeamRules] = useState<LearnedTeam[]>([]);
+  const learnedIndex = useMemo<LearnedIndex>(
+    () => buildLearnedIndex(learnedLoc, learnedTeamRules),
+    [learnedLoc, learnedTeamRules],
+  );
+
+  const loadLearnedRules = useCallback(async () => {
+    const [loc, tm] = await Promise.all([
+      supabase.from("regras_aprendidas_localizacao").select("*").order("criado_em", { ascending: false }),
+      supabase.from("regras_aprendidas_equipe").select("*").order("criado_em", { ascending: false }),
+    ]);
+    setLearnedLoc(((loc.data ?? []) as LearnedLocation[]));
+    setLearnedTeamRules(((tm.data ?? []) as LearnedTeam[]));
+  }, []);
 
   const loadClassifierRules = useCallback(async () => {
     const { data } = await supabase
@@ -235,8 +250,9 @@ function BackorderPage() {
     void loadConfig();
     void loadAssets();
     void loadClassifierRules();
+    void loadLearnedRules();
     void refresh();
-  }, [loadConfig, loadAssets, loadClassifierRules, refresh]);
+  }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
   const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
