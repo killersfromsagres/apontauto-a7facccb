@@ -263,7 +263,10 @@ function SegurancaTrabalhoPage() {
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-              <Upload className="mr-2 h-4 w-4" /> Importar Planilha
+              <Upload className="mr-2 h-4 w-4" /> Importar ASO
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportCadastroOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" /> Importar Cadastro
             </Button>
             <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
               <Download className="mr-2 h-4 w-4" /> Exportar
