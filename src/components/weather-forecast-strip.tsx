@@ -141,7 +141,7 @@ export function WeatherForecastStrip({
 
         <div
           ref={scrollRef}
-          className="scrollbar-none flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1"
+          className="scrollbar-none flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth px-1 pt-4 pb-2"
           style={{ scrollbarWidth: "none" }}
         >
           {q.isLoading &&
@@ -173,7 +173,7 @@ export function WeatherForecastStrip({
                 )}
               >
                 {isToday && (
-                  <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow">
+                  <span className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
                     Hoje
                   </span>
                 )}
