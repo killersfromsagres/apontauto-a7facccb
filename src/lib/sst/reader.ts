@@ -65,7 +65,7 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
     "nome do colaborador", "nome colaborador",
     "nome do funcionario", "nome do funcionário", "nome completo",
   ],
-  funcao: ["funcao", "função", "cargo", "cr", "centro de resultado"],
+  funcao: ["funcao", "função", "cargo"],
   cod_funcao: ["cod funcao", "código função", "cod função"],
   descricao_funcao: ["descricao funcao", "descrição função", "desc funcao"],
   situacao: ["situacao", "situação", "status"],
