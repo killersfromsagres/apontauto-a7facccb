@@ -189,21 +189,27 @@ function BackorderPage() {
     setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
   }, []);
 
+  const [rulesDB, setRulesDB] = useState<RuleRow[]>([]);
+
   const loadClassifierRules = useCallback(async () => {
     const { data } = await supabase
       .from("regras_classificacao_equipe")
-      .select("equipe, palavra_chave, fonte, prioridade, ativo")
-      .eq("ativo", true);
-    if (data && data.length > 0) {
+      .select("id, equipe, palavra_chave, fonte, prioridade, ativo")
+      .order("prioridade", { ascending: true });
+    const rows = (data ?? []) as RuleRow[];
+    setRulesDB(rows);
+    const active = rows.filter((r) => r.ativo);
+    if (active.length > 0) {
       setDynamicRules(
-        (data as Array<{ equipe: string; palavra_chave: string; fonte: string; prioridade: number }>)
-          .map((r) => ({
-            equipe: r.equipe as Categoria,
-            palavra_chave: r.palavra_chave,
-            fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
-            prioridade: r.prioridade,
-          })),
+        active.map((r) => ({
+          equipe: r.equipe as Categoria,
+          palavra_chave: r.palavra_chave,
+          fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as "descricao" | "categoria",
+          prioridade: r.prioridade,
+        })),
       );
+    } else {
+      setDynamicRules(null);
     }
   }, []);
 
