@@ -142,6 +142,7 @@ function BackorderPage() {
   const [configOpen, setConfigOpen] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
+  const instrucaoInputRef = useRef<HTMLInputElement>(null);
   const targetPct = TARGET_PCT_DEFAULT;
 
   const loadConfig = useCallback(async () => {
