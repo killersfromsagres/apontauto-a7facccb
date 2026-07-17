@@ -74,7 +74,9 @@ import {
   CATEGORIAS,
   CATEGORIA_COLOR,
   CATEGORIA_TO_EQUIPE,
+  setDynamicRules,
   type Categoria,
+  type DynamicRule,
 } from "@/lib/backorder/classify";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
