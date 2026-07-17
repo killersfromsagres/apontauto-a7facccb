@@ -745,11 +745,15 @@ function BackorderPage() {
             <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
           </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
-            <Upload className="mr-2 h-4 w-4" /> Importar planilha
+            <Upload className="mr-2 h-4 w-4" /> Importar Backorder
           </Button>
-          <Button variant="outline" onClick={() => setConfigOpen(true)}>
-            <Settings2 className="mr-2 h-4 w-4" /> Prioridades
+          <Button variant="outline" onClick={handleReprocessarChamados} disabled={importing}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
           </Button>
+          <Button variant="outline" onClick={handleValidarBase} disabled={importing}>
+            <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
+          </Button>
+
           <Button onClick={exportar} disabled={filtered.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Exportar
           </Button>
