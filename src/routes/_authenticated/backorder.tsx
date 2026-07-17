@@ -69,7 +69,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import { describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
 import {
   buildLearnedIndex,
   applyLearnedToResolved,
@@ -1189,7 +1189,9 @@ function BackorderPage() {
             setOrder={setOrder}
             onToggle={toggleFinalizado}
             onCategoria={updateAtividade}
+            assetsMap={assetsMap}
           />
+
         </TabsContent>
 
         <TabsContent value="backorder">
@@ -1279,6 +1281,47 @@ function BackorderPage() {
 
 // ---------- Tabela principal ----------
 
+function LocationCell({
+  assetsMap,
+  ativo,
+  value,
+  field,
+  className,
+  title,
+}: {
+  assetsMap: AssetsMap;
+  ativo: string;
+  value: string;
+  field: "predio" | "andar" | "espaco";
+  className?: string;
+  title?: string;
+}) {
+  if (value) return <span className={className} title={title ?? value}>{value}</span>;
+  if (!ativo) return <span className="text-muted-foreground">—</span>;
+  const info = describeAtivo(assetsMap, ativo);
+  if (!info.found) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md bg-red-500/15 px-1.5 py-0.5 text-[10px] font-medium text-red-600 dark:text-red-400"
+        title={`Ativo "${ativo}" não encontrado na base de ativos`}
+      >
+        Ativo não cadastrado
+      </span>
+    );
+  }
+  if (info.naFields[field]) {
+    return (
+      <span
+        className="inline-flex items-center rounded-md bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400"
+        title={`Não aplicável — o Ativo é do nível ${info.nivelSelf || "raiz"}`}
+      >
+        —
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
+}
+
 function TableView({
   rows,
   loading,
@@ -1290,6 +1333,7 @@ function TableView({
   setOrder,
   onToggle,
   onCategoria,
+  assetsMap,
 }: {
   rows: BOSRow[];
   loading: boolean;
@@ -1301,6 +1345,7 @@ function TableView({
   setOrder: (v: "asc" | "desc") => void;
   onToggle: (r: BOSRow, next: boolean) => void;
   onCategoria: (r: BOSRow, c: Categoria) => void;
+  assetsMap: AssetsMap;
 }) {
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
@@ -1433,10 +1478,14 @@ function TableView({
                     <TableCell className="max-w-[320px] truncate" title={r.nome}>
                       {r.nome}
                     </TableCell>
-                    <TableCell className="text-xs">{r.predio}</TableCell>
-                    <TableCell className="text-xs">{r.andar}</TableCell>
-                    <TableCell className="max-w-[220px] truncate text-xs" title={r.espaco}>
-                      {r.espaco}
+                    <TableCell className="text-xs">
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.predio} field="predio" />
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.andar} field="andar" />
+                    </TableCell>
+                    <TableCell className="max-w-[220px] truncate text-xs" title={r.espaco || r.ativo}>
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
                     </TableCell>
                     <TableCell>
                       <Select
