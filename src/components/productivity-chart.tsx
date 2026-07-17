@@ -18,7 +18,9 @@ const data = [
   { week: "S7", programadas: 147, concluidas: 140 },
 ];
 
-export default function ProductivityChart() {
+import { memo } from "react";
+
+function ProductivityChart() {
   return (
     <ResponsiveContainer>
       <AreaChart data={data}>
