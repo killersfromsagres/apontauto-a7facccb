@@ -18,7 +18,8 @@ const ENDPOINT =
   "&hourly=temperature_2m,precipitation_probability,rain,weather_code,cloud_cover,wind_speed_10m" +
   "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,rain_sum" +
   "&forecast_days=2" +
-  `&timezone=${encodeURIComponent(WEATHER_LOCATION.timezone)}`;
+  `&timezone=${encodeURIComponent(WEATHER_LOCATION.timezone)}` +
+  "&utm_source=apontauto.lovable.app";
 
 export type WeatherCurrent = {
   temperature_2m: number;
