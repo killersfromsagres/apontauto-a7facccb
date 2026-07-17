@@ -889,49 +889,68 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
     if (!preview) return;
     setSaving(true);
     try {
-      const cpfs = preview.rows.map((r) => r.cpf).filter((c): c is string => !!c);
-      const { data: existing } = cpfs.length
-        ? await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", cpfs)
-        : { data: [] as { id: string; cpf: string | null }[] };
-      const idByCpf = new Map((existing ?? []).map((r) => [r.cpf, r.id]));
+      // NUNCA sobrescreve datas de exame/vencimento/tipo/observação.
+      const CADASTRAL_KEYS = [
+        "empresa", "filial", "descricao_filial", "cliente", "matricula", "nome",
+        "funcao", "cod_funcao", "descricao_funcao", "situacao",
+        "supervisor", "gerente", "gerente_regional", "diretor", "diretor_executivo",
+        "regional", "negocio", "tipo_contrato", "escala", "horario_trabalho",
+        "sexo", "rg", "data_nascimento", "municipio", "estado",
+        "pis", "ctps", "serie_ctps", "cc", "cr",
+        "data_admissao", "data_demissao",
+      ] as const;
 
-      let unificados = 0;
-      let novos = 0;
-      let semCpf = 0;
+      const pickCadastral = (r: SstImportRow) => {
+        const out: Record<string, unknown> = {};
+        for (const k of CADASTRAL_KEYS) {
+          const v = (r as unknown as Record<string, unknown>)[k];
+          if (v !== undefined) out[k] = v;
+        }
+        if (r.dados_extras && Object.keys(r.dados_extras).length) out.dados_extras = r.dados_extras;
+        return out;
+      };
 
-      for (const r of preview.rows) {
-        if (!r.cpf) { semCpf++; continue; }
-        const id = idByCpf.get(r.cpf);
-        // Somente campos cadastrais — nunca toca em datas de exame/vencimento/tipo.
-        const cadastral = {
-          empresa: r.empresa,
-          filial: r.filial,
-          cliente: r.cliente,
-          matricula: r.matricula,
-          nome: r.nome,
-          funcao: r.funcao,
-          situacao: r.situacao,
-          supervisor: r.supervisor,
-          data_admissao: r.data_admissao,
-        };
+      let unificados = 0, novos = 0, semCpf = 0;
+      const falhas: string[] = [];
+
+      const comCpf = preview.rows.filter((r) => !!r.cpf);
+      semCpf = preview.rows.length - comCpf.length;
+
+      const cpfs = comCpf.map((r) => r.cpf as string);
+      const idByCpf = new Map<string, string>();
+      const CHUNK_LOOKUP = 500;
+      for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
+        const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
+        const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
+        (data ?? []).forEach((r) => { if (r.cpf) idByCpf.set(r.cpf, r.id); });
+      }
+
+      for (const r of comCpf) {
+        const id = idByCpf.get(r.cpf!);
+        const cadastral = pickCadastral(r);
         if (id) {
           const { error } = await supabase.from("sst_colaboradores").update(cadastral).eq("id", id);
-          if (error) throw error;
+          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           unificados++;
         } else if (insertMissing) {
           const { error } = await supabase
             .from("sst_colaboradores")
             .insert({ ...cadastral, cpf: r.cpf, ativo: true });
-          if (error) throw error;
+          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           novos++;
         }
       }
 
-      toast.success(
-        `Cadastro unificado: ${unificados} vinculado(s) por CPF, ${novos} novo(s)` +
-          (semCpf ? `, ${semCpf} linha(s) sem CPF ignorada(s)` : "") +
-          (preview.errors.length ? ` — ${preview.errors.length} aviso(s)` : ""),
-      );
+      const msg =
+        `Cadastro: ${unificados} vinculado(s) por CPF, ${novos} novo(s)` +
+        (semCpf ? `, ${semCpf} sem CPF ignorada(s)` : "") +
+        (preview.errors.length ? ` · ${preview.errors.length} aviso(s)` : "") +
+        (falhas.length ? ` · ${falhas.length} com erro` : "");
+      if (falhas.length) {
+        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+      } else {
+        toast.success(msg);
+      }
       onDone();
       onClose();
     } catch (e) {
