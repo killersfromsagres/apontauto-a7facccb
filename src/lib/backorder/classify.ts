@@ -170,25 +170,47 @@ const PINTURA_OVERRIDE = [
   "faixa de piso",
 ];
 
+export interface DynamicRule {
+  equipe: Categoria;
+  palavra_chave: string;
+  fonte: "descricao" | "categoria";
+  prioridade: number;
+}
+
+/** Regras dinâmicas carregadas do banco (via setDynamicRules).
+ *  Quando definidas, substituem as regras hardcoded padrão. */
+let DYNAMIC_RULES: DynamicRule[] | null = null;
+
+export function setDynamicRules(rules: DynamicRule[] | null): void {
+  DYNAMIC_RULES = rules && rules.length > 0 ? [...rules].sort((a, b) => a.prioridade - b.prioridade) : null;
+}
+
 export function classifyBackorder(input: {
   descricao?: string;
   categoria?: string;
   servico?: string;
 }): Categoria {
-  const hay = [input.descricao, input.servico, input.categoria].map(norm).join(" | ");
-
-  let hit: Categoria | null = null;
-
-  // 1) Categoria de origem
+  const desc = norm([input.descricao, input.servico].filter(Boolean).join(" | "));
   const cat = norm(input.categoria);
+
+  // -- Modo dinâmico (regras do banco) -------------------------------
+  if (DYNAMIC_RULES) {
+    for (const rule of DYNAMIC_RULES) {
+      const haystack = rule.fonte === "categoria" ? cat : desc;
+      if (haystack.includes(norm(rule.palavra_chave))) return rule.equipe;
+    }
+    return "Outros";
+  }
+
+  // -- Modo estático (fallback quando o banco não respondeu) ---------
+  const hay = [input.descricao, input.servico, input.categoria].map(norm).join(" | ");
+  let hit: Categoria | null = null;
   for (const [re, out] of CATEGORIA_ORIGEM) {
     if (re.test(cat)) {
       hit = out;
       break;
     }
   }
-
-  // 2) Palavras-chave na descrição
   if (!hit) {
     for (const rule of KEYWORD_RULES) {
       if (rule.keywords.some((kw) => hay.includes(norm(kw)))) {
@@ -197,12 +219,9 @@ export function classifyBackorder(input: {
       }
     }
   }
-
-  // 3) Pintura tem prioridade sobre Civil
   if (hit === "Civil" && PINTURA_OVERRIDE.some((kw) => hay.includes(norm(kw)))) {
     return "Pintura";
   }
-
   return hit ?? "Outros";
 }
 
