@@ -82,14 +82,37 @@ type Colaborador = {
   id: string;
   empresa: string | null;
   filial: string | null;
+  descricao_filial: string | null;
   cliente: string | null;
   matricula: string | null;
   cpf: string | null;
   nome: string;
   funcao: string | null;
+  cod_funcao: string | null;
+  descricao_funcao: string | null;
   situacao: string | null;
   supervisor: string | null;
+  gerente: string | null;
+  gerente_regional: string | null;
+  diretor: string | null;
+  diretor_executivo: string | null;
+  regional: string | null;
+  negocio: string | null;
+  tipo_contrato: string | null;
+  escala: string | null;
+  horario_trabalho: string | null;
+  sexo: string | null;
+  rg: string | null;
+  data_nascimento: string | null;
+  municipio: string | null;
+  estado: string | null;
+  pis: string | null;
+  ctps: string | null;
+  serie_ctps: string | null;
+  cc: string | null;
+  cr: string | null;
   data_admissao: string | null;
+  data_demissao: string | null;
   data_exame_realizado: string | null;
   tipo_exame: string | null;
   data_vencimento: string | null;
@@ -98,6 +121,7 @@ type Colaborador = {
   exame_realizado: boolean;
   observacao: string | null;
   ativo: boolean;
+  dados_extras: Record<string, string> | null;
 };
 
 type SortKey = "nome" | "data_vencimento" | "dias" | "status" | "filial" | "funcao";
@@ -240,21 +264,49 @@ function SegurancaTrabalhoPage() {
     }
   }
 
-  const exportRows = () =>
-    filtered.map(({ row: r }) => ({
-      nome: r.nome,
-      cpf: r.cpf,
-      matricula: r.matricula,
-      filial: r.filial,
-      cliente: r.cliente,
-      funcao: r.funcao,
-      supervisor: r.supervisor,
-      tipo_exame: r.tipo_exame,
-      data_exame_realizado: r.data_exame_realizado,
-      data_vencimento: r.data_vencimento,
-      data_sugerida_agendamento: r.data_sugerida_agendamento,
-      observacao: r.observacao,
-    }));
+  const toExport = (r: Colaborador): import("@/lib/sst/export").SstExportRow => ({
+    nome: r.nome,
+    cpf: r.cpf,
+    matricula: r.matricula,
+    empresa: r.empresa,
+    filial: r.filial,
+    descricao_filial: r.descricao_filial,
+    cliente: r.cliente,
+    regional: r.regional,
+    negocio: r.negocio,
+    funcao: r.funcao,
+    descricao_funcao: r.descricao_funcao,
+    cod_funcao: r.cod_funcao,
+    situacao: r.situacao,
+    supervisor: r.supervisor,
+    gerente: r.gerente,
+    gerente_regional: r.gerente_regional,
+    diretor: r.diretor,
+    diretor_executivo: r.diretor_executivo,
+    tipo_contrato: r.tipo_contrato,
+    escala: r.escala,
+    horario_trabalho: r.horario_trabalho,
+    sexo: r.sexo,
+    rg: r.rg,
+    data_nascimento: r.data_nascimento,
+    municipio: r.municipio,
+    estado: r.estado,
+    pis: r.pis,
+    ctps: r.ctps,
+    serie_ctps: r.serie_ctps,
+    cc: r.cc,
+    cr: r.cr,
+    data_admissao: r.data_admissao,
+    data_demissao: r.data_demissao,
+    tipo_exame: r.tipo_exame,
+    data_exame_realizado: r.data_exame_realizado,
+    data_vencimento: r.data_vencimento,
+    data_sugerida_agendamento: r.data_sugerida_agendamento,
+    agendamento_confirmado: r.agendamento_confirmado,
+    observacao: r.observacao,
+    dados_extras: r.dados_extras,
+  });
+  const exportRows = () => filtered.map(({ row }) => toExport(row));
 
   return (
     <div className="sst-theme">
@@ -533,22 +585,7 @@ function SegurancaTrabalhoPage() {
           onClose={() => setExportOpen(false)}
           rows={exportRows()}
           totalAll={rows.length}
-          allRows={() =>
-            rows.map((r) => ({
-              nome: r.nome,
-              cpf: r.cpf,
-              matricula: r.matricula,
-              filial: r.filial,
-              cliente: r.cliente,
-              funcao: r.funcao,
-              supervisor: r.supervisor,
-              tipo_exame: r.tipo_exame,
-              data_exame_realizado: r.data_exame_realizado,
-              data_vencimento: r.data_vencimento,
-              data_sugerida_agendamento: r.data_sugerida_agendamento,
-              observacao: r.observacao,
-            }))
-          }
+          allRows={() => rows.map(toExport)}
         />
       )}
       {(editing || creating) && (
@@ -658,39 +695,74 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
     try {
       let inseridos = 0;
       let atualizados = 0;
+      const falhas: string[] = [];
 
-      // Busca todos os existentes por CPF e por matrícula (fallback).
-      const cpfs = preview.rows.map((r) => r.cpf).filter((c): c is string => !!c);
-      const mats = preview.rows.map((r) => r.matricula).filter((c): c is string => !!c);
-      const [byCpf, byMat] = await Promise.all([
-        cpfs.length
-          ? supabase.from("sst_colaboradores").select("id,cpf").in("cpf", cpfs)
-          : Promise.resolve({ data: [] as { id: string; cpf: string | null }[], error: null }),
-        mats.length
-          ? supabase.from("sst_colaboradores").select("id,matricula").in("matricula", mats)
-          : Promise.resolve({ data: [] as { id: string; matricula: string | null }[], error: null }),
-      ]);
-      const idByCpf = new Map((byCpf.data ?? []).map((r) => [r.cpf, r.id]));
-      const idByMat = new Map((byMat.data ?? []).map((r) => [r.matricula, r.id]));
-
+      // 1) Rows com CPF: upsert em lote com onConflict=cpf (não trava por duplicidade)
+      const comCpf = preview.rows.filter((r) => !!r.cpf);
+      const semCpf = preview.rows.filter((r) => !r.cpf);
       const importedIds = new Set<string>();
 
-      for (const r of preview.rows) {
-        const id = (r.cpf && idByCpf.get(r.cpf)) || (r.matricula && idByMat.get(r.matricula));
-        const payload: Omit<SstImportRow, "exame_realizado"> & { exame_realizado: boolean; ativo: boolean } = {
-          ...r,
-          ativo: true,
-        };
-        if (id) {
-          const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", id);
-          if (error) throw error;
-          atualizados++;
-          importedIds.add(id);
+      // pré-mapeia ids existentes por CPF para contar novos vs atualizados
+      const cpfs = comCpf.map((r) => r.cpf as string);
+      const idByCpfPre = new Map<string, string>();
+      if (cpfs.length) {
+        const CHUNK_LOOKUP = 500;
+        for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
+          const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
+          const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
+          (data ?? []).forEach((r) => { if (r.cpf) idByCpfPre.set(r.cpf, r.id); });
+        }
+      }
+
+      const CHUNK = 100;
+      for (let i = 0; i < comCpf.length; i += CHUNK) {
+        const batch = comCpf.slice(i, i + CHUNK).map((r) => ({ ...r, ativo: true }));
+        const { data, error } = await supabase
+          .from("sst_colaboradores")
+          .upsert(batch, { onConflict: "cpf" })
+          .select("id,cpf");
+        if (error) {
+          // fallback linha a linha
+          for (const row of batch) {
+            const { data: one, error: e2 } = await supabase
+              .from("sst_colaboradores")
+              .upsert(row, { onConflict: "cpf" })
+              .select("id,cpf")
+              .single();
+            if (e2) { falhas.push(`${row.nome} (${row.cpf}): ${e2.message}`); continue; }
+            if (one?.id) importedIds.add(one.id);
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+          }
         } else {
-          const { data, error } = await supabase.from("sst_colaboradores").insert(payload).select("id").single();
-          if (error) throw error;
-          inseridos++;
-          if (data?.id) importedIds.add(data.id);
+          (data ?? []).forEach((r) => r.id && importedIds.add(r.id));
+          for (const row of batch) {
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+          }
+        }
+      }
+
+      // 2) Rows sem CPF: fallback por matrícula
+      if (semCpf.length) {
+        const mats = semCpf.map((r) => r.matricula).filter((m): m is string => !!m);
+        const idByMat = new Map<string, string>();
+        if (mats.length) {
+          const { data } = await supabase.from("sst_colaboradores").select("id,matricula").in("matricula", mats);
+          (data ?? []).forEach((r) => { if (r.matricula) idByMat.set(r.matricula, r.id); });
+        }
+        for (const r of semCpf) {
+          const id = r.matricula ? idByMat.get(r.matricula) : undefined;
+          const payload = { ...r, ativo: true };
+          if (id) {
+            const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", id);
+            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            atualizados++;
+            importedIds.add(id);
+          } else {
+            const { data, error } = await supabase.from("sst_colaboradores").insert(payload).select("id").single();
+            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            inseridos++;
+            if (data?.id) importedIds.add(data.id);
+          }
         }
       }
 
@@ -699,20 +771,21 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         const { data: allActive } = await supabase.from("sst_colaboradores").select("id").eq("ativo", true);
         const toInactive = (allActive ?? []).filter((r) => !importedIds.has(r.id)).map((r) => r.id);
         if (toInactive.length) {
-          const { error } = await supabase
-            .from("sst_colaboradores")
-            .update({ ativo: false })
-            .in("id", toInactive);
-          if (error) throw error;
-          inativados = toInactive.length;
+          const { error } = await supabase.from("sst_colaboradores").update({ ativo: false }).in("id", toInactive);
+          if (!error) inativados = toInactive.length;
         }
       }
 
-      toast.success(
-        `Importação concluída: ${inseridos} novo(s), ${atualizados} atualizado(s)` +
-          (subst ? `, ${inativados} inativado(s)` : "") +
-          (preview.errors.length ? ` — ${preview.errors.length} aviso(s)` : ""),
-      );
+      const msg =
+        `Importação: ${inseridos} novo(s), ${atualizados} atualizado(s)` +
+        (subst ? `, ${inativados} inativado(s)` : "") +
+        (preview.errors.length ? ` · ${preview.errors.length} aviso(s) da planilha` : "") +
+        (falhas.length ? ` · ${falhas.length} linha(s) com erro` : "");
+      if (falhas.length) {
+        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+      } else {
+        toast.success(msg);
+      }
       onDone();
       onClose();
     } catch (e) {
@@ -816,49 +889,68 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
     if (!preview) return;
     setSaving(true);
     try {
-      const cpfs = preview.rows.map((r) => r.cpf).filter((c): c is string => !!c);
-      const { data: existing } = cpfs.length
-        ? await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", cpfs)
-        : { data: [] as { id: string; cpf: string | null }[] };
-      const idByCpf = new Map((existing ?? []).map((r) => [r.cpf, r.id]));
+      // NUNCA sobrescreve datas de exame/vencimento/tipo/observação.
+      const CADASTRAL_KEYS = [
+        "empresa", "filial", "descricao_filial", "cliente", "matricula", "nome",
+        "funcao", "cod_funcao", "descricao_funcao", "situacao",
+        "supervisor", "gerente", "gerente_regional", "diretor", "diretor_executivo",
+        "regional", "negocio", "tipo_contrato", "escala", "horario_trabalho",
+        "sexo", "rg", "data_nascimento", "municipio", "estado",
+        "pis", "ctps", "serie_ctps", "cc", "cr",
+        "data_admissao", "data_demissao",
+      ] as const;
 
-      let unificados = 0;
-      let novos = 0;
-      let semCpf = 0;
+      const pickCadastral = (r: SstImportRow) => {
+        const out: Record<string, unknown> = {};
+        for (const k of CADASTRAL_KEYS) {
+          const v = (r as unknown as Record<string, unknown>)[k];
+          if (v !== undefined) out[k] = v;
+        }
+        if (r.dados_extras && Object.keys(r.dados_extras).length) out.dados_extras = r.dados_extras;
+        return out;
+      };
 
-      for (const r of preview.rows) {
-        if (!r.cpf) { semCpf++; continue; }
-        const id = idByCpf.get(r.cpf);
-        // Somente campos cadastrais — nunca toca em datas de exame/vencimento/tipo.
-        const cadastral = {
-          empresa: r.empresa,
-          filial: r.filial,
-          cliente: r.cliente,
-          matricula: r.matricula,
-          nome: r.nome,
-          funcao: r.funcao,
-          situacao: r.situacao,
-          supervisor: r.supervisor,
-          data_admissao: r.data_admissao,
-        };
+      let unificados = 0, novos = 0, semCpf = 0;
+      const falhas: string[] = [];
+
+      const comCpf = preview.rows.filter((r) => !!r.cpf);
+      semCpf = preview.rows.length - comCpf.length;
+
+      const cpfs = comCpf.map((r) => r.cpf as string);
+      const idByCpf = new Map<string, string>();
+      const CHUNK_LOOKUP = 500;
+      for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
+        const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
+        const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
+        (data ?? []).forEach((r) => { if (r.cpf) idByCpf.set(r.cpf, r.id); });
+      }
+
+      for (const r of comCpf) {
+        const id = idByCpf.get(r.cpf!);
+        const cadastral = pickCadastral(r);
         if (id) {
-          const { error } = await supabase.from("sst_colaboradores").update(cadastral).eq("id", id);
-          if (error) throw error;
+          const { error } = await supabase.from("sst_colaboradores").update(cadastral as never).eq("id", id);
+          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           unificados++;
         } else if (insertMissing) {
           const { error } = await supabase
             .from("sst_colaboradores")
-            .insert({ ...cadastral, cpf: r.cpf, ativo: true });
-          if (error) throw error;
+            .insert({ ...cadastral, cpf: r.cpf, nome: r.nome, ativo: true } as never);
+          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           novos++;
         }
       }
 
-      toast.success(
-        `Cadastro unificado: ${unificados} vinculado(s) por CPF, ${novos} novo(s)` +
-          (semCpf ? `, ${semCpf} linha(s) sem CPF ignorada(s)` : "") +
-          (preview.errors.length ? ` — ${preview.errors.length} aviso(s)` : ""),
-      );
+      const msg =
+        `Cadastro: ${unificados} vinculado(s) por CPF, ${novos} novo(s)` +
+        (semCpf ? `, ${semCpf} sem CPF ignorada(s)` : "") +
+        (preview.errors.length ? ` · ${preview.errors.length} aviso(s)` : "") +
+        (falhas.length ? ` · ${falhas.length} com erro` : "");
+      if (falhas.length) {
+        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+      } else {
+        toast.success(msg);
+      }
       onDone();
       onClose();
     } catch (e) {

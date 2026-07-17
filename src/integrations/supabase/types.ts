@@ -662,69 +662,141 @@ export type Database = {
         Row: {
           agendamento_confirmado: boolean
           ativo: boolean
+          cc: string | null
           cliente: string | null
+          cod_funcao: string | null
           cpf: string | null
+          cr: string | null
           created_at: string
+          ctps: string | null
+          dados_extras: Json
           data_admissao: string | null
+          data_demissao: string | null
           data_exame_realizado: string | null
+          data_nascimento: string | null
           data_sugerida_agendamento: string | null
           data_vencimento: string | null
+          descricao_filial: string | null
+          descricao_funcao: string | null
+          diretor: string | null
+          diretor_executivo: string | null
           empresa: string | null
+          escala: string | null
+          estado: string | null
           exame_realizado: boolean
           filial: string | null
           funcao: string | null
+          gerente: string | null
+          gerente_regional: string | null
+          horario_trabalho: string | null
           id: string
           matricula: string | null
+          municipio: string | null
+          negocio: string | null
           nome: string
           observacao: string | null
+          pis: string | null
+          regional: string | null
+          rg: string | null
+          serie_ctps: string | null
+          sexo: string | null
           situacao: string | null
           supervisor: string | null
+          tipo_contrato: string | null
           tipo_exame: string | null
           updated_at: string
         }
         Insert: {
           agendamento_confirmado?: boolean
           ativo?: boolean
+          cc?: string | null
           cliente?: string | null
+          cod_funcao?: string | null
           cpf?: string | null
+          cr?: string | null
           created_at?: string
+          ctps?: string | null
+          dados_extras?: Json
           data_admissao?: string | null
+          data_demissao?: string | null
           data_exame_realizado?: string | null
+          data_nascimento?: string | null
           data_sugerida_agendamento?: string | null
           data_vencimento?: string | null
+          descricao_filial?: string | null
+          descricao_funcao?: string | null
+          diretor?: string | null
+          diretor_executivo?: string | null
           empresa?: string | null
+          escala?: string | null
+          estado?: string | null
           exame_realizado?: boolean
           filial?: string | null
           funcao?: string | null
+          gerente?: string | null
+          gerente_regional?: string | null
+          horario_trabalho?: string | null
           id?: string
           matricula?: string | null
+          municipio?: string | null
+          negocio?: string | null
           nome: string
           observacao?: string | null
+          pis?: string | null
+          regional?: string | null
+          rg?: string | null
+          serie_ctps?: string | null
+          sexo?: string | null
           situacao?: string | null
           supervisor?: string | null
+          tipo_contrato?: string | null
           tipo_exame?: string | null
           updated_at?: string
         }
         Update: {
           agendamento_confirmado?: boolean
           ativo?: boolean
+          cc?: string | null
           cliente?: string | null
+          cod_funcao?: string | null
           cpf?: string | null
+          cr?: string | null
           created_at?: string
+          ctps?: string | null
+          dados_extras?: Json
           data_admissao?: string | null
+          data_demissao?: string | null
           data_exame_realizado?: string | null
+          data_nascimento?: string | null
           data_sugerida_agendamento?: string | null
           data_vencimento?: string | null
+          descricao_filial?: string | null
+          descricao_funcao?: string | null
+          diretor?: string | null
+          diretor_executivo?: string | null
           empresa?: string | null
+          escala?: string | null
+          estado?: string | null
           exame_realizado?: boolean
           filial?: string | null
           funcao?: string | null
+          gerente?: string | null
+          gerente_regional?: string | null
+          horario_trabalho?: string | null
           id?: string
           matricula?: string | null
+          municipio?: string | null
+          negocio?: string | null
           nome?: string
           observacao?: string | null
+          pis?: string | null
+          regional?: string | null
+          rg?: string | null
+          serie_ctps?: string | null
+          sexo?: string | null
           situacao?: string | null
           supervisor?: string | null
+          tipo_contrato?: string | null
           tipo_exame?: string | null
           updated_at?: string
         }
