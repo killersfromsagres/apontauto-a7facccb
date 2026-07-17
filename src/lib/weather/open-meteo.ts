@@ -10,7 +10,13 @@ export const WEATHER_LOCATION = {
   timezone: "America/Sao_Paulo",
 };
 
-const ENDPOINT =
+// Fonte primária: MET Norway (via server route) com fallback automático para Open-Meteo.
+// O server route proxy identifica-se corretamente com User-Agent, exigido pelo MET Norway.
+const PRIMARY_ENDPOINT =
+  `/api/public/clima-forecast?lat=${WEATHER_LOCATION.latitude}&lon=${WEATHER_LOCATION.longitude}`;
+
+// Fallback direto do navegador (caso o servidor Lovable esteja fora).
+const FALLBACK_ENDPOINT =
   "https://api.open-meteo.com/v1/forecast" +
   `?latitude=${WEATHER_LOCATION.latitude}` +
   `&longitude=${WEATHER_LOCATION.longitude}` +
