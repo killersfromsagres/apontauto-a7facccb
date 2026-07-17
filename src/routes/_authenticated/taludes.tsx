@@ -282,8 +282,11 @@ function TaludesPage() {
   // Interaction state
   const [selectedTaludeId, setSelectedTaludeId] = useState<string | null>(null);
   const [drawingNumero, setDrawingNumero] = useState<string>("");
+  const [drawingNewMode, setDrawingNewMode] = useState<boolean>(false);
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [editingPolygonFor, setEditingPolygonFor] = useState<string | null>(null);
+  const [numberPromptOpen, setNumberPromptOpen] = useState(false);
+  const [pendingNumber, setPendingNumber] = useState<string>("");
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
@@ -385,7 +388,7 @@ function TaludesPage() {
   };
 
   const handleMapClick = (e: React.MouseEvent) => {
-    if (!drawingNumero && !editingPolygonFor) return;
+    if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
@@ -429,39 +432,65 @@ function TaludesPage() {
           },
         });
         toast.success(`Talude ${existing.numero}: área atualizada`);
-      } else {
-        const num = parseInt(drawingNumero, 10);
-        if (!num || num <= 0) {
-          toast.error("Número do talude inválido");
-          return;
-        }
-        if (taludes.some((t) => t.numero === num)) {
-          toast.error(`Talude ${num} já existe`);
-          return;
-        }
-        await upsertFn({
-          data: {
-            map_id: map.id,
-            numero: num,
-            polygon: drawingPoints,
-            status: "programado",
-            data_programada: today(),
-          },
-        });
-        toast.success(`Talude ${num} criado`);
+        setDrawingPoints([]);
+        setDrawingNumero("");
+        setEditingPolygonFor(null);
+        await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+        return;
       }
-      setDrawingPoints([]);
-      setDrawingNumero("");
-      setEditingPolygonFor(null);
-      await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+
+      // New talude flow: if number already typed, save; otherwise open prompt.
+      if (drawingNumero) {
+        await commitNewTalude(drawingNumero);
+      } else {
+        // Suggest the next available number
+        const used = new Set(taludes.map((t) => t.numero));
+        let next = 1;
+        while (used.has(next)) next++;
+        setPendingNumber(String(next));
+        setNumberPromptOpen(true);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar");
     }
   };
 
+  const commitNewTalude = async (numStr: string) => {
+    if (!map) return;
+    const num = parseInt(numStr, 10);
+    if (!num || num <= 0) {
+      toast.error("Número do talude inválido");
+      return;
+    }
+    if (taludes.some((t) => t.numero === num)) {
+      toast.error(`Talude ${num} já existe`);
+      return;
+    }
+    await upsertFn({
+      data: {
+        map_id: map.id,
+        numero: num,
+        polygon: drawingPoints,
+        status: "programado",
+        data_programada: today(),
+      },
+    });
+    toast.success(`Talude ${num} criado`);
+    setDrawingPoints([]);
+    setDrawingNumero("");
+    setDrawingNewMode(false);
+    setNumberPromptOpen(false);
+    setPendingNumber("");
+    setEditingPolygonFor(null);
+    await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+  };
+
   const cancelDrawing = () => {
     setDrawingPoints([]);
     setDrawingNumero("");
+    setDrawingNewMode(false);
+    setNumberPromptOpen(false);
+    setPendingNumber("");
     setEditingPolygonFor(null);
   };
 
@@ -737,7 +766,7 @@ function TaludesPage() {
               </div>
             </TooltipProvider>
             <div className="ml-auto flex items-center gap-2">
-              {drawingNumero || editingPolygonFor ? (
+              {drawingNewMode || drawingNumero || editingPolygonFor ? (
                 <>
                   <span className="text-[11px] text-muted-foreground">
                     Pontos: {drawingPoints.length} — clique no mapa para adicionar
@@ -750,29 +779,17 @@ function TaludesPage() {
                   </Button>
                 </>
               ) : (
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    min={1}
-                    placeholder="Nº"
-                    className="h-8 w-16"
-                    value={drawingNumero}
-                    onChange={(e) => setDrawingNumero(e.target.value)}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (!drawingNumero) {
-                        toast.error("Informe o número do talude");
-                        return;
-                      }
-                      setDrawingPoints([]);
-                      toast.info("Clique no mapa para adicionar pontos (≥3)");
-                    }}
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
-                  </Button>
-                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setDrawingPoints([]);
+                    setDrawingNewMode(true);
+                    setDrawingNumero("");
+                    toast.info("Clique no mapa para adicionar pontos (≥3). O número será solicitado ao finalizar.");
+                  }}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
+                </Button>
               )}
             </div>
           </div>
@@ -818,7 +835,7 @@ function TaludesPage() {
 
           {(() => {
             // ─── zoom & transform ───
-            const isDrawing = !!(drawingNumero || editingPolygonFor);
+            const isDrawing = !!(drawingNumero || editingPolygonFor || drawingNewMode);
             const zoomTarget =
               taludes.find((x) => x.id === (editingPolygonFor || zoomedTaludeId)) || null;
             let transform: string | undefined;
@@ -967,7 +984,7 @@ function TaludesPage() {
                       onPointerLeave={handleSvgPointerUp}
                       viewBox="0 0 100 100"
                       preserveAspectRatio="none"
-                      className={`absolute inset-0 h-full w-full ${drawingNumero || editingPolygonFor ? "cursor-crosshair" : ""}`}
+                      className={`absolute inset-0 h-full w-full ${isDrawing ? "cursor-crosshair" : ""}`}
                     >
                       {taludes.map((t) => {
                         if (t.polygon.length < 3) return null;
@@ -984,7 +1001,7 @@ function TaludesPage() {
                             key={t.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (drawingNumero || editingPolygonFor) return;
+                              if (isDrawing) return;
                               if (selectedTaludeId === t.id) {
                                 cycleStatus(t);
                               } else {
@@ -1230,6 +1247,93 @@ function TaludesPage() {
         </div>
       </div>
       <AuditReportDialog report={auditReport} onClose={() => setAuditReport(null)} />
+
+      {/* Prompt de número do talude ao finalizar demarcação */}
+      <Dialog
+        open={numberPromptOpen}
+        onOpenChange={(v) => {
+          if (!v) setNumberPromptOpen(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" /> Número do talude
+            </DialogTitle>
+            <DialogDescription>
+              Área demarcada com {drawingPoints.length} pontos. Informe o número identificador do
+              talude para concluir o cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              commitNewTalude(pendingNumber);
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="talude-numero" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Nº do talude
+              </Label>
+              <Input
+                id="talude-numero"
+                type="number"
+                min={1}
+                autoFocus
+                value={pendingNumber}
+                onChange={(e) => setPendingNumber(e.target.value)}
+                placeholder="Ex.: 12"
+                className="h-11 text-lg font-semibold"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Sugestão: próximo número livre pré-preenchido.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setNumberPromptOpen(false);
+                }}
+              >
+                Continuar editando
+              </Button>
+              <Button type="submit" disabled={!pendingNumber}>
+                <Save className="mr-1.5 h-4 w-4" /> Salvar talude
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Otimização de impressão do mapa */}
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 10mm; }
+          body { background: #fff !important; }
+          /* Esconde chrome do app durante a impressão */
+          aside, nav, header, footer,
+          [data-sidebar], [data-app-header],
+          .no-print { display: none !important; }
+          /* Expande área principal */
+          main, [data-page-shell] { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+          /* Cards viram folhas planas */
+          .glass-card, [data-glass-card] {
+            background: #fff !important;
+            box-shadow: none !important;
+            border-color: #ddd !important;
+            break-inside: avoid;
+          }
+          /* Garante que o mapa apareça inteiro */
+          [data-talude-map] {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            max-height: 90vh !important;
+          }
+        }
+      `}</style>
     </PageShell>
   );
 }

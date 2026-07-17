@@ -52,6 +52,7 @@ import {
   removerEvidencia,
   type ChuvaEvidencia,
 } from "@/lib/taludes-programacao/evidencias";
+import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
 
 export const Route = createFileRoute("/_authenticated/programacao-taludes")({
   head: () => ({
@@ -263,6 +264,13 @@ function ProgramacaoTaludesPage() {
             </div>
           </GlassCard>
         </div>
+
+        {/* Próximos dias úteis */}
+        <WeatherForecastStrip
+          title="Previsão para os próximos dias úteis"
+          subtitle="Planejamento das atividades de talude — role para ver mais dias"
+        />
+
 
         {/* Inteligência operacional — atividades externas */}
         {alertExternal && (

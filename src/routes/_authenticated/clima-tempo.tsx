@@ -40,6 +40,7 @@ import {
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
 } from "@/lib/weather/open-meteo";
+import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
 
 export const Route = createFileRoute("/_authenticated/clima-tempo")({
   head: () => ({
@@ -324,6 +325,11 @@ function ClimaTempoPage() {
             </ResponsiveContainer>
           </div>
         </GlassCard>
+
+        {/* Próximos dias úteis — rolagem horizontal */}
+        <WeatherForecastStrip />
+
+
 
         <div className="text-right text-[11px] text-muted-foreground">
           Última atualização:{" "}
