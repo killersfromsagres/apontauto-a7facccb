@@ -525,6 +525,9 @@ function SegurancaTrabalhoPage() {
       </PageShell>
 
       {importOpen && <ImportDialog onClose={() => setImportOpen(false)} onDone={reload} />}
+      {importCadastroOpen && (
+        <ImportCadastroDialog onClose={() => setImportCadastroOpen(false)} onDone={reload} />
+      )}
       {exportOpen && (
         <ExportDialog
           onClose={() => setExportOpen(false)}
