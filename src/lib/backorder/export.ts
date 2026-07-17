@@ -152,7 +152,7 @@ export async function generateBackorderExport(input: {
       andar: r.ativo ? { formula: buildFormula(7) } : "",
       espaco: r.ativo ? { formula: buildFormula(String(r.ativo).length) } : "",
       atividade: "Corretiva",
-      data: fmtDate(r.termino_sla),
+      data: fmtDate(r.data_solicitacao),
       equipe: r.equipe,
       solicitante: r.outros,
     };
