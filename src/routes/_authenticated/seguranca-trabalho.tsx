@@ -134,6 +134,7 @@ function SegurancaTrabalhoPage() {
 
   // Diálogos
   const [importOpen, setImportOpen] = useState(false);
+  const [importCadastroOpen, setImportCadastroOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [editing, setEditing] = useState<Colaborador | null>(null);
   const [creating, setCreating] = useState(false);
