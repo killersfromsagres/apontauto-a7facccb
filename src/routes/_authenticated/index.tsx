@@ -80,7 +80,10 @@ const modules = [
 ];
 
 function Dashboard() {
-  return (
+  const { access } = useMyAccess();
+  const visibleModules = modules.filter(
+    (m) => access.isAdmin || !access.allowed || access.allowed.includes(m.key),
+  );
     <PageShell
       title="Dashboard"
       description="Visão geral da operação de manutenção industrial — DEMARCHI"
