@@ -152,7 +152,9 @@ export const listAppUsers = createServerFn({ method: "GET" })
       supabaseAdmin.from("profiles").select("id, full_name, allowed_menus").in("id", ids),
     ]);
     const roleMap = new Map<string, Role>();
-    (roles ?? []).forEach((r: any) => roleMap.set(r.user_id, r.role));
+    (roles ?? []).forEach((r: any) => {
+      if (r.role === "admin" || !roleMap.has(r.user_id)) roleMap.set(r.user_id, r.role);
+    });
     const profMap = new Map<string, { full_name: string | null; allowed_menus: string[] | null }>();
     (profs ?? []).forEach((p: any) =>
       profMap.set(p.id, { full_name: p.full_name, allowed_menus: p.allowed_menus }),
