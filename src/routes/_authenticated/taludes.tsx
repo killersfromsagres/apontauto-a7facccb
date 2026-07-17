@@ -282,8 +282,11 @@ function TaludesPage() {
   // Interaction state
   const [selectedTaludeId, setSelectedTaludeId] = useState<string | null>(null);
   const [drawingNumero, setDrawingNumero] = useState<string>("");
+  const [drawingNewMode, setDrawingNewMode] = useState<boolean>(false);
   const [drawingPoints, setDrawingPoints] = useState<Point[]>([]);
   const [editingPolygonFor, setEditingPolygonFor] = useState<string | null>(null);
+  const [numberPromptOpen, setNumberPromptOpen] = useState(false);
+  const [pendingNumber, setPendingNumber] = useState<string>("");
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
