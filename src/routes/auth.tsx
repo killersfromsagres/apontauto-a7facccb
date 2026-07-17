@@ -1,9 +1,24 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Lock, Eye, EyeOff, UserRound } from "lucide-react";
+import { Lock, Eye, EyeOff, UserRound, ShieldCheck } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  saveCredentials,
+  loadCredentials,
+  clearCredentials,
+} from "@/lib/auth/saved-credentials";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 const logo = { url: "/apontauto-logo.png" };
 
 export const Route = createFileRoute("/auth")({
@@ -29,15 +44,40 @@ function AuthPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [askSave, setAskSave] = useState(false);
+  const pendingCreds = useRef<{ email: string; password: string } | null>(null);
+  const autoTried = useRef(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      // Só reage a login efetivo — INITIAL_SESSION já é tratado pelo beforeLoad da rota.
       if (session && event === "SIGNED_IN") {
-        navigate({ to: "/" });
+        // Se veio de fluxo automático, navega direto; senão o diálogo trata.
+        if (!pendingCreds.current) navigate({ to: "/" });
       }
     });
     return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  // Login automático: se há credenciais salvas, tenta autenticar sem interação.
+  useEffect(() => {
+    if (autoTried.current) return;
+    autoTried.current = true;
+    const saved = loadCredentials();
+    if (!saved) return;
+    setEmail(saved.email.replace(/@apontauto\.local$/, ""));
+    setLoading(true);
+    supabase.auth
+      .signInWithPassword({ email: saved.email, password: saved.password })
+      .then(({ error }) => {
+        if (error) {
+          clearCredentials();
+          toast.info("Credenciais salvas expiraram. Faça login novamente.");
+        } else {
+          toast.success("Login automático realizado.");
+          navigate({ to: "/" });
+        }
+      })
+      .finally(() => setLoading(false));
   }, [navigate]);
 
   const triggerShake = () => {
@@ -50,17 +90,36 @@ function AuthPage() {
     setLoading(true);
     try {
       const raw = email.trim().toLowerCase();
-      // Se não contém "@", trata como login e monta o e-mail sintético
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
       toast.success("Bem-vindo!");
+      // Pergunta se deseja salvar somente quando não havia credenciais salvas.
+      const already = loadCredentials();
+      if (!already || already.email !== loginEmail || already.password !== password) {
+        pendingCreds.current = { email: loginEmail, password };
+        setAskSave(true);
+      } else {
+        navigate({ to: "/" });
+      }
     } catch (err) {
       triggerShake();
       toast.error(err instanceof Error ? err.message : "Falha ao autenticar");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveChoice = (save: boolean) => {
+    if (save && pendingCreds.current) {
+      saveCredentials(pendingCreds.current);
+      toast.success("Credenciais salvas neste dispositivo.");
+    } else if (!save) {
+      clearCredentials();
+    }
+    pendingCreds.current = null;
+    setAskSave(false);
+    navigate({ to: "/" });
   };
 
   const forgotPassword = async () => {
@@ -77,11 +136,9 @@ function AuthPage() {
 
   return (
     <div className="auth-bg relative flex min-h-screen items-center justify-center px-4 py-10">
-      {/* animated grid overlay */}
       <div className="auth-grid" aria-hidden />
 
       <main className="relative z-10 w-full max-w-md">
-        {/* Glass card */}
         <div
           className={`relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:p-9 ${
             shake ? "auth-shake" : ""
@@ -91,13 +148,11 @@ function AuthPage() {
               "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
           }}
         >
-          {/* subtle top highlight */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
           />
 
-          {/* Logo */}
           <div className="auth-logo-in mb-4 flex flex-col items-center sm:mb-6">
             <div className="relative mx-auto grid h-40 w-40 place-items-center xs:h-48 xs:w-48 sm:h-56 sm:w-56 md:h-64 md:w-64">
               <img
@@ -189,7 +244,6 @@ function AuthPage() {
           </form>
         </div>
 
-        {/* Footer */}
         <p className="mt-6 text-center text-xs tracking-wide text-white/50">
           Dev by:{" "}
           <span className="shine-text font-semibold">Gabriel Vitor</span>
@@ -201,6 +255,26 @@ function AuthPage() {
           <a href="/termos" className="hover:text-white/70">Termos</a>
         </nav>
       </main>
+
+      <AlertDialog open={askSave} onOpenChange={(open) => !open && handleSaveChoice(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Salvar credenciais?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja salvar suas credenciais neste dispositivo para login automático nas
+              próximas sessões? Elas ficam armazenadas apenas no seu navegador e expiram
+              em 30 dias. Use somente em dispositivos pessoais.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não salvar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSaveChoice(true)}>Salvar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
