@@ -51,6 +51,7 @@ export function AppHeader() {
     try {
       await queryClient.cancelQueries();
       queryClient.clear();
+      clearCredentials();
       await supabase.auth.signOut();
     } catch (err) {
       console.error("[signOut]", err);
