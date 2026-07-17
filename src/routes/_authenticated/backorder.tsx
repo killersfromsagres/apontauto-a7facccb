@@ -356,22 +356,51 @@ function BackorderPage() {
       let atualizadas = 0;
       let ignoradas = 0;
 
-      const toUpsert: BackorderRow[] = [];
+      // Recarrega regras aprendidas (o motor precisa da versão mais atual)
+      const [locRes, teamRes] = await Promise.all([
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+      ]);
+      const learnedIdx = buildLearnedIndex(
+        (locRes.data ?? []) as LearnedLocation[],
+        (teamRes.data ?? []) as LearnedTeam[],
+      );
+
+      const toUpsert: Array<BackorderRow & {
+        origem_predio_andar_espaco: string;
+        origem_equipe: string;
+      }> = [];
       for (const r of parsed) {
         const prev = existMap.get(r.os);
-        // Se já está finalizado localmente, ignora reimport (mas garante upsert com finalizado=true)
         if (prev?.finalizado) {
           ignoradas++;
           continue;
         }
         const override = overrideMap.get(r.os);
-        const atividade = (override as Categoria | undefined) ?? (prev?.atividade_manual ? prev.atividade : r.atividade);
-        const equipe = override
+
+        // Aplica regra aprendida (prioridade sobre árvore) — mas nunca sobrescreve override manual
+        const tree = resolveAtivoTree(assetsMap, r.ativo);
+        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
+
+        const atividadeFinal = (override as Categoria | undefined)
+          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : applied.atividade);
+        const equipeFinal = override
           ? CATEGORIA_TO_EQUIPE[override as Categoria]
           : prev?.atividade_manual
             ? prev.equipe
-            : r.equipe;
-        const next = { ...r, atividade: atividade as Categoria, equipe };
+            : CATEGORIA_TO_EQUIPE[atividadeFinal];
+
+        const next = {
+          ...r,
+          predio: applied.predio || r.predio,
+          andar: applied.andar || r.andar,
+          espaco: applied.espaco || r.espaco,
+          atividade: atividadeFinal,
+          equipe: equipeFinal,
+          revisao_manual: applied.revisao_manual && !override && !prev?.atividade_manual,
+          origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : applied.origem_equipe,
+        };
         if (prev) {
           const sameISO = (a?: string | null, b?: string | null) =>
             (a ? new Date(a).toISOString() : "") === (b ? new Date(b).toISOString() : "");
@@ -415,6 +444,8 @@ function BackorderPage() {
           outros: r.outros,
           criticidade: r.criticidade ?? "",
           revisao_manual: r.revisao_manual,
+          origem_predio_andar_espaco: r.origem_predio_andar_espaco,
+          origem_equipe: r.origem_equipe,
         }));
         const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
         if (error) throw error;
