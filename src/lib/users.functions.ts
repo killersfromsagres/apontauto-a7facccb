@@ -1,5 +1,7 @@
-import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
@@ -7,6 +9,107 @@ type CreateUserInput = { login: string; password: string; fullName?: string; rol
 const OWNER_ADMIN_EMAIL = "gabrielvlp33@gmail.com";
 const LOGIN_DOMAIN = "apontauto.local";
 const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
+
+function isNewSupabaseApiKey(value: string): boolean {
+  return value.startsWith("sb_publishable_") || value.startsWith("sb_secret_");
+}
+
+function createSupabaseFetch(supabaseKey: string): typeof fetch {
+  return (input, init) => {
+    const headers = new Headers(
+      typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
+    );
+
+    if (init?.headers) {
+      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+    }
+
+    if (isNewSupabaseApiKey(supabaseKey) && headers.get("Authorization") === `Bearer ${supabaseKey}`) {
+      headers.delete("Authorization");
+    }
+
+    headers.set("apikey", supabaseKey);
+    return fetch(input, { ...init, headers });
+  };
+}
+
+function getAuthEnv() {
+  const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
+  const publishableKey =
+    process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!url || !publishableKey) {
+    throw new Error("Configuração do backend indisponível. Recarregue o sistema e tente novamente.");
+  }
+
+  return { url, publishableKey };
+}
+
+function createUsersAdminClient() {
+  const { url } = getAuthEnv();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!serviceRoleKey) {
+    throw new Error("Configuração administrativa do backend indisponível.");
+  }
+
+  return createClient<Database>(url, serviceRoleKey, {
+    global: {
+      fetch: createSupabaseFetch(serviceRoleKey),
+    },
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
+  const { url, publishableKey } = getAuthEnv();
+  const request = getRequest();
+
+  if (!request?.headers) {
+    throw new Error("Sessão inválida. Entre novamente.");
+  }
+
+  const authHeader = request.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    throw new Error("Sessão expirada. Entre novamente.");
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  if (!token || token.split(".").length !== 3) {
+    throw new Error("Sessão inválida. Entre novamente.");
+  }
+
+  const supabase = createClient<Database>(url, publishableKey, {
+    global: {
+      fetch: createSupabaseFetch(publishableKey),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+    auth: {
+      storage: undefined,
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims?.sub) {
+    throw new Error("Sessão expirada. Entre novamente.");
+  }
+
+  return next({
+    context: {
+      supabase,
+      userId: data.claims.sub,
+      claims: data.claims,
+    },
+  });
+});
 
 export const MENU_KEYS = [
   "dashboard",
@@ -61,7 +164,7 @@ function isOwnerAdminEmail(email: string | null | undefined) {
  * Retorna se o usuário autenticado atual é administrador.
  */
 export const getIsAdmin = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
@@ -75,7 +178,7 @@ export const getIsAdmin = createServerFn({ method: "GET" })
  * Retorna os itens de menu permitidos ao usuário logado. `null` = todos.
  */
 export const getMyAllowedMenus = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase.rpc("get_my_allowed_menus");
     if (error) throw new Error(error.message);
@@ -87,7 +190,7 @@ export const getMyAllowedMenus = createServerFn({ method: "GET" })
  * na inicialização do layout autenticado).
  */
 export const getMyAccess = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     const email = typeof context.claims?.email === "string" ? context.claims.email : "";
     const [adminRes, menusRes] = await Promise.all([
@@ -107,12 +210,12 @@ export const getMyAccess = createServerFn({ method: "GET" })
  * Cria um novo usuário no backend com e-mail já confirmado e atribui o papel escolhido.
  */
 export const createAppUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .validator(validateCreate)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
       email: loginToEmail(data.login),
       password: data.password,
@@ -135,10 +238,10 @@ export const createAppUser = createServerFn({ method: "POST" })
  * Lista todos os usuários com papel, status e permissões (admin only).
  */
 export const listAppUsers = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
 
     const { data: authList, error: authErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
@@ -192,12 +295,12 @@ function requireUserId(input: unknown): { userId: string } {
  * Remove um usuário completamente (admin only).
  */
 export const deleteAppUser = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .validator(requireUserId)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("Você não pode excluir sua própria conta.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -207,7 +310,7 @@ export const deleteAppUser = createServerFn({ method: "POST" })
  * Ativa/desativa um usuário (ban via Supabase Admin).
  */
 export const setUserBanned = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const banned = Boolean((input as any)?.banned);
@@ -216,7 +319,7 @@ export const setUserBanned = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     if (data.userId === context.userId) throw new Error("Você não pode desativar sua própria conta.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.banned ? "876000h" : "none",
     } as any);
@@ -228,7 +331,7 @@ export const setUserBanned = createServerFn({ method: "POST" })
  * Define o papel (admin/user) de um usuário.
  */
 export const setUserRole = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const role: Role = (input as any)?.role === "admin" ? "admin" : "user";
@@ -236,7 +339,7 @@ export const setUserRole = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
     const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (isOwnerAdminEmail(target.user?.email)) {
       throw new Error("O administrador principal não pode perder o perfil admin.");
@@ -254,7 +357,7 @@ export const setUserRole = createServerFn({ method: "POST" })
  * `allowed = null` significa acesso total.
  */
 export const setUserAllowedMenus = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireUsersAuth])
   .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const raw = (input as any)?.allowed;
@@ -268,7 +371,7 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = createUsersAdminClient();
     const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
     if (isOwnerAdminEmail(target.user?.email)) {
       return { ok: true };
