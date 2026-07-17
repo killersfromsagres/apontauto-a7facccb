@@ -1247,6 +1247,93 @@ function TaludesPage() {
         </div>
       </div>
       <AuditReportDialog report={auditReport} onClose={() => setAuditReport(null)} />
+
+      {/* Prompt de número do talude ao finalizar demarcação */}
+      <Dialog
+        open={numberPromptOpen}
+        onOpenChange={(v) => {
+          if (!v) setNumberPromptOpen(false);
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" /> Número do talude
+            </DialogTitle>
+            <DialogDescription>
+              Área demarcada com {drawingPoints.length} pontos. Informe o número identificador do
+              talude para concluir o cadastro.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              commitNewTalude(pendingNumber);
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="talude-numero" className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Nº do talude
+              </Label>
+              <Input
+                id="talude-numero"
+                type="number"
+                min={1}
+                autoFocus
+                value={pendingNumber}
+                onChange={(e) => setPendingNumber(e.target.value)}
+                placeholder="Ex.: 12"
+                className="h-11 text-lg font-semibold"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Sugestão: próximo número livre pré-preenchido.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setNumberPromptOpen(false);
+                }}
+              >
+                Continuar editando
+              </Button>
+              <Button type="submit" disabled={!pendingNumber}>
+                <Save className="mr-1.5 h-4 w-4" /> Salvar talude
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Otimização de impressão do mapa */}
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 10mm; }
+          body { background: #fff !important; }
+          /* Esconde chrome do app durante a impressão */
+          aside, nav, header, footer,
+          [data-sidebar], [data-app-header],
+          .no-print { display: none !important; }
+          /* Expande área principal */
+          main, [data-page-shell] { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+          /* Cards viram folhas planas */
+          .glass-card, [data-glass-card] {
+            background: #fff !important;
+            box-shadow: none !important;
+            border-color: #ddd !important;
+            break-inside: avoid;
+          }
+          /* Garante que o mapa apareça inteiro */
+          [data-talude-map] {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            max-height: 90vh !important;
+          }
+        }
+      `}</style>
     </PageShell>
   );
 }
