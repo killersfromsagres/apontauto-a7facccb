@@ -1478,10 +1478,14 @@ function TableView({
                     <TableCell className="max-w-[320px] truncate" title={r.nome}>
                       {r.nome}
                     </TableCell>
-                    <TableCell className="text-xs">{r.predio}</TableCell>
-                    <TableCell className="text-xs">{r.andar}</TableCell>
-                    <TableCell className="max-w-[220px] truncate text-xs" title={r.espaco}>
-                      {r.espaco}
+                    <TableCell className="text-xs">
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.predio} field="predio" />
+                    </TableCell>
+                    <TableCell className="text-xs">
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.andar} field="andar" />
+                    </TableCell>
+                    <TableCell className="max-w-[220px] truncate text-xs" title={r.espaco || r.ativo}>
+                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
                     </TableCell>
                     <TableCell>
                       <Select
