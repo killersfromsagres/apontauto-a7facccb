@@ -13,6 +13,7 @@ import {
   PackageX,
   Shirt,
   HardHat,
+  CloudSun,
 } from "lucide-react";
 import {
   Sidebar,
@@ -40,6 +41,7 @@ const baseItems = [
   { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
   { key: "programacao-taludes", title: "Programação de Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
   { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
+  { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
   { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
   { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
   { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },

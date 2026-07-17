@@ -1,20 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Cloud,
   CloudRain,
-  CloudLightning,
-  Sun,
+  Wind,
+  Droplets,
+  Thermometer,
   RefreshCw,
   Trash2,
   Download,
-  Settings2,
   AlertTriangle,
   CheckCircle2,
   ShieldCheck,
   ClipboardCheck,
+  HardHat,
+  ExternalLink,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -24,38 +26,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useWeather } from "@/hooks/use-weather";
 import {
-  loadClima,
-  statusClimatico,
-  wmoIcone,
-  salvarConfig,
-  type ClimaBundle,
-  type ClimaConfig,
-} from "@/lib/taludes-programacao/clima";
+  WEATHER_LOCATION,
+  weatherCodeInfo,
+  situationStatus,
+  EXTERNAL_ACTIVITIES,
+  shouldAlertExternalActivities,
+  EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+} from "@/lib/weather/open-meteo";
 import {
   listarEvidencias,
   registrarEvidencia,
@@ -66,11 +52,11 @@ import {
 export const Route = createFileRoute("/_authenticated/programacao-taludes")({
   head: () => ({
     meta: [
-      { title: "Clima da Programação de Taludes — Apont Auto" },
+      { title: "Programação de Taludes — Clima integrado" },
       {
         name: "description",
         content:
-          "Monitoramento climático integrado à programação de taludes de São Bernardo do Campo, com registro de PT liberada.",
+          "Programação de taludes integrada ao monitoramento climático em tempo real (Open-Meteo).",
       },
     ],
   }),
@@ -86,28 +72,19 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function ClimaIcon({ code, className }: { code: "sun" | "cloud" | "rain" | "storm"; className?: string }) {
-  const c = cn("h-5 w-5", className);
-  if (code === "sun") return <Sun className={cn(c, "text-amber-500")} />;
-  if (code === "rain") return <CloudRain className={cn(c, "text-blue-500")} />;
-  if (code === "storm") return <CloudLightning className={cn(c, "text-purple-500")} />;
-  return <Cloud className={cn(c, "text-slate-400")} />;
-}
-
 function ProgramacaoTaludesPage() {
   const qc = useQueryClient();
-  const { isAdmin } = useIsAdmin();
+  const weatherQ = useWeather();
+  const data = weatherQ.data;
 
-  const climaQ = useQuery({
-    queryKey: ["taludes-clima"],
-    queryFn: loadClima,
-    staleTime: 15 * 60_000,
-    refetchOnWindowFocus: false,
-  });
+  const current = data?.current;
+  const info = weatherCodeInfo(current?.weather_code);
+  const probHoje = data?.daily.precipitation_probability_max[0] ?? 0;
+  const rainSumHoje = data?.daily.rain_sum[0] ?? 0;
+  const status = situationStatus(probHoje);
+  const alertExternal = shouldAlertExternalActivities(probHoje);
 
-  const clima = climaQ.data;
-
-  const climaPanelRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Evidências de chuva
   const evidenciasQ = useQuery({
@@ -117,26 +94,24 @@ function ProgramacaoTaludesPage() {
   });
   const [registrandoEvid, setRegistrandoEvid] = useState(false);
   const handleRegistrarEvidencia = async () => {
-    if (!clima || !climaPanelRef.current) return;
+    if (!data || !panelRef.current) return;
     setRegistrandoEvid(true);
     try {
       const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(climaPanelRef.current, {
+      const dataUrl = await toPng(panelRef.current, {
         pixelRatio: 2,
         backgroundColor: "#0b1220",
       });
       const hoje = todayISO();
-      const diaHoje = clima.dias.find((d) => d.data === hoje);
-      const mm = diaHoje?.precipitacao_mm_real ?? diaHoje?.precipitacao_mm_prev ?? clima.agora.prob_chuva;
       await registrarEvidencia({
         data: hoje,
         mensagem:
           "Atividades de talude interrompidas devido a chuva — condição climática desfavorável registrada como evidência.",
         imagem_data_url: dataUrl,
-        temperatura: clima.agora.temperatura,
-        condicao: clima.agora.condicao,
-        precipitacao_mm: typeof mm === "number" ? mm : null,
-        prob_chuva: clima.agora.prob_chuva,
+        temperatura: current?.temperature_2m ?? null,
+        condicao: info.label,
+        precipitacao_mm: rainSumHoje,
+        prob_chuva: probHoje,
       });
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -151,40 +126,45 @@ function ProgramacaoTaludesPage() {
     }
   };
 
-  const hojeStatus = clima
-    ? statusClimatico(todayISO(), clima.dias, clima.config)
-    : null;
-
   return (
     <PageShell
-      title="Clima da Programação de Taludes"
-      description="Monitoramento climático em tempo real de São Bernardo do Campo — SP, integrado à programação de taludes."
+      title="Programação de Taludes"
+      description={`Programação integrada ao clima em tempo real — ${WEATHER_LOCATION.cidade} · ${WEATHER_LOCATION.bairro} · ${WEATHER_LOCATION.estado}.`}
       actions={
-        <Button variant="outline" onClick={() => climaQ.refetch()} disabled={climaQ.isFetching}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", climaQ.isFetching && "animate-spin")} />
-          Atualizar clima
-        </Button>
+        <>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/clima-tempo">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Dashboard Clima e Tempo
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => weatherQ.refetch()} disabled={weatherQ.isFetching}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", weatherQ.isFetching && "animate-spin")} />
+            Atualizar clima
+          </Button>
+        </>
       }
     >
       <div className="space-y-5">
-        {clima?.stale && (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
+        {weatherQ.isError && (
+          <div className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm text-red-800 dark:text-red-200">
             <AlertTriangle className="mr-2 inline h-4 w-4" />
-            Não foi possível obter dados climáticos agora — exibindo último snapshot salvo.
+            Falha ao consultar Open-Meteo. Tente novamente em instantes.
           </div>
         )}
 
-        {hojeStatus?.nivel === "chuva" && (
+        {status.nivel === "reprogramar" && (
           <div className="rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 to-red-600/10 px-4 py-3 shadow-lg">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <CloudRain className="mt-0.5 h-6 w-6 shrink-0 text-red-500 animate-pulse" />
                 <div>
                   <p className="font-display text-base font-bold text-red-700 dark:text-red-300">
-                    Atividades de talude interrompidas por chuva
+                    {status.titulo} — atividades de talude devem ser reprogramadas
                   </p>
                   <p className="text-xs text-red-800/90 dark:text-red-200/90">
-                    {hojeStatus.motivo} — registre a evidência para o histórico do dia.
+                    Probabilidade de chuva hoje: {Math.round(probHoje)}%. Registre a evidência para
+                    o histórico.
                   </p>
                 </div>
               </div>
@@ -192,7 +172,7 @@ function ProgramacaoTaludesPage() {
                 variant="destructive"
                 size="sm"
                 onClick={handleRegistrarEvidencia}
-                disabled={registrandoEvid}
+                disabled={registrandoEvid || !data}
                 className="shrink-0"
               >
                 {registrandoEvid ? "Registrando…" : "Registrar evidência de chuva"}
@@ -201,110 +181,113 @@ function ProgramacaoTaludesPage() {
           </div>
         )}
 
-        {/* PT (Permissão de Trabalho) — discreto, moderno e elegante */}
         <PTCard />
 
-        {/* Painel climático */}
-        <div ref={climaPanelRef}>
+        {/* Painel climático — Open-Meteo */}
+        <div ref={panelRef}>
           <GlassCard className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                {clima && <ClimaIcon code={wmoIcone(0)} className="h-10 w-10" />}
+                <div className="text-5xl leading-none">{info.emoji}</div>
                 <div>
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                    Agora em São Bernardo do Campo — SP
+                  <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Clima agora — {WEATHER_LOCATION.cidade} · {WEATHER_LOCATION.bairro}
                   </div>
                   <div className="font-display text-2xl font-bold">
-                    {clima?.agora.temperatura != null
-                      ? `${Math.round(clima.agora.temperatura)}°C`
-                      : "—"}
+                    {current ? `${Math.round(current.temperature_2m)}°C` : "—"}
                     <span className="ml-3 text-base font-normal text-muted-foreground">
-                      {clima?.agora.condicao ?? "Carregando…"}
+                      {current ? info.label : "Carregando…"}
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Prob. de chuva hoje: {clima?.agora.prob_chuva ?? 0}%
+                    Prob. de chuva hoje: {Math.round(probHoje)}% · Chuva prevista:{" "}
+                    {rainSumHoje.toFixed(1)} mm
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                {hojeStatus && (
-                  <Badge
-                    className={cn(
-                      "px-3 py-1.5 text-sm",
-                      hojeStatus.nivel === "favoravel" && "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-                      hojeStatus.nivel === "atencao" && "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-                      hojeStatus.nivel === "chuva" && "bg-red-500/15 text-red-700 dark:text-red-300",
-                    )}
-                  >
-                    {hojeStatus.nivel === "favoravel" && <CheckCircle2 className="mr-1 h-4 w-4 inline" />}
-                    {hojeStatus.nivel !== "favoravel" && <AlertTriangle className="mr-1 h-4 w-4 inline" />}
-                    Hoje seguro para talude?{" "}
-                    {hojeStatus.nivel === "favoravel"
-                      ? "Sim"
-                      : hojeStatus.nivel === "atencao"
-                        ? "Atenção"
-                        : "Não"}
-                  </Badge>
+              <Badge
+                className={cn(
+                  "px-3 py-1.5 text-sm",
+                  status.nivel === "normal" &&
+                    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                  status.nivel === "atencao" &&
+                    "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+                  status.nivel === "alto" &&
+                    "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+                  status.nivel === "reprogramar" &&
+                    "bg-red-500/15 text-red-700 dark:text-red-300",
                 )}
-              </div>
+              >
+                {status.nivel === "normal" ? (
+                  <CheckCircle2 className="mr-1 inline h-4 w-4" />
+                ) : (
+                  <AlertTriangle className="mr-1 inline h-4 w-4" />
+                )}
+                {status.titulo}
+              </Badge>
             </div>
 
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-2">
-                {clima?.dias
-                  .filter((d) => d.data >= todayISO())
-                  .slice(0, 14)
-                  .map((d) => {
-                    const st = statusClimatico(d.data, clima.dias, clima.config);
-                    return (
-                      <div
-                        key={d.data}
-                        className={cn(
-                          "min-w-[92px] rounded-xl border p-2 text-center",
-                          st.nivel === "chuva" && "border-red-500/50 bg-red-500/5",
-                          st.nivel === "atencao" && "border-amber-500/40 bg-amber-500/5",
-                          st.nivel === "favoravel" && "border-emerald-500/30 bg-emerald-500/5",
-                        )}
-                      >
-                        <div className="text-[10px] font-semibold uppercase text-muted-foreground">
-                          {fmtBR(d.data).slice(0, 5)}
-                        </div>
-                        <div className="my-1 flex justify-center">
-                          <ClimaIcon
-                            code={
-                              (d.precipitacao_mm_prev ?? 0) > 5
-                                ? "rain"
-                                : (d.prob_chuva_prev ?? 0) > 40
-                                  ? "cloud"
-                                  : "sun"
-                            }
-                          />
-                        </div>
-                        <div className="text-xs font-bold">{Math.round(d.prob_chuva_prev ?? 0)}%</div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {(d.precipitacao_mm_prev ?? 0).toFixed(1)} mm
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
-            </ScrollArea>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <MiniMetric
+                icon={<Thermometer className="h-4 w-4" />}
+                label="Temperatura"
+                value={current ? `${Math.round(current.temperature_2m)}°C` : "—"}
+              />
+              <MiniMetric
+                icon={<Cloud className="h-4 w-4" />}
+                label="Nuvens"
+                value={current ? `${Math.round(current.cloud_cover)}%` : "—"}
+              />
+              <MiniMetric
+                icon={<Wind className="h-4 w-4" />}
+                label="Vento"
+                value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"}
+              />
+              <MiniMetric
+                icon={<Droplets className="h-4 w-4" />}
+                label="Umidade"
+                value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}
+              />
+            </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 Última atualização:{" "}
-                {clima ? new Date(clima.atualizado_em).toLocaleString("pt-BR") : "—"}
+                {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"}
               </span>
-              <span>Fonte: Open-Meteo</span>
+              <span>Fonte: Open-Meteo · atualização automática a cada 30 min</span>
             </div>
           </GlassCard>
         </div>
 
-        {/* Histórico climático simplificado */}
-        <HistoricoClima clima={clima} />
+        {/* Inteligência operacional — atividades externas */}
+        {alertExternal && (
+          <GlassCard className="border border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent">
+            <div className="mb-2 flex items-center gap-2">
+              <HardHat className="h-4 w-4 text-red-500" />
+              <h3 className="font-display text-base font-semibold text-red-700 dark:text-red-300">
+                Serviços externos potencialmente impactados
+              </h3>
+            </div>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Probabilidade de chuva hoje em {Math.round(probHoje)}% (limite de alerta:{" "}
+              {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%). Reavalie a programação das atividades abaixo.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {EXTERNAL_ACTIVITIES.map((a) => (
+                <Badge
+                  key={a}
+                  variant="outline"
+                  className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
+                >
+                  {a}
+                </Badge>
+              ))}
+            </div>
+          </GlassCard>
+        )}
 
-        {/* Evidências de chuva registradas */}
+        {/* Evidências */}
         <EvidenciasChuvaCard
           evidencias={evidenciasQ.data ?? []}
           onRemove={async (id) => {
@@ -317,10 +300,28 @@ function ProgramacaoTaludesPage() {
             }
           }}
         />
-
-        {isAdmin && clima && <ConfigCard config={clima.config} onSaved={() => climaQ.refetch()} />}
       </div>
     </PageShell>
+  );
+}
+
+function MiniMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border/40 bg-background/40 px-3 py-2">
+      <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      <span className="text-sm font-semibold">{value}</span>
+    </div>
   );
 }
 
@@ -330,7 +331,7 @@ function ProgramacaoTaludesPage() {
 const PT_SETTING_ID = "pt_taludes_liberada";
 
 type PTData = {
-  liberada_em: string | null; // ISO datetime-local (yyyy-mm-ddTHH:mm)
+  liberada_em: string | null;
   observacao?: string | null;
   atualizado_em?: string;
   atualizado_por?: string | null;
@@ -401,7 +402,7 @@ function PTCard() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            <ShieldCheck className="h-4.5 w-4.5" />
+            <ShieldCheck className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -498,133 +499,6 @@ function PTCard() {
   );
 }
 
-function HistoricoClima({ clima }: { clima: ClimaBundle | undefined }) {
-  const [periodo, setPeriodo] = useState<"30" | "60" | "90">("30");
-  const dias = useMemo(() => {
-    if (!clima) return [];
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - Number(periodo));
-    const cutIso = cutoff.toISOString().slice(0, 10);
-    return clima.dias.filter((d) => d.data >= cutIso && d.data <= todayISO() && d.choveu);
-  }, [clima, periodo]);
-
-  return (
-    <GlassCard>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <h3 className="font-display text-lg font-semibold">Histórico climático (dias com chuva)</h3>
-        <Select value={periodo} onValueChange={(v) => setPeriodo(v as "30" | "60" | "90")}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">Últimos 30 dias</SelectItem>
-            <SelectItem value="60">Últimos 60 dias</SelectItem>
-            <SelectItem value="90">Últimos 90 dias</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Volume (mm)</TableHead>
-              <TableHead>Condição</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dias.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center text-sm text-muted-foreground">
-                  Nenhum dia com chuva confirmada no período.
-                </TableCell>
-              </TableRow>
-            )}
-            {dias.map((d) => (
-              <TableRow key={d.data}>
-                <TableCell>{fmtBR(d.data)}</TableCell>
-                <TableCell>{(d.precipitacao_mm_real ?? 0).toFixed(1)}</TableCell>
-                <TableCell>{d.condicao}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    </GlassCard>
-  );
-}
-
-function ConfigCard({ config, onSaved }: { config: ClimaConfig; onSaved: () => void }) {
-  const [cfg, setCfg] = useState<ClimaConfig>(config);
-  const [saving, setSaving] = useState(false);
-  return (
-    <GlassCard>
-      <details>
-        <summary className="flex cursor-pointer items-center gap-2 font-display text-lg font-semibold">
-          <Settings2 className="h-5 w-5" />
-          Configurações climáticas (admin)
-        </summary>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div>
-            <Label>Latitude</Label>
-            <Input
-              type="number"
-              step="0.0001"
-              value={cfg.latitude}
-              onChange={(e) => setCfg({ ...cfg, latitude: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>Longitude</Label>
-            <Input
-              type="number"
-              step="0.0001"
-              value={cfg.longitude}
-              onChange={(e) => setCfg({ ...cfg, longitude: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>Limite prob. chuva (%)</Label>
-            <Input
-              type="number"
-              value={cfg.limite_prob_chuva}
-              onChange={(e) => setCfg({ ...cfg, limite_prob_chuva: Number(e.target.value) })}
-            />
-          </div>
-          <div>
-            <Label>Limite mm chuva</Label>
-            <Input
-              type="number"
-              step="0.1"
-              value={cfg.limite_mm_chuva}
-              onChange={(e) => setCfg({ ...cfg, limite_mm_chuva: Number(e.target.value) })}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <Button
-              disabled={saving}
-              onClick={async () => {
-                setSaving(true);
-                try {
-                  await salvarConfig(cfg);
-                  toast.success("Configurações salvas");
-                  onSaved();
-                } catch (e) {
-                  toast.error((e as Error).message);
-                } finally {
-                  setSaving(false);
-                }
-              }}
-            >
-              Salvar
-            </Button>
-          </div>
-        </div>
-      </details>
-    </GlassCard>
-  );
-}
-
 function EvidenciasChuvaCard({
   evidencias,
   onRemove,
@@ -633,30 +507,33 @@ function EvidenciasChuvaCard({
   onRemove: (id: string) => Promise<void>;
 }) {
   const [preview, setPreview] = useState<ChuvaEvidencia | null>(null);
+  const ordenadas = useMemo(
+    () => [...evidencias].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+    [evidencias],
+  );
   return (
     <GlassCard>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-display text-lg font-semibold">
-            Evidências de chuva registradas
-          </h3>
+          <h3 className="font-display text-lg font-semibold">Evidências de chuva registradas</h3>
           <p className="text-xs text-muted-foreground">
-            Registros formais de interrupção de atividades por mau tempo — com print, data e mensagem explícita.
+            Registros formais de interrupção de atividades por mau tempo — com print, data e
+            mensagem explícita.
           </p>
         </div>
         <Badge variant="outline" className="shrink-0">
-          {evidencias.length} registro{evidencias.length === 1 ? "" : "s"}
+          {ordenadas.length} registro{ordenadas.length === 1 ? "" : "s"}
         </Badge>
       </div>
 
-      {evidencias.length === 0 ? (
+      {ordenadas.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
           Nenhuma evidência registrada ainda. Quando o painel indicar chuva hoje, use o botão
           "Registrar evidência de chuva".
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {evidencias.map((ev) => (
+          {ordenadas.map((ev) => (
             <div
               key={ev.id}
               className="group flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/30"
@@ -734,7 +611,7 @@ function EvidenciasChuvaCard({
                 </div>
                 <div>
                   <div className="font-semibold text-foreground">Prob. chuva</div>
-                  {preview.prob_chuva != null ? `${preview.prob_chuva}%` : "—"}
+                  {preview.prob_chuva != null ? `${Math.round(preview.prob_chuva)}%` : "—"}
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground">
