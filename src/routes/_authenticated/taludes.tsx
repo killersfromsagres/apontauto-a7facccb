@@ -388,7 +388,7 @@ function TaludesPage() {
   };
 
   const handleMapClick = (e: React.MouseEvent) => {
-    if (!drawingNumero && !editingPolygonFor) return;
+    if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
     const p = clickToPct(e);
     if (!p) return;
