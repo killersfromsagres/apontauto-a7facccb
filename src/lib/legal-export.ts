@@ -1,6 +1,5 @@
-import * as XLSX from "xlsx";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+// Vendors pesados (xlsx, jsPDF) são carregados sob demanda apenas quando
+// o usuário clica em exportar — mantém o bundle inicial enxuto.
 import type { LegalItem, LegalExecution } from "@/lib/legal-items";
 import { buildMonthMap, statusOf } from "@/lib/legal-items";
 
