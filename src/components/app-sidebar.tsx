@@ -82,7 +82,7 @@ export function AppSidebar() {
               Apont Auto
             </span>
             <span className="shine-text font-mono text-[9px] uppercase tracking-[0.22em] whitespace-nowrap">
-              Gabriel Vitor
+              In Haus Industrial
             </span>
           </div>
         </div>
