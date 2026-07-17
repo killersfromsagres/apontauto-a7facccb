@@ -49,8 +49,8 @@ export function useMyAccess() {
       const { data: s } = await supabase.auth.getSession();
       if (!s.session) return EMPTY;
       const email = s.session.user?.email ?? null;
-      // Fallback fail-open EXCLUSIVO para o dono/admin principal: mesmo se o
-      // servidor falhar (RPC, rede, token), ele nunca fica preso em "acesso restrito".
+      const uid = s.session.user?.id;
+      // Fallback fail-open EXCLUSIVO para o dono/admin principal.
       if (isOwnerAdminEmail(email)) {
         try {
           const res = (await fetchFn()) as MyAccess;
@@ -60,11 +60,25 @@ export function useMyAccess() {
         }
       }
       try {
-        return (await fetchFn()) as MyAccess;
+        const res = (await fetchFn()) as MyAccess;
+        // Se o servidor voltou vazio por qualquer motivo transitório,
+        // tenta reconstruir a partir do banco via RLS (self-read).
+        if (!res.isAdmin && Array.isArray(res.allowed) && res.allowed.length === 0 && uid) {
+          return await readAccessDirect(uid);
+        }
+        return res;
       } catch {
+        if (uid) {
+          try {
+            return await readAccessDirect(uid);
+          } catch {
+            return EMPTY;
+          }
+        }
         return EMPTY;
       }
     },
+
     // Sempre revalida ao montar / focar a aba para que alterações de
     // permissões feitas pelo admin apareçam imediatamente na próxima
     // navegação ou retorno à aba, sem depender de logout/login.
