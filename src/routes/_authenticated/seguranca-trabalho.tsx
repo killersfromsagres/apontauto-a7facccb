@@ -929,13 +929,13 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
         const id = idByCpf.get(r.cpf!);
         const cadastral = pickCadastral(r);
         if (id) {
-          const { error } = await supabase.from("sst_colaboradores").update(cadastral).eq("id", id);
+          const { error } = await supabase.from("sst_colaboradores").update(cadastral as never).eq("id", id);
           if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           unificados++;
         } else if (insertMissing) {
           const { error } = await supabase
             .from("sst_colaboradores")
-            .insert({ ...cadastral, cpf: r.cpf, ativo: true });
+            .insert({ ...cadastral, cpf: r.cpf, nome: r.nome, ativo: true } as never);
           if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
           novos++;
         }
