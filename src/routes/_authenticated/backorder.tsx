@@ -578,6 +578,7 @@ function BackorderPage() {
       criticidade: r.criticidade ?? "",
       finalizado: false,
       status_origem: "",
+      revisao_manual: false,
     }));
     const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
     const blob = await generateBackorderExport({
