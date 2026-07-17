@@ -1292,6 +1292,7 @@ function TableView({
   setOrder,
   onToggle,
   onCategoria,
+  assetsMap,
 }: {
   rows: BOSRow[];
   loading: boolean;
@@ -1303,6 +1304,7 @@ function TableView({
   setOrder: (v: "asc" | "desc") => void;
   onToggle: (r: BOSRow, next: boolean) => void;
   onCategoria: (r: BOSRow, c: Categoria) => void;
+  assetsMap: AssetsMap;
 }) {
   const PAGE_SIZE = 50;
   const [page, setPage] = useState(1);
