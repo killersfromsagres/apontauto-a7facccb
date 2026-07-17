@@ -475,9 +475,15 @@ function BackorderPage() {
       finalizado: false,
       status_origem: "",
     }));
-    const blob = await generateBackorderExport({ titulo: "DEMARCHI", rows: rowsExp });
+    const { data: assetsRaw } = await supabase.from("assets_ref").select("ativo, denominacao");
+    const blob = await generateBackorderExport({
+      titulo: "DEMARCHI",
+      rows: rowsExp,
+      assets: (assetsRaw as Array<{ ativo: string; denominacao: string }>) ?? [],
+    });
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
+
 
   // ----- Motor de priorização -----
 
