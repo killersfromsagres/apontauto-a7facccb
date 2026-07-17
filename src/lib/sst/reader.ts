@@ -203,7 +203,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
 
       const cpfRaw = cellString(pick("cpf"));
       const matricula = cellString(pick("matricula"));
-      const cpf = digits(cpfRaw);
+      const cpf = normalizeCpf(cpfRaw);
       if (!cpf && !matricula) {
         errors.push({ sheet: sheet.name, row: r, message: "Linha sem CPF nem matrícula — pulada." });
         continue;
