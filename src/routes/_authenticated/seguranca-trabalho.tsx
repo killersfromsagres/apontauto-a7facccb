@@ -695,39 +695,83 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
     try {
       let inseridos = 0;
       let atualizados = 0;
+      const falhas: string[] = [];
 
-      // Busca todos os existentes por CPF e por matrícula (fallback).
-      const cpfs = preview.rows.map((r) => r.cpf).filter((c): c is string => !!c);
-      const mats = preview.rows.map((r) => r.matricula).filter((c): c is string => !!c);
-      const [byCpf, byMat] = await Promise.all([
-        cpfs.length
-          ? supabase.from("sst_colaboradores").select("id,cpf").in("cpf", cpfs)
-          : Promise.resolve({ data: [] as { id: string; cpf: string | null }[], error: null }),
-        mats.length
-          ? supabase.from("sst_colaboradores").select("id,matricula").in("matricula", mats)
-          : Promise.resolve({ data: [] as { id: string; matricula: string | null }[], error: null }),
-      ]);
-      const idByCpf = new Map((byCpf.data ?? []).map((r) => [r.cpf, r.id]));
-      const idByMat = new Map((byMat.data ?? []).map((r) => [r.matricula, r.id]));
-
+      // 1) Rows com CPF: upsert em lote com onConflict=cpf (não trava por duplicidade)
+      const comCpf = preview.rows.filter((r) => !!r.cpf);
+      const semCpf = preview.rows.filter((r) => !r.cpf);
       const importedIds = new Set<string>();
 
-      for (const r of preview.rows) {
-        const id = (r.cpf && idByCpf.get(r.cpf)) || (r.matricula && idByMat.get(r.matricula));
-        const payload: Omit<SstImportRow, "exame_realizado"> & { exame_realizado: boolean; ativo: boolean } = {
-          ...r,
-          ativo: true,
-        };
-        if (id) {
-          const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", id);
-          if (error) throw error;
-          atualizados++;
-          importedIds.add(id);
+      // pré-mapeia ids existentes por CPF para contar novos vs atualizados
+      const cpfs = comCpf.map((r) => r.cpf as string);
+      if (cpfs.length) {
+        const CHUNK_LOOKUP = 500;
+        for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
+          const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
+          const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
+          (data ?? []).forEach((r) => { if (r.cpf) { importedIds.add(r.id); (idByCpfPre as Map<string, string>).set(r.cpf, r.id); } });
+        }
+      }
+      const idByCpfPre = new Map<string, string>();
+      // (recomputa após lookup — a linha acima usa `idByCpfPre` que na verdade é declarada aqui)
+      {
+        const CHUNK_LOOKUP = 500;
+        for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
+          const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
+          const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
+          (data ?? []).forEach((r) => { if (r.cpf) idByCpfPre.set(r.cpf, r.id); });
+        }
+      }
+
+      const CHUNK = 100;
+      for (let i = 0; i < comCpf.length; i += CHUNK) {
+        const batch = comCpf.slice(i, i + CHUNK).map((r) => ({ ...r, ativo: true }));
+        const { data, error } = await supabase
+          .from("sst_colaboradores")
+          .upsert(batch, { onConflict: "cpf" })
+          .select("id,cpf");
+        if (error) {
+          // fallback linha a linha
+          for (const row of batch) {
+            const { data: one, error: e2 } = await supabase
+              .from("sst_colaboradores")
+              .upsert(row, { onConflict: "cpf" })
+              .select("id,cpf")
+              .single();
+            if (e2) { falhas.push(`${row.nome} (${row.cpf}): ${e2.message}`); continue; }
+            if (one?.id) importedIds.add(one.id);
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+          }
         } else {
-          const { data, error } = await supabase.from("sst_colaboradores").insert(payload).select("id").single();
-          if (error) throw error;
-          inseridos++;
-          if (data?.id) importedIds.add(data.id);
+          (data ?? []).forEach((r) => r.id && importedIds.add(r.id));
+          for (const row of batch) {
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+          }
+        }
+      }
+
+      // 2) Rows sem CPF: fallback por matrícula
+      if (semCpf.length) {
+        const mats = semCpf.map((r) => r.matricula).filter((m): m is string => !!m);
+        const idByMat = new Map<string, string>();
+        if (mats.length) {
+          const { data } = await supabase.from("sst_colaboradores").select("id,matricula").in("matricula", mats);
+          (data ?? []).forEach((r) => { if (r.matricula) idByMat.set(r.matricula, r.id); });
+        }
+        for (const r of semCpf) {
+          const id = r.matricula ? idByMat.get(r.matricula) : undefined;
+          const payload = { ...r, ativo: true };
+          if (id) {
+            const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", id);
+            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            atualizados++;
+            importedIds.add(id);
+          } else {
+            const { data, error } = await supabase.from("sst_colaboradores").insert(payload).select("id").single();
+            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            inseridos++;
+            if (data?.id) importedIds.add(data.id);
+          }
         }
       }
 
@@ -736,20 +780,21 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         const { data: allActive } = await supabase.from("sst_colaboradores").select("id").eq("ativo", true);
         const toInactive = (allActive ?? []).filter((r) => !importedIds.has(r.id)).map((r) => r.id);
         if (toInactive.length) {
-          const { error } = await supabase
-            .from("sst_colaboradores")
-            .update({ ativo: false })
-            .in("id", toInactive);
-          if (error) throw error;
-          inativados = toInactive.length;
+          const { error } = await supabase.from("sst_colaboradores").update({ ativo: false }).in("id", toInactive);
+          if (!error) inativados = toInactive.length;
         }
       }
 
-      toast.success(
-        `Importação concluída: ${inseridos} novo(s), ${atualizados} atualizado(s)` +
-          (subst ? `, ${inativados} inativado(s)` : "") +
-          (preview.errors.length ? ` — ${preview.errors.length} aviso(s)` : ""),
-      );
+      const msg =
+        `Importação: ${inseridos} novo(s), ${atualizados} atualizado(s)` +
+        (subst ? `, ${inativados} inativado(s)` : "") +
+        (preview.errors.length ? ` · ${preview.errors.length} aviso(s) da planilha` : "") +
+        (falhas.length ? ` · ${falhas.length} linha(s) com erro` : "");
+      if (falhas.length) {
+        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+      } else {
+        toast.success(msg);
+      }
       onDone();
       onClose();
     } catch (e) {
