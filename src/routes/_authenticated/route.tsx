@@ -1,20 +1,64 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
+import { useMyAccess } from "@/hooks/use-my-access";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    // getSession lê do storage em memória (sem network round-trip). RLS no
-    // servidor continua sendo a autoridade real de acesso a dados.
     const { data } = await supabase.auth.getSession();
     if (!data.session) throw redirect({ to: "/auth" });
     return { user: data.session.user };
   },
   component: AuthenticatedLayout,
 });
+
+// Mapeia o primeiro segmento da URL para uma chave de menu (mesma usada em
+// `MENU_KEYS` / `allowed_menus`). `null` = rota sempre permitida (auth página, etc.).
+function pathToMenuKey(pathname: string): string | null {
+  if (pathname === "/" || pathname === "") return "dashboard";
+  const seg = pathname.split("/").filter(Boolean)[0];
+  if (!seg) return "dashboard";
+  return seg;
+}
+
+function AccessGuard() {
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const { access, loading } = useMyAccess();
+
+  useEffect(() => {
+    if (loading) return;
+    if (access.isAdmin) return; // admin acessa tudo
+
+    const key = pathToMenuKey(pathname);
+    if (!key) return;
+
+    // Rota exclusiva de admin
+    if (key === "usuarios") {
+      toast.error("Área restrita a administradores.");
+      navigate({ to: "/", replace: true });
+      return;
+    }
+
+    // Sem restrição customizada → acesso total
+    if (!access.allowed) return;
+
+    if (!access.allowed.includes(key)) {
+      toast.error("Você não tem permissão para acessar essa página.");
+      const fallback = access.allowed[0];
+      const target =
+        fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
+      navigate({ to: target, replace: true });
+    }
+  }, [pathname, access, loading, navigate]);
+
+  return null;
+}
 
 function AuthenticatedLayout() {
   return (
@@ -23,6 +67,7 @@ function AuthenticatedLayout() {
         <AppSidebar />
         <SidebarInset className="flex min-h-screen flex-1 flex-col bg-transparent">
           <AppHeader />
+          <AccessGuard />
           <main className="flex-1">
             <Outlet />
           </main>
