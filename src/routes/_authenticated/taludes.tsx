@@ -432,34 +432,57 @@ function TaludesPage() {
           },
         });
         toast.success(`Talude ${existing.numero}: área atualizada`);
-      } else {
-        const num = parseInt(drawingNumero, 10);
-        if (!num || num <= 0) {
-          toast.error("Número do talude inválido");
-          return;
-        }
-        if (taludes.some((t) => t.numero === num)) {
-          toast.error(`Talude ${num} já existe`);
-          return;
-        }
-        await upsertFn({
-          data: {
-            map_id: map.id,
-            numero: num,
-            polygon: drawingPoints,
-            status: "programado",
-            data_programada: today(),
-          },
-        });
-        toast.success(`Talude ${num} criado`);
+        setDrawingPoints([]);
+        setDrawingNumero("");
+        setEditingPolygonFor(null);
+        await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+        return;
       }
-      setDrawingPoints([]);
-      setDrawingNumero("");
-      setEditingPolygonFor(null);
-      await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+
+      // New talude flow: if number already typed, save; otherwise open prompt.
+      if (drawingNumero) {
+        await commitNewTalude(drawingNumero);
+      } else {
+        // Suggest the next available number
+        const used = new Set(taludes.map((t) => t.numero));
+        let next = 1;
+        while (used.has(next)) next++;
+        setPendingNumber(String(next));
+        setNumberPromptOpen(true);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao salvar");
     }
+  };
+
+  const commitNewTalude = async (numStr: string) => {
+    if (!map) return;
+    const num = parseInt(numStr, 10);
+    if (!num || num <= 0) {
+      toast.error("Número do talude inválido");
+      return;
+    }
+    if (taludes.some((t) => t.numero === num)) {
+      toast.error(`Talude ${num} já existe`);
+      return;
+    }
+    await upsertFn({
+      data: {
+        map_id: map.id,
+        numero: num,
+        polygon: drawingPoints,
+        status: "programado",
+        data_programada: today(),
+      },
+    });
+    toast.success(`Talude ${num} criado`);
+    setDrawingPoints([]);
+    setDrawingNumero("");
+    setDrawingNewMode(false);
+    setNumberPromptOpen(false);
+    setPendingNumber("");
+    setEditingPolygonFor(null);
+    await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
   };
 
   const cancelDrawing = () => {
