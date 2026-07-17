@@ -835,7 +835,7 @@ function TaludesPage() {
 
           {(() => {
             // ─── zoom & transform ───
-            const isDrawing = !!(drawingNumero || editingPolygonFor);
+            const isDrawing = !!(drawingNumero || editingPolygonFor || drawingNewMode);
             const zoomTarget =
               taludes.find((x) => x.id === (editingPolygonFor || zoomedTaludeId)) || null;
             let transform: string | undefined;
