@@ -177,10 +177,12 @@ function BackorderPage() {
     setLoading(false);
   }, []);
 
-  const [assetsMap, setAssetsMap] = useState<AssetsMap>(new Map());
+  const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
-    const { data } = await supabase.from("assets_ref").select("ativo, denominacao");
-    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string }>) ?? []));
+    const { data } = await supabase
+      .from("assets_ref")
+      .select("ativo, denominacao, nivel, codigo_pai");
+    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
   }, []);
 
   useEffect(() => {
