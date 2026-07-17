@@ -9,6 +9,12 @@ export type MyAccess = { isAdmin: boolean; allowed: string[] | null };
 // Falha fechada: `null` significa acesso total, então estados sem sessão,
 // erro de rede ou token ainda não anexado não podem cair em "ver tudo".
 const EMPTY: MyAccess = { isAdmin: false, allowed: [] };
+const OWNER_ADMIN_EMAIL = "gabrielvlp33@gmail.com";
+const FULL_ADMIN: MyAccess = { isAdmin: true, allowed: null };
+
+function isOwnerAdminEmail(email: string | null | undefined) {
+  return (email ?? "").trim().toLowerCase() === OWNER_ADMIN_EMAIL;
+}
 
 // Inscrição única global no auth: em vez de cada componente que usa
 // `useMyAccess` (sidebar, header, dashboards…) registrar seu próprio
