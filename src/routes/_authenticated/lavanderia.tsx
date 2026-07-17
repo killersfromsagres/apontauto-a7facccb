@@ -25,6 +25,16 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AlertTriangle, CheckCircle2, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import {
   BarChart,
   Bar,
   XAxis,
