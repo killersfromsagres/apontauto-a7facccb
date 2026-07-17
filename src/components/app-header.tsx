@@ -51,8 +51,11 @@ export function AppHeader() {
       await queryClient.cancelQueries();
       queryClient.clear();
       await supabase.auth.signOut();
+    } catch (err) {
+      console.error("[signOut]", err);
     } finally {
-      navigate({ to: "/auth", replace: true });
+      // Hard redirect evita ficar preso em rota protegida com queries suspensas após limpar a sessão.
+      window.location.replace("/auth");
     }
   };
 
