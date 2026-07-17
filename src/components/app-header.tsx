@@ -95,9 +95,25 @@ export function AppHeader() {
         )}
         <SlaBell />
         <ThemeToggle />
-        <Button variant="ghost" size="icon" aria-label="Sair" onClick={signOut}>
-          <LogOut className="h-5 w-5" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Sair">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deseja sair da conta?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você será desconectado e retornado à tela de login.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={signOut}>Sair</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </header>
   );
