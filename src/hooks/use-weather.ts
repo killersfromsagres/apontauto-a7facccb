@@ -9,6 +9,8 @@ export function useWeather() {
     staleTime: 30 * 60_000,
     refetchInterval: 30 * 60_000,
     refetchOnWindowFocus: false,
-    retry: 1,
+    refetchOnMount: true,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
   });
 }
