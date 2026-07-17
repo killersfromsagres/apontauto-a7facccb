@@ -1020,6 +1020,18 @@ function BackorderPage() {
           />
         </TabsContent>
 
+        <TabsContent value="revisao">
+          <RevisaoPanel
+            rows={revisaoRows}
+            rules={rulesDB}
+            onSelectRow={setSelectedBackorder}
+            onSaveRule={saveRule}
+            onDeleteRule={deleteRule}
+            onReprocessar={handleReprocessarChamados}
+            importing={importing}
+          />
+        </TabsContent>
+
         <TabsContent value="powerbi">
           <PowerBIView />
         </TabsContent>
