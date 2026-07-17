@@ -886,6 +886,17 @@ function BackorderPage() {
               e.currentTarget.value = "";
             }}
           />
+          <input
+            ref={instrucaoInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleInstrucaoImport(f);
+              e.currentTarget.value = "";
+            }}
+          />
         </div>
       }
     >
