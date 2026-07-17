@@ -89,7 +89,7 @@ async function fromMetNorway(lat: number, lon: number, signal: AbortSignal) {
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day)!.push(t);
   }
-  const days = Array.from(byDay.entries()).slice(0, 2);
+  const days = Array.from(byDay.entries()).slice(0, 7);
   const dailyOut = {
     time: days.map(([d]) => d),
     weather_code: days.map(([, xs]) => symbolToWmo(xs[0]?.data.next_6_hours?.summary?.symbol_code ?? xs[0]?.data.next_1_hours?.summary?.symbol_code)),
