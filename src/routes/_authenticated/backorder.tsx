@@ -2874,6 +2874,13 @@ function RevisaoPanel({
   onDeleteRule,
   onReprocessar,
   importing,
+  learnedLoc,
+  learnedTeam,
+  allRows,
+  onDeleteLearnedLoc,
+  onDeleteLearnedTeam,
+  onToggleLearnedLoc,
+  onToggleLearnedTeam,
 }: {
   rows: BOSRow[];
   rules: RuleRow[];
@@ -2882,7 +2889,24 @@ function RevisaoPanel({
   onDeleteRule: (id: string) => Promise<void>;
   onReprocessar: () => Promise<void>;
   importing: boolean;
+  learnedLoc: LearnedLocation[];
+  learnedTeam: LearnedTeam[];
+  allRows: BOSRow[];
+  onDeleteLearnedLoc: (id: string) => Promise<void>;
+  onDeleteLearnedTeam: (id: string) => Promise<void>;
+  onToggleLearnedLoc: (id: string, ativo: boolean) => Promise<void>;
+  onToggleLearnedTeam: (id: string, ativo: boolean) => Promise<void>;
 }) {
+  // Contagem de chamados por ativo aprendido (para "quantos essa regra resolveu")
+  const countByAtivo = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of allRows) {
+      const k = r.ativo?.trim().toUpperCase();
+      if (!k) continue;
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  }, [allRows]);
   const [novo, setNovo] = useState<{ equipe: Categoria; palavra_chave: string; fonte: "descricao" | "categoria"; prioridade: number }>({
     equipe: "Civil",
     palavra_chave: "",
