@@ -88,7 +88,7 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
   ctps: ["numero ctps", "número ctps", "ctps"],
   serie_ctps: ["serie ctps", "série ctps"],
   cc: ["cc", "centro de custo"],
-  cr: ["cr"],
+  cr: ["cr", "centro de resultado", "centro resultado", "c r"],
   data_admissao: ["data admissao", "data admissão", "data de admissao", "data de admissão", "dt admissao", "dt admissão", "admissao", "admissão"],
   data_demissao: ["data demissao", "data demissão", "dt demissao", "dt demissão", "demissao", "demissão"],
   data_exame_realizado: [
