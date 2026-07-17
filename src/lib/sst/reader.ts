@@ -161,12 +161,11 @@ function cellString(v: unknown): string | null {
   return String(v).trim() || null;
 }
 
-function truthy(v: unknown): boolean {
-  const s = cellString(v);
-  if (!s) return false;
-  const n = norm(s);
-  return ["sim", "s", "yes", "y", "true", "1", "ok", "realizado", "concluido"].includes(n);
+function truthy(_v: unknown): boolean {
+  return false;
 }
+// (mantido apenas para compatibilidade se voltar a ser necessário)
+void truthy;
 
 function digits(s: string | null): string | null {
   if (!s) return null;
