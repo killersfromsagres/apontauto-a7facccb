@@ -362,12 +362,20 @@ function BackorderPage() {
       }
 
       // Recalcula Prédio/Andar/Espaço de todos os chamados usando a base atualizada
-      const nextMap = makeAssetsMap(parsed.concat(
+      const nextMap = makeAssetsMap([
+        ...parsed,
         // preserva ativos que estavam no banco e não vieram no novo arquivo
-        Array.from(existMap.entries())
+        ...Array.from(existMap.entries())
           .filter(([k]) => !parsed.some((p) => p.ativo === k))
-          .map(([ativo, denominacao]) => ({ ativo, denominacao })),
-      ));
+          .map(([ativo, denominacao]) => ({
+            ativo,
+            denominacao,
+            nivel: "",
+            codigo_pai: null,
+            descricao_pai: "",
+            unidade_negocio: "",
+          })),
+      ]);
       setAssetsMap(nextMap);
 
       const { data: allRows } = await supabase.from("backorder_os").select("os, ativo, predio, andar, espaco");
