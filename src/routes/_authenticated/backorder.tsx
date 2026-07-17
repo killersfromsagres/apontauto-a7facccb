@@ -418,6 +418,7 @@ function BackorderPage() {
       termino_sla: r.termino_sla,
       data_solicitacao: r.data_solicitacao,
       outros: r.outros,
+      criticidade: r.criticidade ?? "",
       finalizado: false,
       status_origem: "",
     }));
