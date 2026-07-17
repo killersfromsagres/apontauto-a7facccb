@@ -65,7 +65,7 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
     "nome do colaborador", "nome colaborador",
     "nome do funcionario", "nome do funcionário", "nome completo",
   ],
-  funcao: ["funcao", "função", "cargo", "cr", "centro de resultado"],
+  funcao: ["funcao", "função", "cargo"],
   cod_funcao: ["cod funcao", "código função", "cod função"],
   descricao_funcao: ["descricao funcao", "descrição função", "desc funcao"],
   situacao: ["situacao", "situação", "status"],
@@ -88,7 +88,7 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
   ctps: ["numero ctps", "número ctps", "ctps"],
   serie_ctps: ["serie ctps", "série ctps"],
   cc: ["cc", "centro de custo"],
-  cr: ["cr"],
+  cr: ["cr", "centro de resultado", "centro resultado", "c r"],
   data_admissao: ["data admissao", "data admissão", "data de admissao", "data de admissão", "dt admissao", "dt admissão", "admissao", "admissão"],
   data_demissao: ["data demissao", "data demissão", "dt demissao", "dt demissão", "demissao", "demissão"],
   data_exame_realizado: [

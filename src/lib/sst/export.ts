@@ -65,8 +65,13 @@ const COLS_ASO: Col[] = [
   { key: "cliente", header: "Cliente", width: 14 },
   { key: "regional", header: "Regional", width: 10 },
   { key: "negocio", header: "Negócio", width: 16 },
+  { key: "cc", header: "Centro Custo", width: 16 },
+  { key: "cr", header: "Centro Resultado (CR)", width: 32 },
   { key: "supervisor", header: "Supervisor", width: 22 },
   { key: "gerente", header: "Gerente", width: 22 },
+  { key: "gerente_regional", header: "Gerente Regional", width: 22 },
+  { key: "diretor", header: "Diretor", width: 22 },
+  { key: "diretor_executivo", header: "Diretor Executivo", width: 22 },
   { key: "data_admissao", header: "Admissão", width: 12, kind: "date" },
   { key: "tipo_exame", header: "Tipo de Exame", width: 16 },
   { key: "data_exame_realizado", header: "Último Exame", width: 14, kind: "date" },
@@ -364,14 +369,31 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
   header("Cadastro Completo de Colaboradores");
   autoTable(doc, {
     startY: 56,
-    head: [["Nome", "CPF", "Matr.", "Empresa", "Filial", "Regional", "Função", "Situação", "Supervisor", "Gerente", "Admissão"]],
+    head: [["Nome", "CPF", "Matr.", "Empresa", "Filial", "Regional", "CC", "CR", "Função", "Situação", "Supervisor", "Gerente", "Admissão"]],
     body: rows.map((r) => [
       r.nome, r.cpf ?? "—", r.matricula ?? "—", r.empresa ?? "—",
-      r.filial ?? "—", r.regional ?? "—", r.funcao ?? "—",
-      r.situacao ?? "—", r.supervisor ?? "—", r.gerente ?? "—",
+      r.filial ?? "—", r.regional ?? "—", r.cc ?? "—", r.cr ?? "—",
+      r.funcao ?? "—", r.situacao ?? "—", r.supervisor ?? "—", r.gerente ?? "—",
       fmtBr(r.data_admissao),
     ]),
-    styles: { fontSize: 7.5, cellPadding: 3 },
+    styles: { fontSize: 7, cellPadding: 3 },
+    headStyles: { fillColor: [31, 42, 68], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+  });
+
+  // Dados pessoais / documentos
+  doc.addPage();
+  header("Dados Pessoais e Documentos");
+  autoTable(doc, {
+    startY: 56,
+    head: [["Nome", "CPF", "RG", "Nascimento", "Sexo", "PIS", "CTPS", "Série", "Município", "UF", "Contrato", "Escala", "Horário"]],
+    body: rows.map((r) => [
+      r.nome, r.cpf ?? "—", r.rg ?? "—", fmtBr(r.data_nascimento),
+      r.sexo ?? "—", r.pis ?? "—", r.ctps ?? "—", r.serie_ctps ?? "—",
+      r.municipio ?? "—", r.estado ?? "—", r.tipo_contrato ?? "—",
+      r.escala ?? "—", r.horario_trabalho ?? "—",
+    ]),
+    styles: { fontSize: 7, cellPadding: 3 },
     headStyles: { fillColor: [31, 42, 68], textColor: 255 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
   });
