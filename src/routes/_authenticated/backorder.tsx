@@ -626,7 +626,7 @@ function BackorderPage() {
             };
             if (p.atividade) upd.atividade = p.atividade;
             if (p.equipe) upd.equipe = p.equipe;
-            return supabase.from("backorder_os").update(upd).eq("os", p.os);
+            return supabase.from("backorder_os").update(upd as never).eq("os", p.os);
           }),
         );
       }
