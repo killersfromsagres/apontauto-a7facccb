@@ -82,6 +82,7 @@ export interface ScanInputRow {
   predio: string;
   espaco: string;
   outros: string;
+  criticidade?: string;
   atividade: string;
   data_solicitacao: string;
   finalizado: boolean;
