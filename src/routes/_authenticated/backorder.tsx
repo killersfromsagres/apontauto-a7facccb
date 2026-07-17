@@ -124,6 +124,15 @@ const POWERBI_URL =
 
 const TARGET_PCT_DEFAULT = 5;
 
+interface RuleRow {
+  id: string;
+  equipe: string;
+  palavra_chave: string;
+  fonte: "descricao" | "categoria";
+  prioridade: number;
+  ativo: boolean;
+}
+
 function daysBetween(iso: string): number {
   const d = new Date(iso).getTime();
   if (Number.isNaN(d)) return 0;
