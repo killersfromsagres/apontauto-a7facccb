@@ -19,12 +19,15 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Preload agressivo no hover/foco → dados e chunks prontos quando o clique acontece.
     defaultPreload: "intent",
-    defaultPreloadDelay: 40,
+    defaultPreloadDelay: 30,
     defaultPreloadStaleTime: 0,
-    // Suaviza transição: só mostra pending após 200ms e por no mínimo 300ms.
-    defaultPendingMs: 200,
-    defaultPendingMinMs: 300,
+    // Cross-fade nativo entre rotas (React 19 + View Transitions API) — remove piscadas.
+    defaultViewTransition: true,
+    // Só mostra o loader global se a transição passar de 300ms; garante 250ms mínimos.
+    defaultPendingMs: 300,
+    defaultPendingMinMs: 250,
   });
 
   return router;

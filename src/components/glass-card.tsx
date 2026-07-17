@@ -1,12 +1,12 @@
-import type { ReactNode, CSSProperties } from "react";
+import { memo, type ReactNode, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Liquid Glass panel — CSS-only entrance animation (sem framer-motion)
- * para evitar overhead de JS quando o componente é usado em grande
- * quantidade nas dashboards.
+ * Liquid Glass panel — animação CSS-only sem framer-motion.
+ * `delay` é limitado a 120ms para não atrasar o first paint em dashboards
+ * com muitos cards; valores maiores viram nada (apenas o fade curto).
  */
-export function GlassCard({
+function GlassCardImpl({
   children,
   className,
   delay = 0,
@@ -15,8 +15,9 @@ export function GlassCard({
   className?: string;
   delay?: number;
 }) {
+  const clamped = Math.min(delay, 0.12);
   const style: CSSProperties | undefined =
-    delay > 0 ? { animationDelay: `${delay}s` } : undefined;
+    clamped > 0 ? { animationDelay: `${clamped}s` } : undefined;
 
   return (
     <div
@@ -33,3 +34,5 @@ export function GlassCard({
     </div>
   );
 }
+
+export const GlassCard = memo(GlassCardImpl);
