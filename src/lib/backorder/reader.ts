@@ -1,7 +1,7 @@
 // Leitor de planilhas para o módulo Backorder de Corretivas.
 
 import { classifyBackorder, CATEGORIA_TO_EQUIPE, type Categoria } from "./classify";
-import { resolveAtivo, type AssetsMap } from "./assets";
+import { resolveAtivoTree, type AssetsMap } from "./assets";
 
 export interface BackorderRow {
   os: string;
@@ -18,6 +18,9 @@ export interface BackorderRow {
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   status_origem: string;
+  /** true quando o ativo não foi encontrado na base OU a classificação
+   *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
+  revisao_manual: boolean;
 }
 
 const norm = (v: unknown) =>
