@@ -489,7 +489,7 @@ function LavanderiaPage() {
         </div>
       }
     >
-      <Tabs value={tab} onValueChange={setTab} className="w-full">
+      <Tabs value={tab} onValueChange={setTab} className="w-full lavanderia-scroll-scope">
         <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="abertas">
             <Shirt className="mr-1.5 h-3.5 w-3.5" /> Em aberto
@@ -1189,7 +1189,7 @@ function DashboardView({
         <GlassCard>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold">Movimentações no período · MBR</h3>
+              <h3 className="text-sm font-semibold">Movimentações no período</h3>
               <p className="text-xs text-muted-foreground">
                 Entradas e saídas registradas — selecione para comparar ou isolar cada fluxo.
               </p>
@@ -1233,7 +1233,19 @@ function DashboardView({
                   height={54}
                 />
                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    background: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: 8,
+                    color: "#111827",
+                    fontSize: 12,
+                    boxShadow: "0 8px 24px -6px rgba(0,0,0,0.15)",
+                  }}
+                  labelStyle={{ color: "#111827", fontWeight: 600 }}
+                  itemStyle={{ color: "#111827" }}
+                  cursor={{ fill: "rgba(0,0,0,0.04)" }}
+                />
                 <Legend />
                 {(movView === "ambos" || movView === "saida") && (
                   <Bar dataKey="saidas" name="Saídas" fill="url(#gSai)" radius={[4, 4, 0, 0]} />
@@ -1247,7 +1259,7 @@ function DashboardView({
         </GlassCard>
 
         <GlassCard>
-          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria · MBR</h3>
+          <h3 className="mb-1 text-sm font-semibold">Desempenho por categoria</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             Comparativo consolidado entre Colaborador, Reserva, Visitante e Avulso.
           </p>
@@ -1499,15 +1511,15 @@ function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] })
         </Select>
       </div>
 
-      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      <div className="lavanderia-scroll max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome / Item</TableHead>
-              <TableHead>Matrícula</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Setor</TableHead>
-              <TableHead className="text-right">Códigos de barras</TableHead>
+              <TableHead className="text-center">Nome / Item</TableHead>
+              <TableHead className="text-center">Matrícula</TableHead>
+              <TableHead className="text-center">Categoria</TableHead>
+              <TableHead className="text-center">Setor</TableHead>
+              <TableHead className="text-center">Códigos de barras</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -1518,23 +1530,32 @@ function MatrizView({ colabs, pecas }: { colabs: ColabRow[]; pecas: PecaRow[] })
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((r) => (
-                <TableRow key={r.matricula}>
-                  <TableCell className="font-medium">{r.nome}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {r.categoria === "colaborador" ? r.matricula : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
-                    >
-                      {CAT_LABEL[r.categoria]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm">{r.setor ?? "—"}</TableCell>
-                  <TableCell className="text-right font-semibold">{r.totalPecas}</TableCell>
-                </TableRow>
-              ))
+              filtered.map((r) => {
+                let displayNome = r.nome;
+                let displayMat: string = r.categoria === "colaborador" ? r.matricula : "—";
+                if (r.categoria !== "colaborador") {
+                  const m = r.nome.match(/^(.*)\s[-–—]\s([^-–—]+)\s*$/);
+                  if (m) {
+                    displayNome = m[1].trim();
+                    displayMat = m[2].trim();
+                  }
+                }
+                return (
+                  <TableRow key={r.matricula}>
+                    <TableCell className="text-center font-medium">{displayNome}</TableCell>
+                    <TableCell className="text-center font-mono text-xs">{displayMat}</TableCell>
+                    <TableCell className="text-center">
+                      <span
+                        className={`inline-block rounded-md px-2 py-0.5 text-xs font-medium ${CAT_BADGE[r.categoria]}`}
+                      >
+                        {CAT_LABEL[r.categoria]}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center text-sm">{r.setor ?? "—"}</TableCell>
+                    <TableCell className="text-center font-semibold">{r.totalPecas}</TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
