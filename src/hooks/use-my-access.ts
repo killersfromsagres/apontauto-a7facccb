@@ -23,7 +23,11 @@ async function readAccessDirect(uid: string): Promise<MyAccess> {
   ]);
   const isAdmin = (roleRes.data ?? []).some((r: any) => r.role === "admin");
   if (isAdmin) return { isAdmin: true, allowed: null };
-  const allowed = (profRes.data?.allowed_menus as string[] | null | undefined) ?? [];
+  // NULL no banco = sem restrição customizada = acesso total (mesma
+  // semântica do servidor em `get_my_allowed_menus`). Só devolvemos
+  // lista vazia quando o admin explicitamente marcou `allowed_menus = {}`.
+  const raw = profRes.data?.allowed_menus as string[] | null | undefined;
+  const allowed = raw === null || raw === undefined ? null : raw;
   return { isAdmin: false, allowed };
 }
 
