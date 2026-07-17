@@ -1189,7 +1189,7 @@ function DashboardView({
         <GlassCard>
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold">Movimentações no período · MBR</h3>
+              <h3 className="text-sm font-semibold">Movimentações no período</h3>
               <p className="text-xs text-muted-foreground">
                 Entradas e saídas registradas — selecione para comparar ou isolar cada fluxo.
               </p>
