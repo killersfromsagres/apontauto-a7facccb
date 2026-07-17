@@ -69,7 +69,7 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
-import { makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import { describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
 import {
   buildLearnedIndex,
   applyLearnedToResolved,
