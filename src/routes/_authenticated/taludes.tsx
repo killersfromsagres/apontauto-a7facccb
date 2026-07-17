@@ -18,6 +18,8 @@ import {
   MapPin,
   ZoomIn,
   ZoomOut,
+  Minus,
+  RotateCcw,
   Info,
   ShieldCheck,
 } from "lucide-react";
