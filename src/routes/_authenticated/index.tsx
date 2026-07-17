@@ -136,9 +136,9 @@ function Dashboard() {
           <div className="relative">
             <h3 className="mb-4 text-base font-semibold">Acesso rápido</h3>
             <div className="grid grid-cols-2 gap-3">
-              {modules.map((m) => (
+              {visibleModules.map((m, idx) => (
                 <Link
-                  key={m.to}
+                  key={`${m.key}-${idx}`}
                   to={m.to}
                   className="glass-tile group flex flex-col items-start gap-2 rounded-2xl p-3 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/40"
                 >
@@ -146,6 +146,11 @@ function Dashboard() {
                   <span className="text-sm font-medium">{m.title}</span>
                 </Link>
               ))}
+              {visibleModules.length === 0 && (
+                <p className="col-span-2 text-xs text-muted-foreground">
+                  Nenhum atalho disponível para o seu perfil.
+                </p>
+              )}
             </div>
           </div>
         </GlassCard>
