@@ -16,6 +16,18 @@ function isOwnerAdminEmail(email: string | null | undefined) {
   return (email ?? "").trim().toLowerCase() === OWNER_ADMIN_EMAIL;
 }
 
+async function readAccessDirect(uid: string): Promise<MyAccess> {
+  const [roleRes, profRes] = await Promise.all([
+    supabase.from("user_roles").select("role").eq("user_id", uid),
+    supabase.from("profiles").select("allowed_menus").eq("id", uid).maybeSingle(),
+  ]);
+  const isAdmin = (roleRes.data ?? []).some((r: any) => r.role === "admin");
+  if (isAdmin) return { isAdmin: true, allowed: null };
+  const allowed = (profRes.data?.allowed_menus as string[] | null | undefined) ?? [];
+  return { isAdmin: false, allowed };
+}
+
+
 // Inscrição única global no auth: em vez de cada componente que usa
 // `useMyAccess` (sidebar, header, dashboards…) registrar seu próprio
 // `onAuthStateChange`, mantemos apenas um listener e propagamos a
