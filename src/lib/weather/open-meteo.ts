@@ -69,22 +69,33 @@ export type WeatherResponse = {
   fetched_at: string;
 };
 
-export async function fetchWeather(signal?: AbortSignal): Promise<WeatherResponse> {
-  let res: Response;
-  try {
-    res = await fetch(ENDPOINT, { signal, cache: "no-store" });
-  } catch (e) {
-    throw new Error(`Sem conexão com a Open-Meteo: ${(e as Error).message}`);
-  }
+async function fetchFrom(endpoint: string, signal?: AbortSignal): Promise<WeatherResponse> {
+  const res = await fetch(endpoint, { signal, cache: "no-store" });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Open-Meteo respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`);
+    throw new Error(`${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`);
   }
-  const json = (await res.json()) as Omit<WeatherResponse, "fetched_at">;
+  const json = (await res.json()) as Omit<WeatherResponse, "fetched_at"> & { fetched_at?: string };
   if (!json?.current || !json?.hourly?.temperature_2m) {
-    throw new Error("Resposta inválida do Open-Meteo (campos ausentes).");
+    throw new Error("Resposta de clima inválida (campos ausentes).");
   }
-  return { ...json, fetched_at: new Date().toISOString() };
+  return { ...json, fetched_at: json.fetched_at ?? new Date().toISOString() };
+}
+
+export async function fetchWeather(signal?: AbortSignal): Promise<WeatherResponse> {
+  // 1) Tenta o proxy servidor (MET Norway → Open-Meteo, com User-Agent apropriado).
+  try {
+    return await fetchFrom(PRIMARY_ENDPOINT, signal);
+  } catch (primaryErr) {
+    // 2) Fallback direto no navegador (Open-Meteo público).
+    try {
+      return await fetchFrom(FALLBACK_ENDPOINT, signal);
+    } catch (fallbackErr) {
+      throw new Error(
+        `Falha em todas as fontes de clima. Primária: ${(primaryErr as Error).message}. Fallback: ${(fallbackErr as Error).message}`,
+      );
+    }
+  }
 }
 
 // ────────────────────────────────────────────────────────────

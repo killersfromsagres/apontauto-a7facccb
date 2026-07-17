@@ -31,6 +31,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 
 const TermosRoute = TermosRouteImport.update({
@@ -148,6 +149,11 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
+  id: '/api/public/clima-forecast',
+  path: '/api/public/clima-forecast',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicClimaRoute = ApiPublicClimaRouteImport.update({
   id: '/api/public/clima',
   path: '/api/public/clima',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
+  '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
+  '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
+  '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/taludes'
     | '/usuarios'
     | '/api/public/clima'
+    | '/api/public/clima-forecast'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/'
     | '/api/public/clima'
+    | '/api/public/clima-forecast'
   id:
     | '__root__'
     | '/_authenticated'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/'
     | '/api/public/clima'
+    | '/api/public/clima-forecast'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -313,6 +325,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
+  ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -471,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/clima-forecast': {
+      id: '/api/public/clima-forecast'
+      path: '/api/public/clima-forecast'
+      fullPath: '/api/public/clima-forecast'
+      preLoaderRoute: typeof ApiPublicClimaForecastRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/clima': {
       id: '/api/public/clima'
       path: '/api/public/clima'
@@ -529,6 +549,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
+  ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
