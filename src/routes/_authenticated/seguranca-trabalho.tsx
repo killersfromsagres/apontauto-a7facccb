@@ -264,21 +264,49 @@ function SegurancaTrabalhoPage() {
     }
   }
 
-  const exportRows = () =>
-    filtered.map(({ row: r }) => ({
-      nome: r.nome,
-      cpf: r.cpf,
-      matricula: r.matricula,
-      filial: r.filial,
-      cliente: r.cliente,
-      funcao: r.funcao,
-      supervisor: r.supervisor,
-      tipo_exame: r.tipo_exame,
-      data_exame_realizado: r.data_exame_realizado,
-      data_vencimento: r.data_vencimento,
-      data_sugerida_agendamento: r.data_sugerida_agendamento,
-      observacao: r.observacao,
-    }));
+  const toExport = (r: Colaborador): import("@/lib/sst/export").SstExportRow => ({
+    nome: r.nome,
+    cpf: r.cpf,
+    matricula: r.matricula,
+    empresa: r.empresa,
+    filial: r.filial,
+    descricao_filial: r.descricao_filial,
+    cliente: r.cliente,
+    regional: r.regional,
+    negocio: r.negocio,
+    funcao: r.funcao,
+    descricao_funcao: r.descricao_funcao,
+    cod_funcao: r.cod_funcao,
+    situacao: r.situacao,
+    supervisor: r.supervisor,
+    gerente: r.gerente,
+    gerente_regional: r.gerente_regional,
+    diretor: r.diretor,
+    diretor_executivo: r.diretor_executivo,
+    tipo_contrato: r.tipo_contrato,
+    escala: r.escala,
+    horario_trabalho: r.horario_trabalho,
+    sexo: r.sexo,
+    rg: r.rg,
+    data_nascimento: r.data_nascimento,
+    municipio: r.municipio,
+    estado: r.estado,
+    pis: r.pis,
+    ctps: r.ctps,
+    serie_ctps: r.serie_ctps,
+    cc: r.cc,
+    cr: r.cr,
+    data_admissao: r.data_admissao,
+    data_demissao: r.data_demissao,
+    tipo_exame: r.tipo_exame,
+    data_exame_realizado: r.data_exame_realizado,
+    data_vencimento: r.data_vencimento,
+    data_sugerida_agendamento: r.data_sugerida_agendamento,
+    agendamento_confirmado: r.agendamento_confirmado,
+    observacao: r.observacao,
+    dados_extras: r.dados_extras,
+  });
+  const exportRows = () => filtered.map(({ row }) => toExport(row));
 
   return (
     <div className="sst-theme">
