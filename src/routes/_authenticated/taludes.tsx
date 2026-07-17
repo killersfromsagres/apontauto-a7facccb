@@ -290,6 +290,9 @@ function TaludesPage() {
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [selectedVertexIdx, setSelectedVertexIdx] = useState<number | null>(null);
+  const [cursorPct, setCursorPct] = useState<Point | null>(null);
+  const [snapHint, setSnapHint] = useState<Point | null>(null);
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
