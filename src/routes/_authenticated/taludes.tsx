@@ -835,9 +835,38 @@ function TaludesPage() {
             <div className="ml-auto flex items-center gap-2">
               {drawingNewMode || drawingNumero || editingPolygonFor ? (
                 <>
-                  <span className="text-[11px] text-muted-foreground">
-                    Pontos: {drawingPoints.length} — clique no mapa para adicionar
-                  </span>
+                  <div className="animate-fade-in flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-[11px] font-medium shadow-sm backdrop-blur">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                    </span>
+                    <span className="font-semibold text-primary">
+                      {editingPolygonFor ? "Editando" : "Demarcando"}
+                    </span>
+                    <span className="text-muted-foreground">·</span>
+                    <span>
+                      <strong className="text-foreground">{drawingPoints.length}</strong> ponto{drawingPoints.length === 1 ? "" : "s"}
+                    </span>
+                    {cursorPct && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {cursorPct.x.toFixed(1)}, {cursorPct.y.toFixed(1)}
+                        </span>
+                      </>
+                    )}
+                    {snapHint && (
+                      <span className="ml-1 rounded-full bg-cyan-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-300">
+                        snap
+                      </span>
+                    )}
+                  </div>
+                  <div className="hidden items-center gap-1 text-[10px] text-muted-foreground md:flex">
+                    <kbd className="rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">Del</kbd>
+                    <span>remove</span>
+                    <kbd className="ml-1 rounded border border-border/60 bg-muted px-1 py-0.5 font-mono">Esc</kbd>
+                    <span>cancela</span>
+                  </div>
                   <Button size="sm" onClick={finishPolygon} disabled={drawingPoints.length < 3}>
                     <Save className="mr-1 h-3.5 w-3.5" /> Finalizar
                   </Button>
