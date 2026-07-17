@@ -30,15 +30,35 @@ export type SstImportResult = {
 
 const HEADER_ALIASES: Record<keyof SstImportRow, string[]> = {
   empresa: ["empresa"],
-  filial: ["filial", "unidade"],
+  filial: ["filial", "unidade", "descricao filial", "descrição filial", "desc filial"],
   cliente: ["cliente"],
   matricula: ["matricula", "matrícula", "chapa", "registro"],
-  cpf: ["cpf"],
-  nome: ["nome", "colaborador", "funcionario", "funcionário"],
-  funcao: ["funcao", "função", "cargo"],
+  cpf: ["cpf", "n cpf", "nº cpf", "numero cpf", "número cpf"],
+  nome: [
+    "nome",
+    "colaborador",
+    "funcionario",
+    "funcionário",
+    "nome do colaborador",
+    "nome colaborador",
+    "nome do funcionario",
+    "nome do funcionário",
+    "nome completo",
+  ],
+  funcao: ["funcao", "função", "cargo", "cr", "descricao cr", "descrição cr", "centro de resultado"],
   situacao: ["situacao", "situação", "status"],
   supervisor: ["supervisor", "gestor", "responsavel", "responsável"],
-  data_admissao: ["data_admissao", "admissao", "admissão", "data admissão", "data de admissão"],
+  data_admissao: [
+    "data_admissao",
+    "admissao",
+    "admissão",
+    "data admissão",
+    "data admissao",
+    "data de admissão",
+    "data de admissao",
+    "dt admissao",
+    "dt admissão",
+  ],
   data_exame_realizado: [
     "data_exame_realizado",
     "data exame",
@@ -48,10 +68,38 @@ const HEADER_ALIASES: Record<keyof SstImportRow, string[]> = {
     "data exame realizado",
     "data_ultimo_exame",
     "último exame",
+    "data dos exames",
+    "data ultimo exame",
+    "ultimo aso",
+    "último aso",
   ],
-  tipo_exame: ["tipo_exame", "tipo de exame", "tipo aso", "tipo do aso"],
-  data_vencimento: ["data_vencimento", "vencimento", "validade", "data validade", "data vencimento"],
-  data_sugerida_agendamento: ["data_sugerida", "sugerido", "agendar em", "data sugerida"],
+  tipo_exame: [
+    "tipo_exame",
+    "tipo de exame",
+    "tipo aso",
+    "tipo do aso",
+    "exames ocupacionais",
+    "exame ocupacional",
+    "tipo",
+  ],
+  data_vencimento: [
+    "data_vencimento",
+    "vencimento",
+    "validade",
+    "data validade",
+    "data vencimento",
+    "vencto",
+    "dt vencimento",
+  ],
+  data_sugerida_agendamento: [
+    "data_sugerida",
+    "sugerido",
+    "agendar em",
+    "data sugerida",
+    "agendamento",
+    "data agendamento",
+    "data do agendamento",
+  ],
   exame_realizado: ["exame_realizado", "realizado", "concluido", "concluído"],
   observacao: ["observacao", "observação", "obs", "observacoes", "observações"],
 };
@@ -107,6 +155,14 @@ function digits(s: string | null): string | null {
   return d || null;
 }
 
+/** CPF é sempre 11 dígitos — planilhas exportadas como número perdem zeros à esquerda. */
+function normalizeCpf(s: string | null): string | null {
+  const d = digits(s);
+  if (!d) return null;
+  if (d.length > 11) return d.slice(-11);
+  return d.padStart(11, "0");
+}
+
 export async function readSstXlsx(file: File): Promise<SstImportResult> {
   const buf = await file.arrayBuffer();
   const { default: ExcelJS } = await import("exceljs");
@@ -147,7 +203,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
 
       const cpfRaw = cellString(pick("cpf"));
       const matricula = cellString(pick("matricula"));
-      const cpf = digits(cpfRaw);
+      const cpf = normalizeCpf(cpfRaw);
       if (!cpf && !matricula) {
         errors.push({ sheet: sheet.name, row: r, message: "Linha sem CPF nem matrícula — pulada." });
         continue;
@@ -163,6 +219,19 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         errors.push({ sheet: sheet.name, row: r, message: `Data de vencimento inválida: "${cellString(rawVenc)}"` });
       }
 
+      // "Função" às vezes vem do CR do RH (ex.: "53937 - SP - LPG - BASF DEMARCHI - LIMPEZA").
+      // Extrai o último segmento após " - " para exibir apenas o cargo/atividade.
+      const funcaoRaw = cellString(pick("funcao"));
+      const funcao = funcaoRaw && funcaoRaw.includes(" - ")
+        ? funcaoRaw.split(" - ").pop()!.trim()
+        : funcaoRaw;
+
+      // Se a coluna "AGENDAMENTO" trouxer texto (não uma data), preserva em observação.
+      const agendRaw = pick("data_sugerida_agendamento");
+      const agendText = !parseFlexibleDate(agendRaw) ? cellString(agendRaw) : null;
+      const obsBase = cellString(pick("observacao"));
+      const observacao = [obsBase, agendText].filter(Boolean).join(" — ") || null;
+
       rows.push({
         empresa: cellString(pick("empresa")),
         filial: cellString(pick("filial")),
@@ -170,7 +239,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         matricula,
         cpf,
         nome,
-        funcao: cellString(pick("funcao")),
+        funcao,
         situacao: cellString(pick("situacao")),
         supervisor: cellString(pick("supervisor")),
         data_admissao: parseFlexibleDate(pick("data_admissao")),
@@ -179,7 +248,7 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
         data_vencimento: dataVenc,
         data_sugerida_agendamento: dataSug,
         exame_realizado: truthy(pick("exame_realizado")) || !!dataExame,
-        observacao: cellString(pick("observacao")),
+        observacao,
       });
     }
   });
