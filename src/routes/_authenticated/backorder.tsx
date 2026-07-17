@@ -925,7 +925,17 @@ function TableView({
                 const dias = daysBetween(r.data_solicitacao);
                 const isBackorder = dias > 30;
                 return (
-                  <TableRow key={r.os} className={isBackorder ? "bg-red-500/5" : ""}>
+                  <TableRow
+                    key={r.os}
+                    className={
+                      r.atividade === "Outros"
+                        ? "bg-amber-400/15 hover:bg-amber-400/20"
+                        : isBackorder
+                          ? "bg-red-500/5"
+                          : ""
+                    }
+                  >
+
                     <TableCell>
                       <Checkbox
                         checked={r.finalizado}
