@@ -7,7 +7,6 @@ import {
   ClipboardCheck,
   Settings,
   LayoutDashboard,
-  UserPlus,
   Mountain,
   MountainSnow,
   PackageX,
