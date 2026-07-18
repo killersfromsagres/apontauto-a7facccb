@@ -7,7 +7,6 @@ import {
   ClipboardCheck,
   Settings,
   LayoutDashboard,
-  UserPlus,
   Mountain,
   MountainSnow,
   PackageX,
@@ -48,7 +47,7 @@ const baseItems = [
 ];
 
 
-const adminItem = { key: "usuarios", title: "Usuários", url: "/usuarios", icon: UserPlus };
+
 
 export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
@@ -60,10 +59,9 @@ export const AppSidebar = memo(function AppSidebar() {
   // evitar o flash "vê tudo" antes da resposta do servidor.
   const items = useMemo(() => {
     if (loadingAccess) return [];
-    const visible = baseItems.filter((it) =>
+    return baseItems.filter((it) =>
       isAdmin ? true : !allowed || allowed.includes(it.key),
     );
-    return isAdmin ? [...visible, adminItem] : visible;
   }, [loadingAccess, isAdmin, allowed]);
 
   return (
