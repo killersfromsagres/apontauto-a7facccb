@@ -306,15 +306,33 @@ function OsDetail({
   const [patrim, setPatrim] = useState(os.patrimonio ?? "");
   const [savingPatrim, setSavingPatrim] = useState(false);
 
-  // Peça
-  const [pDesc, setPDesc] = useState("");
-  const [pQtd, setPQtd] = useState("1");
-  const [pUrg, setPUrg] = useState("media");
-  const [pObs, setPObs] = useState("");
+  // Peças (lista) — permite solicitar várias peças diferentes em uma única transação
+  type PecaDraft = {
+    id: string;
+    descricao: string;
+    quantidade: string;
+    urgencia: string;
+    observacao: string;
+  };
+  const emptyPeca = (): PecaDraft => ({
+    id: uuid(),
+    descricao: "",
+    quantidade: "1",
+    urgencia: "media",
+    observacao: "",
+  });
+  const [pecas, setPecas] = useState<PecaDraft[]>([]);
 
-  // Problema
-  const [prDesc, setPrDesc] = useState("");
-  const [prGrav, setPrGrav] = useState("falha");
+  // Problemas (lista) — permite sinalizar vários problemas
+  type ProblemaDraft = { id: string; descricao: string; gravidade: string };
+  const emptyProblema = (): ProblemaDraft => ({
+    id: uuid(),
+    descricao: "",
+    gravidade: "falha",
+  });
+  const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
+
+
 
   const [saving, setSaving] = useState(false);
 
@@ -384,29 +402,31 @@ function OsDetail({
         attempts: 0,
       });
     }
-    if (pDesc.trim()) {
+    for (const p of pecas) {
+      if (!p.descricao.trim()) continue;
       items.push({
-        id: uuid(),
+        id: p.id,
         kind: "peca",
         osId: os.id,
         numeroOs: os.numero_os,
         payload: {
-          descricao: pDesc.trim(),
-          quantidade: Number(pQtd) || 1,
-          urgencia: pUrg,
-          observacao: pObs.trim() || null,
+          descricao: p.descricao.trim(),
+          quantidade: Number(p.quantidade) || 1,
+          urgencia: p.urgencia,
+          observacao: p.observacao.trim() || null,
         },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
-    if (prDesc.trim()) {
+    for (const pr of problemas) {
+      if (!pr.descricao.trim()) continue;
       items.push({
-        id: uuid(),
+        id: pr.id,
         kind: "problema",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { descricao: prDesc.trim(), gravidade: prGrav },
+        payload: { descricao: pr.descricao.trim(), gravidade: pr.gravidade },
         createdAt: Date.now(),
         attempts: 0,
       });
@@ -420,12 +440,9 @@ function OsDetail({
       for (const it of items) await outboxAdd(it);
       previews.forEach((p) => URL.revokeObjectURL(p.url));
       setPreviews([]);
-      setPDesc("");
-      setPQtd("1");
-      setPUrg("media");
-      setPObs("");
-      setPrDesc("");
-      setPrGrav("falha");
+      setPecas([]);
+      setProblemas([]);
+
       onQueued();
       toast.success(
         online
@@ -544,64 +561,183 @@ function OsDetail({
       </GlassCard>
 
       <GlassCard className="p-4">
-        <SectionTitle icon={Package} label="Solicitar peça" />
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <Label>Descrição da peça</Label>
-            <Input value={pDesc} onChange={(e) => setPDesc(e.target.value)} className="h-11" />
-          </div>
-          <div>
-            <Label>Quantidade</Label>
-            <Input
-              type="number"
-              min={1}
-              value={pQtd}
-              onChange={(e) => setPQtd(e.target.value)}
-              className="h-11"
-            />
-          </div>
-          <div>
-            <Label>Urgência</Label>
-            <Select value={pUrg} onValueChange={setPUrg}>
-              <SelectTrigger className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="baixa">Baixa</SelectItem>
-                <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="alta">Alta — parado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="sm:col-span-2">
-            <Label>Observação</Label>
-            <Textarea value={pObs} onChange={(e) => setPObs(e.target.value)} rows={2} />
-          </div>
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={Package} label={`Solicitar peças (${pecas.length})`} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPecas((l) => [...l, emptyPeca()])}
+          >
+            <Package className="mr-2 h-4 w-4" /> Adicionar peça
+          </Button>
         </div>
+        {pecas.length === 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Nenhuma peça adicionada. Clique em "Adicionar peça" para solicitar uma ou mais.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {pecas.map((p, idx) => (
+              <div key={p.id} className="rounded-md border bg-background/40 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Peça #{idx + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPecas((l) => l.filter((x) => x.id !== p.id))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <Label>Descrição da peça</Label>
+                    <Input
+                      value={p.descricao}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, descricao: e.target.value } : x)),
+                        )
+                      }
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label>Quantidade</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={p.quantidade}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) =>
+                            x.id === p.id ? { ...x, quantidade: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label>Urgência</Label>
+                    <Select
+                      value={p.urgencia}
+                      onValueChange={(v) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, urgencia: v } : x)),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="alta">Alta — parado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Observação</Label>
+                    <Textarea
+                      value={p.observacao}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) =>
+                            x.id === p.id ? { ...x, observacao: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </GlassCard>
 
       <GlassCard className="p-4">
-        <SectionTitle icon={AlertTriangle} label="Sinalizar problema" />
-        <div className="mt-3 grid gap-3">
-          <div>
-            <Label>Descrição do problema</Label>
-            <Textarea value={prDesc} onChange={(e) => setPrDesc(e.target.value)} rows={3} />
-          </div>
-          <div>
-            <Label>Gravidade</Label>
-            <Select value={prGrav} onValueChange={setPrGrav}>
-              <SelectTrigger className="h-11">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="observacao">Observação</SelectItem>
-                <SelectItem value="falha">Funcionando com falha</SelectItem>
-                <SelectItem value="critico">Crítico — parado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle icon={AlertTriangle} label={`Sinalizar problemas (${problemas.length})`} />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setProblemas((l) => [...l, emptyProblema()])}
+          >
+            <AlertTriangle className="mr-2 h-4 w-4" /> Adicionar problema
+          </Button>
         </div>
+        {problemas.length === 0 ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Nenhum problema sinalizado. Clique em "Adicionar problema" para registrar.
+          </p>
+        ) : (
+          <div className="mt-3 space-y-3">
+            {problemas.map((pr, idx) => (
+              <div key={pr.id} className="rounded-md border bg-background/40 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Problema #{idx + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setProblemas((l) => l.filter((x) => x.id !== pr.id))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid gap-3">
+                  <div>
+                    <Label>Descrição do problema</Label>
+                    <Textarea
+                      value={pr.descricao}
+                      onChange={(e) =>
+                        setProblemas((l) =>
+                          l.map((x) =>
+                            x.id === pr.id ? { ...x, descricao: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label>Gravidade</Label>
+                    <Select
+                      value={pr.gravidade}
+                      onValueChange={(v) =>
+                        setProblemas((l) =>
+                          l.map((x) => (x.id === pr.id ? { ...x, gravidade: v } : x)),
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="observacao">Observação</SelectItem>
+                        <SelectItem value="falha">Funcionando com falha</SelectItem>
+                        <SelectItem value="critico">Crítico — parado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </GlassCard>
+
 
       <div className="sticky bottom-2 z-10">
         <Button

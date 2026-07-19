@@ -14,6 +14,7 @@ import {
   Loader2,
   Snowflake,
   Filter,
+  FileSpreadsheet,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -39,6 +40,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
+import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
+import { downloadBlob } from "@/lib/download";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
@@ -194,6 +197,12 @@ function RefrigeracaoGestor() {
       description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
+          <ExportXlsxButton
+            os={filteredOs}
+            pecas={filterByOs(pecasQuery.data)}
+            problemas={filterByOs(problQuery.data)}
+            fotos={filterByOs(fotosQuery.data)}
+          />
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
@@ -201,6 +210,7 @@ function RefrigeracaoGestor() {
         </>
       }
     >
+
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-1 items-center gap-2 min-w-[220px]">
@@ -1048,3 +1058,85 @@ function fmtDate(v: string | null): string {
   if (Number.isNaN(d.getTime())) return v;
   return d.toLocaleDateString("pt-BR");
 }
+
+function ExportXlsxButton({
+  os,
+  pecas,
+  problemas,
+  fotos,
+}: {
+  os: Os[];
+  pecas: Peca[];
+  problemas: Problema[];
+  fotos: Foto[];
+}) {
+  const [busy, setBusy] = useState(false);
+  const osById = useMemo(() => {
+    const m = new Map<string, Os>();
+    os.forEach((o) => m.set(o.id, o));
+    return m;
+  }, [os]);
+  const numeroOf = (id: string) => osById.get(id)?.numero_os ?? "—";
+  const handle = async () => {
+    setBusy(true);
+    try {
+      const blob = await generateRefrigeracaoExport({
+        os: os.map((o) => ({
+          numero_os: o.numero_os,
+          nome_os: o.nome_os,
+          predio: o.predio,
+          andar: o.andar,
+          local: o.local,
+          tipo: o.tipo,
+          equipe: o.equipe,
+          data_sla: o.data_sla,
+          data_programada: o.data_programada,
+          ativo: o.ativo,
+          equipamento: o.equipamento,
+          patrimonio: o.patrimonio,
+          status: o.status,
+          created_at: o.created_at,
+        })),
+        pecas: pecas.map((p) => ({
+          numero_os: numeroOf(p.os_id),
+          descricao: p.descricao,
+          quantidade: p.quantidade,
+          urgencia: p.urgencia,
+          observacao: p.observacao,
+          status_gestor: p.status_gestor,
+          created_at: p.created_at,
+        })),
+        problemas: problemas.map((p) => ({
+          numero_os: numeroOf(p.os_id),
+          descricao: p.descricao,
+          gravidade: p.gravidade,
+          status_gestor: p.status_gestor,
+          created_at: p.created_at,
+        })),
+        fotos: fotos.map((f) => ({
+          numero_os: numeroOf(f.os_id),
+          legenda: f.legenda,
+          created_at: f.created_at,
+        })),
+      });
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `refrigeracao-${stamp}.xlsx`);
+      toast.success("Planilha gerada.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao gerar planilha");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Button size="sm" variant="outline" onClick={handle} disabled={busy || os.length === 0}>
+      {busy ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <FileSpreadsheet className="mr-2 h-4 w-4" />
+      )}
+      Exportar Excel
+    </Button>
+  );
+}
+
