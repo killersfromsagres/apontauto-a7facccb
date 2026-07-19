@@ -41,6 +41,7 @@ const logoAsset = { url: "/apontauto-logo.png" };
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAllowedMenus } from "@/hooks/use-allowed-menus";
+import { supabase } from "@/integrations/supabase/client";
 
 type MenuItem = {
   key: string;
