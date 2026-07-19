@@ -105,8 +105,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Reduz latência da primeira chamada auth/DB
       { rel: "preconnect", href: "https://uthidybbrziwvktknryr.supabase.co", crossOrigin: "anonymous" },
       { rel: "dns-prefetch", href: "https://uthidybbrziwvktknryr.supabase.co" },
+      // APIs de clima chamadas direto do cliente em Programação de Taludes.
+      { rel: "preconnect", href: "https://api.open-meteo.com", crossOrigin: "anonymous" },
+      { rel: "dns-prefetch", href: "https://api.open-meteo.com" },
+      { rel: "dns-prefetch", href: "https://archive-api.open-meteo.com" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+
       // Non-blocking font CSS: preload + swap to stylesheet on load.
       {
         rel: "preload",

@@ -95,14 +95,16 @@ export function useMyAccess() {
       }
     },
 
-    // Sempre revalida ao montar / focar a aba para que alterações de
-    // permissões feitas pelo admin apareçam imediatamente na próxima
-    // navegação ou retorno à aba, sem depender de logout/login.
-    staleTime: 0,
+    // Cache curto de 60s: evita refetch a cada navegação/foco (principal
+    // gargalo de "piscada" ao trocar de rota), mas mantém latência baixa
+    // quando o admin altera permissões (usuário sente em <1 min ou pode
+    // clicar em "Recarregar permissões").
+    staleTime: 60_000,
     gcTime: 5 * 60_000,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchOnReconnect: true,
+
   });
 
   useEffect(() => {

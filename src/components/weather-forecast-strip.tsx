@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWeather } from "@/hooks/use-weather";
@@ -20,12 +20,13 @@ export interface WeatherForecastStripProps {
   className?: string;
 }
 
-export function WeatherForecastStrip({
+export const WeatherForecastStrip = memo(function WeatherForecastStrip({
   businessDaysOnly = true,
   title = "Próximos dias úteis",
   subtitle = "Previsão para planejamento de atividades externas",
   className,
 }: WeatherForecastStripProps) {
+
   const q = useWeather();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -269,7 +270,8 @@ export function WeatherForecastStrip({
       </div>
     </div>
   );
-}
+});
+
 
 function ArrowBtn({
   dir,
