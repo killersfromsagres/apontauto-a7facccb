@@ -46,8 +46,10 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
+  const [autoLogin, setAutoLogin] = useState(false);
   const pendingCreds = useRef<{ email: string; password: string } | null>(null);
   const autoTried = useRef(false);
+  const autoCancelled = useRef(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -66,20 +68,28 @@ function AuthPage() {
     const saved = loadCredentials();
     if (!saved) return;
     setEmail(saved.email.replace(/@apontauto\.local$/, ""));
-    setLoading(true);
+    setAutoLogin(true);
     supabase.auth
       .signInWithPassword({ email: saved.email, password: saved.password })
       .then(({ error }) => {
+        if (autoCancelled.current) return;
         if (error) {
           clearCredentials();
           toast.info("Credenciais salvas expiraram. Faça login novamente.");
+          setAutoLogin(false);
         } else {
+          touchCredentials();
           toast.success("Login automático realizado.");
           navigate({ to: "/" });
         }
-      })
-      .finally(() => setLoading(false));
+      });
   }, [navigate]);
+
+  const cancelAutoLogin = () => {
+    autoCancelled.current = true;
+    setAutoLogin(false);
+    toast.info("Login automático cancelado.");
+  };
 
   const triggerShake = () => {
     setShake(true);
