@@ -2126,15 +2126,7 @@ function PriorityConfigDialog({
       <DialogContent className="max-h-[90vh] max-w-3xl overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <img
-              src={priorityEngineIcon}
-              alt=""
-              aria-hidden
-              width={16}
-              height={16}
-              loading="lazy"
-              className="h-4 w-4"
-            />
+            <Cpu className="h-4 w-4 text-orange-500" strokeWidth={1.75} />
             Motor de Priorização — Configuração
           </DialogTitle>
         </DialogHeader>
