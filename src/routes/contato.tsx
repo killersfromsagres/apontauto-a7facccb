@@ -5,13 +5,13 @@ import { Mail, Globe } from "lucide-react";
 export const Route = createFileRoute("/contato")({
   head: () => ({
     meta: [
-      { title: "Contato — ApontAuto" },
+      { title: "Contato — Apont Auto" },
       {
         name: "description",
-        content: "Fale com o responsável pelo ApontAuto — suporte, dúvidas e solicitações de acesso.",
+        content: "Fale com o responsável pelo Apont Auto — suporte, dúvidas e solicitações de acesso.",
       },
-      { property: "og:title", content: "Contato — ApontAuto" },
-      { property: "og:description", content: "Fale com o responsável pelo ApontAuto." },
+      { property: "og:title", content: "Contato — Apont Auto" },
+      { property: "og:description", content: "Fale com o responsável pelo Apont Auto." },
       { property: "og:url", content: "https://apontauto.online/contato" },
     ],
     links: [{ rel: "canonical", href: "https://apontauto.online/contato" }],

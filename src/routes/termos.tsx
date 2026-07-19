@@ -4,13 +4,13 @@ import { LegalLayout } from "@/components/legal-layout";
 export const Route = createFileRoute("/termos")({
   head: () => ({
     meta: [
-      { title: "Termos de Uso — ApontAuto" },
+      { title: "Termos de Uso — Apont Auto" },
       {
         name: "description",
-        content: "Termos e condições de uso do sistema ApontAuto.",
+        content: "Termos e condições de uso do sistema Apont Auto.",
       },
-      { property: "og:title", content: "Termos de Uso — ApontAuto" },
-      { property: "og:description", content: "Regras de uso do ApontAuto." },
+      { property: "og:title", content: "Termos de Uso — Apont Auto" },
+      { property: "og:description", content: "Regras de uso do Apont Auto." },
       { property: "og:url", content: "https://apontauto.online/termos" },
     ],
     links: [{ rel: "canonical", href: "https://apontauto.online/termos" }],
@@ -22,13 +22,13 @@ function TermosPage() {
   return (
     <LegalLayout title="Termos de Uso" updatedAt="15/07/2026">
       <p>
-        Ao acessar o <strong>ApontAuto</strong>, você concorda com os termos abaixo. Se não
+        Ao acessar o <strong>Apont Auto</strong>, você concorda com os termos abaixo. Se não
         concordar, não utilize o sistema.
       </p>
 
       <h2>1. Objeto</h2>
       <p>
-        O ApontAuto é um sistema corporativo de apontamento e planejamento de manutenção
+        O Apont Auto é um sistema corporativo de apontamento e planejamento de manutenção
         industrial, disponibilizado a usuários previamente autorizados.
       </p>
 
@@ -52,7 +52,7 @@ function TermosPage() {
 
       <h2>4. Propriedade intelectual</h2>
       <p>
-        Todo o código, layout, marca e conteúdo do ApontAuto são de titularidade de
+        Todo o código, layout, marca e conteúdo do Apont Auto são de titularidade de
         <strong> Gabriel Vitor</strong>, protegidos pelas leis de direitos autorais e propriedade
         intelectual.
       </p>
