@@ -402,29 +402,31 @@ function OsDetail({
         attempts: 0,
       });
     }
-    if (pDesc.trim()) {
+    for (const p of pecas) {
+      if (!p.descricao.trim()) continue;
       items.push({
-        id: uuid(),
+        id: p.id,
         kind: "peca",
         osId: os.id,
         numeroOs: os.numero_os,
         payload: {
-          descricao: pDesc.trim(),
-          quantidade: Number(pQtd) || 1,
-          urgencia: pUrg,
-          observacao: pObs.trim() || null,
+          descricao: p.descricao.trim(),
+          quantidade: Number(p.quantidade) || 1,
+          urgencia: p.urgencia,
+          observacao: p.observacao.trim() || null,
         },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
-    if (prDesc.trim()) {
+    for (const pr of problemas) {
+      if (!pr.descricao.trim()) continue;
       items.push({
-        id: uuid(),
+        id: pr.id,
         kind: "problema",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { descricao: prDesc.trim(), gravidade: prGrav },
+        payload: { descricao: pr.descricao.trim(), gravidade: pr.gravidade },
         createdAt: Date.now(),
         attempts: 0,
       });
@@ -438,12 +440,9 @@ function OsDetail({
       for (const it of items) await outboxAdd(it);
       previews.forEach((p) => URL.revokeObjectURL(p.url));
       setPreviews([]);
-      setPDesc("");
-      setPQtd("1");
-      setPUrg("media");
-      setPObs("");
-      setPrDesc("");
-      setPrGrav("falha");
+      setPecas([]);
+      setProblemas([]);
+
       onQueued();
       toast.success(
         online
