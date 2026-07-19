@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Lock, Eye, EyeOff, UserRound, ShieldCheck } from "lucide-react";
+import { Lock, Eye, EyeOff, UserRound, ShieldCheck, Loader2, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
   saveCredentials,
   loadCredentials,
   clearCredentials,
+  touchCredentials,
 } from "@/lib/auth/saved-credentials";
 import {
   AlertDialog,
@@ -45,8 +46,10 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
+  const [autoLogin, setAutoLogin] = useState(false);
   const pendingCreds = useRef<{ email: string; password: string } | null>(null);
   const autoTried = useRef(false);
+  const autoCancelled = useRef(false);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
@@ -65,20 +68,28 @@ function AuthPage() {
     const saved = loadCredentials();
     if (!saved) return;
     setEmail(saved.email.replace(/@apontauto\.local$/, ""));
-    setLoading(true);
+    setAutoLogin(true);
     supabase.auth
       .signInWithPassword({ email: saved.email, password: saved.password })
       .then(({ error }) => {
+        if (autoCancelled.current) return;
         if (error) {
           clearCredentials();
           toast.info("Credenciais salvas expiraram. Faça login novamente.");
+          setAutoLogin(false);
         } else {
+          touchCredentials();
           toast.success("Login automático realizado.");
           navigate({ to: "/" });
         }
-      })
-      .finally(() => setLoading(false));
+      });
   }, [navigate]);
+
+  const cancelAutoLogin = () => {
+    autoCancelled.current = true;
+    setAutoLogin(false);
+    toast.info("Login automático cancelado.");
+  };
 
   const triggerShake = () => {
     setShake(true);
@@ -267,6 +278,44 @@ function AuthPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Splash de login automático com opção de cancelar. */}
+      {autoLogin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="relative w-full max-w-sm rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-950/90 p-8 shadow-2xl">
+            <button
+              type="button"
+              onClick={cancelAutoLogin}
+              aria-label="Cancelar"
+              className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-4 grid h-16 w-16 place-items-center">
+                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" />
+                <Loader2 className="relative h-10 w-10 animate-spin text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold text-white">Entrando automaticamente…</h2>
+              <p className="mt-1 text-sm text-white/60">
+                Restaurando sua sessão de forma segura.
+              </p>
+              {email && (
+                <p className="mt-3 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70">
+                  {email}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={cancelAutoLogin}
+                className="mt-6 text-xs text-white/50 underline-offset-4 transition hover:text-white/80 hover:underline"
+              >
+                Cancelar e usar outra conta
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

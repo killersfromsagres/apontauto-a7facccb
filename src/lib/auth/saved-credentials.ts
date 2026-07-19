@@ -58,3 +58,16 @@ export function clearCredentials() {
   localStorage.removeItem(KEY);
   localStorage.removeItem(EXPIRY_KEY);
 }
+
+/** Estende o prazo de expiração após um login automático bem-sucedido. */
+export function touchCredentials() {
+  if (typeof window === "undefined") return;
+  if (!localStorage.getItem(KEY)) return;
+  localStorage.setItem(EXPIRY_KEY, String(Date.now() + MAX_AGE_MS));
+}
+
+export function hasSavedCredentials(): boolean {
+  if (typeof window === "undefined") return false;
+  const exp = Number(localStorage.getItem(EXPIRY_KEY) ?? 0);
+  return !!localStorage.getItem(KEY) && !!exp && Date.now() <= exp;
+}
