@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Lock, Eye, EyeOff, UserRound, ShieldCheck } from "lucide-react";
+import { Lock, Eye, EyeOff, UserRound, ShieldCheck, Loader2, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
   saveCredentials,
   loadCredentials,
   clearCredentials,
+  touchCredentials,
 } from "@/lib/auth/saved-credentials";
 import {
   AlertDialog,
