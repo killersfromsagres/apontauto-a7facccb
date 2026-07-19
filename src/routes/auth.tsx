@@ -245,36 +245,49 @@ function AuthPage() {
               </button>
             </div>
 
-            <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70 transition hover:border-white/20">
-              <input
-                type="checkbox"
-                checked={acceptTerms}
-                onChange={(e) => setAcceptTerms(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-cyan-400"
-                aria-describedby="terms-desc"
-              />
-              <span id="terms-desc" className="leading-relaxed">
-                Li e aceito os{" "}
-                <a
-                  href="/termos"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
-                >
-                  Termos de Uso
-                </a>{" "}
-                e a{" "}
-                <a
-                  href="/privacidade"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
-                >
-                  Política de Privacidade
-                </a>
-                .
+            <button
+              type="button"
+              onClick={() => setTermsOpen(true)}
+              aria-pressed={acceptTerms}
+              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border p-3 text-left text-xs transition-all duration-300 ${
+                acceptTerms
+                  ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100 shadow-[0_0_0_1px_rgba(52,211,153,0.25),0_8px_24px_-12px_rgba(52,211,153,0.5)]"
+                  : "border-white/10 bg-white/5 text-white/70 hover:border-cyan-300/40 hover:bg-white/[0.07] hover:text-white"
+              }`}
+            >
+              <span
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition-all duration-300 ${
+                  acceptTerms
+                    ? "animate-in zoom-in-50 border-emerald-400/60 bg-emerald-500 text-white shadow-[0_0_16px_rgba(52,211,153,0.6)]"
+                    : "border-white/20 bg-white/5 text-transparent group-hover:border-cyan-300/60"
+                }`}
+                aria-hidden
+              >
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12l5 5L20 7" />
+                </svg>
               </span>
-            </label>
+              <span className="leading-relaxed">
+                {acceptTerms ? (
+                  <span className="animate-in fade-in slide-in-from-left-1">
+                    Termos aceitos — obrigado por confirmar.
+                  </span>
+                ) : (
+                  <>
+                    Li e aceito os <span className="font-semibold text-cyan-300">Termos de Uso</span>{" "}
+                    e a{" "}
+                    <span className="font-semibold text-cyan-300">Política de Privacidade</span>{" "}
+                    <span className="text-white/40">(clique para ler)</span>
+                  </>
+                )}
+              </span>
+              {!acceptTerms && (
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full"
+                />
+              )}
+            </button>
 
             <button type="submit" className="auth-btn" disabled={loading || !acceptTerms}>
               {loading ? (
