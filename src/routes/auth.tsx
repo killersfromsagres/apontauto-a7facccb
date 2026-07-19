@@ -43,6 +43,7 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
