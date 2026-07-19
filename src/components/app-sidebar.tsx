@@ -68,7 +68,6 @@ const sections: MenuSection[] = [
       { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
       { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
       { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
-      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
     ],
   },
