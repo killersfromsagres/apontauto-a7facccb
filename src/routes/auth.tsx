@@ -41,7 +41,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
@@ -94,20 +94,11 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
       toast.success("Bem-vindo!");
-      // Só abre o diálogo de salvar quando o usuário marcou "Lembrar-me"
-      // e ainda não existem credenciais equivalentes salvas.
-      if (!remember) {
-        clearCredentials();
-        navigate({ to: "/" });
-        return;
-      }
-      const already = loadCredentials();
-      if (!already || already.email !== loginEmail || already.password !== password) {
-        pendingCreds.current = { email: loginEmail, password };
-        setAskSave(true);
-      } else {
-        navigate({ to: "/" });
-      }
+      // Tela intermediária obrigatória: sempre pergunta se deseja salvar
+      // para login automático. A navegação para "/" ocorre somente após
+      // a escolha (Sim/Não) no diálogo.
+      pendingCreds.current = { email: loginEmail, password };
+      setAskSave(true);
     } catch (err) {
       triggerShake();
       toast.error(err instanceof Error ? err.message : "Falha ao autenticar");
@@ -219,16 +210,7 @@ function AuthPage() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex cursor-pointer select-none items-center gap-2 text-white/70">
-                <input
-                  type="checkbox"
-                  className="auth-checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                />
-                Lembrar-me
-              </label>
+            <div className="flex items-center justify-end text-sm">
               <button
                 type="button"
                 onClick={forgotPassword}
@@ -262,22 +244,26 @@ function AuthPage() {
         </nav>
       </main>
 
-      <AlertDialog open={askSave} onOpenChange={(open) => !open && handleSaveChoice(false)}>
-        <AlertDialogContent>
+      {/* Tela intermediária travada: só fecha ao clicar em Sim ou Não. */}
+      <AlertDialog open={askSave}>
+        <AlertDialogContent
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Salvar credenciais?
+              Salvar dados de login?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja salvar suas credenciais neste dispositivo para login automático nas
-              próximas sessões? Elas ficam armazenadas apenas no seu navegador e expiram
-              em 30 dias. Use somente em dispositivos pessoais.
+              Deseja salvar seus dados de login para entrar automaticamente nas
+              próximas sessões? Ficam armazenados apenas neste navegador, de
+              forma ofuscada, e expiram em 30 dias. Use somente em dispositivos
+              pessoais.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não salvar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleSaveChoice(true)}>Salvar</AlertDialogAction>
+            <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleSaveChoice(true)}>Sim</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
