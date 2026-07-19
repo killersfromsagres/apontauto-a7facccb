@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
+import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
+import { downloadBlob } from "@/lib/download";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
