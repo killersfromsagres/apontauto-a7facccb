@@ -94,12 +94,9 @@ export function syncPending(): Promise<SyncResult> {
         });
       }
     }
-    const remaining = failed;
-    return { sent, failed, remaining };
-  })();
-  try {
-    return await running;
-  } finally {
+    return { sent, failed, remaining: failed };
+  })().finally(() => {
     running = null;
-  }
+  });
+  return running;
 }
