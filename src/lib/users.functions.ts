@@ -115,6 +115,8 @@ export const MENU_KEYS = [
   "programacao-taludes",
   "apontamentos",
   "painel-legal",
+  "refrigeracao",
+  "refrigeracao-gestor",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
