@@ -245,7 +245,38 @@ function AuthPage() {
               </button>
             </div>
 
-            <button type="submit" className="auth-btn" disabled={loading}>
+            <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70 transition hover:border-white/20">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-cyan-400"
+                aria-describedby="terms-desc"
+              />
+              <span id="terms-desc" className="leading-relaxed">
+                Li e aceito os{" "}
+                <a
+                  href="/termos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
+                >
+                  Termos de Uso
+                </a>{" "}
+                e a{" "}
+                <a
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
+                >
+                  Política de Privacidade
+                </a>
+                .
+              </span>
+            </label>
+
+            <button type="submit" className="auth-btn" disabled={loading || !acceptTerms}>
               {loading ? (
                 <span className="dots inline-flex items-center justify-center text-white">
                   <span /><span /><span />
