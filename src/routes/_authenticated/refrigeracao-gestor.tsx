@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
@@ -47,10 +47,17 @@ export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
 type Os = {
   id: string;
   numero_os: string;
+  nome_os: string | null;
+  predio: string | null;
+  andar: string | null;
+  local: string | null;
+  tipo: string | null;
+  equipe: string | null;
+  data_sla: string | null;
+  data_programada: string | null;
   ativo: string;
   equipamento: string;
-  patrimonio: string;
-  localizacao: string | null;
+  patrimonio: string | null;
   status: string;
   created_at: string;
 };
@@ -61,7 +68,7 @@ type Foto = {
   storage_path: string;
   legenda: string | null;
   created_at: string;
-  enviado_por: string;
+  enviado_por: string | null;
 };
 
 type Peca = {
@@ -84,21 +91,25 @@ type Problema = {
   created_at: string;
 };
 
+const OS_COLUMNS =
+  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, ativo, equipamento, patrimonio, status, created_at";
+
 function RefrigeracaoGestor() {
   const qc = useQueryClient();
   const [tab, setTab] = useState("os");
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("all");
+  const [filtroEquipe, setFiltroEquipe] = useState<string>("all");
 
   const osQuery = useQuery({
     queryKey: ["refrig", "os"],
     queryFn: async (): Promise<Os[]> => {
       const { data, error } = await supabase
         .from("refrigeracao_os")
-        .select("id, numero_os, ativo, equipamento, patrimonio, localizacao, status, created_at")
+        .select(OS_COLUMNS)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Os[];
+      return (data ?? []) as unknown as Os[];
     },
   });
 
@@ -119,7 +130,9 @@ function RefrigeracaoGestor() {
     queryFn: async (): Promise<Peca[]> => {
       const { data, error } = await supabase
         .from("refrigeracao_pecas")
-        .select("id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at")
+        .select(
+          "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at",
+        )
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Peca[];
@@ -138,6 +151,12 @@ function RefrigeracaoGestor() {
     },
   });
 
+  const equipes = useMemo(() => {
+    const s = new Set<string>();
+    (osQuery.data ?? []).forEach((o) => o.equipe && s.add(o.equipe));
+    return Array.from(s).sort();
+  }, [osQuery.data]);
+
   const osById = useMemo(() => {
     const m = new Map<string, Os>();
     (osQuery.data ?? []).forEach((o) => m.set(o.id, o));
@@ -147,6 +166,7 @@ function RefrigeracaoGestor() {
   const filteredOs = useMemo(() => {
     let list = osQuery.data ?? [];
     if (filtroStatus !== "all") list = list.filter((o) => o.status === filtroStatus);
+    if (filtroEquipe !== "all") list = list.filter((o) => o.equipe === filtroEquipe);
     const q = busca.trim().toLowerCase();
     if (q) {
       list = list.filter(
@@ -154,12 +174,14 @@ function RefrigeracaoGestor() {
           o.numero_os.toLowerCase().includes(q) ||
           o.ativo.toLowerCase().includes(q) ||
           o.equipamento.toLowerCase().includes(q) ||
-          o.patrimonio.toLowerCase().includes(q) ||
-          (o.localizacao ?? "").toLowerCase().includes(q),
+          (o.patrimonio ?? "").toLowerCase().includes(q) ||
+          (o.nome_os ?? "").toLowerCase().includes(q) ||
+          (o.predio ?? "").toLowerCase().includes(q) ||
+          (o.local ?? "").toLowerCase().includes(q),
       );
     }
     return list;
-  }, [osQuery.data, filtroStatus, busca]);
+  }, [osQuery.data, filtroStatus, filtroEquipe, busca]);
 
   const filterByOs = <T extends { os_id: string }>(rows: T[] | undefined) => {
     const setIds = new Set(filteredOs.map((o) => o.id));
@@ -169,15 +191,13 @@ function RefrigeracaoGestor() {
   return (
     <PageShell
       title="Refrigeração — Gestão"
-      description="Visualize OS, fotos enviadas pelo campo, solicitações de peças e problemas sinalizados."
+      description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
-          <NewOsDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
-          />
+          <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })} />
         </>
       }
     >
@@ -186,7 +206,7 @@ function RefrigeracaoGestor() {
           <div className="flex flex-1 items-center gap-2 min-w-[220px]">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por OS, ativo, equipamento, patrimônio…"
+              placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="h-9"
@@ -195,7 +215,7 @@ function RefrigeracaoGestor() {
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="h-9 w-[180px]">
+              <SelectTrigger className="h-9 w-[170px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -207,6 +227,21 @@ function RefrigeracaoGestor() {
               </SelectContent>
             </Select>
           </div>
+          {equipes.length > 0 && (
+            <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+              <SelectTrigger className="h-9 w-[170px]">
+                <SelectValue placeholder="Equipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as equipes</SelectItem>
+                {equipes.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </GlassCard>
 
@@ -235,7 +270,11 @@ function RefrigeracaoGestor() {
           />
         </TabsContent>
         <TabsContent value="fotos" className="mt-4">
-          <FotosGrid rows={filterByOs(fotosQuery.data)} osById={osById} loading={fotosQuery.isLoading} />
+          <FotosGrid
+            rows={filterByOs(fotosQuery.data)}
+            osById={osById}
+            loading={fotosQuery.isLoading}
+          />
         </TabsContent>
         <TabsContent value="pecas" className="mt-4">
           <PecasTable
@@ -270,24 +309,58 @@ function OsTable({
   onChanged: () => void;
 }) {
   const exportCsv = () => {
-    const header = ["numero_os", "ativo", "equipamento", "patrimonio", "localizacao", "status", "criada_em"];
+    const header = [
+      "numero_os",
+      "nome_os",
+      "predio",
+      "andar",
+      "local",
+      "tipo",
+      "equipe",
+      "data_sla",
+      "data_programada",
+      "ativo",
+      "equipamento",
+      "patrimonio",
+      "status",
+      "criada_em",
+    ];
     const rows = list.map((o) =>
-      [o.numero_os, o.ativo, o.equipamento, o.patrimonio, o.localizacao ?? "", o.status, new Date(o.created_at).toLocaleString("pt-BR")].map(
-        csvCell,
-      ).join(","),
+      [
+        o.numero_os,
+        o.nome_os ?? "",
+        o.predio ?? "",
+        o.andar ?? "",
+        o.local ?? "",
+        o.tipo ?? "",
+        o.equipe ?? "",
+        o.data_sla ?? "",
+        o.data_programada ?? "",
+        o.ativo,
+        o.equipamento,
+        o.patrimonio ?? "",
+        o.status,
+        new Date(o.created_at).toLocaleString("pt-BR"),
+      ]
+        .map(csvCell)
+        .join(","),
     );
     downloadCsv("refrigeracao-os.csv", [header.join(","), ...rows].join("\n"));
   };
 
   const changeStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("refrigeracao_os").update({ status: status as any }).eq("id", id);
+    const { error } = await supabase
+      .from("refrigeracao_os")
+      .update({ status: status as any })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Status atualizado.");
     onChanged();
   };
 
   const removeOs = async (id: string) => {
-    if (!confirm("Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos.")) return;
+    if (!confirm("Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos."))
+      return;
     const { error } = await supabase.from("refrigeracao_os").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("OS removida.");
@@ -309,10 +382,13 @@ function OsTable({
           <thead className="bg-muted/50 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <Th>OS</Th>
-              <Th>Ativo</Th>
-              <Th>Equipamento</Th>
+              <Th>Nome</Th>
+              <Th>Local</Th>
+              <Th>Tipo</Th>
+              <Th>Equipe</Th>
+              <Th>Programada</Th>
+              <Th>Ativo / Equipamento</Th>
               <Th>Patrimônio</Th>
-              <Th>Localização</Th>
               <Th>Status</Th>
               <Th className="text-right">Ações</Th>
             </tr>
@@ -321,10 +397,22 @@ function OsTable({
             {list.map((o) => (
               <tr key={o.id} className="hover:bg-accent/40">
                 <Td className="font-mono font-semibold">{o.numero_os}</Td>
-                <Td>{o.ativo}</Td>
-                <Td>{o.equipamento}</Td>
-                <Td>{o.patrimonio}</Td>
-                <Td className="text-muted-foreground">{o.localizacao ?? "—"}</Td>
+                <Td className="max-w-[220px] truncate" title={o.nome_os ?? ""}>
+                  {o.nome_os ?? "—"}
+                </Td>
+                <Td className="text-muted-foreground">
+                  {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                </Td>
+                <Td>{o.tipo ?? "—"}</Td>
+                <Td>{o.equipe ?? "—"}</Td>
+                <Td className="whitespace-nowrap text-xs">{fmtDate(o.data_programada)}</Td>
+                <Td className="max-w-[200px]">
+                  <div className="truncate font-medium">{o.ativo}</div>
+                  <div className="truncate text-xs text-muted-foreground">{o.equipamento}</div>
+                </Td>
+                <Td className={o.patrimonio ? "" : "text-muted-foreground"}>
+                  {o.patrimonio ?? "—"}
+                </Td>
                 <Td>
                   <Select value={o.status} onValueChange={(v) => changeStatus(o.id, v)}>
                     <SelectTrigger className="h-8 w-[150px]">
@@ -347,8 +435,8 @@ function OsTable({
             ))}
             {list.length === 0 && !loading && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
-                  Nenhuma OS. Importe ou crie uma nova.
+                <td colSpan={10} className="p-8 text-center text-sm text-muted-foreground">
+                  Nenhuma OS. Importe uma planilha ou crie uma nova.
                 </td>
               </tr>
             )}
@@ -361,32 +449,54 @@ function OsTable({
 
 function NewOsDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [numero, setNumero] = useState("");
-  const [ativo, setAtivo] = useState("");
-  const [equip, setEquip] = useState("");
-  const [patrim, setPatrim] = useState("");
-  const [local, setLocal] = useState("");
+  const [f, setF] = useState({
+    numero_os: "",
+    nome_os: "",
+    predio: "",
+    andar: "",
+    local: "",
+    tipo: "",
+    equipe: "",
+    ativo: "",
+    equipamento: "",
+    patrimonio: "",
+  });
   const [saving, setSaving] = useState(false);
+  const set = (k: keyof typeof f) => (v: string) => setF((cur) => ({ ...cur, [k]: v }));
 
   const save = async () => {
-    if (!numero || !ativo || !equip || !patrim) return toast.warning("Preencha os campos obrigatórios.");
+    if (!f.numero_os || !f.ativo || !f.equipamento)
+      return toast.warning("Preencha Nº OS, Ativo e Equipamento.");
     setSaving(true);
-    const { error } = await supabase.from("refrigeracao_os").insert({
-      numero_os: numero.trim(),
-      ativo: ativo.trim(),
-      equipamento: equip.trim(),
-      patrimonio: patrim.trim(),
-      localizacao: local.trim() || null,
-    });
+    const payload = {
+      numero_os: f.numero_os.trim(),
+      nome_os: f.nome_os.trim() || null,
+      predio: f.predio.trim() || null,
+      andar: f.andar.trim() || null,
+      local: f.local.trim() || null,
+      tipo: f.tipo.trim() || null,
+      equipe: f.equipe.trim() || null,
+      ativo: f.ativo.trim(),
+      equipamento: f.equipamento.trim(),
+      patrimonio: f.patrimonio.trim() || null,
+    };
+    const { error } = await supabase.from("refrigeracao_os").insert(payload);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("OS criada.");
     setOpen(false);
-    setNumero("");
-    setAtivo("");
-    setEquip("");
-    setPatrim("");
-    setLocal("");
+    setF({
+      numero_os: "",
+      nome_os: "",
+      predio: "",
+      andar: "",
+      local: "",
+      tipo: "",
+      equipe: "",
+      ativo: "",
+      equipamento: "",
+      patrimonio: "",
+    });
     onDone();
   };
 
@@ -397,19 +507,30 @@ function NewOsDialog({ onDone }: { onDone: () => void }) {
           <Plus className="mr-2 h-4 w-4" /> Nova OS
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Nova OS de Refrigeração</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3">
-          <FieldInput label="Número da OS *" value={numero} onChange={setNumero} />
-          <FieldInput label="Ativo *" value={ativo} onChange={setAtivo} />
-          <FieldInput label="Equipamento *" value={equip} onChange={setEquip} />
-          <FieldInput label="Patrimônio *" value={patrim} onChange={setPatrim} />
-          <FieldInput label="Localização" value={local} onChange={setLocal} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <FieldInput label="Nº OS *" value={f.numero_os} onChange={set("numero_os")} />
+          <FieldInput label="Nome da OS" value={f.nome_os} onChange={set("nome_os")} />
+          <FieldInput label="Ativo *" value={f.ativo} onChange={set("ativo")} />
+          <FieldInput label="Equipamento *" value={f.equipamento} onChange={set("equipamento")} />
+          <FieldInput label="Prédio" value={f.predio} onChange={set("predio")} />
+          <FieldInput label="Andar" value={f.andar} onChange={set("andar")} />
+          <FieldInput label="Local" value={f.local} onChange={set("local")} />
+          <FieldInput label="Tipo" value={f.tipo} onChange={set("tipo")} />
+          <FieldInput label="Equipe" value={f.equipe} onChange={set("equipe")} />
+          <FieldInput
+            label="Patrimônio (opcional)"
+            value={f.patrimonio}
+            onChange={set("patrimonio")}
+          />
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
           <Button onClick={save} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Criar
           </Button>
@@ -421,43 +542,40 @@ function NewOsDialog({ onDone }: { onDone: () => void }) {
 
 function ImportOsDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<RefrigOsImport[]>([]);
+  const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const onFile = async (f: File | null) => {
+    setFile(f);
+    setPreview([]);
+    if (!f) return;
+    setParsing(true);
+    try {
+      const rows = await readRefrigOsFile(f);
+      setPreview(rows);
+      if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao ler planilha");
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const importar = async () => {
-    const linhas = text
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
-    if (linhas.length === 0) return toast.warning("Cole ao menos uma linha.");
-    const rows: {
-      numero_os: string;
-      ativo: string;
-      equipamento: string;
-      patrimonio: string;
-      localizacao: string | null;
-    }[] = [];
-    for (const l of linhas) {
-      const cols = l.split(/\t|;|,/).map((c) => c.trim());
-      if (cols.length < 4) continue;
-      rows.push({
-        numero_os: cols[0],
-        ativo: cols[1],
-        equipamento: cols[2],
-        patrimonio: cols[3],
-        localizacao: cols[4] || null,
-      });
-    }
-    if (rows.length === 0) return toast.warning("Formato inválido. Use: OS<TAB>Ativo<TAB>Equipamento<TAB>Patrimônio[<TAB>Localização]");
+    if (preview.length === 0) return toast.warning("Escolha uma planilha válida.");
     setSaving(true);
     const { error, count } = await supabase
       .from("refrigeracao_os")
-      .upsert(rows, { onConflict: "numero_os", count: "exact" });
+      .upsert(preview, { onConflict: "numero_os", count: "exact" });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(`${count ?? rows.length} OS importadas/atualizadas.`);
+    toast.success(`${count ?? preview.length} OS importadas/atualizadas.`);
     setOpen(false);
-    setText("");
+    setFile(null);
+    setPreview([]);
     onDone();
   };
 
@@ -465,31 +583,83 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <Upload className="mr-2 h-4 w-4" /> Importar OS
+          <Upload className="mr-2 h-4 w-4" /> Importar planilha
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Importar OS</DialogTitle>
+          <DialogTitle>Importar OS por planilha (.xlsx)</DialogTitle>
         </DialogHeader>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Cole colunas separadas por TAB, ponto-e-vírgula ou vírgula. Ordem:
-            <b> Nº OS · Ativo · Equipamento · Patrimônio · Localização (opcional)</b>. OS já
-            existentes serão atualizadas.
+            Cabeçalhos esperados (a ordem não importa):{" "}
+            <b>
+              Ordem de Serviço · Nome OS · Prédio · Andar · Local · Tipo · Equipe · Data SLA · Data
+              Programada · Início · Fim · Ativo · Equipamento
+            </b>
+            . OS já existentes serão atualizadas pelo número. Patrimônio é preenchido pelo
+            colaborador no campo.
           </p>
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={10}
-            className="font-mono text-xs"
-            placeholder={"12345\tAC-01\tSplit 24k\tPAT-001\tSala Servidores\n12346\tAC-02\tSplit 12k\tPAT-002\tRefeitório"}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => inputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" /> Escolher arquivo
+            </Button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+            />
+            {file && <span className="text-xs text-muted-foreground">{file.name}</span>}
+            {parsing && <Loader2 className="h-4 w-4 animate-spin" />}
+          </div>
+          {preview.length > 0 && (
+            <div className="rounded-md border">
+              <div className="border-b bg-muted/50 px-3 py-2 text-xs font-medium">
+                Prévia — {preview.length} linhas
+              </div>
+              <div className="max-h-64 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
+                    <tr>
+                      <Th>OS</Th>
+                      <Th>Nome</Th>
+                      <Th>Local</Th>
+                      <Th>Ativo</Th>
+                      <Th>Equipamento</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.slice(0, 50).map((r, i) => (
+                      <tr key={i} className="border-t">
+                        <Td className="font-mono">{r.numero_os}</Td>
+                        <Td className="max-w-[160px] truncate">{r.nome_os ?? "—"}</Td>
+                        <Td className="text-muted-foreground">
+                          {[r.predio, r.andar, r.local].filter(Boolean).join(" · ") || "—"}
+                        </Td>
+                        <Td>{r.ativo}</Td>
+                        <Td className="max-w-[180px] truncate">{r.equipamento}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {preview.length > 50 && (
+                  <div className="border-t p-2 text-center text-[10px] text-muted-foreground">
+                    +{preview.length - 50} linhas não exibidas na prévia.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={importar} disabled={saving}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Importar
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={importar} disabled={saving || preview.length === 0}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Importar{" "}
+            {preview.length > 0 && `(${preview.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -517,7 +687,10 @@ function FotosGrid({
       if (missing.length === 0) return;
       const { data, error } = await supabase.storage
         .from("refrigeracao-fotos")
-        .createSignedUrls(missing.map((m) => m.storage_path), 60 * 60);
+        .createSignedUrls(
+          missing.map((m) => m.storage_path),
+          60 * 60,
+        );
       if (error || cancelled) return;
       const next: Record<string, string> = {};
       missing.forEach((m, i) => {
@@ -567,7 +740,7 @@ function FotosGrid({
             <div className="space-y-1 p-2 text-xs">
               <div className="font-mono font-semibold">OS {os?.numero_os ?? "?"}</div>
               <div className="truncate text-muted-foreground">
-                {os?.equipamento ?? "—"} · {os?.patrimonio ?? "—"}
+                {os?.equipamento ?? "—"} · {os?.patrimonio ?? "sem patrim."}
               </div>
               <div className="text-[10px] text-muted-foreground/80">
                 {new Date(f.created_at).toLocaleString("pt-BR")}
@@ -594,17 +767,36 @@ function PecasTable({
   onChanged: () => void;
 }) {
   const changeStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("refrigeracao_pecas").update({ status_gestor: status as any }).eq("id", id);
+    const { error } = await supabase
+      .from("refrigeracao_pecas")
+      .update({ status_gestor: status as any })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     onChanged();
   };
   const exportCsv = () => {
-    const header = ["numero_os", "descricao", "quantidade", "urgencia", "observacao", "status", "criada_em"];
+    const header = [
+      "numero_os",
+      "descricao",
+      "quantidade",
+      "urgencia",
+      "observacao",
+      "status",
+      "criada_em",
+    ];
     const csv = [
       header.join(","),
       ...rows.map((r) => {
         const os = osById.get(r.os_id);
-        return [os?.numero_os ?? "", r.descricao, r.quantidade, r.urgencia, r.observacao ?? "", r.status_gestor, new Date(r.created_at).toLocaleString("pt-BR")]
+        return [
+          os?.numero_os ?? "",
+          r.descricao,
+          r.quantidade,
+          r.urgencia,
+          r.observacao ?? "",
+          r.status_gestor,
+          new Date(r.created_at).toLocaleString("pt-BR"),
+        ]
           .map(csvCell)
           .join(",");
       }),
@@ -638,7 +830,9 @@ function PecasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
+                <Td className="font-mono font-semibold">
+                  {osById.get(p.os_id)?.numero_os ?? "?"}
+                </Td>
                 <Td>{p.descricao}</Td>
                 <Td>{p.quantidade}</Td>
                 <Td>
@@ -647,13 +841,15 @@ function PecasTable({
                 <Td className="text-muted-foreground">{p.observacao ?? "—"}</Td>
                 <Td>
                   <Select value={p.status_gestor} onValueChange={(v) => changeStatus(p.id, v)}>
-                    <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="novo">Novo</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
                       <SelectItem value="em_analise">Em análise</SelectItem>
                       <SelectItem value="aprovado">Aprovado</SelectItem>
-                      <SelectItem value="resolvido">Resolvido</SelectItem>
                       <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                      <SelectItem value="concluido">Concluído</SelectItem>
                     </SelectContent>
                   </Select>
                 </Td>
@@ -690,7 +886,10 @@ function ProblemasTable({
   onChanged: () => void;
 }) {
   const changeStatus = async (id: string, status: string) => {
-    const { error } = await supabase.from("refrigeracao_problemas").update({ status_gestor: status as any }).eq("id", id);
+    const { error } = await supabase
+      .from("refrigeracao_problemas")
+      .update({ status_gestor: status as any })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     onChanged();
   };
@@ -700,7 +899,13 @@ function ProblemasTable({
       header.join(","),
       ...rows.map((r) => {
         const os = osById.get(r.os_id);
-        return [os?.numero_os ?? "", r.descricao, r.gravidade, r.status_gestor, new Date(r.created_at).toLocaleString("pt-BR")]
+        return [
+          os?.numero_os ?? "",
+          r.descricao,
+          r.gravidade,
+          r.status_gestor,
+          new Date(r.created_at).toLocaleString("pt-BR"),
+        ]
           .map(csvCell)
           .join(",");
       }),
@@ -732,20 +937,24 @@ function ProblemasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
+                <Td className="font-mono font-semibold">
+                  {osById.get(p.os_id)?.numero_os ?? "?"}
+                </Td>
                 <Td>{p.descricao}</Td>
                 <Td>
                   <Badge variant={gravityVariant(p.gravidade)}>{gravityLabel(p.gravidade)}</Badge>
                 </Td>
                 <Td>
                   <Select value={p.status_gestor} onValueChange={(v) => changeStatus(p.id, v)}>
-                    <SelectTrigger className="h-8 w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-8 w-[140px]">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="novo">Novo</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
                       <SelectItem value="em_analise">Em análise</SelectItem>
                       <SelectItem value="aprovado">Aprovado</SelectItem>
-                      <SelectItem value="resolvido">Resolvido</SelectItem>
                       <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                      <SelectItem value="concluido">Concluído</SelectItem>
                     </SelectContent>
                   </Select>
                 </Td>
@@ -776,7 +985,15 @@ function Th({ children, className = "" }: { children: any; className?: string })
 function Td({ children, className = "" }: { children: any; className?: string }) {
   return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
 }
-function FieldInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function FieldInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div>
       <Label>{label}</Label>
@@ -799,17 +1016,23 @@ function downloadCsv(name: string, content: string) {
   URL.revokeObjectURL(url);
 }
 function urgencyVariant(u: string): any {
-  if (u === "urgente") return "destructive";
-  if (u === "alta") return "default";
+  if (u === "alta") return "destructive";
+  if (u === "media") return "default";
   return "secondary";
 }
 function gravityVariant(g: string): any {
-  if (g === "parado") return "destructive";
-  if (g === "parcial") return "default";
+  if (g === "critico") return "destructive";
+  if (g === "falha") return "default";
   return "secondary";
 }
 function gravityLabel(g: string) {
-  if (g === "parado") return "Totalmente parado";
-  if (g === "parcial") return "Parcialmente parado";
-  return "Funcionando com falha";
+  if (g === "critico") return "Crítico";
+  if (g === "falha") return "Funcionando com falha";
+  return "Observação";
+}
+function fmtDate(v: string | null): string {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  return d.toLocaleDateString("pt-BR");
 }
