@@ -41,7 +41,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(true);
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
@@ -94,7 +94,13 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
       toast.success("Bem-vindo!");
-      // Pergunta se deseja salvar somente quando não havia credenciais salvas.
+      // Só abre o diálogo de salvar quando o usuário marcou "Lembrar-me"
+      // e ainda não existem credenciais equivalentes salvas.
+      if (!remember) {
+        clearCredentials();
+        navigate({ to: "/" });
+        return;
+      }
       const already = loadCredentials();
       if (!already || already.email !== loginEmail || already.password !== password) {
         pendingCreds.current = { email: loginEmail, password };
