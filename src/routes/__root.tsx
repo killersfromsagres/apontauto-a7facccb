@@ -112,18 +112,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
 
-      // Non-blocking font CSS: preload + swap to stylesheet on load.
-      {
-        rel: "preload",
-        as: "style",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
-      },
+      // Fonte com display=swap; carregamento não-bloqueante nativo.
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
-        media: "print",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        onLoad: "this.media='all'" as any,
       },
     ],
     scripts: [
