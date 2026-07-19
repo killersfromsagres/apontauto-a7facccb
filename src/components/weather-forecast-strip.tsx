@@ -7,7 +7,6 @@ import {
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
 } from "@/lib/weather/open-meteo";
-import { WeatherIcon } from "@/lib/weather/icons";
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const WEEK_LONG = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -188,8 +187,8 @@ export function WeatherForecastStrip({
                       {String(d.date.getMonth() + 1).padStart(2, "0")}
                     </div>
                   </div>
-                  <div className="transition-transform duration-300 group-hover:scale-110">
-                    <WeatherIcon code={d.code} bucket={info.bucket} className="h-8 w-8" />
+                  <div className="text-3xl leading-none transition-transform duration-300 group-hover:scale-110">
+                    {info.emoji}
                   </div>
                 </div>
 

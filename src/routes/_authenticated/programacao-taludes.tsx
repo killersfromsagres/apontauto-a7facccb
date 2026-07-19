@@ -46,7 +46,6 @@ import {
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
 } from "@/lib/weather/open-meteo";
-import { WeatherIcon } from "@/lib/weather/icons";
 import {
   listarEvidencias,
   registrarEvidencia,
@@ -194,7 +193,7 @@ function ProgramacaoTaludesPage() {
           <GlassCard className="space-y-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <WeatherIcon code={current?.weather_code ?? null} bucket={info.bucket} className="h-14 w-14" />
+                <div className="text-5xl leading-none">{info.emoji}</div>
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
                     Clima agora — {WEATHER_LOCATION.cidade} · {WEATHER_LOCATION.bairro}

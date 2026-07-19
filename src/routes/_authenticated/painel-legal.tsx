@@ -549,7 +549,7 @@ function AlertsBell({ alerts, onFocus }: { alerts: LegalAlert[]; onFocus: (id: s
         <div className="border-b border-border/60 px-3 py-2">
           <p className="text-sm font-semibold">Alertas</p>
           <p className="text-xs text-muted-foreground">
-            {count === 0 ? "Tudo em dia" : `${count} pendência(s)`}
+            {count === 0 ? "Nada pendente 🎉" : `${count} pendência(s)`}
           </p>
         </div>
         <div className="max-h-80 overflow-auto">

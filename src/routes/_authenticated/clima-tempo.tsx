@@ -40,7 +40,6 @@ import {
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
 } from "@/lib/weather/open-meteo";
-import { WeatherIcon, StatusIcon } from "@/lib/weather/icons";
 import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
 
 export const Route = createFileRoute("/_authenticated/clima-tempo")({
@@ -175,7 +174,7 @@ function ClimaTempoPage() {
               )}
             </div>
             <div className="flex items-center gap-3">
-              <WeatherIcon code={current?.weather_code ?? null} bucket={currentInfo.bucket} className="h-14 w-14" />
+              <div className="text-5xl leading-none">{currentInfo.emoji}</div>
               <div>
                 <div className="font-display text-4xl font-bold">
                   {current ? `${Math.round(current.temperature_2m)}°` : "—"}
@@ -200,7 +199,7 @@ function ClimaTempoPage() {
           <GlassCard>
             <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
               <span>Resumo do Dia</span>
-              <WeatherIcon code={daySummary?.code ?? null} bucket={daySummaryInfo.bucket} className="h-5 w-5" />
+              <span>{daySummaryInfo.emoji}</span>
             </div>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
@@ -244,7 +243,7 @@ function ClimaTempoPage() {
               <span>{Math.round(probMaxHoje)}% prob. chuva</span>
             </div>
             <div className="flex items-center gap-4">
-              <StatusIcon nivel={status.nivel} className="h-14 w-14" />
+              <div className="text-5xl leading-none">{status.emoji}</div>
               <div>
                 <div className={cn("font-display text-2xl font-bold", statusStyle.text)}>{status.titulo}</div>
                 <div className="text-sm text-muted-foreground">{status.descricao}</div>
