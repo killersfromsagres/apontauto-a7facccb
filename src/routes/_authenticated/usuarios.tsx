@@ -61,6 +61,8 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "programacao-taludes": "Programação de Taludes (Clima)",
   apontamentos: "Apontamentos",
   "painel-legal": "Painel de Itens Legais",
+  refrigeracao: "Refrigeração (Campo)",
+  "refrigeracao-gestor": "Refrigeração — Gestão",
   configuracoes: "Configurações",
 };
 
