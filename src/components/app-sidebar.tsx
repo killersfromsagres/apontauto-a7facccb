@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   CalendarClock,
@@ -13,6 +13,8 @@ import {
   Shirt,
   HardHat,
   CloudSun,
+  ChevronRight,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,45 +26,112 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
 const logoAsset = { url: "/apontauto-logo.png" };
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAllowedMenus } from "@/hooks/use-allowed-menus";
 
-const baseItems = [
-  { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
-  { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
-  { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: Shirt },
-  { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
-  { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
-  { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
-  { key: "programacao-taludes", title: "Programação de Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
-  { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
-  { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
-  { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
-  { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
-  { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
+type MenuItem = {
+  key: string;
+  title: string;
+  url: string;
+  icon: LucideIcon;
+};
+
+type MenuSection =
+  | { kind: "item"; item: MenuItem }
+  | { kind: "group"; key: string; title: string; icon: LucideIcon; items: MenuItem[] };
+
+const sections: MenuSection[] = [
+  {
+    kind: "item",
+    item: { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
+  },
+  {
+    kind: "group",
+    key: "programacao-grp",
+    title: "Programação",
+    icon: CalendarClock,
+    items: [
+      { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
+      { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
+      { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
+      { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
+      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
+      { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
+    ],
+  },
+  {
+    kind: "group",
+    key: "seguranca-grp",
+    title: "Segurança do Trabalho",
+    icon: HardHat,
+    items: [
+      { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
+      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
+    ],
+  },
+  {
+    kind: "group",
+    key: "rouparia-grp",
+    title: "Rouparia",
+    icon: Shirt,
+    items: [
+      { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: Shirt },
+    ],
+  },
+  {
+    kind: "group",
+    key: "operacao-grp",
+    title: "Operação",
+    icon: PackageX,
+    items: [
+      { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
+      { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
+    ],
+  },
+  {
+    kind: "item",
+    item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
+  },
 ];
-
-
-
 
 export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
   const { allowed, loading: loadingAllowed } = useAllowedMenus();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
   const loadingAccess = loadingAdmin || loadingAllowed;
 
-  // Enquanto o acesso carrega, não mostramos itens restringíveis para
-  // evitar o flash "vê tudo" antes da resposta do servidor.
-  const items = useMemo(() => {
+  const visibleSections = useMemo<MenuSection[]>(() => {
     if (loadingAccess) return [];
-    return baseItems.filter((it) =>
-      isAdmin ? true : !allowed || allowed.includes(it.key),
-    );
+    const canSee = (key: string) => (isAdmin ? true : !allowed || allowed.includes(key));
+    const out: MenuSection[] = [];
+    for (const s of sections) {
+      if (s.kind === "item") {
+        if (canSee(s.item.key)) out.push(s);
+      } else {
+        const items = s.items.filter((i) => canSee(i.key));
+        if (items.length > 0) out.push({ ...s, items });
+      }
+    }
+    return out;
   }, [loadingAccess, isAdmin, allowed]);
+
+  const isItemActive = (url: string) =>
+    url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
@@ -98,30 +167,22 @@ export const AppSidebar = memo(function AppSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => {
-                const active =
-                  item.url === "/"
-                    ? currentPath === "/"
-                    : currentPath.startsWith(item.url);
-                return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      tooltip={item.title}
-                      className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
-                    >
-                      <Link to={item.url} preload="intent" className="flex items-center gap-3">
-                        {active && (
-                          <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
-                        )}
-                        <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                        <span className="truncate">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
+              {visibleSections.map((section) =>
+                section.kind === "item" ? (
+                  <SimpleItem
+                    key={section.item.url}
+                    item={section.item}
+                    active={isItemActive(section.item.url)}
+                  />
+                ) : (
+                  <GroupItem
+                    key={section.key}
+                    section={section}
+                    collapsed={collapsed}
+                    isItemActive={isItemActive}
+                  />
+                ),
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -129,3 +190,108 @@ export const AppSidebar = memo(function AppSidebar() {
     </Sidebar>
   );
 });
+
+function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={active}
+        tooltip={item.title}
+        className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
+      >
+        <Link to={item.url} preload="intent" className="flex items-center gap-3">
+          {active && (
+            <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+          )}
+          <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+          <span className="truncate">{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function GroupItem({
+  section,
+  collapsed,
+  isItemActive,
+}: {
+  section: Extract<MenuSection, { kind: "group" }>;
+  collapsed: boolean;
+  isItemActive: (url: string) => boolean;
+}) {
+  const hasActive = section.items.some((i) => isItemActive(i.url));
+  const [open, setOpen] = useState(hasActive);
+
+  useEffect(() => {
+    if (hasActive) setOpen(true);
+  }, [hasActive]);
+
+  // In collapsed (icon-only) mode, render as a flyout-like list: show the group
+  // icon button; hovering shows tooltip. To keep it simple, render just the parent
+  // as a link to the first child.
+  if (collapsed) {
+    const first = section.items[0];
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          asChild
+          isActive={hasActive}
+          tooltip={section.title}
+          className="h-10 rounded-lg data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
+        >
+          <Link to={first.url} preload="intent" className="flex items-center gap-3">
+            <section.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            <span className="truncate">{section.title}</span>
+          </Link>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} asChild>
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            tooltip={section.title}
+            isActive={hasActive && !open}
+            className="group/trigger h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
+          >
+            <section.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
+            <span className="truncate">{section.title}</span>
+            <ChevronRight
+              className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 data-[state=open]:rotate-90"
+              data-state={open ? "open" : "closed"}
+            />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden">
+          <SidebarMenuSub className="mt-1 border-l border-sidebar-border/50">
+            {section.items.map((item) => {
+              const active = isItemActive(item.url);
+              return (
+                <SidebarMenuSubItem key={item.url}>
+                  <SidebarMenuSubButton
+                    asChild
+                    isActive={active}
+                    className="group/subitem relative h-9 rounded-md transition-all data-[active=true]:bg-primary/15 data-[active=true]:text-foreground"
+                  >
+                    <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
+                      {active && (
+                        <span className="absolute -left-[1px] top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
+                      )}
+                      <item.icon className="h-3.5 w-3.5 shrink-0 opacity-80" strokeWidth={1.75} />
+                      <span className="truncate text-[13px]">{item.title}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              );
+            })}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
