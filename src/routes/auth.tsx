@@ -248,8 +248,6 @@ function AuthPage() {
       <AlertDialog open={askSave}>
         <AlertDialogContent
           onEscapeKeyDown={(e) => e.preventDefault()}
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
         >
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
