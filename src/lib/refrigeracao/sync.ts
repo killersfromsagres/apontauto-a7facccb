@@ -45,6 +45,14 @@ async function sendOne(item: OutboxItem): Promise<void> {
     if (error && !isDupError(error)) throw error;
     return;
   }
+  if (item.kind === "patrimonio") {
+    const { error } = await supabase
+      .from("refrigeracao_os")
+      .update({ patrimonio: item.payload.patrimonio ?? null })
+      .eq("id", item.osId);
+    if (error) throw error;
+    return;
+  }
   if (item.kind === "foto") {
     const blobKey: string | undefined = item.payload.blobKey;
     if (!blobKey) throw new Error("Foto sem blob");

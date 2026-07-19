@@ -13,6 +13,7 @@ import {
   Loader2,
   CheckCircle2,
   Snowflake,
+  Save,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -35,6 +36,7 @@ import {
   outboxAdd,
   outboxAll,
   blobPut,
+  updateCachedOs,
   type OsCacheRow,
   type OutboxItem,
 } from "@/lib/refrigeracao/db";
@@ -44,6 +46,9 @@ import { syncPending } from "@/lib/refrigeracao/sync";
 export const Route = createFileRoute("/_authenticated/refrigeracao")({
   component: RefrigeracaoPage,
 });
+
+const OS_COLUMNS =
+  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at";
 
 function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -95,10 +100,10 @@ function RefrigeracaoPage() {
   const refreshOsFromServer = async () => {
     const { data, error } = await supabase
       .from("refrigeracao_os")
-      .select("id, numero_os, ativo, equipamento, patrimonio, localizacao, status, updated_at")
+      .select(OS_COLUMNS)
       .order("numero_os", { ascending: true });
     if (error) throw error;
-    const rows = (data ?? []) as OsCacheRow[];
+    const rows = (data ?? []) as unknown as OsCacheRow[];
     await cacheOsList(rows);
     setOsList(rows);
   };
@@ -113,7 +118,8 @@ function RefrigeracaoPage() {
         try {
           await refreshOsFromServer();
         } catch (e: any) {
-          if (osList.length === 0) toast.error("Não foi possível carregar OS: " + (e?.message ?? ""));
+          if (osList.length === 0)
+            toast.error("Não foi possível carregar OS: " + (e?.message ?? ""));
         }
       }
       setLoadingList(false);
@@ -129,16 +135,25 @@ function RefrigeracaoPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return osList;
-    return osList.filter(
-      (o) =>
+    return osList.filter((o) => {
+      return (
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
         o.equipamento.toLowerCase().includes(q) ||
-        o.patrimonio.toLowerCase().includes(q),
-    );
+        (o.patrimonio ?? "").toLowerCase().includes(q) ||
+        (o.nome_os ?? "").toLowerCase().includes(q) ||
+        (o.predio ?? "").toLowerCase().includes(q) ||
+        (o.local ?? "").toLowerCase().includes(q)
+      );
+    });
   }, [osList, search]);
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
+
+  const patchLocal = (id: string, patch: Partial<OsCacheRow>) => {
+    setOsList((list) => list.map((o) => (o.id === id ? { ...o, ...patch } : o)));
+    updateCachedOs(id, patch).catch(() => {});
+  };
 
   return (
     <PageShell
@@ -166,7 +181,7 @@ function RefrigeracaoPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por número da OS, ativo, equipamento ou patrimônio…"
+              placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
               className="h-11 text-base"
             />
           </div>
@@ -178,7 +193,7 @@ function RefrigeracaoPage() {
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               {osList.length === 0
-                ? "Nenhuma OS disponível. O gestor precisa importar as OS."
+                ? "Nenhuma OS disponível. O gestor precisa importar a planilha."
                 : "Nenhuma OS encontrada para essa busca."}
             </div>
           ) : (
@@ -188,24 +203,35 @@ function RefrigeracaoPage() {
                   <button
                     type="button"
                     onClick={() => setSelectedId(o.id)}
-                    className="flex w-full items-center gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
+                    className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
                   >
-                    <Snowflake className="h-5 w-5 shrink-0 text-primary" />
+                    <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
                         <Badge variant="outline" className="text-[10px]">
                           {o.status}
                         </Badge>
+                        {o.tipo && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            {o.tipo}
+                          </Badge>
+                        )}
+                        {!o.patrimonio && (
+                          <Badge variant="outline" className="border-amber-500/40 text-[10px] text-amber-600">
+                            sem patrimônio
+                          </Badge>
+                        )}
                       </div>
-                      <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                        {o.equipamento} · Patrim. {o.patrimonio} · Ativo {o.ativo}
-                      </div>
-                      {o.localizacao && (
-                        <div className="truncate text-xs text-muted-foreground/80">
-                          {o.localizacao}
-                        </div>
+                      {o.nome_os && (
+                        <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
                       )}
+                      <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                        {o.equipamento} · Ativo {o.ativo}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground/80">
+                        {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                      </div>
                     </div>
                   </button>
                 </li>
@@ -218,6 +244,7 @@ function RefrigeracaoPage() {
           os={selected}
           onBack={() => setSelectedId(null)}
           onQueued={refreshPending}
+          onPatchLocal={(p) => patchLocal(selected.id, p)}
           online={online}
         />
       )}
@@ -263,16 +290,21 @@ function OsDetail({
   os,
   onBack,
   onQueued,
+  onPatchLocal,
   online,
 }: {
   os: OsCacheRow;
   onBack: () => void;
   onQueued: () => void;
+  onPatchLocal: (patch: Partial<OsCacheRow>) => void;
   online: boolean;
 }) {
-  // Fotos
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<{ id: string; url: string; blob: Blob }[]>([]);
+
+  // Patrimônio (opcional — colaborador preenche)
+  const [patrim, setPatrim] = useState(os.patrimonio ?? "");
+  const [savingPatrim, setSavingPatrim] = useState(false);
 
   // Peça
   const [pDesc, setPDesc] = useState("");
@@ -285,6 +317,38 @@ function OsDetail({
   const [prGrav, setPrGrav] = useState("falha");
 
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setPatrim(os.patrimonio ?? "");
+  }, [os.id, os.patrimonio]);
+
+  const savePatrimonio = async () => {
+    const v = patrim.trim();
+    if (v === (os.patrimonio ?? "")) return;
+    setSavingPatrim(true);
+    try {
+      await outboxAdd({
+        id: uuid(),
+        kind: "patrimonio",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { patrimonio: v || null },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+      onPatchLocal({ patrimonio: v || null });
+      onQueued();
+      if (online) {
+        await syncPending();
+        onQueued();
+      }
+      toast.success("Patrimônio salvo.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar patrimônio");
+    } finally {
+      setSavingPatrim(false);
+    }
+  };
 
   const onPickFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -307,7 +371,6 @@ function OsDetail({
 
   const saveAll = async () => {
     const items: OutboxItem[] = [];
-    // fotos
     for (const p of previews) {
       const blobKey = `foto:${p.id}`;
       await blobPut(blobKey, p.blob);
@@ -321,7 +384,6 @@ function OsDetail({
         attempts: 0,
       });
     }
-    // peça
     if (pDesc.trim()) {
       items.push({
         id: uuid(),
@@ -338,7 +400,6 @@ function OsDetail({
         attempts: 0,
       });
     }
-    // problema
     if (prDesc.trim()) {
       items.push({
         id: uuid(),
@@ -367,7 +428,9 @@ function OsDetail({
       setPrGrav("falha");
       onQueued();
       toast.success(
-        online ? "Salvo. Enviando ao servidor…" : "Salvo offline. Enviaremos assim que houver internet.",
+        online
+          ? "Salvo. Enviando ao servidor…"
+          : "Salvo offline. Enviaremos assim que houver internet.",
       );
       if (online) {
         try {
@@ -385,24 +448,57 @@ function OsDetail({
     <div className="space-y-4">
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">OS selecionada</div>
-            <div className="font-mono text-lg font-bold">#{os.numero_os}</div>
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+              OS selecionada
+            </div>
+            <div className="truncate font-mono text-lg font-bold">#{os.numero_os}</div>
+            {os.nome_os && (
+              <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
+            )}
           </div>
           <Button variant="ghost" size="sm" onClick={onBack}>
             ← Voltar à lista
           </Button>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <ReadOnly label="Ativo" value={os.ativo} />
           <ReadOnly label="Equipamento" value={os.equipamento} />
-          <ReadOnly label="Patrimônio" value={os.patrimonio} />
+          <ReadOnly label="Tipo" value={os.tipo ?? "—"} />
+          <ReadOnly label="Prédio" value={os.predio ?? "—"} />
+          <ReadOnly label="Andar" value={os.andar ?? "—"} />
+          <ReadOnly label="Local" value={os.local ?? "—"} />
+          <ReadOnly label="Equipe" value={os.equipe ?? "—"} />
+          <ReadOnly label="Data SLA" value={fmtDate(os.data_sla)} />
+          <ReadOnly label="Data programada" value={fmtDate(os.data_programada)} />
         </div>
-        {os.localizacao && (
-          <div className="mt-3">
-            <ReadOnly label="Localização" value={os.localizacao} />
-          </div>
-        )}
+      </GlassCard>
+
+      <GlassCard className="p-4">
+        <SectionTitle icon={Package} label="Patrimônio (opcional)" />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Se você identificou o número de patrimônio do equipamento em campo, registre aqui.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Input
+            value={patrim}
+            onChange={(e) => setPatrim(e.target.value)}
+            placeholder="Ex.: PAT-01234"
+            className="h-11 max-w-xs"
+          />
+          <Button
+            onClick={savePatrimonio}
+            disabled={savingPatrim || patrim.trim() === (os.patrimonio ?? "")}
+            className="h-11"
+          >
+            {savingPatrim ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Salvar patrimônio
+          </Button>
+        </div>
       </GlassCard>
 
       <GlassCard className="p-4">
@@ -429,7 +525,10 @@ function OsDetail({
         {previews.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
             {previews.map((p) => (
-              <div key={p.id} className="group relative aspect-square overflow-hidden rounded-md border">
+              <div
+                key={p.id}
+                className="group relative aspect-square overflow-hidden rounded-md border"
+              >
                 <img src={p.url} className="h-full w-full object-cover" alt="preview" />
                 <button
                   type="button"
@@ -470,8 +569,7 @@ function OsDetail({
               <SelectContent>
                 <SelectItem value="baixa">Baixa</SelectItem>
                 <SelectItem value="media">Média</SelectItem>
-                <SelectItem value="alta">Alta</SelectItem>
-                <SelectItem value="urgente">Urgente — parado</SelectItem>
+                <SelectItem value="alta">Alta — parado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -496,9 +594,9 @@ function OsDetail({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="observacao">Observação</SelectItem>
                 <SelectItem value="falha">Funcionando com falha</SelectItem>
-                <SelectItem value="parcial">Parcialmente parado</SelectItem>
-                <SelectItem value="parado">Totalmente parado</SelectItem>
+                <SelectItem value="critico">Crítico — parado</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -542,4 +640,11 @@ function SectionTitle({ icon: Icon, label }: { icon: any; label: string }) {
       </h3>
     </div>
   );
+}
+
+function fmtDate(v: string | null): string {
+  if (!v) return "—";
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return v;
+  return d.toLocaleDateString("pt-BR");
 }
