@@ -79,7 +79,6 @@ const sections: MenuSection[] = [
     icon: HardHat,
     items: [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
-      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
     ],
   },
   {
@@ -99,6 +98,8 @@ const sections: MenuSection[] = [
     items: [
       { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
+      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
+      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
     ],
   },
   {
