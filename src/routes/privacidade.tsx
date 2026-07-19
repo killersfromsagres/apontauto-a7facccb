@@ -4,13 +4,13 @@ import { LegalLayout } from "@/components/legal-layout";
 export const Route = createFileRoute("/privacidade")({
   head: () => ({
     meta: [
-      { title: "Política de Privacidade — ApontAuto" },
+      { title: "Política de Privacidade — Apont Auto" },
       {
         name: "description",
-        content: "Como o ApontAuto coleta, usa e protege os dados dos usuários do sistema.",
+        content: "Como o Apont Auto coleta, usa e protege os dados dos usuários do sistema.",
       },
-      { property: "og:title", content: "Política de Privacidade — ApontAuto" },
-      { property: "og:description", content: "Como tratamos dados no ApontAuto." },
+      { property: "og:title", content: "Política de Privacidade — Apont Auto" },
+      { property: "og:description", content: "Como tratamos dados no Apont Auto." },
       { property: "og:url", content: "https://apontauto.online/privacidade" },
     ],
     links: [{ rel: "canonical", href: "https://apontauto.online/privacidade" }],
@@ -22,7 +22,7 @@ function PrivacidadePage() {
   return (
     <LegalLayout title="Política de Privacidade" updatedAt="15/07/2026">
       <p>
-        Esta política descreve como o <strong>ApontAuto</strong> trata dados pessoais dos usuários
+        Esta política descreve como o <strong>Apont Auto</strong> trata dados pessoais dos usuários
         autorizados a acessar o sistema, em conformidade com a <strong>Lei Geral de Proteção de
         Dados (LGPD — Lei nº 13.709/2018)</strong>.
       </p>

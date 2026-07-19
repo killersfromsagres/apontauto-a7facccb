@@ -4,13 +4,13 @@ import { LegalLayout } from "@/components/legal-layout";
 export const Route = createFileRoute("/sobre")({
   head: () => ({
     meta: [
-      { title: "Sobre — ApontAuto" },
+      { title: "Sobre — Apont Auto" },
       {
         name: "description",
         content:
-          "ApontAuto é um sistema corporativo de apontamento e planejamento de manutenção industrial (PCM) usado por equipes técnicas.",
+          "Apont Auto é um sistema corporativo de apontamento e planejamento de manutenção industrial (PCM) usado por equipes técnicas.",
       },
-      { property: "og:title", content: "Sobre — ApontAuto" },
+      { property: "og:title", content: "Sobre — Apont Auto" },
       { property: "og:description", content: "Sistema corporativo de apontamento de manutenção industrial." },
       { property: "og:url", content: "https://apontauto.online/sobre" },
     ],
@@ -21,9 +21,9 @@ export const Route = createFileRoute("/sobre")({
 
 function SobrePage() {
   return (
-    <LegalLayout title="Sobre o ApontAuto">
+    <LegalLayout title="Sobre o Apont Auto">
       <p>
-        O <strong>ApontAuto</strong> é um sistema corporativo de <strong>Planejamento e Controle de
+        O <strong>Apont Auto</strong> é um sistema corporativo de <strong>Planejamento e Controle de
         Manutenção (PCM)</strong>, criado para apoiar equipes técnicas industriais no
         apontamento de ordens de serviço, no controle de manutenções preventivas, corretivas e legais
         e na consolidação de indicadores de produtividade.
