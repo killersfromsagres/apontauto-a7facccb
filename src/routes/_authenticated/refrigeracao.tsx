@@ -306,15 +306,33 @@ function OsDetail({
   const [patrim, setPatrim] = useState(os.patrimonio ?? "");
   const [savingPatrim, setSavingPatrim] = useState(false);
 
-  // Peça
-  const [pDesc, setPDesc] = useState("");
-  const [pQtd, setPQtd] = useState("1");
-  const [pUrg, setPUrg] = useState("media");
-  const [pObs, setPObs] = useState("");
+  // Peças (lista) — permite solicitar várias peças diferentes em uma única transação
+  type PecaDraft = {
+    id: string;
+    descricao: string;
+    quantidade: string;
+    urgencia: string;
+    observacao: string;
+  };
+  const emptyPeca = (): PecaDraft => ({
+    id: uuid(),
+    descricao: "",
+    quantidade: "1",
+    urgencia: "media",
+    observacao: "",
+  });
+  const [pecas, setPecas] = useState<PecaDraft[]>([]);
 
-  // Problema
-  const [prDesc, setPrDesc] = useState("");
-  const [prGrav, setPrGrav] = useState("falha");
+  // Problemas (lista) — permite sinalizar vários problemas
+  type ProblemaDraft = { id: string; descricao: string; gravidade: string };
+  const emptyProblema = (): ProblemaDraft => ({
+    id: uuid(),
+    descricao: "",
+    gravidade: "falha",
+  });
+  const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
+
+
 
   const [saving, setSaving] = useState(false);
 
