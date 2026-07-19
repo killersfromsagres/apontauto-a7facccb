@@ -1378,3 +1378,39 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
     -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
   }
 }
+
+/* ============================================================
+ * Scroll reveal — usado apenas nas páginas institucionais
+ * (Sobre, Contato, Privacidade, Termos) via <LegalLayout />.
+ * Aplicado somente após hidratação (classe .reveal adicionada
+ * via JS), então SSR e usuários sem JS veem o conteúdo normal.
+ * ============================================================ */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+.reveal-parallax {
+  transition: transform 200ms linear;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal.reveal-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .reveal-parallax {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
