@@ -440,6 +440,180 @@ export type Database = {
         }
         Relationships: []
       }
+      refrigeracao_fotos: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          enviado_por: string
+          id: string
+          legenda: string | null
+          os_id: string
+          storage_path: string
+          thumb_path: string | null
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          enviado_por: string
+          id?: string
+          legenda?: string | null
+          os_id: string
+          storage_path: string
+          thumb_path?: string | null
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          enviado_por?: string
+          id?: string
+          legenda?: string | null
+          os_id?: string
+          storage_path?: string
+          thumb_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refrigeracao_fotos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "refrigeracao_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refrigeracao_os: {
+        Row: {
+          ativo: string
+          created_at: string
+          criado_por: string | null
+          equipamento: string
+          id: string
+          localizacao: string | null
+          numero_os: string
+          patrimonio: string
+          status: Database["public"]["Enums"]["refrigeracao_os_status"]
+          updated_at: string
+        }
+        Insert: {
+          ativo: string
+          created_at?: string
+          criado_por?: string | null
+          equipamento: string
+          id?: string
+          localizacao?: string | null
+          numero_os: string
+          patrimonio: string
+          status?: Database["public"]["Enums"]["refrigeracao_os_status"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: string
+          created_at?: string
+          criado_por?: string | null
+          equipamento?: string
+          id?: string
+          localizacao?: string | null
+          numero_os?: string
+          patrimonio?: string
+          status?: Database["public"]["Enums"]["refrigeracao_os_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      refrigeracao_pecas: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          descricao: string
+          enviado_por: string
+          id: string
+          observacao: string | null
+          os_id: string
+          quantidade: number
+          status_gestor: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at: string
+          urgencia: Database["public"]["Enums"]["refrigeracao_urgencia"]
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          descricao: string
+          enviado_por: string
+          id?: string
+          observacao?: string | null
+          os_id: string
+          quantidade?: number
+          status_gestor?: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["refrigeracao_urgencia"]
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          descricao?: string
+          enviado_por?: string
+          id?: string
+          observacao?: string | null
+          os_id?: string
+          quantidade?: number
+          status_gestor?: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["refrigeracao_urgencia"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refrigeracao_pecas_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "refrigeracao_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      refrigeracao_problemas: {
+        Row: {
+          client_uuid: string
+          created_at: string
+          descricao: string
+          enviado_por: string
+          gravidade: Database["public"]["Enums"]["refrigeracao_gravidade"]
+          id: string
+          os_id: string
+          status_gestor: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at: string
+        }
+        Insert: {
+          client_uuid: string
+          created_at?: string
+          descricao: string
+          enviado_por: string
+          gravidade?: Database["public"]["Enums"]["refrigeracao_gravidade"]
+          id?: string
+          os_id: string
+          status_gestor?: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at?: string
+        }
+        Update: {
+          client_uuid?: string
+          created_at?: string
+          descricao?: string
+          enviado_por?: string
+          gravidade?: Database["public"]["Enums"]["refrigeracao_gravidade"]
+          id?: string
+          os_id?: string
+          status_gestor?: Database["public"]["Enums"]["refrigeracao_status_gestor"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refrigeracao_problemas_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "refrigeracao_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       regras_aprendidas_equipe: {
         Row: {
           ativo: boolean
@@ -1082,6 +1256,10 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      refrigeracao_gravidade: "falha" | "parcial" | "parado"
+      refrigeracao_os_status: "aberta" | "em_andamento" | "resolvida"
+      refrigeracao_status_gestor: "novo" | "visto" | "andamento" | "resolvido"
+      refrigeracao_urgencia: "baixa" | "media" | "alta" | "urgente"
       talude_situacao: "programado" | "realizado" | "adiado_chuva" | "cancelado"
       talude_tipo_servico:
         | "rocada"
@@ -1218,6 +1396,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      refrigeracao_gravidade: ["falha", "parcial", "parado"],
+      refrigeracao_os_status: ["aberta", "em_andamento", "resolvida"],
+      refrigeracao_status_gestor: ["novo", "visto", "andamento", "resolvido"],
+      refrigeracao_urgencia: ["baixa", "media", "alta", "urgente"],
       talude_situacao: ["programado", "realizado", "adiado_chuva", "cancelado"],
       talude_tipo_servico: [
         "rocada",

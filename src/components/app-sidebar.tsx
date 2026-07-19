@@ -13,6 +13,8 @@ import {
   Shirt,
   HardHat,
   CloudSun,
+  Snowflake,
+  ClipboardList,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -103,6 +105,16 @@ const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "refrigeracao-grp",
+    title: "Refrigeração",
+    icon: Snowflake,
+    items: [
+      { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Snowflake },
+      { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: ClipboardList },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
   },
@@ -128,6 +140,7 @@ export const AppSidebar = memo(function AppSidebar() {
     if (loadingAccess) return [];
     const canSee = (key: string) => {
       if (key === "configuracoes") return isOwner;
+      if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];
