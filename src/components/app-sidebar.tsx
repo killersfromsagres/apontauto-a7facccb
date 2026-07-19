@@ -13,6 +13,8 @@ import {
   Shirt,
   HardHat,
   CloudSun,
+  Snowflake,
+  ClipboardList,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
