@@ -20,12 +20,13 @@ export interface WeatherForecastStripProps {
   className?: string;
 }
 
-export function WeatherForecastStrip({
+export const WeatherForecastStrip = memo(function WeatherForecastStrip({
   businessDaysOnly = true,
   title = "Próximos dias úteis",
   subtitle = "Previsão para planejamento de atividades externas",
   className,
 }: WeatherForecastStripProps) {
+
   const q = useWeather();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
