@@ -376,6 +376,12 @@ function AuthPage() {
           </div>
         </div>
       )}
+
+      <TermsAcceptDialog
+        open={termsOpen}
+        onOpenChange={setTermsOpen}
+        onAccept={() => setAcceptTerms(true)}
+      />
     </div>
   );
 }
