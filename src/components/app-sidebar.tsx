@@ -267,7 +267,7 @@ function GroupItem({
             />
           </SidebarMenuButton>
         </CollapsibleTrigger>
-        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+        <CollapsibleContent className="overflow-hidden">
           <SidebarMenuSub className="mt-1 border-l border-sidebar-border/50">
             {section.items.map((item) => {
               const active = isItemActive(item.url);
