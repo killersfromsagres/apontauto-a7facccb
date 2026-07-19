@@ -36,7 +36,8 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         O <strong>Apont Auto</strong> é um sistema corporativo de apontamento e planejamento de
-        manutenção industrial, disponibilizado exclusivamente a usuários previamente autorizados.
+        manutenção industrial, <strong>desenvolvido por Gabriel Vitor</strong> e disponibilizado
+        exclusivamente aos colaboradores previamente cadastrados pelo administrador.
       </p>
     ),
   },
@@ -52,8 +53,14 @@ const SECTIONS: Section[] = [
     },
     body: (
       <ul className="list-disc space-y-1 pl-5">
-        <li>O acesso é restrito — não há cadastro aberto ao público.</li>
-        <li>As credenciais são pessoais e intransferíveis.</li>
+        <li>
+          <strong>Não há cadastro público</strong> — o sistema não coleta dados de novos usuários.
+        </li>
+        <li>
+          O acesso é feito por credenciais corporativas fornecidas internamente aos colaboradores
+          autorizados.
+        </li>
+        <li>As credenciais são pessoais, intransferíveis e de uso restrito ao ambiente de trabalho.</li>
         <li>Você é responsável por manter a confidencialidade da sua senha.</li>
       </ul>
     ),
@@ -87,10 +94,17 @@ const SECTIONS: Section[] = [
       glow: "shadow-[0_0_18px_-2px_rgba(110,231,183,0.55)]",
     },
     body: (
-      <p>
-        Tratamos dados pessoais conforme a <strong>LGPD (Lei nº 13.709/2018)</strong>. Não vendemos
-        seus dados nem os compartilhamos com terceiros, exceto quando exigido por lei.
-      </p>
+      <div className="space-y-2">
+        <p>
+          Como <strong>não existe cadastro público</strong>, o sistema <strong>não coleta dados
+          pessoais de visitantes</strong>. Apenas as informações operacionais necessárias ao
+          apontamento e planejamento de manutenção são armazenadas.
+        </p>
+        <p>
+          O tratamento de dados segue a <strong>LGPD (Lei nº 13.709/2018)</strong>. Nenhum dado é
+          vendido ou compartilhado com terceiros, exceto quando exigido por lei.
+        </p>
+      </div>
     ),
   },
   {
@@ -105,8 +119,9 @@ const SECTIONS: Section[] = [
     },
     body: (
       <p>
-        O sistema é fornecido "no estado em que se encontra". Não nos responsabilizamos por perdas
-        indiretas decorrentes de indisponibilidade temporária ou uso indevido pelo usuário.
+        O sistema é fornecido "no estado em que se encontra" pelo desenvolvedor{" "}
+        <strong>Gabriel Vitor</strong>. Não nos responsabilizamos por perdas indiretas decorrentes
+        de indisponibilidade temporária ou uso indevido pelo usuário.
       </p>
     ),
   },
@@ -124,10 +139,11 @@ const SECTIONS: Section[] = [
       <p>
         Ao confirmar abaixo, você declara que <strong>leu, compreendeu e concorda</strong> com os
         Termos de Uso e com a Política de Privacidade do Apont Auto. O aceite fica registrado com
-        data, hora e versão para fins de auditoria.
+        data, hora e versão para fins de auditoria interna.
       </p>
     ),
   },
+
 ];
 
 export function TermsAcceptDialog({
