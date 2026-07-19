@@ -99,12 +99,25 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptTerms) {
+      triggerShake();
+      toast.error("Você precisa aceitar os Termos de Uso para continuar.");
+      return;
+    }
     setLoading(true);
     try {
       const raw = email.trim().toLowerCase();
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
+      try {
+        localStorage.setItem(
+          "apontauto:terms-accepted",
+          JSON.stringify({ email: loginEmail, acceptedAt: new Date().toISOString(), version: "1.0" }),
+        );
+      } catch {
+        // ignore storage errors
+      }
       toast.success("Bem-vindo!");
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
