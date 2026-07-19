@@ -105,6 +105,16 @@ const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "refrigeracao-grp",
+    title: "Refrigeração",
+    icon: Snowflake,
+    items: [
+      { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Snowflake },
+      { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: ClipboardList },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
   },
