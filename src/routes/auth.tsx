@@ -42,7 +42,8 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
+  const [acceptTerms, setAcceptTerms] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
@@ -98,12 +99,25 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptTerms) {
+      triggerShake();
+      toast.error("Você precisa aceitar os Termos de Uso para continuar.");
+      return;
+    }
     setLoading(true);
     try {
       const raw = email.trim().toLowerCase();
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
       const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
+      try {
+        localStorage.setItem(
+          "apontauto:terms-accepted",
+          JSON.stringify({ email: loginEmail, acceptedAt: new Date().toISOString(), version: "1.0" }),
+        );
+      } catch {
+        // ignore storage errors
+      }
       toast.success("Bem-vindo!");
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
@@ -231,7 +245,38 @@ function AuthPage() {
               </button>
             </div>
 
-            <button type="submit" className="auth-btn" disabled={loading}>
+            <label className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/70 transition hover:border-white/20">
+              <input
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-cyan-400"
+                aria-describedby="terms-desc"
+              />
+              <span id="terms-desc" className="leading-relaxed">
+                Li e aceito os{" "}
+                <a
+                  href="/termos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
+                >
+                  Termos de Uso
+                </a>{" "}
+                e a{" "}
+                <a
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-cyan-300 underline-offset-2 hover:underline"
+                >
+                  Política de Privacidade
+                </a>
+                .
+              </span>
+            </label>
+
+            <button type="submit" className="auth-btn" disabled={loading || !acceptTerms}>
               {loading ? (
                 <span className="dots inline-flex items-center justify-center text-white">
                   <span /><span /><span />
