@@ -237,15 +237,8 @@ function AuthPage() {
               </button>
             </div>
 
-            <div className="flex items-center justify-end text-sm">
-              <button
-                type="button"
-                onClick={forgotPassword}
-                className="text-cyan-300/90 transition-colors hover:text-cyan-200"
-              >
-                Esqueceu a senha?
-              </button>
-            </div>
+
+
 
             <button
               type="button"
