@@ -1,11 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { CheckCircle2, FileText, ShieldCheck, ScrollText, ArrowDown, Sparkles } from "lucide-react";
+import {
+  CheckCircle2,
+  ScrollText,
+  KeyRound,
+  Gavel,
+  Lock,
+  ShieldAlert,
+  Handshake,
+  ArrowDown,
+  ShieldCheck,
+  Check,
+} from "lucide-react";
 
 type Section = {
   id: string;
   title: string;
   icon: React.ComponentType<{ className?: string }>;
+  /** Tailwind color classes when the section is "concluded" */
+  accent: { text: string; bg: string; ring: string; glow: string };
   body: React.ReactNode;
 };
 
@@ -13,7 +26,13 @@ const SECTIONS: Section[] = [
   {
     id: "objeto",
     title: "1. Objeto",
-    icon: FileText,
+    icon: ScrollText,
+    accent: {
+      text: "text-cyan-300",
+      bg: "bg-cyan-400/15",
+      ring: "ring-cyan-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(103,232,249,0.55)]",
+    },
     body: (
       <p>
         O <strong>Apont Auto</strong> é um sistema corporativo de apontamento e planejamento de
@@ -24,7 +43,13 @@ const SECTIONS: Section[] = [
   {
     id: "acesso",
     title: "2. Acesso e credenciais",
-    icon: ShieldCheck,
+    icon: KeyRound,
+    accent: {
+      text: "text-amber-300",
+      bg: "bg-amber-400/15",
+      ring: "ring-amber-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(252,211,77,0.55)]",
+    },
     body: (
       <ul className="list-disc space-y-1 pl-5">
         <li>O acesso é restrito — não há cadastro aberto ao público.</li>
@@ -36,7 +61,13 @@ const SECTIONS: Section[] = [
   {
     id: "uso",
     title: "3. Uso permitido",
-    icon: ScrollText,
+    icon: Gavel,
+    accent: {
+      text: "text-violet-300",
+      bg: "bg-violet-400/15",
+      ring: "ring-violet-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(196,181,253,0.55)]",
+    },
     body: (
       <p>
         Utilize o sistema apenas para as finalidades operacionais autorizadas. É proibido tentar
@@ -48,7 +79,13 @@ const SECTIONS: Section[] = [
   {
     id: "dados",
     title: "4. Privacidade e dados",
-    icon: ShieldCheck,
+    icon: Lock,
+    accent: {
+      text: "text-emerald-300",
+      bg: "bg-emerald-400/15",
+      ring: "ring-emerald-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(110,231,183,0.55)]",
+    },
     body: (
       <p>
         Tratamos dados pessoais conforme a <strong>LGPD (Lei nº 13.709/2018)</strong>. Não vendemos
@@ -59,7 +96,13 @@ const SECTIONS: Section[] = [
   {
     id: "responsabilidade",
     title: "5. Limitação de responsabilidade",
-    icon: FileText,
+    icon: ShieldAlert,
+    accent: {
+      text: "text-rose-300",
+      bg: "bg-rose-400/15",
+      ring: "ring-rose-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(253,164,175,0.55)]",
+    },
     body: (
       <p>
         O sistema é fornecido "no estado em que se encontra". Não nos responsabilizamos por perdas
@@ -70,10 +113,16 @@ const SECTIONS: Section[] = [
   {
     id: "aceite",
     title: "6. Aceite",
-    icon: Sparkles,
+    icon: Handshake,
+    accent: {
+      text: "text-sky-300",
+      bg: "bg-sky-400/15",
+      ring: "ring-sky-400/50",
+      glow: "shadow-[0_0_18px_-2px_rgba(125,211,252,0.55)]",
+    },
     body: (
       <p>
-        Ao clicar em <strong>Aceitar</strong> abaixo, você confirma que leu e concorda com os
+        Ao confirmar abaixo, você declara que <strong>leu, compreendeu e concorda</strong> com os
         Termos de Uso e com a Política de Privacidade do Apont Auto. O aceite fica registrado com
         data, hora e versão para fins de auditoria.
       </p>
@@ -95,6 +144,8 @@ export function TermsAcceptDialog({
   const [progress, setProgress] = useState(0);
   const [reachedBottom, setReachedBottom] = useState(false);
   const [activeId, setActiveId] = useState<string>(SECTIONS[0]!.id);
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
+  const [checked, setChecked] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
@@ -105,12 +156,16 @@ export function TermsAcceptDialog({
     setReachedBottom(false);
     setConfirming(false);
     setConfirmed(false);
+    setChecked(false);
+    setReadIds(new Set());
     setActiveId(SECTIONS[0]!.id);
-    // scroll back to top after mount
     requestAnimationFrame(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = 0;
     });
   }, [open]);
+
+  const totalRead = readIds.size;
+  const allRead = totalRead === SECTIONS.length;
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -120,15 +175,43 @@ export function TermsAcceptDialog({
     setProgress(pct);
     if (pct >= 95) setReachedBottom(true);
 
-    // active section = last one whose top is above midline
-    const mid = el.getBoundingClientRect().top + el.clientHeight * 0.35;
+    const viewportTop = el.getBoundingClientRect().top;
+    const viewportBottom = viewportTop + el.clientHeight;
+    const mid = viewportTop + el.clientHeight * 0.35;
+
     let current = SECTIONS[0]!.id;
+    const newlyRead: string[] = [];
     for (const s of SECTIONS) {
       const node = sectionRefs.current[s.id];
       if (!node) continue;
-      if (node.getBoundingClientRect().top <= mid) current = s.id;
+      const r = node.getBoundingClientRect();
+      if (r.top <= mid) current = s.id;
+      // section counts as "read" once its bottom scrolled past 70% of viewport
+      if (r.bottom <= viewportTop + el.clientHeight * 0.7) {
+        newlyRead.push(s.id);
+      }
+    }
+    // last section becomes read when bottom is fully in view
+    const last = SECTIONS[SECTIONS.length - 1]!;
+    const lastNode = sectionRefs.current[last.id];
+    if (lastNode) {
+      const r = lastNode.getBoundingClientRect();
+      if (r.bottom <= viewportBottom + 4) newlyRead.push(last.id);
+    }
+
+    if (newlyRead.length) {
+      setReadIds((prev) => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const id of newlyRead) if (!next.has(id)) { next.add(id); changed = true; }
+        return changed ? next : prev;
+      });
     }
     setActiveId(current);
+  };
+
+  const scrollToSection = (id: string) => {
+    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const scrollToEnd = () => {
@@ -137,10 +220,11 @@ export function TermsAcceptDialog({
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   };
 
+  const canAccept = reachedBottom && allRead && checked && !confirming && !confirmed;
+
   const handleAccept = () => {
-    if (!reachedBottom || confirming || confirmed) return;
+    if (!canAccept) return;
     setConfirming(true);
-    // brief animated confirmation before closing
     window.setTimeout(() => {
       setConfirmed(true);
       window.setTimeout(() => {
@@ -150,31 +234,38 @@ export function TermsAcceptDialog({
     }, 350);
   };
 
+  const readCountLabel = useMemo(
+    () => `${totalRead}/${SECTIONS.length} seções lidas`,
+    [totalRead],
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl gap-0 overflow-hidden border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-0 text-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] sm:rounded-2xl">
-        {/* Local keyframes for effects */}
         <style>{`
           @keyframes terms-shimmer { 0%{background-position:-200% 0}100%{background-position:200% 0} }
           @keyframes terms-pop { 0%{transform:scale(.5);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1} }
-          @keyframes terms-ring { 0%{box-shadow:0 0 0 0 hsl(var(--primary)/.6)}100%{box-shadow:0 0 0 24px hsl(var(--primary)/0)} }
+          @keyframes terms-ring { 0%{box-shadow:0 0 0 0 hsl(var(--primary)/.55)}100%{box-shadow:0 0 0 22px hsl(var(--primary)/0)} }
           @keyframes terms-check-draw { from{stroke-dashoffset:60} to{stroke-dashoffset:0} }
+          @keyframes terms-icon-pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
+          .terms-scroll::-webkit-scrollbar{width:8px}
+          .terms-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(103,232,249,.4),rgba(59,130,246,.4));border-radius:8px}
+          .terms-scroll{scroll-behavior:smooth}
         `}</style>
 
-        {/* Header with progress bar */}
+        {/* Header */}
         <div className="relative border-b border-white/10 bg-white/[0.02] px-6 py-5">
           <DialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight">
             <ShieldCheck className="h-5 w-5 text-cyan-300" />
             Termos de Uso — Apont Auto
           </DialogTitle>
           <DialogDescription className="mt-1 text-xs text-white/60">
-            Leia até o final para habilitar o botão de aceitação.
+            Leia todas as seções — os ícones se acendem conforme você avança.
           </DialogDescription>
 
-          {/* Progress bar */}
           <div className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden bg-white/5">
             <div
-              className="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 transition-[width] duration-200 ease-out"
+              className="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 transition-[width] duration-300 ease-out"
               style={{
                 width: `${progress}%`,
                 boxShadow: "0 0 12px rgba(56,189,248,0.7)",
@@ -183,52 +274,69 @@ export function TermsAcceptDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[180px_1fr]">
-          {/* Section rail (desktop) */}
+        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
+          {/* Section rail */}
           <nav className="hidden border-r border-white/10 bg-white/[0.02] p-3 md:block">
             <ul className="space-y-1">
-              {SECTIONS.map((s) => {
+              {SECTIONS.map((s, idx) => {
                 const active = activeId === s.id;
+                const read = readIds.has(s.id);
                 const Icon = s.icon;
                 return (
                   <li key={s.id}>
                     <button
                       type="button"
-                      onClick={() => {
-                        sectionRefs.current[s.id]?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                      className={`group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[11px] font-medium transition-all ${
+                      onClick={() => scrollToSection(s.id)}
+                      className={`group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[11px] font-medium transition-all duration-300 ${
                         active
-                          ? "bg-cyan-400/10 text-cyan-200 shadow-[inset_2px_0_0_0_rgb(103,232,249)]"
+                          ? "bg-white/[0.06] text-white shadow-[inset_2px_0_0_0_rgb(103,232,249)]"
                           : "text-white/50 hover:bg-white/5 hover:text-white/80"
                       }`}
                     >
-                      <Icon className={`h-3.5 w-3.5 ${active ? "text-cyan-300" : ""}`} />
+                      <span
+                        className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-md transition-all duration-500 ${
+                          read
+                            ? `${s.accent.bg} ${s.accent.text} ${s.accent.glow} ring-1 ${s.accent.ring}`
+                            : "bg-white/5 text-white/40 ring-1 ring-white/5"
+                        }`}
+                        style={read ? { animation: "terms-icon-pop .45s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        {read && (
+                          <span className="absolute -right-1 -top-1 grid h-3 w-3 place-items-center rounded-full bg-emerald-500 text-white ring-2 ring-slate-950">
+                            <Check className="h-2 w-2" strokeWidth={4} />
+                          </span>
+                        )}
+                      </span>
                       <span className="truncate">{s.title}</span>
+                      <span className="ml-auto text-[9px] text-white/30 tabular-nums">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
                     </button>
                   </li>
                 );
               })}
             </ul>
+
+            <div className="mt-3 border-t border-white/5 pt-3 text-[10px] text-white/40">
+              {readCountLabel}
+            </div>
           </nav>
 
-          {/* Scrollable terms body */}
+          {/* Scrollable body */}
           <div className="relative">
-            {/* top/bottom fade masks */}
             <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-slate-950 to-transparent" />
             <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-slate-950 to-transparent" />
 
             <div
               ref={scrollRef}
               onScroll={handleScroll}
-              className="h-[52vh] overflow-y-auto overscroll-contain px-6 py-6 [scrollbar-width:thin]"
+              className="terms-scroll h-[52vh] overflow-y-auto overscroll-contain px-6 py-6"
             >
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {SECTIONS.map((s, i) => {
                   const active = activeId === s.id;
+                  const read = readIds.has(s.id);
                   const Icon = s.icon;
                   return (
                     <section
@@ -236,36 +344,48 @@ export function TermsAcceptDialog({
                       ref={(node) => {
                         sectionRefs.current[s.id] = node;
                       }}
-                      className={`rounded-xl border p-4 transition-all duration-500 ${
+                      className={`group rounded-xl border p-4 transition-all duration-500 ${
                         active
-                          ? "border-cyan-400/40 bg-cyan-400/[0.04] shadow-[0_0_0_1px_rgba(103,232,249,0.15),0_10px_40px_-20px_rgba(56,189,248,0.5)]"
-                          : "border-white/5 bg-white/[0.015]"
+                          ? `border-white/20 bg-white/[0.04] ${s.accent.glow}`
+                          : read
+                            ? "border-white/10 bg-white/[0.02]"
+                            : "border-white/5 bg-white/[0.015]"
                       } animate-in fade-in slide-in-from-bottom-2`}
                       style={{ animationDelay: `${i * 60}ms`, animationFillMode: "both" }}
                     >
                       <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
                         <span
-                          className={`grid h-6 w-6 place-items-center rounded-md transition-colors ${
-                            active ? "bg-cyan-400/20 text-cyan-200" : "bg-white/5 text-white/60"
+                          className={`relative grid h-7 w-7 place-items-center rounded-lg transition-all duration-500 ${
+                            read
+                              ? `${s.accent.bg} ${s.accent.text} ${s.accent.glow} ring-1 ${s.accent.ring}`
+                              : active
+                                ? "bg-white/10 text-white/80 ring-1 ring-white/10"
+                                : "bg-white/5 text-white/50 ring-1 ring-white/5"
                           }`}
+                          style={read ? { animation: "terms-icon-pop .5s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
                         >
-                          <Icon className="h-3.5 w-3.5" />
+                          <Icon className="h-4 w-4" />
                         </span>
                         {s.title}
+                        {read && (
+                          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+                            <Check className="h-2.5 w-2.5" strokeWidth={4} />
+                            Lido
+                          </span>
+                        )}
                       </h3>
-                      <div className="text-sm leading-relaxed text-white/70">{s.body}</div>
+                      <div className="text-sm leading-relaxed text-white/75">{s.body}</div>
                     </section>
                   );
                 })}
               </div>
             </div>
 
-            {/* Scroll hint */}
             {!reachedBottom && (
               <button
                 type="button"
                 onClick={scrollToEnd}
-                className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-fit items-center gap-1.5 rounded-full border border-white/15 bg-slate-900/80 px-3 py-1.5 text-[11px] font-medium text-white/80 shadow-lg backdrop-blur transition hover:border-cyan-400/40 hover:text-cyan-200"
+                className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-fit items-center gap-1.5 rounded-full border border-white/15 bg-slate-900/85 px-3 py-1.5 text-[11px] font-medium text-white/80 shadow-lg backdrop-blur transition hover:border-cyan-400/40 hover:text-cyan-200"
               >
                 <ArrowDown className="h-3 w-3 animate-bounce" />
                 Role até o final para continuar
@@ -274,14 +394,53 @@ export function TermsAcceptDialog({
           </div>
         </div>
 
-        {/* Footer / accept */}
+        {/* Footer */}
         <div className="relative border-t border-white/10 bg-white/[0.02] px-6 py-4">
+          {/* Explicit acceptance checkbox */}
+          <label
+            className={`mb-3 flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all duration-300 ${
+              !allRead
+                ? "cursor-not-allowed border-white/5 bg-white/[0.02] opacity-50"
+                : checked
+                  ? "border-emerald-400/40 bg-emerald-400/[0.06]"
+                  : "border-white/10 bg-white/[0.03] hover:border-cyan-400/30 hover:bg-cyan-400/[0.04]"
+            }`}
+          >
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={checked}
+              disabled={!allRead}
+              onChange={(e) => setChecked(e.target.checked)}
+            />
+            <span
+              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition-all duration-300 ${
+                checked
+                  ? "border-emerald-400 bg-emerald-500 shadow-[0_0_14px_-2px_rgba(52,211,153,0.7)]"
+                  : "border-white/25 bg-transparent"
+              }`}
+            >
+              {checked && <Check className="h-3 w-3 text-white" strokeWidth={4} />}
+            </span>
+            <span className="text-xs leading-relaxed text-white/80">
+              Declaro que <strong className="text-white">li, compreendi e concordo</strong> com os
+              Termos de Uso e com a Política de Privacidade do Apont Auto.
+              {!allRead && (
+                <span className="mt-1 block text-[10px] text-white/40">
+                  Leia todas as seções para habilitar esta opção.
+                </span>
+              )}
+            </span>
+          </label>
+
           <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-[11px] text-white/50">
-              Progresso de leitura:{" "}
-              <span className={reachedBottom ? "text-cyan-300" : "text-white/70"}>
-                {progress}%
+            <div className="flex items-center gap-3 text-[11px] text-white/50">
+              <span>
+                Leitura:{" "}
+                <span className={reachedBottom ? "text-cyan-300" : "text-white/70"}>{progress}%</span>
               </span>
+              <span className="text-white/20">•</span>
+              <span className={allRead ? "text-emerald-300" : "text-white/70"}>{readCountLabel}</span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -294,23 +453,18 @@ export function TermsAcceptDialog({
               <button
                 type="button"
                 onClick={handleAccept}
-                disabled={!reachedBottom || confirming || confirmed}
+                disabled={!canAccept}
                 aria-live="polite"
                 className={`group relative inline-flex items-center gap-2 overflow-hidden rounded-md px-5 py-2 text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
                   confirmed
                     ? "bg-emerald-500 text-white"
-                    : reachedBottom
+                    : canAccept
                       ? "bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 text-slate-950 hover:shadow-[0_10px_30px_-8px_rgba(56,189,248,0.7)] active:scale-[0.97]"
                       : "cursor-not-allowed bg-white/5 text-white/40"
                 }`}
-                style={
-                  reachedBottom && !confirmed
-                    ? { animation: "terms-ring 1.8s ease-out infinite" }
-                    : undefined
-                }
+                style={canAccept ? { animation: "terms-ring 1.8s ease-out infinite" } : undefined}
               >
-                {/* Shimmer overlay when enabled */}
-                {reachedBottom && !confirmed && (
+                {canAccept && (
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-0 opacity-60"
@@ -334,10 +488,7 @@ export function TermsAcceptDialog({
                       Confirmando…
                     </>
                   ) : (
-                    <>
-                      <ShieldCheck className="h-4 w-4" />
-                      Aceitar Termos
-                    </>
+                    <>Confirmar e Aceitar</>
                   )}
                 </span>
               </button>
