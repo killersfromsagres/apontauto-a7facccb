@@ -197,6 +197,12 @@ function RefrigeracaoGestor() {
       description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
+          <ExportXlsxButton
+            os={filteredOs}
+            pecas={filterByOs(pecasQuery.data)}
+            problemas={filterByOs(problQuery.data)}
+            fotos={filterByOs(fotosQuery.data)}
+          />
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
@@ -204,6 +210,7 @@ function RefrigeracaoGestor() {
         </>
       }
     >
+
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-1 items-center gap-2 min-w-[220px]">
