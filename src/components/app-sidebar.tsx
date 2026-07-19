@@ -41,6 +41,7 @@ const logoAsset = { url: "/apontauto-logo.png" };
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAllowedMenus } from "@/hooks/use-allowed-menus";
+import { supabase } from "@/integrations/supabase/client";
 
 type MenuItem = {
   key: string;
@@ -68,7 +69,6 @@ const sections: MenuSection[] = [
       { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
       { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
       { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
-      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
     ],
   },
@@ -79,7 +79,6 @@ const sections: MenuSection[] = [
     icon: HardHat,
     items: [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
-      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
     ],
   },
   {
@@ -99,6 +98,8 @@ const sections: MenuSection[] = [
     items: [
       { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
+      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
+      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
     ],
   },
   {
@@ -115,9 +116,20 @@ export const AppSidebar = memo(function AppSidebar() {
   const collapsed = state === "collapsed";
   const loadingAccess = loadingAdmin || loadingAllowed;
 
+  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setOwnerEmail(data.session?.user?.email ?? null));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setOwnerEmail(s?.user?.email ?? null));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+  const isOwner = (ownerEmail ?? "").trim().toLowerCase() === "gabrielvlp33@gmail.com";
+
   const visibleSections = useMemo<MenuSection[]>(() => {
     if (loadingAccess) return [];
-    const canSee = (key: string) => (isAdmin ? true : !allowed || allowed.includes(key));
+    const canSee = (key: string) => {
+      if (key === "configuracoes") return isOwner;
+      return isAdmin ? true : !allowed || allowed.includes(key);
+    };
     const out: MenuSection[] = [];
     for (const s of sections) {
       if (s.kind === "item") {
@@ -128,7 +140,7 @@ export const AppSidebar = memo(function AppSidebar() {
       }
     }
     return out;
-  }, [loadingAccess, isAdmin, allowed]);
+  }, [loadingAccess, isAdmin, allowed, isOwner]);
 
   const isItemActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
