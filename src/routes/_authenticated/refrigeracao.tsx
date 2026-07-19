@@ -1,0 +1,545 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
+import {
+  Wifi,
+  WifiOff,
+  RefreshCw,
+  Camera,
+  Package,
+  AlertTriangle,
+  Search,
+  X,
+  Loader2,
+  CheckCircle2,
+  Snowflake,
+} from "lucide-react";
+import { PageShell } from "@/components/page-shell";
+import { GlassCard } from "@/components/glass-card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  cacheOsList,
+  getCachedOsList,
+  outboxAdd,
+  outboxAll,
+  blobPut,
+  type OsCacheRow,
+  type OutboxItem,
+} from "@/lib/refrigeracao/db";
+import { compressImage } from "@/lib/refrigeracao/image";
+import { syncPending } from "@/lib/refrigeracao/sync";
+
+export const Route = createFileRoute("/_authenticated/refrigeracao")({
+  component: RefrigeracaoPage,
+});
+
+function uuid() {
+  return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+}
+
+function useOnlineStatus() {
+  const [online, setOnline] = useState(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+  return online;
+}
+
+function RefrigeracaoPage() {
+  const online = useOnlineStatus();
+  const [osList, setOsList] = useState<OsCacheRow[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [pending, setPending] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [loadingList, setLoadingList] = useState(true);
+
+  const refreshPending = async () => setPending((await outboxAll()).length);
+
+  const doSync = async (silent = false) => {
+    if (!navigator.onLine) return;
+    setSyncing(true);
+    try {
+      const r = await syncPending();
+      if (!silent && r.sent > 0) toast.success(`${r.sent} registro(s) sincronizado(s).`);
+      if (r.failed > 0 && !silent) toast.error(`${r.failed} pendente(s) — tentaremos novamente.`);
+    } catch (e: any) {
+      if (!silent) toast.error(e?.message ?? "Falha ao sincronizar");
+    } finally {
+      setSyncing(false);
+      refreshPending();
+    }
+  };
+
+  const refreshOsFromServer = async () => {
+    const { data, error } = await supabase
+      .from("refrigeracao_os")
+      .select("id, numero_os, ativo, equipamento, patrimonio, localizacao, status, updated_at")
+      .order("numero_os", { ascending: true });
+    if (error) throw error;
+    const rows = (data ?? []) as OsCacheRow[];
+    await cacheOsList(rows);
+    setOsList(rows);
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const cached = await getCachedOsList();
+        if (cached.length) setOsList(cached);
+      } catch {}
+      if (navigator.onLine) {
+        try {
+          await refreshOsFromServer();
+        } catch (e: any) {
+          if (osList.length === 0) toast.error("Não foi possível carregar OS: " + (e?.message ?? ""));
+        }
+      }
+      setLoadingList(false);
+      refreshPending();
+      doSync(true);
+    })();
+    const on = () => doSync(false);
+    window.addEventListener("online", on);
+    return () => window.removeEventListener("online", on);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return osList;
+    return osList.filter(
+      (o) =>
+        o.numero_os.toLowerCase().includes(q) ||
+        o.ativo.toLowerCase().includes(q) ||
+        o.equipamento.toLowerCase().includes(q) ||
+        o.patrimonio.toLowerCase().includes(q),
+    );
+  }, [osList, search]);
+
+  const selected = osList.find((o) => o.id === selectedId) ?? null;
+
+  return (
+    <PageShell
+      title="Refrigeração"
+      description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
+      actions={
+        <>
+          <StatusChip online={online} syncing={syncing} pending={pending} />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => doSync(false)}
+            disabled={syncing || !online}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            Sincronizar
+          </Button>
+        </>
+      }
+    >
+      {!selected ? (
+        <GlassCard className="p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por número da OS, ativo, equipamento ou patrimônio…"
+              className="h-11 text-base"
+            />
+          </div>
+          {loadingList ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
+              Carregando OS…
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-8 text-center text-sm text-muted-foreground">
+              {osList.length === 0
+                ? "Nenhuma OS disponível. O gestor precisa importar as OS."
+                : "Nenhuma OS encontrada para essa busca."}
+            </div>
+          ) : (
+            <ul className="divide-y divide-border/50">
+              {filtered.map((o) => (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(o.id)}
+                    className="flex w-full items-center gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
+                  >
+                    <Snowflake className="h-5 w-5 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {o.status}
+                        </Badge>
+                      </div>
+                      <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                        {o.equipamento} · Patrim. {o.patrimonio} · Ativo {o.ativo}
+                      </div>
+                      {o.localizacao && (
+                        <div className="truncate text-xs text-muted-foreground/80">
+                          {o.localizacao}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassCard>
+      ) : (
+        <OsDetail
+          os={selected}
+          onBack={() => setSelectedId(null)}
+          onQueued={refreshPending}
+          online={online}
+        />
+      )}
+    </PageShell>
+  );
+}
+
+function StatusChip({
+  online,
+  syncing,
+  pending,
+}: {
+  online: boolean;
+  syncing: boolean;
+  pending: number;
+}) {
+  const cls = !online
+    ? "bg-amber-500/15 text-amber-600 border-amber-500/30"
+    : syncing
+      ? "bg-sky-500/15 text-sky-600 border-sky-500/30"
+      : pending > 0
+        ? "bg-orange-500/15 text-orange-600 border-orange-500/30"
+        : "bg-emerald-500/15 text-emerald-600 border-emerald-500/30";
+  const Icon = !online ? WifiOff : syncing ? Loader2 : pending > 0 ? RefreshCw : Wifi;
+  const label = !online
+    ? `Offline${pending > 0 ? ` · ${pending} pendente(s)` : ""}`
+    : syncing
+      ? "Sincronizando…"
+      : pending > 0
+        ? `${pending} pendente(s)`
+        : "Sincronizado";
+  return (
+    <span
+      className={`inline-flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium ${cls}`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+      {label}
+    </span>
+  );
+}
+
+function OsDetail({
+  os,
+  onBack,
+  onQueued,
+  online,
+}: {
+  os: OsCacheRow;
+  onBack: () => void;
+  onQueued: () => void;
+  online: boolean;
+}) {
+  // Fotos
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previews, setPreviews] = useState<{ id: string; url: string; blob: Blob }[]>([]);
+
+  // Peça
+  const [pDesc, setPDesc] = useState("");
+  const [pQtd, setPQtd] = useState("1");
+  const [pUrg, setPUrg] = useState("media");
+  const [pObs, setPObs] = useState("");
+
+  // Problema
+  const [prDesc, setPrDesc] = useState("");
+  const [prGrav, setPrGrav] = useState("falha");
+
+  const [saving, setSaving] = useState(false);
+
+  const onPickFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const next: typeof previews = [];
+    for (const f of Array.from(files)) {
+      if (!f.type.startsWith("image/")) continue;
+      const blob = await compressImage(f);
+      next.push({ id: uuid(), url: URL.createObjectURL(blob), blob });
+    }
+    setPreviews((p) => [...p, ...next]);
+  };
+
+  const removePreview = (id: string) => {
+    setPreviews((p) => {
+      const rm = p.find((x) => x.id === id);
+      if (rm) URL.revokeObjectURL(rm.url);
+      return p.filter((x) => x.id !== id);
+    });
+  };
+
+  const saveAll = async () => {
+    const items: OutboxItem[] = [];
+    // fotos
+    for (const p of previews) {
+      const blobKey = `foto:${p.id}`;
+      await blobPut(blobKey, p.blob);
+      items.push({
+        id: p.id,
+        kind: "foto",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { blobKey },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+    }
+    // peça
+    if (pDesc.trim()) {
+      items.push({
+        id: uuid(),
+        kind: "peca",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: {
+          descricao: pDesc.trim(),
+          quantidade: Number(pQtd) || 1,
+          urgencia: pUrg,
+          observacao: pObs.trim() || null,
+        },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+    }
+    // problema
+    if (prDesc.trim()) {
+      items.push({
+        id: uuid(),
+        kind: "problema",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { descricao: prDesc.trim(), gravidade: prGrav },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+    }
+    if (items.length === 0) {
+      toast.warning("Nada para salvar. Adicione foto, peça ou problema.");
+      return;
+    }
+    setSaving(true);
+    try {
+      for (const it of items) await outboxAdd(it);
+      previews.forEach((p) => URL.revokeObjectURL(p.url));
+      setPreviews([]);
+      setPDesc("");
+      setPQtd("1");
+      setPUrg("media");
+      setPObs("");
+      setPrDesc("");
+      setPrGrav("falha");
+      onQueued();
+      toast.success(
+        online ? "Salvo. Enviando ao servidor…" : "Salvo offline. Enviaremos assim que houver internet.",
+      );
+      if (online) {
+        try {
+          const r = await syncPending();
+          onQueued();
+          if (r.sent > 0) toast.success(`${r.sent} enviado(s) ao servidor.`);
+        } catch {}
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <GlassCard className="p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">OS selecionada</div>
+            <div className="font-mono text-lg font-bold">#{os.numero_os}</div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            ← Voltar à lista
+          </Button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <ReadOnly label="Ativo" value={os.ativo} />
+          <ReadOnly label="Equipamento" value={os.equipamento} />
+          <ReadOnly label="Patrimônio" value={os.patrimonio} />
+        </div>
+        {os.localizacao && (
+          <div className="mt-3">
+            <ReadOnly label="Localização" value={os.localizacao} />
+          </div>
+        )}
+      </GlassCard>
+
+      <GlassCard className="p-4">
+        <SectionTitle icon={Camera} label="Fotos" />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="h-12"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Camera className="mr-2 h-4 w-4" /> Adicionar fotos
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            className="hidden"
+            onChange={(e) => onPickFiles(e.target.files)}
+          />
+        </div>
+        {previews.length > 0 && (
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+            {previews.map((p) => (
+              <div key={p.id} className="group relative aspect-square overflow-hidden rounded-md border">
+                <img src={p.url} className="h-full w-full object-cover" alt="preview" />
+                <button
+                  type="button"
+                  onClick={() => removePreview(p.id)}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </GlassCard>
+
+      <GlassCard className="p-4">
+        <SectionTitle icon={Package} label="Solicitar peça" />
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <Label>Descrição da peça</Label>
+            <Input value={pDesc} onChange={(e) => setPDesc(e.target.value)} className="h-11" />
+          </div>
+          <div>
+            <Label>Quantidade</Label>
+            <Input
+              type="number"
+              min={1}
+              value={pQtd}
+              onChange={(e) => setPQtd(e.target.value)}
+              className="h-11"
+            />
+          </div>
+          <div>
+            <Label>Urgência</Label>
+            <Select value={pUrg} onValueChange={setPUrg}>
+              <SelectTrigger className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="baixa">Baixa</SelectItem>
+                <SelectItem value="media">Média</SelectItem>
+                <SelectItem value="alta">Alta</SelectItem>
+                <SelectItem value="urgente">Urgente — parado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="sm:col-span-2">
+            <Label>Observação</Label>
+            <Textarea value={pObs} onChange={(e) => setPObs(e.target.value)} rows={2} />
+          </div>
+        </div>
+      </GlassCard>
+
+      <GlassCard className="p-4">
+        <SectionTitle icon={AlertTriangle} label="Sinalizar problema" />
+        <div className="mt-3 grid gap-3">
+          <div>
+            <Label>Descrição do problema</Label>
+            <Textarea value={prDesc} onChange={(e) => setPrDesc(e.target.value)} rows={3} />
+          </div>
+          <div>
+            <Label>Gravidade</Label>
+            <Select value={prGrav} onValueChange={setPrGrav}>
+              <SelectTrigger className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="falha">Funcionando com falha</SelectItem>
+                <SelectItem value="parcial">Parcialmente parado</SelectItem>
+                <SelectItem value="parado">Totalmente parado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </GlassCard>
+
+      <div className="sticky bottom-2 z-10">
+        <Button
+          size="lg"
+          className="h-14 w-full text-base font-semibold shadow-lg"
+          onClick={saveAll}
+          disabled={saving}
+        >
+          {saving ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <CheckCircle2 className="mr-2 h-5 w-5" />
+          )}
+          {online ? "Salvar e enviar" : "Salvar offline"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ReadOnly({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      <div className="mt-1 rounded-md border bg-muted/40 px-3 py-2 text-sm">{value}</div>
+    </div>
+  );
+}
+
+function SectionTitle({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="h-4 w-4 text-primary" />
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </h3>
+    </div>
+  );
+}
