@@ -26,8 +26,8 @@ import {
   Save,
   ClipboardList,
   User,
+  Cpu,
 } from "lucide-react";
-import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
   BarChart,
   Bar,
@@ -1811,15 +1811,9 @@ function Dashboard({
             Motor de Priorização
           </div>
           <div className="mt-3 flex items-center gap-2">
-            <img
-              src={priorityEngineIcon}
-              alt=""
-              aria-hidden
-              width={20}
-              height={20}
-              loading="lazy"
-              className="h-5 w-5 drop-shadow-[0_0_6px_rgba(249,115,22,0.45)]"
-            />
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-orange-500/30 bg-orange-500/10 text-orange-500">
+              <Cpu className="h-4 w-4" strokeWidth={1.75} />
+            </span>
             <div className="text-sm">
               Última verificação:{" "}
               <span className="font-medium">
