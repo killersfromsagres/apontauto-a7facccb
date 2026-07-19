@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWeather } from "@/hooks/use-weather";
