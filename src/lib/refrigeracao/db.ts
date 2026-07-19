@@ -2,16 +2,16 @@
 // Sem dependências externas: 3 object stores (os_cache, outbox, blobs).
 
 const DB_NAME = "refrigeracao-offline";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
-export type OutboxKind = "foto" | "peca" | "problema";
+export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio";
 
 export type OutboxItem = {
-  id: string; // client_uuid
+  id: string;
   kind: OutboxKind;
   osId: string;
   numeroOs: string;
-  payload: any; // { descricao?, quantidade?, urgencia?, observacao?, gravidade?, legenda?, blobKey? }
+  payload: any;
   createdAt: number;
   attempts: number;
   lastError?: string;
@@ -20,10 +20,19 @@ export type OutboxItem = {
 export type OsCacheRow = {
   id: string;
   numero_os: string;
+  nome_os: string | null;
+  predio: string | null;
+  andar: string | null;
+  local: string | null;
+  tipo: string | null;
+  equipe: string | null;
+  data_sla: string | null;
+  data_programada: string | null;
+  inicio: string | null;
+  fim: string | null;
   ativo: string;
   equipamento: string;
-  patrimonio: string;
-  localizacao: string | null;
+  patrimonio: string | null;
   status: string;
   updated_at: string;
 };
@@ -49,7 +58,7 @@ function openDb(): Promise<IDBDatabase> {
         s.createIndex("osId", "osId", { unique: false });
       }
       if (!db.objectStoreNames.contains("blobs")) {
-        db.createObjectStore("blobs"); // key = blobKey, value = Blob
+        db.createObjectStore("blobs");
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -87,7 +96,6 @@ function req<T = any>(r: IDBRequest<T>): Promise<T> {
   });
 }
 
-// ---- OS cache
 export async function cacheOsList(rows: OsCacheRow[]): Promise<void> {
   await tx("os_cache", "readwrite", async (t) => {
     const s = t.objectStore("os_cache");
@@ -100,7 +108,15 @@ export async function getCachedOsList(): Promise<OsCacheRow[]> {
   return tx("os_cache", "readonly", (t) => req(t.objectStore("os_cache").getAll()));
 }
 
-// ---- Outbox
+export async function updateCachedOs(id: string, patch: Partial<OsCacheRow>): Promise<void> {
+  await tx("os_cache", "readwrite", async (t) => {
+    const s = t.objectStore("os_cache");
+    const cur = (await req(s.get(id))) as OsCacheRow | undefined;
+    if (!cur) return;
+    s.put({ ...cur, ...patch });
+  });
+}
+
 export async function outboxAdd(item: OutboxItem): Promise<void> {
   await tx("outbox", "readwrite", (t) => req(t.objectStore("outbox").put(item)));
 }
@@ -121,7 +137,6 @@ export async function outboxCount(): Promise<number> {
   return tx("outbox", "readonly", (t) => req(t.objectStore("outbox").count()));
 }
 
-// ---- Blobs (fotos)
 export async function blobPut(key: string, blob: Blob): Promise<void> {
   await tx("blobs", "readwrite", (t) => req(t.objectStore("blobs").put(blob, key)));
 }
