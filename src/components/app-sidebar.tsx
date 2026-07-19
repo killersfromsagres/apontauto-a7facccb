@@ -140,6 +140,7 @@ export const AppSidebar = memo(function AppSidebar() {
     if (loadingAccess) return [];
     const canSee = (key: string) => {
       if (key === "configuracoes") return isOwner;
+      if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];
