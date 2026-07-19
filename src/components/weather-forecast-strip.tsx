@@ -270,7 +270,8 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
       </div>
     </div>
   );
-}
+});
+
 
 function ArrowBtn({
   dir,
