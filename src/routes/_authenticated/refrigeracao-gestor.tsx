@@ -982,8 +982,20 @@ function ProblemasTable({
 function Th({ children, className = "" }: { children: any; className?: string }) {
   return <th className={`px-3 py-2 text-left ${className}`}>{children}</th>;
 }
-function Td({ children, className = "" }: { children: any; className?: string }) {
-  return <td className={`px-3 py-2 align-middle ${className}`}>{children}</td>;
+function Td({
+  children,
+  className = "",
+  title,
+}: {
+  children: any;
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <td className={`px-3 py-2 align-middle ${className}`} title={title}>
+      {children}
+    </td>
+  );
 }
 function FieldInput({
   label,
