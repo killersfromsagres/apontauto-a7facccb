@@ -320,6 +320,8 @@ function ProgramacaoPage() {
                   slot={slot}
                   file={slotFiles[slot.id]}
                   onChange={(f) => setSlot(slot.id, f)}
+                  incremento={incrementos[slot.id]}
+                  onIncrementoChange={(d) => setIncremento(slot.id, d)}
                 />
               ))}
             </div>
