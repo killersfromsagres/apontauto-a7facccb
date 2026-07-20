@@ -562,19 +562,30 @@ function OsDetail({
         </div>
         {previews.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            {previews.map((p) => (
+            {previews.map((p, idx) => (
               <div
                 key={p.id}
                 className="group relative aspect-square overflow-hidden rounded-md border"
               >
                 <img src={p.url} className="h-full w-full object-cover" alt="preview" />
-                <button
-                  type="button"
-                  onClick={() => removePreview(p.id)}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                <div className="absolute right-1 top-1 flex gap-1">
+                  <a
+                    href={p.url}
+                    download={`OS-${os.numero_os}-foto-${idx + 1}.jpg`}
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80"
+                    aria-label="Baixar foto"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => removePreview(p.id)}
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-red-600"
+                    aria-label="Remover foto"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
