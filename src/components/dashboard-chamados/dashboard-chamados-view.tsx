@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   Upload,
@@ -22,6 +22,9 @@ import {
   ShieldCheck,
   HardHat,
   ArrowRight,
+  ListChecks,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -54,6 +57,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { parseChamadosFile, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
 import { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
+import {
+  fetchBackorderStatuses,
+  setBackorderConcluido,
+  setBackorderReaberto,
+  subscribeBackorderChanges,
+  type BackorderStatus,
+} from "@/lib/dashboard-chamados/backorder-sync";
 import { useMyAccess } from "@/hooks/use-my-access";
 
 const CHART_COLORS = [
@@ -141,6 +151,32 @@ export function DashboardChamadosView() {
   );
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // Sincronia com backorder_os: mapa OS -> status vindo do banco.
+  const [backorderMap, setBackorderMap] = useState<Map<string, BackorderStatus>>(new Map());
+  const [pendingOs, setPendingOs] = useState<Set<string>>(new Set());
+
+  // Aplica o status do backorder sobre as linhas parseadas.
+  const mergedRows = useMemo<ChamadoRow[]>(() => {
+    if (backorderMap.size === 0) return rows;
+    return rows.map((r) => {
+      const b = backorderMap.get(r.os);
+      if (!b) return r;
+      if (b.finalizado) {
+        return {
+          ...r,
+          statusNorm: "concluido",
+          status: r.status || "Concluído",
+          dataConclusao: b.data_finalizacao ?? r.dataConclusao,
+        };
+      }
+      // Se foi reaberto explicitamente no backorder, refletir aqui.
+      if (r.statusNorm === "concluido") {
+        return { ...r, statusNorm: "aberto", status: "Reaberto", dataConclusao: null };
+      }
+      return r;
+    });
+  }, [rows, backorderMap]);
+
 
   const onUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,7 +209,7 @@ export function DashboardChamadosView() {
     const st = new Set<string>();
     const so = new Set<string>();
     const pr = new Set<string>();
-    for (const r of rows) {
+    for (const r of mergedRows) {
       if (r.equipe) eq.add(r.equipe);
       if (r.categoria) ca.add(r.categoria);
       if (r.criticidade) cr.add(r.criticidade);
@@ -189,12 +225,12 @@ export function DashboardChamadosView() {
       solicitantes: [...so].sort(),
       predios: [...pr].sort(),
     };
-  }, [rows]);
+  }, [mergedRows]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
     const periodoMs = filters.periodo === "todos" ? 0 : Number(filters.periodo) * 86400000;
-    return rows.filter((r) => {
+    return mergedRows.filter((r) => {
       if (filters.equipe !== "todas" && r.equipe !== filters.equipe) return false;
       if (filters.categoria !== "todas" && r.categoria !== filters.categoria) return false;
       if (filters.criticidade !== "todas" && r.criticidade !== filters.criticidade) return false;
@@ -207,13 +243,72 @@ export function DashboardChamadosView() {
       }
       return true;
     });
-  }, [rows, filters]);
+  }, [mergedRows, filters]);
 
   const stats = useMemo(() => computeDashboardStats(filtered), [filtered]);
   const topPredios = useMemo(
     () => [...stats.porPredio].sort((a, b) => b.value - a.value).slice(0, 10),
     [stats.porPredio],
   );
+
+  // Ao carregar linhas, busca status atuais em backorder_os e mescla.
+  useEffect(() => {
+    if (rows.length === 0) {
+      setBackorderMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchBackorderStatuses(rows.map((r) => r.os))
+      .then((m) => {
+        if (!cancelled) setBackorderMap(m);
+      })
+      .catch((err) => {
+        console.error("[dashboard] fetchBackorderStatuses", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows]);
+
+  // Realtime: reflete alterações vindas do módulo Backorder.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const known = new Set(rows.map((r) => r.os));
+    const unsub = subscribeBackorderChanges((status) => {
+      if (!known.has(status.os)) return;
+      setBackorderMap((prev) => {
+        const next = new Map(prev);
+        next.set(status.os, status);
+        return next;
+      });
+    });
+    return unsub;
+  }, [rows]);
+
+  const toggleConcluido = useCallback(
+    async (row: ChamadoRow, next: boolean) => {
+      setPendingOs((prev) => new Set(prev).add(row.os));
+      try {
+        const status = next ? await setBackorderConcluido(row) : await setBackorderReaberto(row.os);
+        setBackorderMap((prev) => {
+          const m = new Map(prev);
+          m.set(row.os, status);
+          return m;
+        });
+        toast.success(next ? `OS ${row.os} concluída` : `OS ${row.os} reaberta`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com backorder");
+      } finally {
+        setPendingOs((prev) => {
+          const s = new Set(prev);
+          s.delete(row.os);
+          return s;
+        });
+      }
+    },
+    [],
+  );
+
 
   const activeFilterCount = Object.entries(filters).filter(
     ([k, v]) => v !== EMPTY_FILTERS[k as keyof Filters],
@@ -514,12 +609,16 @@ export function DashboardChamadosView() {
               </div>
               <span className="text-xs text-muted-foreground">Quem abriu mais chamados</span>
             </div>
-            <div className="h-96 w-full">
+            <div
+              className="w-full"
+              style={{ height: `${Math.max(260, stats.porSolicitante.length * 36 + 60)}px` }}
+            >
               <ResponsiveContainer>
                 <BarChart
                   data={stats.porSolicitante}
                   layout="vertical"
-                  margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
+                  margin={{ top: 8, right: 32, bottom: 8, left: 8 }}
+                  barCategoryGap={8}
                 >
                   <defs>
                     <linearGradient id="gSol" x1="0" y1="0" x2="1" y2="0">
@@ -528,15 +627,27 @@ export function DashboardChamadosView() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
+                  <XAxis
+                    type="number"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    allowDecimals={false}
+                    hide
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"
                     stroke="var(--muted-foreground)"
                     fontSize={11}
-                    width={160}
+                    width={200}
+                    interval={0}
+                    tick={{ fill: "var(--muted-foreground)" }}
+                    tickFormatter={(v: string) =>
+                      v && v.length > 26 ? `${v.slice(0, 25)}…` : v
+                    }
                   />
                   <Tooltip
+                    cursor={{ fill: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
                     contentStyle={{
                       background: "var(--popover)",
                       color: "var(--popover-foreground)",
@@ -545,11 +656,18 @@ export function DashboardChamadosView() {
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey="total" name="Total" fill="url(#gSol)" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="total" name="Total" fill="url(#gSol)" radius={[0, 6, 6, 0]} barSize={20}>
+                    <LabelList
+                      dataKey="total"
+                      position="right"
+                      style={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 600 }}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </GlassCard>
+
 
           <GlassCard delay={0.4}>
             <h3 className="mb-4 text-base font-semibold">Por categoria</h3>
@@ -695,8 +813,99 @@ export function DashboardChamadosView() {
             </div>
           </GlassCard>
         </div>
+
+        {/* Lista de chamados com sincronização Backorder */}
+        <GlassCard delay={0.55}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4 text-primary" strokeWidth={1.75} />
+              <h3 className="text-base font-semibold">Chamados</h3>
+              <Badge variant="secondary" className="text-xs">
+                {filtered.length}
+              </Badge>
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              Concluir aqui sincroniza automaticamente com o módulo Backorder
+            </span>
+          </div>
+          <div
+            className="scroll-fluid relative w-full overflow-auto rounded-xl border border-border/60"
+            style={{ maxHeight: "min(70vh, 640px)", scrollBehavior: "smooth" }}
+          >
+            <table className="w-full min-w-[720px] text-xs">
+              <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+                <tr className="border-b border-border/60 text-left text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="px-3 py-2 font-medium">OS</th>
+                  <th className="px-3 py-2 font-medium">Descrição</th>
+                  <th className="px-3 py-2 font-medium">Equipe</th>
+                  <th className="px-3 py-2 font-medium">Solicitante</th>
+                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 text-right font-medium">Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.slice(0, 300).map((r) => {
+                  const done = r.statusNorm === "concluido";
+                  const busy = pendingOs.has(r.os);
+                  return (
+                    <tr
+                      key={r.os}
+                      className="border-b border-border/40 last:border-b-0 hover:bg-muted/40"
+                    >
+                      <td className="px-3 py-2 font-mono text-[11px] tabular-nums">{r.os}</td>
+                      <td className="max-w-[340px] truncate px-3 py-2" title={r.descricao}>
+                        {r.descricao || "—"}
+                      </td>
+                      <td className="px-3 py-2">{r.equipe}</td>
+                      <td className="max-w-[180px] truncate px-3 py-2" title={r.solicitante}>
+                        {r.solicitante}
+                      </td>
+                      <td className="px-3 py-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            done
+                              ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                              : r.statusNorm === "andamento"
+                              ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                              : "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                          }
+                        >
+                          {done ? "Concluído" : r.status || "Aberto"}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <Button
+                          size="sm"
+                          variant={done ? "outline" : "default"}
+                          disabled={busy}
+                          onClick={() => toggleConcluido(r, !done)}
+                        >
+                          {busy ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : done ? (
+                            <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                          ) : (
+                            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          {done ? "Reabrir" : "Concluir"}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            {filtered.length > 300 && (
+              <div className="border-t border-border/60 bg-muted/30 px-3 py-2 text-center text-[11px] text-muted-foreground">
+                Mostrando 300 de {filtered.length} chamados — refine os filtros para ver os demais.
+              </div>
+            )}
+          </div>
+        </GlassCard>
       </div>
     </PageShell>
+
   );
 }
 
