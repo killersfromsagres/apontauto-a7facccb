@@ -217,9 +217,40 @@ function PreventivaAcPage() {
             <Plus className="h-4 w-4" /> Novo registro PMOC
           </h3>
 
-          <Section title="Identificação do equipamento">
+          <Section title="Essenciais de campo">
+            <p className="mb-3 text-xs text-muted-foreground">
+              Preencha primeiro o que o técnico precisa em campo. Os demais dados podem ser complementados depois.
+            </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <FieldText label="TAG *" value={form.tag} onChange={(v) => update("tag", v)} placeholder="Ex.: AC-B203-01" />
+              <FieldText label="Modelo do equipamento" value={form.modelo} onChange={(v) => update("modelo", v)} placeholder="Ex.: LG S4-Q12JA3AC" />
+              <FieldSelect
+                label="Fluido refrigerante"
+                value={form.fluido_refrigerante}
+                onChange={(v) => update("fluido_refrigerante", v)}
+                options={FLUIDOS as unknown as string[]}
+              />
+              <FieldText label="Quantidade / carga de fluido" value={form.quantidade_fluido} onChange={(v) => update("quantidade_fluido", v)} placeholder="Ex.: 1,2 kg" />
+              <FieldSelect
+                label="Status do equipamento"
+                value={form.status_equipamento}
+                onChange={(v) => update("status_equipamento", v)}
+                options={STATUS_EQUIPAMENTO as unknown as string[]}
+              />
+              <FieldText label="Local / Ambiente" value={form.ambiente} onChange={(v) => update("ambiente", v)} placeholder="Onde o equipamento está" />
+              <FieldText label="Data manutenção" type="date" value={form.data_manutencao} onChange={(v) => update("data_manutencao", v)} />
+              <FieldSelect
+                label="Tipo de serviço"
+                value={form.tipo_servico}
+                onChange={(v) => update("tipo_servico", v)}
+                options={TIPOS_SERVICO as unknown as string[]}
+              />
+              <FieldText label="Técnico responsável" value={form.responsavel_tecnico} onChange={(v) => update("responsavel_tecnico", v)} placeholder="Nome + CREA" />
+            </div>
+          </Section>
+
+          <Section title="Identificação do equipamento">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <FieldSelect
                 label="Tipo"
                 value={form.tipo_equipamento}
@@ -227,19 +258,11 @@ function PreventivaAcPage() {
                 options={TIPOS_EQUIPAMENTO as unknown as string[]}
               />
               <FieldText label="Marca" value={form.marca} onChange={(v) => update("marca", v)} placeholder="Ex.: LG, Daikin, Carrier" />
-              <FieldText label="Modelo" value={form.modelo} onChange={(v) => update("modelo", v)} />
               <FieldText label="Nº Série" value={form.numero_serie} onChange={(v) => update("numero_serie", v)} />
               <FieldText label="Capacidade (BTU/h)" value={form.capacidade_btu} onChange={(v) => update("capacidade_btu", v)} placeholder="Ex.: 12000" />
-              <FieldSelect
-                label="Fluido refrigerante"
-                value={form.fluido_refrigerante}
-                onChange={(v) => update("fluido_refrigerante", v)}
-                options={FLUIDOS as unknown as string[]}
-              />
               <FieldText label="Ano fabricação" value={form.ano_fabricacao} onChange={(v) => update("ano_fabricacao", v)} placeholder="Ex.: 2022" />
               <FieldText label="Data instalação" type="date" value={form.data_instalacao} onChange={(v) => update("data_instalacao", v)} />
               <FieldText label="Fabricante" value={form.fabricante} onChange={(v) => update("fabricante", v)} />
-              <FieldText label="Responsável técnico" value={form.responsavel_tecnico} onChange={(v) => update("responsavel_tecnico", v)} placeholder="Nome + CREA" />
             </div>
           </Section>
 
