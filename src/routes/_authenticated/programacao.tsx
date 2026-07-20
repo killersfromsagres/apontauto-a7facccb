@@ -42,10 +42,10 @@ const SLOTS: SlotDef[] = [
   {
     id: "CCH",
     label: "CIVIL / CHAVEIRO / HIDRÁULICA",
-    hint: "30 min/OS · até 16/dia (8h por técnico).",
+    hint: "Base 01:00/OS · +00:30 por incremento (alerta).",
     color: EQUIPE_COLOR.CIVIL,
     equipes: ["CHAVEIRO", "CIVIL", "HIDRÁULICA"],
-    minutosPorOS: 30,
+    minutosPorOS: 60,
   },
   {
     id: "REFRIG",
@@ -124,6 +124,25 @@ function ProgramacaoPage() {
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
+  // Incrementos de 00:30 por OS (média) — planejamento de tempo extra.
+  const [incrementos, setIncrementos] = useState<Record<SlotId, number>>({
+    CCH: 0,
+    REFRIG: 0,
+    ELETRICA: 0,
+  });
+
+  const setIncremento = useCallback((slot: SlotId, delta: number) => {
+    setIncrementos((prev) => {
+      const next = Math.max(0, (prev[slot] ?? 0) + delta);
+      if (delta > 0 && next > 0) {
+        toast.warning(
+          `Tempo adicional registrado — +00:30 por OS (${next}× incremento) em ${slot}.`,
+          { description: "O tempo base de 01:00 foi excedido." },
+        );
+      }
+      return { ...prev, [slot]: next };
+    });
+  }, []);
 
   const setSlot = useCallback((slot: SlotId, file: File | null) => {
     if (file && !file.name.toLowerCase().endsWith(".xlsx")) {
@@ -166,6 +185,8 @@ function ProgramacaoPage() {
         // Distribui cada equipe do slot balanceando por dias úteis do mês,
         // com sequenciamento por prédio → andar (minimiza deslocamento).
         const now = new Date();
+        const incr = incrementos[slot.id] ?? 0;
+        const minEffective = slot.minutosPorOS + 30 * incr;
         const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
@@ -174,7 +195,7 @@ function ProgramacaoPage() {
               eq,
               distributeAcrossMonth(osEq, semanas, {
                 from: now,
-                minutosPorOS: slot.minutosPorOS,
+                minutosPorOS: minEffective,
               }),
             );
           }
@@ -299,6 +320,8 @@ function ProgramacaoPage() {
                   slot={slot}
                   file={slotFiles[slot.id]}
                   onChange={(f) => setSlot(slot.id, f)}
+                  incremento={incrementos[slot.id]}
+                  onIncrementoChange={(d) => setIncremento(slot.id, d)}
                 />
               ))}
             </div>
@@ -404,10 +427,19 @@ interface SlotUploadProps {
   slot: SlotDef;
   file: File | null;
   onChange: (file: File | null) => void;
+  incremento: number;
+  onIncrementoChange: (delta: number) => void;
 }
 
-function SlotUpload({ slot, file, onChange }: SlotUploadProps) {
+function SlotUpload({ slot, file, onChange, incremento, onIncrementoChange }: SlotUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const baseH = Math.floor(slot.minutosPorOS / 60);
+  const baseM = slot.minutosPorOS % 60;
+  const totalMin = slot.minutosPorOS + 30 * incremento;
+  const tH = Math.floor(totalMin / 60);
+  const tM = totalMin % 60;
+  const fmt = (h: number, m: number) =>
+    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
   return (
     <div
@@ -424,6 +456,48 @@ function SlotUpload({ slot, file, onChange }: SlotUploadProps) {
           <p className="truncate text-[10px] text-muted-foreground">{slot.hint}</p>
         </div>
       </div>
+
+      <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/50 px-2 py-1.5 text-[11px]">
+        <div className="flex flex-col leading-tight">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Tempo/OS
+          </span>
+          <span className="font-mono">
+            {fmt(baseH, baseM)}
+            {incremento > 0 && (
+              <span className="ml-1 text-amber-500">
+                +{incremento}×00:30 = {fmt(tH, tM)}
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onIncrementoChange(-1)}
+            disabled={incremento === 0}
+            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40 disabled:opacity-40"
+            aria-label="Remover incremento"
+          >
+            −
+          </button>
+          <span className="w-5 text-center font-mono tabular-nums">{incremento}</span>
+          <button
+            type="button"
+            onClick={() => onIncrementoChange(+1)}
+            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40"
+            aria-label="Adicionar incremento de 00:30"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      {incremento > 0 && (
+        <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3 w-3" />
+          Tempo base excedido — {incremento}× 00:30 adicionado.
+        </div>
+      )}
 
       {file ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/60 px-2 py-1.5 text-[11px]">
