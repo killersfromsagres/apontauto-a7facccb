@@ -53,6 +53,14 @@ async function sendOne(item: OutboxItem): Promise<void> {
     if (error) throw error;
     return;
   }
+  if (item.kind === "status") {
+    const { error } = await supabase
+      .from("refrigeracao_os")
+      .update({ status: item.payload.status ?? "concluida", fim: item.payload.fim ?? new Date().toISOString() })
+      .eq("id", item.osId);
+    if (error) throw error;
+    return;
+  }
   if (item.kind === "foto") {
     const blobKey: string | undefined = item.payload.blobKey;
     if (!blobKey) throw new Error("Foto sem blob");

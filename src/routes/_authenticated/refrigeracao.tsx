@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Snowflake,
   Save,
+  ArrowLeft,
+  Download,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -435,6 +437,17 @@ function OsDetail({
       toast.warning("Nada para salvar. Adicione foto, peça ou problema.");
       return;
     }
+    // Marca a OS como Concluída ao enviar
+    const nowIso = new Date().toISOString();
+    items.push({
+      id: uuid(),
+      kind: "status",
+      osId: os.id,
+      numeroOs: os.numero_os,
+      payload: { status: "concluida", fim: nowIso },
+      createdAt: Date.now(),
+      attempts: 0,
+    });
     setSaving(true);
     try {
       for (const it of items) await outboxAdd(it);
@@ -442,11 +455,12 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
+      onPatchLocal({ status: "concluida", fim: nowIso });
 
       onQueued();
       toast.success(
         online
-          ? "Salvo. Enviando ao servidor…"
+          ? "OS concluída. Enviando ao servidor…"
           : "Salvo offline. Enviaremos assim que houver internet.",
       );
       if (online) {
@@ -461,8 +475,29 @@ function OsDetail({
     }
   };
 
+  const hasUnsaved =
+    previews.length > 0 ||
+    pecas.some((p) => p.descricao.trim()) ||
+    problemas.some((p) => p.descricao.trim());
+
+  const handleBack = () => {
+    if (hasUnsaved && !confirm("Você tem alterações não enviadas. Sair mesmo assim?")) return;
+    previews.forEach((p) => URL.revokeObjectURL(p.url));
+    onBack();
+  };
+
   return (
     <div className="space-y-4">
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={handleBack}
+        className="h-12 w-full justify-start gap-2 text-base font-semibold sm:w-auto"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        Voltar à lista
+      </Button>
+
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -474,9 +509,7 @@ function OsDetail({
               <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            ← Voltar à lista
-          </Button>
+          <Badge variant="outline" className="text-[10px]">{os.status}</Badge>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <ReadOnly label="Ativo" value={os.ativo} />
@@ -541,19 +574,30 @@ function OsDetail({
         </div>
         {previews.length > 0 && (
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-            {previews.map((p) => (
+            {previews.map((p, idx) => (
               <div
                 key={p.id}
                 className="group relative aspect-square overflow-hidden rounded-md border"
               >
                 <img src={p.url} className="h-full w-full object-cover" alt="preview" />
-                <button
-                  type="button"
-                  onClick={() => removePreview(p.id)}
-                  className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 transition group-hover:opacity-100"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                <div className="absolute right-1 top-1 flex gap-1">
+                  <a
+                    href={p.url}
+                    download={`OS-${os.numero_os}-foto-${idx + 1}.jpg`}
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-black/80"
+                    aria-label="Baixar foto"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => removePreview(p.id)}
+                    className="rounded-full bg-black/60 p-1 text-white transition hover:bg-red-600"
+                    aria-label="Remover foto"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

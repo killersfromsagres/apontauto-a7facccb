@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as QrViewRouteImport } from './routes/qr-view'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -20,8 +21,10 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
+import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
+import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
 import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
@@ -49,6 +52,11 @@ const SobreRoute = SobreRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrViewRoute = QrViewRouteImport.update({
+  id: '/qr-view',
+  path: '/qr-view',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
@@ -91,6 +99,12 @@ const AuthenticatedSegurancaTrabalhoRoute =
     path: '/seguranca-trabalho',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRefrigeracaoHistoricoRoute =
+  AuthenticatedRefrigeracaoHistoricoRouteImport.update({
+    id: '/refrigeracao-historico',
+    path: '/refrigeracao-historico',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRefrigeracaoGestorRoute =
   AuthenticatedRefrigeracaoGestorRouteImport.update({
     id: '/refrigeracao-gestor',
@@ -103,6 +117,11 @@ const AuthenticatedRefrigeracaoRoute =
     path: '/refrigeracao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedQrCodesRoute = AuthenticatedQrCodesRouteImport.update({
+  id: '/qr-codes',
+  path: '/qr-codes',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedProgramacaoTaludesRoute =
   AuthenticatedProgramacaoTaludesRouteImport.update({
     id: '/programacao-taludes',
@@ -179,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
@@ -193,8 +213,10 @@ export interface FileRoutesByFullPath {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
+  '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -205,6 +227,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
@@ -219,8 +242,10 @@ export interface FileRoutesByTo {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
+  '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -234,6 +259,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
+  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
@@ -248,8 +274,10 @@ export interface FileRoutesById {
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
+  '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
+  '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -264,6 +292,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
+    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
@@ -278,8 +307,10 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
+    | '/qr-codes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
+    | '/refrigeracao-historico'
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
@@ -290,6 +321,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
+    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
@@ -304,8 +336,10 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
+    | '/qr-codes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
+    | '/refrigeracao-historico'
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
@@ -318,6 +352,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
+    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
@@ -332,8 +367,10 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva'
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-taludes'
+    | '/_authenticated/qr-codes'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
+    | '/_authenticated/refrigeracao-historico'
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
@@ -347,6 +384,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
+  QrViewRoute: typeof QrViewRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
@@ -375,6 +413,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr-view': {
+      id: '/qr-view'
+      path: '/qr-view'
+      fullPath: '/qr-view'
+      preLoaderRoute: typeof QrViewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacidade': {
@@ -433,6 +478,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSegurancaTrabalhoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/refrigeracao-historico': {
+      id: '/_authenticated/refrigeracao-historico'
+      path: '/refrigeracao-historico'
+      fullPath: '/refrigeracao-historico'
+      preLoaderRoute: typeof AuthenticatedRefrigeracaoHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/refrigeracao-gestor': {
       id: '/_authenticated/refrigeracao-gestor'
       path: '/refrigeracao-gestor'
@@ -445,6 +497,13 @@ declare module '@tanstack/react-router' {
       path: '/refrigeracao'
       fullPath: '/refrigeracao'
       preLoaderRoute: typeof AuthenticatedRefrigeracaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/qr-codes': {
+      id: '/_authenticated/qr-codes'
+      path: '/qr-codes'
+      fullPath: '/qr-codes'
+      preLoaderRoute: typeof AuthenticatedQrCodesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/programacao-taludes': {
@@ -553,8 +612,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
+  AuthenticatedQrCodesRoute: typeof AuthenticatedQrCodesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
+  AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -573,8 +634,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
+  AuthenticatedQrCodesRoute: AuthenticatedQrCodesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
+  AuthenticatedRefrigeracaoHistoricoRoute:
+    AuthenticatedRefrigeracaoHistoricoRoute,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
@@ -589,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,
   PrivacidadeRoute: PrivacidadeRoute,
+  QrViewRoute: QrViewRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,

@@ -4,7 +4,7 @@
 const DB_NAME = "refrigeracao-offline";
 const DB_VERSION = 2;
 
-export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio";
+export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio" | "status";
 
 export type OutboxItem = {
   id: string;
