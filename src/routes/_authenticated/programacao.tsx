@@ -427,10 +427,19 @@ interface SlotUploadProps {
   slot: SlotDef;
   file: File | null;
   onChange: (file: File | null) => void;
+  incremento: number;
+  onIncrementoChange: (delta: number) => void;
 }
 
-function SlotUpload({ slot, file, onChange }: SlotUploadProps) {
+function SlotUpload({ slot, file, onChange, incremento, onIncrementoChange }: SlotUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const baseH = Math.floor(slot.minutosPorOS / 60);
+  const baseM = slot.minutosPorOS % 60;
+  const totalMin = slot.minutosPorOS + 30 * incremento;
+  const tH = Math.floor(totalMin / 60);
+  const tM = totalMin % 60;
+  const fmt = (h: number, m: number) =>
+    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 
   return (
     <div
@@ -447,6 +456,48 @@ function SlotUpload({ slot, file, onChange }: SlotUploadProps) {
           <p className="truncate text-[10px] text-muted-foreground">{slot.hint}</p>
         </div>
       </div>
+
+      <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/50 px-2 py-1.5 text-[11px]">
+        <div className="flex flex-col leading-tight">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Tempo/OS
+          </span>
+          <span className="font-mono">
+            {fmt(baseH, baseM)}
+            {incremento > 0 && (
+              <span className="ml-1 text-amber-500">
+                +{incremento}×00:30 = {fmt(tH, tM)}
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onIncrementoChange(-1)}
+            disabled={incremento === 0}
+            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40 disabled:opacity-40"
+            aria-label="Remover incremento"
+          >
+            −
+          </button>
+          <span className="w-5 text-center font-mono tabular-nums">{incremento}</span>
+          <button
+            type="button"
+            onClick={() => onIncrementoChange(+1)}
+            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40"
+            aria-label="Adicionar incremento de 00:30"
+          >
+            +
+          </button>
+        </div>
+      </div>
+      {incremento > 0 && (
+        <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="h-3 w-3" />
+          Tempo base excedido — {incremento}× 00:30 adicionado.
+        </div>
+      )}
 
       {file ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/60 px-2 py-1.5 text-[11px]">
