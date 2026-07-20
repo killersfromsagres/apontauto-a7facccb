@@ -129,6 +129,7 @@ function TaludesPage() {
 
   const [auditing, setAuditing] = useState(false);
   const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
+  const [autoMarkOpen, setAutoMarkOpen] = useState(false);
 
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
