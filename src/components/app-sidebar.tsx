@@ -15,6 +15,8 @@ import {
   CloudSun,
   Snowflake,
   ClipboardList,
+  History,
+  QrCode,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -111,7 +113,17 @@ const sections: MenuSection[] = [
     icon: Snowflake,
     items: [
       { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Snowflake },
+      { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: History },
       { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: ClipboardList },
+    ],
+  },
+  {
+    kind: "group",
+    key: "ativos-grp",
+    title: "Ativos",
+    icon: QrCode,
+    items: [
+      { key: "qr-codes", title: "QR-Codes", url: "/qr-codes", icon: QrCode },
     ],
   },
   {
