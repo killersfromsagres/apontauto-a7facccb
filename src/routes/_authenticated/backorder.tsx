@@ -1115,6 +1115,14 @@ function BackorderPage() {
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" /> Importar Backorder
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setClearOpen(true)}
+            disabled={importing || clearing || rows.length === 0}
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Eraser className="mr-2 h-4 w-4" /> Limpar Tudo
+          </Button>
           <Button variant="outline" onClick={handleReprocessarChamados} disabled={importing}>
             <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
           </Button>
