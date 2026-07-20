@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as QrViewRouteImport } from './routes/qr-view'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -24,7 +23,6 @@ import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_au
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
-import { Route as AuthenticatedQrCodesRouteImport } from './routes/_authenticated/qr-codes'
 import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
@@ -35,7 +33,6 @@ import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
-import { Route as AuthenticatedAtivoHistoricoRouteImport } from './routes/_authenticated/ativo-historico'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -53,11 +50,6 @@ const SobreRoute = SobreRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const QrViewRoute = QrViewRouteImport.update({
-  id: '/qr-view',
-  path: '/qr-view',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
@@ -118,11 +110,6 @@ const AuthenticatedRefrigeracaoRoute =
     path: '/refrigeracao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedQrCodesRoute = AuthenticatedQrCodesRouteImport.update({
-  id: '/qr-codes',
-  path: '/qr-codes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedProgramacaoTaludesRoute =
   AuthenticatedProgramacaoTaludesRouteImport.update({
     id: '/programacao-taludes',
@@ -177,12 +164,6 @@ const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
   path: '/backorder',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAtivoHistoricoRoute =
-  AuthenticatedAtivoHistoricoRouteImport.update({
-    id: '/ativo-historico',
-    path: '/ativo-historico',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedApontamentosRoute =
   AuthenticatedApontamentosRouteImport.update({
     id: '/apontamentos',
@@ -205,12 +186,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/ativo-historico': typeof AuthenticatedAtivoHistoricoRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -221,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
-  '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -235,12 +213,10 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/ativo-historico': typeof AuthenticatedAtivoHistoricoRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -251,7 +227,6 @@ export interface FileRoutesByTo {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
-  '/qr-codes': typeof AuthenticatedQrCodesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -268,12 +243,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
-  '/qr-view': typeof QrViewRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
-  '/_authenticated/ativo-historico': typeof AuthenticatedAtivoHistoricoRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
@@ -284,7 +257,6 @@ export interface FileRoutesById {
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
-  '/_authenticated/qr-codes': typeof AuthenticatedQrCodesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -302,12 +274,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
-    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/apontamentos'
-    | '/ativo-historico'
     | '/backorder'
     | '/clima-tempo'
     | '/configuracoes'
@@ -318,7 +288,6 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
-    | '/qr-codes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -332,12 +301,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
-    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/apontamentos'
-    | '/ativo-historico'
     | '/backorder'
     | '/clima-tempo'
     | '/configuracoes'
@@ -348,7 +315,6 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/programacao'
     | '/programacao-taludes'
-    | '/qr-codes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -364,12 +330,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contato'
     | '/privacidade'
-    | '/qr-view'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
     | '/_authenticated/apontamentos'
-    | '/_authenticated/ativo-historico'
     | '/_authenticated/backorder'
     | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
@@ -380,7 +344,6 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva'
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-taludes'
-    | '/_authenticated/qr-codes'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
@@ -397,7 +360,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
-  QrViewRoute: typeof QrViewRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
@@ -426,13 +388,6 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/qr-view': {
-      id: '/qr-view'
-      path: '/qr-view'
-      fullPath: '/qr-view'
-      preLoaderRoute: typeof QrViewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacidade': {
@@ -512,13 +467,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRefrigeracaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/qr-codes': {
-      id: '/_authenticated/qr-codes'
-      path: '/qr-codes'
-      fullPath: '/qr-codes'
-      preLoaderRoute: typeof AuthenticatedQrCodesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/programacao-taludes': {
       id: '/_authenticated/programacao-taludes'
       path: '/programacao-taludes'
@@ -589,13 +537,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBackorderRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/ativo-historico': {
-      id: '/_authenticated/ativo-historico'
-      path: '/ativo-historico'
-      fullPath: '/ativo-historico'
-      preLoaderRoute: typeof AuthenticatedAtivoHistoricoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/apontamentos': {
       id: '/_authenticated/apontamentos'
       path: '/apontamentos'
@@ -622,7 +563,6 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
-  AuthenticatedAtivoHistoricoRoute: typeof AuthenticatedAtivoHistoricoRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
@@ -633,7 +573,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
-  AuthenticatedQrCodesRoute: typeof AuthenticatedQrCodesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -645,7 +584,6 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
-  AuthenticatedAtivoHistoricoRoute: AuthenticatedAtivoHistoricoRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
@@ -656,7 +594,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
-  AuthenticatedQrCodesRoute: AuthenticatedQrCodesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:
@@ -675,7 +612,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,
   PrivacidadeRoute: PrivacidadeRoute,
-  QrViewRoute: QrViewRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,

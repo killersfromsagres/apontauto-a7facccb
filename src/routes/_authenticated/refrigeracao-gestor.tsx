@@ -440,36 +440,6 @@ function OsTable({
                 </Td>
                 <Td className="text-right">
                   <div className="flex items-center justify-end gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Gerar QR-Code do ativo (histórico de refrigeração)"
-                      onClick={async () => {
-                        try {
-                          const png = await generateAtivoQrPng({
-                            ativo: o.ativo,
-                            equipamento: o.equipamento,
-                            patrimonio: o.patrimonio,
-                          });
-                          printAtivoQr(png, {
-                            ativo: o.ativo,
-                            equipamento: o.equipamento,
-                            patrimonio: o.patrimonio,
-                          });
-                          toast.success("QR-Code gerado.", {
-                            description: buildAtivoHistoricoUrl({
-                              ativo: o.ativo,
-                              equipamento: o.equipamento,
-                              patrimonio: o.patrimonio,
-                            }),
-                          });
-                        } catch (e: any) {
-                          toast.error(e?.message ?? "Falha ao gerar QR-Code");
-                        }
-                      }}
-                    >
-                      <QrCode className="h-4 w-4 text-primary" />
-                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => removeOs(o.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
