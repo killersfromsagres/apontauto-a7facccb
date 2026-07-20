@@ -781,6 +781,15 @@ function TaludesPage() {
           )}
           <Button
             variant="outline"
+            onClick={() => setAutoMarkOpen(true)}
+            disabled={!map}
+            title="Detectar áreas em uma imagem anotada e criar os taludes automaticamente"
+          >
+            <Wand2 className="mr-2 h-4 w-4" />
+            Auto‑marcar
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => runAudit(false)}
             disabled={!map || auditing}
             title="Verificar e reparar inconsistências"
