@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Download, FileSpreadsheet, Upload, X } from "lucide-react";
+import { AlertTriangle, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -22,6 +22,13 @@ import { distributeAcrossMonth, weeksUntilEndOfMonth, type WeekBucket } from "@/
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
+import {
+  clearHistorico,
+  deleteHistorico,
+  listHistorico,
+  saveHistorico,
+  type HistoricoItem,
+} from "@/lib/preventiva/history";
 
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
