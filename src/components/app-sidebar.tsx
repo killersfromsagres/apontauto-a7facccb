@@ -1,26 +1,34 @@
 import { memo, useMemo, useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Gauge,
+  CalendarRange,
+  CalendarDays,
   CalendarClock,
-  Wrench,
-  ShieldCheck,
-  ClipboardCheck,
-  Settings,
-  LayoutDashboard,
-  Mountain,
-  MountainSnow,
-  PackageX,
-  Shirt,
+  Hammer,
+  Map,
+  PenLine,
+  ShieldAlert,
   HardHat,
+  WashingMachine,
+  Shirt,
+  Factory,
+  ChartColumn,
+  PackageOpen,
   CloudSun,
+  CloudRainWind,
+  Scale,
   Snowflake,
-  ClipboardList,
-  History,
-  Wind,
-  BarChart3,
+  Thermometer,
+  ScrollText,
+  Users,
+  Fan,
+  AirVent,
+  Cog,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -62,26 +70,26 @@ type MenuSection =
 const sections: MenuSection[] = [
   {
     kind: "item",
-    item: { key: "dashboard", title: "Dashboard", url: "/", icon: LayoutDashboard },
+    item: { key: "dashboard", title: "Dashboard", url: "/", icon: Gauge },
   },
   {
     kind: "group",
     key: "programacao-grp",
     title: "Programação",
-    icon: CalendarClock,
+    icon: CalendarRange,
     items: [
-      { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarClock },
+      { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarDays },
       { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
-      { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Wrench },
-      { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Mountain },
-      { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: ClipboardCheck },
+      { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Hammer },
+      { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Map },
+      { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
     ],
   },
   {
     kind: "group",
     key: "seguranca-grp",
     title: "Segurança do Trabalho",
-    icon: HardHat,
+    icon: ShieldAlert,
     items: [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
     ],
@@ -92,20 +100,20 @@ const sections: MenuSection[] = [
     title: "Rouparia",
     icon: Shirt,
     items: [
-      { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: Shirt },
+      { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: WashingMachine },
     ],
   },
   {
     kind: "group",
     key: "operacao-grp",
     title: "Operação",
-    icon: PackageX,
+    icon: Factory,
     items: [
-      { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: BarChart3 },
-      { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
+      { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: ChartColumn },
+      { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageOpen },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
-      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
-      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: ShieldCheck },
+      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: CloudRainWind },
+      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: Scale },
     ],
   },
   {
@@ -114,25 +122,26 @@ const sections: MenuSection[] = [
     title: "Refrigeração",
     icon: Snowflake,
     items: [
-      { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Snowflake },
-      { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: History },
-      { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: ClipboardList },
+      { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Thermometer },
+      { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: ScrollText },
+      { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: Users },
     ],
   },
   {
     kind: "group",
     key: "preventiva-ac-grp",
     title: "Preventiva AC",
-    icon: Wind,
+    icon: Fan,
     items: [
-      { key: "preventiva-ac", title: "Cadastro PMOC", url: "/preventiva-ac", icon: Wind },
+      { key: "preventiva-ac", title: "Cadastro PMOC", url: "/preventiva-ac", icon: AirVent },
     ],
   },
   {
     kind: "item",
-    item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Settings },
+    item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Cog },
   },
 ];
+
 
 export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
