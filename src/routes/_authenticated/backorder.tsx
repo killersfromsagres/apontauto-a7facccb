@@ -1100,6 +1100,31 @@ function BackorderPage() {
     [selectedBackorder, rows],
   );
 
+  const handleLimparTudo = useCallback(async () => {
+    setClearing(true);
+    const t = toast.loading("Limpando todos os chamados...");
+    try {
+      const { error } = await supabase
+        .from("backorder_os")
+        .delete()
+        .not("os", "is", null);
+      if (error) throw error;
+      setRows([]);
+      setSelectedBackorder(null);
+      setSearch("");
+      setFilterCat("__all__");
+      setOrder("asc");
+      setTab("tabela");
+      setClearOpen(false);
+      toast.success("Todos os chamados foram removidos.", { id: t });
+    } catch (e) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? "Falha ao limpar chamados", { id: t });
+    } finally {
+      setClearing(false);
+    }
+  }, []);
+
   return (
     <PageShell
       title="Backorder de Corretivas"
