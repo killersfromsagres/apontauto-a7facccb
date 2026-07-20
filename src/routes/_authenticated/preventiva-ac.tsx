@@ -193,7 +193,6 @@ function PreventivaAcPage() {
     <PageShell
       title="Preventiva AC (PMOC)"
       description="Cadastro de equipamentos de ar-condicionado ausentes no sistema principal e execução da manutenção preventiva conforme PMOC (Lei 13.589/2018). Ao salvar, uma planilha é gerada para o responsável importar no sistema interno."
-      icon={<Wind className="h-6 w-6" />}
       actions={
         <div className="flex gap-2">
           <Button variant="outline" onClick={exportAll}>
