@@ -440,7 +440,9 @@ export type Database = {
           observacoes: string | null
           ocupacao_max: number | null
           predio: string | null
+          quantidade_fluido: string | null
           responsavel_tecnico: string | null
+          status_equipamento: string | null
           tag: string
           tipo_equipamento: string | null
           tipo_servico: string | null
@@ -469,7 +471,9 @@ export type Database = {
           observacoes?: string | null
           ocupacao_max?: number | null
           predio?: string | null
+          quantidade_fluido?: string | null
           responsavel_tecnico?: string | null
+          status_equipamento?: string | null
           tag: string
           tipo_equipamento?: string | null
           tipo_servico?: string | null
@@ -498,7 +502,9 @@ export type Database = {
           observacoes?: string | null
           ocupacao_max?: number | null
           predio?: string | null
+          quantidade_fluido?: string | null
           responsavel_tecnico?: string | null
+          status_equipamento?: string | null
           tag?: string
           tipo_equipamento?: string | null
           tipo_servico?: string | null
