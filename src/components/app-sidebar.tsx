@@ -17,6 +17,7 @@ import {
   ClipboardList,
   History,
   Wind,
+  BarChart3,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -100,6 +101,7 @@ const sections: MenuSection[] = [
     title: "Operação",
     icon: PackageX,
     items: [
+      { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: BarChart3 },
       { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageX },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
       { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: MountainSnow },
