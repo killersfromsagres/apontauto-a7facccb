@@ -277,16 +277,9 @@ function PreventivaAcPage() {
             </div>
           </Section>
 
-          <Section title="Dados da manutenção">
+          <Section title="Execução">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <FieldText label="Data manutenção" type="date" value={form.data_manutencao} onChange={(v) => update("data_manutencao", v)} />
-              <FieldSelect
-                label="Tipo de serviço"
-                value={form.tipo_servico}
-                onChange={(v) => update("tipo_servico", v)}
-                options={TIPOS_SERVICO as unknown as string[]}
-              />
-              <FieldText label="Colaborador" value={form.colaborador} onChange={(v) => update("colaborador", v)} />
+              <FieldText label="Colaborador / equipe" value={form.colaborador} onChange={(v) => update("colaborador", v)} placeholder="Ex.: Refrigeração 2" />
             </div>
           </Section>
 
