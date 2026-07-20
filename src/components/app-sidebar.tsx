@@ -229,6 +229,10 @@ export const AppSidebar = memo(function AppSidebar() {
 });
 
 function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -237,7 +241,7 @@ function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
         tooltip={item.title}
         className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
       >
-        <Link to={item.url} preload="intent" className="flex items-center gap-3">
+        <Link to={item.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-3">
           {active && (
             <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
           )}
