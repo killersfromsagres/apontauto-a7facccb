@@ -229,6 +229,10 @@ export const AppSidebar = memo(function AppSidebar() {
 });
 
 function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -237,7 +241,7 @@ function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
         tooltip={item.title}
         className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
       >
-        <Link to={item.url} preload="intent" className="flex items-center gap-3">
+        <Link to={item.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-3">
           {active && (
             <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
           )}
@@ -260,6 +264,10 @@ function GroupItem({
 }) {
   const hasActive = section.items.some((i) => isItemActive(i.url));
   const [open, setOpen] = useState(hasActive);
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   useEffect(() => {
     if (hasActive) setOpen(true);
@@ -278,7 +286,7 @@ function GroupItem({
           tooltip={section.title}
           className="h-10 rounded-lg data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
         >
-          <Link to={first.url} preload="intent" className="flex items-center gap-3">
+          <Link to={first.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-3">
             <section.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             <span className="truncate">{section.title}</span>
           </Link>
@@ -315,7 +323,7 @@ function GroupItem({
                     isActive={active}
                     className="group/subitem relative h-9 rounded-md transition-all data-[active=true]:bg-primary/15 data-[active=true]:text-foreground"
                   >
-                    <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
+                    <Link to={item.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-2.5">
                       {active && (
                         <span className="absolute -left-[1px] top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
                       )}
