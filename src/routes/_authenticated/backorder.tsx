@@ -170,6 +170,8 @@ function BackorderPage() {
   const [scanning, setScanning] = useState(false);
   const [config, setConfig] = useState<PriorityConfig>(DEFAULT_CONFIG);
   const [configOpen, setConfigOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
