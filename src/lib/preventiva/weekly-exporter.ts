@@ -120,21 +120,24 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       const dia = diaDeOS.get(os.os) ?? 0;
 
       let ativoValue = os.ativo;
+      let outrosValue: string = os.criticidade || "";
       let ativoNaoLocalizado = false;
       if (isClima) {
         const entry = lookupAtivoEntry(input.ativoIndex, os.predio, os.andar, os.local);
         const ativoFound = entry?.ativo || "";
         const equipFound = entry?.equipamento || "";
         const baseAtivo = ativoFound || ativoValue || "";
-        if (baseAtivo && equipFound && baseAtivo !== equipFound) {
-          ativoValue = `${baseAtivo} — ${equipFound}`;
-        } else if (baseAtivo) {
+        if (baseAtivo) {
           ativoValue = baseAtivo;
         } else if (equipFound) {
           ativoValue = equipFound;
-        } else if (!ativoValue) {
+        } else {
           ativoValue = "Ativo não localizado";
           ativoNaoLocalizado = true;
+        }
+        // Equipamento de climatização vai para a coluna "Outros"
+        if (equipFound && equipFound !== ativoValue) {
+          outrosValue = outrosValue ? `${equipFound} · ${outrosValue}` : equipFound;
         }
       }
 
@@ -148,7 +151,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
         sla: formatSLA(os.terminoSLA),
         equipe,
         ativo: ativoValue,
-        outros: os.criticidade || "",
+        outros: outrosValue,
         seg: dia === 0 ? 1 : "",
         ter: dia === 1 ? 1 : "",
         qua: dia === 2 ? 1 : "",

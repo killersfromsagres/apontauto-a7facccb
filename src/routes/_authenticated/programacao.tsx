@@ -131,11 +131,11 @@ function ProgramacaoPage() {
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
-  // Incrementos de 00:30 por OS (média) — planejamento de tempo extra.
-  const [incrementos, setIncrementos] = useState<Record<SlotId, number>>({
-    CCH: 0,
-    REFRIG: 0,
-    ELETRICA: 0,
+  // Tempo por OS (minutos). Intervalo permitido: 30 (00:30) ou 60 (01:00).
+  const [tempoPorOS, setTempoPorOS] = useState<Record<SlotId, 30 | 60>>({
+    CCH: 60,
+    REFRIG: 60,
+    ELETRICA: 30,
   });
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
 
@@ -151,16 +151,10 @@ function ProgramacaoPage() {
     void reloadHistorico();
   }, [reloadHistorico]);
 
-  const setIncremento = useCallback((slot: SlotId, delta: number) => {
-    setIncrementos((prev) => {
-      const next = Math.max(0, (prev[slot] ?? 0) + delta);
-      if (delta > 0 && next > 0) {
-        toast.warning(
-          `Tempo adicional registrado — +00:30 por OS (${next}× incremento) em ${slot}.`,
-          { description: "O tempo base de 01:00 foi excedido." },
-        );
-      }
-      return { ...prev, [slot]: next };
+  const setTempo = useCallback((slot: SlotId, minutos: 30 | 60) => {
+    setTempoPorOS((prev) => {
+      if (prev[slot] === minutos) return prev;
+      return { ...prev, [slot]: minutos };
     });
   }, []);
 
@@ -205,8 +199,7 @@ function ProgramacaoPage() {
         // Distribui cada equipe do slot balanceando por dias úteis do mês,
         // com sequenciamento por prédio → andar (minimiza deslocamento).
         const now = new Date();
-        const incr = incrementos[slot.id] ?? 0;
-        const minEffective = slot.minutosPorOS + 30 * incr;
+        const minEffective = tempoPorOS[slot.id] ?? slot.minutosPorOS;
         const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
@@ -357,8 +350,8 @@ function ProgramacaoPage() {
                   slot={slot}
                   file={slotFiles[slot.id]}
                   onChange={(f) => setSlot(slot.id, f)}
-                  incremento={incrementos[slot.id]}
-                  onIncrementoChange={(d) => setIncremento(slot.id, d)}
+                  minutos={tempoPorOS[slot.id]}
+                  onMinutosChange={(m) => setTempo(slot.id, m)}
                 />
               ))}
             </div>
@@ -566,19 +559,13 @@ interface SlotUploadProps {
   slot: SlotDef;
   file: File | null;
   onChange: (file: File | null) => void;
-  incremento: number;
-  onIncrementoChange: (delta: number) => void;
+  minutos: 30 | 60;
+  onMinutosChange: (minutos: 30 | 60) => void;
 }
 
-function SlotUpload({ slot, file, onChange, incremento, onIncrementoChange }: SlotUploadProps) {
+function SlotUpload({ slot, file, onChange, minutos, onMinutosChange }: SlotUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const baseH = Math.floor(slot.minutosPorOS / 60);
-  const baseM = slot.minutosPorOS % 60;
-  const totalMin = slot.minutosPorOS + 30 * incremento;
-  const tH = Math.floor(totalMin / 60);
-  const tM = totalMin % 60;
-  const fmt = (h: number, m: number) =>
-    `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  const fmt = (m: number) => (m === 60 ? "01:00" : "00:30");
 
   return (
     <div
@@ -601,42 +588,42 @@ function SlotUpload({ slot, file, onChange, incremento, onIncrementoChange }: Sl
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Tempo/OS
           </span>
-          <span className="font-mono">
-            {fmt(baseH, baseM)}
-            {incremento > 0 && (
-              <span className="ml-1 text-amber-500">
-                +{incremento}×00:30 = {fmt(tH, tM)}
-              </span>
-            )}
-          </span>
+          <span className="font-mono">{fmt(minutos)}</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="inline-flex overflow-hidden rounded-md border border-border/60">
           <button
             type="button"
-            onClick={() => onIncrementoChange(-1)}
-            disabled={incremento === 0}
-            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40 disabled:opacity-40"
-            aria-label="Remover incremento"
+            onClick={() => onMinutosChange(30)}
+            className={`px-2 py-1 text-[11px] font-mono transition-colors ${
+              minutos === 30
+                ? "bg-primary text-primary-foreground"
+                : "bg-background/60 text-muted-foreground hover:bg-accent/40"
+            }`}
+            aria-pressed={minutos === 30}
           >
-            −
+            00:30
           </button>
-          <span className="w-5 text-center font-mono tabular-nums">{incremento}</span>
           <button
             type="button"
-            onClick={() => onIncrementoChange(+1)}
-            className="h-6 w-6 rounded border border-border/60 text-xs hover:bg-accent/40"
-            aria-label="Adicionar incremento de 00:30"
+            onClick={() => onMinutosChange(60)}
+            className={`border-l border-border/60 px-2 py-1 text-[11px] font-mono transition-colors ${
+              minutos === 60
+                ? "bg-primary text-primary-foreground"
+                : "bg-background/60 text-muted-foreground hover:bg-accent/40"
+            }`}
+            aria-pressed={minutos === 60}
           >
-            +
+            01:00
           </button>
         </div>
       </div>
-      {incremento > 0 && (
+      {minutos !== slot.minutosPorOS && (
         <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-600 dark:text-amber-400">
           <AlertTriangle className="h-3 w-3" />
-          Tempo base excedido — {incremento}× 00:30 adicionado.
+          Tempo/OS ajustado (padrão {fmt(slot.minutosPorOS)}).
         </div>
       )}
+
 
       {file ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/60 px-2 py-1.5 text-[11px]">
