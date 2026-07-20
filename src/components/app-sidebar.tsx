@@ -323,7 +323,7 @@ function GroupItem({
                     isActive={active}
                     className="group/subitem relative h-9 rounded-md transition-all data-[active=true]:bg-primary/15 data-[active=true]:text-foreground"
                   >
-                    <Link to={item.url} preload="intent" className="flex items-center gap-2.5">
+                    <Link to={item.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-2.5">
                       {active && (
                         <span className="absolute -left-[1px] top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
                       )}
