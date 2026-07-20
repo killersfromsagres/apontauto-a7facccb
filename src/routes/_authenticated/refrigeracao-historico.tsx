@@ -48,7 +48,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("refrigeracao_os")
         .select("id, numero_os, nome_os, predio, andar, local, ativo, equipamento, patrimonio, status, fim, updated_at")
-        .eq("status", "Concluída")
+        .eq("status", "concluida")
         .order("fim", { ascending: false, nullsFirst: false })
         .limit(500);
       if (error) throw error;

@@ -444,7 +444,7 @@ function OsDetail({
       kind: "status",
       osId: os.id,
       numeroOs: os.numero_os,
-      payload: { status: "Concluída", fim: nowIso },
+      payload: { status: "concluida", fim: nowIso },
       createdAt: Date.now(),
       attempts: 0,
     });
@@ -455,7 +455,7 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
-      onPatchLocal({ status: "Concluída", fim: nowIso });
+      onPatchLocal({ status: "concluida", fim: nowIso });
 
       onQueued();
       toast.success(
