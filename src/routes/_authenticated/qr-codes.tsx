@@ -49,11 +49,11 @@ function QrCodesPage() {
     }
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const params = new URLSearchParams();
-    (Object.keys(form) as (keyof Form)[]).forEach((k) => {
-      const v = form[k].trim();
-      if (v) params.set(k, v);
-    });
-    const url = `${origin}/qr-view?${params.toString()}`;
+    if (form.ativo.trim()) params.set("ativo", form.ativo.trim());
+    if (form.equipamento.trim()) params.set("equipamento", form.equipamento.trim());
+    if (form.patrimonio.trim()) params.set("patrimonio", form.patrimonio.trim());
+    // QR sempre aponta para o histórico do ativo (foco em refrigeração).
+    const url = `${origin}/ativo-historico?${params.toString()}`;
     try {
       const png = await QRCode.toDataURL(url, {
         errorCorrectionLevel: "M",
