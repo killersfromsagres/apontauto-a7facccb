@@ -44,6 +44,13 @@ import {
 } from "@/lib/refrigeracao/db";
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
+import {
+  EQUIPES_REFRIGERACAO,
+  loadEquipe,
+  saveEquipe,
+  matchEquipe,
+  type EquipeFiltro,
+} from "@/lib/refrigeracao/equipe";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao")({
   component: RefrigeracaoPage,
@@ -81,6 +88,16 @@ function RefrigeracaoPage() {
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+
+  useEffect(() => {
+    setEquipe(loadEquipe());
+  }, []);
+
+  const setEquipeAndPersist = (v: EquipeFiltro) => {
+    setEquipe(v);
+    saveEquipe(v);
+  };
 
   const refreshPending = async () => setPending((await outboxAll()).length);
 
@@ -136,8 +153,9 @@ function RefrigeracaoPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return osList;
     return osList.filter((o) => {
+      if (!matchEquipe(o.equipe, equipe)) return false;
+      if (!q) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
@@ -148,7 +166,7 @@ function RefrigeracaoPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     });
-  }, [osList, search]);
+  }, [osList, search, equipe]);
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
@@ -178,15 +196,51 @@ function RefrigeracaoPage() {
     >
       {!selected ? (
         <GlassCard className="p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
-              className="h-11 text-base"
-            />
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2 sm:min-w-[240px]">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Minha equipe
+              </span>
+              <Select
+                value={equipe}
+                onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
+              >
+                <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as equipes</SelectItem>
+                  {EQUIPES_REFRIGERACAO.map((e) => (
+                    <SelectItem key={e} value={e}>
+                      {e}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-1 items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
+                className="h-11 text-base"
+              />
+            </div>
           </div>
+          {equipe !== "todas" && (
+            <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
+              <span>Mostrando apenas OS desta equipe.</span>
+              <button
+                type="button"
+                onClick={() => setEquipeAndPersist("todas")}
+                className="ml-auto text-primary underline-offset-2 hover:underline"
+              >
+                Ver todas
+              </button>
+            </div>
+          )}
           {loadingList ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
