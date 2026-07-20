@@ -1542,6 +1542,27 @@ function TaludesPage() {
           }
         }
       `}</style>
+      <AutoMarkDialog
+        open={autoMarkOpen}
+        onOpenChange={setAutoMarkOpen}
+        mapId={map?.id ?? null}
+        existingNumeros={taludes.map((t) => t.numero)}
+        onApply={async (items) => {
+          if (!map) return;
+          for (const it of items) {
+            await upsertFn({
+              data: {
+                map_id: map.id,
+                numero: it.numero,
+                polygon: it.polygon,
+                status: "programado",
+                data_programada: today(),
+              },
+            });
+          }
+          await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+        }}
+      />
     </PageShell>
   );
 }
