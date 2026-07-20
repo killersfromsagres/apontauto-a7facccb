@@ -80,7 +80,7 @@ const sections: MenuSection[] = [
     items: [
       { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarDays },
       { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
-      { key: "corretiva", title: "Programação Corretiva", url: "/corretiva", icon: Hammer },
+      
       { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Map },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
     ],
