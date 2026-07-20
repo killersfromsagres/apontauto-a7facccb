@@ -137,6 +137,19 @@ function ProgramacaoPage() {
     REFRIG: 0,
     ELETRICA: 0,
   });
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+
+  const reloadHistorico = useCallback(async () => {
+    try {
+      setHistorico(await listHistorico());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reloadHistorico();
+  }, [reloadHistorico]);
 
   const setIncremento = useCallback((slot: SlotId, delta: number) => {
     setIncrementos((prev) => {
