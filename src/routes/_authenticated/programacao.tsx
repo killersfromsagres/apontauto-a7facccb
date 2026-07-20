@@ -42,10 +42,10 @@ const SLOTS: SlotDef[] = [
   {
     id: "CCH",
     label: "CIVIL / CHAVEIRO / HIDRÁULICA",
-    hint: "30 min/OS · até 16/dia (8h por técnico).",
+    hint: "Base 01:00/OS · +00:30 por incremento (alerta).",
     color: EQUIPE_COLOR.CIVIL,
     equipes: ["CHAVEIRO", "CIVIL", "HIDRÁULICA"],
-    minutosPorOS: 30,
+    minutosPorOS: 60,
   },
   {
     id: "REFRIG",
