@@ -2445,6 +2445,8 @@ function PowerBIView() {
           title="Power BI — Demarchi"
           src={POWERBI_URL}
           className="h-full w-full"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
           allowFullScreen
         />
       </div>
