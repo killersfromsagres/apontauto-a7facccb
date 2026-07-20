@@ -416,6 +416,96 @@ export type Database = {
         }
         Relationships: []
       }
+      preventiva_ac_registros: {
+        Row: {
+          ambiente: string | null
+          andar: string | null
+          ano_fabricacao: number | null
+          area_climatizada: number | null
+          capacidade_btu: number | null
+          checklist: Json
+          colaborador: string | null
+          created_at: string
+          criado_por: string | null
+          data_instalacao: string | null
+          data_manutencao: string | null
+          fabricante: string | null
+          fluido_refrigerante: string | null
+          id: string
+          local: string | null
+          marca: string | null
+          medicoes: Json
+          modelo: string | null
+          numero_serie: string | null
+          observacoes: string | null
+          ocupacao_max: number | null
+          predio: string | null
+          responsavel_tecnico: string | null
+          tag: string
+          tipo_equipamento: string | null
+          tipo_servico: string | null
+          updated_at: string
+        }
+        Insert: {
+          ambiente?: string | null
+          andar?: string | null
+          ano_fabricacao?: number | null
+          area_climatizada?: number | null
+          capacidade_btu?: number | null
+          checklist?: Json
+          colaborador?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_instalacao?: string | null
+          data_manutencao?: string | null
+          fabricante?: string | null
+          fluido_refrigerante?: string | null
+          id?: string
+          local?: string | null
+          marca?: string | null
+          medicoes?: Json
+          modelo?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          ocupacao_max?: number | null
+          predio?: string | null
+          responsavel_tecnico?: string | null
+          tag: string
+          tipo_equipamento?: string | null
+          tipo_servico?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ambiente?: string | null
+          andar?: string | null
+          ano_fabricacao?: number | null
+          area_climatizada?: number | null
+          capacidade_btu?: number | null
+          checklist?: Json
+          colaborador?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_instalacao?: string | null
+          data_manutencao?: string | null
+          fabricante?: string | null
+          fluido_refrigerante?: string | null
+          id?: string
+          local?: string | null
+          marca?: string | null
+          medicoes?: Json
+          modelo?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          ocupacao_max?: number | null
+          predio?: string | null
+          responsavel_tecnico?: string | null
+          tag?: string
+          tipo_equipamento?: string | null
+          tipo_servico?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allowed_menus: string[] | null
