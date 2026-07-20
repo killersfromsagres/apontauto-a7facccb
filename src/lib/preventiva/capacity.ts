@@ -180,12 +180,15 @@ export interface DistributeResult {
 
 export interface DistributeOptions extends SliceOptions {
   from?: Date;
+  /** Data limite (inclusive) — padrão: último dia do mês de `from`. */
+  until?: Date;
 }
 
 /**
- * Distribui OS de UMA equipe de forma balanceada entre os DIAS ÚTEIS restantes
- * do mês (considerando feriados BR). Pré-ordena por Prédio→Andar para minimizar
- * deslocamento. Se `perDay` exceder a capacidade diária real, o excedente vira overflow.
+ * Distribui OS de UMA equipe de forma balanceada entre os DIAS ÚTEIS
+ * (considerando feriados BR) entre `from` e `until` (inclusive). Pré-ordena
+ * por Prédio→Andar para minimizar deslocamento. Se `perDay` exceder a
+ * capacidade diária real, o excedente vira overflow.
  */
 export function distributeAcrossMonth(
   os: TriagedOS[],
@@ -193,6 +196,7 @@ export function distributeAcrossMonth(
   opts: DistributeOptions = {},
 ): DistributeResult {
   const from = opts.from ?? new Date();
+  const until = opts.until ?? new Date(from.getFullYear(), from.getMonth() + 1, 0);
   const minPorOS = opts.minutosPorOS ?? DEFAULT_MINUTOS_POR_OS;
   const equipeSample = os[0]?.equipe as Equipe | undefined;
   const nTec = Math.max(
@@ -201,8 +205,9 @@ export function distributeAcrossMonth(
   );
   const capPerDay = Math.floor((MINUTOS_UTEIS_DIA * nTec) / minPorOS);
 
-  const businessDays = businessDaysUntilEndOfMonth(from);
+  const businessDays = businessDaysUntil(from, until);
   const businessDaysCount = Math.max(1, businessDays.length);
+
 
   const sorted = sortByLocation(os);
   const perDayIdeal = Math.max(1, Math.ceil(sorted.length / businessDaysCount));
