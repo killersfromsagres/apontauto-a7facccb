@@ -44,6 +44,13 @@ import {
 } from "@/lib/refrigeracao/db";
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
+import {
+  EQUIPES_REFRIGERACAO,
+  loadEquipe,
+  saveEquipe,
+  matchEquipe,
+  type EquipeFiltro,
+} from "@/lib/refrigeracao/equipe";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao")({
   component: RefrigeracaoPage,
