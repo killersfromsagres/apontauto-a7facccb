@@ -13,16 +13,21 @@
 import type { BackorderRow } from "./reader";
 
 const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
-const HEADER_BG_L1 = argb("#002060");
-const HEADER_BG_L2 = argb("#2B3095");
-const COL_WIDTH = 31.28;
+// Paleta moderna — navy escuro + azul de destaque + zebra suave.
+const TITLE_BG = argb("#0B1F4D");
+const HEADER_BG = argb("#1E3A8A");
+const HEADER_FG = argb("#FFFFFF");
+const ROW_ALT_BG = argb("#F1F5F9");
+const BORDER_SOFT = argb("#CBD5E1");
+const BORDER_STRONG = argb("#0B1F4D");
+const TAB_COLOR = argb("#1E3A8A");
 
 type ColKey =
   | "os"
   | "nome"
   | "predio"
   | "andar"
-  | "espaco"
+  | "ambiente"
   | "atividade"
   | "data"
   | "equipe"
@@ -32,24 +37,23 @@ interface ColDef {
   key: ColKey;
   label: string;
   width: number;
+  align?: "left" | "center";
 }
 
-// Ordem padrão de exportação — pode ser reordenada aqui sem impactar
-// a lógica de cálculo (cada campo é resolvido pelo seu key).
+// Larguras pensadas por tipo de conteúdo (evita colunas todas iguais).
 const COLUMN_ORDER: ColDef[] = [
-  { key: "os", label: "OS", width: COL_WIDTH },
-  { key: "nome", label: "Nome", width: COL_WIDTH },
-  { key: "predio", label: "Prédio", width: COL_WIDTH },
-  { key: "andar", label: "Andar", width: COL_WIDTH },
-  { key: "espaco", label: "Espaço", width: COL_WIDTH },
-  { key: "atividade", label: "Atividade", width: COL_WIDTH },
-  { key: "data", label: "Data", width: COL_WIDTH },
-  { key: "equipe", label: "Equipe", width: COL_WIDTH },
-  { key: "solicitante", label: "Solicitante", width: COL_WIDTH },
+  { key: "os", label: "OS", width: 12, align: "center" },
+  { key: "nome", label: "Nome", width: 46, align: "left" },
+  { key: "predio", label: "Prédio", width: 26, align: "left" },
+  { key: "andar", label: "Andar", width: 22, align: "left" },
+  { key: "ambiente", label: "Ambiente", width: 30, align: "left" },
+  { key: "atividade", label: "Atividade", width: 16, align: "center" },
+  { key: "data", label: "Data", width: 14, align: "center" },
+  { key: "equipe", label: "Equipe", width: 22, align: "center" },
+  { key: "solicitante", label: "Solicitante", width: 28, align: "left" },
 ];
 
 function colLetter(idx: number): string {
-  // 1 → A, 26 → Z, 27 → AA …
   let n = idx;
   let s = "";
   while (n > 0) {
@@ -69,68 +73,74 @@ function fmtDate(iso: string | null | undefined): string {
 export async function generateBackorderExport(input: {
   titulo: string;
   rows: BackorderRow[];
-  /** Base de ativos para a aba auxiliar (fórmulas PROCV). */
+  /** Base de ativos para a aba auxiliar (fórmulas VLOOKUP vivas). */
   assets?: Array<{ ativo: string; denominacao: string }>;
 }): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto";
+  wb.created = new Date();
 
   // ---------- Aba auxiliar "ativos" ----------
-  const ativosSheet = wb.addWorksheet("ativos");
+  const ativosSheet = wb.addWorksheet("ativos", { properties: { tabColor: { argb: argb("#94A3B8") } } });
   ativosSheet.columns = [
-    { header: "Ativo", key: "ativo", width: 20 },
-    { header: "Denominação Ativo", key: "denominacao", width: 60 },
+    { header: "Ativo", key: "ativo", width: 22 },
+    { header: "Denominação Ativo", key: "denominacao", width: 64 },
   ];
-  const header = ativosSheet.getRow(1);
-  header.font = { bold: true };
+  const ativosHead = ativosSheet.getRow(1);
+  ativosHead.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+    cell.font = { name: "Aptos", bold: true, size: 12, color: { argb: HEADER_FG } };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+  });
+  ativosHead.height = 24;
+  ativosSheet.views = [{ state: "frozen", ySplit: 1 }];
   const assets = input.assets ?? [];
-  for (const a of assets) {
-    ativosSheet.addRow({ ativo: a.ativo, denominacao: a.denominacao });
-  }
+  for (const a of assets) ativosSheet.addRow({ ativo: a.ativo, denominacao: a.denominacao });
 
   // ---------- Aba principal ----------
-  const ws = wb.addWorksheet("BACKORDER", { views: [{ state: "frozen", ySplit: 2 }] });
+  const ws = wb.addWorksheet("BACKORDER", {
+    views: [{ state: "frozen", ySplit: 2, showGridLines: false }],
+    properties: { tabColor: { argb: TAB_COLOR } },
+  });
 
-  // Colunas visíveis + coluna oculta "Ativo" ao final
   const visibleCols = COLUMN_ORDER;
   const ATIVO_COL_INDEX = visibleCols.length + 1;
   const ATIVO_COL_LETTER = colLetter(ATIVO_COL_INDEX);
 
   ws.columns = [
     ...visibleCols.map((c) => ({ key: c.key, width: c.width })),
-    { key: "__ativo", width: 20, hidden: true },
+    { key: "__ativo", width: 22, hidden: true },
   ];
 
-  // Título mesclado (só nas colunas visíveis)
+  // Título mesclado
   ws.mergeCells(1, 1, 1, visibleCols.length);
   const title = ws.getCell(1, 1);
-  title.value = `${input.titulo}  ·  Programação de Backorder`;
-  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG_L1 } };
-  title.font = { name: "Aptos ExtraBold", bold: true, size: 20, color: { argb: "FFFFFFFF" } };
+  const totalRows = input.rows.length;
+  title.value = `${input.titulo}  ·  Programação de Backorder  ·  ${totalRows} OS`;
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: TITLE_BG } };
+  title.font = { name: "Aptos ExtraBold", bold: true, size: 18, color: { argb: HEADER_FG } };
   title.alignment = { vertical: "middle", horizontal: "center" };
-  ws.getRow(1).height = 36;
+  ws.getRow(1).height = 40;
 
   // Cabeçalho
   const head = ws.getRow(2);
   visibleCols.forEach((c, i) => {
     const cell = head.getCell(i + 1);
     cell.value = c.label;
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG_L2 } };
-    cell.font = { name: "Aptos ExtraBold", bold: true, size: 14, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
+    cell.font = { name: "Aptos", bold: true, size: 12, color: { argb: HEADER_FG } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
     cell.border = {
-      top: { style: "thin", color: { argb: "FF000000" } },
-      bottom: { style: "thin", color: { argb: "FF000000" } },
-      left: { style: "thin", color: { argb: "FF000000" } },
-      right: { style: "thin", color: { argb: "FF000000" } },
+      top: { style: "medium", color: { argb: BORDER_STRONG } },
+      bottom: { style: "medium", color: { argb: BORDER_STRONG } },
+      left: { style: "thin", color: { argb: BORDER_STRONG } },
+      right: { style: "thin", color: { argb: BORDER_STRONG } },
     };
   });
-  // Cabeçalho da coluna oculta (para referência humana ao desocultar)
   head.getCell(ATIVO_COL_INDEX).value = "Ativo";
-  head.height = 34;
+  head.height = 30;
 
-  // Ordena ASC por data de solicitação (mais antigo primeiro)
   const sorted = [...input.rows].sort(
     (a, b) => new Date(a.data_solicitacao).getTime() - new Date(b.data_solicitacao).getTime(),
   );
@@ -138,9 +148,8 @@ export async function generateBackorderExport(input: {
   let rowIdx = 3;
   for (const r of sorted) {
     const row = ws.getRow(rowIdx);
+    const isAlt = rowIdx % 2 === 1; // linhas alternadas para zebra
 
-    // Fórmulas PROCV vivas apontando para a aba "ativos" e para a
-    // coluna oculta "Ativo" (letra calculada dinamicamente).
     const ativoRef = `$${ATIVO_COL_LETTER}${rowIdx}`;
     const buildFormula = (chars: number) =>
       `IFERROR(VLOOKUP(LEFT(${ativoRef},${chars}),ativos!$A:$B,2,0),"")`;
@@ -150,7 +159,7 @@ export async function generateBackorderExport(input: {
       nome: r.nome,
       predio: r.ativo ? { formula: buildFormula(5) } : "",
       andar: r.ativo ? { formula: buildFormula(7) } : "",
-      espaco: r.ativo ? { formula: buildFormula(String(r.ativo).length) } : "",
+      ambiente: r.ativo ? { formula: buildFormula(String(r.ativo).length) } : "",
       atividade: "Corretiva",
       data: fmtDate(r.data_solicitacao),
       equipe: r.equipe,
@@ -160,20 +169,36 @@ export async function generateBackorderExport(input: {
     visibleCols.forEach((c, i) => {
       const cell = row.getCell(i + 1);
       cell.value = values[c.key] as never;
-      cell.font = { name: "Aptos ExtraBold", bold: true, size: 13, color: { argb: "FF000000" } };
-      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-      cell.border = {
-        top: { style: "thin", color: { argb: "FFBFBFBF" } },
-        bottom: { style: "thin", color: { argb: "FFBFBFBF" } },
-        left: { style: "thin", color: { argb: "FFBFBFBF" } },
-        right: { style: "thin", color: { argb: "FFBFBFBF" } },
+      cell.font = { name: "Aptos", size: 11, color: { argb: "FF0F172A" } };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: c.align ?? "left",
+        wrapText: true,
       };
+      cell.border = {
+        top: { style: "thin", color: { argb: BORDER_SOFT } },
+        bottom: { style: "thin", color: { argb: BORDER_SOFT } },
+        left: { style: "thin", color: { argb: BORDER_SOFT } },
+        right: { style: "thin", color: { argb: BORDER_SOFT } },
+      };
+      if (isAlt) {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ROW_ALT_BG } };
+      }
     });
-    // Coluna oculta com o código do Ativo (fonte das fórmulas acima)
+    // OS em negrito
+    row.getCell(1).font = { name: "Aptos", bold: true, size: 11, color: { argb: TITLE_BG } };
     row.getCell(ATIVO_COL_INDEX).value = r.ativo;
 
-    row.height = 34;
+    row.height = 28;
     rowIdx++;
+  }
+
+  // AutoFilter na linha 2 (cabeçalho) cobrindo todas colunas visíveis
+  if (rowIdx > 3) {
+    ws.autoFilter = {
+      from: { row: 2, column: 1 },
+      to: { row: rowIdx - 1, column: visibleCols.length },
+    };
   }
 
   ws.pageSetup = {
@@ -184,6 +209,9 @@ export async function generateBackorderExport(input: {
     paperSize: 9,
     margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
     printTitlesRow: "1:2",
+  };
+  ws.headerFooter = {
+    oddFooter: "&LApont Auto&CPágina &P de &N&R&D",
   };
 
   const buf = await wb.xlsx.writeBuffer();
