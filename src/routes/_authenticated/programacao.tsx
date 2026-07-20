@@ -350,8 +350,8 @@ function ProgramacaoPage() {
                   slot={slot}
                   file={slotFiles[slot.id]}
                   onChange={(f) => setSlot(slot.id, f)}
-                  incremento={incrementos[slot.id]}
-                  onIncrementoChange={(d) => setIncremento(slot.id, d)}
+                  minutos={tempoPorOS[slot.id]}
+                  onMinutosChange={(m) => setTempo(slot.id, m)}
                 />
               ))}
             </div>
