@@ -1,7 +1,8 @@
 // Cálculo de capacidade semanal e fatiamento de OS em semanas.
 
 import type { TriagedOS, Equipe } from "./triage";
-import { businessDaysUntilEndOfMonth, isBusinessDay, brHolidays } from "./business-days";
+import { businessDaysUntilEndOfMonth, businessDaysUntil, isBusinessDay, brHolidays } from "./business-days";
+
 
 
 export const DEFAULT_MINUTOS_POR_OS = 60;
