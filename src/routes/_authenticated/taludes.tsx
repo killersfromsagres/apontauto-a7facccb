@@ -22,7 +22,9 @@ import {
   RotateCcw,
   Info,
   ShieldCheck,
+  Wand2,
 } from "lucide-react";
+import { AutoMarkDialog } from "@/components/taludes/auto-mark-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -127,6 +129,7 @@ function TaludesPage() {
 
   const [auditing, setAuditing] = useState(false);
   const [auditReport, setAuditReport] = useState<Awaited<ReturnType<typeof verifyAndRepairMap>> | null>(null);
+  const [autoMarkOpen, setAutoMarkOpen] = useState(false);
 
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
 
@@ -776,6 +779,15 @@ function TaludesPage() {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="outline"
+            onClick={() => setAutoMarkOpen(true)}
+            disabled={!map}
+            title="Detectar áreas em uma imagem anotada e criar os taludes automaticamente"
+          >
+            <Wand2 className="mr-2 h-4 w-4" />
+            Auto‑marcar
+          </Button>
           <Button
             variant="outline"
             onClick={() => runAudit(false)}
@@ -1530,6 +1542,27 @@ function TaludesPage() {
           }
         }
       `}</style>
+      <AutoMarkDialog
+        open={autoMarkOpen}
+        onOpenChange={setAutoMarkOpen}
+        mapId={map?.id ?? null}
+        existingNumeros={taludes.map((t) => t.numero)}
+        onApply={async (items) => {
+          if (!map) return;
+          for (const it of items) {
+            await upsertFn({
+              data: {
+                map_id: map.id,
+                numero: it.numero,
+                polygon: it.polygon,
+                status: "programado",
+                data_programada: today(),
+              },
+            });
+          }
+          await qc.invalidateQueries({ queryKey: ["talude-map-detail", map.id] });
+        }}
+      />
     </PageShell>
   );
 }
