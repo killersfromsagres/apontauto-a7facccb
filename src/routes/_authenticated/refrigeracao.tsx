@@ -153,8 +153,9 @@ function RefrigeracaoPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return osList;
     return osList.filter((o) => {
+      if (!matchEquipe(o.equipe, equipe)) return false;
+      if (!q) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
@@ -165,7 +166,7 @@ function RefrigeracaoPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     });
-  }, [osList, search]);
+  }, [osList, search, equipe]);
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
