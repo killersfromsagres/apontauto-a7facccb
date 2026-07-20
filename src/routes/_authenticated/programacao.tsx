@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
 import {
@@ -18,7 +23,12 @@ import {
   type Equipe,
   type TriagedOS,
 } from "@/lib/preventiva/triage";
-import { distributeAcrossMonth, weeksUntilEndOfMonth, type WeekBucket } from "@/lib/preventiva/capacity";
+import {
+  distributeAcrossMonth,
+  weeksToCoverAll,
+  MINUTOS_UTEIS_DIA,
+  type WeekBucket,
+} from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
@@ -33,6 +43,7 @@ import {
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
 });
+
 
 type SlotId = "CCH" | "REFRIG" | "ELETRICA";
 
