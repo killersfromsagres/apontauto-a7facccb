@@ -63,7 +63,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/50 bg-background/70 px-3 backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:gap-3 sm:px-4">
-      <SidebarTrigger />
+      <SidebarToggle />
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div className="relative shrink-0">
           <img
