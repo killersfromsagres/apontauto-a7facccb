@@ -170,7 +170,13 @@ function ProgramacaoPage() {
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
           if (osEq.length > 0) {
-            porEquipeBuckets.set(eq, distributeAcrossMonth(osEq, semanas, { from: now }));
+            porEquipeBuckets.set(
+              eq,
+              distributeAcrossMonth(osEq, semanas, {
+                from: now,
+                minutosPorOS: slot.minutosPorOS,
+              }),
+            );
           }
         }
 
