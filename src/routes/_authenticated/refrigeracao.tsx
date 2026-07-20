@@ -14,6 +14,8 @@ import {
   CheckCircle2,
   Snowflake,
   Save,
+  ArrowLeft,
+  Download,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -461,8 +463,29 @@ function OsDetail({
     }
   };
 
+  const hasUnsaved =
+    previews.length > 0 ||
+    pecas.some((p) => p.descricao.trim()) ||
+    problemas.some((p) => p.descricao.trim());
+
+  const handleBack = () => {
+    if (hasUnsaved && !confirm("Você tem alterações não enviadas. Sair mesmo assim?")) return;
+    previews.forEach((p) => URL.revokeObjectURL(p.url));
+    onBack();
+  };
+
   return (
     <div className="space-y-4">
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={handleBack}
+        className="h-12 w-full justify-start gap-2 text-base font-semibold sm:w-auto"
+      >
+        <ArrowLeft className="h-5 w-5" />
+        Voltar à lista
+      </Button>
+
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -474,9 +497,7 @@ function OsDetail({
               <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
             )}
           </div>
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            ← Voltar à lista
-          </Button>
+          <Badge variant="outline" className="text-[10px]">{os.status}</Badge>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <ReadOnly label="Ativo" value={os.ativo} />
