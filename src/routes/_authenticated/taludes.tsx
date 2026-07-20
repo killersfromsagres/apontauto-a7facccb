@@ -22,7 +22,9 @@ import {
   RotateCcw,
   Info,
   ShieldCheck,
+  Wand2,
 } from "lucide-react";
+import { AutoMarkDialog } from "@/components/taludes/auto-mark-dialog";
 import {
   Tooltip,
   TooltipContent,
