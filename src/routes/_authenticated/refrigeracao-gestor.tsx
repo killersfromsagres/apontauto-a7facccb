@@ -15,6 +15,7 @@ import {
   Snowflake,
   Filter,
   FileSpreadsheet,
+  QrCode,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -42,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
 import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
 import { downloadBlob } from "@/lib/download";
+import { generateAtivoQrPng, printAtivoQr, buildAtivoHistoricoUrl } from "@/lib/refrigeracao/qrcode";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
@@ -437,9 +439,41 @@ function OsTable({
                   </Select>
                 </Td>
                 <Td className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => removeOs(o.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Gerar QR-Code do ativo (histórico de refrigeração)"
+                      onClick={async () => {
+                        try {
+                          const png = await generateAtivoQrPng({
+                            ativo: o.ativo,
+                            equipamento: o.equipamento,
+                            patrimonio: o.patrimonio,
+                          });
+                          printAtivoQr(png, {
+                            ativo: o.ativo,
+                            equipamento: o.equipamento,
+                            patrimonio: o.patrimonio,
+                          });
+                          toast.success("QR-Code gerado.", {
+                            description: buildAtivoHistoricoUrl({
+                              ativo: o.ativo,
+                              equipamento: o.equipamento,
+                              patrimonio: o.patrimonio,
+                            }),
+                          });
+                        } catch (e: any) {
+                          toast.error(e?.message ?? "Falha ao gerar QR-Code");
+                        }
+                      }}
+                    >
+                      <QrCode className="h-4 w-4 text-primary" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => removeOs(o.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </Td>
               </tr>
             ))}
