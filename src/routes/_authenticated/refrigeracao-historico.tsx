@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Camera, Package, AlertTriangle, Loader2, CheckCircle2, Download } from "lucide-react";
@@ -7,6 +7,13 @@ import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -14,6 +21,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  EQUIPES_REFRIGERACAO,
+  loadEquipe,
+  saveEquipe,
+  matchEquipe,
+  type EquipeFiltro,
+} from "@/lib/refrigeracao/equipe";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-historico")({
   component: HistoricoPage,
