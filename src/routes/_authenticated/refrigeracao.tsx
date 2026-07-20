@@ -463,21 +463,73 @@ function OsDetail({
   }, [previews, pecas, problemas, draftLoaded, os.id]);
 
 
+  const savePatrimonio = async () => {
+    const v = patrim.trim();
+    if (v === (os.patrimonio ?? "")) return;
+    setSavingPatrim(true);
+    try {
+      await outboxAdd({
+        id: uuid(),
+        kind: "patrimonio",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { patrimonio: v || null },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+      onPatchLocal({ patrimonio: v || null });
+      onQueued();
+      if (online) {
+        await syncPending();
+        onQueued();
+      }
+      toast.success("Patrimônio salvo.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao salvar patrimônio");
+    } finally {
+      setSavingPatrim(false);
+    }
+  };
+
+  const onPickFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const next: Preview[] = [];
+    for (const f of Array.from(files)) {
+      if (!f.type.startsWith("image/")) continue;
+      const blob = await compressImage(f);
+      const id = uuid();
+      const blobKey = `draft:${os.id}:${id}`;
+      await blobPut(blobKey, blob);
+      next.push({ id, blobKey, url: URL.createObjectURL(blob) });
+    }
+    if (next.length) setPreviews((p) => [...p, ...next]);
+  };
+
+  const removePreview = (id: string) => {
+    setPreviews((p) => {
+      const rm = p.find((x) => x.id === id);
+      if (rm) {
+        URL.revokeObjectURL(rm.url);
+        blobDelete(rm.blobKey).catch(() => {});
+      }
+      return p.filter((x) => x.id !== id);
+    });
+  };
+
   const saveAll = async () => {
     const items: OutboxItem[] = [];
     for (const p of previews) {
-      const blobKey = `foto:${p.id}`;
-      await blobPut(blobKey, p.blob);
       items.push({
         id: p.id,
         kind: "foto",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { blobKey },
+        payload: { blobKey: p.blobKey },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
+
     for (const p of pecas) {
       if (!p.descricao.trim()) continue;
       items.push({
