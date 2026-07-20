@@ -612,15 +612,24 @@ function OsDetail({
 
   return (
     <div className="space-y-4">
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={handleBack}
-        className="h-12 w-full justify-start gap-2 text-base font-semibold sm:w-auto"
-      >
-        <ArrowLeft className="h-5 w-5" />
-        Voltar à lista
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={handleBack}
+          className="h-12 flex-1 justify-start gap-2 text-base font-semibold sm:flex-none"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Voltar à lista
+        </Button>
+        {draftSavedAt && (
+          <span className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-medium text-emerald-600">
+            <Save className="h-3.5 w-3.5" />
+            Rascunho salvo — fotos e textos ficam guardados nesta OS
+          </span>
+        )}
+      </div>
+
 
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
