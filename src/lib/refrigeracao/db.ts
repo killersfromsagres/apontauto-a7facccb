@@ -2,7 +2,8 @@
 // Sem dependências externas: 3 object stores (os_cache, outbox, blobs).
 
 const DB_NAME = "refrigeracao-offline";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
+
 
 export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio" | "status";
 
