@@ -1,6 +1,8 @@
 // Cálculo de capacidade semanal e fatiamento de OS em semanas.
 
 import type { TriagedOS, Equipe } from "./triage";
+import { businessDaysUntilEndOfMonth, isBusinessDay, brHolidays } from "./business-days";
+
 
 export const DEFAULT_MINUTOS_POR_OS = 60;
 export const MINUTOS_UTEIS_DIA = 480; // 08-12 + 13-17
@@ -120,4 +122,100 @@ export function sliceIntoWeeks(
   const consumed = buckets.reduce((s, b) => s + b.os.length, 0);
   const overflow = os.slice(consumed);
   return { buckets, overflow };
+}
+
+/** Extrai número do andar para ordenação natural ("2º andar" → 2). */
+function andarNum(s: string): number {
+  const m = String(s ?? "").match(/-?\d+/);
+  return m ? parseInt(m[0], 10) : Number.POSITIVE_INFINITY;
+}
+
+/** Ordena por Prédio → Andar (numérico) → Término SLA, minimizando deslocamento. */
+export function sortByLocation<T extends TriagedOS>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const pa = String(a.predio ?? "").localeCompare(String(b.predio ?? ""), "pt-BR");
+    if (pa !== 0) return pa;
+    const na = andarNum(a.andar);
+    const nb = andarNum(b.andar);
+    if (na !== nb) return na - nb;
+    const aa = String(a.andar ?? "").localeCompare(String(b.andar ?? ""), "pt-BR");
+    if (aa !== 0) return aa;
+    return a.terminoSLATs - b.terminoSLATs;
+  });
+}
+
+export interface DistributeResult {
+  buckets: WeekBucket[];
+  overflow: TriagedOS[];
+  perDay: number;
+  businessDaysCount: number;
+  capPerDay: number;
+}
+
+export interface DistributeOptions extends SliceOptions {
+  from?: Date;
+}
+
+/**
+ * Distribui OS de UMA equipe de forma balanceada entre os DIAS ÚTEIS restantes
+ * do mês (considerando feriados BR). Pré-ordena por Prédio→Andar para minimizar
+ * deslocamento. Se `perDay` exceder a capacidade diária real, o excedente vira overflow.
+ */
+export function distributeAcrossMonth(
+  os: TriagedOS[],
+  weeks: WeekInfo[],
+  opts: DistributeOptions = {},
+): DistributeResult {
+  const from = opts.from ?? new Date();
+  const minPorOS = opts.minutosPorOS ?? DEFAULT_MINUTOS_POR_OS;
+  const equipeSample = os[0]?.equipe as Equipe | undefined;
+  const nTec = Math.max(
+    1,
+    (equipeSample && opts.tecnicosPorEquipe?.[equipeSample]) ?? opts.tecnicosDefault ?? 1,
+  );
+  const capPerDay = Math.floor((MINUTOS_UTEIS_DIA * nTec) / minPorOS);
+
+  const businessDays = businessDaysUntilEndOfMonth(from);
+  const businessDaysCount = Math.max(1, businessDays.length);
+
+  const sorted = sortByLocation(os);
+  const perDayIdeal = Math.max(1, Math.ceil(sorted.length / businessDaysCount));
+  const perDay = Math.min(perDayIdeal, capPerDay);
+
+  const buckets: WeekBucket[] = weeks.map((w) => ({
+    week: w,
+    os: [],
+    porDia: [[], [], [], [], []],
+  }));
+
+  const holidays = brHolidays(from.getFullYear());
+  let queueIdx = 0;
+
+  outer: for (let wi = 0; wi < weeks.length; wi++) {
+    const monday = weeks[wi].monday;
+    for (let dow = 0; dow < 5; dow++) {
+      const day = new Date(monday);
+      day.setDate(day.getDate() + dow);
+      // Só considera dias úteis a partir de `from`.
+      const fromMid = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+      if (day < fromMid) continue;
+      if (day > businessDays[businessDays.length - 1]) break outer;
+      if (!isBusinessDay(day, holidays)) continue;
+
+      for (let k = 0; k < perDay && queueIdx < sorted.length; k++) {
+        const item = sorted[queueIdx++];
+        buckets[wi].os.push(item);
+        buckets[wi].porDia[dow].push(item);
+      }
+      if (queueIdx >= sorted.length) break outer;
+    }
+  }
+
+  return {
+    buckets,
+    overflow: sorted.slice(queueIdx),
+    perDay,
+    businessDaysCount,
+    capPerDay,
+  };
 }

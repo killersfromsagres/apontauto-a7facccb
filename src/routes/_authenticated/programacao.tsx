@@ -18,7 +18,7 @@ import {
   type Equipe,
   type TriagedOS,
 } from "@/lib/preventiva/triage";
-import { sliceIntoWeeks, weeksUntilEndOfMonth, type WeekBucket } from "@/lib/preventiva/capacity";
+import { distributeAcrossMonth, weeksUntilEndOfMonth, type WeekBucket } from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
@@ -159,14 +159,22 @@ function ProgramacaoPage() {
           continue;
         }
 
-        // Fatia cada equipe do slot separadamente em semanas
-        const porEquipeBuckets = new Map<Equipe, ReturnType<typeof sliceIntoWeeks>>();
+        // Distribui cada equipe do slot balanceando por dias úteis do mês,
+        // com sequenciamento por prédio → andar (minimiza deslocamento).
+        const now = new Date();
+        const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
-          if (osEq.length > 0) porEquipeBuckets.set(eq, sliceIntoWeeks(osEq, semanas));
+          if (osEq.length > 0) {
+            porEquipeBuckets.set(eq, distributeAcrossMonth(osEq, semanas, { from: now }));
+          }
         }
 
         let overflowTotal = 0;
+        let overflowPerDay = 0;
+        let overflowCap = 0;
+        let overflowDias = 0;
+        let overflowTotalOS = 0;
         for (let i = 0; i < semanas.length; i++) {
           const week = semanas[i];
           const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
@@ -199,13 +207,27 @@ function ProgramacaoPage() {
           });
         }
         for (const eq of slot.equipes) {
-          overflowTotal += porEquipeBuckets.get(eq)?.overflow.length ?? 0;
+          const d = porEquipeBuckets.get(eq);
+          if (!d) continue;
+          overflowTotal += d.overflow.length;
+          overflowPerDay = Math.max(overflowPerDay, d.perDay);
+          overflowCap = Math.max(overflowCap, d.capPerDay);
+          overflowDias = d.businessDaysCount;
+          overflowTotalOS += d.buckets.reduce((s, b) => s + b.os.length, 0) + d.overflow.length;
         }
         if (overflowTotal > 0) {
           overflowList.push(
-            `${slot.label}: ${overflowTotal} OS não cabem até o fim do mês com a capacidade atual.`,
+            `${slot.label}: ${overflowTotal} OS não cabem até o fim do mês. ` +
+              `Total ${overflowTotalOS} OS ÷ ${overflowDias} dias úteis = ${Math.ceil(
+                overflowTotalOS / Math.max(1, overflowDias),
+              )}/dia, mas a capacidade máxima é ${overflowCap}/dia (usando ${overflowPerDay}/dia).`,
+          );
+        } else if (overflowPerDay > 0) {
+          overflowList.push(
+            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), sequenciadas por prédio → andar.`,
           );
         }
+
       }
 
       setAlerts(allAlerts);
