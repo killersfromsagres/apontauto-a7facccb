@@ -158,7 +158,7 @@ function RootShell({ children }: { children: ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen overflow-x-hidden">
+      <body className="min-h-dvh overflow-x-hidden overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]">
         {children}
         <Scripts />
       </body>
