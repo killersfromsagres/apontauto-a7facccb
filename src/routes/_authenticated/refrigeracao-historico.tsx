@@ -42,6 +42,7 @@ type OsRow = {
   local: string | null;
   ativo: string;
   equipamento: string;
+  equipe: string | null;
   patrimonio: string | null;
   status: string;
   fim: string | null;
@@ -55,13 +56,23 @@ type Problema = { id: string; descricao: string; gravidade: string; created_at: 
 function HistoricoPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<OsRow | null>(null);
+  const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+
+  useEffect(() => {
+    setEquipe(loadEquipe());
+  }, []);
+
+  const setEquipeAndPersist = (v: EquipeFiltro) => {
+    setEquipe(v);
+    saveEquipe(v);
+  };
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["refrig-historico"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("refrigeracao_os")
-        .select("id, numero_os, nome_os, predio, andar, local, ativo, equipamento, patrimonio, status, fim, updated_at")
+        .select("id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, status, fim, updated_at")
         .eq("status", "concluida")
         .order("fim", { ascending: false, nullsFirst: false })
         .limit(500);
@@ -72,13 +83,14 @@ function HistoricoPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((o) =>
-      [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.patrimonio, o.predio, o.local]
+    return rows.filter((o) => {
+      if (!matchEquipe(o.equipe, equipe)) return false;
+      if (!q) return true;
+      return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.patrimonio, o.predio, o.local]
         .filter(Boolean)
-        .some((v) => (v as string).toLowerCase().includes(q)),
-    );
-  }, [rows, search]);
+        .some((v) => (v as string).toLowerCase().includes(q));
+    });
+  }, [rows, search, equipe]);
 
   return (
     <PageShell
@@ -86,15 +98,51 @@ function HistoricoPage() {
       description="Todas as ordens de serviço já concluídas e enviadas."
     >
       <GlassCard className="p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por OS, ativo, equipamento, patrimônio, prédio, local…"
-            className="h-11 text-base"
-          />
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2 sm:min-w-[240px]">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              Minha equipe
+            </span>
+            <Select
+              value={equipe}
+              onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
+            >
+              <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as equipes</SelectItem>
+                {EQUIPES_REFRIGERACAO.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-1 items-center gap-2">
+            <Search className="h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por OS, ativo, equipamento, patrimônio, prédio, local…"
+              className="h-11 text-base"
+            />
+          </div>
         </div>
+        {equipe !== "todas" && (
+          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+            <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
+            <span>Mostrando apenas OS desta equipe.</span>
+            <button
+              type="button"
+              onClick={() => setEquipeAndPersist("todas")}
+              className="ml-auto text-primary underline-offset-2 hover:underline"
+            >
+              Ver todas
+            </button>
+          </div>
+        )}
         {isLoading ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
