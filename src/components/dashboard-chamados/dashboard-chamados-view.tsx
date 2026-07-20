@@ -209,7 +209,7 @@ export function DashboardChamadosView() {
     const st = new Set<string>();
     const so = new Set<string>();
     const pr = new Set<string>();
-    for (const r of rows) {
+    for (const r of mergedRows) {
       if (r.equipe) eq.add(r.equipe);
       if (r.categoria) ca.add(r.categoria);
       if (r.criticidade) cr.add(r.criticidade);
@@ -225,12 +225,12 @@ export function DashboardChamadosView() {
       solicitantes: [...so].sort(),
       predios: [...pr].sort(),
     };
-  }, [rows]);
+  }, [mergedRows]);
 
   const filtered = useMemo(() => {
     const now = Date.now();
     const periodoMs = filters.periodo === "todos" ? 0 : Number(filters.periodo) * 86400000;
-    return rows.filter((r) => {
+    return mergedRows.filter((r) => {
       if (filters.equipe !== "todas" && r.equipe !== filters.equipe) return false;
       if (filters.categoria !== "todas" && r.categoria !== filters.categoria) return false;
       if (filters.criticidade !== "todas" && r.criticidade !== filters.criticidade) return false;
@@ -243,13 +243,72 @@ export function DashboardChamadosView() {
       }
       return true;
     });
-  }, [rows, filters]);
+  }, [mergedRows, filters]);
 
   const stats = useMemo(() => computeDashboardStats(filtered), [filtered]);
   const topPredios = useMemo(
     () => [...stats.porPredio].sort((a, b) => b.value - a.value).slice(0, 10),
     [stats.porPredio],
   );
+
+  // Ao carregar linhas, busca status atuais em backorder_os e mescla.
+  useEffect(() => {
+    if (rows.length === 0) {
+      setBackorderMap(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchBackorderStatuses(rows.map((r) => r.os))
+      .then((m) => {
+        if (!cancelled) setBackorderMap(m);
+      })
+      .catch((err) => {
+        console.error("[dashboard] fetchBackorderStatuses", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rows]);
+
+  // Realtime: reflete alterações vindas do módulo Backorder.
+  useEffect(() => {
+    if (rows.length === 0) return;
+    const known = new Set(rows.map((r) => r.os));
+    const unsub = subscribeBackorderChanges((status) => {
+      if (!known.has(status.os)) return;
+      setBackorderMap((prev) => {
+        const next = new Map(prev);
+        next.set(status.os, status);
+        return next;
+      });
+    });
+    return unsub;
+  }, [rows]);
+
+  const toggleConcluido = useCallback(
+    async (row: ChamadoRow, next: boolean) => {
+      setPendingOs((prev) => new Set(prev).add(row.os));
+      try {
+        const status = next ? await setBackorderConcluido(row) : await setBackorderReaberto(row.os);
+        setBackorderMap((prev) => {
+          const m = new Map(prev);
+          m.set(row.os, status);
+          return m;
+        });
+        toast.success(next ? `OS ${row.os} concluída` : `OS ${row.os} reaberta`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com backorder");
+      } finally {
+        setPendingOs((prev) => {
+          const s = new Set(prev);
+          s.delete(row.os);
+          return s;
+        });
+      }
+    },
+    [],
+  );
+
 
   const activeFilterCount = Object.entries(filters).filter(
     ([k, v]) => v !== EMPTY_FILTERS[k as keyof Filters],
