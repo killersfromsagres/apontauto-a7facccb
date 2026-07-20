@@ -16,6 +16,14 @@ export const TIPOS_EQUIPAMENTO = [
 
 export const FLUIDOS = ["R-410A", "R-32", "R-22", "R-134A", "R-407C", "R-404A", "R-1234yf"] as const;
 
+export const STATUS_EQUIPAMENTO = [
+  "Operando normal",
+  "Operando com restrição",
+  "Parado — aguardando peça",
+  "Parado — falha crítica",
+  "Desativado",
+] as const;
+
 export const TIPOS_SERVICO = [
   "Preventiva Mensal",
   "Preventiva Trimestral",
