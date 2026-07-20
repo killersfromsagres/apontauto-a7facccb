@@ -124,6 +124,25 @@ function ProgramacaoPage() {
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
+  // Incrementos de 00:30 por OS (média) — planejamento de tempo extra.
+  const [incrementos, setIncrementos] = useState<Record<SlotId, number>>({
+    CCH: 0,
+    REFRIG: 0,
+    ELETRICA: 0,
+  });
+
+  const setIncremento = useCallback((slot: SlotId, delta: number) => {
+    setIncrementos((prev) => {
+      const next = Math.max(0, (prev[slot] ?? 0) + delta);
+      if (delta > 0 && next > 0) {
+        toast.warning(
+          `Tempo adicional registrado — +00:30 por OS (${next}× incremento) em ${slot}.`,
+          { description: "O tempo base de 01:00 foi excedido." },
+        );
+      }
+      return { ...prev, [slot]: next };
+    });
+  }, []);
 
   const setSlot = useCallback((slot: SlotId, file: File | null) => {
     if (file && !file.name.toLowerCase().endsWith(".xlsx")) {
