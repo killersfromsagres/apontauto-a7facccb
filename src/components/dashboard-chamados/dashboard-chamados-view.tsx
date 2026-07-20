@@ -151,6 +151,32 @@ export function DashboardChamadosView() {
   );
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // Sincronia com backorder_os: mapa OS -> status vindo do banco.
+  const [backorderMap, setBackorderMap] = useState<Map<string, BackorderStatus>>(new Map());
+  const [pendingOs, setPendingOs] = useState<Set<string>>(new Set());
+
+  // Aplica o status do backorder sobre as linhas parseadas.
+  const mergedRows = useMemo<ChamadoRow[]>(() => {
+    if (backorderMap.size === 0) return rows;
+    return rows.map((r) => {
+      const b = backorderMap.get(r.os);
+      if (!b) return r;
+      if (b.finalizado) {
+        return {
+          ...r,
+          statusNorm: "concluido",
+          status: r.status || "Concluído",
+          dataConclusao: b.data_finalizacao ?? r.dataConclusao,
+        };
+      }
+      // Se foi reaberto explicitamente no backorder, refletir aqui.
+      if (r.statusNorm === "concluido") {
+        return { ...r, statusNorm: "aberto", status: "Reaberto", dataConclusao: null };
+      }
+      return r;
+    });
+  }, [rows, backorderMap]);
+
 
   const onUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
