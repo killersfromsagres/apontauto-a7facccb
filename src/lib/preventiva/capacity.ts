@@ -41,9 +41,15 @@ export function isoWeekNumber(date: Date): number {
  */
 export function weeksUntilEndOfMonth(hoje: Date = new Date()): WeekInfo[] {
   const lastDay = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+  return weeksBetween(hoje, lastDay);
+}
+
+/** Gera WeekInfo[] cobrindo a semana que contém `from` até a semana que contém `until`. */
+export function weeksBetween(from: Date, until: Date): WeekInfo[] {
   const weeks: WeekInfo[] = [];
-  let cursor = mondayOf(hoje);
-  while (cursor <= lastDay) {
+  let cursor = mondayOf(from);
+  const endMonday = mondayOf(until);
+  while (cursor <= endMonday) {
     const friday = new Date(cursor);
     friday.setDate(friday.getDate() + 4);
     const iso = isoWeekNumber(cursor);
@@ -57,15 +63,34 @@ export function weeksUntilEndOfMonth(hoje: Date = new Date()): WeekInfo[] {
     cursor = new Date(cursor);
     cursor.setDate(cursor.getDate() + 7);
   }
-  return weeks.length > 0 ? weeks : [
-    (() => {
-      const m = mondayOf(hoje);
-      const f = new Date(m);
-      f.setDate(f.getDate() + 4);
-      return { isoWeek: isoWeekNumber(m), year: m.getFullYear(), monday: m, friday: f, label: `Semana ${isoWeekNumber(m)}` };
-    })(),
-  ];
+  if (weeks.length === 0) {
+    const m = mondayOf(from);
+    const f = new Date(m); f.setDate(f.getDate() + 4);
+    weeks.push({ isoWeek: isoWeekNumber(m), year: m.getFullYear(), monday: m, friday: f, label: `Semana ${isoWeekNumber(m)}` });
+  }
+  return weeks;
 }
+
+/**
+ * Gera semanas suficientes a partir de `from` para caber pelo menos
+ * `businessDaysNeeded` dias úteis. Estende além do fim do mês quando preciso.
+ */
+export function weeksToCoverAll(
+  from: Date,
+  businessDaysNeeded: number,
+): { weeks: WeekInfo[]; until: Date } {
+  const fromMid = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  let until = new Date(from.getFullYear(), from.getMonth() + 1, 0);
+  if (until < fromMid) until = new Date(fromMid);
+  let guard = 0;
+  while (businessDaysUntil(fromMid, until).length < Math.max(1, businessDaysNeeded)) {
+    until = new Date(until);
+    until.setDate(until.getDate() + 7);
+    if (++guard > 260) break; // ~5 anos, segurança
+  }
+  return { weeks: weeksBetween(fromMid, until), until };
+}
+
 
 export interface WeekBucket {
   week: WeekInfo;
