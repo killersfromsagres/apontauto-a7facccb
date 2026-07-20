@@ -26,7 +26,18 @@ import {
   Save,
   ClipboardList,
   User,
+  Eraser,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
   BarChart,
