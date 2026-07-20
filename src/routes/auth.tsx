@@ -159,7 +159,7 @@ function AuthPage() {
   };
 
   return (
-    <div className="auth-bg relative flex min-h-screen items-center justify-center px-4 py-10">
+    <div className="auth-bg relative flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="auth-grid" aria-hidden />
 
       <main className="relative z-10 w-full max-w-md">

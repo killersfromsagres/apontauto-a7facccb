@@ -1408,3 +1408,54 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 .recharts-tooltip-label {
   color: var(--popover-foreground) !important;
 }
+
+/* ============ Mobile UX polish ============ */
+
+/* Momentum + safe scroll on touch surfaces */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* Never let form controls trigger iOS auto-zoom (font < 16px triggers it) */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Guarantee comfortable tap targets on icon-only actions */
+  [role="button"][aria-label],
+  button[aria-label]:not(:has(span:not(.sr-only))) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* Tighten PageShell horizontal padding and let tables scroll horizontally without shifting layout */
+  .table-scroll,
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  /* Radix dialogs should never exceed the visual viewport on mobile */
+  [data-radix-popper-content-wrapper] > * {
+    max-width: calc(100vw - 1rem) !important;
+  }
+}
+
+/* Respect device safe areas everywhere the app paints edge-to-edge */
+@supports (padding: max(0px)) {
+  .safe-area-x {
+    padding-left: max(env(safe-area-inset-left), 0.75rem);
+    padding-right: max(env(safe-area-inset-right), 0.75rem);
+  }
+  .safe-area-b {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+}
