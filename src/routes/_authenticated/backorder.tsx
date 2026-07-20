@@ -1195,6 +1195,30 @@ function BackorderPage() {
               e.currentTarget.value = "";
             }}
           />
+          <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação remove permanentemente todos os {rows.length} chamado(s) de backorder
+                  e reseta os filtros da tela. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void handleLimparTudo();
+                  }}
+                  disabled={clearing}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {clearing ? "Limpando..." : "Sim, limpar tudo"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       }
     >
