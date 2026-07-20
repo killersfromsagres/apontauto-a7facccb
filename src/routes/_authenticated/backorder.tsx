@@ -26,7 +26,18 @@ import {
   Save,
   ClipboardList,
   User,
+  Eraser,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import priorityEngineIcon from "@/assets/priority-engine-icon.png";
 import {
   BarChart,
@@ -159,6 +170,8 @@ function BackorderPage() {
   const [scanning, setScanning] = useState(false);
   const [config, setConfig] = useState<PriorityConfig>(DEFAULT_CONFIG);
   const [configOpen, setConfigOpen] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
@@ -1087,6 +1100,31 @@ function BackorderPage() {
     [selectedBackorder, rows],
   );
 
+  const handleLimparTudo = useCallback(async () => {
+    setClearing(true);
+    const t = toast.loading("Limpando todos os chamados...");
+    try {
+      const { error } = await supabase
+        .from("backorder_os")
+        .delete()
+        .not("os", "is", null);
+      if (error) throw error;
+      setRows([]);
+      setSelectedBackorder(null);
+      setSearch("");
+      setFilterCat("__all__");
+      setOrder("asc");
+      setTab("tabela");
+      setClearOpen(false);
+      toast.success("Todos os chamados foram removidos.", { id: t });
+    } catch (e) {
+      const err = e as { message?: string };
+      toast.error(err?.message ?? "Falha ao limpar chamados", { id: t });
+    } finally {
+      setClearing(false);
+    }
+  }, []);
+
   return (
     <PageShell
       title="Backorder de Corretivas"
@@ -1101,6 +1139,14 @@ function BackorderPage() {
           </Button>
           <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
             <Upload className="mr-2 h-4 w-4" /> Importar Backorder
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setClearOpen(true)}
+            disabled={importing || clearing || rows.length === 0}
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          >
+            <Eraser className="mr-2 h-4 w-4" /> Limpar Tudo
           </Button>
           <Button variant="outline" onClick={handleReprocessarChamados} disabled={importing}>
             <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
@@ -1149,6 +1195,30 @@ function BackorderPage() {
               e.currentTarget.value = "";
             }}
           />
+          <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação remove permanentemente todos os {rows.length} chamado(s) de backorder
+                  e reseta os filtros da tela. Não é possível desfazer.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={clearing}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void handleLimparTudo();
+                  }}
+                  disabled={clearing}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {clearing ? "Limpando..." : "Sim, limpar tudo"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       }
     >
