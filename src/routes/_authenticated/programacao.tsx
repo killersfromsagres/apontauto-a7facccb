@@ -35,33 +35,37 @@ interface SlotDef {
   hint: string;
   color: string;
   equipes: Equipe[]; // equipes que serão geradas por esse slot
+  minutosPorOS: number; // duração estimada por OS
 }
 
 const SLOTS: SlotDef[] = [
   {
     id: "CCH",
     label: "CIVIL / CHAVEIRO / HIDRÁULICA",
-    hint: "1 arquivo → separa automaticamente as 3 equipes.",
+    hint: "30 min/OS · até 16/dia (8h por técnico).",
     color: EQUIPE_COLOR.CIVIL,
     equipes: ["CHAVEIRO", "CIVIL", "HIDRÁULICA"],
+    minutosPorOS: 30,
   },
   {
     id: "REFRIG",
     label: "CLIMATIZAÇÃO E REFRIGERAÇÃO",
-    hint: "1 arquivo → separa Equipe 1, 2 e 3 por prédio automaticamente.",
+    hint: "60 min/OS · até 8/dia · separa Equipe 1/2/3 por prédio.",
     color: EQUIPE_COLOR["CLIMATIZAÇÃO E REFRIGERAÇÃO 1"],
     equipes: [
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 1",
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 2",
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 3",
     ],
+    minutosPorOS: 60,
   },
   {
     id: "ELETRICA",
     label: "ELÉTRICA",
-    hint: "Ordena por Término SLA.",
+    hint: "30 min/OS · até 16/dia (8h por técnico).",
     color: EQUIPE_COLOR.ELÉTRICA,
     equipes: ["ELÉTRICA"],
+    minutosPorOS: 30,
   },
 ];
 
@@ -166,7 +170,13 @@ function ProgramacaoPage() {
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
           if (osEq.length > 0) {
-            porEquipeBuckets.set(eq, distributeAcrossMonth(osEq, semanas, { from: now }));
+            porEquipeBuckets.set(
+              eq,
+              distributeAcrossMonth(osEq, semanas, {
+                from: now,
+                minutosPorOS: slot.minutosPorOS,
+              }),
+            );
           }
         }
 
