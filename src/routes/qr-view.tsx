@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Link } from "@tanstack/react-router";
 import { QrCode, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/qr-view")({
@@ -6,7 +6,7 @@ export const Route = createFileRoute("/qr-view")({
   head: () => ({
     meta: [
       { title: "QR-Code do Ativo — Apont Auto" },
-      { name: "description", content: "Informações do ativo escaneado via QR-Code." },
+      { name: "description", content: "Redirecionamento do QR-Code para o histórico do ativo." },
     ],
   }),
 });
@@ -22,7 +22,24 @@ const LABELS: Record<string, string> = {
 };
 
 function QrViewPage() {
-  const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const params =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const ativo = params.get("ativo") ?? "";
+  const equipamento = params.get("equipamento") ?? "";
+  const patrimonio = params.get("patrimonio") ?? "";
+
+  // QRs novos apontam direto para /ativo-historico. QRs antigos caem aqui
+  // e são redirecionados quando têm identificadores suficientes.
+  if (ativo || equipamento || patrimonio) {
+    return (
+      <Navigate
+        to="/ativo-historico"
+        search={{ ativo, equipamento, patrimonio }}
+        replace
+      />
+    );
+  }
+
   const entries = Array.from(params.entries()).filter(([k]) => LABELS[k]);
 
   return (
