@@ -437,6 +437,17 @@ function OsDetail({
       toast.warning("Nada para salvar. Adicione foto, peça ou problema.");
       return;
     }
+    // Marca a OS como Concluída ao enviar
+    const nowIso = new Date().toISOString();
+    items.push({
+      id: uuid(),
+      kind: "status",
+      osId: os.id,
+      numeroOs: os.numero_os,
+      payload: { status: "Concluída", fim: nowIso },
+      createdAt: Date.now(),
+      attempts: 0,
+    });
     setSaving(true);
     try {
       for (const it of items) await outboxAdd(it);
@@ -444,11 +455,12 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
+      onPatchLocal({ status: "Concluída", fim: nowIso });
 
       onQueued();
       toast.success(
         online
-          ? "Salvo. Enviando ao servidor…"
+          ? "OS concluída. Enviando ao servidor…"
           : "Salvo offline. Enviaremos assim que houver internet.",
       );
       if (online) {
