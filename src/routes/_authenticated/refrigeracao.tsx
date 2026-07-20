@@ -88,6 +88,16 @@ function RefrigeracaoPage() {
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+
+  useEffect(() => {
+    setEquipe(loadEquipe());
+  }, []);
+
+  const setEquipeAndPersist = (v: EquipeFiltro) => {
+    setEquipe(v);
+    saveEquipe(v);
+  };
 
   const refreshPending = async () => setPending((await outboxAll()).length);
 
