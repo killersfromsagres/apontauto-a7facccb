@@ -1,12 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
 import {
@@ -18,7 +23,12 @@ import {
   type Equipe,
   type TriagedOS,
 } from "@/lib/preventiva/triage";
-import { distributeAcrossMonth, weeksUntilEndOfMonth, type WeekBucket } from "@/lib/preventiva/capacity";
+import {
+  distributeAcrossMonth,
+  weeksToCoverAll,
+  MINUTOS_UTEIS_DIA,
+  type WeekBucket,
+} from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
@@ -33,6 +43,7 @@ import {
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
 });
+
 
 type SlotId = "CCH" | "REFRIG" | "ELETRICA";
 
@@ -138,6 +149,11 @@ function ProgramacaoPage() {
     ELETRICA: 30,
   });
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  });
+
 
   const reloadHistorico = useCallback(async () => {
     try {
@@ -177,10 +193,10 @@ function ProgramacaoPage() {
     setAlerts([]);
     setOverflowMsgs([]);
     try {
-      const semanas = weeksUntilEndOfMonth(new Date());
       const out: GeneratedFile[] = [];
       const allAlerts: FileAlert[] = [];
       const overflowList: string[] = [];
+      const now = startDate;
 
       for (const slot of SLOTS) {
         const file = slotFiles[slot.id];
@@ -196,10 +212,20 @@ function ProgramacaoPage() {
           continue;
         }
 
-        // Distribui cada equipe do slot balanceando por dias úteis do mês,
-        // com sequenciamento por prédio → andar (minimiza deslocamento).
-        const now = new Date();
         const minEffective = tempoPorOS[slot.id] ?? slot.minutosPorOS;
+        // Capacidade diária deste slot (1 técnico por equipe).
+        const capPerDay = Math.max(1, Math.floor(MINUTOS_UTEIS_DIA / minEffective));
+        // Precisamos cobrir a MAIOR fila de equipe (dias úteis suficientes
+        // para não sobrar OS).
+        const maiorFila = slot.equipes.reduce((max, eq) => {
+          const n = filtered.filter((o) => o.equipe === eq).length;
+          return n > max ? n : max;
+        }, 0);
+        const diasNecessarios = Math.ceil(maiorFila / capPerDay);
+        const { weeks: semanas, until } = weeksToCoverAll(now, diasNecessarios);
+
+        // Distribui cada equipe do slot balanceando por dias úteis (até `until`),
+        // com sequenciamento por prédio → andar (minimiza deslocamento).
         const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
@@ -208,6 +234,7 @@ function ProgramacaoPage() {
               eq,
               distributeAcrossMonth(osEq, semanas, {
                 from: now,
+                until,
                 minutosPorOS: minEffective,
               }),
             );
@@ -275,16 +302,14 @@ function ProgramacaoPage() {
           overflowDias = d.businessDaysCount;
           overflowTotalOS += d.buckets.reduce((s, b) => s + b.os.length, 0) + d.overflow.length;
         }
+        const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR");
         if (overflowTotal > 0) {
           overflowList.push(
-            `${slot.label}: ${overflowTotal} OS não cabem até o fim do mês. ` +
-              `Total ${overflowTotalOS} OS ÷ ${overflowDias} dias úteis = ${Math.ceil(
-                overflowTotalOS / Math.max(1, overflowDias),
-              )}/dia, mas a capacidade máxima é ${overflowCap}/dia (usando ${overflowPerDay}/dia).`,
+            `${slot.label}: ${overflowTotal} OS ainda não alocadas — capacidade máxima ${overflowCap}/dia. Reveja o tempo/OS.`,
           );
         } else if (overflowPerDay > 0) {
           overflowList.push(
-            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), sequenciadas por prédio → andar.`,
+            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), de ${fmtDate(now)} até ${fmtDate(until)}. Sequenciadas por prédio → andar.`,
           );
         }
 
@@ -293,6 +318,7 @@ function ProgramacaoPage() {
       setAlerts(allAlerts);
       setOverflowMsgs(overflowList);
       setGenerated((prev) => [...out, ...prev]);
+
       if (out.length > 0) void reloadHistorico();
       if (out.length === 0) toast.warning("Nenhum arquivo semanal foi gerado.");
       else toast.success(`${out.length} arquivo(s) semanal(is) gerado(s)`);
@@ -356,14 +382,54 @@ function ProgramacaoPage() {
               ))}
             </div>
 
-            <Button
-              onClick={generate}
-              disabled={processing || !hasAnyFile}
-              className="w-full sm:w-auto"
-              size="lg"
-            >
-              {processing ? "Processando…" : "Gerar Programação"}
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Data de início da programação
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal sm:w-[260px]",
+                        !startDate && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate
+                        ? format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                        : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(d) => d && setStartDate(d)}
+                      locale={ptBR}
+                      weekStartsOn={1}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-[11px] text-muted-foreground">
+                  A distribuição começa nesta data e se estende automaticamente
+                  até acomodar todas as OS.
+                </p>
+              </div>
+
+              <Button
+                onClick={generate}
+                disabled={processing || !hasAnyFile}
+                className="w-full sm:w-auto"
+                size="lg"
+              >
+                {processing ? "Processando…" : "Gerar Programação"}
+              </Button>
+            </div>
+
 
             {alerts.length > 0 && (
               <div className="space-y-2">

@@ -61,12 +61,26 @@ export function isBusinessDay(d: Date, holidays?: Set<string>): boolean {
 export function businessDaysUntilEndOfMonth(from: Date = new Date()): Date[] {
   const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const last = new Date(from.getFullYear(), from.getMonth() + 1, 0);
-  const hs = brHolidays(from.getFullYear());
+  return businessDaysUntil(start, last);
+}
+
+/** Dias úteis entre `from` (inclusive) e `until` (inclusive). */
+export function businessDaysUntil(from: Date, until: Date): Date[] {
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const end = new Date(until.getFullYear(), until.getMonth(), until.getDate());
   const out: Date[] = [];
-  for (let d = new Date(start); d <= last; d = addDays(d, 1)) {
-    if (isBusinessDay(d, hs)) out.push(new Date(d));
+  // Feriados podem cruzar de ano
+  const holidayCache = new Map<number, Set<string>>();
+  const hs = (y: number) => {
+    let s = holidayCache.get(y);
+    if (!s) { s = brHolidays(y); holidayCache.set(y, s); }
+    return s;
+  };
+  for (let d = new Date(start); d <= end; d = addDays(d, 1)) {
+    if (isBusinessDay(d, hs(d.getFullYear()))) out.push(new Date(d));
   }
   return out;
 }
 
 export { iso as isoDate };
+
