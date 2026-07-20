@@ -193,10 +193,10 @@ function ProgramacaoPage() {
     setAlerts([]);
     setOverflowMsgs([]);
     try {
-      const semanas = weeksUntilEndOfMonth(new Date());
       const out: GeneratedFile[] = [];
       const allAlerts: FileAlert[] = [];
       const overflowList: string[] = [];
+      const now = startDate;
 
       for (const slot of SLOTS) {
         const file = slotFiles[slot.id];
@@ -212,10 +212,20 @@ function ProgramacaoPage() {
           continue;
         }
 
-        // Distribui cada equipe do slot balanceando por dias úteis do mês,
-        // com sequenciamento por prédio → andar (minimiza deslocamento).
-        const now = new Date();
         const minEffective = tempoPorOS[slot.id] ?? slot.minutosPorOS;
+        // Capacidade diária deste slot (1 técnico por equipe).
+        const capPerDay = Math.max(1, Math.floor(MINUTOS_UTEIS_DIA / minEffective));
+        // Precisamos cobrir a MAIOR fila de equipe (dias úteis suficientes
+        // para não sobrar OS).
+        const maiorFila = slot.equipes.reduce((max, eq) => {
+          const n = filtered.filter((o) => o.equipe === eq).length;
+          return n > max ? n : max;
+        }, 0);
+        const diasNecessarios = Math.ceil(maiorFila / capPerDay);
+        const { weeks: semanas, until } = weeksToCoverAll(now, diasNecessarios);
+
+        // Distribui cada equipe do slot balanceando por dias úteis (até `until`),
+        // com sequenciamento por prédio → andar (minimiza deslocamento).
         const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
@@ -224,6 +234,7 @@ function ProgramacaoPage() {
               eq,
               distributeAcrossMonth(osEq, semanas, {
                 from: now,
+                until,
                 minutosPorOS: minEffective,
               }),
             );
@@ -291,16 +302,14 @@ function ProgramacaoPage() {
           overflowDias = d.businessDaysCount;
           overflowTotalOS += d.buckets.reduce((s, b) => s + b.os.length, 0) + d.overflow.length;
         }
+        const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR");
         if (overflowTotal > 0) {
           overflowList.push(
-            `${slot.label}: ${overflowTotal} OS não cabem até o fim do mês. ` +
-              `Total ${overflowTotalOS} OS ÷ ${overflowDias} dias úteis = ${Math.ceil(
-                overflowTotalOS / Math.max(1, overflowDias),
-              )}/dia, mas a capacidade máxima é ${overflowCap}/dia (usando ${overflowPerDay}/dia).`,
+            `${slot.label}: ${overflowTotal} OS ainda não alocadas — capacidade máxima ${overflowCap}/dia. Reveja o tempo/OS.`,
           );
         } else if (overflowPerDay > 0) {
           overflowList.push(
-            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), sequenciadas por prédio → andar.`,
+            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), de ${fmtDate(now)} até ${fmtDate(until)}. Sequenciadas por prédio → andar.`,
           );
         }
 
@@ -309,6 +318,7 @@ function ProgramacaoPage() {
       setAlerts(allAlerts);
       setOverflowMsgs(overflowList);
       setGenerated((prev) => [...out, ...prev]);
+
       if (out.length > 0) void reloadHistorico();
       if (out.length === 0) toast.warning("Nenhum arquivo semanal foi gerado.");
       else toast.success(`${out.length} arquivo(s) semanal(is) gerado(s)`);
