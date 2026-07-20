@@ -247,7 +247,7 @@ function ProgramacaoPage() {
             ativoIndex: read.ativoIndex,
           });
           const slug = slot.label.replace(/[^A-Z0-9]+/gi, "_");
-          out.push({
+          const item: GeneratedFile = {
             id: `${slot.id}-${week.isoWeek}-${Date.now()}-${i}`,
             filename: `PROGRAMACAO_SEM${week.isoWeek}_${slug}.xlsx`,
             blob,
@@ -255,7 +255,23 @@ function ProgramacaoPage() {
             slot: slot.id,
             slotLabel: slot.label,
             totalOS: totalSemana,
-          });
+          };
+          out.push(item);
+          try {
+            await saveHistorico({
+              id: item.id,
+              filename: item.filename,
+              week: item.week,
+              slot: item.slot,
+              slotLabel: item.slotLabel,
+              totalOS: item.totalOS,
+              titulo: TITULO_PADRAO,
+              createdAt: Date.now(),
+              blob,
+            });
+          } catch (err) {
+            console.error("Falha ao salvar histórico", err);
+          }
         }
         for (const eq of slot.equipes) {
           const d = porEquipeBuckets.get(eq);
@@ -284,6 +300,7 @@ function ProgramacaoPage() {
       setAlerts(allAlerts);
       setOverflowMsgs(overflowList);
       setGenerated((prev) => [...out, ...prev]);
+      if (out.length > 0) void reloadHistorico();
       if (out.length === 0) toast.warning("Nenhum arquivo semanal foi gerado.");
       else toast.success(`${out.length} arquivo(s) semanal(is) gerado(s)`);
     } catch (e) {
