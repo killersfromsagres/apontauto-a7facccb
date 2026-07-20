@@ -267,3 +267,19 @@ export function lookupAtivo(
   }
   return "";
 }
+
+export function lookupAtivoEntry(
+  index: Map<string, AtivoIndexEntry>,
+  predio: string,
+  andar: string,
+  local: string,
+): AtivoIndexEntry | null {
+  const hit = index.get(ativoKey(predio, andar, local));
+  if (hit) return hit;
+  for (const [k, v] of index) {
+    if (k.startsWith(`${norm(predio)}|`) && k.endsWith(`|${norm(local)}`)) {
+      return v;
+    }
+  }
+  return null;
+}

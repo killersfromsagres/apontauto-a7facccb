@@ -2,7 +2,7 @@
 
 import type { WeekBucket, WeekInfo } from "./capacity";
 import { EQUIPE_COLOR, EQUIPES_ORDEM, type Equipe, type TriagedOS } from "./triage";
-import { lookupAtivo, type AtivoIndexEntry } from "./reader";
+import { lookupAtivoEntry, type AtivoIndexEntry } from "./reader";
 
 export const APTOS_EXTRABOLD = "Aptos ExtraBold";
 export const APTOS_SEMIBOLD = "Aptos SemiBold";
@@ -15,14 +15,14 @@ const NAO_LOCALIZADO_COLOR = argbFromHex("#FF0000");
 
 const COLUMNS = [
   { key: "os", label: "OS", width: 16 },
-  { key: "nome", label: "Nome", width: 54 },
+  { key: "nome", label: "Nome", width: 38 },
   { key: "predio", label: "Prédio", width: 16 },
   { key: "andar", label: "Andar", width: 14 },
   { key: "espaco", label: "Espaço", width: 34 },
   { key: "atividade", label: "Atividade", width: 18 },
   { key: "sla", label: "Término SLA", width: 18 },
   { key: "equipe", label: "Equipe", width: 32 },
-  { key: "ativo", label: "Ativo", width: 30 },
+  { key: "ativo", label: "Ativo", width: 36 },
   { key: "outros", label: "Outros", width: 18 },
   { key: "seg", label: "SEGUNDA", width: 9, day: 0 },
   { key: "ter", label: "TERÇA", width: 9, day: 1 },
@@ -122,9 +122,17 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
       let ativoValue = os.ativo;
       let ativoNaoLocalizado = false;
       if (isClima) {
-        const found = lookupAtivo(input.ativoIndex, os.predio, os.andar, os.local);
-        if (found) ativoValue = found;
-        else if (!ativoValue) {
+        const entry = lookupAtivoEntry(input.ativoIndex, os.predio, os.andar, os.local);
+        const ativoFound = entry?.ativo || "";
+        const equipFound = entry?.equipamento || "";
+        const baseAtivo = ativoFound || ativoValue || "";
+        if (baseAtivo && equipFound && baseAtivo !== equipFound) {
+          ativoValue = `${baseAtivo} — ${equipFound}`;
+        } else if (baseAtivo) {
+          ativoValue = baseAtivo;
+        } else if (equipFound) {
+          ativoValue = equipFound;
+        } else if (!ativoValue) {
           ativoValue = "Ativo não localizado";
           ativoNaoLocalizado = true;
         }
