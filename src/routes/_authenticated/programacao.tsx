@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Download, FileSpreadsheet, Upload, X } from "lucide-react";
+import { AlertTriangle, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -22,6 +22,13 @@ import { distributeAcrossMonth, weeksUntilEndOfMonth, type WeekBucket } from "@/
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
+import {
+  clearHistorico,
+  deleteHistorico,
+  listHistorico,
+  saveHistorico,
+  type HistoricoItem,
+} from "@/lib/preventiva/history";
 
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
@@ -130,6 +137,19 @@ function ProgramacaoPage() {
     REFRIG: 0,
     ELETRICA: 0,
   });
+  const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+
+  const reloadHistorico = useCallback(async () => {
+    try {
+      setHistorico(await listHistorico());
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    void reloadHistorico();
+  }, [reloadHistorico]);
 
   const setIncremento = useCallback((slot: SlotId, delta: number) => {
     setIncrementos((prev) => {
@@ -227,7 +247,7 @@ function ProgramacaoPage() {
             ativoIndex: read.ativoIndex,
           });
           const slug = slot.label.replace(/[^A-Z0-9]+/gi, "_");
-          out.push({
+          const item: GeneratedFile = {
             id: `${slot.id}-${week.isoWeek}-${Date.now()}-${i}`,
             filename: `PROGRAMACAO_SEM${week.isoWeek}_${slug}.xlsx`,
             blob,
@@ -235,7 +255,23 @@ function ProgramacaoPage() {
             slot: slot.id,
             slotLabel: slot.label,
             totalOS: totalSemana,
-          });
+          };
+          out.push(item);
+          try {
+            await saveHistorico({
+              id: item.id,
+              filename: item.filename,
+              week: item.week,
+              slot: item.slot,
+              slotLabel: item.slotLabel,
+              totalOS: item.totalOS,
+              titulo: TITULO_PADRAO,
+              createdAt: Date.now(),
+              blob,
+            });
+          } catch (err) {
+            console.error("Falha ao salvar histórico", err);
+          }
         }
         for (const eq of slot.equipes) {
           const d = porEquipeBuckets.get(eq);
@@ -264,6 +300,7 @@ function ProgramacaoPage() {
       setAlerts(allAlerts);
       setOverflowMsgs(overflowList);
       setGenerated((prev) => [...out, ...prev]);
+      if (out.length > 0) void reloadHistorico();
       if (out.length === 0) toast.warning("Nenhum arquivo semanal foi gerado.");
       else toast.success(`${out.length} arquivo(s) semanal(is) gerado(s)`);
     } catch (e) {
@@ -418,7 +455,109 @@ function ProgramacaoPage() {
             )}
           </div>
         </GlassCard>
+
+        {/* Campo 3 — Histórico persistente */}
+        <GlassCard>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <History className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  3 · Histórico de programações
+                </h3>
+                {historico.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {historico.length}
+                  </Badge>
+                )}
+              </div>
+              {historico.length > 0 && (
+                <button
+                  onClick={async () => {
+                    if (!confirm("Apagar todo o histórico local?")) return;
+                    await clearHistorico();
+                    await reloadHistorico();
+                    toast.success("Histórico limpo");
+                  }}
+                  className="text-[11px] text-muted-foreground hover:text-destructive"
+                >
+                  Limpar histórico
+                </button>
+              )}
+            </div>
+
+            {historico.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 py-12 text-center text-muted-foreground">
+                <History className="h-6 w-6" />
+                <p className="text-xs">
+                  Programações geradas aparecerão aqui e ficam salvas no navegador.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(
+                  historico.reduce<Record<string, HistoricoItem[]>>((acc, it) => {
+                    const key = `Semana ${it.week}`;
+                    (acc[key] ||= []).push(it);
+                    return acc;
+                  }, {}),
+                ).map(([label, items]) => (
+                  <div key={label} className="space-y-2">
+                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                      <span className="font-semibold">{label}</span>
+                      <span className="h-px flex-1 bg-border/50" />
+                      <span>{items.length} arquivo{items.length === 1 ? "" : "s"}</span>
+                    </div>
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                      {items.map((f) => (
+                        <li
+                          key={f.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 p-3"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">{f.slotLabel}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {f.totalOS} OS ·{" "}
+                              {new Date(f.createdAt).toLocaleString("pt-BR", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </p>
+                            <p className="truncate text-[10px] text-muted-foreground/70">
+                              {f.filename}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => downloadBlob(f.blob, f.filename)}
+                            >
+                              <Download className="mr-1.5 h-3.5 w-3.5" /> Baixar
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                await deleteHistorico(f.id);
+                                await reloadHistorico();
+                              }}
+                              aria-label="Excluir do histórico"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </GlassCard>
       </div>
+
     </PageShell>
   );
 }
