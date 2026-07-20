@@ -16,7 +16,7 @@ import {
   Snowflake,
   ClipboardList,
   History,
-  QrCode,
+  Wind,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -119,11 +119,11 @@ const sections: MenuSection[] = [
   },
   {
     kind: "group",
-    key: "ativos-grp",
-    title: "Ativos",
-    icon: QrCode,
+    key: "preventiva-ac-grp",
+    title: "Preventiva AC",
+    icon: Wind,
     items: [
-      { key: "qr-codes", title: "QR-Codes", url: "/qr-codes", icon: QrCode },
+      { key: "preventiva-ac", title: "Cadastro PMOC", url: "/preventiva-ac", icon: Wind },
     ],
   },
   {
