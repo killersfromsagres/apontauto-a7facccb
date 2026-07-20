@@ -362,7 +362,8 @@ function OsDetail({
   online: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previews, setPreviews] = useState<{ id: string; url: string; blob: Blob }[]>([]);
+  type Preview = { id: string; url: string; blobKey: string };
+  const [previews, setPreviews] = useState<Preview[]>([]);
 
   // Patrimônio (opcional — colaborador preenche)
   const [patrim, setPatrim] = useState(os.patrimonio ?? "");
@@ -394,60 +395,73 @@ function OsDetail({
   });
   const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
 
-
-
   const [saving, setSaving] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
     setPatrim(os.patrimonio ?? "");
   }, [os.id, os.patrimonio]);
 
-  const savePatrimonio = async () => {
-    const v = patrim.trim();
-    if (v === (os.patrimonio ?? "")) return;
-    setSavingPatrim(true);
-    try {
-      await outboxAdd({
-        id: uuid(),
-        kind: "patrimonio",
-        osId: os.id,
-        numeroOs: os.numero_os,
-        payload: { patrimonio: v || null },
-        createdAt: Date.now(),
-        attempts: 0,
-      });
-      onPatchLocal({ patrimonio: v || null });
-      onQueued();
-      if (online) {
-        await syncPending();
-        onQueued();
+  // Restaura rascunho salvo (fotos + textos) ao entrar na OS
+  useEffect(() => {
+    let cancelled = false;
+    setDraftLoaded(false);
+    setPreviews([]);
+    setPecas([]);
+    setProblemas([]);
+    (async () => {
+      try {
+        const d = await draftGet(os.id);
+        if (cancelled || !d) {
+          setDraftLoaded(true);
+          return;
+        }
+        const restored: Preview[] = [];
+        for (const f of d.fotos) {
+          const blob = await blobGet(f.blobKey);
+          if (blob) restored.push({ id: f.id, blobKey: f.blobKey, url: URL.createObjectURL(blob) });
+        }
+        if (cancelled) return;
+        setPreviews(restored);
+        setPecas(d.pecas ?? []);
+        setProblemas(d.problemas ?? []);
+        if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
+          setDraftSavedAt(d.updatedAt);
+        }
+      } catch {}
+      setDraftLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [os.id]);
+
+  // Auto-save do rascunho (debounced)
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const hasAny =
+      previews.length > 0 || pecas.length > 0 || problemas.length > 0;
+    const t = setTimeout(() => {
+      if (!hasAny) {
+        draftDelete(os.id).catch(() => {});
+        setDraftSavedAt(null);
+        return;
       }
-      toast.success("Patrimônio salvo.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao salvar patrimônio");
-    } finally {
-      setSavingPatrim(false);
-    }
-  };
+      const draft = {
+        osId: os.id,
+        fotos: previews.map((p) => ({ id: p.id, blobKey: p.blobKey })),
+        pecas,
+        problemas,
+        updatedAt: Date.now(),
+      };
+      draftPut(draft)
+        .then(() => setDraftSavedAt(draft.updatedAt))
+        .catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [previews, pecas, problemas, draftLoaded, os.id]);
 
-  const onPickFiles = async (files: FileList | null) => {
-    if (!files) return;
-    const next: typeof previews = [];
-    for (const f of Array.from(files)) {
-      if (!f.type.startsWith("image/")) continue;
-      const blob = await compressImage(f);
-      next.push({ id: uuid(), url: URL.createObjectURL(blob), blob });
-    }
-    setPreviews((p) => [...p, ...next]);
-  };
-
-  const removePreview = (id: string) => {
-    setPreviews((p) => {
-      const rm = p.find((x) => x.id === id);
-      if (rm) URL.revokeObjectURL(rm.url);
-      return p.filter((x) => x.id !== id);
-    });
-  };
 
   const saveAll = async () => {
     const items: OutboxItem[] = [];
