@@ -286,7 +286,7 @@ function GroupItem({
           tooltip={section.title}
           className="h-10 rounded-lg data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
         >
-          <Link to={first.url} preload="intent" className="flex items-center gap-3">
+          <Link to={first.url} preload="intent" onClick={closeOnMobile} className="flex items-center gap-3">
             <section.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             <span className="truncate">{section.title}</span>
           </Link>
