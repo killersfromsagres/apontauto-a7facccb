@@ -15,7 +15,7 @@ import {
   Snowflake,
   Filter,
   FileSpreadsheet,
-  QrCode,
+  
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -43,7 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
 import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
 import { downloadBlob } from "@/lib/download";
-import { generateAtivoQrPng, printAtivoQr, buildAtivoHistoricoUrl } from "@/lib/refrigeracao/qrcode";
+
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
