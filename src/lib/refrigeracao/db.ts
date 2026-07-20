@@ -61,7 +61,11 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("blobs")) {
         db.createObjectStore("blobs");
       }
+      if (!db.objectStoreNames.contains("drafts")) {
+        db.createObjectStore("drafts", { keyPath: "osId" });
+      }
     };
+
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
