@@ -23,7 +23,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { downloadBlob } from "@/lib/download";
 import {
-  CHECKLIST_PMOC, MEDICOES, TIPOS_EQUIPAMENTO, TIPOS_SERVICO, FLUIDOS,
+  CHECKLIST_PMOC, MEDICOES, TIPOS_EQUIPAMENTO, TIPOS_SERVICO, FLUIDOS, STATUS_EQUIPAMENTO,
   type ChecklistState, type MedicoesState,
 } from "@/lib/preventiva-ac/pmoc";
 import { generatePmocWorkbook, type PmocRegistro } from "@/lib/preventiva-ac/export";
@@ -46,6 +46,8 @@ type Form = {
   numero_serie: string;
   capacidade_btu: string;
   fluido_refrigerante: string;
+  quantidade_fluido: string;
+  status_equipamento: string;
   ano_fabricacao: string;
   data_instalacao: string;
   predio: string;
@@ -64,7 +66,9 @@ type Form = {
 
 const EMPTY_FORM: Form = {
   tag: "", tipo_equipamento: "", marca: "", modelo: "", numero_serie: "",
-  capacidade_btu: "", fluido_refrigerante: "", ano_fabricacao: "", data_instalacao: "",
+  capacidade_btu: "", fluido_refrigerante: "", quantidade_fluido: "",
+  status_equipamento: "Operando normal",
+  ano_fabricacao: "", data_instalacao: "",
   predio: "", andar: "", local: "", ambiente: "", area_climatizada: "", ocupacao_max: "",
   fabricante: "", responsavel_tecnico: "",
   data_manutencao: new Date().toISOString().slice(0, 10),
@@ -109,6 +113,8 @@ function PreventivaAcPage() {
         numero_serie: form.numero_serie || null,
         capacidade_btu: toNumOrNull(form.capacidade_btu),
         fluido_refrigerante: form.fluido_refrigerante || null,
+        quantidade_fluido: form.quantidade_fluido || null,
+        status_equipamento: form.status_equipamento || null,
         ano_fabricacao: toNumOrNull(form.ano_fabricacao),
         data_instalacao: form.data_instalacao || null,
         predio: form.predio || null,
