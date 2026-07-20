@@ -382,14 +382,54 @@ function ProgramacaoPage() {
               ))}
             </div>
 
-            <Button
-              onClick={generate}
-              disabled={processing || !hasAnyFile}
-              className="w-full sm:w-auto"
-              size="lg"
-            >
-              {processing ? "Processando…" : "Gerar Programação"}
-            </Button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Data de início da programação
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal sm:w-[260px]",
+                        !startDate && "text-muted-foreground",
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate
+                        ? format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                        : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={(d) => d && setStartDate(d)}
+                      locale={ptBR}
+                      weekStartsOn={1}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-[11px] text-muted-foreground">
+                  A distribuição começa nesta data e se estende automaticamente
+                  até acomodar todas as OS.
+                </p>
+              </div>
+
+              <Button
+                onClick={generate}
+                disabled={processing || !hasAnyFile}
+                className="w-full sm:w-auto"
+                size="lg"
+              >
+                {processing ? "Processando…" : "Gerar Programação"}
+              </Button>
+            </div>
+
 
             {alerts.length > 0 && (
               <div className="space-y-2">
