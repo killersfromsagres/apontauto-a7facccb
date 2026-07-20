@@ -91,24 +91,20 @@ function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
       return all.filter((o) =>
         o.equipe === "CIVIL" || o.equipe === "CHAVEIRO" || o.equipe === "HIDRÁULICA",
       );
-    case "REFRIG1":
-      return all.filter(
-        (o) =>
-          o.equipe.startsWith("CLIMAT") &&
-          predioMatches(o.predio, REFRIG_1),
-      ).map((o) => ({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 1" as Equipe }));
-    case "REFRIG2":
-      return all.filter(
-        (o) =>
-          o.equipe.startsWith("CLIMAT") &&
-          predioMatches(o.predio, REFRIG_2),
-      ).map((o) => ({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 2" as Equipe }));
-    case "REFRIG3":
-      return all.filter(
-        (o) =>
-          o.equipe.startsWith("CLIMAT") &&
-          predioMatches(o.predio, REFRIG_3),
-      ).map((o) => ({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 3" as Equipe }));
+    case "REFRIG": {
+      const climat = all.filter((o) => o.equipe.startsWith("CLIMAT"));
+      const out: TriagedOS[] = [];
+      for (const o of climat) {
+        if (predioMatches(o.predio, REFRIG_1)) {
+          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 1" as Equipe });
+        } else if (predioMatches(o.predio, REFRIG_2)) {
+          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 2" as Equipe });
+        } else if (predioMatches(o.predio, REFRIG_3)) {
+          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 3" as Equipe });
+        }
+      }
+      return out;
+    }
     case "ELETRICA":
       return all.filter((o) => o.equipe === "ELÉTRICA");
   }
@@ -117,9 +113,7 @@ function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
 function ProgramacaoPage() {
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
-    REFRIG1: null,
-    REFRIG2: null,
-    REFRIG3: null,
+    REFRIG: null,
     ELETRICA: null,
   });
   const [processing, setProcessing] = useState(false);
