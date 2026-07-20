@@ -149,6 +149,11 @@ function ProgramacaoPage() {
     ELETRICA: 30,
   });
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  });
+
 
   const reloadHistorico = useCallback(async () => {
     try {
