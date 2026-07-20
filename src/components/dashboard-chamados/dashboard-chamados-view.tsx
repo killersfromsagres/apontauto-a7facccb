@@ -57,6 +57,13 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { parseChamadosFile, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
 import { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
+import {
+  fetchBackorderStatuses,
+  setBackorderConcluido,
+  setBackorderReaberto,
+  subscribeBackorderChanges,
+  type BackorderStatus,
+} from "@/lib/dashboard-chamados/backorder-sync";
 import { useMyAccess } from "@/hooks/use-my-access";
 
 const CHART_COLORS = [
