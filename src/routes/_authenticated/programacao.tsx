@@ -185,6 +185,8 @@ function ProgramacaoPage() {
         // Distribui cada equipe do slot balanceando por dias úteis do mês,
         // com sequenciamento por prédio → andar (minimiza deslocamento).
         const now = new Date();
+        const incr = incrementos[slot.id] ?? 0;
+        const minEffective = slot.minutosPorOS + 30 * incr;
         const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
         for (const eq of slot.equipes) {
           const osEq = filtered.filter((o) => o.equipe === eq);
@@ -193,7 +195,7 @@ function ProgramacaoPage() {
               eq,
               distributeAcrossMonth(osEq, semanas, {
                 from: now,
-                minutosPorOS: slot.minutosPorOS,
+                minutosPorOS: minEffective,
               }),
             );
           }
