@@ -153,3 +153,35 @@ export async function blobGet(key: string): Promise<Blob | undefined> {
 export async function blobDelete(key: string): Promise<void> {
   await tx("blobs", "readwrite", (t) => req(t.objectStore("blobs").delete(key)));
 }
+
+// ---------- Drafts (rascunho em andamento por OS) ----------
+export type DraftFoto = { id: string; blobKey: string };
+export type DraftPeca = {
+  id: string;
+  descricao: string;
+  quantidade: string;
+  urgencia: string;
+  observacao: string;
+};
+export type DraftProblema = { id: string; descricao: string; gravidade: string };
+
+export type OsDraft = {
+  osId: string;
+  fotos: DraftFoto[];
+  pecas: DraftPeca[];
+  problemas: DraftProblema[];
+  patrimonio?: string;
+  updatedAt: number;
+};
+
+export async function draftGet(osId: string): Promise<OsDraft | undefined> {
+  return tx("drafts", "readonly", (t) => req<OsDraft>(t.objectStore("drafts").get(osId) as any));
+}
+
+export async function draftPut(draft: OsDraft): Promise<void> {
+  await tx("drafts", "readwrite", (t) => req(t.objectStore("drafts").put(draft)));
+}
+
+export async function draftDelete(osId: string): Promise<void> {
+  await tx("drafts", "readwrite", (t) => req(t.objectStore("drafts").delete(osId)));
+}
