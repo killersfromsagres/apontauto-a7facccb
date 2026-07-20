@@ -581,6 +581,8 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
+      await draftDelete(os.id).catch(() => {});
+      setDraftSavedAt(null);
       onPatchLocal({ status: "concluida", fim: nowIso });
 
       onQueued();
@@ -601,16 +603,12 @@ function OsDetail({
     }
   };
 
-  const hasUnsaved =
-    previews.length > 0 ||
-    pecas.some((p) => p.descricao.trim()) ||
-    problemas.some((p) => p.descricao.trim());
-
   const handleBack = () => {
-    if (hasUnsaved && !confirm("Você tem alterações não enviadas. Sair mesmo assim?")) return;
+    // Rascunho já foi salvo automaticamente — sair não perde nada.
     previews.forEach((p) => URL.revokeObjectURL(p.url));
     onBack();
   };
+
 
   return (
     <div className="space-y-4">
