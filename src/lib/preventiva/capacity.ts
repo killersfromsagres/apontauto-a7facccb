@@ -189,25 +189,46 @@ export function distributeAcrossMonth(
   }));
 
   const holidays = brHolidays(from.getFullYear());
-  let queueIdx = 0;
 
-  outer: for (let wi = 0; wi < weeks.length; wi++) {
+  // Monta a lista ordenada de dias úteis com referência (semana, dow).
+  const daySlots: { wi: number; dow: number; date: Date }[] = [];
+  const fromMid = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const lastBiz = businessDays[businessDays.length - 1];
+  for (let wi = 0; wi < weeks.length; wi++) {
     const monday = weeks[wi].monday;
     for (let dow = 0; dow < 5; dow++) {
       const day = new Date(monday);
       day.setDate(day.getDate() + dow);
-      // Só considera dias úteis a partir de `from`.
-      const fromMid = new Date(from.getFullYear(), from.getMonth(), from.getDate());
       if (day < fromMid) continue;
-      if (day > businessDays[businessDays.length - 1]) break outer;
+      if (day > lastBiz) break;
       if (!isBusinessDay(day, holidays)) continue;
+      daySlots.push({ wi, dow, date: day });
+    }
+  }
 
-      for (let k = 0; k < perDay && queueIdx < sorted.length; k++) {
-        const item = sorted[queueIdx++];
-        buckets[wi].os.push(item);
-        buckets[wi].porDia[dow].push(item);
-      }
-      if (queueIdx >= sorted.length) break outer;
+  // Distribui: perDay para todos os dias; se sobrar OS antes do fim,
+  // aumenta a alocação nos dias finais (flexibilização da última semana),
+  // respeitando capPerDay.
+  const perDayArr = new Array(daySlots.length).fill(perDay) as number[];
+  let assigned = perDayArr.reduce((s, n) => s + n, 0);
+  let extra = Math.max(0, sorted.length - assigned);
+  // Preenche do fim para o começo até esgotar `extra` ou saturar capPerDay.
+  for (let i = daySlots.length - 1; i >= 0 && extra > 0; i--) {
+    const room = capPerDay - perDayArr[i];
+    if (room <= 0) continue;
+    const add = Math.min(room, extra);
+    perDayArr[i] += add;
+    extra -= add;
+  }
+
+  let queueIdx = 0;
+  for (let i = 0; i < daySlots.length && queueIdx < sorted.length; i++) {
+    const { wi, dow } = daySlots[i];
+    const take = perDayArr[i];
+    for (let k = 0; k < take && queueIdx < sorted.length; k++) {
+      const item = sorted[queueIdx++];
+      buckets[wi].os.push(item);
+      buckets[wi].porDia[dow].push(item);
     }
   }
 
