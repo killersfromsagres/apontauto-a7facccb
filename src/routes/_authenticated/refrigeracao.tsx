@@ -38,12 +38,18 @@ import {
   outboxAdd,
   outboxAll,
   blobPut,
+  blobGet,
+  blobDelete,
   updateCachedOs,
+  draftGet,
+  draftPut,
+  draftDelete,
   type OsCacheRow,
   type OutboxItem,
 } from "@/lib/refrigeracao/db";
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
+
 import {
   EQUIPES_REFRIGERACAO,
   loadEquipe,
