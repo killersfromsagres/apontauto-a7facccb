@@ -131,11 +131,11 @@ function ProgramacaoPage() {
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
-  // Incrementos de 00:30 por OS (média) — planejamento de tempo extra.
-  const [incrementos, setIncrementos] = useState<Record<SlotId, number>>({
-    CCH: 0,
-    REFRIG: 0,
-    ELETRICA: 0,
+  // Tempo por OS (minutos). Intervalo permitido: 30 (00:30) ou 60 (01:00).
+  const [tempoPorOS, setTempoPorOS] = useState<Record<SlotId, 30 | 60>>({
+    CCH: 60,
+    REFRIG: 60,
+    ELETRICA: 30,
   });
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
 
@@ -151,16 +151,10 @@ function ProgramacaoPage() {
     void reloadHistorico();
   }, [reloadHistorico]);
 
-  const setIncremento = useCallback((slot: SlotId, delta: number) => {
-    setIncrementos((prev) => {
-      const next = Math.max(0, (prev[slot] ?? 0) + delta);
-      if (delta > 0 && next > 0) {
-        toast.warning(
-          `Tempo adicional registrado — +00:30 por OS (${next}× incremento) em ${slot}.`,
-          { description: "O tempo base de 01:00 foi excedido." },
-        );
-      }
-      return { ...prev, [slot]: next };
+  const setTempo = useCallback((slot: SlotId, minutos: 30 | 60) => {
+    setTempoPorOS((prev) => {
+      if (prev[slot] === minutos) return prev;
+      return { ...prev, [slot]: minutos };
     });
   }, []);
 
