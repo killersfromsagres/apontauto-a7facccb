@@ -264,6 +264,10 @@ function GroupItem({
 }) {
   const hasActive = section.items.some((i) => isItemActive(i.url));
   const [open, setOpen] = useState(hasActive);
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeOnMobile = () => {
+    if (isMobile) setOpenMobile(false);
+  };
 
   useEffect(() => {
     if (hasActive) setOpen(true);
