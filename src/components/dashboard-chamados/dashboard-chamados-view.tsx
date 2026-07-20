@@ -609,12 +609,16 @@ export function DashboardChamadosView() {
               </div>
               <span className="text-xs text-muted-foreground">Quem abriu mais chamados</span>
             </div>
-            <div className="h-96 w-full">
+            <div
+              className="w-full"
+              style={{ height: `${Math.max(260, stats.porSolicitante.length * 36 + 60)}px` }}
+            >
               <ResponsiveContainer>
                 <BarChart
                   data={stats.porSolicitante}
                   layout="vertical"
-                  margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
+                  margin={{ top: 8, right: 32, bottom: 8, left: 8 }}
+                  barCategoryGap={8}
                 >
                   <defs>
                     <linearGradient id="gSol" x1="0" y1="0" x2="1" y2="0">
@@ -623,15 +627,27 @@ export function DashboardChamadosView() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
+                  <XAxis
+                    type="number"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    allowDecimals={false}
+                    hide
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"
                     stroke="var(--muted-foreground)"
                     fontSize={11}
-                    width={160}
+                    width={200}
+                    interval={0}
+                    tick={{ fill: "var(--muted-foreground)" }}
+                    tickFormatter={(v: string) =>
+                      v && v.length > 26 ? `${v.slice(0, 25)}…` : v
+                    }
                   />
                   <Tooltip
+                    cursor={{ fill: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
                     contentStyle={{
                       background: "var(--popover)",
                       color: "var(--popover-foreground)",
@@ -640,11 +656,18 @@ export function DashboardChamadosView() {
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey="total" name="Total" fill="url(#gSol)" radius={[0, 6, 6, 0]} />
+                  <Bar dataKey="total" name="Total" fill="url(#gSol)" radius={[0, 6, 6, 0]} barSize={20}>
+                    <LabelList
+                      dataKey="total"
+                      position="right"
+                      style={{ fill: "var(--foreground)", fontSize: 11, fontWeight: 600 }}
+                    />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </GlassCard>
+
 
           <GlassCard delay={0.4}>
             <h3 className="mb-4 text-base font-semibold">Por categoria</h3>
