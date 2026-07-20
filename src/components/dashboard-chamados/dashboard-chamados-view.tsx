@@ -22,6 +22,9 @@ import {
   ShieldCheck,
   HardHat,
   ArrowRight,
+  ListChecks,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import {
   ResponsiveContainer,
