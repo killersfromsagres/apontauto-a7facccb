@@ -38,12 +38,18 @@ import {
   outboxAdd,
   outboxAll,
   blobPut,
+  blobGet,
+  blobDelete,
   updateCachedOs,
+  draftGet,
+  draftPut,
+  draftDelete,
   type OsCacheRow,
   type OutboxItem,
 } from "@/lib/refrigeracao/db";
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
+
 import {
   EQUIPES_REFRIGERACAO,
   loadEquipe,
@@ -356,7 +362,8 @@ function OsDetail({
   online: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [previews, setPreviews] = useState<{ id: string; url: string; blob: Blob }[]>([]);
+  type Preview = { id: string; url: string; blobKey: string };
+  const [previews, setPreviews] = useState<Preview[]>([]);
 
   // Patrimônio (opcional — colaborador preenche)
   const [patrim, setPatrim] = useState(os.patrimonio ?? "");
@@ -388,13 +395,73 @@ function OsDetail({
   });
   const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
 
-
-
   const [saving, setSaving] = useState(false);
+  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
     setPatrim(os.patrimonio ?? "");
   }, [os.id, os.patrimonio]);
+
+  // Restaura rascunho salvo (fotos + textos) ao entrar na OS
+  useEffect(() => {
+    let cancelled = false;
+    setDraftLoaded(false);
+    setPreviews([]);
+    setPecas([]);
+    setProblemas([]);
+    (async () => {
+      try {
+        const d = await draftGet(os.id);
+        if (cancelled || !d) {
+          setDraftLoaded(true);
+          return;
+        }
+        const restored: Preview[] = [];
+        for (const f of d.fotos) {
+          const blob = await blobGet(f.blobKey);
+          if (blob) restored.push({ id: f.id, blobKey: f.blobKey, url: URL.createObjectURL(blob) });
+        }
+        if (cancelled) return;
+        setPreviews(restored);
+        setPecas(d.pecas ?? []);
+        setProblemas(d.problemas ?? []);
+        if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
+          setDraftSavedAt(d.updatedAt);
+        }
+      } catch {}
+      setDraftLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [os.id]);
+
+  // Auto-save do rascunho (debounced)
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const hasAny =
+      previews.length > 0 || pecas.length > 0 || problemas.length > 0;
+    const t = setTimeout(() => {
+      if (!hasAny) {
+        draftDelete(os.id).catch(() => {});
+        setDraftSavedAt(null);
+        return;
+      }
+      const draft = {
+        osId: os.id,
+        fotos: previews.map((p) => ({ id: p.id, blobKey: p.blobKey })),
+        pecas,
+        problemas,
+        updatedAt: Date.now(),
+      };
+      draftPut(draft)
+        .then(() => setDraftSavedAt(draft.updatedAt))
+        .catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [previews, pecas, problemas, draftLoaded, os.id]);
+
 
   const savePatrimonio = async () => {
     const v = patrim.trim();
@@ -426,19 +493,25 @@ function OsDetail({
 
   const onPickFiles = async (files: FileList | null) => {
     if (!files) return;
-    const next: typeof previews = [];
+    const next: Preview[] = [];
     for (const f of Array.from(files)) {
       if (!f.type.startsWith("image/")) continue;
       const blob = await compressImage(f);
-      next.push({ id: uuid(), url: URL.createObjectURL(blob), blob });
+      const id = uuid();
+      const blobKey = `draft:${os.id}:${id}`;
+      await blobPut(blobKey, blob);
+      next.push({ id, blobKey, url: URL.createObjectURL(blob) });
     }
-    setPreviews((p) => [...p, ...next]);
+    if (next.length) setPreviews((p) => [...p, ...next]);
   };
 
   const removePreview = (id: string) => {
     setPreviews((p) => {
       const rm = p.find((x) => x.id === id);
-      if (rm) URL.revokeObjectURL(rm.url);
+      if (rm) {
+        URL.revokeObjectURL(rm.url);
+        blobDelete(rm.blobKey).catch(() => {});
+      }
       return p.filter((x) => x.id !== id);
     });
   };
@@ -446,18 +519,17 @@ function OsDetail({
   const saveAll = async () => {
     const items: OutboxItem[] = [];
     for (const p of previews) {
-      const blobKey = `foto:${p.id}`;
-      await blobPut(blobKey, p.blob);
       items.push({
         id: p.id,
         kind: "foto",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { blobKey },
+        payload: { blobKey: p.blobKey },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
+
     for (const p of pecas) {
       if (!p.descricao.trim()) continue;
       items.push({
@@ -509,6 +581,8 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
+      await draftDelete(os.id).catch(() => {});
+      setDraftSavedAt(null);
       onPatchLocal({ status: "concluida", fim: nowIso });
 
       onQueued();
@@ -529,28 +603,33 @@ function OsDetail({
     }
   };
 
-  const hasUnsaved =
-    previews.length > 0 ||
-    pecas.some((p) => p.descricao.trim()) ||
-    problemas.some((p) => p.descricao.trim());
-
   const handleBack = () => {
-    if (hasUnsaved && !confirm("Você tem alterações não enviadas. Sair mesmo assim?")) return;
+    // Rascunho já foi salvo automaticamente — sair não perde nada.
     previews.forEach((p) => URL.revokeObjectURL(p.url));
     onBack();
   };
 
+
   return (
     <div className="space-y-4">
-      <Button
-        variant="outline"
-        size="lg"
-        onClick={handleBack}
-        className="h-12 w-full justify-start gap-2 text-base font-semibold sm:w-auto"
-      >
-        <ArrowLeft className="h-5 w-5" />
-        Voltar à lista
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={handleBack}
+          className="h-12 flex-1 justify-start gap-2 text-base font-semibold sm:flex-none"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          Voltar à lista
+        </Button>
+        {draftSavedAt && (
+          <span className="inline-flex h-9 items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 text-xs font-medium text-emerald-600">
+            <Save className="h-3.5 w-3.5" />
+            Rascunho salvo — fotos e textos ficam guardados nesta OS
+          </span>
+        )}
+      </div>
+
 
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
