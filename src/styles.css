@@ -1378,3 +1378,33 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
     -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
   }
 }
+
+/* Recharts: adapt text colors to theme (light = dark text, dark = white text) */
+.recharts-legend-item-text,
+.recharts-legend-wrapper,
+.recharts-text.recharts-label,
+.recharts-label-list text,
+.recharts-pie-label-text {
+  fill: var(--foreground) !important;
+  color: var(--foreground) !important;
+}
+
+.recharts-cartesian-axis-tick-value,
+.recharts-polar-angle-axis-tick-value,
+.recharts-polar-radius-axis-tick-value {
+  fill: var(--muted-foreground) !important;
+}
+
+.recharts-default-tooltip,
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+.recharts-tooltip-item,
+.recharts-tooltip-item-name,
+.recharts-tooltip-item-value,
+.recharts-tooltip-label {
+  color: var(--popover-foreground) !important;
+}
