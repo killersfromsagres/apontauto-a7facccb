@@ -410,13 +410,18 @@ function BackorderPage() {
         const tree = resolveAtivoTree(assetsMap, r.ativo);
         const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
 
-        const atividadeFinal = (override as Categoria | undefined)
-          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : applied.atividade);
+        // Classificador de texto (Nome) — fonte primária de equipe quando não
+        // há override manual nem regra aprendida por ativo confiável.
+        const textResult = classifyTeamByText(r.nome ?? "");
+
+        const atividadeFinal: Categoria = (override as Categoria | undefined)
+          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : (textResult.equipe as Categoria));
         const equipeFinal = override
           ? CATEGORIA_TO_EQUIPE[override as Categoria]
           : prev?.atividade_manual
             ? prev.equipe
             : CATEGORIA_TO_EQUIPE[atividadeFinal];
+        const revisaoText = !override && !prev?.atividade_manual && textResult.ambiguo;
 
         const next = {
           ...r,
@@ -425,9 +430,9 @@ function BackorderPage() {
           espaco: applied.espaco || r.espaco,
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: applied.revisao_manual && !override && !prev?.atividade_manual,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual) || revisaoText,
           origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
-          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : applied.origem_equipe,
+          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
           const sameISO = (a?: string | null, b?: string | null) =>
