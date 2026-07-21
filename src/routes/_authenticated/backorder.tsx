@@ -102,6 +102,7 @@ import {
 } from "@/lib/backorder/classify";
 import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
+import { fillLocationsInWorkbook } from "@/lib/backorder/fill-locations";
 import { downloadBlob } from "@/lib/download";
 import {
   DEFAULT_CONFIG,
@@ -189,6 +190,8 @@ function BackorderPage() {
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
+  const fillLocInputRef = useRef<HTMLInputElement>(null);
+  const [fillingLoc, setFillingLoc] = useState(false);
   const targetPct = TARGET_PCT_DEFAULT;
 
   const loadConfig = useCallback(async () => {
@@ -589,7 +592,39 @@ function BackorderPage() {
     }
   }
 
-  // Reprocessa Prédio/Andar/Espaço/Equipe usando árvore + regras aprendidas.
+  // Preenche Prédio/Andar/Ambiente em qualquer planilha enviada, replicando
+  // o VLOOKUP manual — usa a aba `ativos` do próprio arquivo (se houver) +
+  // a base persistida em `assets_ref` como fallback.
+  async function handlePreencherLocalizacoes(file: File) {
+    setFillingLoc(true);
+    const t = toast.loading("Preenchendo Prédio / Andar / Ambiente…");
+    try {
+      const { data: assetsRaw } = await supabase
+        .from("assets_ref")
+        .select("ativo, denominacao, nivel, codigo_pai");
+      const base = makeAssetsMap(
+        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
+      );
+      const result = await fillLocationsInWorkbook(file, base);
+      downloadBlob(result.blob, result.filename);
+      const detalhes = result.sheetsProcessed
+        .map((s) => `${s.name}: ${s.filled}${s.missing ? ` (${s.missing} sem match)` : ""}`)
+        .join(" · ");
+      if (result.sheetsProcessed.length === 0) {
+        toast.warning("Nenhuma aba com colunas Ativo + Prédio/Andar/Ambiente encontrada.", { id: t });
+      } else {
+        toast.success(
+          `Preenchido: ${result.totalFilled} linha(s)${result.totalMissing ? `, ${result.totalMissing} sem match` : ""}. ${detalhes}`,
+          { id: t },
+        );
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao preencher localizações", { id: t });
+    } finally {
+      setFillingLoc(false);
+    }
+  }
   async function handleReprocessarChamados() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
@@ -1260,6 +1295,13 @@ function BackorderPage() {
               <DropdownMenuItem onClick={handleReprocessarChamados} disabled={importing}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => fillLocInputRef.current?.click()}
+                disabled={fillingLoc}
+              >
+                <Database className="mr-2 h-4 w-4" />
+                {fillingLoc ? "Preenchendo…" : "Preencher Prédio/Andar/Ambiente"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleValidarBase} disabled={importing}>
                 <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
               </DropdownMenuItem>
@@ -1307,6 +1349,17 @@ function BackorderPage() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void handleInstrucaoImport(f);
+              e.currentTarget.value = "";
+            }}
+          />
+          <input
+            ref={fillLocInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handlePreencherLocalizacoes(f);
               e.currentTarget.value = "";
             }}
           />
