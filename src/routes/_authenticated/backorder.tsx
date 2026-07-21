@@ -592,7 +592,39 @@ function BackorderPage() {
     }
   }
 
-  // Reprocessa Prédio/Andar/Espaço/Equipe usando árvore + regras aprendidas.
+  // Preenche Prédio/Andar/Ambiente em qualquer planilha enviada, replicando
+  // o VLOOKUP manual — usa a aba `ativos` do próprio arquivo (se houver) +
+  // a base persistida em `assets_ref` como fallback.
+  async function handlePreencherLocalizacoes(file: File) {
+    setFillingLoc(true);
+    const t = toast.loading("Preenchendo Prédio / Andar / Ambiente…");
+    try {
+      const { data: assetsRaw } = await supabase
+        .from("assets_ref")
+        .select("ativo, denominacao, nivel, codigo_pai");
+      const base = makeAssetsMap(
+        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
+      );
+      const result = await fillLocationsInWorkbook(file, base);
+      downloadBlob(result.blob, result.filename);
+      const detalhes = result.sheetsProcessed
+        .map((s) => `${s.name}: ${s.filled}${s.missing ? ` (${s.missing} sem match)` : ""}`)
+        .join(" · ");
+      if (result.sheetsProcessed.length === 0) {
+        toast.warning("Nenhuma aba com colunas Ativo + Prédio/Andar/Ambiente encontrada.", { id: t });
+      } else {
+        toast.success(
+          `Preenchido: ${result.totalFilled} linha(s)${result.totalMissing ? `, ${result.totalMissing} sem match` : ""}. ${detalhes}`,
+          { id: t },
+        );
+      }
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message ?? "Falha ao preencher localizações", { id: t });
+    } finally {
+      setFillingLoc(false);
+    }
+  }
   async function handleReprocessarChamados() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
