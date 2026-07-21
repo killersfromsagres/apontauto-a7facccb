@@ -314,6 +314,32 @@ function TaludesPage() {
   const [selectedVertexIdx, setSelectedVertexIdx] = useState<number | null>(null);
   const [cursorPct, setCursorPct] = useState<Point | null>(null);
   const [snapHint, setSnapHint] = useState<Point | null>(null);
+  // Undo/redo local ao editor de polígono (não persiste entre sessões).
+  const historyRef = useRef<{ past: Point[][]; future: Point[][] }>({ past: [], future: [] });
+  const resetHistory = () => { historyRef.current = { past: [], future: [] }; };
+  const pushHistory = (arr: Point[]) => {
+    historyRef.current.past.push(arr.map((p) => ({ ...p })));
+    if (historyRef.current.past.length > 100) historyRef.current.past.shift();
+    historyRef.current.future = [];
+  };
+  const undoDrawing = () => {
+    setDrawingPoints((prev) => {
+      const h = historyRef.current;
+      if (!h.past.length) return prev;
+      h.future.push(prev.map((p) => ({ ...p })));
+      return h.past.pop()!;
+    });
+    setSelectedVertexIdx(null);
+  };
+  const redoDrawing = () => {
+    setDrawingPoints((prev) => {
+      const h = historyRef.current;
+      if (!h.future.length) return prev;
+      h.past.push(prev.map((p) => ({ ...p })));
+      return h.future.pop()!;
+    });
+    setSelectedVertexIdx(null);
+  };
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
@@ -514,6 +540,7 @@ function TaludesPage() {
       }
     }
     const { p: sp } = snapPoint(candidate);
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => [...prev, sp]);
     setSelectedVertexIdx(drawingPoints.length);
   };
@@ -521,6 +548,7 @@ function TaludesPage() {
   const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    pushHistory(drawingPoints);
     setDraggingIdx(idx);
     setSelectedVertexIdx(idx);
   };
@@ -534,7 +562,6 @@ function TaludesPage() {
     }
     let candidate = p;
     if (shiftDown && drawingPoints.length > 1) {
-      // Anchor to the previous vertex (or next, whichever exists) to keep the segment straight
       const anchor =
         drawingPoints[(draggingIdx - 1 + drawingPoints.length) % drawingPoints.length];
       candidate = constrainStraight(anchor, p);
@@ -551,10 +578,12 @@ function TaludesPage() {
   const removeVertex = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
     setSelectedVertexIdx(null);
   };
   const insertVertexAt = (afterIdx: number, p: Point) => {
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => {
       const arr = [...prev];
       arr.splice(afterIdx + 1, 0, p);
@@ -665,6 +694,7 @@ function TaludesPage() {
     setSelectedVertexIdx(null);
     setSnapHint(null);
     setCursorPct(null);
+    resetHistory();
   };
 
   // Keyboard shortcuts while drawing/editing polygon
@@ -674,6 +704,17 @@ function TaludesPage() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        undoDrawing();
+        return;
+      }
+      if (mod && ((e.shiftKey && (e.key === "z" || e.key === "Z")) || e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        redoDrawing();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         cancelDrawing();
@@ -682,6 +723,7 @@ function TaludesPage() {
         void finishPolygon();
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
         e.preventDefault();
+        pushHistory(drawingPoints);
         setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
         setSelectedVertexIdx(null);
       }
@@ -689,18 +731,20 @@ function TaludesPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx]);
+  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx, drawingPoints]);
 
   const startRedraw = (t: TaludeRow) => {
+    resetHistory();
     setEditingPolygonFor(t.id);
     setDrawingPoints(t.polygon.map((p) => ({ ...p })));
     setDrawingNumero("");
     setSelectedTaludeId(t.id);
-    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
+    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover. Ctrl+Z desfaz.`);
   };
 
   // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
   const startNewPart = (t: TaludeRow) => {
+    resetHistory();
     setEditingPolygonFor(null);
     setDrawingPoints([]);
     setDrawingNewMode(true);
@@ -708,6 +752,7 @@ function TaludesPage() {
     setSelectedTaludeId(t.id);
     toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
   };
+
 
 
   const updateMutation = useMutation({
@@ -880,6 +925,30 @@ function TaludesPage() {
     }
   };
 
+  const doExportDXF = async () => {
+    if (!map) return;
+    try {
+      toast.info("Gerando DXF…");
+      const { dxfBlob } = await import("@/lib/taludes/dxf");
+      const blob = dxfBlob({
+        mapName: map.nome,
+        imageWidthPx: map.image_width,
+        imageHeightPx: map.image_height,
+        metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        taludes: taludes.map((t) => ({
+          numero: t.numero,
+          nome: t.nome,
+          status: t.status,
+          polygon: t.polygon,
+        })),
+      });
+      downloadBlob(blob, `taludes_${map.nome.replace(/\s+/g, "_")}_${today()}.dxf`);
+      toast.success("DXF gerado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar DXF");
+    }
+  };
+
   // ─── Empty state ─────────────────────────────
   if (!mapsQuery.isLoading && (!mapsQuery.data || mapsQuery.data.length === 0)) {
     return (
@@ -974,6 +1043,9 @@ function TaludesPage() {
           <Button variant="default" onClick={doExportPDF} disabled={!imageUrl || taludes.length === 0} title="Relatório PDF com capa e detalhamento">
             <Download className="mr-2 h-4 w-4" /> Relatório PDF
           </Button>
+          <Button variant="outline" onClick={doExportDXF} disabled={taludes.length === 0} title="Exportar geometria em DXF (AutoCAD) — cada talude em uma layer">
+            <Download className="mr-2 h-4 w-4" /> DXF
+          </Button>
           <Button variant="ghost" size="icon" onClick={removeMap} title="Excluir mapa">
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -1064,10 +1136,11 @@ function TaludesPage() {
                 <Button
                   size="sm"
                   onClick={() => {
+                    resetHistory();
                     setDrawingPoints([]);
                     setDrawingNewMode(true);
                     setDrawingNumero("");
-                    toast.info("Clique no mapa para adicionar pontos (≥3). O número será solicitado ao finalizar.");
+                    toast.info("Clique no mapa para adicionar pontos (≥3). Ctrl+Z desfaz. O número será solicitado ao finalizar.");
                   }}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
