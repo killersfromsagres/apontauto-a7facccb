@@ -848,6 +848,38 @@ function TaludesPage() {
     }
   };
 
+  const doExportPDF = async () => {
+    if (!map || !imageUrl) return;
+    try {
+      toast.info("Gerando relatório PDF…");
+      const { buildSlopeReport } = await import("@/lib/taludes/report");
+      const blob = await buildSlopeReport(
+        {
+          nome: map.nome,
+          imageUrl,
+          imageWidthPx: map.image_width,
+          imageHeightPx: map.image_height,
+          metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        },
+        taludes.map((t) => ({
+          numero: t.numero,
+          nome: t.nome,
+          status: t.status,
+          polygon: t.polygon,
+          data_programada: t.data_programada,
+          data_execucao: t.data_execucao,
+          data_conclusao: t.data_conclusao,
+          proxima_data: t.proxima_data,
+          periodicidade_dias: t.periodicidade_dias,
+        })),
+      );
+      downloadBlob(blob, `taludes_${map.nome.replace(/\s+/g, "_")}_${today()}.pdf`);
+      toast.success("Relatório PDF gerado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar PDF");
+    }
+  };
+
   // ─── Empty state ─────────────────────────────
   if (!mapsQuery.isLoading && (!mapsQuery.data || mapsQuery.data.length === 0)) {
     return (
