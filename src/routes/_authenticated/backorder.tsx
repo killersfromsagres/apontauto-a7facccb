@@ -81,7 +81,7 @@ import {
 } from "@/components/ui/table";
 
 import { supabase } from "@/integrations/supabase/client";
-import { readAssetsFile, readBackorderFile, type BackorderRow } from "@/lib/backorder/reader";
+import { readAssetsFile, readBackorderFile, readBackorderWorkbook, type BackorderRow } from "@/lib/backorder/reader";
 import { describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
 import {
   buildLearnedIndex,
