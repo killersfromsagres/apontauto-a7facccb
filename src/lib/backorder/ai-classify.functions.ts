@@ -145,7 +145,7 @@ export const classifyBackorderWithAi = createServerFn({ method: "POST" })
         results.push(...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno vazio da IA")));
       } catch (error) {
         if (NoObjectGeneratedError.isInstance(error)) {
-          const parsed = parseJsonFallback(error.text);
+          const parsed = parseJsonFallback(error.text ?? "");
           const validos = normalizeResults(batch, parsed);
           results.push(...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno inválido da IA")));
           continue;
