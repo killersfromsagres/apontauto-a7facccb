@@ -1636,7 +1636,7 @@ function TaludeDetail({
       <div className="flex items-center gap-2">
         <span
           className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold text-white"
-          style={{ background: meta.fill }}
+          style={{ background: talude.cor || meta.fill }}
         >
           {talude.numero}
         </span>
@@ -1652,6 +1652,25 @@ function TaludeDetail({
         <Button size="icon" variant="ghost" onClick={onDelete} title="Excluir">
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-2">
+        <Label className="text-[10px] uppercase text-muted-foreground">Cor</Label>
+        <input
+          type="color"
+          value={rgbLikeToHex(talude.cor) || meta.fill}
+          onChange={(e) => onPatch({ cor: e.target.value } as Partial<TaludeRow>)}
+          className="h-7 w-10 cursor-pointer rounded border border-border/60 bg-transparent"
+          title="Cor personalizada do talude"
+        />
+        <span className="flex-1 truncate text-[11px] text-muted-foreground">
+          {talude.cor ? talude.cor : `Padrão do status (${meta.fill})`}
+        </span>
+        {talude.cor && (
+          <Button size="sm" variant="ghost" onClick={() => onPatch({ cor: null } as Partial<TaludeRow>)}>
+            Reset
+          </Button>
+        )}
       </div>
 
       <div>
