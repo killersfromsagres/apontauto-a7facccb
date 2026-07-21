@@ -239,7 +239,7 @@ export const AppSidebar = memo(function AppSidebar() {
   );
 });
 
-function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
+const SimpleItem = memo(function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -262,9 +262,10 @@ function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
-}
+});
 
-function GroupItem({
+
+const GroupItem = memo(function GroupItem({
   section,
   collapsed,
   isItemActive,
@@ -284,9 +285,6 @@ function GroupItem({
     if (hasActive) setOpen(true);
   }, [hasActive]);
 
-  // In collapsed (icon-only) mode, render as a flyout-like list: show the group
-  // icon button; hovering shows tooltip. To keep it simple, render just the parent
-  // as a link to the first child.
   if (collapsed) {
     const first = section.items[0];
     return (
@@ -350,4 +348,5 @@ function GroupItem({
       </SidebarMenuItem>
     </Collapsible>
   );
-}
+});
+
