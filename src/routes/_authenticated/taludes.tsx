@@ -656,6 +656,9 @@ function TaludesPage() {
       if (e.key === "Escape") {
         e.preventDefault();
         cancelDrawing();
+      } else if (e.key === "Enter" && drawingPoints.length >= 3) {
+        e.preventDefault();
+        void finishPolygon();
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
         e.preventDefault();
         setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
