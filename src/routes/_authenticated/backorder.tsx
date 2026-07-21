@@ -100,6 +100,7 @@ import {
   type Categoria,
   type DynamicRule,
 } from "@/lib/backorder/classify";
+import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
 import {
@@ -183,6 +184,8 @@ function BackorderPage() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [aiReclassifying, setAiReclassifying] = useState(false);
+  const [reclassifyOpen, setReclassifyOpen] = useState(false);
+  const [reclassifyAll, setReclassifyAll] = useState(false);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
@@ -406,13 +409,18 @@ function BackorderPage() {
         const tree = resolveAtivoTree(assetsMap, r.ativo);
         const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
 
-        const atividadeFinal = (override as Categoria | undefined)
-          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : applied.atividade);
+        // Classificador de texto (Nome) — fonte primária de equipe quando não
+        // há override manual nem regra aprendida por ativo confiável.
+        const textResult = classifyTeamByText(r.nome ?? "");
+
+        const atividadeFinal: Categoria = (override as Categoria | undefined)
+          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : (textResult.equipe as Categoria));
         const equipeFinal = override
           ? CATEGORIA_TO_EQUIPE[override as Categoria]
           : prev?.atividade_manual
             ? prev.equipe
             : CATEGORIA_TO_EQUIPE[atividadeFinal];
+        const revisaoText = !override && !prev?.atividade_manual && textResult.ambiguo;
 
         const next = {
           ...r,
@@ -421,9 +429,9 @@ function BackorderPage() {
           espaco: applied.espaco || r.espaco,
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: applied.revisao_manual && !override && !prev?.atividade_manual,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual) || revisaoText,
           origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
-          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : applied.origem_equipe,
+          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
           const sameISO = (a?: string | null, b?: string | null) =>
@@ -779,81 +787,63 @@ function BackorderPage() {
     );
   }
 
-  async function reclassificarComIA() {
-    const alvo = abertas;
-    if (alvo.length === 0) {
-      toast.info("Sem OS abertas para reclassificar.");
+  async function classificarEquipes(opts: { incluirManual: boolean }) {
+    const base = abertas.filter((r) => opts.incluirManual ? true : !r.atividade_manual);
+    if (base.length === 0) {
+      toast.info(opts.incluirManual ? "Sem OS abertas." : "Todas as OS abertas já têm equipe definida manualmente.");
       return;
     }
     setAiReclassifying(true);
-    const toastId = toast.loading(`Analisando ${alvo.length} OS com IA...`);
+    const toastId = toast.loading(`Classificando ${base.length} OS…`);
     try {
-      const items = alvo.map((r) => ({
-        os: r.os,
-        descricao: r.nome ?? "",
-        ativo: r.ativo ?? "",
-        solicitante: r.outros ?? "",
-        predio: r.predio ?? "",
-      }));
-      const response = await fetch("/api/backorder-reclassificar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
-      const payload = (await response.json()) as {
-        results?: Array<{ os: string; categoria: Categoria; confianca?: string; justificativa?: string }>;
-        error?: string;
-      };
-      if (!response.ok) throw new Error(payload.error ?? "Falha na reclassificação com IA.");
-      const results = payload.results ?? [];
-      if (!results || results.length === 0) {
-        toast.dismiss(toastId);
-        toast.error("A IA não retornou classificações válidas.");
-        return;
+      const patches: Array<{ os: string; atividade: Categoria; equipe: string; ambiguo: boolean }> = [];
+      for (const row of base) {
+        const result = classifyTeamByText(row.nome ?? "");
+        const cat = result.equipe as Categoria;
+        const nextEquipe = CATEGORIA_TO_EQUIPE[cat];
+        // Só grava se mudou algo (atividade OU flag de revisão)
+        if (cat === row.atividade && row.equipe === nextEquipe && (row.revisao_manual ?? false) === result.ambiguo) continue;
+        patches.push({ os: row.os, atividade: cat, equipe: nextEquipe, ambiguo: result.ambiguo });
       }
-      const byOs = new Map(results.map((r) => [r.os, r]));
-      let alterados = 0;
-      const patches: Array<{ os: string; atividade: Categoria; equipe: string }> = [];
-      for (const row of alvo) {
-        const ai = byOs.get(row.os);
-        if (!ai) continue;
-        const cat = ai.categoria as Categoria;
-        if (!CATEGORIAS.includes(cat)) continue;
-        if (cat === row.atividade) continue;
-        patches.push({ os: row.os, atividade: cat, equipe: CATEGORIA_TO_EQUIPE[cat] });
-        alterados++;
-      }
-      // Persiste em batch
-      for (const p of patches) {
-        await supabase
-          .from("backorder_os")
-          .update({
-            atividade: p.atividade,
-            atividade_manual: true,
-            equipe: p.equipe,
-            origem_equipe: "regra_aprendida",
-            revisao_manual: false,
-          } as never)
-          .eq("os", p.os);
-        await supabase
-          .from("backorder_atividade_override")
-          .upsert({ os: p.os, atividade: p.atividade }, { onConflict: "os" });
+      // Persiste em batches paralelos de 25
+      for (let i = 0; i < patches.length; i += 25) {
+        const slice = patches.slice(i, i + 25);
+        await Promise.all(
+          slice.map((p) =>
+            supabase
+              .from("backorder_os")
+              .update({
+                atividade: p.atividade,
+                equipe: p.equipe,
+                // Marca como automática (não-manual) — a menos que o usuário
+                // tenha forçado sobrescrever a manual: nesse caso vira auto de novo.
+                atividade_manual: false,
+                revisao_manual: p.ambiguo,
+                origem_equipe: p.ambiguo ? "pendente" : "regra_local",
+              } as never)
+              .eq("os", p.os),
+          ),
+        );
       }
       setRows((prev) =>
         prev.map((x) => {
           const p = patches.find((pp) => pp.os === x.os);
           return p
-            ? { ...x, atividade: p.atividade, atividade_manual: true, equipe: p.equipe, revisao_manual: false }
+            ? { ...x, atividade: p.atividade, equipe: p.equipe, atividade_manual: false, revisao_manual: p.ambiguo }
             : x;
         }),
       );
+      const ambiguos = patches.filter((p) => p.ambiguo).length;
       toast.dismiss(toastId);
-      toast.success(`IA reclassificou ${alterados} de ${alvo.length} OS.`);
+      toast.success(
+        `Classificação concluída: ${patches.length} atualizada(s)${ambiguos > 0 ? ` · ${ambiguos} marcada(s) para revisão` : ""}.`,
+      );
     } catch (e) {
       toast.dismiss(toastId);
-      toast.error(e instanceof Error ? e.message : "Falha na reclassificação com IA.");
+      toast.error(e instanceof Error ? e.message : "Falha na classificação.");
     } finally {
       setAiReclassifying(false);
+      setReclassifyOpen(false);
     }
   }
 
@@ -1238,12 +1228,12 @@ function BackorderPage() {
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
-            onClick={reclassificarComIA}
+            onClick={() => setReclassifyOpen(true)}
             disabled={aiReclassifying || abertas.length === 0}
             className="w-full sm:w-auto"
           >
             <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
-            {aiReclassifying ? "Analisando..." : "Reclassificar"}
+            {aiReclassifying ? "Classificando..." : "Classificar Equipes"}
           </Button>
 
           <Button onClick={exportar} disabled={filtered.length === 0} className="w-full sm:w-auto">
@@ -1347,6 +1337,53 @@ function BackorderPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          <Dialog open={reclassifyOpen} onOpenChange={setReclassifyOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Classificar Equipes</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted-foreground">
+                  Analisa o texto do <strong>Nome</strong> de cada chamado e atribui a equipe
+                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica ou Elétrica).
+                </p>
+                <p className="text-muted-foreground">
+                  Chamados ambíguos (várias equipes com peso equivalente) são marcados como
+                  <span className="mx-1 inline-flex items-center rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                    Classificação sugerida — revisar
+                  </span>
+                  para você confirmar.
+                </p>
+                <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-3">
+                  <Checkbox
+                    checked={reclassifyAll}
+                    onCheckedChange={(v) => setReclassifyAll(Boolean(v))}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium">Reclassificar tudo</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Inclui chamados que você já ajustou manualmente. Por padrão, o sistema
+                      só toca em chamados sem equipe definida.
+                    </span>
+                  </span>
+                </label>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReclassifyOpen(false)} disabled={aiReclassifying}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => void classificarEquipes({ incluirManual: reclassifyAll })}
+                  disabled={aiReclassifying}
+                >
+                  <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
+                  {aiReclassifying ? "Classificando..." : "Classificar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       }
     >
@@ -1589,6 +1626,8 @@ function TableView({
         </Button>
       </div>
 
+      <TeamSummaryStrip rows={rows} filterCat={filterCat} setFilterCat={setFilterCat} />
+
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {rows.length === 0
@@ -1686,32 +1725,71 @@ function TableView({
                       <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={r.atividade}
-                        onValueChange={(v) => onCategoria(r, v as Categoria)}
-                      >
-                        <SelectTrigger className="h-8 w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIAS.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              <span className="flex items-center gap-1.5">
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ background: CATEGORIA_COLOR[c] }}
-                                />
-                                {c}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1.5">
+                        <Select
+                          value={r.atividade}
+                          onValueChange={(v) => onCategoria(r, v as Categoria)}
+                        >
+                          <SelectTrigger className="h-8 w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIAS.map((c) => (
+                              <SelectItem key={c} value={c}>
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ background: CATEGORIA_COLOR[c] }}
+                                  />
+                                  {c}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {r.atividade_manual ? (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-emerald-500/15 px-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                            title="Equipe definida manualmente por você"
+                          >
+                            Manual
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-sky-500/15 px-1 text-[9px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-400"
+                            title="Classificação automática — clique para ajustar"
+                          >
+                            Auto
+                          </span>
+                        )}
+                        {r.revisao_manual && !r.atividade_manual && (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-amber-500/20 px-1 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400"
+                            title="Classificação sugerida — várias equipes têm evidência semelhante. Revisar."
+                          >
+                            Revisar
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs">
                       {r.termino_sla ? new Date(r.termino_sla).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
-                    <TableCell className="text-xs">{r.equipe}</TableCell>
+                    <TableCell className="text-xs">
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium"
+                        style={{
+                          background: `${(EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8"}22`,
+                          color: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? undefined,
+                        }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8" }}
+                        />
+                        {r.equipe || "—"}
+                      </span>
+                    </TableCell>
                     <TableCell className="max-w-[200px] truncate text-xs" title={r.outros}>
                       {r.outros}
                     </TableCell>
@@ -1740,6 +1818,69 @@ function TableView({
       </div>
 
     </GlassCard>
+  );
+}
+
+function TeamSummaryStrip({
+  rows,
+  filterCat,
+  setFilterCat,
+}: {
+  rows: BOSRow[];
+  filterCat: string;
+  setFilterCat: (v: string) => void;
+}) {
+  const counts = useMemo(() => {
+    const map = new Map<Equipe, number>();
+    for (const e of EQUIPES) map.set(e, 0);
+    for (const r of rows) {
+      if (EQUIPES.includes(r.atividade as Equipe)) {
+        map.set(r.atividade as Equipe, (map.get(r.atividade as Equipe) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [rows]);
+  const revisao = useMemo(
+    () => rows.filter((r) => r.revisao_manual && !r.atividade_manual).length,
+    [rows],
+  );
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setFilterCat("__all__")}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition ${
+          filterCat === "__all__"
+            ? "border-primary/60 bg-primary/10 text-primary"
+            : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted"
+        }`}
+      >
+        Todas · {rows.length}
+      </button>
+      {EQUIPES.map((e) => {
+        const active = filterCat === e;
+        const color = EQUIPE_COR[e];
+        return (
+          <button
+            key={e}
+            type="button"
+            onClick={() => setFilterCat(active ? "__all__" : e)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition ${
+              active ? "border-primary/60" : "border-border/60 hover:bg-muted"
+            }`}
+            style={active ? { background: `${color}22`, color } : undefined}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+            {e} · {counts.get(e) ?? 0}
+          </button>
+        );
+      })}
+      {revisao > 0 && (
+        <span className="ml-1 inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+          <ShieldAlert className="h-3 w-3" /> {revisao} para revisar
+        </span>
+      )}
+    </div>
   );
 }
 
