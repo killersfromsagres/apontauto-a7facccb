@@ -451,12 +451,33 @@ function TaludesPage() {
     return { p, snapped: false };
   };
 
+  // Constrain a point to 0°/45°/90° axes relative to an anchor (Shift-lock)
+  const constrainStraight = (anchor: Point, p: Point): Point => {
+    const dx = p.x - anchor.x;
+    const dy = p.y - anchor.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const ratio = absX === 0 ? Infinity : absY / absX;
+    // 45° band when the two components are close
+    if (ratio > 0.4142 && ratio < 2.4142) {
+      const m = Math.min(absX, absY);
+      return { x: anchor.x + Math.sign(dx) * m, y: anchor.y + Math.sign(dy) * m };
+    }
+    if (absX >= absY) return { x: p.x, y: anchor.y };
+    return { x: anchor.x, y: p.y };
+  };
+
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
+    if (spaceDown || panState) return;
     const p = clickToPct(e);
     if (!p) return;
-    const { p: sp } = snapPoint(p);
+    let candidate = p;
+    if (shiftDown && drawingPoints.length > 0) {
+      candidate = constrainStraight(drawingPoints[drawingPoints.length - 1], p);
+    }
+    const { p: sp } = snapPoint(candidate);
     setDrawingPoints((prev) => [...prev, sp]);
     setSelectedVertexIdx(drawingPoints.length);
   };
@@ -475,10 +496,18 @@ function TaludesPage() {
       setSnapHint(null);
       return;
     }
-    const { p: sp, snapped } = snapPoint(p, draggingIdx);
+    let candidate = p;
+    if (shiftDown && drawingPoints.length > 1) {
+      // Anchor to the previous vertex (or next, whichever exists) to keep the segment straight
+      const anchor =
+        drawingPoints[(draggingIdx - 1 + drawingPoints.length) % drawingPoints.length];
+      candidate = constrainStraight(anchor, p);
+    }
+    const { p: sp, snapped } = snapPoint(candidate, draggingIdx);
     setSnapHint(snapped ? sp : null);
     setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? sp : pt)));
   };
+
   const handleSvgPointerUp = () => {
     setDraggingIdx(null);
     setSnapHint(null);
