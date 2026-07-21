@@ -158,6 +158,22 @@ const RULES: Rule[] = [
     termos: ["refrigeracao", "climatizado", "temperatura", "exaustor", "insuflamento"],
   },
 
+  // ---------------- Pintura ----------------
+  {
+    equipe: "Pintura",
+    peso: 4,
+    termos: [
+      "pintura", "pintar", "repintura", "repintar", "tinta", "textura", "verniz",
+      "demarcacao de piso", "sinalizacao de piso", "faixa de piso", "faixa amarela",
+      "pintura de piso", "pintura de parede", "retoque de pintura",
+    ],
+  },
+  {
+    equipe: "Pintura",
+    peso: 3,
+    termos: ["demarcacao", "sinalizacao", "descascado", "descascando", "parede manchada"],
+  },
+
   // ---------------- Civil ----------------
   {
     equipe: "Civil",
@@ -167,9 +183,6 @@ const RULES: Rule[] = [
       "gesso", "drywall", "reboco", "trinca", "rachadura",
       "piso", "piso quebrado", "piso solto", "azulejo", "revestimento",
       "calcada", "buraco no piso", "buraco",
-      "pintura", "pintar", "repintura", "tinta", "textura", "verniz",
-      "demarcacao", "demarcacao de piso", "sinalizacao de piso",
-      "faixa de piso", "faixa amarela",
       "guarda corpo", "guarda-corpo", "corrimao",
       "jardinagem", "poda", "capina", "limpeza de area", "limpeza geral",
       "limpeza de vidros", "limpeza de placa",
