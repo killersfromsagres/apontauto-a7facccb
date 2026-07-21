@@ -90,41 +90,53 @@ export interface ResolveResult {
 export function resolveAtivoTree(index: AssetsIndex, ativo: string): ResolveResult {
   const code = String(ativo ?? "").trim().toUpperCase();
   if (!code) return { predio: "", andar: "", espaco: "", found: false };
+
+  // Fallback estilo VLOOKUP manual do Excel:
+  //   Prédio   = VLOOKUP(LEFT(ativo;5); ativos)
+  //   Andar    = VLOOKUP(LEFT(ativo;7); ativos)
+  //   Ambiente = VLOOKUP(ativo;         ativos)
+  // Aplicado por-Ativo quando a árvore não devolve o nível — reproduz
+  // exatamente o comportamento que o usuário fazia arrastando a fórmula.
+  const byLeft = (n: number) => {
+    if (code.length < n) return "";
+    const node = index.byCodigo.get(code.slice(0, n));
+    return node?.nome ?? "";
+  };
   const self = index.byCodigo.get(code);
+
   if (!self) {
-    // Fallback compat: LEFT(5/7) — só quando não há árvore real na base.
-    if (!index.hasTree) {
-      const p5 = index.byCodigo.get(code.slice(0, 5));
-      const p7 = index.byCodigo.get(code.slice(0, 7));
-      return {
-        predio: p5?.nome ?? "",
-        andar: p7?.nome ?? "",
-        espaco: "",
-        found: !!(p5 || p7),
-      };
-    }
-    return { predio: "", andar: "", espaco: "", found: false };
+    // Ativo desconhecido: só resta o LEFT.
+    const predio = byLeft(5);
+    const andar = byLeft(7);
+    const espaco = ""; // sem self, não temos Ambiente confiável
+    return { predio, andar, espaco, found: !!(predio || andar) };
   }
 
-  const predio = findAncestor(index, code, (n) => n.nivel === "PREDIO");
-  const andar = findAncestor(index, code, (n) => n.nivel === "ANDAR");
+  const predioNode = findAncestor(index, code, (n) => n.nivel === "PREDIO");
+  const andarNode = findAncestor(index, code, (n) => n.nivel === "ANDAR");
   // Espaço = o próprio nó se for Ambiente/Andar/Prédio; se for Equipamento,
   // sobe até o Ambiente pai (não expõe o nome do equipamento como "espaço").
   let espacoNode: AssetNode | null = self;
   if (self.nivel === "EQUIPAMENTO") {
     espacoNode = findAncestor(index, code, (n) => n.nivel === "AMBIENTE");
   } else if (self.nivel === "ANDAR" || self.nivel === "PREDIO" || self.nivel === "PLANTA") {
-    // Chamado aberto no nível de Andar/Prédio: espaço fica vazio.
     espacoNode = null;
   }
 
-  return {
-    predio: predio?.nome ?? "",
-    andar: andar?.nome ?? "",
-    espaco: espacoNode?.nome ?? "",
-    found: true,
-  };
+  // Preenchimento com fallback LEFT quando árvore veio vazia.
+  let predio = predioNode?.nome ?? "";
+  let andar = andarNode?.nome ?? "";
+  let espaco = espacoNode?.nome ?? "";
+  if (!predio) predio = byLeft(5);
+  if (!andar) andar = byLeft(7);
+  if (!espaco && self.nivel !== "PLANTA" && self.nivel !== "PREDIO" && self.nivel !== "ANDAR") {
+    // Ambiente = próprio ativo pelo nome (VLOOKUP direto).
+    espaco = self.nome ?? "";
+  }
+
+  return { predio, andar, espaco, found: true };
 }
+
 
 /** Diagnóstico do Ativo para decidir badges "—" (não aplicável) vs "não encontrado".
  *  Não faz adivinhação — usa exclusivamente a árvore real. */
