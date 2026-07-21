@@ -102,9 +102,20 @@ function CorretivaPage() {
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [equipes, setEquipes] = useState<EquipeRow[]>([]);
   const [managingTeams, setManagingTeams] = useState(false);
+  const [lockedEquipe, setLockedEquipe] = useState<string | null>(null);
 
   useEffect(() => {
-    setEquipe(loadEquipe());
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const email = (data.session?.user?.email ?? "").toLowerCase();
+      if (email.startsWith("hidraulica@")) {
+        setLockedEquipe("Hidráulica");
+        setEquipe("Hidráulica");
+        saveEquipe("Hidráulica");
+      } else {
+        setEquipe(loadEquipe());
+      }
+    })();
     void reloadEquipes();
   }, []);
 
