@@ -1539,9 +1539,6 @@ function BackorderPage() {
           />
         </TabsContent>
 
-        <TabsContent value="powerbi">
-          <PowerBIView />
-        </TabsContent>
       </Tabs>
       <PriorityConfigDialog
         open={configOpen}
