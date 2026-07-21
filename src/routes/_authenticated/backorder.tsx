@@ -175,6 +175,8 @@ function BackorderPage() {
   const [configOpen, setConfigOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [aiReclassifying, setAiReclassifying] = useState(false);
+  const runAiClassify = useServerFn(classifyBackorderWithAi);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
