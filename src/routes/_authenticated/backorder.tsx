@@ -122,8 +122,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useServerFn } from "@tanstack/react-start";
-import { classifyBackorderWithAi } from "@/lib/backorder/ai-classify.functions";
 
 export const Route = createFileRoute("/_authenticated/backorder")({
   component: BackorderPage,
@@ -185,7 +183,6 @@ function BackorderPage() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [aiReclassifying, setAiReclassifying] = useState(false);
-  const runAiClassify = useServerFn(classifyBackorderWithAi);
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
@@ -798,7 +795,17 @@ function BackorderPage() {
         solicitante: r.outros ?? "",
         predio: r.predio ?? "",
       }));
-      const { results } = await runAiClassify({ data: { items } });
+      const response = await fetch("/api/backorder-reclassificar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const payload = (await response.json()) as {
+        results?: Array<{ os: string; categoria: Categoria; confianca?: string; justificativa?: string }>;
+        error?: string;
+      };
+      if (!response.ok) throw new Error(payload.error ?? "Falha na reclassificação com IA.");
+      const results = payload.results ?? [];
       if (!results || results.length === 0) {
         toast.dismiss(toastId);
         toast.error("A IA não retornou classificações válidas.");
