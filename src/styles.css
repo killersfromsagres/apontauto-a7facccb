@@ -355,7 +355,8 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 .auth-bg {
   position: relative;
   background: radial-gradient(120% 80% at 50% 0%, #0b1230 0%, #05060f 45%, #000000 100%);
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   isolation: isolate;
 }
 .auth-bg::before,
