@@ -1485,6 +1485,69 @@ function TaludesPage() {
                               </g>
                             );
                           })}
+                          {/* Guide line + close preview + close halo on first vertex */}
+                          {isDrawing && cursorPct && draggingIdx === null && drawingPoints.length > 0 && (() => {
+                            const last = drawingPoints[drawingPoints.length - 1];
+                            const first = drawingPoints[0];
+                            const nearFirst =
+                              drawingPoints.length >= 3 &&
+                              Math.hypot(cursorPct.x - first.x, cursorPct.y - first.y) <= CLOSE_SNAP;
+                            return (
+                              <g pointerEvents="none">
+                                <line
+                                  x1={last.x}
+                                  y1={last.y}
+                                  x2={cursorPct.x}
+                                  y2={cursorPct.y}
+                                  stroke={accent}
+                                  strokeWidth={0.12}
+                                  strokeDasharray="0.6,0.4"
+                                  opacity={0.9}
+                                />
+                                {drawingPoints.length >= 3 && (
+                                  <line
+                                    x1={cursorPct.x}
+                                    y1={cursorPct.y}
+                                    x2={first.x}
+                                    y2={first.y}
+                                    stroke={nearFirst ? "#22c55e" : accent}
+                                    strokeWidth={nearFirst ? 0.2 : 0.09}
+                                    strokeDasharray="0.4,0.35"
+                                    opacity={nearFirst ? 0.95 : 0.55}
+                                  />
+                                )}
+                                {drawingPoints.length >= 3 && (
+                                  <>
+                                    <circle
+                                      cx={first.x}
+                                      cy={first.y}
+                                      r={nearFirst ? 1.9 : 1.2}
+                                      fill="none"
+                                      stroke="#22c55e"
+                                      strokeWidth={nearFirst ? 0.2 : 0.12}
+                                      opacity={nearFirst ? 1 : 0.6}
+                                      style={{ transition: "r 120ms ease" }}
+                                    />
+                                    {nearFirst && (
+                                      <text
+                                        x={first.x}
+                                        y={first.y - 2.4}
+                                        textAnchor="middle"
+                                        fontSize="1.6"
+                                        fontWeight="800"
+                                        fill="#052e16"
+                                        stroke="#bbf7d0"
+                                        strokeWidth="0.35"
+                                        style={{ paintOrder: "stroke" }}
+                                      >
+                                        Fechar
+                                      </text>
+                                    )}
+                                  </>
+                                )}
+                              </g>
+                            );
+                          })()}
                           {/* Cursor crosshair while drawing (not dragging) */}
                           {isDrawing && cursorPct && draggingIdx === null && (
                             <g pointerEvents="none" opacity={0.85}>
