@@ -1134,6 +1134,7 @@ export type Database = {
       }
       taludes: {
         Row: {
+          cor: string | null
           created_at: string
           data_conclusao: string | null
           data_execucao: string | null
@@ -1151,6 +1152,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cor?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_execucao?: string | null
@@ -1168,6 +1170,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cor?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_execucao?: string | null

@@ -97,6 +97,7 @@ interface TaludeRow {
   proxima_data: string | null;
   periodicidade_dias: number | null;
   observacoes: string | null;
+  cor: string | null;
 }
 
 const statusIcon: Record<TaludeStatus, typeof Clock> = {
@@ -116,6 +117,16 @@ const fmtBr = (iso: string | null) => {
   const [y, m, d] = iso.split("T")[0].split("-");
   return `${d}/${m}/${y}`;
 };
+
+function rgbLikeToHex(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const s = v.trim();
+  if (s.startsWith("#")) return s.length === 7 ? s : null;
+  const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (!m) return null;
+  const toHex = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0");
+  return `#${toHex(+m[1])}${toHex(+m[2])}${toHex(+m[3])}`;
+}
 
 function TaludesPage() {
   const qc = useQueryClient();
@@ -590,6 +601,7 @@ function TaludesPage() {
           proxima_data: patch.proxima_data ?? t.proxima_data,
           periodicidade_dias: patch.periodicidade_dias ?? t.periodicidade_dias,
           observacoes: patch.observacoes ?? t.observacoes,
+          cor: patch.cor !== undefined ? patch.cor : t.cor,
         },
       });
     },
@@ -1137,9 +1149,9 @@ function TaludesPage() {
                           >
                             <polygon
                               points={pts}
-                              fill={meta.fill}
+                              fill={t.cor || meta.fill}
                               fillOpacity={isSel ? 0.72 : isHover ? 0.62 : 0.5}
-                              stroke={meta.stroke}
+                              stroke={t.cor || meta.stroke}
                               strokeWidth={isSel || isHover ? 0.6 : 0.35}
                               strokeLinejoin="round"
                               style={{
@@ -1557,6 +1569,7 @@ function TaludesPage() {
                 polygon: it.polygon,
                 status: "programado",
                 data_programada: today(),
+                cor: it.cor ?? null,
               },
             });
           }
@@ -1633,7 +1646,7 @@ function TaludeDetail({
       <div className="flex items-center gap-2">
         <span
           className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold text-white"
-          style={{ background: meta.fill }}
+          style={{ background: talude.cor || meta.fill }}
         >
           {talude.numero}
         </span>
@@ -1649,6 +1662,25 @@ function TaludeDetail({
         <Button size="icon" variant="ghost" onClick={onDelete} title="Excluir">
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
+      </div>
+
+      <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-2">
+        <Label className="text-[10px] uppercase text-muted-foreground">Cor</Label>
+        <input
+          type="color"
+          value={rgbLikeToHex(talude.cor) || meta.fill}
+          onChange={(e) => onPatch({ cor: e.target.value } as Partial<TaludeRow>)}
+          className="h-7 w-10 cursor-pointer rounded border border-border/60 bg-transparent"
+          title="Cor personalizada do talude"
+        />
+        <span className="flex-1 truncate text-[11px] text-muted-foreground">
+          {talude.cor ? talude.cor : `Padrão do status (${meta.fill})`}
+        </span>
+        {talude.cor && (
+          <Button size="sm" variant="ghost" onClick={() => onPatch({ cor: null } as Partial<TaludeRow>)}>
+            Reset
+          </Button>
+        )}
       </div>
 
       <div>
