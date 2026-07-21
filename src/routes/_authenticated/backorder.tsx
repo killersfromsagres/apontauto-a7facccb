@@ -5,7 +5,6 @@ import {
   Upload,
   Download,
   RefreshCw,
-  ExternalLink,
   PackageX,
   Database,
   ArrowUpDown,
@@ -151,8 +150,6 @@ interface BOSRow {
   revisao_manual?: boolean;
 }
 
-const POWERBI_URL =
-  "https://app.powerbi.com/view?r=eyJrIjoiNDhjOGJiZjMtYWM0YS00MGUyLTkyYzItMDgyMzM5OTMxNThmIiwidCI6IjQyODUyNWQ5LTIzYmQtNGY4Yy1hZmEyLTU2MDBmNDAxZjMyNiJ9";
 
 const TARGET_PCT_DEFAULT = 5;
 
@@ -439,13 +436,15 @@ function BackorderPage() {
 
         const next = {
           ...r,
-          predio: applied.predio || r.predio,
-          andar: applied.andar || r.andar,
-          espaco: applied.espaco || r.espaco,
+          // Preserva o que veio na planilha. `applied` (regra aprendida) e
+          // `resolveAtivoTree` são apenas fallback quando a coluna estava vazia.
+          predio: r.predio || applied.predio,
+          andar: r.andar || applied.andar,
+          espaco: r.espaco || applied.espaco,
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual) || revisaoText,
-          origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco) || revisaoText,
+          origem_predio_andar_espaco: r.predio || r.andar || r.espaco ? "planilha" : applied.origem_predio_andar_espaco,
           origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
@@ -1396,7 +1395,13 @@ function BackorderPage() {
               <div className="space-y-3 text-sm">
                 <p className="text-muted-foreground">
                   Analisa o texto do <strong>Nome</strong> de cada chamado e atribui a equipe
-                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica ou Elétrica).
+                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica, Elétrica ou{" "}
+                  <strong>Pintura</strong>).
+                </p>
+                <p className="text-muted-foreground">
+                  A análise considera também o critério de <strong>Pintura</strong> (pintura,
+                  repintura, tinta, textura, verniz, demarcação e sinalização de piso), que tem
+                  prioridade sobre Civil quando ambos se aplicam.
                 </p>
                 <p className="text-muted-foreground">
                   Chamados ambíguos (várias equipes com peso equivalente) são marcados como
@@ -1459,7 +1464,6 @@ function BackorderPage() {
               <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="powerbi">Power BI</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tabela">
@@ -1474,6 +1478,7 @@ function BackorderPage() {
             setOrder={setOrder}
             onToggle={toggleFinalizado}
             onCategoria={updateAtividade}
+            onSelect={setSelectedBackorder}
             assetsMap={assetsMap}
           />
 
@@ -1541,9 +1546,6 @@ function BackorderPage() {
           />
         </TabsContent>
 
-        <TabsContent value="powerbi">
-          <PowerBIView />
-        </TabsContent>
       </Tabs>
       <PriorityConfigDialog
         open={configOpen}
@@ -1618,6 +1620,7 @@ function TableView({
   setOrder,
   onToggle,
   onCategoria,
+  onSelect,
   assetsMap,
 }: {
   rows: BOSRow[];
@@ -1630,6 +1633,7 @@ function TableView({
   setOrder: (v: "asc" | "desc") => void;
   onToggle: (r: BOSRow, next: boolean) => void;
   onCategoria: (r: BOSRow, c: Categoria) => void;
+  onSelect?: (r: BOSRow) => void;
   assetsMap: AssetsMap;
 }) {
   const PAGE_SIZE = 50;
@@ -1746,12 +1750,18 @@ function TableView({
                 return (
                   <TableRow
                     key={r.os}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, input, [role="combobox"], [role="checkbox"], a')) return;
+                      onSelect?.(r);
+                    }}
                     className={
-                      r.atividade === "Outros"
+                      (onSelect ? "cursor-pointer " : "") +
+                      (r.atividade === "Outros"
                         ? "bg-amber-400/15 hover:bg-amber-400/20"
                         : isBackorder
-                          ? "bg-red-500/5"
-                          : ""
+                          ? "bg-red-500/5 hover:bg-red-500/10"
+                          : "hover:bg-muted/40")
                     }
                   >
 
@@ -2720,43 +2730,6 @@ function PriorityConfigDialog({
   );
 }
 
-function PowerBIView() {
-  const [key, setKey] = useState(0);
-  return (
-    <GlassCard>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold">Painel Power BI — Demarchi</h3>
-          <p className="text-xs text-muted-foreground">
-            Se o relatório mostrar múltiplas unidades, aplique manualmente o filtro para
-            "Demarchi" no próprio Power BI.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setKey((k) => k + 1)}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href={POWERBI_URL} target="_blank" rel="noreferrer">
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Tela cheia
-            </a>
-          </Button>
-        </div>
-      </div>
-      <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/60 bg-black/40">
-        <iframe
-          key={key}
-          title="Power BI — Demarchi"
-          src={POWERBI_URL}
-          className="h-full w-full"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          allowFullScreen
-        />
-      </div>
-    </GlassCard>
-  );
-}
 
 // ---------- Modal de detalhes de chamado prioritário ----------
 

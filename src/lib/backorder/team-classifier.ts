@@ -9,7 +9,7 @@
 
 import type { Categoria } from "./classify";
 
-export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica";
+export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica" | "Pintura";
 
 export const EQUIPES: readonly Equipe[] = [
   "Chaveiro",
@@ -17,6 +17,7 @@ export const EQUIPES: readonly Equipe[] = [
   "Refrigeração",
   "Hidráulica",
   "Elétrica",
+  "Pintura",
 ] as const;
 
 export const EQUIPE_COR: Record<Equipe, string> = {
@@ -25,6 +26,7 @@ export const EQUIPE_COR: Record<Equipe, string> = {
   Refrigeração: "#06B6D4",
   Hidráulica: "#3B82F6",
   Elétrica: "#F59E0B",
+  Pintura: "#EC4899",
 };
 
 const norm = (v: unknown) =>
@@ -156,6 +158,22 @@ const RULES: Rule[] = [
     termos: ["refrigeracao", "climatizado", "temperatura", "exaustor", "insuflamento"],
   },
 
+  // ---------------- Pintura ----------------
+  {
+    equipe: "Pintura",
+    peso: 4,
+    termos: [
+      "pintura", "pintar", "repintura", "repintar", "tinta", "textura", "verniz",
+      "demarcacao de piso", "sinalizacao de piso", "faixa de piso", "faixa amarela",
+      "pintura de piso", "pintura de parede", "retoque de pintura",
+    ],
+  },
+  {
+    equipe: "Pintura",
+    peso: 3,
+    termos: ["demarcacao", "sinalizacao", "descascado", "descascando", "parede manchada"],
+  },
+
   // ---------------- Civil ----------------
   {
     equipe: "Civil",
@@ -165,9 +183,6 @@ const RULES: Rule[] = [
       "gesso", "drywall", "reboco", "trinca", "rachadura",
       "piso", "piso quebrado", "piso solto", "azulejo", "revestimento",
       "calcada", "buraco no piso", "buraco",
-      "pintura", "pintar", "repintura", "tinta", "textura", "verniz",
-      "demarcacao", "demarcacao de piso", "sinalizacao de piso",
-      "faixa de piso", "faixa amarela",
       "guarda corpo", "guarda-corpo", "corrimao",
       "jardinagem", "poda", "capina", "limpeza de area", "limpeza geral",
       "limpeza de vidros", "limpeza de placa",
@@ -253,6 +268,7 @@ export function classifyTeamByText(nome: string): TeamClassificationResult {
     Refrigeração: 0,
     Hidráulica: 0,
     Elétrica: 0,
+    Pintura: 0,
   };
 
   for (const rule of RULES) {

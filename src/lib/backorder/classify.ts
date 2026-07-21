@@ -232,7 +232,7 @@ export const CATEGORIA_TO_EQUIPE: Record<Categoria, string> = {
   Refrigeração: "CLIMATIZAÇÃO E REFRIGERAÇÃO",
   Elétrica: "ELÉTRICA",
   Hidráulica: "HIDRÁULICA",
-  Pintura: "CIVIL",
+  Pintura: "PINTURA",
   Gerenciamento: "GERENCIAMENTO",
   Outros: "REVISAR",
 };
