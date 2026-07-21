@@ -573,12 +573,19 @@ function TaludesPage() {
       if (editingPolygonFor) {
         const existing = taludes.find((t) => t.id === editingPolygonFor);
         if (!existing) return;
+        const metrics = realMetrics(drawingPoints, {
+          imageWidthPx: map.image_width,
+          imageHeightPx: map.image_height,
+          metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        });
         await upsertFn({
           data: {
             id: existing.id,
             map_id: map.id,
             numero: existing.numero,
             polygon: drawingPoints,
+            area_m2: metrics.areaM2,
+            perimetro_m: metrics.perimetroM,
           },
         });
         toast.success(`Talude ${existing.numero}: área atualizada`);
