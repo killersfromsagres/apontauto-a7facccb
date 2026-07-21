@@ -118,6 +118,16 @@ const fmtBr = (iso: string | null) => {
   return `${d}/${m}/${y}`;
 };
 
+function rgbLikeToHex(v: string | null | undefined): string | null {
+  if (!v) return null;
+  const s = v.trim();
+  if (s.startsWith("#")) return s.length === 7 ? s : null;
+  const m = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (!m) return null;
+  const toHex = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, "0");
+  return `#${toHex(+m[1])}${toHex(+m[2])}${toHex(+m[3])}`;
+}
+
 function TaludesPage() {
   const qc = useQueryClient();
   const listFn = listMaps;
