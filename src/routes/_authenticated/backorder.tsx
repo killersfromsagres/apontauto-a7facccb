@@ -5,7 +5,6 @@ import {
   Upload,
   Download,
   RefreshCw,
-  ExternalLink,
   PackageX,
   Database,
   ArrowUpDown,
