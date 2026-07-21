@@ -186,7 +186,6 @@ function BackorderPage() {
   const [aiReclassifying, setAiReclassifying] = useState(false);
   const [reclassifyOpen, setReclassifyOpen] = useState(false);
   const [reclassifyAll, setReclassifyAll] = useState(false);
-  const [filterEquipe, setFilterEquipe] = useState<string>("__all__");
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
