@@ -1627,6 +1627,8 @@ function TableView({
         </Button>
       </div>
 
+      <TeamSummaryStrip rows={rows} filterCat={filterCat} setFilterCat={setFilterCat} />
+
       <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>
           {rows.length === 0
