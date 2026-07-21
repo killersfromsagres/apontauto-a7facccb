@@ -1357,7 +1357,7 @@ function TaludesPage() {
                 )}
                 {imageUrl ? (
                   <div
-                    className="relative w-full"
+                    className="relative h-full w-full"
                     style={{
                       transform,
                       transformOrigin: originStr,
@@ -1372,13 +1372,19 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="block h-auto w-full select-none"
+                      className="absolute inset-0 block h-full w-full select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
                       style={{ filter: imgFilter }}
-                      onLoad={() => setImgLoaded(true)}
+                      onLoad={(e) => {
+                        const el = e.currentTarget;
+                        setImgLoaded(true);
+                        if (el.naturalWidth && el.naturalHeight) {
+                          setImgSize({ w: el.naturalWidth, h: el.naturalHeight });
+                        }
+                      }}
                     />
                     <LogoMaskOverlay
                       masks={imgMasks}
