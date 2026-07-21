@@ -1,14 +1,12 @@
 // Exportador Excel — Programação de Backorder.
-// Cada campo do relatório é montado por nome interno; a ordem das
-// colunas é apenas uma configuração declarativa (COLUMN_ORDER). Assim,
-// reordenar/adicionar/remover colunas depois é uma mudança pontual.
 //
-// Prédio / Andar / Espaço são gerados como fórmulas PROCV vivas
-// contra uma aba auxiliar "ativos" que também vai no mesmo arquivo,
-// exatamente como no modelo original. O código do Ativo é gravado em
-// uma coluna oculta ao final da planilha e as fórmulas apontam para
-// essa coluna (a letra é calculada em tempo de exportação, para que
-// nada quebre se um dia a ordem for alterada).
+// Prédio / Andar / Ambiente são gravados como VALORES ESTÁTICOS já
+// resolvidos pelo motor hierárquico (resolveAtivoTree em assets.ts),
+// que sobe a árvore por codigo_pai/nivel — funciona para OS abertas
+// em qualquer nível (Ambiente ou Equipamento) e não depende do
+// tamanho do código. O arquivo exportado é autossuficiente: não usa
+// fórmulas VLOOKUP, não referencia abas auxiliares e não quebra ao
+// ser aberto em outra máquina.
 
 import type { BackorderRow } from "./reader";
 
