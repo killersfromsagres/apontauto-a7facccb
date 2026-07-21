@@ -646,6 +646,17 @@ function TaludesPage() {
     toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
   };
 
+  // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
+  const startNewPart = (t: TaludeRow) => {
+    setEditingPolygonFor(null);
+    setDrawingPoints([]);
+    setDrawingNewMode(true);
+    setDrawingNumero(String(t.numero));
+    setSelectedTaludeId(t.id);
+    toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
+  };
+
+
   const updateMutation = useMutation({
     mutationFn: async (patch: Partial<TaludeRow> & { id: string }) => {
       const t = taludes.find((x) => x.id === patch.id);
