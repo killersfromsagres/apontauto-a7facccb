@@ -1352,16 +1352,17 @@ function TaludesPage() {
                             return (
                               <g key={`v-${i}`}>
                                 {(isDrag || isSel) && (
-                                  <circle cx={p.x} cy={p.y} r={1.15} fill={accent} fillOpacity={0.18} />
+                                  <circle cx={p.x} cy={p.y} r={0.75} fill={accent} fillOpacity={0.14} />
                                 )}
                                 <circle
                                   cx={p.x}
                                   cy={p.y}
-                                  r={isDrag ? 0.6 : isSel ? 0.52 : 0.42}
+                                  r={isDrag ? 0.28 : isSel ? 0.26 : 0.42}
                                   fill="#ffffff"
                                   stroke={accent}
-                                  strokeWidth={isDrag || isSel ? 0.2 : 0.16}
+                                  strokeWidth={isDrag || isSel ? 0.12 : 0.16}
                                 />
+
                                 <circle
                                   cx={p.x}
                                   cy={p.y}
