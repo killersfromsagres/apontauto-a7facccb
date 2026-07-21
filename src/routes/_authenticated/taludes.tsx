@@ -314,6 +314,32 @@ function TaludesPage() {
   const [selectedVertexIdx, setSelectedVertexIdx] = useState<number | null>(null);
   const [cursorPct, setCursorPct] = useState<Point | null>(null);
   const [snapHint, setSnapHint] = useState<Point | null>(null);
+  // Undo/redo local ao editor de polígono (não persiste entre sessões).
+  const historyRef = useRef<{ past: Point[][]; future: Point[][] }>({ past: [], future: [] });
+  const resetHistory = () => { historyRef.current = { past: [], future: [] }; };
+  const pushHistory = (arr: Point[]) => {
+    historyRef.current.past.push(arr.map((p) => ({ ...p })));
+    if (historyRef.current.past.length > 100) historyRef.current.past.shift();
+    historyRef.current.future = [];
+  };
+  const undoDrawing = () => {
+    setDrawingPoints((prev) => {
+      const h = historyRef.current;
+      if (!h.past.length) return prev;
+      h.future.push(prev.map((p) => ({ ...p })));
+      return h.past.pop()!;
+    });
+    setSelectedVertexIdx(null);
+  };
+  const redoDrawing = () => {
+    setDrawingPoints((prev) => {
+      const h = historyRef.current;
+      if (!h.future.length) return prev;
+      h.past.push(prev.map((p) => ({ ...p })));
+      return h.future.pop()!;
+    });
+    setSelectedVertexIdx(null);
+  };
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
