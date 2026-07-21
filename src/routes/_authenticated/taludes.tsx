@@ -971,6 +971,9 @@ function TaludesPage() {
           <Button variant="outline" onClick={doExport} disabled={!imageUrl || taludes.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar PNG
           </Button>
+          <Button variant="default" onClick={doExportPDF} disabled={!imageUrl || taludes.length === 0} title="Relatório PDF com capa e detalhamento">
+            <Download className="mr-2 h-4 w-4" /> Relatório PDF
+          </Button>
           <Button variant="ghost" size="icon" onClick={removeMap} title="Excluir mapa">
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
