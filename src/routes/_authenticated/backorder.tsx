@@ -1224,12 +1224,12 @@ function BackorderPage() {
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
-            onClick={reclassificarComIA}
+            onClick={() => setReclassifyOpen(true)}
             disabled={aiReclassifying || abertas.length === 0}
             className="w-full sm:w-auto"
           >
             <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
-            {aiReclassifying ? "Analisando..." : "Reclassificar"}
+            {aiReclassifying ? "Classificando..." : "Classificar Equipes"}
           </Button>
 
           <Button onClick={exportar} disabled={filtered.length === 0} className="w-full sm:w-auto">
