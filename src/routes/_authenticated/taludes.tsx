@@ -628,6 +628,11 @@ function TaludesPage() {
     const dataProg = existing
       ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
       : today();
+    const metrics = realMetrics(drawingPoints, {
+      imageWidthPx: map.image_width,
+      imageHeightPx: map.image_height,
+      metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+    });
     await upsertFn({
       data: {
         map_id: map.id,
@@ -635,6 +640,8 @@ function TaludesPage() {
         polygon: drawingPoints,
         status,
         data_programada: dataProg,
+        area_m2: metrics.areaM2,
+        perimetro_m: metrics.perimetroM,
       },
     });
     toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
