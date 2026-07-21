@@ -143,7 +143,9 @@ const sections: MenuSection[] = [
     title: "Corretiva",
     icon: Wrench,
     items: [
-      { key: "corretiva", title: "Gestão de Corretivas", url: "/corretiva", icon: Wrench },
+      { key: "corretiva", title: "Campo (Colaborador)", url: "/corretiva", icon: Wrench },
+      { key: "corretiva-historico", title: "Histórico de OS", url: "/corretiva-historico", icon: ScrollText },
+      { key: "corretiva-gestor", title: "Gestão", url: "/corretiva-gestor", icon: Users },
     ],
   },
   {
@@ -174,6 +176,7 @@ export const AppSidebar = memo(function AppSidebar() {
     const canSee = (key: string) => {
       if (key === "configuracoes") return isOwner;
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
+      if (key === "corretiva-gestor") return isOwner || isAdmin;
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];
