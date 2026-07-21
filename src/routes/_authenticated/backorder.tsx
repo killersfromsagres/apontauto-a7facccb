@@ -16,7 +16,6 @@ import {
   Settings2,
   Printer,
   ShieldAlert,
-  
   TrendingDown,
   TrendingUp,
   CheckCircle2,
@@ -28,6 +27,8 @@ import {
   User,
   Eraser,
   Sparkles,
+  BrainCircuit,
+  ChevronDown,
 } from "lucide-react";
 import {
   AlertDialog,
