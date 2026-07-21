@@ -39,6 +39,7 @@ import { Route as AuthenticatedBackorderRouteImport } from './routes/_authentica
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
+import { Route as ApiPublicBootstrapHidraulicaRouteImport } from './routes/api/public/bootstrap-hidraulica'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -201,6 +202,12 @@ const ApiPublicClimaRoute = ApiPublicClimaRouteImport.update({
   path: '/api/public/clima',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicBootstrapHidraulicaRoute =
+  ApiPublicBootstrapHidraulicaRouteImport.update({
+    id: '/api/public/bootstrap-hidraulica',
+    path: '/api/public/bootstrap-hidraulica',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/public/bootstrap-hidraulica': typeof ApiPublicBootstrapHidraulicaRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/bootstrap-hidraulica': typeof ApiPublicBootstrapHidraulicaRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
@@ -294,6 +303,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/bootstrap-hidraulica': typeof ApiPublicBootstrapHidraulicaRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/taludes'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/public/bootstrap-hidraulica'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
   fileRoutesByTo: FileRoutesByTo
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/'
+    | '/api/public/bootstrap-hidraulica'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
   id:
@@ -390,6 +402,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/_authenticated/'
+    | '/api/public/bootstrap-hidraulica'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
   fileRoutesById: FileRoutesById
@@ -403,6 +416,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
   ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
+  ApiPublicBootstrapHidraulicaRoute: typeof ApiPublicBootstrapHidraulicaRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
 }
@@ -619,6 +633,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicClimaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/bootstrap-hidraulica': {
+      id: '/api/public/bootstrap-hidraulica'
+      path: '/api/public/bootstrap-hidraulica'
+      fullPath: '/api/public/bootstrap-hidraulica'
+      preLoaderRoute: typeof ApiPublicBootstrapHidraulicaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -681,6 +702,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
   ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
+  ApiPublicBootstrapHidraulicaRoute: ApiPublicBootstrapHidraulicaRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
 }
