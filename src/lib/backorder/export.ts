@@ -51,16 +51,12 @@ const COLUMN_ORDER: ColDef[] = [
   { key: "solicitante", label: "Solicitante", width: 28, align: "left" },
 ];
 
-function colLetter(idx: number): string {
-  let n = idx;
-  let s = "";
-  while (n > 0) {
-    const rem = (n - 1) % 26;
-    s = String.fromCharCode(65 + rem) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
 }
+
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
