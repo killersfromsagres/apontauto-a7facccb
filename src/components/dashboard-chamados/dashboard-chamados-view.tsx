@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
-  Upload,
   Users,
   AlertTriangle,
   CheckCircle2,
@@ -11,7 +10,6 @@ import {
   TrendingUp,
   Filter,
   X,
-  FileSpreadsheet,
   Info,
   Building2,
   CalendarClock,
@@ -25,6 +23,9 @@ import {
   ListChecks,
   RotateCcw,
   Loader2,
+  RefreshCw,
+  Database,
+  Radio,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -55,16 +56,16 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { parseChamadosFile, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
+import { parseChamadosFile as _unused, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
 import { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
 import {
-  fetchBackorderStatuses,
+  fetchBackorderRows,
   setBackorderConcluido,
   setBackorderReaberto,
-  subscribeBackorderChanges,
-  type BackorderStatus,
+  subscribeBackorderTable,
 } from "@/lib/dashboard-chamados/backorder-sync";
 import { useMyAccess } from "@/hooks/use-my-access";
+void _unused;
 
 const CHART_COLORS = [
   "oklch(0.62 0.19 256)",
@@ -146,61 +147,51 @@ function QuickAccessStrip() {
 
 export function DashboardChamadosView() {
   const [rows, setRows] = useState<ChamadoRow[]>([]);
-  const [fileInfo, setFileInfo] = useState<{ name: string; origem: string; total: number } | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  // Sincronia com backorder_os: mapa OS -> status vindo do banco.
-  const [backorderMap, setBackorderMap] = useState<Map<string, BackorderStatus>>(new Map());
   const [pendingOs, setPendingOs] = useState<Set<string>>(new Set());
+  const debounceRef = useRef<number | null>(null);
 
-  // Aplica o status do backorder sobre as linhas parseadas.
-  const mergedRows = useMemo<ChamadoRow[]>(() => {
-    if (backorderMap.size === 0) return rows;
-    return rows.map((r) => {
-      const b = backorderMap.get(r.os);
-      if (!b) return r;
-      if (b.finalizado) {
-        return {
-          ...r,
-          statusNorm: "concluido",
-          status: r.status || "Concluído",
-          dataConclusao: b.data_finalizacao ?? r.dataConclusao,
-        };
-      }
-      // Se foi reaberto explicitamente no backorder, refletir aqui.
-      if (r.statusNorm === "concluido") {
-        return { ...r, statusNorm: "aberto", status: "Reaberto", dataConclusao: null };
-      }
-      return r;
-    });
-  }, [rows, backorderMap]);
-
-
-  const onUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLoading(true);
+  const loadRows = useCallback(async (silent = false) => {
+    if (!silent) setRefreshing(true);
     try {
-      const res = await parseChamadosFile(file);
-      if (res.rows.length === 0) {
-        toast.error("Nenhum chamado válido encontrado na planilha");
-        return;
-      }
-      setRows(res.rows);
-      setFileInfo({ name: res.arquivo, origem: res.origem, total: res.totalLidas });
-      setFilters(EMPTY_FILTERS);
-      toast.success(
-        `${res.rows.length} chamados carregados (${res.origem === "generico" ? "formato genérico" : res.origem})`,
-      );
+      const data = await fetchBackorderRows();
+      setRows(data);
+      setLastUpdate(Date.now());
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha ao ler planilha");
+      console.error("[dashboard] fetchBackorderRows", err);
+      toast.error(err instanceof Error ? err.message : "Falha ao carregar backorders");
     } finally {
+      setRefreshing(false);
       setLoading(false);
-      e.target.value = "";
     }
   }, []);
+
+  // Carga inicial.
+  useEffect(() => {
+    void loadRows(true);
+  }, [loadRows]);
+
+  // Realtime: qualquer alteração em backorder_os dispara um refetch (com debounce
+  // para agrupar rajadas de eventos, como imports em massa).
+  useEffect(() => {
+    const unsub = subscribeBackorderTable(() => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      debounceRef.current = window.setTimeout(() => {
+        void loadRows(true);
+      }, 350);
+    });
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+      unsub();
+    };
+  }, [loadRows]);
+
+  // As linhas já vêm do banco (finalizado/data_finalizacao mapeados), então
+  // mergedRows é apenas um alias para compatibilidade com o restante do componente.
+  const mergedRows = rows;
 
   const uniques = useMemo(() => {
     const eq = new Set<string>();
@@ -251,53 +242,30 @@ export function DashboardChamadosView() {
     [stats.porPredio],
   );
 
-  // Ao carregar linhas, busca status atuais em backorder_os e mescla.
-  useEffect(() => {
-    if (rows.length === 0) {
-      setBackorderMap(new Map());
-      return;
-    }
-    let cancelled = false;
-    fetchBackorderStatuses(rows.map((r) => r.os))
-      .then((m) => {
-        if (!cancelled) setBackorderMap(m);
-      })
-      .catch((err) => {
-        console.error("[dashboard] fetchBackorderStatuses", err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [rows]);
-
-  // Realtime: reflete alterações vindas do módulo Backorder.
-  useEffect(() => {
-    if (rows.length === 0) return;
-    const known = new Set(rows.map((r) => r.os));
-    const unsub = subscribeBackorderChanges((status) => {
-      if (!known.has(status.os)) return;
-      setBackorderMap((prev) => {
-        const next = new Map(prev);
-        next.set(status.os, status);
-        return next;
-      });
-    });
-    return unsub;
-  }, [rows]);
-
   const toggleConcluido = useCallback(
     async (row: ChamadoRow, next: boolean) => {
       setPendingOs((prev) => new Set(prev).add(row.os));
+      // Atualização otimista — o realtime completa o restante em seguida.
+      setRows((prev) =>
+        prev.map((r) =>
+          r.os === row.os
+            ? {
+                ...r,
+                statusNorm: next ? "concluido" : "aberto",
+                status: next ? "Concluído" : "Reaberto",
+                dataConclusao: next ? new Date().toISOString() : null,
+              }
+            : r,
+        ),
+      );
       try {
-        const status = next ? await setBackorderConcluido(row) : await setBackorderReaberto(row.os);
-        setBackorderMap((prev) => {
-          const m = new Map(prev);
-          m.set(row.os, status);
-          return m;
-        });
+        if (next) await setBackorderConcluido(row);
+        else await setBackorderReaberto(row.os);
         toast.success(next ? `OS ${row.os} concluída` : `OS ${row.os} reaberta`);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com backorder");
+        // Reverte on error recarregando a base.
+        void loadRows(true);
       } finally {
         setPendingOs((prev) => {
           const s = new Set(prev);
@@ -306,50 +274,25 @@ export function DashboardChamadosView() {
         });
       }
     },
-    [],
+    [loadRows],
   );
-
 
   const activeFilterCount = Object.entries(filters).filter(
     ([k, v]) => v !== EMPTY_FILTERS[k as keyof Filters],
   ).length;
 
-  if (rows.length === 0) {
+  if (loading && rows.length === 0) {
     return (
       <PageShell
         title="Dashboard de Chamados"
-        description="Envie uma planilha de chamados (Backorder ou Preventiva) para gerar análises interativas com um agente inteligente"
+        description="Carregando informações da aba Backorder…"
       >
         <QuickAccessStrip />
         <div className="mt-4">
           <GlassCard>
-            <div className="flex flex-col items-center justify-center gap-6 py-16 text-center">
-              <div className="glass-tile flex h-20 w-20 items-center justify-center rounded-3xl">
-                <FileSpreadsheet className="h-10 w-10 text-primary" strokeWidth={1.5} />
-              </div>
-              <div className="max-w-md space-y-2">
-                <h3 className="text-lg font-semibold">Envie sua planilha para começar</h3>
-                <p className="text-sm text-muted-foreground">
-                  Suportamos automaticamente planilhas do Backorder e das Preventivas.
-                  O sistema detecta as colunas, calcula métricas por equipe, solicitante e SLA,
-                  e gera insights automáticos.
-                </p>
-              </div>
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls"
-                  className="hidden"
-                  onChange={onUpload}
-                  disabled={loading}
-                />
-                <Button size="lg" asChild disabled={loading}>
-                  <span>
-                    <Upload className="mr-2 h-4 w-4" />
-                    {loading ? "Processando…" : "Enviar planilha (.xlsx)"}
-                  </span>
-                </Button>
-              </label>
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Sincronizando com Backorder…</p>
             </div>
           </GlassCard>
         </div>
@@ -357,11 +300,55 @@ export function DashboardChamadosView() {
     );
   }
 
+  if (!loading && rows.length === 0) {
+    return (
+      <PageShell
+        title="Dashboard de Chamados"
+        description="Nenhum chamado disponível no módulo Backorder"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => void loadRows()} disabled={refreshing}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        }
+      >
+        <QuickAccessStrip />
+        <div className="mt-4">
+          <GlassCard>
+            <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
+              <div className="glass-tile flex h-20 w-20 items-center justify-center rounded-3xl">
+                <Database className="h-10 w-10 text-primary" strokeWidth={1.5} />
+              </div>
+              <div className="max-w-md space-y-2">
+                <h3 className="text-lg font-semibold">Sem chamados no Backorder</h3>
+                <p className="text-sm text-muted-foreground">
+                  Assim que uma OS for adicionada ou finalizada na aba <strong>Backorder</strong>,
+                  os gráficos deste dashboard são atualizados automaticamente em tempo real.
+                </p>
+              </div>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/backorder">
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Abrir Backorder
+                </Link>
+              </Button>
+            </div>
+          </GlassCard>
+        </div>
+      </PageShell>
+    );
+  }
+
+
+  const lastUpdateLabel = lastUpdate
+    ? new Date(lastUpdate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
   const kpis = [
     {
       label: "Total",
       value: stats.total.toString(),
-      hint: fileInfo ? `${fileInfo.origem}` : "",
+      hint: `Atualizado às ${lastUpdateLabel}`,
       icon: BarChart3,
       tint: "text-sky-600 dark:text-sky-400",
     },
@@ -391,27 +378,26 @@ export function DashboardChamadosView() {
   return (
     <PageShell
       title="Dashboard de Chamados"
-      description={
-        fileInfo
-          ? `${fileInfo.name} · ${filtered.length} de ${rows.length} chamados no filtro`
-          : "Análise de chamados"
-      }
+      description={`Sincronizado com Backorder · ${filtered.length} de ${rows.length} chamados no filtro`}
       actions={
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={onUpload}
-            disabled={loading}
-          />
-          <Button variant="outline" size="sm" asChild disabled={loading}>
-            <span>
-              <Upload className="mr-2 h-4 w-4" />
-              {loading ? "Processando…" : "Trocar planilha"}
-            </span>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="hidden gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 sm:inline-flex"
+          >
+            <Radio className="h-3 w-3 animate-pulse" />
+            Tempo real
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadRows()}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Atualizar
           </Button>
-        </label>
+        </div>
       }
     >
       <div className="space-y-4">
