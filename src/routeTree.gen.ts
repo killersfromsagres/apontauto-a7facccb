@@ -32,6 +32,7 @@ import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
+import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
@@ -165,6 +166,12 @@ const AuthenticatedDashboardChamadosRoute =
     path: '/dashboard-chamados',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCorretivaHistoricoRoute =
+  AuthenticatedCorretivaHistoricoRouteImport.update({
+    id: '/corretiva-historico',
+    path: '/corretiva-historico',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCorretivaGestorRoute =
   AuthenticatedCorretivaGestorRouteImport.update({
     id: '/corretiva-gestor',
@@ -223,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
+  '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -254,6 +262,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
+  '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -288,6 +297,7 @@ export interface FileRoutesById {
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
+  '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
@@ -323,6 +333,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/corretiva'
     | '/corretiva-gestor'
+    | '/corretiva-historico'
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/outros'
@@ -354,6 +365,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/corretiva'
     | '/corretiva-gestor'
+    | '/corretiva-historico'
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/outros'
@@ -387,6 +399,7 @@ export interface FileRouteTypes {
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
     | '/_authenticated/corretiva-gestor'
+    | '/_authenticated/corretiva-historico'
     | '/_authenticated/dashboard-chamados'
     | '/_authenticated/lavanderia'
     | '/_authenticated/outros'
@@ -583,6 +596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardChamadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/corretiva-historico': {
+      id: '/_authenticated/corretiva-historico'
+      path: '/corretiva-historico'
+      fullPath: '/corretiva-historico'
+      preLoaderRoute: typeof AuthenticatedCorretivaHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corretiva-gestor': {
       id: '/_authenticated/corretiva-gestor'
       path: '/corretiva-gestor'
@@ -649,6 +669,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
+  AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
@@ -673,6 +694,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
+  AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
