@@ -1352,6 +1352,17 @@ function BackorderPage() {
               e.currentTarget.value = "";
             }}
           />
+          <input
+            ref={fillLocInputRef}
+            type="file"
+            accept=".xlsx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handlePreencherLocalizacoes(f);
+              e.currentTarget.value = "";
+            }}
+          />
           <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
