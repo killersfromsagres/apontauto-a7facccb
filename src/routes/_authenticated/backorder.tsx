@@ -1750,12 +1750,18 @@ function TableView({
                 return (
                   <TableRow
                     key={r.os}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button, input, [role="combobox"], [role="checkbox"], a')) return;
+                      onSelect?.(r);
+                    }}
                     className={
-                      r.atividade === "Outros"
+                      (onSelect ? "cursor-pointer " : "") +
+                      (r.atividade === "Outros"
                         ? "bg-amber-400/15 hover:bg-amber-400/20"
                         : isBackorder
-                          ? "bg-red-500/5"
-                          : ""
+                          ? "bg-red-500/5 hover:bg-red-500/10"
+                          : "hover:bg-muted/40")
                     }
                   >
 
