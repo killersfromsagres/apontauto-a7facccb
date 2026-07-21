@@ -1478,6 +1478,7 @@ function BackorderPage() {
             setOrder={setOrder}
             onToggle={toggleFinalizado}
             onCategoria={updateAtividade}
+            onSelect={setSelectedBackorder}
             assetsMap={assetsMap}
           />
 
