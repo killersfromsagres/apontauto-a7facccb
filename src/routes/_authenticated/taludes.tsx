@@ -1568,6 +1568,8 @@ function TaludesPage() {
                 onChangeStatus={(s) => changeStatus(selected, s)}
                 onPatch={(patch) => updateMutation.mutate({ id: selected.id, ...patch })}
                 onRedraw={() => startRedraw(selected)}
+                onNewPart={() => startNewPart(selected)}
+
                 onDelete={() => removeTalude(selected)}
                 onBumpDate={(days) => bumpDate(selected, days)}
                 onCycleStatus={() => cycleStatus(selected)}
