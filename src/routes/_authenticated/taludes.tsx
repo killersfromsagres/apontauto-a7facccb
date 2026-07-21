@@ -1921,6 +1921,26 @@ function TaludeDetail({
         </Button>
       </div>
 
+      {talude.polygon.length >= 3 && (() => {
+        const areaPct = polygonAreaPct(talude.polygon);
+        const perimPct = polygonPerimeterPct(talude.polygon);
+        const areaM2 = (talude as unknown as { area_m2?: number | null }).area_m2 ?? null;
+        const perimM = (talude as unknown as { perimetro_m?: number | null }).perimetro_m ?? null;
+        return (
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 text-[11px]">
+            <div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Área</div>
+              <div className="font-semibold">{formatArea(areaPct, areaM2)}</div>
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Perímetro</div>
+              <div className="font-semibold">{formatPerimeter(perimPct, perimM)}</div>
+            </div>
+          </div>
+        );
+      })()}
+
+
       <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-2">
         <Label className="text-[10px] uppercase text-muted-foreground">Cor</Label>
         <input
