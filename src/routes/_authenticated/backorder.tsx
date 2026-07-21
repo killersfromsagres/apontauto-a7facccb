@@ -1822,6 +1822,69 @@ function TableView({
   );
 }
 
+function TeamSummaryStrip({
+  rows,
+  filterCat,
+  setFilterCat,
+}: {
+  rows: BOSRow[];
+  filterCat: string;
+  setFilterCat: (v: string) => void;
+}) {
+  const counts = useMemo(() => {
+    const map = new Map<Equipe, number>();
+    for (const e of EQUIPES) map.set(e, 0);
+    for (const r of rows) {
+      if (EQUIPES.includes(r.atividade as Equipe)) {
+        map.set(r.atividade as Equipe, (map.get(r.atividade as Equipe) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [rows]);
+  const revisao = useMemo(
+    () => rows.filter((r) => r.revisao_manual && !r.atividade_manual).length,
+    [rows],
+  );
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        onClick={() => setFilterCat("__all__")}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition ${
+          filterCat === "__all__"
+            ? "border-primary/60 bg-primary/10 text-primary"
+            : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted"
+        }`}
+      >
+        Todas · {rows.length}
+      </button>
+      {EQUIPES.map((e) => {
+        const active = filterCat === e;
+        const color = EQUIPE_COR[e];
+        return (
+          <button
+            key={e}
+            type="button"
+            onClick={() => setFilterCat(active ? "__all__" : e)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition ${
+              active ? "border-primary/60" : "border-border/60 hover:bg-muted"
+            }`}
+            style={active ? { background: `${color}22`, color } : undefined}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+            {e} · {counts.get(e) ?? 0}
+          </button>
+        );
+      })}
+      {revisao > 0 && (
+        <span className="ml-1 inline-flex items-center gap-1 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+          <ShieldAlert className="h-3 w-3" /> {revisao} para revisar
+        </span>
+      )}
+    </div>
+  );
+}
+
 function FinalizadosView({
   rows,
   onReabrir,
