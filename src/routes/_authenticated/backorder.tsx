@@ -16,7 +16,6 @@ import {
   Settings2,
   Printer,
   ShieldAlert,
-  
   TrendingDown,
   TrendingUp,
   CheckCircle2,
@@ -28,6 +27,8 @@ import {
   User,
   Eraser,
   Sparkles,
+  BrainCircuit,
+  ChevronDown,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -113,6 +114,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useServerFn } from "@tanstack/react-start";
 import { classifyBackorderWithAi } from "@/lib/backorder/ai-classify.functions";
 
@@ -1220,49 +1229,60 @@ function BackorderPage() {
       title="Backorder de Corretivas"
       description="OS corretivas em aberto há mais de 30 dias. Importe a planilha para sincronizar a base e acompanhe o fechamento das pendências."
       actions={
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => assetsInputRef.current?.click()} disabled={importing}>
-            <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
-          </Button>
-          <Button variant="outline" onClick={() => instrucaoInputRef.current?.click()} disabled={importing}>
-            <Upload className="mr-2 h-4 w-4" /> Importar Instrução
-          </Button>
-          <Button variant="outline" onClick={() => backorderInputRef.current?.click()} disabled={importing}>
-            <Upload className="mr-2 h-4 w-4" /> Importar Backorder
-          </Button>
+        <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
-            variant="outline"
-            onClick={() => setClearOpen(true)}
-            disabled={importing || clearing || rows.length === 0}
-            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Eraser className="mr-2 h-4 w-4" /> Limpar Tudo
-          </Button>
-          <Button variant="outline" onClick={handleReprocessarChamados} disabled={importing}>
-            <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
-          </Button>
-          <Button variant="outline" onClick={handleValidarBase} disabled={importing}>
-            <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
-          </Button>
-          <Button variant="outline" onClick={() => setConfigOpen(true)}>
-            <Settings2 className="mr-2 h-4 w-4" /> Prioridades
-          </Button>
-          <Button
-            variant="outline"
             onClick={reclassificarComIA}
             disabled={aiReclassifying || abertas.length === 0}
-            className="border-primary/40 text-primary hover:bg-primary/10"
+            className="w-full sm:w-auto"
           >
-            <Sparkles className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
-            {aiReclassifying ? "Analisando..." : "Reclassificar com IA"}
+            <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
+            {aiReclassifying ? "Analisando..." : "Reclassificar"}
           </Button>
 
-
-
-
-          <Button onClick={exportar} disabled={filtered.length === 0}>
+          <Button onClick={exportar} disabled={filtered.length === 0} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" /> Exportar
           </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full sm:w-auto" disabled={importing}>
+                <Settings2 className="mr-2 h-4 w-4" /> Ações
+                <ChevronDown className="ml-2 h-4 w-4 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Importação</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => assetsInputRef.current?.click()} disabled={importing}>
+                <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => instrucaoInputRef.current?.click()} disabled={importing}>
+                <Upload className="mr-2 h-4 w-4" /> Importar Instrução
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => backorderInputRef.current?.click()} disabled={importing}>
+                <Upload className="mr-2 h-4 w-4" /> Importar Backorder
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Processamento</DropdownMenuLabel>
+              <DropdownMenuItem onClick={handleReprocessarChamados} disabled={importing}>
+                <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleValidarBase} disabled={importing}>
+                <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setConfigOpen(true)}>
+                <Sparkles className="mr-2 h-4 w-4" /> Prioridades
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setClearOpen(true)}
+                disabled={importing || clearing || rows.length === 0}
+                className="text-destructive focus:text-destructive"
+              >
+                <Eraser className="mr-2 h-4 w-4" /> Limpar Tudo
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <input
             ref={backorderInputRef}
             type="file"
