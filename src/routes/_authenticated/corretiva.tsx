@@ -53,12 +53,12 @@ import { compressImage } from "@/lib/corretiva/image";
 import { syncPending } from "@/lib/corretiva/sync";
 
 import {
-  EQUIPES_CORRETIVA_PLACEHOLDER,
   loadEquipe,
   saveEquipe,
   matchEquipe,
   type EquipeFiltro,
 } from "@/lib/corretiva/equipe";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
