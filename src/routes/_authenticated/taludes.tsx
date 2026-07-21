@@ -64,6 +64,13 @@ import {
   verifyAndRepairMap,
 } from "@/lib/taludes.functions";
 import { STATUS_META, type TaludeStatus } from "@/lib/taludes/constants";
+import {
+  polygonAreaPct,
+  polygonPerimeterPct,
+  realMetrics,
+  formatArea,
+  formatPerimeter,
+} from "@/lib/taludes/geometry";
 import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
