@@ -2715,43 +2715,6 @@ function PriorityConfigDialog({
   );
 }
 
-function PowerBIView() {
-  const [key, setKey] = useState(0);
-  return (
-    <GlassCard>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold">Painel Power BI — Demarchi</h3>
-          <p className="text-xs text-muted-foreground">
-            Se o relatório mostrar múltiplas unidades, aplique manualmente o filtro para
-            "Demarchi" no próprio Power BI.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setKey((k) => k + 1)}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recarregar
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <a href={POWERBI_URL} target="_blank" rel="noreferrer">
-              <ExternalLink className="mr-1.5 h-3.5 w-3.5" /> Tela cheia
-            </a>
-          </Button>
-        </div>
-      </div>
-      <div className="aspect-video w-full overflow-hidden rounded-xl border border-border/60 bg-black/40">
-        <iframe
-          key={key}
-          title="Power BI — Demarchi"
-          src={POWERBI_URL}
-          className="h-full w-full"
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          allowFullScreen
-        />
-      </div>
-    </GlassCard>
-  );
-}
 
 // ---------- Modal de detalhes de chamado prioritário ----------
 
