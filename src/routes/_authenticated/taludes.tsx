@@ -97,6 +97,7 @@ interface TaludeRow {
   proxima_data: string | null;
   periodicidade_dias: number | null;
   observacoes: string | null;
+  cor: string | null;
 }
 
 const statusIcon: Record<TaludeStatus, typeof Clock> = {
@@ -1137,9 +1138,9 @@ function TaludesPage() {
                           >
                             <polygon
                               points={pts}
-                              fill={meta.fill}
+                              fill={t.cor || meta.fill}
                               fillOpacity={isSel ? 0.72 : isHover ? 0.62 : 0.5}
-                              stroke={meta.stroke}
+                              stroke={t.cor || meta.stroke}
                               strokeWidth={isSel || isHover ? 0.6 : 0.35}
                               strokeLinejoin="round"
                               style={{
@@ -1557,6 +1558,7 @@ function TaludesPage() {
                 polygon: it.polygon,
                 status: "programado",
                 data_programada: today(),
+                cor: it.cor ?? null,
               },
             });
           }

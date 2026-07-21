@@ -80,6 +80,7 @@ export async function upsertTalude(args: {
     proxima_data?: string | null;
     periodicidade_dias?: number | null;
     observacoes?: string | null;
+    cor?: string | null;
   };
 }) {
   const d = args.data;
@@ -97,7 +98,8 @@ export async function upsertTalude(args: {
     ...(d.proxima_data !== undefined ? { proxima_data: d.proxima_data } : {}),
     ...(d.periodicidade_dias !== undefined ? { periodicidade_dias: d.periodicidade_dias } : {}),
     ...(d.observacoes !== undefined ? { observacoes: d.observacoes } : {}),
-  };
+    ...(d.cor !== undefined ? { cor: d.cor } : {}),
+  } as Record<string, unknown>;
 
 
   if (d.id) {
