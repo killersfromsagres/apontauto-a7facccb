@@ -138,6 +138,15 @@ const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "corretiva-grp",
+    title: "Corretiva",
+    icon: Wrench,
+    items: [
+      { key: "corretiva", title: "Gestão de Corretivas", url: "/corretiva", icon: Wrench },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Cog },
   },
