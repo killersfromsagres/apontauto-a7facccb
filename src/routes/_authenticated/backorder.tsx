@@ -995,26 +995,9 @@ function BackorderPage() {
       status_origem: "",
       revisao_manual: false,
     }));
-    // Paginação — Supabase corta em 1000 por padrão e a base tem ~2.8k ativos.
-    const assetsAll: Array<{ ativo: string; denominacao: string }> = [];
-    const PAGE = 1000;
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
-        .from("assets_ref")
-        .select("ativo, denominacao")
-        .range(from, from + PAGE - 1);
-      if (error) {
-        toast.error("Falha ao carregar base de ativos: " + error.message);
-        break;
-      }
-      const chunk = (data as Array<{ ativo: string; denominacao: string }>) ?? [];
-      assetsAll.push(...chunk);
-      if (chunk.length < PAGE) break;
-    }
     const blob = await generateBackorderExport({
       titulo: "DEMARCHI",
       rows: rowsExp,
-      assets: assetsAll,
     });
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
