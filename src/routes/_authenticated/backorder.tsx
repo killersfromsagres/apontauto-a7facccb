@@ -783,81 +783,63 @@ function BackorderPage() {
     );
   }
 
-  async function reclassificarComIA() {
-    const alvo = abertas;
-    if (alvo.length === 0) {
-      toast.info("Sem OS abertas para reclassificar.");
+  async function classificarEquipes(opts: { incluirManual: boolean }) {
+    const base = abertas.filter((r) => opts.incluirManual ? true : !r.atividade_manual);
+    if (base.length === 0) {
+      toast.info(opts.incluirManual ? "Sem OS abertas." : "Todas as OS abertas já têm equipe definida manualmente.");
       return;
     }
     setAiReclassifying(true);
-    const toastId = toast.loading(`Analisando ${alvo.length} OS com IA...`);
+    const toastId = toast.loading(`Classificando ${base.length} OS…`);
     try {
-      const items = alvo.map((r) => ({
-        os: r.os,
-        descricao: r.nome ?? "",
-        ativo: r.ativo ?? "",
-        solicitante: r.outros ?? "",
-        predio: r.predio ?? "",
-      }));
-      const response = await fetch("/api/backorder-reclassificar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
-      const payload = (await response.json()) as {
-        results?: Array<{ os: string; categoria: Categoria; confianca?: string; justificativa?: string }>;
-        error?: string;
-      };
-      if (!response.ok) throw new Error(payload.error ?? "Falha na reclassificação com IA.");
-      const results = payload.results ?? [];
-      if (!results || results.length === 0) {
-        toast.dismiss(toastId);
-        toast.error("A IA não retornou classificações válidas.");
-        return;
+      const patches: Array<{ os: string; atividade: Categoria; equipe: string; ambiguo: boolean }> = [];
+      for (const row of base) {
+        const result = classifyTeamByText(row.nome ?? "");
+        const cat = result.equipe as Categoria;
+        const nextEquipe = CATEGORIA_TO_EQUIPE[cat];
+        // Só grava se mudou algo (atividade OU flag de revisão)
+        if (cat === row.atividade && row.equipe === nextEquipe && (row.revisao_manual ?? false) === result.ambiguo) continue;
+        patches.push({ os: row.os, atividade: cat, equipe: nextEquipe, ambiguo: result.ambiguo });
       }
-      const byOs = new Map(results.map((r) => [r.os, r]));
-      let alterados = 0;
-      const patches: Array<{ os: string; atividade: Categoria; equipe: string }> = [];
-      for (const row of alvo) {
-        const ai = byOs.get(row.os);
-        if (!ai) continue;
-        const cat = ai.categoria as Categoria;
-        if (!CATEGORIAS.includes(cat)) continue;
-        if (cat === row.atividade) continue;
-        patches.push({ os: row.os, atividade: cat, equipe: CATEGORIA_TO_EQUIPE[cat] });
-        alterados++;
-      }
-      // Persiste em batch
-      for (const p of patches) {
-        await supabase
-          .from("backorder_os")
-          .update({
-            atividade: p.atividade,
-            atividade_manual: true,
-            equipe: p.equipe,
-            origem_equipe: "regra_aprendida",
-            revisao_manual: false,
-          } as never)
-          .eq("os", p.os);
-        await supabase
-          .from("backorder_atividade_override")
-          .upsert({ os: p.os, atividade: p.atividade }, { onConflict: "os" });
+      // Persiste em batches paralelos de 25
+      for (let i = 0; i < patches.length; i += 25) {
+        const slice = patches.slice(i, i + 25);
+        await Promise.all(
+          slice.map((p) =>
+            supabase
+              .from("backorder_os")
+              .update({
+                atividade: p.atividade,
+                equipe: p.equipe,
+                // Marca como automática (não-manual) — a menos que o usuário
+                // tenha forçado sobrescrever a manual: nesse caso vira auto de novo.
+                atividade_manual: false,
+                revisao_manual: p.ambiguo,
+                origem_equipe: p.ambiguo ? "pendente" : "regra_local",
+              } as never)
+              .eq("os", p.os),
+          ),
+        );
       }
       setRows((prev) =>
         prev.map((x) => {
           const p = patches.find((pp) => pp.os === x.os);
           return p
-            ? { ...x, atividade: p.atividade, atividade_manual: true, equipe: p.equipe, revisao_manual: false }
+            ? { ...x, atividade: p.atividade, equipe: p.equipe, atividade_manual: false, revisao_manual: p.ambiguo }
             : x;
         }),
       );
+      const ambiguos = patches.filter((p) => p.ambiguo).length;
       toast.dismiss(toastId);
-      toast.success(`IA reclassificou ${alterados} de ${alvo.length} OS.`);
+      toast.success(
+        `Classificação concluída: ${patches.length} atualizada(s)${ambiguos > 0 ? ` · ${ambiguos} marcada(s) para revisão` : ""}.`,
+      );
     } catch (e) {
       toast.dismiss(toastId);
-      toast.error(e instanceof Error ? e.message : "Falha na reclassificação com IA.");
+      toast.error(e instanceof Error ? e.message : "Falha na classificação.");
     } finally {
       setAiReclassifying(false);
+      setReclassifyOpen(false);
     }
   }
 
