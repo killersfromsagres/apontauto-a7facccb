@@ -268,6 +268,7 @@ export function classifyTeamByText(nome: string): TeamClassificationResult {
     Refrigeração: 0,
     Hidráulica: 0,
     Elétrica: 0,
+    Pintura: 0,
   };
 
   for (const rule of RULES) {
