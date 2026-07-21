@@ -88,8 +88,11 @@ function useOnlineStatus() {
   return online;
 }
 
+type EquipeRow = { id: string; nome: string; colaboradores: string; ordem: number };
+
 function CorretivaPage() {
   const online = useOnlineStatus();
+  const { isAdmin } = useIsAdmin();
   const [osList, setOsList] = useState<OsCacheRow[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -97,10 +100,23 @@ function CorretivaPage() {
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+  const [equipes, setEquipes] = useState<EquipeRow[]>([]);
+  const [managingTeams, setManagingTeams] = useState(false);
 
   useEffect(() => {
     setEquipe(loadEquipe());
+    void reloadEquipes();
   }, []);
+
+  const reloadEquipes = async () => {
+    const { data } = await supabase
+      .from("corretiva_equipes")
+      .select("id, nome, colaboradores, ordem")
+      .order("ordem", { ascending: true })
+      .order("nome", { ascending: true });
+    setEquipes((data ?? []) as EquipeRow[]);
+  };
+
 
   const setEquipeAndPersist = (v: EquipeFiltro) => {
     setEquipe(v);
