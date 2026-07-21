@@ -67,23 +67,6 @@ export async function generateBackorderExport(input: {
   wb.creator = "Apont Auto";
   wb.created = new Date();
 
-  // ---------- Aba auxiliar "ativos" ----------
-  const ativosSheet = wb.addWorksheet("ativos", { properties: { tabColor: { argb: argb("#94A3B8") } } });
-  ativosSheet.columns = [
-    { header: "Ativo", key: "ativo", width: 22 },
-    { header: "Denominação Ativo", key: "denominacao", width: 64 },
-  ];
-  const ativosHead = ativosSheet.getRow(1);
-  ativosHead.eachCell((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
-    cell.font = { name: "Aptos", bold: true, size: 12, color: { argb: HEADER_FG } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-  });
-  ativosHead.height = 24;
-  ativosSheet.views = [{ state: "frozen", ySplit: 1 }];
-  const assets = input.assets ?? [];
-  for (const a of assets) ativosSheet.addRow({ ativo: a.ativo, denominacao: a.denominacao });
-
   // ---------- Aba principal ----------
   const ws = wb.addWorksheet("BACKORDER", {
     views: [{ state: "frozen", ySplit: 2, showGridLines: false }],
@@ -91,13 +74,8 @@ export async function generateBackorderExport(input: {
   });
 
   const visibleCols = COLUMN_ORDER;
-  const ATIVO_COL_INDEX = visibleCols.length + 1;
-  const ATIVO_COL_LETTER = colLetter(ATIVO_COL_INDEX);
 
-  ws.columns = [
-    ...visibleCols.map((c) => ({ key: c.key, width: c.width })),
-    { key: "__ativo", width: 22, hidden: true },
-  ];
+  ws.columns = visibleCols.map((c) => ({ key: c.key, width: c.width }));
 
   // Título mesclado
   ws.mergeCells(1, 1, 1, visibleCols.length);
@@ -124,7 +102,6 @@ export async function generateBackorderExport(input: {
       right: { style: "thin", color: { argb: BORDER_STRONG } },
     };
   });
-  head.getCell(ATIVO_COL_INDEX).value = "Ativo";
   head.height = 30;
 
   const sorted = [...input.rows].sort(
@@ -136,16 +113,18 @@ export async function generateBackorderExport(input: {
     const row = ws.getRow(rowIdx);
     const isAlt = rowIdx % 2 === 1; // linhas alternadas para zebra
 
-    const ativoRef = `$${ATIVO_COL_LETTER}${rowIdx}`;
-    const buildFormula = (chars: number) =>
-      `IFERROR(VLOOKUP(LEFT(${ativoRef},${chars}),ativos!$A:$B,2,0),"")`;
+    // Prédio / Andar / Ambiente já vêm resolvidos pela árvore hierárquica
+    // (resolveAtivoTree) — gravamos como texto estático. Fallback "Não
+    // localizado" quando a OS tem Ativo mas a árvore não retornou aquele
+    // nível (cadeia incompleta ou Ativo ausente da base).
+    const naoLoc = (v: string) => (r.ativo && !v ? "Não localizado" : v || "");
 
     const values: Record<ColKey, unknown> = {
       os: r.os,
       nome: r.nome,
-      predio: r.ativo ? { formula: buildFormula(5) } : "",
-      andar: r.ativo ? { formula: buildFormula(7) } : "",
-      ambiente: r.ativo ? { formula: buildFormula(String(r.ativo).length) } : "",
+      predio: naoLoc(r.predio),
+      andar: naoLoc(r.andar),
+      ambiente: naoLoc(r.espaco),
       atividade: "Corretiva",
       data: fmtDate(r.data_solicitacao),
       equipe: r.equipe,
@@ -173,11 +152,11 @@ export async function generateBackorderExport(input: {
     });
     // OS em negrito
     row.getCell(1).font = { name: "Aptos", bold: true, size: 11, color: { argb: TITLE_BG } };
-    row.getCell(ATIVO_COL_INDEX).value = r.ativo;
 
     row.height = 28;
     rowIdx++;
   }
+
 
   // AutoFilter na linha 2 (cabeçalho) cobrindo todas colunas visíveis
   if (rowIdx > 3) {
