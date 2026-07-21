@@ -268,27 +268,29 @@ function CorretivaPage() {
       {!selected ? (
         <GlassCard className="p-4">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 sm:min-w-[240px]">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Minha equipe
-              </span>
-              <Select
-                value={equipe}
-                onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
-              >
-                <SelectTrigger className="h-11 flex-1 text-base sm:w-[220px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as equipes</SelectItem>
-                  {equipes.map((e) => (
-                    <SelectItem key={e.id} value={e.nome}>
-                      {e.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {!lockedEquipe && (
+              <div className="flex items-center gap-2 sm:min-w-[240px]">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Minha equipe
+                </span>
+                <Select
+                  value={equipe}
+                  onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
+                >
+                  <SelectTrigger className="h-11 flex-1 text-base sm:w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as equipes</SelectItem>
+                    {equipes.map((e) => (
+                      <SelectItem key={e.id} value={e.nome}>
+                        {e.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex flex-1 items-center gap-2">
               <Search className="h-4 w-4 text-muted-foreground" />
               <Input
@@ -299,7 +301,7 @@ function CorretivaPage() {
               />
             </div>
           </div>
-          {equipe !== "todas" && (
+          {!lockedEquipe && equipe !== "todas" && (
             <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
               <span>Mostrando apenas OS desta equipe.</span>
