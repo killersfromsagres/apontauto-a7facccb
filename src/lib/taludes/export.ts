@@ -33,7 +33,7 @@ function centroid(pts: Array<{ x: number; y: number }>) {
 
 /**
  * Export de altíssima resolução, adequado para impressão (300 DPI equivalente).
- * Sem legenda no PNG; inclui marca discreta "Sherwin Williams" e data de geração.
+ * Sem legenda, sem marca d'água e sem data de geração no PNG.
  */
 export async function exportMapPNG(opts: {
   imageUrl: string;
@@ -146,63 +146,7 @@ export async function exportMapPNG(opts: {
     ctx.textBaseline = "alphabetic";
   }
 
-  // ── Marca discreta "Sherwin Williams" + data de geração (canto inferior direito) ──
-  const now = new Date();
-  const dateStr = now.toLocaleString("pt-BR");
-  const brandPad = Math.max(16, scale * 14);
-  const brandFontMain = Math.max(18, Math.round(scale * 16));
-  const brandFontSub = Math.max(11, Math.round(scale * 10));
-
-  ctx.save();
-  ctx.globalAlpha = 0.75;
-
-  // Fundo pill sutil
-  ctx.font = `800 ${brandFontMain}px "Helvetica Neue", Arial, sans-serif`;
-  const brandText = "SHERWIN WILLIAMS";
-  const bm = ctx.measureText(brandText);
-  ctx.font = `500 ${brandFontSub}px system-ui, sans-serif`;
-  const genText = `Gerado em ${dateStr}`;
-  const gm = ctx.measureText(genText);
-  const boxW = Math.max(bm.width, gm.width) + brandPad * 1.8;
-  const boxH = brandFontMain + brandFontSub + brandPad * 1.4;
-  const boxX = W - boxW - brandPad;
-  const boxY = H - boxH - brandPad;
-
-  ctx.fillStyle = "rgba(255,255,255,0.85)";
-  roundRect(ctx, boxX, boxY, boxW, boxH, Math.max(8, scale * 6));
-  ctx.fill();
-  ctx.strokeStyle = "rgba(15,23,42,0.15)";
-  ctx.lineWidth = Math.max(1, scale * 0.8);
-  ctx.stroke();
-
-  // Marca "SW" em vermelho (paleta institucional aproximada) — discreta
-  const swMark = "SW";
-  const swSize = Math.round(brandFontMain * 1.4);
-  ctx.font = `900 ${swSize}px "Helvetica Neue", Arial, sans-serif`;
-  ctx.textBaseline = "top";
-  ctx.fillStyle = "#c8102e";
-  const swW = ctx.measureText(swMark).width;
-  ctx.fillText(swMark, boxX + brandPad * 0.7, boxY + brandPad * 0.5);
-
-  // Nome
-  ctx.font = `700 ${brandFontMain}px "Helvetica Neue", Arial, sans-serif`;
-  ctx.fillStyle = "#0f172a";
-  ctx.fillText(
-    brandText,
-    boxX + brandPad * 0.7 + swW + brandPad * 0.4,
-    boxY + brandPad * 0.6,
-  );
-
-  // Data de geração
-  ctx.font = `500 ${brandFontSub}px system-ui, sans-serif`;
-  ctx.fillStyle = "#475569";
-  ctx.fillText(
-    genText,
-    boxX + brandPad * 0.7,
-    boxY + brandPad * 0.55 + brandFontMain + brandPad * 0.15,
-  );
-
-  ctx.restore();
+  // Rodapé removido: nenhum texto de marca ou data é adicionado à imagem exportada.
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(

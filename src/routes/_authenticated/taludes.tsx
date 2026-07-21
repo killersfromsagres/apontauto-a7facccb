@@ -348,6 +348,7 @@ function TaludesPage() {
   };
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
   const [panState, setPanState] = useState<null | { sx: number; sy: number; tx: number; ty: number; moved: boolean }>(null);
   const [shiftDown, setShiftDown] = useState(false);
@@ -369,6 +370,7 @@ function TaludesPage() {
   useEffect(() => { setMaskMode(false); setMaskDrag(null); }, [selectedMapId]);
   useEffect(() => {
     setImgLoaded(false);
+    setImgSize(null);
     setView({ scale: 1, tx: 0, ty: 0 });
   }, [imageUrl]);
 
@@ -1272,13 +1274,18 @@ function TaludesPage() {
             return (
               <div
                 ref={viewportRef}
-                className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5"
+                className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-black/5"
                 onPointerDown={onPanDown}
                 onPointerMove={onPanMove}
                 onPointerUp={onPanUp}
                 onPointerLeave={onPanUp}
                 onContextMenu={(e) => { if (panState) e.preventDefault(); }}
-                style={{ cursor: panCursor, touchAction: "none" }}
+                style={{
+                  cursor: panCursor,
+                  touchAction: "none",
+                  maxHeight: "calc(100dvh - 11rem)",
+                  aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                }}
               >
 
                 {/* zoom toolbar */}
@@ -1351,7 +1358,7 @@ function TaludesPage() {
                 )}
                 {imageUrl ? (
                   <div
-                    className="relative w-full"
+                    className="relative h-full w-full"
                     style={{
                       transform,
                       transformOrigin: originStr,
@@ -1366,13 +1373,19 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="block h-auto w-full select-none"
+                      className="absolute inset-0 block h-full w-full select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
                       style={{ filter: imgFilter }}
-                      onLoad={() => setImgLoaded(true)}
+                      onLoad={(e) => {
+                        const el = e.currentTarget;
+                        setImgLoaded(true);
+                        if (el.naturalWidth && el.naturalHeight) {
+                          setImgSize({ w: el.naturalWidth, h: el.naturalHeight });
+                        }
+                      }}
                     />
                     <LogoMaskOverlay
                       masks={imgMasks}
