@@ -72,6 +72,12 @@ import {
   formatPerimeter,
 } from "@/lib/taludes/geometry";
 import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
+import {
+  useImageEnhancer,
+  ImageEnhancerControls,
+  LogoMaskOverlay,
+  sampleBorderColor,
+} from "@/components/taludes/image-enhancer";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
   head: () => ({
