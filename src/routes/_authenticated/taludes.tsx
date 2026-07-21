@@ -487,6 +487,7 @@ function TaludesPage() {
     return { x: anchor.x, y: p.y };
   };
 
+  const CLOSE_SNAP = 1.8;
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
@@ -496,6 +497,14 @@ function TaludesPage() {
     let candidate = p;
     if (shiftDown && drawingPoints.length > 0) {
       candidate = constrainStraight(drawingPoints[drawingPoints.length - 1], p);
+    }
+    // Fechamento automático: clicando perto do primeiro vértice, finaliza.
+    if (drawingPoints.length >= 3) {
+      const first = drawingPoints[0];
+      if (Math.hypot(candidate.x - first.x, candidate.y - first.y) <= CLOSE_SNAP) {
+        void finishPolygon();
+        return;
+      }
     }
     const { p: sp } = snapPoint(candidate);
     setDrawingPoints((prev) => [...prev, sp]);
