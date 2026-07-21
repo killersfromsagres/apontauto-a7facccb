@@ -1366,7 +1366,7 @@ function TaludesPage() {
                                 <circle
                                   cx={p.x}
                                   cy={p.y}
-                                  r={isDrag ? 0.3 : 0.22}
+                                  r={isDrag ? 0.14 : isSel ? 0.13 : 0.22}
                                   fill={accent}
                                   pointerEvents="none"
                                 />
