@@ -1259,21 +1259,24 @@ function TaludesPage() {
                                 animation: t.status === "em_execucao" ? "taludePulse 2s ease-in-out infinite" : undefined,
                               }}
                             />
-                            {/* number label — amarelo com contorno escuro (estilo mapa original) */}
-                            <text
-                              x={cx}
-                              y={cy}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fontSize="3"
-                              fontWeight="900"
-                              fill="#fde047"
-                              style={{ pointerEvents: "none", paintOrder: "stroke" }}
-                              stroke="#0f172a"
-                              strokeWidth="0.55"
-                            >
-                              {t.numero}
-                            </text>
+                            {/* number label — apenas na maior parte do grupo (evita labels duplicados) */}
+                            {labelOwnerIds.has(t.id) && (
+                              <text
+                                x={cx}
+                                y={cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize="3"
+                                fontWeight="900"
+                                fill="#fde047"
+                                style={{ pointerEvents: "none", paintOrder: "stroke" }}
+                                stroke="#0f172a"
+                                strokeWidth="0.55"
+                              >
+                                {t.numero}
+                              </text>
+                            )}
+
                           </g>
                         );
                       })}
