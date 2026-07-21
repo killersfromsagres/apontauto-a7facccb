@@ -1295,6 +1295,13 @@ function BackorderPage() {
               <DropdownMenuItem onClick={handleReprocessarChamados} disabled={importing}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => fillLocInputRef.current?.click()}
+                disabled={fillingLoc}
+              >
+                <Database className="mr-2 h-4 w-4" />
+                {fillingLoc ? "Preenchendo…" : "Preencher Prédio/Andar/Ambiente"}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleValidarBase} disabled={importing}>
                 <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
               </DropdownMenuItem>
