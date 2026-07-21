@@ -9,6 +9,8 @@
 // ser aberto em outra máquina.
 
 import type { BackorderRow } from "./reader";
+import { resolveAtivoTree, type AssetsMap } from "./assets";
+
 
 const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
 // Paleta moderna — navy escuro + azul de destaque + zebra suave.
@@ -60,6 +62,10 @@ function fmtDate(iso: string | null | undefined): string {
 export async function generateBackorderExport(input: {
   titulo: string;
   rows: BackorderRow[];
+  /** Árvore de ativos atual — usada para re-resolver Prédio/Andar/Ambiente
+   *  no momento da exportação quando a linha veio com esses campos vazios
+   *  (registros antigos ou importados antes da hidratação da base). */
+  assetsMap?: AssetsMap;
 }): Promise<Blob> {
 
   const { default: ExcelJS } = await import("exceljs");
@@ -113,23 +119,32 @@ export async function generateBackorderExport(input: {
     const row = ws.getRow(rowIdx);
     const isAlt = rowIdx % 2 === 1; // linhas alternadas para zebra
 
-    // Prédio / Andar / Ambiente já vêm resolvidos pela árvore hierárquica
-    // (resolveAtivoTree) — gravamos como texto estático. Fallback "Não
-    // localizado" quando a OS tem Ativo mas a árvore não retornou aquele
-    // nível (cadeia incompleta ou Ativo ausente da base).
+    // Se a linha veio sem Prédio/Andar/Ambiente resolvidos e temos a
+    // árvore atual em mãos, resolvemos aqui na hora (fallback defensivo:
+    // VLOOKUP LEFT(5)/LEFT(7)/self embutido em resolveAtivoTree).
+    let predio = r.predio;
+    let andar = r.andar;
+    let espaco = r.espaco;
+    if (input.assetsMap && r.ativo && (!predio || !andar || !espaco)) {
+      const t = resolveAtivoTree(input.assetsMap, r.ativo);
+      if (!predio) predio = t.predio;
+      if (!andar) andar = t.andar;
+      if (!espaco) espaco = t.espaco;
+    }
     const naoLoc = (v: string) => (r.ativo && !v ? "Não localizado" : v || "");
 
     const values: Record<ColKey, unknown> = {
       os: r.os,
       nome: r.nome,
-      predio: naoLoc(r.predio),
-      andar: naoLoc(r.andar),
-      ambiente: naoLoc(r.espaco),
+      predio: naoLoc(predio),
+      andar: naoLoc(andar),
+      ambiente: naoLoc(espaco),
       atividade: "Corretiva",
       data: fmtDate(r.data_solicitacao),
       equipe: r.equipe,
       solicitante: r.outros,
     };
+
 
     visibleCols.forEach((c, i) => {
       const cell = row.getCell(i + 1);
