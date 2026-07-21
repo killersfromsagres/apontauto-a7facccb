@@ -439,13 +439,15 @@ function BackorderPage() {
 
         const next = {
           ...r,
-          predio: applied.predio || r.predio,
-          andar: applied.andar || r.andar,
-          espaco: applied.espaco || r.espaco,
+          // Preserva o que veio na planilha. `applied` (regra aprendida) e
+          // `resolveAtivoTree` são apenas fallback quando a coluna estava vazia.
+          predio: r.predio || applied.predio,
+          andar: r.andar || applied.andar,
+          espaco: r.espaco || applied.espaco,
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual) || revisaoText,
-          origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco) || revisaoText,
+          origem_predio_andar_espaco: r.predio || r.andar || r.espaco ? "planilha" : applied.origem_predio_andar_espaco,
           origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
