@@ -9,7 +9,7 @@
 
 import type { Categoria } from "./classify";
 
-export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica";
+export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica" | "Pintura";
 
 export const EQUIPES: readonly Equipe[] = [
   "Chaveiro",
@@ -17,6 +17,7 @@ export const EQUIPES: readonly Equipe[] = [
   "Refrigeração",
   "Hidráulica",
   "Elétrica",
+  "Pintura",
 ] as const;
 
 export const EQUIPE_COR: Record<Equipe, string> = {
@@ -25,6 +26,7 @@ export const EQUIPE_COR: Record<Equipe, string> = {
   Refrigeração: "#06B6D4",
   Hidráulica: "#3B82F6",
   Elétrica: "#F59E0B",
+  Pintura: "#EC4899",
 };
 
 const norm = (v: unknown) =>
