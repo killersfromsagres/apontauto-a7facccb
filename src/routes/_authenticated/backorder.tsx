@@ -1333,6 +1333,53 @@ function BackorderPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+
+          <Dialog open={reclassifyOpen} onOpenChange={setReclassifyOpen}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Classificar Equipes</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted-foreground">
+                  Analisa o texto do <strong>Nome</strong> de cada chamado e atribui a equipe
+                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica ou Elétrica).
+                </p>
+                <p className="text-muted-foreground">
+                  Chamados ambíguos (várias equipes com peso equivalente) são marcados como
+                  <span className="mx-1 inline-flex items-center rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                    Classificação sugerida — revisar
+                  </span>
+                  para você confirmar.
+                </p>
+                <label className="flex items-start gap-2 rounded-md border border-border/60 bg-muted/40 p-3">
+                  <Checkbox
+                    checked={reclassifyAll}
+                    onCheckedChange={(v) => setReclassifyAll(Boolean(v))}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium">Reclassificar tudo</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Inclui chamados que você já ajustou manualmente. Por padrão, o sistema
+                      só toca em chamados sem equipe definida.
+                    </span>
+                  </span>
+                </label>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setReclassifyOpen(false)} disabled={aiReclassifying}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => void classificarEquipes({ incluirManual: reclassifyAll })}
+                  disabled={aiReclassifying}
+                >
+                  <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
+                  {aiReclassifying ? "Classificando..." : "Classificar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       }
     >
