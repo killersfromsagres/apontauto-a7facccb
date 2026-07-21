@@ -1273,13 +1273,18 @@ function TaludesPage() {
             return (
               <div
                 ref={viewportRef}
-                className="relative w-full overflow-hidden rounded-xl border border-border/50 bg-black/5"
+                className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-black/5"
                 onPointerDown={onPanDown}
                 onPointerMove={onPanMove}
                 onPointerUp={onPanUp}
                 onPointerLeave={onPanUp}
                 onContextMenu={(e) => { if (panState) e.preventDefault(); }}
-                style={{ cursor: panCursor, touchAction: "none" }}
+                style={{
+                  cursor: panCursor,
+                  touchAction: "none",
+                  maxHeight: "calc(100dvh - 11rem)",
+                  aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                }}
               >
 
                 {/* zoom toolbar */}
