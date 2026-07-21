@@ -113,6 +113,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useServerFn } from "@tanstack/react-start";
+import { classifyBackorderWithAi } from "@/lib/backorder/ai-classify.functions";
 
 export const Route = createFileRoute("/_authenticated/backorder")({
   component: BackorderPage,
