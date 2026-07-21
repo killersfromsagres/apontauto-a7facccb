@@ -591,6 +591,7 @@ function TaludesPage() {
           proxima_data: patch.proxima_data ?? t.proxima_data,
           periodicidade_dias: patch.periodicidade_dias ?? t.periodicidade_dias,
           observacoes: patch.observacoes ?? t.observacoes,
+          cor: patch.cor !== undefined ? patch.cor : t.cor,
         },
       });
     },
