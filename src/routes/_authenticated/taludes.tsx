@@ -576,20 +576,26 @@ function TaludesPage() {
       toast.error("Número do talude inválido");
       return;
     }
-    if (taludes.some((t) => t.numero === num)) {
-      toast.error(`Talude ${num} já existe`);
-      return;
-    }
+    const existing = taludes.some((t) => t.numero === num);
+    // Duplicate numeros são permitidos: representam partes distintas
+    // do mesmo talude (interrompido e retomado, ou dividido em áreas).
+    const status: TaludeStatus = existing
+      ? (taludes.find((t) => t.numero === num)?.status ?? "programado")
+      : "programado";
+    const dataProg = existing
+      ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
+      : today();
     await upsertFn({
       data: {
         map_id: map.id,
         numero: num,
         polygon: drawingPoints,
-        status: "programado",
-        data_programada: today(),
+        status,
+        data_programada: dataProg,
       },
     });
-    toast.success(`Talude ${num} criado`);
+    toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
+
     setDrawingPoints([]);
     setDrawingNumero("");
     setDrawingNewMode(false);
