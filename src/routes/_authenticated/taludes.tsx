@@ -311,11 +311,37 @@ function TaludesPage() {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
   const [panState, setPanState] = useState<null | { sx: number; sy: number; tx: number; ty: number; moved: boolean }>(null);
+  const [shiftDown, setShiftDown] = useState(false);
+  const [spaceDown, setSpaceDown] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setImgLoaded(false);
     setView({ scale: 1, tx: 0, ty: 0 });
   }, [imageUrl]);
+
+  // Track Shift (straight-line lock) and Space (pan tool)
+  useEffect(() => {
+    const kd = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftDown(true);
+      if (e.code === "Space") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag !== "INPUT" && tag !== "TEXTAREA") {
+          e.preventDefault();
+          setSpaceDown(true);
+        }
+      }
+    };
+    const ku = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftDown(false);
+      if (e.code === "Space") setSpaceDown(false);
+    };
+    window.addEventListener("keydown", kd);
+    window.addEventListener("keyup", ku);
+    return () => {
+      window.removeEventListener("keydown", kd);
+      window.removeEventListener("keyup", ku);
+    };
+  }, []);
 
   const resetView = () => setView({ scale: 1, tx: 0, ty: 0 });
   const zoomBy = (factor: number) => {
@@ -337,7 +363,8 @@ function TaludesPage() {
       const rect = el.getBoundingClientRect();
       const cx = ((e.clientX - rect.left) / rect.width) * 100;
       const cy = ((e.clientY - rect.top) / rect.height) * 100;
-      const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+      // Smoother, finer-grained zoom step
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
       setView((v) => {
         const newScale = Math.min(8, Math.max(1, v.scale * factor));
         if (newScale === v.scale) return v;
@@ -348,6 +375,7 @@ function TaludesPage() {
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [imageUrl]);
+
 
 
 
