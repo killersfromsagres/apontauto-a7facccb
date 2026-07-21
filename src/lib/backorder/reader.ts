@@ -83,23 +83,15 @@ function parseDateISO(v: string): string | null {
  *  nenhuma bata os critérios. Ignora abas do tipo "ativos" (base de
  *  hierarquia) e planilhas resumo do tipo "plano". */
 function pickBackorderSheet(wb: any): string {
-  const XLSX_names: string[] = wb.SheetNames;
-  let best = XLSX_names[0];
+  const names: string[] = wb.SheetNames;
+  let best = names[0];
   let bestScore = -1;
-  for (const n of XLSX_names) {
+  for (const n of names) {
     const sn = norm(n);
     if (sn === "ATIVOS" || sn === "ATIVO") continue;
     if (sn.startsWith("PLANO")) continue;
     const ws = wb.Sheets[n];
     if (!ws || !ws["!ref"]) continue;
-    // Lê apenas cabeçalho para pontuação (linha 1)
-    const rows = (globalThis as any).XLSX_helper?.(ws) ?? null;
-    // Fallback: usa sheet_to_json com header:1 e primeira linha
-    const header = (require("xlsx") as any)?.utils?.sheet_to_json
-      ? []
-      : [];
-    void header;
-    // Score por cabeçalho serializado
     const flat = norm(JSON.stringify(ws).slice(0, 4000));
     let score = 0;
     if (flat.includes("ATIVO")) score += 2;
@@ -118,9 +110,8 @@ function pickBackorderSheet(wb: any): string {
 
 /** Extrai a árvore de ativos embutida no mesmo workbook (aba "ativos",
  *  "cadastro de ativos" etc.), se existir. Retorna [] quando ausente. */
-function extractEmbeddedAssets(wb: any): AssetImportRow[] {
-  const XLSX = require("xlsx");
-  const name = wb.SheetNames.find((n: string) => {
+function extractEmbeddedAssets(XLSX: typeof import("xlsx"), wb: any): AssetImportRow[] {
+  const name = (wb.SheetNames as string[]).find((n) => {
     const s = norm(n);
     return s === "ATIVOS" || s === "ATIVO" || s.includes("CADASTRO DE ATIVO") || s.includes("ARVORE DE ATIVO");
   });
@@ -130,14 +121,12 @@ function extractEmbeddedAssets(wb: any): AssetImportRow[] {
   for (const r of raw) {
     const ativo = pick(r, "ATIVO", "CODIGO", "CÓDIGO", "TAG");
     if (!ativo) continue;
+    const p = pick(r, "ATIVO PAI", "CODIGO PAI", "CÓDIGO PAI", "PAI");
     out.push({
       ativo: ativo.toUpperCase(),
       denominacao: pick(r, "DENOMINAÇÃO ATIVO", "DENOMINACAO ATIVO", "DENOMINAÇÃO", "DENOMINACAO", "NOME"),
       nivel: pick(r, "DENOMINAÇÃO NÍVEL DE EMPRESA", "DENOMINACAO NIVEL DE EMPRESA", "NIVEL", "NÍVEL", "NIVEL DE EMPRESA"),
-      codigo_pai: (() => {
-        const p = pick(r, "ATIVO PAI", "CODIGO PAI", "CÓDIGO PAI", "PAI");
-        return p ? p.toUpperCase() : null;
-      })(),
+      codigo_pai: p ? p.toUpperCase() : null,
       descricao_pai: pick(r, "DESCRIÇÃO ATIVO PAI", "DESCRICAO ATIVO PAI", "DESCRIÇÃO PAI", "DESCRICAO PAI"),
       unidade_negocio: pick(r, "DENOMINAÇÃO UNIDADE NEGÓCIO", "DENOMINACAO UNIDADE NEGOCIO", "UNIDADE NEGOCIO", "UNIDADE"),
     });
