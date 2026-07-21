@@ -421,6 +421,26 @@ function TaludesPage() {
     return pairs;
   }, [taludes]);
 
+  // Label owner por numero: só a maior parte de cada grupo recebe o número,
+  // evitando labels duplicados quando um talude é formado por múltiplas áreas.
+  const labelOwnerIds = useMemo(() => {
+    const bestByNumero = new Map<number, { id: string; area: number }>();
+    for (const t of taludes) {
+      if (t.polygon.length < 3) continue;
+      // área aproximada (shoelace)
+      let a = 0;
+      const p = t.polygon;
+      for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+        a += (p[j].x + p[i].x) * (p[j].y - p[i].y);
+      }
+      const area = Math.abs(a) / 2;
+      const cur = bestByNumero.get(t.numero);
+      if (!cur || area > cur.area) bestByNumero.set(t.numero, { id: t.id, area });
+    }
+    return new Set(Array.from(bestByNumero.values()).map((v) => v.id));
+  }, [taludes]);
+
+
   const svgRef = useRef<SVGSVGElement>(null);
   const clickToPct = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
