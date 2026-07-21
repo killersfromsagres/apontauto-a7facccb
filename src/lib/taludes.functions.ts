@@ -99,7 +99,7 @@ export async function upsertTalude(args: {
     ...(d.periodicidade_dias !== undefined ? { periodicidade_dias: d.periodicidade_dias } : {}),
     ...(d.observacoes !== undefined ? { observacoes: d.observacoes } : {}),
     ...(d.cor !== undefined ? { cor: d.cor } : {}),
-  } as Record<string, unknown>;
+  };
 
 
   if (d.id) {
