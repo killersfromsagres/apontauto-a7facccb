@@ -111,13 +111,14 @@ export const MENU_KEYS = [
   "lavanderia",
   "preventiva",
   "corretiva",
+  "corretiva-historico",
+  "corretiva-gestor",
   "taludes",
   "programacao-taludes",
   "apontamentos",
   "painel-legal",
   "refrigeracao",
   "refrigeracao-gestor",
-  "corretiva",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
