@@ -56,16 +56,16 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { parseChamadosFile, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
+import { parseChamadosFile as _unused, type ChamadoRow } from "@/lib/dashboard-chamados/parser";
 import { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
 import {
-  fetchBackorderStatuses,
+  fetchBackorderRows,
   setBackorderConcluido,
   setBackorderReaberto,
-  subscribeBackorderChanges,
-  type BackorderStatus,
+  subscribeBackorderTable,
 } from "@/lib/dashboard-chamados/backorder-sync";
 import { useMyAccess } from "@/hooks/use-my-access";
+void _unused;
 
 const CHART_COLORS = [
   "oklch(0.62 0.19 256)",
