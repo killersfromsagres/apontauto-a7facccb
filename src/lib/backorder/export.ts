@@ -57,19 +57,11 @@ function fmtDate(iso: string | null | undefined): string {
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
 }
 
-
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
-}
-
 export async function generateBackorderExport(input: {
   titulo: string;
   rows: BackorderRow[];
-  /** Base de ativos para a aba auxiliar (fórmulas VLOOKUP vivas). */
-  assets?: Array<{ ativo: string; denominacao: string }>;
 }): Promise<Blob> {
+
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto";
