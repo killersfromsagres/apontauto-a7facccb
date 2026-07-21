@@ -370,6 +370,7 @@ function TaludesPage() {
   useEffect(() => { setMaskMode(false); setMaskDrag(null); }, [selectedMapId]);
   useEffect(() => {
     setImgLoaded(false);
+    setImgSize(null);
     setView({ scale: 1, tx: 0, ty: 0 });
   }, [imageUrl]);
 
