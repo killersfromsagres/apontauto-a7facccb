@@ -17,6 +17,7 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
@@ -78,6 +79,12 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiBackorderReclassificarRoute =
+  ApiBackorderReclassificarRouteImport.update({
+    id: '/api/backorder-reclassificar',
+    path: '/api/backorder-reclassificar',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -222,6 +229,7 @@ export interface FileRoutesByFullPath {
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
 }
@@ -251,6 +259,7 @@ export interface FileRoutesByTo {
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
@@ -283,6 +292,7 @@ export interface FileRoutesById {
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
+    | '/api/backorder-reclassificar'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
   fileRoutesByTo: FileRoutesByTo
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
+    | '/api/backorder-reclassificar'
     | '/'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
@@ -376,6 +388,7 @@ export interface FileRouteTypes {
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
+    | '/api/backorder-reclassificar'
     | '/_authenticated/'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
@@ -389,6 +402,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
+  ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
 }
@@ -450,6 +464,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/backorder-reclassificar': {
+      id: '/api/backorder-reclassificar'
+      path: '/api/backorder-reclassificar'
+      fullPath: '/api/backorder-reclassificar'
+      preLoaderRoute: typeof ApiBackorderReclassificarRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
@@ -659,6 +680,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
+  ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
 }
