@@ -540,6 +540,7 @@ function TaludesPage() {
       }
     }
     const { p: sp } = snapPoint(candidate);
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => [...prev, sp]);
     setSelectedVertexIdx(drawingPoints.length);
   };
@@ -547,6 +548,7 @@ function TaludesPage() {
   const handleVertexPointerDown = (idx: number, e: React.PointerEvent) => {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
+    pushHistory(drawingPoints);
     setDraggingIdx(idx);
     setSelectedVertexIdx(idx);
   };
@@ -560,7 +562,6 @@ function TaludesPage() {
     }
     let candidate = p;
     if (shiftDown && drawingPoints.length > 1) {
-      // Anchor to the previous vertex (or next, whichever exists) to keep the segment straight
       const anchor =
         drawingPoints[(draggingIdx - 1 + drawingPoints.length) % drawingPoints.length];
       candidate = constrainStraight(anchor, p);
@@ -577,10 +578,12 @@ function TaludesPage() {
   const removeVertex = (idx: number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => prev.filter((_, i) => i !== idx));
     setSelectedVertexIdx(null);
   };
   const insertVertexAt = (afterIdx: number, p: Point) => {
+    pushHistory(drawingPoints);
     setDrawingPoints((prev) => {
       const arr = [...prev];
       arr.splice(afterIdx + 1, 0, p);
