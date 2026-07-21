@@ -199,10 +199,12 @@ function CorretivaPage() {
     updateCachedOs(id, patch).catch(() => {});
   };
 
+  const currentEquipe = equipes.find((e) => e.nome === equipe) ?? null;
+
   return (
     <PageShell
-      title="Corretiva"
-      description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
+      title="Gestão de Corretivas"
+      description="Registro de corretivas em campo — funciona offline. Fotos, peças e problemas são salvos localmente e enviados quando houver internet."
       actions={
         <>
           <StatusChip online={online} syncing={syncing} pending={pending} />
@@ -218,6 +220,40 @@ function CorretivaPage() {
         </>
       }
     >
+      {/* Colaborador / Equipe */}
+      <GlassCard className="mb-3 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equipe</div>
+              <div className="text-base font-semibold">{currentEquipe?.nome ?? (equipe === "todas" ? "Todas" : equipe)}</div>
+            </div>
+          </div>
+          {currentEquipe && (
+            <div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Colaboradores</div>
+              <div className="text-sm">{currentEquipe.colaboradores || "—"}</div>
+            </div>
+          )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto"
+              onClick={() => setManagingTeams((v) => !v)}
+            >
+              <Pencil className="mr-2 h-4 w-4" />
+              {managingTeams ? "Fechar edição" : "Editar equipes"}
+            </Button>
+          )}
+        </div>
+      </GlassCard>
+
+      {isAdmin && managingTeams && (
+        <EquipesEditor equipes={equipes} onChange={reloadEquipes} />
+      )}
+
       {!selected ? (
         <GlassCard className="p-4">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -229,14 +265,14 @@ function CorretivaPage() {
                 value={equipe}
                 onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
               >
-                <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
+                <SelectTrigger className="h-11 flex-1 text-base sm:w-[220px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as equipes</SelectItem>
-                  {EQUIPES_CORRETIVA_PLACEHOLDER.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {e}
+                  {equipes.map((e) => (
+                    <SelectItem key={e.id} value={e.nome}>
+                      {e.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -273,7 +309,7 @@ function CorretivaPage() {
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               {osList.length === 0
-                ? "Nenhuma OS disponível. O gestor precisa importar a planilha."
+                ? "Nenhuma OS disponível. Importe a planilha em Configurações ou peça ao gestor."
                 : "Nenhuma OS encontrada para essa busca."}
             </div>
           ) : (
@@ -285,7 +321,8 @@ function CorretivaPage() {
                     onClick={() => setSelectedId(o.id)}
                     className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
                   >
-                    <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
