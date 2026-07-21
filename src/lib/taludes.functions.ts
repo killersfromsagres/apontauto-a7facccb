@@ -81,6 +81,8 @@ export async function upsertTalude(args: {
     periodicidade_dias?: number | null;
     observacoes?: string | null;
     cor?: string | null;
+    area_m2?: number | null;
+    perimetro_m?: number | null;
   };
 }) {
   const d = args.data;
@@ -99,6 +101,8 @@ export async function upsertTalude(args: {
     ...(d.periodicidade_dias !== undefined ? { periodicidade_dias: d.periodicidade_dias } : {}),
     ...(d.observacoes !== undefined ? { observacoes: d.observacoes } : {}),
     ...(d.cor !== undefined ? { cor: d.cor } : {}),
+    ...(d.area_m2 !== undefined ? { area_m2: d.area_m2 } : {}),
+    ...(d.perimetro_m !== undefined ? { perimetro_m: d.perimetro_m } : {}),
   };
 
 

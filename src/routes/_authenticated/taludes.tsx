@@ -64,6 +64,13 @@ import {
   verifyAndRepairMap,
 } from "@/lib/taludes.functions";
 import { STATUS_META, type TaludeStatus } from "@/lib/taludes/constants";
+import {
+  polygonAreaPct,
+  polygonPerimeterPct,
+  realMetrics,
+  formatArea,
+  formatPerimeter,
+} from "@/lib/taludes/geometry";
 import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
@@ -487,6 +494,7 @@ function TaludesPage() {
     return { x: anchor.x, y: p.y };
   };
 
+  const CLOSE_SNAP = 1.8;
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
@@ -496,6 +504,14 @@ function TaludesPage() {
     let candidate = p;
     if (shiftDown && drawingPoints.length > 0) {
       candidate = constrainStraight(drawingPoints[drawingPoints.length - 1], p);
+    }
+    // Fechamento automático: clicando perto do primeiro vértice, finaliza.
+    if (drawingPoints.length >= 3) {
+      const first = drawingPoints[0];
+      if (Math.hypot(candidate.x - first.x, candidate.y - first.y) <= CLOSE_SNAP) {
+        void finishPolygon();
+        return;
+      }
     }
     const { p: sp } = snapPoint(candidate);
     setDrawingPoints((prev) => [...prev, sp]);
@@ -557,12 +573,19 @@ function TaludesPage() {
       if (editingPolygonFor) {
         const existing = taludes.find((t) => t.id === editingPolygonFor);
         if (!existing) return;
+        const metrics = realMetrics(drawingPoints, {
+          imageWidthPx: map.image_width,
+          imageHeightPx: map.image_height,
+          metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        });
         await upsertFn({
           data: {
             id: existing.id,
             map_id: map.id,
             numero: existing.numero,
             polygon: drawingPoints,
+            area_m2: metrics.areaM2,
+            perimetro_m: metrics.perimetroM,
           },
         });
         toast.success(`Talude ${existing.numero}: área atualizada`);
@@ -605,6 +628,11 @@ function TaludesPage() {
     const dataProg = existing
       ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
       : today();
+    const metrics = realMetrics(drawingPoints, {
+      imageWidthPx: map.image_width,
+      imageHeightPx: map.image_height,
+      metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+    });
     await upsertFn({
       data: {
         map_id: map.id,
@@ -612,6 +640,8 @@ function TaludesPage() {
         polygon: drawingPoints,
         status,
         data_programada: dataProg,
+        area_m2: metrics.areaM2,
+        perimetro_m: metrics.perimetroM,
       },
     });
     toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
@@ -647,6 +677,9 @@ function TaludesPage() {
       if (e.key === "Escape") {
         e.preventDefault();
         cancelDrawing();
+      } else if (e.key === "Enter" && drawingPoints.length >= 3) {
+        e.preventDefault();
+        void finishPolygon();
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
         e.preventDefault();
         setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
@@ -815,6 +848,38 @@ function TaludesPage() {
     }
   };
 
+  const doExportPDF = async () => {
+    if (!map || !imageUrl) return;
+    try {
+      toast.info("Gerando relatório PDF…");
+      const { buildSlopeReport } = await import("@/lib/taludes/report");
+      const blob = await buildSlopeReport(
+        {
+          nome: map.nome,
+          imageUrl,
+          imageWidthPx: map.image_width,
+          imageHeightPx: map.image_height,
+          metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        },
+        taludes.map((t) => ({
+          numero: t.numero,
+          nome: t.nome,
+          status: t.status,
+          polygon: t.polygon,
+          data_programada: t.data_programada,
+          data_execucao: t.data_execucao,
+          data_conclusao: t.data_conclusao,
+          proxima_data: t.proxima_data,
+          periodicidade_dias: t.periodicidade_dias,
+        })),
+      );
+      downloadBlob(blob, `taludes_${map.nome.replace(/\s+/g, "_")}_${today()}.pdf`);
+      toast.success("Relatório PDF gerado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar PDF");
+    }
+  };
+
   // ─── Empty state ─────────────────────────────
   if (!mapsQuery.isLoading && (!mapsQuery.data || mapsQuery.data.length === 0)) {
     return (
@@ -905,6 +970,9 @@ function TaludesPage() {
           </Button>
           <Button variant="outline" onClick={doExport} disabled={!imageUrl || taludes.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Baixar PNG
+          </Button>
+          <Button variant="default" onClick={doExportPDF} disabled={!imageUrl || taludes.length === 0} title="Relatório PDF com capa e detalhamento">
+            <Download className="mr-2 h-4 w-4" /> Relatório PDF
           </Button>
           <Button variant="ghost" size="icon" onClick={removeMap} title="Excluir mapa">
             <Trash2 className="h-4 w-4 text-destructive" />
@@ -1206,6 +1274,12 @@ function TaludesPage() {
                     <svg
                       ref={svgRef}
                       onClick={handleMapClick}
+                      onDoubleClick={(e) => {
+                        if (drawingPoints.length >= 3) {
+                          e.stopPropagation();
+                          void finishPolygon();
+                        }
+                      }}
                       onPointerMove={handleSvgPointerMove}
                       onPointerUp={handleSvgPointerUp}
                       onPointerLeave={handleSvgPointerUp}
@@ -1411,6 +1485,69 @@ function TaludesPage() {
                               </g>
                             );
                           })}
+                          {/* Guide line + close preview + close halo on first vertex */}
+                          {isDrawing && cursorPct && draggingIdx === null && drawingPoints.length > 0 && (() => {
+                            const last = drawingPoints[drawingPoints.length - 1];
+                            const first = drawingPoints[0];
+                            const nearFirst =
+                              drawingPoints.length >= 3 &&
+                              Math.hypot(cursorPct.x - first.x, cursorPct.y - first.y) <= CLOSE_SNAP;
+                            return (
+                              <g pointerEvents="none">
+                                <line
+                                  x1={last.x}
+                                  y1={last.y}
+                                  x2={cursorPct.x}
+                                  y2={cursorPct.y}
+                                  stroke={accent}
+                                  strokeWidth={0.12}
+                                  strokeDasharray="0.6,0.4"
+                                  opacity={0.9}
+                                />
+                                {drawingPoints.length >= 3 && (
+                                  <line
+                                    x1={cursorPct.x}
+                                    y1={cursorPct.y}
+                                    x2={first.x}
+                                    y2={first.y}
+                                    stroke={nearFirst ? "#22c55e" : accent}
+                                    strokeWidth={nearFirst ? 0.2 : 0.09}
+                                    strokeDasharray="0.4,0.35"
+                                    opacity={nearFirst ? 0.95 : 0.55}
+                                  />
+                                )}
+                                {drawingPoints.length >= 3 && (
+                                  <>
+                                    <circle
+                                      cx={first.x}
+                                      cy={first.y}
+                                      r={nearFirst ? 1.9 : 1.2}
+                                      fill="none"
+                                      stroke="#22c55e"
+                                      strokeWidth={nearFirst ? 0.2 : 0.12}
+                                      opacity={nearFirst ? 1 : 0.6}
+                                      style={{ transition: "r 120ms ease" }}
+                                    />
+                                    {nearFirst && (
+                                      <text
+                                        x={first.x}
+                                        y={first.y - 2.4}
+                                        textAnchor="middle"
+                                        fontSize="1.6"
+                                        fontWeight="800"
+                                        fill="#052e16"
+                                        stroke="#bbf7d0"
+                                        strokeWidth="0.35"
+                                        style={{ paintOrder: "stroke" }}
+                                      >
+                                        Fechar
+                                      </text>
+                                    )}
+                                  </>
+                                )}
+                              </g>
+                            );
+                          })()}
                           {/* Cursor crosshair while drawing (not dragging) */}
                           {isDrawing && cursorPct && draggingIdx === null && (
                             <g pointerEvents="none" opacity={0.85}>
@@ -1783,6 +1920,26 @@ function TaludeDetail({
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
       </div>
+
+      {talude.polygon.length >= 3 && (() => {
+        const areaPct = polygonAreaPct(talude.polygon);
+        const perimPct = polygonPerimeterPct(talude.polygon);
+        const areaM2 = (talude as unknown as { area_m2?: number | null }).area_m2 ?? null;
+        const perimM = (talude as unknown as { perimetro_m?: number | null }).perimetro_m ?? null;
+        return (
+          <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/60 bg-muted/20 p-2 text-[11px]">
+            <div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Área</div>
+              <div className="font-semibold">{formatArea(areaPct, areaM2)}</div>
+            </div>
+            <div>
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Perímetro</div>
+              <div className="font-semibold">{formatPerimeter(perimPct, perimM)}</div>
+            </div>
+          </div>
+        );
+      })()}
+
 
       <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 p-2">
         <Label className="text-[10px] uppercase text-muted-foreground">Cor</Label>

@@ -1099,6 +1099,7 @@ export type Database = {
       talude_maps: {
         Row: {
           created_at: string
+          escala_m_por_px: number | null
           id: string
           image_height: number | null
           image_path: string
@@ -1110,6 +1111,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          escala_m_por_px?: number | null
           id?: string
           image_height?: number | null
           image_path: string
@@ -1121,6 +1123,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          escala_m_por_px?: number | null
           id?: string
           image_height?: number | null
           image_path?: string
@@ -1134,6 +1137,7 @@ export type Database = {
       }
       taludes: {
         Row: {
+          area_m2: number | null
           cor: string | null
           created_at: string
           data_conclusao: string | null
@@ -1145,6 +1149,7 @@ export type Database = {
           numero: number
           observacoes: string | null
           owner_id: string
+          perimetro_m: number | null
           periodicidade_dias: number | null
           polygon: Json
           proxima_data: string | null
@@ -1152,6 +1157,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area_m2?: number | null
           cor?: string | null
           created_at?: string
           data_conclusao?: string | null
@@ -1163,6 +1169,7 @@ export type Database = {
           numero: number
           observacoes?: string | null
           owner_id: string
+          perimetro_m?: number | null
           periodicidade_dias?: number | null
           polygon?: Json
           proxima_data?: string | null
@@ -1170,6 +1177,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area_m2?: number | null
           cor?: string | null
           created_at?: string
           data_conclusao?: string | null
@@ -1181,6 +1189,7 @@ export type Database = {
           numero?: number
           observacoes?: string | null
           owner_id?: string
+          perimetro_m?: number | null
           periodicidade_dias?: number | null
           polygon?: Json
           proxima_data?: string | null
