@@ -32,6 +32,7 @@ import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
+import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
@@ -164,6 +165,12 @@ const AuthenticatedDashboardChamadosRoute =
     path: '/dashboard-chamados',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCorretivaGestorRoute =
+  AuthenticatedCorretivaGestorRouteImport.update({
+    id: '/corretiva-gestor',
+    path: '/corretiva-gestor',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   id: '/corretiva',
   path: '/corretiva',
@@ -215,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -245,6 +253,7 @@ export interface FileRoutesByTo {
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
+  '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -278,6 +287,7 @@ export interface FileRoutesById {
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
+  '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/clima-tempo'
     | '/configuracoes'
     | '/corretiva'
+    | '/corretiva-gestor'
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/outros'
@@ -342,6 +353,7 @@ export interface FileRouteTypes {
     | '/clima-tempo'
     | '/configuracoes'
     | '/corretiva'
+    | '/corretiva-gestor'
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/outros'
@@ -374,6 +386,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
     | '/_authenticated/corretiva'
+    | '/_authenticated/corretiva-gestor'
     | '/_authenticated/dashboard-chamados'
     | '/_authenticated/lavanderia'
     | '/_authenticated/outros'
@@ -570,6 +583,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardChamadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/corretiva-gestor': {
+      id: '/_authenticated/corretiva-gestor'
+      path: '/corretiva-gestor'
+      fullPath: '/corretiva-gestor'
+      preLoaderRoute: typeof AuthenticatedCorretivaGestorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/corretiva': {
       id: '/_authenticated/corretiva'
       path: '/corretiva'
@@ -628,6 +648,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
+  AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
@@ -651,6 +672,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
+  AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
