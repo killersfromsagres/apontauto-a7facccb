@@ -27,6 +27,7 @@ import {
   ClipboardList,
   User,
   Eraser,
+  Sparkles,
 } from "lucide-react";
 import {
   AlertDialog,
