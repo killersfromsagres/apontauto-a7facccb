@@ -100,6 +100,7 @@ import {
   type Categoria,
   type DynamicRule,
 } from "@/lib/backorder/classify";
+import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
 import {
