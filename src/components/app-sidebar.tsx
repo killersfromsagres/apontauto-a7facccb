@@ -24,6 +24,7 @@ import {
   Users,
   Fan,
   AirVent,
+  Wrench,
   Cog,
   ChevronRight,
   type LucideIcon,
@@ -134,6 +135,15 @@ const sections: MenuSection[] = [
     icon: Fan,
     items: [
       { key: "preventiva-ac", title: "Cadastro PMOC", url: "/preventiva-ac", icon: AirVent },
+    ],
+  },
+  {
+    kind: "group",
+    key: "corretiva-grp",
+    title: "Corretiva",
+    icon: Wrench,
+    items: [
+      { key: "corretiva", title: "Gestão de Corretivas", url: "/corretiva", icon: Wrench },
     ],
   },
   {
