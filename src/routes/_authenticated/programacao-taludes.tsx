@@ -478,7 +478,7 @@ function PTCard() {
                 </>
               ) : (
                 <span className="text-sm italic text-muted-foreground">
-                  Nenhuma liberação registrada — a data e hora serão capturadas automaticamente.
+                  Nenhuma liberação registrada — informe a data/hora da PT liberada pelos Bombeiros.
                 </span>
               )}
             </div>
