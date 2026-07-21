@@ -33,7 +33,7 @@ function centroid(pts: Array<{ x: number; y: number }>) {
 
 /**
  * Export de altíssima resolução, adequado para impressão (300 DPI equivalente).
- * Sem legenda no PNG; inclui marca discreta "Sherwin Williams" e data de geração.
+ * Sem legenda, sem marca d'água e sem data de geração no PNG.
  */
 export async function exportMapPNG(opts: {
   imageUrl: string;
