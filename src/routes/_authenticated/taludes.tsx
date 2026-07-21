@@ -72,6 +72,12 @@ import {
   formatPerimeter,
 } from "@/lib/taludes/geometry";
 import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
+import {
+  useImageEnhancer,
+  ImageEnhancerControls,
+  LogoMaskOverlay,
+  sampleBorderColor,
+} from "@/components/taludes/image-enhancer";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
   head: () => ({
@@ -347,6 +353,20 @@ function TaludesPage() {
   const [shiftDown, setShiftDown] = useState(false);
   const [spaceDown, setSpaceDown] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
+  // ── Enhancer de imagem (ajustes + cobertura de logos) ───────────────
+  const {
+    adj: imgAdj,
+    updateAdj: updateImgAdj,
+    resetAdj: resetImgAdj,
+    masks: imgMasks,
+    addMask: addImgMask,
+    removeMask: removeImgMask,
+    clearMasks: clearImgMasks,
+    filter: imgFilter,
+  } = useImageEnhancer(selectedMapId);
+  const [maskMode, setMaskMode] = useState(false);
+  const [maskDrag, setMaskDrag] = useState<null | { sx: number; sy: number; x: number; y: number; w: number; h: number }>(null);
+  useEffect(() => { setMaskMode(false); setMaskDrag(null); }, [selectedMapId]);
   useEffect(() => {
     setImgLoaded(false);
     setView({ scale: 1, tx: 0, ty: 0 });
@@ -1318,6 +1338,15 @@ function TaludesPage() {
                         </Button>
                       )
                     )}
+                    <ImageEnhancerControls
+                      adj={imgAdj}
+                      updateAdj={updateImgAdj}
+                      resetAdj={resetImgAdj}
+                      maskMode={maskMode}
+                      onToggleMaskMode={() => setMaskMode((v) => !v)}
+                      maskCount={imgMasks.length}
+                      onClearMasks={clearImgMasks}
+                    />
                   </div>
                 )}
                 {imageUrl ? (
@@ -1342,8 +1371,66 @@ function TaludesPage() {
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
+                      style={{ filter: imgFilter }}
                       onLoad={() => setImgLoaded(true)}
                     />
+                    <LogoMaskOverlay
+                      masks={imgMasks}
+                      showHandles={maskMode}
+                      onRemove={removeImgMask}
+                    />
+                    {maskMode && (
+                      <div
+                        className="absolute inset-0 z-20 cursor-crosshair"
+                        style={{ touchAction: "none" }}
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                          const r = e.currentTarget.getBoundingClientRect();
+                          const x = ((e.clientX - r.left) / r.width) * 100;
+                          const y = ((e.clientY - r.top) / r.height) * 100;
+                          setMaskDrag({ sx: x, sy: y, x, y, w: 0, h: 0 });
+                        }}
+                        onPointerMove={(e) => {
+                          if (!maskDrag) return;
+                          const r = e.currentTarget.getBoundingClientRect();
+                          const x = ((e.clientX - r.left) / r.width) * 100;
+                          const y = ((e.clientY - r.top) / r.height) * 100;
+                          setMaskDrag({
+                            ...maskDrag,
+                            x: Math.min(maskDrag.sx, x),
+                            y: Math.min(maskDrag.sy, y),
+                            w: Math.abs(x - maskDrag.sx),
+                            h: Math.abs(y - maskDrag.sy),
+                          });
+                        }}
+                        onPointerUp={async () => {
+                          const d = maskDrag;
+                          setMaskDrag(null);
+                          if (!d || d.w < 0.5 || d.h < 0.5 || !imageUrl) return;
+                          const color = await sampleBorderColor(imageUrl, { x: d.x, y: d.y, w: d.w, h: d.h });
+                          addImgMask({
+                            id: crypto.randomUUID(),
+                            x: d.x, y: d.y, w: d.w, h: d.h,
+                            color,
+                          });
+                        }}
+                      >
+                        {maskDrag && (
+                          <div
+                            className="absolute border-2 border-primary bg-primary/20"
+                            style={{
+                              left: `${maskDrag.x}%`,
+                              top: `${maskDrag.y}%`,
+                              width: `${maskDrag.w}%`,
+                              height: `${maskDrag.h}%`,
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
                     <svg
                       ref={svgRef}
                       onClick={handleMapClick}
