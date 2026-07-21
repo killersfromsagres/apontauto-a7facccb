@@ -1395,7 +1395,13 @@ function BackorderPage() {
               <div className="space-y-3 text-sm">
                 <p className="text-muted-foreground">
                   Analisa o texto do <strong>Nome</strong> de cada chamado e atribui a equipe
-                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica ou Elétrica).
+                  responsável (Chaveiro, Civil, Refrigeração, Hidráulica, Elétrica ou{" "}
+                  <strong>Pintura</strong>).
+                </p>
+                <p className="text-muted-foreground">
+                  A análise considera também o critério de <strong>Pintura</strong> (pintura,
+                  repintura, tinta, textura, verniz, demarcação e sinalização de piso), que tem
+                  prioridade sobre Civil quando ambos se aplicam.
                 </p>
                 <p className="text-muted-foreground">
                   Chamados ambíguos (várias equipes com peso equivalente) são marcados como
