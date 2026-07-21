@@ -348,6 +348,7 @@ function TaludesPage() {
   };
   const [zoomedTaludeId, setZoomedTaludeId] = useState<string | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
   const [panState, setPanState] = useState<null | { sx: number; sy: number; tx: number; ty: number; moved: boolean }>(null);
   const [shiftDown, setShiftDown] = useState(false);
