@@ -1,7 +1,9 @@
 // Sincronização entre o Dashboard de Chamados e a tabela backorder_os.
-// - fetchBackorderStatuses: lê finalizado/data_finalizacao para uma lista de OS
-// - setBackorderConcluido / setBackorderReaberto: escreve o status (upsert por PK `os`)
-// - subscribeBackorderChanges: realtime para refletir alterações vindas do módulo Backorder
+// - fetchBackorderRows: lê todos os backorders e converte para ChamadoRow (fonte automática do dashboard).
+// - fetchBackorderStatuses: lê finalizado/data_finalizacao para uma lista de OS.
+// - setBackorderConcluido / setBackorderReaberto: escreve o status (upsert por PK `os`).
+// - subscribeBackorderChanges: realtime pontual por OS (usado quando as linhas vêm de outra fonte).
+// - subscribeBackorderTable: realtime para qualquer alteração — dispara refetch completo.
 
 import { supabase } from "@/integrations/supabase/client";
 import type { ChamadoRow } from "./parser";
@@ -17,6 +19,93 @@ const CHUNK = 200;
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+const norm = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+function normalizeCriticidade(raw: string): string {
+  const n = norm(raw);
+  if (!n) return "NÃO INFORMADA";
+  if (n.includes("ALTA") || n.includes("URGE") || n.includes("CRITIC")) return "ALTA";
+  if (n.includes("MED") || n.includes("MOD")) return "MÉDIA";
+  if (n.includes("BAIX")) return "BAIXA";
+  return n;
+}
+
+type BackorderDbRow = {
+  os: string;
+  nome: string | null;
+  ativo: string | null;
+  predio: string | null;
+  andar: string | null;
+  espaco: string | null;
+  atividade: string | null;
+  equipe: string | null;
+  criticidade: string | null;
+  outros: string | null;
+  termino_sla: string | null;
+  data_solicitacao: string | null;
+  data_finalizacao: string | null;
+  finalizado: boolean | null;
+};
+
+function mapRowToChamado(r: BackorderDbRow): ChamadoRow {
+  const done = !!r.finalizado;
+  const ab = r.data_solicitacao ? new Date(r.data_solicitacao) : null;
+  const lm = r.termino_sla ? new Date(r.termino_sla) : null;
+  const cc = r.data_finalizacao ? new Date(r.data_finalizacao) : null;
+  const categoria = (r.atividade || "OUTROS").toUpperCase();
+  return {
+    os: r.os,
+    descricao: r.nome ?? "",
+    categoria,
+    equipe: r.equipe || "Outros",
+    criticidade: normalizeCriticidade(r.criticidade ?? ""),
+    criticidadeOriginal: r.criticidade ?? "",
+    status: done ? "Concluído" : "Aberto",
+    statusNorm: done ? "concluido" : "aberto",
+    solicitante: r.outros || "NÃO INFORMADO",
+    predio: r.predio ?? "",
+    andar: r.andar ?? "",
+    local: r.espaco ?? "",
+    ativo: r.ativo ?? "",
+    equipamento: "",
+    dataAbertura: ab ? ab.toISOString() : null,
+    dataAberturaTs: ab ? ab.getTime() : null,
+    dataLimite: lm ? lm.toISOString() : null,
+    dataLimiteTs: lm ? lm.getTime() : null,
+    dataConclusao: cc ? cc.toISOString() : null,
+    origem: "backorder",
+  };
+}
+
+/** Carrega todas as OS da tabela backorder_os e converte para ChamadoRow. */
+export async function fetchBackorderRows(): Promise<ChamadoRow[]> {
+  const pageSize = 1000;
+  const out: ChamadoRow[] = [];
+  let from = 0;
+  // Paginação para suportar bases grandes.
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const { data, error } = await supabase
+      .from("backorder_os")
+      .select(
+        "os, nome, ativo, predio, andar, espaco, atividade, equipe, criticidade, outros, termino_sla, data_solicitacao, data_finalizacao, finalizado",
+      )
+      .order("data_solicitacao", { ascending: false, nullsFirst: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    const rows = (data ?? []) as BackorderDbRow[];
+    for (const r of rows) out.push(mapRowToChamado(r));
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
   return out;
 }
 
@@ -55,7 +144,6 @@ export async function setBackorderConcluido(row: ChamadoRow): Promise<BackorderS
     os: row.os,
     finalizado: true,
     data_finalizacao: nowIso,
-    // Campos obrigatórios / úteis quando a OS ainda não existir no backorder
     data_solicitacao: fallbackDate(row.dataAbertura),
     nome: row.descricao || row.os,
     atividade: row.categoria || "",
@@ -106,6 +194,22 @@ export function subscribeBackorderChanges(
           data_finalizacao: row.data_finalizacao ?? null,
         });
       },
+    )
+    .subscribe();
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+/** Assina qualquer alteração em backorder_os e dispara um callback (sem payload).
+ *  Ideal para recarregar a lista completa quando linhas são inseridas/removidas. */
+export function subscribeBackorderTable(onChange: () => void): () => void {
+  const channel = supabase
+    .channel("dashboard-chamados-backorder-table")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "backorder_os" },
+      () => onChange(),
     )
     .subscribe();
   return () => {
