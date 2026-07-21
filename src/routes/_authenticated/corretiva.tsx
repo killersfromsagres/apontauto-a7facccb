@@ -1016,3 +1016,150 @@ function fmtDate(v: string | null): string {
   if (Number.isNaN(d.getTime())) return v;
   return d.toLocaleDateString("pt-BR");
 }
+
+function EquipesEditor({
+  equipes,
+  onChange,
+}: {
+  equipes: EquipeRow[];
+  onChange: () => void | Promise<void>;
+}) {
+  const [drafts, setDrafts] = useState<Record<string, { nome: string; colaboradores: string }>>({});
+  const [newNome, setNewNome] = useState("");
+  const [newColabs, setNewColabs] = useState("");
+  const [saving, setSaving] = useState<string | null>(null);
+
+  const draftFor = (e: EquipeRow) =>
+    drafts[e.id] ?? { nome: e.nome, colaboradores: e.colaboradores ?? "" };
+
+  const save = async (e: EquipeRow) => {
+    const d = draftFor(e);
+    setSaving(e.id);
+    const { error } = await supabase
+      .from("corretiva_equipes")
+      .update({ nome: d.nome.trim(), colaboradores: d.colaboradores.trim() })
+      .eq("id", e.id);
+    setSaving(null);
+    if (error) {
+      toast.error("Erro ao salvar equipe: " + error.message);
+      return;
+    }
+    toast.success("Equipe atualizada.");
+    setDrafts((prev) => {
+      const copy = { ...prev };
+      delete copy[e.id];
+      return copy;
+    });
+    await onChange();
+  };
+
+  const remove = async (e: EquipeRow) => {
+    if (!confirm(`Remover equipe "${e.nome}"?`)) return;
+    const { error } = await supabase.from("corretiva_equipes").delete().eq("id", e.id);
+    if (error) {
+      toast.error("Erro ao remover: " + error.message);
+      return;
+    }
+    toast.success("Equipe removida.");
+    await onChange();
+  };
+
+  const create = async () => {
+    const nome = newNome.trim();
+    if (!nome) {
+      toast.error("Informe o nome da equipe.");
+      return;
+    }
+    setSaving("__new__");
+    const { error } = await supabase
+      .from("corretiva_equipes")
+      .insert({ nome, colaboradores: newColabs.trim(), ordem: equipes.length });
+    setSaving(null);
+    if (error) {
+      toast.error("Erro ao criar: " + error.message);
+      return;
+    }
+    setNewNome("");
+    setNewColabs("");
+    toast.success("Equipe criada.");
+    await onChange();
+  };
+
+  return (
+    <GlassCard className="mb-3 p-4">
+      <div className="mb-3 flex items-center gap-2">
+        <Pencil className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-semibold">Editar equipes e colaboradores</h3>
+      </div>
+      <div className="space-y-3">
+        {equipes.map((e) => {
+          const d = draftFor(e);
+          const dirty = d.nome !== e.nome || d.colaboradores !== (e.colaboradores ?? "");
+          return (
+            <div
+              key={e.id}
+              className="grid grid-cols-1 gap-2 rounded-md border border-border/50 p-3 sm:grid-cols-[1fr_2fr_auto]"
+            >
+              <div>
+                <Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label>
+                <Input
+                  value={d.nome}
+                  onChange={(ev) =>
+                    setDrafts((p) => ({ ...p, [e.id]: { ...d, nome: ev.target.value } }))
+                  }
+                  className="h-9"
+                />
+              </div>
+              <div>
+                <Label className="text-[10px] uppercase text-muted-foreground">
+                  Colaboradores (ex: Emerson - William)
+                </Label>
+                <Input
+                  value={d.colaboradores}
+                  onChange={(ev) =>
+                    setDrafts((p) => ({ ...p, [e.id]: { ...d, colaboradores: ev.target.value } }))
+                  }
+                  className="h-9"
+                />
+              </div>
+              <div className="flex items-end gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => save(e)}
+                  disabled={!dirty || saving === e.id}
+                >
+                  {saving === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => remove(e)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="grid grid-cols-1 gap-2 rounded-md border border-dashed border-border p-3 sm:grid-cols-[1fr_2fr_auto]">
+          <div>
+            <Label className="text-[10px] uppercase text-muted-foreground">Nova equipe</Label>
+            <Input value={newNome} onChange={(e) => setNewNome(e.target.value)} className="h-9" placeholder="Ex: Elétrica" />
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase text-muted-foreground">Colaboradores</Label>
+            <Input
+              value={newColabs}
+              onChange={(e) => setNewColabs(e.target.value)}
+              className="h-9"
+              placeholder="Ex: João - Pedro"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button size="sm" onClick={create} disabled={saving === "__new__"}>
+              {saving === "__new__" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Adicionar"}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
