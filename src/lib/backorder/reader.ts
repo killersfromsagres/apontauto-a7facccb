@@ -162,7 +162,7 @@ export async function readBackorderWorkbook(
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, { type: "array" });
 
-  const embeddedAssets = extractEmbeddedAssets(wb);
+  const embeddedAssets = extractEmbeddedAssets(XLSX, wb);
   // Se a planilha trouxe hierarquia embutida, fundimos com `assets` antes de resolver.
   const effective: AssetsMap = embeddedAssets.length
     ? (await import("./assets")).buildAssetsIndex([
