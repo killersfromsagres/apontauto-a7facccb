@@ -187,15 +187,33 @@
   }
 }
 
-/* Ambient background: dramatic indigo aurora */
+/* Ambient background: dramatic indigo aurora.
+ * `background-attachment: fixed` em elemento com scroll é um dos maiores
+ * causadores de jank em mobile (força repaint da tela inteira a cada frame
+ * de scroll). Movemos o gradiente para um pseudo-elemento fixed + isolamos
+ * paint/compositing com `contain` + `will-change: transform`.
+ */
 @utility app-bg {
+  position: relative;
   background-color: var(--color-background);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 30%, transparent) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 22%, transparent) 0%, transparent 60%),
-    radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 70%);
-  background-attachment: fixed;
+  isolation: isolate;
 }
+@utility app-bg {
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 30%, transparent) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 22%, transparent) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 70%);
+    contain: strict;
+    will-change: opacity;
+  }
+}
+
 
 /* Fine noise/grain overlay for premium depth (dark only) */
 @utility grain {
