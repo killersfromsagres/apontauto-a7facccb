@@ -773,6 +773,76 @@ function BackorderPage() {
     );
   }
 
+  async function reclassificarComIA() {
+    const alvo = abertas;
+    if (alvo.length === 0) {
+      toast.info("Sem OS abertas para reclassificar.");
+      return;
+    }
+    setAiReclassifying(true);
+    const toastId = toast.loading(`Analisando ${alvo.length} OS com IA...`);
+    try {
+      const items = alvo.map((r) => ({
+        os: r.os,
+        descricao: r.nome ?? "",
+        ativo: r.ativo ?? "",
+        solicitante: r.outros ?? "",
+        predio: r.predio ?? "",
+      }));
+      const { results } = await runAiClassify({ data: { items } });
+      if (!results || results.length === 0) {
+        toast.dismiss(toastId);
+        toast.error("A IA não retornou classificações válidas.");
+        return;
+      }
+      const byOs = new Map(results.map((r) => [r.os, r]));
+      let alterados = 0;
+      const patches: Array<{ os: string; atividade: Categoria; equipe: string }> = [];
+      for (const row of alvo) {
+        const ai = byOs.get(row.os);
+        if (!ai) continue;
+        const cat = ai.categoria as Categoria;
+        if (!CATEGORIAS.includes(cat)) continue;
+        if (cat === row.atividade) continue;
+        patches.push({ os: row.os, atividade: cat, equipe: CATEGORIA_TO_EQUIPE[cat] });
+        alterados++;
+      }
+      // Persiste em batch
+      for (const p of patches) {
+        await supabase
+          .from("backorder_os")
+          .update({
+            atividade: p.atividade,
+            atividade_manual: true,
+            equipe: p.equipe,
+            origem_equipe: "regra_aprendida",
+            revisao_manual: false,
+          } as never)
+          .eq("os", p.os);
+        await supabase
+          .from("backorder_atividade_override")
+          .upsert({ os: p.os, atividade: p.atividade }, { onConflict: "os" });
+      }
+      setRows((prev) =>
+        prev.map((x) => {
+          const p = patches.find((pp) => pp.os === x.os);
+          return p
+            ? { ...x, atividade: p.atividade, atividade_manual: true, equipe: p.equipe, revisao_manual: false }
+            : x;
+        }),
+      );
+      toast.dismiss(toastId);
+      toast.success(`IA reclassificou ${alterados} de ${alvo.length} OS.`);
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error(e instanceof Error ? e.message : "Falha na reclassificação com IA.");
+    } finally {
+      setAiReclassifying(false);
+    }
+  }
+
+
+
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
     // Se o "ativo" mudar e nenhum override manual for enviado para
     // predio/andar/espaço, aplicamos a fórmula (assets_ref).
