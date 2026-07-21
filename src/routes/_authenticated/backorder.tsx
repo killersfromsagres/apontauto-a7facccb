@@ -1726,32 +1726,71 @@ function TableView({
                       <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={r.atividade}
-                        onValueChange={(v) => onCategoria(r, v as Categoria)}
-                      >
-                        <SelectTrigger className="h-8 w-[150px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CATEGORIAS.map((c) => (
-                            <SelectItem key={c} value={c}>
-                              <span className="flex items-center gap-1.5">
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ background: CATEGORIA_COLOR[c] }}
-                                />
-                                {c}
-                              </span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1.5">
+                        <Select
+                          value={r.atividade}
+                          onValueChange={(v) => onCategoria(r, v as Categoria)}
+                        >
+                          <SelectTrigger className="h-8 w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORIAS.map((c) => (
+                              <SelectItem key={c} value={c}>
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ background: CATEGORIA_COLOR[c] }}
+                                  />
+                                  {c}
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {r.atividade_manual ? (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-emerald-500/15 px-1 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                            title="Equipe definida manualmente por você"
+                          >
+                            Manual
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-sky-500/15 px-1 text-[9px] font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-400"
+                            title="Classificação automática — clique para ajustar"
+                          >
+                            Auto
+                          </span>
+                        )}
+                        {r.revisao_manual && !r.atividade_manual && (
+                          <span
+                            className="inline-flex h-5 items-center rounded bg-amber-500/20 px-1 text-[9px] font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400"
+                            title="Classificação sugerida — várias equipes têm evidência semelhante. Revisar."
+                          >
+                            Revisar
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-xs">
                       {r.termino_sla ? new Date(r.termino_sla).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
-                    <TableCell className="text-xs">{r.equipe}</TableCell>
+                    <TableCell className="text-xs">
+                      <span
+                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium"
+                        style={{
+                          background: `${(EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8"}22`,
+                          color: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? undefined,
+                        }}
+                      >
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8" }}
+                        />
+                        {r.equipe || "—"}
+                      </span>
+                    </TableCell>
                     <TableCell className="max-w-[200px] truncate text-xs" title={r.outros}>
                       {r.outros}
                     </TableCell>
