@@ -102,6 +102,7 @@ import {
 } from "@/lib/backorder/classify";
 import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
+import { fillLocationsInWorkbook } from "@/lib/backorder/fill-locations";
 import { downloadBlob } from "@/lib/download";
 import {
   DEFAULT_CONFIG,
