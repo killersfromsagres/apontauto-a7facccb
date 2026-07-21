@@ -353,6 +353,20 @@ function TaludesPage() {
   const [shiftDown, setShiftDown] = useState(false);
   const [spaceDown, setSpaceDown] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
+  // ── Enhancer de imagem (ajustes + cobertura de logos) ───────────────
+  const {
+    adj: imgAdj,
+    updateAdj: updateImgAdj,
+    resetAdj: resetImgAdj,
+    masks: imgMasks,
+    addMask: addImgMask,
+    removeMask: removeImgMask,
+    clearMasks: clearImgMasks,
+    filter: imgFilter,
+  } = useImageEnhancer(selectedMapId);
+  const [maskMode, setMaskMode] = useState(false);
+  const [maskDrag, setMaskDrag] = useState<null | { sx: number; sy: number; x: number; y: number; w: number; h: number }>(null);
+  useEffect(() => { setMaskMode(false); setMaskDrag(null); }, [selectedMapId]);
   useEffect(() => {
     setImgLoaded(false);
     setView({ scale: 1, tx: 0, ty: 0 });
