@@ -9,6 +9,8 @@
 // ser aberto em outra máquina.
 
 import type { BackorderRow } from "./reader";
+import { resolveAtivoTree, type AssetsMap } from "./assets";
+
 
 const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
 // Paleta moderna — navy escuro + azul de destaque + zebra suave.
