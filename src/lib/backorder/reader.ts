@@ -201,13 +201,23 @@ export async function readBackorderWorkbook(
     );
     const criticidade = pick(r, "CRITICIDADE", "PRIORIDADE", "NÍVEL DE CRITICIDADE", "NIVEL DE CRITICIDADE");
 
+    // Preserva Prédio / Andar / Ambiente vindos da planilha ("as-is").
+    // Só recorre à árvore de ativos quando a coluna estiver vazia.
+    const sheetPredio = pick(r, "PREDIO", "PRÉDIO", "PREDIO / AREA", "PRÉDIO / ÁREA", "AREA", "ÁREA");
+    const sheetAndar = pick(r, "ANDAR", "PAVIMENTO");
+    const sheetEspaco = pick(r, "AMBIENTE", "ESPAÇO", "ESPACO", "LOCAL");
+
     const atividade = classifyBackorder({
       descricao,
       categoria: categoriaOrig,
       servico,
     });
 
-    const { predio, andar, espaco, found } = resolveAtivoTree(effective, ativo);
+    const tree = resolveAtivoTree(effective, ativo);
+    const predio = sheetPredio || tree.predio;
+    const andar = sheetAndar || tree.andar;
+    const espaco = sheetEspaco || tree.espaco;
+    const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
     const finalizado = /FINAL|CONCLU|ENCERR/.test(norm(status));
     const revisao_manual = (!!ativo && !found) || atividade === "Outros";
 
