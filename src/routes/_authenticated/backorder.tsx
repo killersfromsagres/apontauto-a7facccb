@@ -359,10 +359,22 @@ function BackorderPage() {
         (assetsRaw as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? [],
       );
 
-      const parsed = await readBackorderFile(file, assetsMap);
+      const { rows: parsed, embeddedAssets } = await readBackorderWorkbook(file, assetsMap);
       if (parsed.length === 0) {
         toast.warning("Nenhuma OS reconhecida na planilha.");
         return;
+      }
+
+      // Se o workbook trouxe uma aba `ativos` embutida, hidrata a base
+      // `assets_ref` antes de qualquer resolução futura.
+      if (embeddedAssets.length > 0) {
+        const chunkSize = 500;
+        for (let i = 0; i < embeddedAssets.length; i += chunkSize) {
+          const chunk = embeddedAssets.slice(i, i + chunkSize);
+          const { error } = await supabase.from("assets_ref").upsert(chunk, { onConflict: "ativo" });
+          if (error) throw error;
+        }
+        toast.info(`Base de ativos atualizada com ${embeddedAssets.length} registros do próprio arquivo.`);
       }
 
       // Overrides manuais persistidos (Atividade corrigida à mão)
