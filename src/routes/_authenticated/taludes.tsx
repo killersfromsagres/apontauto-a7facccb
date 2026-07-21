@@ -1698,6 +1698,7 @@ function TaludeDetail({
   onChangeStatus,
   onPatch,
   onRedraw,
+  onNewPart,
   onDelete,
   onBumpDate,
   onCycleStatus,
@@ -1707,10 +1708,12 @@ function TaludeDetail({
   onChangeStatus: (s: TaludeStatus) => void;
   onPatch: (patch: Partial<TaludeRow>) => void;
   onRedraw: () => void;
+  onNewPart: () => void;
   onDelete: () => void;
   onBumpDate: (days: number) => void;
   onCycleStatus: () => void;
   saving: boolean;
+
 }) {
   const [local, setLocal] = useState({
     nome: talude.nome ?? "",
