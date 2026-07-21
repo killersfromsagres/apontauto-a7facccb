@@ -343,8 +343,8 @@ function MiniMetric({
 const PT_SETTING_ID = "pt_taludes_liberada";
 
 type PTHistoricoItem = {
-  liberada_em: string;          // ISO — imutável, gerado no ato do registro
-  registrado_em: string;        // ISO — igual a liberada_em (auditoria)
+  liberada_em: string;          // ISO — data/hora em que a PT foi liberada pelo Corpo de Bombeiros
+  registrado_em: string;        // ISO — quando o registro foi feito no sistema (auditoria)
   registrado_por: string | null;
   observacao?: string | null;
 };
@@ -368,6 +368,15 @@ function fmtDataHora(iso: string | null | undefined): string | null {
   });
 }
 
+// Retorna a data/hora atual no formato aceito por <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
+function nowLocalInput(): string {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function PTCard() {
   const qc = useQueryClient();
   const ptQ = useQuery({
@@ -385,10 +394,16 @@ function PTCard() {
   });
 
   const [obs, setObs] = useState<string>("");
+  const [liberadaEmLocal, setLiberadaEmLocal] = useState<string>(() => nowLocalInput());
   const [confirmando, setConfirmando] = useState(false);
 
+  // Ao abrir o formulário, redefine para o "agora" como sugestão inicial.
+  useEffect(() => {
+    if (confirmando) setLiberadaEmLocal(nowLocalInput());
+  }, [confirmando]);
+
   const registrarMut = useMutation({
-    mutationFn: async (observacao: string | null) => {
+    mutationFn: async (input: { liberadaEmISO: string; observacao: string | null }) => {
       const { data: u } = await supabase.auth.getUser();
       const quem = u.user?.email ?? u.user?.id ?? null;
       const agora = new Date().toISOString();
@@ -403,16 +418,16 @@ function PTCard() {
 
       const anterior = (atual?.data as PTData | undefined) ?? { liberada_em: null, historico: [] };
       const novoItem: PTHistoricoItem = {
-        liberada_em: agora,
-        registrado_em: agora,
+        liberada_em: input.liberadaEmISO,   // data/hora informada pelo Corpo de Bombeiros
+        registrado_em: agora,               // instante do lançamento no sistema (auditoria)
         registrado_por: quem,
-        observacao: observacao || null,
+        observacao: input.observacao || null,
       };
       const historico = [...(anterior.historico ?? []), novoItem];
 
       const payload: PTData = {
-        liberada_em: agora,
-        observacao: observacao || null,
+        liberada_em: input.liberadaEmISO,
+        observacao: input.observacao || null,
         atualizado_em: agora,
         atualizado_por: quem,
         historico,
@@ -463,7 +478,7 @@ function PTCard() {
                 </>
               ) : (
                 <span className="text-sm italic text-muted-foreground">
-                  Nenhuma liberação registrada — a data e hora serão capturadas automaticamente.
+                  Nenhuma liberação registrada — informe a data/hora da PT liberada pelos Bombeiros.
                 </span>
               )}
             </div>
@@ -541,7 +556,23 @@ function PTCard() {
       </div>
 
       {confirmando && (
-        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Liberada pelo Corpo de Bombeiros em
+            </Label>
+            <Input
+              type="datetime-local"
+              value={liberadaEmLocal}
+              onChange={(e) => setLiberadaEmLocal(e.target.value)}
+              max={nowLocalInput()}
+              className="h-9"
+              autoFocus
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Informe a data e horário exatos da liberação pelos Bombeiros.
+            </div>
+          </div>
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
               Observação (opcional)
@@ -551,10 +582,9 @@ function PTCard() {
               onChange={(e) => setObs(e.target.value)}
               placeholder="Ex.: PT nº 123 — equipe Alfa"
               className="h-9"
-              autoFocus
             />
             <div className="mt-1 text-[10px] text-muted-foreground">
-              A data e o horário serão registrados agora e não poderão ser alterados.
+              O registro no sistema é imutável e mantém o autor e o instante do lançamento.
             </div>
           </div>
           <div className="flex items-end gap-2">
@@ -571,10 +601,25 @@ function PTCard() {
             </Button>
             <Button
               size="sm"
-              onClick={() => registrarMut.mutate(obs.trim() || null)}
+              onClick={() => {
+                if (!liberadaEmLocal) {
+                  toast.error("Informe a data e horário da liberação.");
+                  return;
+                }
+                const iso = new Date(liberadaEmLocal).toISOString();
+                if (Number.isNaN(new Date(iso).getTime())) {
+                  toast.error("Data/horário inválido.");
+                  return;
+                }
+                if (new Date(iso).getTime() > Date.now() + 60_000) {
+                  toast.error("A liberação não pode ser no futuro.");
+                  return;
+                }
+                registrarMut.mutate({ liberadaEmISO: iso, observacao: obs.trim() || null });
+              }}
               disabled={registrarMut.isPending}
             >
-              {registrarMut.isPending ? "Registrando…" : "Liberar agora"}
+              {registrarMut.isPending ? "Registrando…" : "Registrar liberação"}
             </Button>
           </div>
         </div>
