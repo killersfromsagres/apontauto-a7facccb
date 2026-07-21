@@ -1247,6 +1247,17 @@ function BackorderPage() {
           <Button variant="outline" onClick={() => setConfigOpen(true)}>
             <Settings2 className="mr-2 h-4 w-4" /> Prioridades
           </Button>
+          <Button
+            variant="outline"
+            onClick={reclassificarComIA}
+            disabled={aiReclassifying || abertas.length === 0}
+            className="border-primary/40 text-primary hover:bg-primary/10"
+          >
+            <Sparkles className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
+            {aiReclassifying ? "Analisando..." : "Reclassificar com IA"}
+          </Button>
+
+
 
 
           <Button onClick={exportar} disabled={filtered.length === 0}>
