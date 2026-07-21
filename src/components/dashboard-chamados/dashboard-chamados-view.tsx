@@ -340,11 +340,15 @@ export function DashboardChamadosView() {
   }
 
 
+  const lastUpdateLabel = lastUpdate
+    ? new Date(lastUpdate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
   const kpis = [
     {
       label: "Total",
       value: stats.total.toString(),
-      hint: fileInfo ? `${fileInfo.origem}` : "",
+      hint: `Atualizado às ${lastUpdateLabel}`,
       icon: BarChart3,
       tint: "text-sky-600 dark:text-sky-400",
     },
@@ -374,27 +378,26 @@ export function DashboardChamadosView() {
   return (
     <PageShell
       title="Dashboard de Chamados"
-      description={
-        fileInfo
-          ? `${fileInfo.name} · ${filtered.length} de ${rows.length} chamados no filtro`
-          : "Análise de chamados"
-      }
+      description={`Sincronizado com Backorder · ${filtered.length} de ${rows.length} chamados no filtro`}
       actions={
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={onUpload}
-            disabled={loading}
-          />
-          <Button variant="outline" size="sm" asChild disabled={loading}>
-            <span>
-              <Upload className="mr-2 h-4 w-4" />
-              {loading ? "Processando…" : "Trocar planilha"}
-            </span>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant="outline"
+            className="hidden gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 sm:inline-flex"
+          >
+            <Radio className="h-3 w-3 animate-pulse" />
+            Tempo real
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadRows()}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            Atualizar
           </Button>
-        </label>
+        </div>
       }
     >
       <div className="space-y-4">
