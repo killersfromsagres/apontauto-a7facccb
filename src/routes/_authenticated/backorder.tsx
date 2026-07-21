@@ -150,8 +150,6 @@ interface BOSRow {
   revisao_manual?: boolean;
 }
 
-const POWERBI_URL =
-  "https://app.powerbi.com/view?r=eyJrIjoiNDhjOGJiZjMtYWM0YS00MGUyLTkyYzItMDgyMzM5OTMxNThmIiwidCI6IjQyODUyNWQ5LTIzYmQtNGY4Yy1hZmEyLTU2MDBmNDAxZjMyNiJ9";
 
 const TARGET_PCT_DEFAULT = 5;
 
