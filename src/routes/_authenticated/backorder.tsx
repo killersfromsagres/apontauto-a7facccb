@@ -1458,7 +1458,6 @@ function BackorderPage() {
               <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="powerbi">Power BI</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tabela">
