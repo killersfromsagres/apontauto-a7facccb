@@ -1,14 +1,12 @@
 // Exportador Excel — Programação de Backorder.
-// Cada campo do relatório é montado por nome interno; a ordem das
-// colunas é apenas uma configuração declarativa (COLUMN_ORDER). Assim,
-// reordenar/adicionar/remover colunas depois é uma mudança pontual.
 //
-// Prédio / Andar / Espaço são gerados como fórmulas PROCV vivas
-// contra uma aba auxiliar "ativos" que também vai no mesmo arquivo,
-// exatamente como no modelo original. O código do Ativo é gravado em
-// uma coluna oculta ao final da planilha e as fórmulas apontam para
-// essa coluna (a letra é calculada em tempo de exportação, para que
-// nada quebre se um dia a ordem for alterada).
+// Prédio / Andar / Ambiente são gravados como VALORES ESTÁTICOS já
+// resolvidos pelo motor hierárquico (resolveAtivoTree em assets.ts),
+// que sobe a árvore por codigo_pai/nivel — funciona para OS abertas
+// em qualquer nível (Ambiente ou Equipamento) e não depende do
+// tamanho do código. O arquivo exportado é autossuficiente: não usa
+// fórmulas VLOOKUP, não referencia abas auxiliares e não quebra ao
+// ser aberto em outra máquina.
 
 import type { BackorderRow } from "./reader";
 
@@ -53,17 +51,6 @@ const COLUMN_ORDER: ColDef[] = [
   { key: "solicitante", label: "Solicitante", width: 28, align: "left" },
 ];
 
-function colLetter(idx: number): string {
-  let n = idx;
-  let s = "";
-  while (n > 0) {
-    const rem = (n - 1) % 26;
-    s = String.fromCharCode(65 + rem) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
-}
-
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -73,30 +60,12 @@ function fmtDate(iso: string | null | undefined): string {
 export async function generateBackorderExport(input: {
   titulo: string;
   rows: BackorderRow[];
-  /** Base de ativos para a aba auxiliar (fórmulas VLOOKUP vivas). */
-  assets?: Array<{ ativo: string; denominacao: string }>;
 }): Promise<Blob> {
+
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto";
   wb.created = new Date();
-
-  // ---------- Aba auxiliar "ativos" ----------
-  const ativosSheet = wb.addWorksheet("ativos", { properties: { tabColor: { argb: argb("#94A3B8") } } });
-  ativosSheet.columns = [
-    { header: "Ativo", key: "ativo", width: 22 },
-    { header: "Denominação Ativo", key: "denominacao", width: 64 },
-  ];
-  const ativosHead = ativosSheet.getRow(1);
-  ativosHead.eachCell((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
-    cell.font = { name: "Aptos", bold: true, size: 12, color: { argb: HEADER_FG } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-  });
-  ativosHead.height = 24;
-  ativosSheet.views = [{ state: "frozen", ySplit: 1 }];
-  const assets = input.assets ?? [];
-  for (const a of assets) ativosSheet.addRow({ ativo: a.ativo, denominacao: a.denominacao });
 
   // ---------- Aba principal ----------
   const ws = wb.addWorksheet("BACKORDER", {
@@ -105,13 +74,8 @@ export async function generateBackorderExport(input: {
   });
 
   const visibleCols = COLUMN_ORDER;
-  const ATIVO_COL_INDEX = visibleCols.length + 1;
-  const ATIVO_COL_LETTER = colLetter(ATIVO_COL_INDEX);
 
-  ws.columns = [
-    ...visibleCols.map((c) => ({ key: c.key, width: c.width })),
-    { key: "__ativo", width: 22, hidden: true },
-  ];
+  ws.columns = visibleCols.map((c) => ({ key: c.key, width: c.width }));
 
   // Título mesclado
   ws.mergeCells(1, 1, 1, visibleCols.length);
@@ -138,7 +102,6 @@ export async function generateBackorderExport(input: {
       right: { style: "thin", color: { argb: BORDER_STRONG } },
     };
   });
-  head.getCell(ATIVO_COL_INDEX).value = "Ativo";
   head.height = 30;
 
   const sorted = [...input.rows].sort(
@@ -150,16 +113,18 @@ export async function generateBackorderExport(input: {
     const row = ws.getRow(rowIdx);
     const isAlt = rowIdx % 2 === 1; // linhas alternadas para zebra
 
-    const ativoRef = `$${ATIVO_COL_LETTER}${rowIdx}`;
-    const buildFormula = (chars: number) =>
-      `IFERROR(VLOOKUP(LEFT(${ativoRef},${chars}),ativos!$A:$B,2,0),"")`;
+    // Prédio / Andar / Ambiente já vêm resolvidos pela árvore hierárquica
+    // (resolveAtivoTree) — gravamos como texto estático. Fallback "Não
+    // localizado" quando a OS tem Ativo mas a árvore não retornou aquele
+    // nível (cadeia incompleta ou Ativo ausente da base).
+    const naoLoc = (v: string) => (r.ativo && !v ? "Não localizado" : v || "");
 
     const values: Record<ColKey, unknown> = {
       os: r.os,
       nome: r.nome,
-      predio: r.ativo ? { formula: buildFormula(5) } : "",
-      andar: r.ativo ? { formula: buildFormula(7) } : "",
-      ambiente: r.ativo ? { formula: buildFormula(String(r.ativo).length) } : "",
+      predio: naoLoc(r.predio),
+      andar: naoLoc(r.andar),
+      ambiente: naoLoc(r.espaco),
       atividade: "Corretiva",
       data: fmtDate(r.data_solicitacao),
       equipe: r.equipe,
@@ -187,11 +152,11 @@ export async function generateBackorderExport(input: {
     });
     // OS em negrito
     row.getCell(1).font = { name: "Aptos", bold: true, size: 11, color: { argb: TITLE_BG } };
-    row.getCell(ATIVO_COL_INDEX).value = r.ativo;
 
     row.height = 28;
     rowIdx++;
   }
+
 
   // AutoFilter na linha 2 (cabeçalho) cobrindo todas colunas visíveis
   if (rowIdx > 3) {
