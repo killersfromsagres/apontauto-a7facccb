@@ -694,6 +694,7 @@ function TaludesPage() {
     setSelectedVertexIdx(null);
     setSnapHint(null);
     setCursorPct(null);
+    resetHistory();
   };
 
   // Keyboard shortcuts while drawing/editing polygon
@@ -703,6 +704,17 @@ function TaludesPage() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        undoDrawing();
+        return;
+      }
+      if (mod && ((e.shiftKey && (e.key === "z" || e.key === "Z")) || e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        redoDrawing();
+        return;
+      }
       if (e.key === "Escape") {
         e.preventDefault();
         cancelDrawing();
@@ -711,6 +723,7 @@ function TaludesPage() {
         void finishPolygon();
       } else if ((e.key === "Delete" || e.key === "Backspace") && selectedVertexIdx !== null) {
         e.preventDefault();
+        pushHistory(drawingPoints);
         setDrawingPoints((prev) => prev.filter((_, i) => i !== selectedVertexIdx));
         setSelectedVertexIdx(null);
       }
@@ -718,18 +731,20 @@ function TaludesPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx]);
+  }, [drawingNumero, editingPolygonFor, drawingNewMode, selectedVertexIdx, drawingPoints]);
 
   const startRedraw = (t: TaludeRow) => {
+    resetHistory();
     setEditingPolygonFor(t.id);
     setDrawingPoints(t.polygon.map((p) => ({ ...p })));
     setDrawingNumero("");
     setSelectedTaludeId(t.id);
-    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
+    toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover. Ctrl+Z desfaz.`);
   };
 
   // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
   const startNewPart = (t: TaludeRow) => {
+    resetHistory();
     setEditingPolygonFor(null);
     setDrawingPoints([]);
     setDrawingNewMode(true);
@@ -737,6 +752,7 @@ function TaludesPage() {
     setSelectedTaludeId(t.id);
     toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
   };
+
 
 
   const updateMutation = useMutation({
