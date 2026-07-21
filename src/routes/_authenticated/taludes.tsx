@@ -311,11 +311,37 @@ function TaludesPage() {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 });
   const [panState, setPanState] = useState<null | { sx: number; sy: number; tx: number; ty: number; moved: boolean }>(null);
+  const [shiftDown, setShiftDown] = useState(false);
+  const [spaceDown, setSpaceDown] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     setImgLoaded(false);
     setView({ scale: 1, tx: 0, ty: 0 });
   }, [imageUrl]);
+
+  // Track Shift (straight-line lock) and Space (pan tool)
+  useEffect(() => {
+    const kd = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftDown(true);
+      if (e.code === "Space") {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag !== "INPUT" && tag !== "TEXTAREA") {
+          e.preventDefault();
+          setSpaceDown(true);
+        }
+      }
+    };
+    const ku = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftDown(false);
+      if (e.code === "Space") setSpaceDown(false);
+    };
+    window.addEventListener("keydown", kd);
+    window.addEventListener("keyup", ku);
+    return () => {
+      window.removeEventListener("keydown", kd);
+      window.removeEventListener("keyup", ku);
+    };
+  }, []);
 
   const resetView = () => setView({ scale: 1, tx: 0, ty: 0 });
   const zoomBy = (factor: number) => {
@@ -337,7 +363,8 @@ function TaludesPage() {
       const rect = el.getBoundingClientRect();
       const cx = ((e.clientX - rect.left) / rect.width) * 100;
       const cy = ((e.clientY - rect.top) / rect.height) * 100;
-      const factor = e.deltaY < 0 ? 1.2 : 1 / 1.2;
+      // Smoother, finer-grained zoom step
+      const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
       setView((v) => {
         const newScale = Math.min(8, Math.max(1, v.scale * factor));
         if (newScale === v.scale) return v;
@@ -348,6 +375,7 @@ function TaludesPage() {
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [imageUrl]);
+
 
 
 
@@ -393,6 +421,26 @@ function TaludesPage() {
     return pairs;
   }, [taludes]);
 
+  // Label owner por numero: só a maior parte de cada grupo recebe o número,
+  // evitando labels duplicados quando um talude é formado por múltiplas áreas.
+  const labelOwnerIds = useMemo(() => {
+    const bestByNumero = new Map<number, { id: string; area: number }>();
+    for (const t of taludes) {
+      if (t.polygon.length < 3) continue;
+      // área aproximada (shoelace)
+      let a = 0;
+      const p = t.polygon;
+      for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+        a += (p[j].x + p[i].x) * (p[j].y - p[i].y);
+      }
+      const area = Math.abs(a) / 2;
+      const cur = bestByNumero.get(t.numero);
+      if (!cur || area > cur.area) bestByNumero.set(t.numero, { id: t.id, area });
+    }
+    return new Set(Array.from(bestByNumero.values()).map((v) => v.id));
+  }, [taludes]);
+
+
   const svgRef = useRef<SVGSVGElement>(null);
   const clickToPct = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
@@ -423,12 +471,33 @@ function TaludesPage() {
     return { p, snapped: false };
   };
 
+  // Constrain a point to 0°/45°/90° axes relative to an anchor (Shift-lock)
+  const constrainStraight = (anchor: Point, p: Point): Point => {
+    const dx = p.x - anchor.x;
+    const dy = p.y - anchor.y;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+    const ratio = absX === 0 ? Infinity : absY / absX;
+    // 45° band when the two components are close
+    if (ratio > 0.4142 && ratio < 2.4142) {
+      const m = Math.min(absX, absY);
+      return { x: anchor.x + Math.sign(dx) * m, y: anchor.y + Math.sign(dy) * m };
+    }
+    if (absX >= absY) return { x: p.x, y: anchor.y };
+    return { x: anchor.x, y: p.y };
+  };
+
   const handleMapClick = (e: React.MouseEvent) => {
     if (!drawingNumero && !editingPolygonFor && !drawingNewMode) return;
     if (draggingIdx !== null) return;
+    if (spaceDown || panState) return;
     const p = clickToPct(e);
     if (!p) return;
-    const { p: sp } = snapPoint(p);
+    let candidate = p;
+    if (shiftDown && drawingPoints.length > 0) {
+      candidate = constrainStraight(drawingPoints[drawingPoints.length - 1], p);
+    }
+    const { p: sp } = snapPoint(candidate);
     setDrawingPoints((prev) => [...prev, sp]);
     setSelectedVertexIdx(drawingPoints.length);
   };
@@ -447,10 +516,18 @@ function TaludesPage() {
       setSnapHint(null);
       return;
     }
-    const { p: sp, snapped } = snapPoint(p, draggingIdx);
+    let candidate = p;
+    if (shiftDown && drawingPoints.length > 1) {
+      // Anchor to the previous vertex (or next, whichever exists) to keep the segment straight
+      const anchor =
+        drawingPoints[(draggingIdx - 1 + drawingPoints.length) % drawingPoints.length];
+      candidate = constrainStraight(anchor, p);
+    }
+    const { p: sp, snapped } = snapPoint(candidate, draggingIdx);
     setSnapHint(snapped ? sp : null);
     setDrawingPoints((prev) => prev.map((pt, i) => (i === draggingIdx ? sp : pt)));
   };
+
   const handleSvgPointerUp = () => {
     setDraggingIdx(null);
     setSnapHint(null);
@@ -519,20 +596,26 @@ function TaludesPage() {
       toast.error("Número do talude inválido");
       return;
     }
-    if (taludes.some((t) => t.numero === num)) {
-      toast.error(`Talude ${num} já existe`);
-      return;
-    }
+    const existing = taludes.some((t) => t.numero === num);
+    // Duplicate numeros são permitidos: representam partes distintas
+    // do mesmo talude (interrompido e retomado, ou dividido em áreas).
+    const status: TaludeStatus = existing
+      ? (taludes.find((t) => t.numero === num)?.status ?? "programado")
+      : "programado";
+    const dataProg = existing
+      ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
+      : today();
     await upsertFn({
       data: {
         map_id: map.id,
         numero: num,
         polygon: drawingPoints,
-        status: "programado",
-        data_programada: today(),
+        status,
+        data_programada: dataProg,
       },
     });
-    toast.success(`Talude ${num} criado`);
+    toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
+
     setDrawingPoints([]);
     setDrawingNumero("");
     setDrawingNewMode(false);
@@ -582,6 +665,17 @@ function TaludesPage() {
     setSelectedTaludeId(t.id);
     toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover`);
   };
+
+  // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
+  const startNewPart = (t: TaludeRow) => {
+    setEditingPolygonFor(null);
+    setDrawingPoints([]);
+    setDrawingNewMode(true);
+    setDrawingNumero(String(t.numero));
+    setSelectedTaludeId(t.id);
+    toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
+  };
+
 
   const updateMutation = useMutation({
     mutationFn: async (patch: Partial<TaludeRow> & { id: string }) => {
@@ -982,10 +1076,15 @@ function TaludesPage() {
               transform = `translate(${view.tx}%, ${view.ty}%) scale(${view.scale})`;
             }
 
-            const canPan = !isDrawing && !usingAutoZoom && view.scale > 1;
+            // Pan disponível sempre que houver zoom — durante desenho use Space
+            // ou o botão do meio do mouse para não conflitar com a marcação.
+            const canPan = !usingAutoZoom && view.scale > 1;
             const onPanDown = (e: React.PointerEvent) => {
               if (!canPan) return;
-              if (e.button !== 0) return;
+              const middle = e.button === 1;
+              const leftWithModifier = e.button === 0 && (spaceDown || !isDrawing);
+              if (!middle && !leftWithModifier) return;
+              e.preventDefault();
               (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
               setPanState({ sx: e.clientX, sy: e.clientY, tx: view.tx, ty: view.ty, moved: false });
             };
@@ -1002,6 +1101,12 @@ function TaludesPage() {
               setView((v) => ({ ...v, tx: panState.tx + dx, ty: panState.ty + dy }));
             };
             const onPanUp = () => setPanState(null);
+            const panCursor =
+              canPan && (spaceDown || !isDrawing)
+                ? panState
+                  ? "grabbing"
+                  : "grab"
+                : undefined;
 
             return (
               <div
@@ -1011,8 +1116,10 @@ function TaludesPage() {
                 onPointerMove={onPanMove}
                 onPointerUp={onPanUp}
                 onPointerLeave={onPanUp}
-                style={{ cursor: canPan ? (panState ? "grabbing" : "grab") : undefined, touchAction: "none" }}
+                onContextMenu={(e) => { if (panState) e.preventDefault(); }}
+                style={{ cursor: panCursor, touchAction: "none" }}
               >
+
                 {/* zoom toolbar */}
                 {imageUrl && (
                   <div className="pointer-events-none absolute right-2 top-2 z-20 flex flex-col gap-1">
@@ -1165,21 +1272,24 @@ function TaludesPage() {
                                 animation: t.status === "em_execucao" ? "taludePulse 2s ease-in-out infinite" : undefined,
                               }}
                             />
-                            {/* number label — amarelo com contorno escuro (estilo mapa original) */}
-                            <text
-                              x={cx}
-                              y={cy}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fontSize="3"
-                              fontWeight="900"
-                              fill="#fde047"
-                              style={{ pointerEvents: "none", paintOrder: "stroke" }}
-                              stroke="#0f172a"
-                              strokeWidth="0.55"
-                            >
-                              {t.numero}
-                            </text>
+                            {/* number label — apenas na maior parte do grupo (evita labels duplicados) */}
+                            {labelOwnerIds.has(t.id) && (
+                              <text
+                                x={cx}
+                                y={cy}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize="3"
+                                fontWeight="900"
+                                fill="#fde047"
+                                style={{ pointerEvents: "none", paintOrder: "stroke" }}
+                                stroke="#0f172a"
+                                strokeWidth="0.55"
+                              >
+                                {t.numero}
+                              </text>
+                            )}
+
                           </g>
                         );
                       })}
@@ -1255,20 +1365,21 @@ function TaludesPage() {
                             return (
                               <g key={`v-${i}`}>
                                 {(isDrag || isSel) && (
-                                  <circle cx={p.x} cy={p.y} r={1.15} fill={accent} fillOpacity={0.18} />
+                                  <circle cx={p.x} cy={p.y} r={0.75} fill={accent} fillOpacity={0.14} />
                                 )}
                                 <circle
                                   cx={p.x}
                                   cy={p.y}
-                                  r={isDrag ? 0.6 : isSel ? 0.52 : 0.42}
+                                  r={isDrag ? 0.28 : isSel ? 0.26 : 0.42}
                                   fill="#ffffff"
                                   stroke={accent}
-                                  strokeWidth={isDrag || isSel ? 0.2 : 0.16}
+                                  strokeWidth={isDrag || isSel ? 0.12 : 0.16}
                                 />
+
                                 <circle
                                   cx={p.x}
                                   cy={p.y}
-                                  r={isDrag ? 0.3 : 0.22}
+                                  r={isDrag ? 0.14 : isSel ? 0.13 : 0.22}
                                   fill={accent}
                                   pointerEvents="none"
                                 />
@@ -1457,6 +1568,8 @@ function TaludesPage() {
                 onChangeStatus={(s) => changeStatus(selected, s)}
                 onPatch={(patch) => updateMutation.mutate({ id: selected.id, ...patch })}
                 onRedraw={() => startRedraw(selected)}
+                onNewPart={() => startNewPart(selected)}
+
                 onDelete={() => removeTalude(selected)}
                 onBumpDate={(days) => bumpDate(selected, days)}
                 onCycleStatus={() => cycleStatus(selected)}
@@ -1585,6 +1698,7 @@ function TaludeDetail({
   onChangeStatus,
   onPatch,
   onRedraw,
+  onNewPart,
   onDelete,
   onBumpDate,
   onCycleStatus,
@@ -1594,10 +1708,12 @@ function TaludeDetail({
   onChangeStatus: (s: TaludeStatus) => void;
   onPatch: (patch: Partial<TaludeRow>) => void;
   onRedraw: () => void;
+  onNewPart: () => void;
   onDelete: () => void;
   onBumpDate: (days: number) => void;
   onCycleStatus: () => void;
   saving: boolean;
+
 }) {
   const [local, setLocal] = useState({
     nome: talude.nome ?? "",
@@ -1659,6 +1775,10 @@ function TaludeDetail({
         <Button size="icon" variant="ghost" onClick={onRedraw} title="Redesenhar área">
           <Pencil className="h-4 w-4" />
         </Button>
+        <Button size="icon" variant="ghost" onClick={onNewPart} title="Adicionar nova parte com este número">
+          <Plus className="h-4 w-4" />
+        </Button>
+
         <Button size="icon" variant="ghost" onClick={onDelete} title="Excluir">
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
