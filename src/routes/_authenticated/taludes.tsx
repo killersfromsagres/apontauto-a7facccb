@@ -1076,10 +1076,15 @@ function TaludesPage() {
               transform = `translate(${view.tx}%, ${view.ty}%) scale(${view.scale})`;
             }
 
-            const canPan = !isDrawing && !usingAutoZoom && view.scale > 1;
+            // Pan disponível sempre que houver zoom — durante desenho use Space
+            // ou o botão do meio do mouse para não conflitar com a marcação.
+            const canPan = !usingAutoZoom && view.scale > 1;
             const onPanDown = (e: React.PointerEvent) => {
               if (!canPan) return;
-              if (e.button !== 0) return;
+              const middle = e.button === 1;
+              const leftWithModifier = e.button === 0 && (spaceDown || !isDrawing);
+              if (!middle && !leftWithModifier) return;
+              e.preventDefault();
               (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
               setPanState({ sx: e.clientX, sy: e.clientY, tx: view.tx, ty: view.ty, moved: false });
             };
@@ -1096,6 +1101,12 @@ function TaludesPage() {
               setView((v) => ({ ...v, tx: panState.tx + dx, ty: panState.ty + dy }));
             };
             const onPanUp = () => setPanState(null);
+            const panCursor =
+              canPan && (spaceDown || !isDrawing)
+                ? panState
+                  ? "grabbing"
+                  : "grab"
+                : undefined;
 
             return (
               <div
@@ -1105,8 +1116,10 @@ function TaludesPage() {
                 onPointerMove={onPanMove}
                 onPointerUp={onPanUp}
                 onPointerLeave={onPanUp}
-                style={{ cursor: canPan ? (panState ? "grabbing" : "grab") : undefined, touchAction: "none" }}
+                onContextMenu={(e) => { if (panState) e.preventDefault(); }}
+                style={{ cursor: panCursor, touchAction: "none" }}
               >
+
                 {/* zoom toolbar */}
                 {imageUrl && (
                   <div className="pointer-events-none absolute right-2 top-2 z-20 flex flex-col gap-1">
