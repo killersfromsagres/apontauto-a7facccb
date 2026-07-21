@@ -556,7 +556,23 @@ function PTCard() {
       </div>
 
       {confirmando && (
-        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="mt-3 grid gap-3 border-t border-border/40 pt-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+          <div>
+            <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Liberada pelo Corpo de Bombeiros em
+            </Label>
+            <Input
+              type="datetime-local"
+              value={liberadaEmLocal}
+              onChange={(e) => setLiberadaEmLocal(e.target.value)}
+              max={nowLocalInput()}
+              className="h-9"
+              autoFocus
+            />
+            <div className="mt-1 text-[10px] text-muted-foreground">
+              Informe a data e horário exatos da liberação pelos Bombeiros.
+            </div>
+          </div>
           <div>
             <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
               Observação (opcional)
@@ -566,10 +582,9 @@ function PTCard() {
               onChange={(e) => setObs(e.target.value)}
               placeholder="Ex.: PT nº 123 — equipe Alfa"
               className="h-9"
-              autoFocus
             />
             <div className="mt-1 text-[10px] text-muted-foreground">
-              A data e o horário serão registrados agora e não poderão ser alterados.
+              O registro no sistema é imutável e mantém o autor e o instante do lançamento.
             </div>
           </div>
           <div className="flex items-end gap-2">
@@ -586,10 +601,25 @@ function PTCard() {
             </Button>
             <Button
               size="sm"
-              onClick={() => registrarMut.mutate(obs.trim() || null)}
+              onClick={() => {
+                if (!liberadaEmLocal) {
+                  toast.error("Informe a data e horário da liberação.");
+                  return;
+                }
+                const iso = new Date(liberadaEmLocal).toISOString();
+                if (Number.isNaN(new Date(iso).getTime())) {
+                  toast.error("Data/horário inválido.");
+                  return;
+                }
+                if (new Date(iso).getTime() > Date.now() + 60_000) {
+                  toast.error("A liberação não pode ser no futuro.");
+                  return;
+                }
+                registrarMut.mutate({ liberadaEmISO: iso, observacao: obs.trim() || null });
+              }}
               disabled={registrarMut.isPending}
             >
-              {registrarMut.isPending ? "Registrando…" : "Liberar agora"}
+              {registrarMut.isPending ? "Registrando…" : "Registrar liberação"}
             </Button>
           </div>
         </div>
