@@ -194,6 +194,231 @@ export type Database = {
         }
         Relationships: []
       }
+      corretiva_equipes: {
+        Row: {
+          colaboradores: string
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          colaboradores?: string
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          colaboradores?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      corretiva_fotos: {
+        Row: {
+          client_uuid: string | null
+          created_at: string
+          enviado_por: string | null
+          id: string
+          legenda: string | null
+          os_id: string
+          storage_path: string
+        }
+        Insert: {
+          client_uuid?: string | null
+          created_at?: string
+          enviado_por?: string | null
+          id?: string
+          legenda?: string | null
+          os_id: string
+          storage_path: string
+        }
+        Update: {
+          client_uuid?: string | null
+          created_at?: string
+          enviado_por?: string | null
+          id?: string
+          legenda?: string | null
+          os_id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corretiva_fotos_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "corretiva_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corretiva_os: {
+        Row: {
+          andar: string | null
+          ativo: string
+          created_at: string
+          criado_por: string | null
+          data_programada: string | null
+          data_sla: string | null
+          equipamento: string
+          equipe: string | null
+          fim: string | null
+          id: string
+          inicio: string | null
+          local: string | null
+          nome_os: string | null
+          numero_os: string
+          patrimonio: string | null
+          predio: string | null
+          status: Database["public"]["Enums"]["corretiva_os_status"]
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          andar?: string | null
+          ativo: string
+          created_at?: string
+          criado_por?: string | null
+          data_programada?: string | null
+          data_sla?: string | null
+          equipamento: string
+          equipe?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string | null
+          local?: string | null
+          nome_os?: string | null
+          numero_os: string
+          patrimonio?: string | null
+          predio?: string | null
+          status?: Database["public"]["Enums"]["corretiva_os_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          andar?: string | null
+          ativo?: string
+          created_at?: string
+          criado_por?: string | null
+          data_programada?: string | null
+          data_sla?: string | null
+          equipamento?: string
+          equipe?: string | null
+          fim?: string | null
+          id?: string
+          inicio?: string | null
+          local?: string | null
+          nome_os?: string | null
+          numero_os?: string
+          patrimonio?: string | null
+          predio?: string | null
+          status?: Database["public"]["Enums"]["corretiva_os_status"]
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      corretiva_pecas: {
+        Row: {
+          client_uuid: string | null
+          created_at: string
+          descricao: string
+          enviado_por: string | null
+          id: string
+          observacao: string | null
+          os_id: string
+          quantidade: number
+          status_gestor: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at: string
+          urgencia: Database["public"]["Enums"]["corretiva_urgencia"]
+        }
+        Insert: {
+          client_uuid?: string | null
+          created_at?: string
+          descricao: string
+          enviado_por?: string | null
+          id?: string
+          observacao?: string | null
+          os_id: string
+          quantidade?: number
+          status_gestor?: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["corretiva_urgencia"]
+        }
+        Update: {
+          client_uuid?: string | null
+          created_at?: string
+          descricao?: string
+          enviado_por?: string | null
+          id?: string
+          observacao?: string | null
+          os_id?: string
+          quantidade?: number
+          status_gestor?: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at?: string
+          urgencia?: Database["public"]["Enums"]["corretiva_urgencia"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corretiva_pecas_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "corretiva_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      corretiva_problemas: {
+        Row: {
+          client_uuid: string | null
+          created_at: string
+          descricao: string
+          enviado_por: string | null
+          gravidade: Database["public"]["Enums"]["corretiva_gravidade"]
+          id: string
+          os_id: string
+          status_gestor: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at: string
+        }
+        Insert: {
+          client_uuid?: string | null
+          created_at?: string
+          descricao: string
+          enviado_por?: string | null
+          gravidade?: Database["public"]["Enums"]["corretiva_gravidade"]
+          id?: string
+          os_id: string
+          status_gestor?: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at?: string
+        }
+        Update: {
+          client_uuid?: string | null
+          created_at?: string
+          descricao?: string
+          enviado_por?: string | null
+          gravidade?: Database["public"]["Enums"]["corretiva_gravidade"]
+          id?: string
+          os_id?: string
+          status_gestor?: Database["public"]["Enums"]["corretiva_status_gestor"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corretiva_problemas_os_id_fkey"
+            columns: ["os_id"]
+            isOneToOne: false
+            referencedRelation: "corretiva_os"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lavanderia_colaboradores: {
         Row: {
           created_at: string
@@ -1388,6 +1613,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      corretiva_gravidade: "observacao" | "falha" | "critico"
+      corretiva_os_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
+      corretiva_status_gestor:
+        | "pendente"
+        | "aprovado"
+        | "rejeitado"
+        | "concluido"
+      corretiva_urgencia: "baixa" | "media" | "alta"
       refrig_gravidade: "observacao" | "falha" | "critico"
       refrig_os_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
       refrig_status_gestor:
@@ -1537,6 +1770,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      corretiva_gravidade: ["observacao", "falha", "critico"],
+      corretiva_os_status: ["aberta", "em_andamento", "concluida", "cancelada"],
+      corretiva_status_gestor: [
+        "pendente",
+        "aprovado",
+        "rejeitado",
+        "concluido",
+      ],
+      corretiva_urgencia: ["baixa", "media", "alta"],
       refrig_gravidade: ["observacao", "falha", "critico"],
       refrig_os_status: ["aberta", "em_andamento", "concluida", "cancelada"],
       refrig_status_gestor: [
