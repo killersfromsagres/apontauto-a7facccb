@@ -343,8 +343,8 @@ function MiniMetric({
 const PT_SETTING_ID = "pt_taludes_liberada";
 
 type PTHistoricoItem = {
-  liberada_em: string;          // ISO — imutável, gerado no ato do registro
-  registrado_em: string;        // ISO — igual a liberada_em (auditoria)
+  liberada_em: string;          // ISO — data/hora em que a PT foi liberada pelo Corpo de Bombeiros
+  registrado_em: string;        // ISO — quando o registro foi feito no sistema (auditoria)
   registrado_por: string | null;
   observacao?: string | null;
 };
@@ -368,6 +368,15 @@ function fmtDataHora(iso: string | null | undefined): string | null {
   });
 }
 
+// Retorna a data/hora atual no formato aceito por <input type="datetime-local"> (YYYY-MM-DDTHH:mm)
+function nowLocalInput(): string {
+  const d = new Date();
+  d.setSeconds(0, 0);
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 function PTCard() {
   const qc = useQueryClient();
   const ptQ = useQuery({
@@ -385,10 +394,16 @@ function PTCard() {
   });
 
   const [obs, setObs] = useState<string>("");
+  const [liberadaEmLocal, setLiberadaEmLocal] = useState<string>(() => nowLocalInput());
   const [confirmando, setConfirmando] = useState(false);
 
+  // Ao abrir o formulário, redefine para o "agora" como sugestão inicial.
+  useEffect(() => {
+    if (confirmando) setLiberadaEmLocal(nowLocalInput());
+  }, [confirmando]);
+
   const registrarMut = useMutation({
-    mutationFn: async (observacao: string | null) => {
+    mutationFn: async (input: { liberadaEmISO: string; observacao: string | null }) => {
       const { data: u } = await supabase.auth.getUser();
       const quem = u.user?.email ?? u.user?.id ?? null;
       const agora = new Date().toISOString();
@@ -403,16 +418,16 @@ function PTCard() {
 
       const anterior = (atual?.data as PTData | undefined) ?? { liberada_em: null, historico: [] };
       const novoItem: PTHistoricoItem = {
-        liberada_em: agora,
-        registrado_em: agora,
+        liberada_em: input.liberadaEmISO,   // data/hora informada pelo Corpo de Bombeiros
+        registrado_em: agora,               // instante do lançamento no sistema (auditoria)
         registrado_por: quem,
-        observacao: observacao || null,
+        observacao: input.observacao || null,
       };
       const historico = [...(anterior.historico ?? []), novoItem];
 
       const payload: PTData = {
-        liberada_em: agora,
-        observacao: observacao || null,
+        liberada_em: input.liberadaEmISO,
+        observacao: input.observacao || null,
         atualizado_em: agora,
         atualizado_por: quem,
         historico,
