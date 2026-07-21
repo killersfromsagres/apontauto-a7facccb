@@ -1010,7 +1010,9 @@ function BackorderPage() {
     const blob = await generateBackorderExport({
       titulo: "DEMARCHI",
       rows: rowsExp,
+      assetsMap,
     });
+
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
