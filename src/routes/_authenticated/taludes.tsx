@@ -925,6 +925,30 @@ function TaludesPage() {
     }
   };
 
+  const doExportDXF = async () => {
+    if (!map) return;
+    try {
+      toast.info("Gerando DXF…");
+      const { dxfBlob } = await import("@/lib/taludes/dxf");
+      const blob = dxfBlob({
+        mapName: map.nome,
+        imageWidthPx: map.image_width,
+        imageHeightPx: map.image_height,
+        metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
+        taludes: taludes.map((t) => ({
+          numero: t.numero,
+          nome: t.nome,
+          status: t.status,
+          polygon: t.polygon,
+        })),
+      });
+      downloadBlob(blob, `taludes_${map.nome.replace(/\s+/g, "_")}_${today()}.dxf`);
+      toast.success("DXF gerado");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao gerar DXF");
+    }
+  };
+
   // ─── Empty state ─────────────────────────────
   if (!mapsQuery.isLoading && (!mapsQuery.data || mapsQuery.data.length === 0)) {
     return (
@@ -1019,6 +1043,9 @@ function TaludesPage() {
           <Button variant="default" onClick={doExportPDF} disabled={!imageUrl || taludes.length === 0} title="Relatório PDF com capa e detalhamento">
             <Download className="mr-2 h-4 w-4" /> Relatório PDF
           </Button>
+          <Button variant="outline" onClick={doExportDXF} disabled={taludes.length === 0} title="Exportar geometria em DXF (AutoCAD) — cada talude em uma layer">
+            <Download className="mr-2 h-4 w-4" /> DXF
+          </Button>
           <Button variant="ghost" size="icon" onClick={removeMap} title="Excluir mapa">
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -1109,10 +1136,11 @@ function TaludesPage() {
                 <Button
                   size="sm"
                   onClick={() => {
+                    resetHistory();
                     setDrawingPoints([]);
                     setDrawingNewMode(true);
                     setDrawingNumero("");
-                    toast.info("Clique no mapa para adicionar pontos (≥3). O número será solicitado ao finalizar.");
+                    toast.info("Clique no mapa para adicionar pontos (≥3). Ctrl+Z desfaz. O número será solicitado ao finalizar.");
                   }}
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" /> Novo talude
