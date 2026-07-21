@@ -1274,6 +1274,12 @@ function TaludesPage() {
                     <svg
                       ref={svgRef}
                       onClick={handleMapClick}
+                      onDoubleClick={(e) => {
+                        if (drawingPoints.length >= 3) {
+                          e.stopPropagation();
+                          void finishPolygon();
+                        }
+                      }}
                       onPointerMove={handleSvgPointerMove}
                       onPointerUp={handleSvgPointerUp}
                       onPointerLeave={handleSvgPointerUp}
