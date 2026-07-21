@@ -24,6 +24,7 @@ import {
   Users,
   Fan,
   AirVent,
+  Wrench,
   Cog,
   ChevronRight,
   type LucideIcon,
