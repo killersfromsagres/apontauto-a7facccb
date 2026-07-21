@@ -239,7 +239,7 @@ export const AppSidebar = memo(function AppSidebar() {
   );
 });
 
-function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
+const SimpleItem = memo(function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
@@ -262,7 +262,8 @@ function SimpleItem({ item, active }: { item: MenuItem; active: boolean }) {
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
-}
+});
+
 
 function GroupItem({
   section,
