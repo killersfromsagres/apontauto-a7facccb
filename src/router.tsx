@@ -6,11 +6,16 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        // Cache mais generoso: reduz refetch em navegação SPA sem sacrificar frescor
+        // (queries críticas sobrescrevem localmente).
         staleTime: 60_000,
         gcTime: 10 * 60_000,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        refetchOnMount: false,
         retry: 1,
+        // Evita re-render em consumidores quando o payload é estruturalmente igual.
+        structuralSharing: true,
       },
     },
   });
@@ -25,9 +30,10 @@ export const getRouter = () => {
     defaultPreloadStaleTime: 0,
     // Cross-fade nativo entre rotas (React 19 + View Transitions API) — remove piscadas.
     defaultViewTransition: true,
-    // Só mostra o loader global se a transição passar de 300ms; garante 250ms mínimos.
-    defaultPendingMs: 300,
-    defaultPendingMinMs: 250,
+    // Só mostra o pending state em navegações lentas (>500ms) — sem mínimo forçado,
+    // rotas cacheadas trocam instantaneamente sem flicker do loader.
+    defaultPendingMs: 500,
+    defaultPendingMinMs: 0,
   });
 
   return router;

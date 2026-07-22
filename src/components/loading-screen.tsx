@@ -30,11 +30,13 @@ export function LoadingScreen() {
     }
 
     if (routerLoading) {
+      // Threshold alto (600ms): mascote só aparece em rotas realmente pesadas
+      // e nunca em navegações cacheadas / instantâneas — elimina piscada.
       showTimer.current = setTimeout(() => {
         setMounted(true);
         // Próximo frame para permitir transição de 0 → 1.
         requestAnimationFrame(() => setVisible(true));
-      }, 250);
+      }, 600);
     } else if (mounted) {
       setVisible(false);
       hideTimer.current = setTimeout(() => setMounted(false), 260);
