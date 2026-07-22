@@ -1382,13 +1382,23 @@ function TaludesPage() {
                 )}
                 {imageUrl ? (
                   <div
-                    className="relative inline-block max-h-full max-w-full"
+                    className="relative block"
                     style={{
                       transform,
                       transformOrigin: originStr,
                       transition: panState ? "none" : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                       willChange: "transform",
                       lineHeight: 0,
+                      // Wrapper size = image size. Use aspect-ratio so the box
+                      // fits inside the viewport preserving proportions and
+                      // the SVG overlay (inset-0) is pixel-perfectly aligned
+                      // with the <img>. Prevents the "marks appear slightly
+                      // above the clicked point" bug in the exported PNG.
+                      aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                      maxWidth: "100%",
+                      maxHeight: "calc(100dvh - 8rem)",
+                      width: imgSize ? "auto" : undefined,
+                      height: imgSize ? "100%" : undefined,
                     }}
                   >
                     {!imgLoaded && (
@@ -1398,12 +1408,12 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="block max-h-[calc(100dvh-8rem)] max-w-full w-auto h-auto select-none"
+                      className="block h-full w-full select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
-                      style={{ filter: imgFilter }}
+                      style={{ filter: imgFilter, display: "block" }}
                       onLoad={(e) => {
                         const el = e.currentTarget;
                         setImgLoaded(true);
@@ -1412,6 +1422,7 @@ function TaludesPage() {
                         }
                       }}
                     />
+
 
                     <LogoMaskOverlay
                       masks={imgMasks}
