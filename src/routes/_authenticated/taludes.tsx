@@ -501,21 +501,18 @@ function TaludesPage() {
   const svgRef = useRef<SVGSVGElement>(null);
   const clickToPct = (e: { clientX: number; clientY: number }) => {
     const svg = svgRef.current;
-    if (svg) {
-      const matrix = svg.getScreenCTM();
-      if (matrix) {
-        const point = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
-        return {
-          x: Math.max(0, Math.min(100, point.x)),
-          y: Math.max(0, Math.min(100, point.y)),
-        };
-      }
-    }
     const rect = svg?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+
+    // The SVG is stretched 1:1 over the displayed image and may be moved by
+    // CSS zoom/pan transforms. getBoundingClientRect() already includes those
+    // transforms, so the stored 0..100 coordinates match the exact pixels the
+    // user sees and the original-size PNG export draws.
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
     return {
-      x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
-      y: Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)),
+      x: Math.max(0, Math.min(100, Number.isFinite(x) ? x : 0)),
+      y: Math.max(0, Math.min(100, Number.isFinite(y) ? y : 0)),
     };
   };
 

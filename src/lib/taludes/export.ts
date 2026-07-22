@@ -51,30 +51,27 @@ export async function exportMapPNG(opts: {
   // mapa base
   ctx.drawImage(img, 0, 0, W, H);
 
-  // polígonos vibrantes
+  // polígonos vibrantes. O preenchimento usa coordenadas exatas; o contorno é
+  // desenhado com proteção nas bordas para não ser cortado pelo limite do canvas.
   for (const t of opts.taludes) {
     if (t.polygon.length < 3) continue;
     const meta = STATUS_META[t.status];
+    const strokeWidth = Math.max(2, uiScale * 2.2);
 
     ctx.beginPath();
-    for (let i = 0; i < t.polygon.length; i++) {
-      const p = t.polygon[i];
-      const px = (p.x / 100) * W;
-      const py = (p.y / 100) * H;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
+    tracePolygon(ctx, t.polygon, W, H);
 
     // preenchimento vibrante translúcido
     ctx.fillStyle = meta.fill + "80"; // ~50% alpha
     ctx.fill();
 
     // contorno grosso e nítido
+    ctx.beginPath();
+    tracePolygon(ctx, t.polygon, W, H, strokeWidth / 2 + 0.5);
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.strokeStyle = meta.stroke;
-    ctx.lineWidth = Math.max(2, uiScale * 2.2);
+    ctx.lineWidth = strokeWidth;
     ctx.stroke();
   }
 
@@ -162,6 +159,30 @@ function roundRect(
   ctx.arcTo(x + w, y + h, x, y + h, r);
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function tracePolygon(
+  ctx: CanvasRenderingContext2D,
+  polygon: Array<{ x: number; y: number }>,
+  W: number,
+  H: number,
+  insetPx = 0,
+) {
+  const minX = insetPx;
+  const minY = insetPx;
+  const maxX = Math.max(minX, W - insetPx);
+  const maxY = Math.max(minY, H - insetPx);
+
+  for (let i = 0; i < polygon.length; i++) {
+    const p = polygon[i];
+    const rawX = (Math.max(0, Math.min(100, p.x)) / 100) * W;
+    const rawY = (Math.max(0, Math.min(100, p.y)) / 100) * H;
+    const px = Math.max(minX, Math.min(maxX, rawX));
+    const py = Math.max(minY, Math.min(maxY, rawY));
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
   ctx.closePath();
 }
 
