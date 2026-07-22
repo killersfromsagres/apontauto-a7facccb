@@ -268,7 +268,9 @@
   }
 
   // ------------- Loop principal -------------
+  // ------------- Loop principal -------------
   async function processarOS(item, usuarioLogado) {
+    await waitWhilePaused();
     await abrirOSCompleta();
     await preencherNumeroOS(item.numeroOS);
     await marcarEstadoConcluido();
@@ -278,23 +280,37 @@
   }
 
   async function run(payload) {
-    const { usuario, senha, lote } = payload;
+    const { usuario, senha, lote, retomarDe } = payload;
+    const inicioTotal = Date.now();
     try {
       await login(usuario, senha);
-      for (let i = 0; i < lote.length; i++) {
+      const startIdx = Math.max(0, Number(retomarDe) || 0);
+      if (startIdx > 0) log(`Retomando a partir da OS ${startIdx + 1}/${lote.length}.`, "info");
+      for (let i = startIdx; i < lote.length; i++) {
         if (STOP) break;
+        await waitWhilePaused();
         const item = lote[i];
-        progress(Math.round((i / lote.length) * 100), `Processando OS ${item.numeroOS} (${i + 1}/${lote.length})`);
+        const t0 = Date.now();
+        const feitas = i - startIdx;
+        const restantes = lote.length - i;
+        const mediaMs = feitas > 0 ? (Date.now() - inicioTotal) / feitas : 0;
+        const etaMin = mediaMs > 0 ? Math.round((mediaMs * restantes) / 60000) : null;
+        progress(
+          Math.round((i / lote.length) * 100),
+          `OS ${item.numeroOS} (${i + 1}/${lote.length})${etaMin != null ? ` · ETA ~${etaMin}min` : ""}`,
+        );
         try {
           await processarOS(item, usuario);
-          send({ type: "APONTAUTO_RESULT", result: { os: item.numeroOS, status: "concluido" } });
-          log(`OS ${item.numeroOS} concluída ✓`, "ok");
+          const dur = ((Date.now() - t0) / 1000).toFixed(1);
+          send({ type: "APONTAUTO_RESULT", result: { indice: i, os: item.numeroOS, status: "concluido", duracaoSeg: Number(dur) } });
+          log(`OS ${item.numeroOS} concluída em ${dur}s ✓`, "ok");
         } catch (err) {
-          send({ type: "APONTAUTO_RESULT", result: { os: item.numeroOS, status: "erro", mensagem: err.message } });
-          log(`OS ${item.numeroOS} falhou: ${err.message}`, "err");
+          const dur = ((Date.now() - t0) / 1000).toFixed(1);
+          send({ type: "APONTAUTO_RESULT", result: { indice: i, os: item.numeroOS, status: "erro", mensagem: err.message, duracaoSeg: Number(dur) } });
+          log(`OS ${item.numeroOS} falhou após ${dur}s: ${err.message}`, "err");
         }
       }
-      progress(100, "Finalizado");
+      progress(100, STOP ? "Cancelado" : "Finalizado");
     } catch (err) {
       log(`Erro fatal: ${err.message}`, "err");
     } finally {
@@ -305,7 +321,9 @@
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg?.type === "APONTAUTO_RUN") run(msg.payload);
-    if (msg?.type === "APONTAUTO_STOP") { STOP = true; }
+    else if (msg?.type === "APONTAUTO_STOP") { STOP = true; PAUSED = false; }
+    else if (msg?.type === "APONTAUTO_PAUSE") { PAUSED = true; log("Pausado pelo usuário.", "info"); }
+    else if (msg?.type === "APONTAUTO_RESUME") { PAUSED = false; log("Retomado.", "info"); }
   });
 
   send({ type: "APONTAUTO_LOG", msg: "Runner carregado na página.", kind: "ok" });
