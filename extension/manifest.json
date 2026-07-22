@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Apont Auto — Painel Prisma",
+  "version": "2.0.0",
+  "description": "Executa lotes de OS cadastrados no Painel Prisma (Supabase) diretamente na aba autenticada do Prisma4.",
+  "permissions": ["storage", "scripting", "tabs", "alarms"],
+  "host_permissions": [
+    "https://*.supabase.co/*",
+    "https://*.cimogps.com.br/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Apont Auto — Painel Prisma",
+    "default_icon": { "128": "icon128.png" }
+  },
+  "icons": { "128": "icon128.png" }
+}

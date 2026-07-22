@@ -1,0 +1,51 @@
+* { box-sizing: border-box; }
+body {
+  width: 320px;
+  margin: 0;
+  padding: 16px;
+  font-family: -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+  background: #0A0A0C;
+  color: #f5f5f7;
+}
+header { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+header img { border-radius: 8px; }
+h1 { font-size: 15px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+.badge {
+  font-size: 10px; margin: 2px 0 0; padding: 2px 8px; border-radius: 999px;
+  display: inline-block; letter-spacing: 0.05em; text-transform: uppercase;
+}
+.badge.off { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+.badge.on  { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+label { font-size: 11px; opacity: 0.65; display: block; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: #fff;
+  padding: 9px 11px;
+  font-size: 13px;
+  outline: none;
+}
+input:focus { border-color: rgba(99,102,241,0.6); background: rgba(255,255,255,0.08); }
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border: none;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+button:active { transform: scale(0.97); }
+button.primary { background: linear-gradient(90deg,#3b82f6,#a855f7,#ec4899); color: #fff; }
+button.ghost { background: rgba(255,255,255,0.06); color: #fff; }
+button.small { width: auto; padding: 4px 10px; font-size: 11px; margin: 0; }
+.row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.muted { font-size: 11px; opacity: 0.6; }
+.hint { font-size: 11px; opacity: 0.55; margin-top: 12px; line-height: 1.4; }
+.status { font-size: 11px; margin: 12px 0 0; text-align: center; opacity: 0.75; min-height: 14px; }
+.status.err { color: #fca5a5; }
+.status.ok { color: #6ee7b7; }
