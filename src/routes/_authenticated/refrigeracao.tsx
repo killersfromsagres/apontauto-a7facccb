@@ -69,6 +69,41 @@ function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
+/**
+ * Cores por equipe para destaque visual na lista de atuações.
+ * Refrigeração 1: azul claro · Refrigeração 2: verde água · Refrigeração 3: rosa claro
+ */
+function equipeStyles(equipe: string | null | undefined): { row: string; dot: string; badge: string } {
+  const n = (equipe ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (n === "refrigeracao 1")
+    return {
+      row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
+      dot: "bg-sky-400",
+      badge: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+    };
+  if (n === "refrigeracao 2")
+    return {
+      row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
+      dot: "bg-teal-400",
+      badge: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
+    };
+  if (n === "refrigeracao 3")
+    return {
+      row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
+      dot: "bg-pink-300",
+      badge: "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+    };
+  return {
+    row: "border-l-4 border-transparent hover:bg-accent/60",
+    dot: "bg-muted-foreground/40",
+    badge: "",
+  };
+}
+
 function useOnlineStatus() {
   const [online, setOnline] = useState(
     typeof navigator === "undefined" ? true : navigator.onLine,
@@ -159,7 +194,7 @@ function RefrigeracaoPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return osList.filter((o) => {
+    const base = osList.filter((o) => {
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (!q) return true;
       return (
@@ -171,6 +206,17 @@ function RefrigeracaoPage() {
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
       );
+    });
+    return [...base].sort((a, b) => {
+      const pa = (a.predio ?? "\uffff");
+      const pb = (b.predio ?? "\uffff");
+      const pc = pa.localeCompare(pb, "pt-BR", { sensitivity: "base", numeric: true });
+      if (pc !== 0) return pc;
+      const aa = (a.andar ?? "").toString();
+      const ab = (b.andar ?? "").toString();
+      const ac = aa.localeCompare(ab, "pt-BR", { numeric: true, sensitivity: "base" });
+      if (ac !== 0) return ac;
+      return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
   }, [osList, search, equipe]);
 
@@ -260,12 +306,14 @@ function RefrigeracaoPage() {
             </div>
           ) : (
             <ul className="divide-y divide-border/50">
-              {filtered.map((o) => (
+              {filtered.map((o) => {
+                const st = equipeStyles(o.equipe);
+                return (
                 <li key={o.id}>
                   <button
                     type="button"
                     onClick={() => setSelectedId(o.id)}
-                    className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
+                    className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${st.row}`}
                   >
                     <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
@@ -274,6 +322,15 @@ function RefrigeracaoPage() {
                         <Badge variant="outline" className="text-[10px]">
                           {o.status}
                         </Badge>
+                        {o.equipe && (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${st.badge}`}
+                          >
+                            <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                            {o.equipe}
+                          </Badge>
+                        )}
                         {o.tipo && (
                           <Badge variant="secondary" className="text-[10px]">
                             {o.tipo}
@@ -297,7 +354,8 @@ function RefrigeracaoPage() {
                     </div>
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </GlassCard>
@@ -685,7 +743,7 @@ function OsDetail({
       </GlassCard>
 
       <GlassCard className="p-4">
-        <SectionTitle icon={Camera} label="Fotos" />
+        <SectionTitle icon={Camera} label="Fotos (opcional)" />
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             type="button"
@@ -749,6 +807,9 @@ function OsDetail({
             <Package className="mr-2 h-4 w-4" /> Adicionar peça
           </Button>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima se quiser registrar imagens.
+        </p>
         {pecas.length === 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
             Nenhuma peça adicionada. Clique em "Adicionar peça" para solicitar uma ou mais.
@@ -852,6 +913,9 @@ function OsDetail({
             <AlertTriangle className="mr-2 h-4 w-4" /> Adicionar problema
           </Button>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima se quiser registrar imagens.
+        </p>
         {problemas.length === 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
             Nenhum problema sinalizado. Clique em "Adicionar problema" para registrar.
