@@ -1306,10 +1306,11 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  maxHeight: "calc(100dvh - 8rem)",
+                  height: "calc(100dvh - 8rem)",
                   minHeight: "60vh",
                 }}
               >
+
 
 
                 {/* zoom toolbar */}
