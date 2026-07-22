@@ -306,12 +306,14 @@ function RefrigeracaoPage() {
             </div>
           ) : (
             <ul className="divide-y divide-border/50">
-              {filtered.map((o) => (
+              {filtered.map((o) => {
+                const st = equipeStyles(o.equipe);
+                return (
                 <li key={o.id}>
                   <button
                     type="button"
                     onClick={() => setSelectedId(o.id)}
-                    className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
+                    className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${st.row}`}
                   >
                     <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                     <div className="min-w-0 flex-1">
@@ -320,6 +322,15 @@ function RefrigeracaoPage() {
                         <Badge variant="outline" className="text-[10px]">
                           {o.status}
                         </Badge>
+                        {o.equipe && (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${st.badge}`}
+                          >
+                            <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                            {o.equipe}
+                          </Badge>
+                        )}
                         {o.tipo && (
                           <Badge variant="secondary" className="text-[10px]">
                             {o.tipo}
@@ -343,7 +354,8 @@ function RefrigeracaoPage() {
                     </div>
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </GlassCard>
