@@ -99,11 +99,12 @@ export function useMyAccess() {
     // gargalo de "piscada" ao trocar de rota), mas mantém latência baixa
     // quando o admin altera permissões (usuário sente em <1 min ou pode
     // clicar em "Recarregar permissões").
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
+    refetchOnReconnect: false,
+
 
   });
 
