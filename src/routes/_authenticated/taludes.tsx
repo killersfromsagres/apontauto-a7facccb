@@ -670,32 +670,54 @@ function TaludesPage() {
       toast.error("Número do talude inválido");
       return;
     }
-    const existing = taludes.some((t) => t.numero === num);
-    // Duplicate numeros são permitidos: representam partes distintas
-    // do mesmo talude (interrompido e retomado, ou dividido em áreas).
-    const status: TaludeStatus = existing
-      ? (taludes.find((t) => t.numero === num)?.status ?? "programado")
-      : "programado";
-    const dataProg = existing
-      ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
-      : today();
+    const existingList = taludes.filter((t) => t.numero === num);
     const metrics = realMetrics(drawingPoints, {
       imageWidthPx: map.image_width,
       imageHeightPx: map.image_height,
       metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
     });
-    await upsertFn({
-      data: {
-        map_id: map.id,
-        numero: num,
-        polygon: drawingPoints,
-        status,
-        data_programada: dataProg,
-        area_m2: metrics.areaM2,
-        perimetro_m: metrics.perimetroM,
-      },
-    });
-    toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
+
+    if (existingList.length > 0) {
+      // Mantém a numeração e a data original do primeiro registro; substitui
+      // a demarcação pela nova e remove as partes antigas para que o número
+      // sempre exiba apenas a demarcação mais recente.
+      const primary = existingList.reduce((a, b) => {
+        const ad = a.data_programada || "9999-99-99";
+        const bd = b.data_programada || "9999-99-99";
+        return ad <= bd ? a : b;
+      });
+      await upsertFn({
+        data: {
+          id: primary.id,
+          map_id: map.id,
+          numero: primary.numero,
+          polygon: drawingPoints,
+          status: primary.status,
+          data_programada: primary.data_programada,
+          area_m2: metrics.areaM2,
+          perimetro_m: metrics.perimetroM,
+        },
+      });
+      for (const extra of existingList) {
+        if (extra.id !== primary.id) {
+          await deleteFn({ data: { id: extra.id } });
+        }
+      }
+      toast.success(`Talude ${num}: demarcação substituída (data original preservada)`);
+    } else {
+      await upsertFn({
+        data: {
+          map_id: map.id,
+          numero: num,
+          polygon: drawingPoints,
+          status: "programado",
+          data_programada: today(),
+          area_m2: metrics.areaM2,
+          perimetro_m: metrics.perimetroM,
+        },
+      });
+      toast.success(`Talude ${num} criado`);
+    }
 
     setDrawingPoints([]);
     setDrawingNumero("");
