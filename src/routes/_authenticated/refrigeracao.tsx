@@ -69,6 +69,41 @@ function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
+/**
+ * Cores por equipe para destaque visual na lista de atuações.
+ * Refrigeração 1: azul claro · Refrigeração 2: verde água · Refrigeração 3: rosa claro
+ */
+function equipeStyles(equipe: string | null | undefined): { row: string; dot: string; badge: string } {
+  const n = (equipe ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (n === "refrigeracao 1")
+    return {
+      row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
+      dot: "bg-sky-400",
+      badge: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+    };
+  if (n === "refrigeracao 2")
+    return {
+      row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
+      dot: "bg-teal-400",
+      badge: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
+    };
+  if (n === "refrigeracao 3")
+    return {
+      row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
+      dot: "bg-pink-300",
+      badge: "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+    };
+  return {
+    row: "border-l-4 border-transparent hover:bg-accent/60",
+    dot: "bg-muted-foreground/40",
+    badge: "",
+  };
+}
+
 function useOnlineStatus() {
   const [online, setOnline] = useState(
     typeof navigator === "undefined" ? true : navigator.onLine,
