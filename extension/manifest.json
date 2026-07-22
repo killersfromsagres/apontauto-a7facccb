@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Apont Auto — Prisma4",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automatiza apontamentos de OS no Prisma4 (login, mão-de-obra, procedimentos e salvamento) direto do navegador.",
   "permissions": ["storage", "scripting", "tabs", "activeTab"],
   "host_permissions": ["https://cimogps.com.br/*"],
