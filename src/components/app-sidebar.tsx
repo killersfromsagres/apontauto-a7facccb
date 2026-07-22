@@ -28,6 +28,7 @@ import {
   Cog,
   Bot,
   ChevronRight,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 
