@@ -72,7 +72,7 @@ import {
   formatPerimeter,
   polygonLabelAnchor,
 } from "@/lib/taludes/geometry";
-import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
+import referenceMap from "@/assets/mapa-taludes-default.png.asset.json";
 import {
   useImageEnhancer,
   ImageEnhancerControls,
