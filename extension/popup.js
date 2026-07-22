@@ -42,11 +42,31 @@ $("importarBtn").onclick = () => $("importInput").click();
 $("importInput").onchange = async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
+  const nome = file.name || "arquivo";
+  if (/\.(js|mjs|cjs)$/i.test(nome)) {
+    log(`"${nome}" é um arquivo JavaScript. Exporte o lote como JSON na página Automação de OS e importe o .json aqui.`, "err");
+    e.target.value = "";
+    return;
+  }
   try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    const itens = Array.isArray(data) ? data : data.itens;
-    if (!Array.isArray(itens) || itens.length === 0) throw new Error("JSON vazio ou inválido.");
+    const text = (await file.text()).replace(/^\uFEFF/, "").trim();
+    if (!text) throw new Error("Arquivo vazio.");
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      throw new Error(`JSON inválido: ${parseErr.message}. Verifique se o arquivo foi exportado pela página "Automação de OS".`);
+    }
+    const itens = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.itens)
+        ? data.itens
+        : Array.isArray(data?.resultados)
+          ? data.resultados
+          : null;
+    if (!itens || itens.length === 0) throw new Error("JSON não contém 'itens' com OS.");
+    const faltando = itens.find((i) => !i || !i.numeroOS || !i.dataHoraInicio || !i.dataHoraFim);
+    if (faltando) throw new Error("Cada item precisa de numeroOS, dataHoraInicio e dataHoraFim.");
     loteCarregado = itens;
     await chrome.storage.local.set({ lote: itens });
     loteInfoEl.textContent = `${itens.length} OS carregadas · ${new Set(itens.map((i) => i.categoria)).size} categoria(s).`;
@@ -54,6 +74,8 @@ $("importInput").onchange = async (e) => {
     log(`Lote importado: ${itens.length} OS.`, "ok");
   } catch (err) {
     log(`Erro ao importar: ${err.message}`, "err");
+  } finally {
+    e.target.value = "";
   }
 };
 
