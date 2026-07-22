@@ -1306,7 +1306,7 @@ function TaludesPage() {
             return (
               <div
                 ref={viewportRef}
-                className="relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-black/5"
+                className="relative mx-auto flex items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-black/5"
                 onPointerDown={onPanDown}
                 onPointerMove={onPanMove}
                 onPointerUp={onPanUp}
@@ -1315,16 +1315,15 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  // Wrapper hugs the image's real aspect ratio — no big empty
-                  // navy area above/below. Height grows to fit the map, up to
-                  // the viewport limit. maxWidth keeps aspect ratio when the
-                  // height clamp kicks in on tall containers.
+                  // Container hugs the image's real aspect ratio so the map is
+                  // shown ENTIRELY without cropping. Width & height are both
+                  // clamped to the viewport; whichever axis saturates first
+                  // wins, and aspectRatio keeps the other axis proportional.
+                  width: "auto",
                   height: "auto",
+                  maxWidth: "100%",
                   maxHeight: "calc(100dvh - 7rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
-                  maxWidth: imgSize
-                    ? `calc((100dvh - 7rem) * ${imgSize.w / imgSize.h})`
-                    : undefined,
                 }}
               >
 
