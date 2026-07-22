@@ -28,6 +28,7 @@ import {
   Cog,
   Bot,
   ChevronRight,
+  Trophy,
   type LucideIcon,
 } from "lucide-react";
 
@@ -127,6 +128,7 @@ const sections: MenuSection[] = [
     items: [
       { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Thermometer },
       { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: ScrollText },
+      { key: "refrigeracao-colaboradores", title: "Histórico de Colaboradores", url: "/refrigeracao-colaboradores", icon: Trophy },
       { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: Users },
     ],
   },
