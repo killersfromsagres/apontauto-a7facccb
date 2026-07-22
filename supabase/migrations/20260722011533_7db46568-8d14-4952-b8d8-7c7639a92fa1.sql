@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.sst_can_access() FROM PUBLIC, anon;
