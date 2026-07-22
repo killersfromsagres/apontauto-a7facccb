@@ -665,27 +665,48 @@ function BackorderPage() {
         const nextEquipe = r.atividade_manual
           ? undefined
           : CATEGORIA_TO_EQUIPE[applied.atividade];
-        const revisao = (applied.origem_predio_andar_espaco === "pendente")
+
+        // Preserva prédio/andar/ambiente já salvos. Só sobrescreve quando:
+        //  - existe regra aprendida para o ativo (fonte confiável), ou
+        //  - o campo salvo está vazio e a árvore/regra devolve algo.
+        // Assim reprocessar nunca destrói uma localização que o usuário
+        // preencheu manualmente sem ter virado regra aprendida.
+        const hasLearnedLoc = applied.origem_predio_andar_espaco === "regra_aprendida";
+        const pickLoc = (prev: string, next: string) => {
+          if (hasLearnedLoc) return next;
+          if (prev) return prev;
+          return next;
+        };
+        const finalPredio = pickLoc(r.predio, applied.predio);
+        const finalAndar = pickLoc(r.andar, applied.andar);
+        const finalEspaco = pickLoc(r.espaco, applied.espaco);
+        const finalOrigemLoc = hasLearnedLoc
+          ? "regra_aprendida"
+          : (r.predio || r.andar || r.espaco)
+            ? (r.origem_predio_andar_espaco || "planilha")
+            : applied.origem_predio_andar_espaco;
+
+        const revisao = (finalOrigemLoc === "pendente")
           || (!r.atividade_manual && applied.origem_equipe === "pendente");
 
         if (
-          applied.predio !== r.predio ||
-          applied.andar !== r.andar ||
-          applied.espaco !== r.espaco ||
+          finalPredio !== r.predio ||
+          finalAndar !== r.andar ||
+          finalEspaco !== r.espaco ||
           nextAtiv !== r.atividade ||
           revisao !== r.revisao_manual ||
-          applied.origem_predio_andar_espaco !== r.origem_predio_andar_espaco ||
+          finalOrigemLoc !== r.origem_predio_andar_espaco ||
           (r.atividade_manual ? "regra_aprendida" : applied.origem_equipe) !== r.origem_equipe
         ) {
           patches.push({
             os: r.os,
-            predio: applied.predio,
-            andar: applied.andar,
-            espaco: applied.espaco,
+            predio: finalPredio,
+            andar: finalAndar,
+            espaco: finalEspaco,
             atividade: r.atividade_manual ? undefined : nextAtiv,
             equipe: nextEquipe,
             revisao_manual: revisao,
-            origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+            origem_predio_andar_espaco: finalOrigemLoc,
             origem_equipe: r.atividade_manual ? "regra_aprendida" : applied.origem_equipe,
           });
         }
