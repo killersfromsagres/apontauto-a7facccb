@@ -1317,10 +1317,14 @@ function TaludesPage() {
                   touchAction: "none",
                   // Wrapper hugs the image's real aspect ratio — no big empty
                   // navy area above/below. Height grows to fit the map, up to
-                  // the viewport limit.
+                  // the viewport limit. maxWidth keeps aspect ratio when the
+                  // height clamp kicks in on tall containers.
                   height: "auto",
                   maxHeight: "calc(100dvh - 7rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                  maxWidth: imgSize
+                    ? `calc((100dvh - 7rem) * ${imgSize.w / imgSize.h})`
+                    : undefined,
                 }}
               >
 
