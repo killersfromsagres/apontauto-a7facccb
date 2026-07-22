@@ -257,42 +257,61 @@ export function TermsAcceptDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-0 overflow-hidden border-white/10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-0 text-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] sm:rounded-2xl">
+      <DialogContent
+        className="max-w-2xl gap-0 overflow-hidden border-white/15 p-0 text-white shadow-[0_40px_100px_-20px_rgba(0,0,0,0.7)] sm:rounded-[28px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95 data-[state=open]:slide-in-from-bottom-4"
+        style={{
+          background:
+            "linear-gradient(155deg, rgba(30,41,59,0.72) 0%, rgba(15,23,42,0.78) 50%, rgba(2,6,23,0.82) 100%)",
+          backdropFilter: "blur(40px) saturate(180%)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+        }}
+      >
+        {/* iOS-style ambient light blobs */}
+        <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+
         <style>{`
           @keyframes terms-shimmer { 0%{background-position:-200% 0}100%{background-position:200% 0} }
           @keyframes terms-pop { 0%{transform:scale(.5);opacity:0}60%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1} }
-          @keyframes terms-ring { 0%{box-shadow:0 0 0 0 hsl(var(--primary)/.55)}100%{box-shadow:0 0 0 22px hsl(var(--primary)/0)} }
+          @keyframes terms-ring { 0%{box-shadow:0 0 0 0 rgba(56,189,248,.55)}100%{box-shadow:0 0 0 22px rgba(56,189,248,0)} }
           @keyframes terms-check-draw { from{stroke-dashoffset:60} to{stroke-dashoffset:0} }
           @keyframes terms-icon-pop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.2)} 100%{transform:scale(1);opacity:1} }
-          .terms-scroll::-webkit-scrollbar{width:8px}
-          .terms-scroll::-webkit-scrollbar-thumb{background:linear-gradient(180deg,rgba(103,232,249,.4),rgba(59,130,246,.4));border-radius:8px}
-          .terms-scroll{scroll-behavior:smooth}
+          .terms-scroll::-webkit-scrollbar{width:6px}
+          .terms-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:999px}
+          .terms-scroll::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}
+          .terms-scroll{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+          .terms-glass-card{transition:transform .5s cubic-bezier(.34,1.56,.64,1),background .4s,border-color .4s,box-shadow .4s}
+          .terms-nav-btn{transition:all .35s cubic-bezier(.34,1.56,.64,1)}
         `}</style>
 
-        {/* Header */}
-        <div className="relative border-b border-white/10 bg-white/[0.02] px-6 py-5">
-          <DialogTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-            <ShieldCheck className="h-5 w-5 text-cyan-300" />
-            Termos de Uso — Apont Auto
+        {/* Header — iOS 17 style */}
+        <div className="relative border-b border-white/10 px-6 py-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+          <DialogTitle className="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.02em]">
+            <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-cyan-400/25 to-blue-500/25 ring-1 ring-white/15 backdrop-blur-xl">
+              <ShieldCheck className="h-4 w-4 text-cyan-200" />
+            </span>
+            Termos de Uso
+            <span className="ml-1 text-[13px] font-normal text-white/50">· Apont Auto</span>
           </DialogTitle>
-          <DialogDescription className="mt-1 text-xs text-white/60">
+          <DialogDescription className="mt-1.5 text-[12px] leading-relaxed tracking-[-0.01em] text-white/55">
             Leia todas as seções — os ícones se acendem conforme você avança.
           </DialogDescription>
 
-          <div className="absolute inset-x-0 bottom-0 h-[3px] overflow-hidden bg-white/5">
+          {/* Progress pill */}
+          <div className="absolute inset-x-0 bottom-0 h-[2px] overflow-hidden bg-white/[0.06]">
             <div
-              className="h-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 transition-[width] duration-300 ease-out"
+              className="h-full rounded-r-full bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 transition-[width] duration-500 ease-out"
               style={{
                 width: `${progress}%`,
-                boxShadow: "0 0 12px rgba(56,189,248,0.7)",
+                boxShadow: "0 0 14px rgba(56,189,248,0.75)",
               }}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr]">
+        <div className="relative grid grid-cols-1 md:grid-cols-[210px_1fr]">
           {/* Section rail */}
-          <nav className="hidden border-r border-white/10 bg-white/[0.02] p-3 md:block">
+          <nav className="hidden border-r border-white/10 p-3 md:block" style={{ background: "rgba(255,255,255,0.02)" }}>
             <ul className="space-y-1">
               {SECTIONS.map((s, idx) => {
                 const active = activeId === s.id;
@@ -303,17 +322,17 @@ export function TermsAcceptDialog({
                     <button
                       type="button"
                       onClick={() => scrollToSection(s.id)}
-                      className={`group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-[11px] font-medium transition-all duration-300 ${
+                      className={`terms-nav-btn group flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-[11.5px] font-medium tracking-[-0.01em] ${
                         active
-                          ? "bg-white/[0.06] text-white shadow-[inset_2px_0_0_0_rgb(103,232,249)]"
-                          : "text-white/50 hover:bg-white/5 hover:text-white/80"
+                          ? "bg-white/[0.09] text-white ring-1 ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                          : "text-white/55 hover:bg-white/[0.05] hover:text-white/90"
                       }`}
                     >
                       <span
-                        className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-md transition-all duration-500 ${
+                        className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-lg transition-all duration-500 ${
                           read
                             ? `${s.accent.bg} ${s.accent.text} ${s.accent.glow} ring-1 ${s.accent.ring}`
-                            : "bg-white/5 text-white/40 ring-1 ring-white/5"
+                            : "bg-white/[0.06] text-white/40 ring-1 ring-white/10"
                         }`}
                         style={read ? { animation: "terms-icon-pop .45s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
                       >
@@ -334,22 +353,23 @@ export function TermsAcceptDialog({
               })}
             </ul>
 
-            <div className="mt-3 border-t border-white/5 pt-3 text-[10px] text-white/40">
+            <div className="mt-3 border-t border-white/[0.06] pt-3 text-[10px] font-medium tracking-[-0.01em] text-white/45">
               {readCountLabel}
             </div>
           </nav>
 
           {/* Scrollable body */}
           <div className="relative">
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-slate-950 to-transparent" />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-slate-950 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-10 bg-gradient-to-b from-slate-950/80 to-transparent" />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-slate-950/80 to-transparent" />
 
             <div
               ref={scrollRef}
               onScroll={handleScroll}
               className="terms-scroll h-[52vh] overflow-y-auto overscroll-contain px-6 py-6"
+              style={{ WebkitOverflowScrolling: "touch" }}
             >
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {SECTIONS.map((s, i) => {
                   const active = activeId === s.id;
                   const read = readIds.has(s.id);
@@ -360,23 +380,23 @@ export function TermsAcceptDialog({
                       ref={(node) => {
                         sectionRefs.current[s.id] = node;
                       }}
-                      className={`group rounded-xl border p-4 transition-all duration-500 ${
+                      className={`terms-glass-card group rounded-2xl border p-4 backdrop-blur-xl ${
                         active
-                          ? `border-white/20 bg-white/[0.04] ${s.accent.glow}`
+                          ? `border-white/20 bg-white/[0.07] ${s.accent.glow} scale-[1.005]`
                           : read
-                            ? "border-white/10 bg-white/[0.02]"
-                            : "border-white/5 bg-white/[0.015]"
+                            ? "border-white/10 bg-white/[0.035]"
+                            : "border-white/[0.06] bg-white/[0.02]"
                       } animate-in fade-in slide-in-from-bottom-2`}
                       style={{ animationDelay: `${i * 60}ms`, animationFillMode: "both" }}
                     >
-                      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-white">
+                      <h3 className="mb-2.5 flex items-center gap-2.5 text-[14px] font-semibold tracking-[-0.015em] text-white">
                         <span
-                          className={`relative grid h-7 w-7 place-items-center rounded-lg transition-all duration-500 ${
+                          className={`relative grid h-8 w-8 place-items-center rounded-xl transition-all duration-500 ${
                             read
                               ? `${s.accent.bg} ${s.accent.text} ${s.accent.glow} ring-1 ${s.accent.ring}`
                               : active
-                                ? "bg-white/10 text-white/80 ring-1 ring-white/10"
-                                : "bg-white/5 text-white/50 ring-1 ring-white/5"
+                                ? "bg-white/[0.09] text-white/85 ring-1 ring-white/15"
+                                : "bg-white/[0.05] text-white/50 ring-1 ring-white/10"
                           }`}
                           style={read ? { animation: "terms-icon-pop .5s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
                         >
@@ -384,13 +404,13 @@ export function TermsAcceptDialog({
                         </span>
                         {s.title}
                         {read && (
-                          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300 ring-1 ring-emerald-400/30">
+                          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium tracking-[-0.01em] text-emerald-300 ring-1 ring-emerald-400/30 backdrop-blur">
                             <Check className="h-2.5 w-2.5" strokeWidth={4} />
                             Lido
                           </span>
                         )}
                       </h3>
-                      <div className="text-sm leading-relaxed text-white/75">{s.body}</div>
+                      <div className="text-[13.5px] leading-[1.65] tracking-[-0.005em] text-white/75">{s.body}</div>
                     </section>
                   );
                 })}
@@ -401,7 +421,12 @@ export function TermsAcceptDialog({
               <button
                 type="button"
                 onClick={scrollToEnd}
-                className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-fit items-center gap-1.5 rounded-full border border-white/15 bg-slate-900/85 px-3 py-1.5 text-[11px] font-medium text-white/80 shadow-lg backdrop-blur transition hover:border-cyan-400/40 hover:text-cyan-200"
+                className="absolute inset-x-0 bottom-3 z-20 mx-auto flex w-fit items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-[11px] font-medium tracking-[-0.01em] text-white/85 shadow-[0_8px_24px_-6px_rgba(0,0,0,0.5)] transition-all duration-300 hover:scale-105 hover:border-cyan-400/50 hover:text-cyan-200"
+                style={{
+                  background: "rgba(15,23,42,0.55)",
+                  backdropFilter: "blur(20px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+                }}
               >
                 <ArrowDown className="h-3 w-3 animate-bounce" />
                 Role até o final para continuar
@@ -411,15 +436,15 @@ export function TermsAcceptDialog({
         </div>
 
         {/* Footer */}
-        <div className="relative border-t border-white/10 bg-white/[0.02] px-6 py-4">
+        <div className="relative border-t border-white/10 px-6 py-4" style={{ background: "rgba(255,255,255,0.03)" }}>
           {/* Explicit acceptance checkbox */}
           <label
-            className={`mb-3 flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-all duration-300 ${
+            className={`mb-3 flex cursor-pointer items-start gap-3 rounded-2xl border p-3 backdrop-blur-xl transition-all duration-400 ${
               !allRead
-                ? "cursor-not-allowed border-white/5 bg-white/[0.02] opacity-50"
+                ? "cursor-not-allowed border-white/[0.06] bg-white/[0.02] opacity-50"
                 : checked
-                  ? "border-emerald-400/40 bg-emerald-400/[0.06]"
-                  : "border-white/10 bg-white/[0.03] hover:border-cyan-400/30 hover:bg-cyan-400/[0.04]"
+                  ? "border-emerald-400/40 bg-emerald-400/[0.08] shadow-[0_0_28px_-10px_rgba(52,211,153,0.5)]"
+                  : "border-white/10 bg-white/[0.04] hover:scale-[1.005] hover:border-cyan-400/30 hover:bg-cyan-400/[0.05]"
             }`}
           >
             <input
@@ -432,13 +457,13 @@ export function TermsAcceptDialog({
             <span
               className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition-all duration-300 ${
                 checked
-                  ? "border-emerald-400 bg-emerald-500 shadow-[0_0_14px_-2px_rgba(52,211,153,0.7)]"
+                  ? "border-emerald-400 bg-emerald-500 shadow-[0_0_16px_-2px_rgba(52,211,153,0.8)]"
                   : "border-white/25 bg-transparent"
               }`}
             >
               {checked && <Check className="h-3 w-3 text-white" strokeWidth={4} />}
             </span>
-            <span className="text-xs leading-relaxed text-white/80">
+            <span className="text-[12.5px] leading-relaxed tracking-[-0.01em] text-white/80">
               Declaro que <strong className="text-white">li, compreendi e concordo</strong> com os
               Termos de Uso e com a Política de Privacidade do Apont Auto.
               {!allRead && (
@@ -450,10 +475,10 @@ export function TermsAcceptDialog({
           </label>
 
           <div className="flex flex-col-reverse items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3 text-[11px] text-white/50">
+            <div className="flex items-center gap-3 text-[11px] tracking-[-0.01em] text-white/50">
               <span>
                 Leitura:{" "}
-                <span className={reachedBottom ? "text-cyan-300" : "text-white/70"}>{progress}%</span>
+                <span className={`tabular-nums ${reachedBottom ? "text-cyan-300" : "text-white/70"}`}>{progress}%</span>
               </span>
               <span className="text-white/20">•</span>
               <span className={allRead ? "text-emerald-300" : "text-white/70"}>{readCountLabel}</span>
@@ -462,7 +487,7 @@ export function TermsAcceptDialog({
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="rounded-md px-3 py-2 text-xs font-medium text-white/60 transition hover:bg-white/5 hover:text-white/90"
+                className="rounded-xl px-4 py-2 text-[13px] font-medium tracking-[-0.01em] text-white/65 transition-all duration-200 hover:bg-white/[0.06] hover:text-white active:scale-[0.97]"
               >
                 Cancelar
               </button>
@@ -471,12 +496,12 @@ export function TermsAcceptDialog({
                 onClick={handleAccept}
                 disabled={!canAccept}
                 aria-live="polite"
-                className={`group relative inline-flex items-center gap-2 overflow-hidden rounded-md px-5 py-2 text-sm font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
+                className={`group relative inline-flex items-center gap-2 overflow-hidden rounded-xl px-5 py-2 text-[13.5px] font-semibold tracking-[-0.01em] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 ${
                   confirmed
                     ? "bg-emerald-500 text-white"
                     : canAccept
-                      ? "bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 text-slate-950 hover:shadow-[0_10px_30px_-8px_rgba(56,189,248,0.7)] active:scale-[0.97]"
-                      : "cursor-not-allowed bg-white/5 text-white/40"
+                      ? "bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 text-slate-950 shadow-[0_8px_24px_-6px_rgba(56,189,248,0.6)] hover:scale-[1.03] hover:shadow-[0_12px_36px_-8px_rgba(56,189,248,0.8)] active:scale-[0.97]"
+                      : "cursor-not-allowed bg-white/[0.06] text-white/40"
                 }`}
                 style={canAccept ? { animation: "terms-ring 1.8s ease-out infinite" } : undefined}
               >
@@ -514,12 +539,19 @@ export function TermsAcceptDialog({
 
         {/* Success overlay */}
         {confirmed && (
-          <div className="pointer-events-none absolute inset-0 z-30 grid place-items-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-300">
+          <div
+            className="pointer-events-none absolute inset-0 z-30 grid place-items-center animate-in fade-in duration-300"
+            style={{
+              background: "rgba(2,6,23,0.55)",
+              backdropFilter: "blur(24px) saturate(180%)",
+              WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            }}
+          >
             <div
               className="flex flex-col items-center gap-3"
               style={{ animation: "terms-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}
             >
-              <div className="relative grid h-20 w-20 place-items-center rounded-full bg-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.6)]">
+              <div className="relative grid h-20 w-20 place-items-center rounded-full bg-emerald-500 shadow-[0_0_48px_rgba(16,185,129,0.7)]">
                 <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <path
                     d="M5 12l5 5L20 7"
@@ -531,7 +563,7 @@ export function TermsAcceptDialog({
                   />
                 </svg>
               </div>
-              <p className="text-sm font-semibold text-white">Termos aceitos com sucesso</p>
+              <p className="text-[14px] font-semibold tracking-[-0.015em] text-white">Termos aceitos com sucesso</p>
             </div>
           </div>
         )}
