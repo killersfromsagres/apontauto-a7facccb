@@ -500,9 +500,18 @@ function TaludesPage() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const clickToPct = (e: { clientX: number; clientY: number }) => {
-    const layer = imageLayerRef.current;
     const svg = svgRef.current;
-    const rect = (layer ?? svg)?.getBoundingClientRect();
+    if (svg) {
+      const matrix = svg.getScreenCTM();
+      if (matrix) {
+        const point = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
+        return {
+          x: Math.max(0, Math.min(100, point.x)),
+          y: Math.max(0, Math.min(100, point.y)),
+        };
+      }
+    }
+    const rect = svg?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || rect.height <= 0) return null;
     return {
       x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
