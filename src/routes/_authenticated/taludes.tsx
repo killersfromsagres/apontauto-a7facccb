@@ -1315,8 +1315,12 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  height: "calc(100dvh - 8rem)",
-                  minHeight: "60vh",
+                  // Wrapper hugs the image's real aspect ratio — no big empty
+                  // navy area above/below. Height grows to fit the map, up to
+                  // the viewport limit.
+                  height: "auto",
+                  maxHeight: "calc(100dvh - 7rem)",
+                  aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
                 }}
               >
 
