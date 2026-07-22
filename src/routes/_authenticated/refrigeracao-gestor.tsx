@@ -212,6 +212,9 @@ function RefrigeracaoGestor() {
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
+          <BulkUpdateDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
+          />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })} />
         </>
       }
