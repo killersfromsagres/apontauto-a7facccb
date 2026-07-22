@@ -41,6 +41,52 @@ export function polygonCentroid(pts: Point[]): Point {
   return { x: sx / pts.length, y: sy / pts.length };
 }
 
+export function polygonBounds(pts: Point[]): {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+} {
+  if (pts.length === 0) return { minX: 50, minY: 50, maxX: 50, maxY: 50 };
+  let minX = 100;
+  let minY = 100;
+  let maxX = 0;
+  let maxY = 0;
+  for (const p of pts) {
+    minX = Math.min(minX, p.x);
+    minY = Math.min(minY, p.y);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+const clampPct = (v: number, min = 1, max = 99) => Math.max(min, Math.min(max, v));
+
+export function polygonLabelAnchor(pts: Point[]): {
+  number: Point;
+  date: Point;
+  datePlacement: "above" | "below";
+} {
+  const b = polygonBounds(pts);
+  const x = clampPct((b.minX + b.maxX) / 2, 2, 98);
+  const numberY = clampPct((b.minY + b.maxY) / 2, 2, 98);
+  const gap = 0.75;
+  const belowY = b.maxY + gap;
+  if (belowY <= 98.5) {
+    return {
+      number: { x, y: numberY },
+      date: { x, y: belowY },
+      datePlacement: "below",
+    };
+  }
+  return {
+    number: { x, y: numberY },
+    date: { x, y: clampPct(b.minY - gap, 1.5, 98.5) },
+    datePlacement: "above",
+  };
+}
+
 /**
  * Métricas reais quando o mapa tem escala calibrada.
  * - `escala_m_por_px`: metros por pixel do bitmap original.

@@ -70,6 +70,7 @@ import {
   realMetrics,
   formatArea,
   formatPerimeter,
+  polygonLabelAnchor,
 } from "@/lib/taludes/geometry";
 import referenceMap from "@/assets/demarchi-taludes-v2.png.asset.json";
 import {
@@ -354,6 +355,7 @@ function TaludesPage() {
   const [shiftDown, setShiftDown] = useState(false);
   const [spaceDown, setSpaceDown] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const imageLayerRef = useRef<HTMLDivElement>(null);
   // ── Enhancer de imagem (ajustes + cobertura de logos) ───────────────
   const {
     adj: imgAdj,
@@ -498,9 +500,10 @@ function TaludesPage() {
 
   const svgRef = useRef<SVGSVGElement>(null);
   const clickToPct = (e: { clientX: number; clientY: number }) => {
+    const layer = imageLayerRef.current;
     const svg = svgRef.current;
-    if (!svg) return null;
-    const rect = svg.getBoundingClientRect();
+    const rect = (layer ?? svg)?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
     return {
       x: Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)),
       y: Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)),
@@ -1383,23 +1386,23 @@ function TaludesPage() {
                 )}
                 {imageUrl ? (
                   <div
-                    className="relative block"
+                    ref={imageLayerRef}
+                    data-talude-image-layer
+                    className="relative inline-block max-w-full align-middle"
                     style={{
                       transform,
                       transformOrigin: originStr,
                       transition: panState ? "none" : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                       willChange: "transform",
                       lineHeight: 0,
-                      // Wrapper size = image size. Use aspect-ratio so the box
-                      // fits inside the viewport preserving proportions and
-                      // the SVG overlay (inset-0) is pixel-perfectly aligned
-                      // with the <img>. Prevents the "marks appear slightly
-                      // above the clicked point" bug in the exported PNG.
+                      // Wrapper shrink-wraps the real rendered image. The SVG
+                      // uses the same box, so screen clicks and PNG export use
+                      // exactly the same 0..100 coordinate system.
                       aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                      width: imgSize
+                        ? `min(100%, calc((100dvh - 8rem) * ${imgSize.w / imgSize.h}))`
+                        : "fit-content",
                       maxWidth: "100%",
-                      maxHeight: "calc(100dvh - 8rem)",
-                      width: imgSize ? "auto" : undefined,
-                      height: imgSize ? "100%" : undefined,
                     }}
                   >
                     {!imgLoaded && (
@@ -1409,12 +1412,20 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="block h-full w-full select-none"
+                      className="block select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
                       fetchPriority="high"
-                      style={{ filter: imgFilter, display: "block" }}
+                      style={{
+                        filter: imgFilter,
+                        display: "block",
+                        width: imgSize ? "100%" : "auto",
+                        height: imgSize ? "100%" : "auto",
+                        objectFit: "contain",
+                        maxWidth: "100%",
+                        maxHeight: "calc(100dvh - 8rem)",
+                      }}
                       onLoad={(e) => {
                         const el = e.currentTarget;
                         setImgLoaded(true);
@@ -1496,6 +1507,7 @@ function TaludesPage() {
                       onPointerLeave={handleSvgPointerUp}
                       viewBox="0 0 100 100"
                       preserveAspectRatio="none"
+                      data-talude-svg
                       className={`absolute inset-0 h-full w-full ${isDrawing ? "cursor-crosshair" : ""}`}
                     >
                       {taludes.map((t) => {
@@ -1506,8 +1518,9 @@ function TaludesPage() {
                         const isEditing = t.id === editingPolygonFor;
                         if (isEditing) return null;
                         const pts = t.polygon.map((p) => `${p.x},${p.y}`).join(" ");
-                        const cx = t.polygon.reduce((a, p) => a + p.x, 0) / t.polygon.length;
-                        const cy = t.polygon.reduce((a, p) => a + p.y, 0) / t.polygon.length;
+                        const anchor = polygonLabelAnchor(t.polygon);
+                        const cx = anchor.number.x;
+                        const cy = anchor.number.y;
                         return (
                           <g
                             key={t.id}
@@ -1781,8 +1794,7 @@ function TaludesPage() {
                             ? t.data_execucao
                             : t.data_programada;
                       if (!dateIso) return null;
-                      const cx = t.polygon.reduce((a, p) => a + p.x, 0) / t.polygon.length;
-                      const cy = t.polygon.reduce((a, p) => a + p.y, 0) / t.polygon.length;
+                      const anchor = polygonLabelAnchor(t.polygon);
                       const isSel = t.id === selectedTaludeId;
                       const meta = STATUS_META[t.status];
                       const prefix =
@@ -1792,9 +1804,12 @@ function TaludesPage() {
                           key={`pill-${t.id}`}
                           className="pointer-events-none absolute z-[5] -translate-x-1/2 animate-fade-in"
                           style={{
-                            left: `${cx}%`,
-                            top: `${cy}%`,
-                            transform: `translate(-50%, calc(-50% + ${isSel ? 34 : 26}px))`,
+                            left: `${anchor.date.x}%`,
+                            top: `${anchor.date.y}%`,
+                            transform:
+                              anchor.datePlacement === "below"
+                                ? "translate(-50%, 0)"
+                                : "translate(-50%, -100%)",
                             transition: "transform 300ms ease",
                           }}
                         >
