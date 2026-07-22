@@ -1154,3 +1154,190 @@ function ExportXlsxButton({
   );
 }
 
+/* ---------------- Bulk update ---------------- */
+
+function BulkUpdateDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<RefrigOsUpdate[]>([]);
+  const [parsing, setParsing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState<{ ok: number; missing: string[]; failed: string[] } | null>(
+    null,
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => {
+    setFile(null);
+    setPreview([]);
+    setResult(null);
+  };
+
+  const onFile = async (f: File | null) => {
+    setFile(f);
+    setPreview([]);
+    setResult(null);
+    if (!f) return;
+    setParsing(true);
+    try {
+      const rows = await readRefrigOsUpdateFile(f);
+      setPreview(rows);
+      if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao ler planilha");
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const aplicar = async () => {
+    if (preview.length === 0) return toast.warning("Escolha uma planilha válida.");
+    setSaving(true);
+    const numeros = preview.map((p) => p.numero_os);
+    const { data: existentes, error: qErr } = await supabase
+      .from("refrigeracao_os")
+      .select("id, numero_os")
+      .in("numero_os", numeros);
+    if (qErr) {
+      setSaving(false);
+      return toast.error(qErr.message);
+    }
+    const idByNumero = new Map<string, string>();
+    (existentes ?? []).forEach((r: any) => idByNumero.set(String(r.numero_os), String(r.id)));
+
+    const missing: string[] = [];
+    const failed: string[] = [];
+    let ok = 0;
+    for (const item of preview) {
+      const id = idByNumero.get(item.numero_os);
+      if (!id) {
+        missing.push(item.numero_os);
+        continue;
+      }
+      const { error } = await supabase
+        .from("refrigeracao_os")
+        .update(item.patch as any)
+        .eq("id", id);
+      if (error) failed.push(`${item.numero_os}: ${error.message}`);
+      else ok++;
+    }
+    setSaving(false);
+    setResult({ ok, missing, failed });
+    if (ok > 0) toast.success(`${ok} OS atualizada(s).`);
+    if (missing.length > 0) toast.warning(`${missing.length} OS não encontrada(s).`);
+    if (failed.length > 0) toast.error(`${failed.length} falha(s) na atualização.`);
+    onDone();
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <FileSpreadsheet className="mr-2 h-4 w-4" /> Atualizar em massa
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Atualizar OS em massa (.xlsx)</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Apenas <b>Ordem de Serviço</b> é obrigatório. Colunas reconhecidas:{" "}
+            <b>
+              Ordem de Serviço · Prédio · Andar · Ambiente (Local) · Equipe (Colaborador) · Ativo ·
+              Equipamento · Patrimônio · Tipo · Nome OS
+            </b>
+            . Células vazias são ignoradas — só sobrescreve o que estiver preenchido. Status da OS
+            não é alterado (não reabre). Duplicidades por número de OS são consolidadas.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => inputRef.current?.click()}>
+              <Upload className="mr-2 h-4 w-4" /> Escolher arquivo
+            </Button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              className="hidden"
+              onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+            />
+            {file && <span className="text-xs text-muted-foreground">{file.name}</span>}
+            {parsing && <Loader2 className="h-4 w-4 animate-spin" />}
+          </div>
+          {preview.length > 0 && (
+            <div className="rounded-md border">
+              <div className="border-b bg-muted/50 px-3 py-2 text-xs font-medium">
+                Prévia — {preview.length} OS a atualizar
+              </div>
+              <div className="max-h-64 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
+                    <tr>
+                      <Th>OS</Th>
+                      <Th>Campos atualizados</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {preview.slice(0, 100).map((r, i) => (
+                      <tr key={i} className="border-t">
+                        <Td className="font-mono">{r.numero_os}</Td>
+                        <Td className="text-muted-foreground">
+                          {Object.entries(r.patch)
+                            .map(([k, v]) => `${k}=${v}`)
+                            .join(" · ")}
+                        </Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {preview.length > 100 && (
+                  <div className="border-t p-2 text-center text-[10px] text-muted-foreground">
+                    +{preview.length - 100} linhas não exibidas na prévia.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {result && (
+            <div className="rounded-md border p-3 text-xs">
+              <div className="mb-1 font-medium">Resultado</div>
+              <div>✅ Atualizadas: {result.ok}</div>
+              {result.missing.length > 0 && (
+                <div className="mt-1">
+                  ⚠️ Não encontradas ({result.missing.length}):{" "}
+                  <span className="font-mono text-muted-foreground">
+                    {result.missing.slice(0, 20).join(", ")}
+                    {result.missing.length > 20 ? "…" : ""}
+                  </span>
+                </div>
+              )}
+              {result.failed.length > 0 && (
+                <div className="mt-1 text-destructive">
+                  ❌ Falhas: {result.failed.slice(0, 5).join(" | ")}
+                  {result.failed.length > 5 ? "…" : ""}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Fechar
+          </Button>
+          <Button onClick={aplicar} disabled={saving || preview.length === 0}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Aplicar{" "}
+            {preview.length > 0 && `(${preview.length})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
