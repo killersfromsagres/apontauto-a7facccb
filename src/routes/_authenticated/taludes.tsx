@@ -1283,8 +1283,14 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  maxHeight: "calc(100dvh - 11rem)",
+                  maxHeight: "calc(100dvh - 8rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                  // Respeita a proporção original mesmo quando maxHeight limita a altura:
+                  // sem width explícito, w-full mantém 100% e o navegador ignora aspectRatio,
+                  // distorcendo a imagem — o que fazia a demarcação escapar do mapa exportado.
+                  width: imgSize
+                    ? `min(100%, calc((100dvh - 8rem) * ${imgSize.w / imgSize.h}))`
+                    : undefined,
                 }}
               >
 
