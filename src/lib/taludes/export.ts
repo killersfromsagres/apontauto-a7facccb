@@ -1,5 +1,6 @@
 export { STATUS_META, type TaludeStatus } from "./constants";
 import { STATUS_META, type TaludeStatus } from "./constants";
+import { polygonLabelAnchor } from "./geometry";
 
 
 
@@ -20,19 +21,8 @@ function fmtBr(iso: string | null): string {
   return `${d}/${m}/${y}`;
 }
 
-function centroid(pts: Array<{ x: number; y: number }>) {
-  if (pts.length === 0) return { x: 0, y: 0 };
-  let x = 0;
-  let y = 0;
-  for (const p of pts) {
-    x += p.x;
-    y += p.y;
-  }
-  return { x: x / pts.length, y: y / pts.length };
-}
-
 /**
- * Export de altíssima resolução, adequado para impressão (300 DPI equivalente).
+ * Export na dimensão nativa do mapa, mantendo coordenadas 1:1 com a demarcação.
  * Sem legenda, sem marca d'água e sem data de geração no PNG.
  */
 export async function exportMapPNG(opts: {
@@ -41,10 +31,9 @@ export async function exportMapPNG(opts: {
   taludes: ExportTalude[];
 }): Promise<Blob> {
   const img = await loadImage(opts.imageUrl);
-  // Alta resolução: alvo ~4800px na maior dimensão (equivalente a >300 DPI para A3)
-  const scale = Math.min(3, 4800 / Math.max(img.width, 1));
-  const W = Math.round(img.width * scale);
-  const H = Math.round(img.height * scale);
+  const W = img.naturalWidth || img.width;
+  const H = img.naturalHeight || img.height;
+  const uiScale = Math.max(0.75, Math.max(W, H) / 1600);
   const canvas = document.createElement("canvas");
   canvas.width = W;
   canvas.height = H;
@@ -85,7 +74,7 @@ export async function exportMapPNG(opts: {
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     ctx.strokeStyle = meta.stroke;
-    ctx.lineWidth = Math.max(3, scale * 2.2);
+    ctx.lineWidth = Math.max(2, uiScale * 2.2);
     ctx.stroke();
   }
 
@@ -93,9 +82,9 @@ export async function exportMapPNG(opts: {
   for (const t of opts.taludes) {
     if (t.polygon.length < 3) continue;
 
-    const c = centroid(t.polygon);
-    const cx = (c.x / 100) * W;
-    const cy = (c.y / 100) * H;
+    const anchor = polygonLabelAnchor(t.polygon);
+    const cx = (anchor.number.x / 100) * W;
+    const cy = (anchor.number.y / 100) * H;
 
     const dateStr =
       t.status === "finalizado"
@@ -105,33 +94,35 @@ export async function exportMapPNG(opts: {
           : `Prog: ${fmtBr(t.data_programada)}`;
 
     // Número gigante amarelo com contorno escuro
-    const numSize = Math.max(48, Math.round(scale * 44));
+    const numSize = Math.max(24, Math.round(uiScale * 42));
     ctx.font = `900 ${numSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.lineJoin = "round";
     ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = Math.max(6, scale * 5);
-    ctx.strokeText(String(t.numero), cx, cy - numSize * 0.2);
+    ctx.lineWidth = Math.max(4, uiScale * 5);
+    ctx.strokeText(String(t.numero), cx, cy);
     ctx.fillStyle = "#fde047";
-    ctx.fillText(String(t.numero), cx, cy - numSize * 0.2);
+    ctx.fillText(String(t.numero), cx, cy);
 
-    // Etiqueta de data — cartão arredondado escuro semi-transparente
-    const dateSize = Math.max(16, Math.round(scale * 15));
+    // Etiqueta de data — ancorada no limite do polígono, próxima à área marcada.
+    const dateSize = Math.max(10, Math.round(uiScale * 14));
     ctx.font = `600 ${dateSize}px system-ui, -apple-system, sans-serif`;
     const dm = ctx.measureText(dateStr);
     const padX = dateSize * 0.7;
     const padY = dateSize * 0.35;
     const pillW = dm.width + padX * 2;
     const pillH = dateSize + padY * 2;
-    const pillX = cx - pillW / 2;
-    const pillY = cy + numSize * 0.35;
+    const dateX = (anchor.date.x / 100) * W;
+    const dateY = (anchor.date.y / 100) * H;
+    const pillX = Math.max(3, Math.min(W - pillW - 3, dateX - pillW / 2));
+    const pillY = anchor.datePlacement === "below" ? dateY : dateY - pillH;
 
     // sombra suave
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.35)";
-    ctx.shadowBlur = Math.max(6, scale * 4);
-    ctx.shadowOffsetY = Math.max(2, scale * 1.5);
+    ctx.shadowBlur = Math.max(4, uiScale * 4);
+    ctx.shadowOffsetY = Math.max(1, uiScale * 1.5);
     ctx.fillStyle = "rgba(15,23,42,0.92)";
     roundRect(ctx, pillX, pillY, pillW, pillH, Math.max(6, dateSize * 0.35));
     ctx.fill();
@@ -140,7 +131,7 @@ export async function exportMapPNG(opts: {
     // texto da data
     ctx.fillStyle = "#ffffff";
     ctx.textBaseline = "middle";
-    ctx.fillText(dateStr, cx, pillY + pillH / 2);
+    ctx.fillText(dateStr, pillX + pillW / 2, pillY + pillH / 2);
 
     ctx.textAlign = "start";
     ctx.textBaseline = "alphabetic";
