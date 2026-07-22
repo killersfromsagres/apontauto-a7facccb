@@ -2114,7 +2114,7 @@ function TaludeDetail({
         <Button size="icon" variant="ghost" onClick={onRedraw} title="Redesenhar área">
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={onNewPart} title="Adicionar nova parte com este número">
+        <Button size="icon" variant="ghost" onClick={onNewPart} title="Redemarcar (substitui a área anterior deste número)">
           <Plus className="h-4 w-4" />
         </Button>
 
