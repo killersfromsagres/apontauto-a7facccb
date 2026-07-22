@@ -670,32 +670,54 @@ function TaludesPage() {
       toast.error("Número do talude inválido");
       return;
     }
-    const existing = taludes.some((t) => t.numero === num);
-    // Duplicate numeros são permitidos: representam partes distintas
-    // do mesmo talude (interrompido e retomado, ou dividido em áreas).
-    const status: TaludeStatus = existing
-      ? (taludes.find((t) => t.numero === num)?.status ?? "programado")
-      : "programado";
-    const dataProg = existing
-      ? (taludes.find((t) => t.numero === num)?.data_programada ?? today())
-      : today();
+    const existingList = taludes.filter((t) => t.numero === num);
     const metrics = realMetrics(drawingPoints, {
       imageWidthPx: map.image_width,
       imageHeightPx: map.image_height,
       metersPerPixel: (map as { escala_m_por_px?: number | null }).escala_m_por_px ?? null,
     });
-    await upsertFn({
-      data: {
-        map_id: map.id,
-        numero: num,
-        polygon: drawingPoints,
-        status,
-        data_programada: dataProg,
-        area_m2: metrics.areaM2,
-        perimetro_m: metrics.perimetroM,
-      },
-    });
-    toast.success(existing ? `Nova parte adicionada ao talude ${num}` : `Talude ${num} criado`);
+
+    if (existingList.length > 0) {
+      // Mantém a numeração e a data original do primeiro registro; substitui
+      // a demarcação pela nova e remove as partes antigas para que o número
+      // sempre exiba apenas a demarcação mais recente.
+      const primary = existingList.reduce((a, b) => {
+        const ad = a.data_programada || "9999-99-99";
+        const bd = b.data_programada || "9999-99-99";
+        return ad <= bd ? a : b;
+      });
+      await upsertFn({
+        data: {
+          id: primary.id,
+          map_id: map.id,
+          numero: primary.numero,
+          polygon: drawingPoints,
+          status: primary.status,
+          data_programada: primary.data_programada,
+          area_m2: metrics.areaM2,
+          perimetro_m: metrics.perimetroM,
+        },
+      });
+      for (const extra of existingList) {
+        if (extra.id !== primary.id) {
+          await deleteFn({ data: { id: extra.id } });
+        }
+      }
+      toast.success(`Talude ${num}: demarcação substituída (data original preservada)`);
+    } else {
+      await upsertFn({
+        data: {
+          map_id: map.id,
+          numero: num,
+          polygon: drawingPoints,
+          status: "programado",
+          data_programada: today(),
+          area_m2: metrics.areaM2,
+          perimetro_m: metrics.perimetroM,
+        },
+      });
+      toast.success(`Talude ${num} criado`);
+    }
 
     setDrawingPoints([]);
     setDrawingNumero("");
@@ -764,7 +786,8 @@ function TaludesPage() {
     toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover. Ctrl+Z desfaz.`);
   };
 
-  // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
+  // Inicia nova demarcação para o mesmo número: ao finalizar, substitui a
+  // demarcação existente preservando a data original.
   const startNewPart = (t: TaludeRow) => {
     resetHistory();
     setEditingPolygonFor(null);
@@ -772,7 +795,7 @@ function TaludesPage() {
     setDrawingNewMode(true);
     setDrawingNumero(String(t.numero));
     setSelectedTaludeId(t.id);
-    toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
+    toast.info(`Redemarcar talude ${t.numero} — a área anterior será substituída, mantendo a data original`);
   };
 
 
@@ -1283,8 +1306,14 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  maxHeight: "calc(100dvh - 11rem)",
+                  maxHeight: "calc(100dvh - 8rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+                  // Respeita a proporção original mesmo quando maxHeight limita a altura:
+                  // sem width explícito, w-full mantém 100% e o navegador ignora aspectRatio,
+                  // distorcendo a imagem — o que fazia a demarcação escapar do mapa exportado.
+                  width: imgSize
+                    ? `min(100%, calc((100dvh - 8rem) * ${imgSize.w / imgSize.h}))`
+                    : undefined,
                 }}
               >
 
@@ -2085,7 +2114,7 @@ function TaludeDetail({
         <Button size="icon" variant="ghost" onClick={onRedraw} title="Redesenhar área">
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button size="icon" variant="ghost" onClick={onNewPart} title="Adicionar nova parte com este número">
+        <Button size="icon" variant="ghost" onClick={onNewPart} title="Redemarcar (substitui a área anterior deste número)">
           <Plus className="h-4 w-4" />
         </Button>
 
