@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
-import { MobileBottomNav } from "@/components/mobile-bottom-nav";
 import { useMyAccess } from "@/hooks/use-my-access";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
@@ -137,10 +136,10 @@ function AuthenticatedLayout() {
         <SidebarInset className="flex min-h-dvh flex-1 flex-col bg-transparent">
           <AppHeader />
           <AccessGuard />
-          <main className="flex-1 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] md:pb-[env(safe-area-inset-bottom)] [contain:paint]">
+          <main className="flex-1 pb-[env(safe-area-inset-bottom)] [contain:paint]">
             {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
-          <MobileBottomNav />
+
         </SidebarInset>
       </div>
     </SidebarProvider>
