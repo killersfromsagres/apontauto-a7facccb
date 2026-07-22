@@ -5,6 +5,7 @@
   window.__apontautoRunning = true;
 
   let STOP = false;
+  let PAUSED = false;
 
   function send(msg) {
     try { chrome.runtime.sendMessage(msg); } catch (_) {}
@@ -13,6 +14,9 @@
   function progress(percent, status) { send({ type: "APONTAUTO_PROGRESS", percent, status }); }
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function waitWhilePaused() {
+    while (PAUSED && !STOP) await sleep(300);
+  }
 
   async function waitFor(pred, { timeout = 10000, interval = 200, msg = "condição" } = {}) {
     const start = Date.now();
@@ -140,6 +144,7 @@
 
   async function adicionarMaoDeObra(item, usuarioLogado) {
     const { colaboradores, dataHoraInicio } = item;
+    const duracao = Number(item.tempoTrabalhoHoras) > 0 ? Number(item.tempoTrabalhoHoras) : 1;
     const gridSel = "#GWorkOrderWorkerLabor";
     log("Abrindo aba Mão-de-Obra por OS…", "info");
     const abaMO = $$("li").find((li) => (li.textContent || "").includes("Mão-de-Obra por OS"));
@@ -178,11 +183,11 @@
       await pressEnter(inputData);
       await sleep(500);
 
-      log(`Linha ${i + 1}: tempo trabalho 1h…`, "info");
+      log(`Linha ${i + 1}: tempo trabalho ${duracao}h…`, "info");
       const celTempo = $$(`${gridSel} .slick-cell.l8 .cell-content`)[i];
       celTempo?.click();
       const inputTempo = await waitEl("#CLaborTimeW", { timeout: 6000 });
-      setNativeValue(inputTempo, "1");
+      setNativeValue(inputTempo, String(duracao));
       await pressEnter(inputTempo);
       await sleep(1200);
     }
