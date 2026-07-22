@@ -53,6 +53,30 @@ type Foto = { id: string; storage_path: string; created_at: string; legenda: str
 type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; created_at: string };
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
+function equipeStyles(equipe: string | null | undefined): { row: string; badge: string } {
+  const n = (equipe ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  if (n === "refrigeracao 1")
+    return {
+      row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
+      badge: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+    };
+  if (n === "refrigeracao 2")
+    return {
+      row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
+      badge: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
+    };
+  if (n === "refrigeracao 3")
+    return {
+      row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
+      badge: "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+    };
+  return { row: "border-l-4 border-transparent hover:bg-accent/60", badge: "" };
+}
+
 function HistoricoPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<OsRow | null>(null);
@@ -153,41 +177,49 @@ function HistoricoPage() {
             Nenhuma OS concluída encontrada.
           </div>
         ) : (
-          <ul className="divide-y divide-border/50">
-            {filtered.map((o) => (
-              <li key={o.id}>
-                <button
-                  type="button"
-                  onClick={() => setOpen(o)}
-                  className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
-                >
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {o.status}
-                      </Badge>
-                      {o.fim && (
-                        <span className="text-xs text-muted-foreground">
-                          concluída em {new Date(o.fim).toLocaleString("pt-BR")}
-                        </span>
+          <ul className="flex flex-col gap-2">
+            {filtered.map((o) => {
+              const st = equipeStyles(o.equipe);
+              return (
+                <li key={o.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(o)}
+                    className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}
+                  >
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {o.status}
+                        </Badge>
+                        {o.equipe && (
+                          <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                            {o.equipe}
+                          </Badge>
+                        )}
+                        {o.fim && (
+                          <span className="text-xs text-muted-foreground">
+                            concluída em {new Date(o.fim).toLocaleString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
+                      {o.nome_os && (
+                        <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
                       )}
+                      <div className="truncate text-sm text-muted-foreground">
+                        {o.equipamento} · Ativo {o.ativo}
+                        {o.patrimonio ? ` · PAT ${o.patrimonio}` : ""}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground/80">
+                        {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                      </div>
                     </div>
-                    {o.nome_os && (
-                      <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
-                    )}
-                    <div className="truncate text-sm text-muted-foreground">
-                      {o.equipamento} · Ativo {o.ativo}
-                      {o.patrimonio ? ` · PAT ${o.patrimonio}` : ""}
-                    </div>
-                    <div className="truncate text-xs text-muted-foreground/80">
-                      {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                    </div>
-                  </div>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </GlassCard>
