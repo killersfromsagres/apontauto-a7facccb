@@ -743,7 +743,7 @@ function OsDetail({
       </GlassCard>
 
       <GlassCard className="p-4">
-        <SectionTitle icon={Camera} label="Fotos" />
+        <SectionTitle icon={Camera} label="Fotos (opcional)" />
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             type="button"
