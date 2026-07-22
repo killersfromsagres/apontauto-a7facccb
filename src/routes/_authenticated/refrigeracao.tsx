@@ -807,6 +807,9 @@ function OsDetail({
             <Package className="mr-2 h-4 w-4" /> Adicionar peça
           </Button>
         </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima se quiser registrar imagens.
+        </p>
         {pecas.length === 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
             Nenhuma peça adicionada. Clique em "Adicionar peça" para solicitar uma ou mais.
