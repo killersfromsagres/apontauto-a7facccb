@@ -1315,14 +1315,17 @@ function TaludesPage() {
                 style={{
                   cursor: panCursor,
                   touchAction: "none",
-                  // Container hugs the image's real aspect ratio so the map is
-                  // shown ENTIRELY without cropping. Width & height are both
-                  // clamped to the viewport; whichever axis saturates first
-                  // wins, and aspectRatio keeps the other axis proportional.
-                  width: "auto",
+                  // Container respects the image's real aspect ratio and
+                  // grows up to the image's natural resolution, capped only
+                  // by the available viewport. This shows the map ENTIRELY
+                  // at 1:1 pixels when there is room, and scales down
+                  // proportionally on smaller screens without cropping.
+                  width: imgSize ? `min(100%, ${imgSize.w}px)` : "100%",
                   height: "auto",
                   maxWidth: "100%",
-                  maxHeight: "calc(100dvh - 7rem)",
+                  maxHeight: imgSize
+                    ? `min(${imgSize.h}px, calc(100dvh - 4rem))`
+                    : "calc(100dvh - 4rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
                 }}
               >
