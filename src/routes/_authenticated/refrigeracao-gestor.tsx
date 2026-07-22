@@ -215,8 +215,8 @@ function RefrigeracaoGestor() {
 
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 min-w-[220px]">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full flex-1 items-center gap-2 sm:w-auto sm:min-w-[220px]">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Input
               placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
               value={busca}
@@ -224,10 +224,10 @@ function RefrigeracaoGestor() {
               className="h-9"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="h-9 w-[170px]">
+              <SelectTrigger className="h-9 w-full sm:w-[170px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +241,7 @@ function RefrigeracaoGestor() {
           </div>
           {equipes.length > 0 && (
             <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-              <SelectTrigger className="h-9 w-[170px]">
+              <SelectTrigger className="h-9 w-full sm:w-[170px]">
                 <SelectValue placeholder="Equipe" />
               </SelectTrigger>
               <SelectContent>
@@ -258,19 +258,22 @@ function RefrigeracaoGestor() {
       </GlassCard>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="os">
-            <Snowflake className="mr-1.5 h-4 w-4" /> OS ({filteredOs.length})
+        <TabsList className="grid w-full grid-cols-4 gap-1">
+          <TabsTrigger value="os" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Snowflake className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">OS ({filteredOs.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="fotos">
-            <Camera className="mr-1.5 h-4 w-4" /> Fotos ({filterByOs(fotosQuery.data).length})
+          <TabsTrigger value="fotos" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Camera className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Fotos ({filterByOs(fotosQuery.data).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="pecas">
-            <Package className="mr-1.5 h-4 w-4" /> Peças ({filterByOs(pecasQuery.data).length})
+          <TabsTrigger value="pecas" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Package className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Peças ({filterByOs(pecasQuery.data).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="problemas">
-            <AlertTriangle className="mr-1.5 h-4 w-4" /> Problemas (
-            {filterByOs(problQuery.data).length})
+          <TabsTrigger value="problemas" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <AlertTriangle className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Problemas ({filterByOs(problQuery.data).length})</span>
           </TabsTrigger>
         </TabsList>
 
