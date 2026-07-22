@@ -1106,7 +1106,7 @@ function TaludesPage() {
         </div>
       }
     >
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_340px]">
         {/* ── Mapa ── */}
         <GlassCard>
           <div className="mb-3 flex flex-wrap items-center gap-2">
