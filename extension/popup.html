@@ -1,57 +1,49 @@
 <!doctype html>
 <html lang="pt-BR">
   <head>
-    <meta charset="utf-8" />
-    <title>Apont Auto — Prisma4</title>
+    <meta charset="UTF-8" />
+    <title>Apont Auto — Painel Prisma</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <header>
-      <img src="icon.png" width="32" height="32" alt="" />
+      <img src="icon128.png" alt="" width="28" height="28" />
       <div>
-        <h1>Apont Auto</h1>
-        <p>Automação Prisma4</p>
+        <h1>Painel Prisma</h1>
+        <p id="statusBadge" class="badge off">Desconectado</p>
       </div>
     </header>
 
-    <section class="card">
-      <h2>Credenciais</h2>
-      <label>Usuário<input id="usuario" type="text" placeholder="ex: 436057" autocomplete="off" /></label>
-      <label>Senha<input id="senha" type="password" placeholder="••••••" autocomplete="off" /></label>
-      <button id="salvarCreds" class="ghost">Salvar credenciais</button>
-      <p class="hint">Salvo apenas neste navegador (<code>chrome.storage.local</code>).</p>
+    <section id="setup">
+      <label>URL do Supabase</label>
+      <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" />
+
+      <label>Chave anon</label>
+      <input id="anonKey" placeholder="sb_publishable_..." />
+
+      <label>E-mail</label>
+      <input id="email" type="email" autocomplete="username" placeholder="seu@email.com" />
+
+      <label>Senha</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+
+      <label>Padrão de URL do Prisma</label>
+      <input id="prismaUrlPattern" placeholder="https://*.cimogps.com.br/*" value="https://*.cimogps.com.br/*" />
+
+      <button id="btnLogin" class="primary">Conectar</button>
     </section>
 
-    <section class="card">
-      <h2>Lote</h2>
+    <section id="controls" hidden>
       <div class="row">
-        <button id="importarBtn">Importar JSON</button>
-        <input id="importInput" type="file" accept=".json,application/json,text/plain,.txt" hidden />
-        <button id="limparBtn" class="ghost">Limpar</button>
+        <span id="userInfo" class="muted"></span>
+        <button id="btnLogout" class="ghost small">Sair</button>
       </div>
-      <div id="loteInfo" class="lote-info">Nenhum lote carregado.</div>
+      <button id="btnToggle" class="primary">Ativar automação</button>
+      <button id="btnCiclo" class="ghost">Verificar lotes agora</button>
+      <p class="hint">Deixe uma aba do Prisma aberta e logada no mesmo navegador. A extensão checa por lotes pendentes a cada 30s.</p>
     </section>
 
-    <section class="card">
-      <h2>Execução</h2>
-      <div class="row">
-        <button id="iniciarBtn" class="primary">▶ Iniciar automação</button>
-        <button id="pausarBtn" class="ghost" disabled data-state="running">⏸ Pausar</button>
-        <button id="pararBtn" class="ghost" disabled>⏹ Parar</button>
-        <button id="retomarBtn" class="ghost" disabled>↻ Retomar de onde parou</button>
-      </div>
-      <progress id="progresso" value="0" max="100"></progress>
-      <div id="statusLine">Aguardando…</div>
-    </section>
-
-    <section class="card">
-      <h2>Log</h2>
-      <pre id="log" class="log"></pre>
-      <div class="row">
-        <button id="exportarLog" class="ghost">Exportar JSON</button>
-        <button id="exportarCsv" class="ghost">Exportar CSV</button>
-      </div>
-    </section>
+    <p id="status" class="status"></p>
 
     <script src="popup.js"></script>
   </body>

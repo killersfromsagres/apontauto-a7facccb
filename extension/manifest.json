@@ -1,20 +1,20 @@
 {
   "manifest_version": 3,
-  "name": "Apont Auto — Prisma4",
-  "version": "1.1.1",
-  "description": "Automatiza apontamentos de OS no Prisma4 (login, mão-de-obra, procedimentos e salvamento) direto do navegador.",
-  "permissions": ["storage", "scripting", "tabs", "activeTab"],
-  "host_permissions": ["https://cimogps.com.br/*"],
+  "name": "Apont Auto — Painel Prisma",
+  "version": "2.0.0",
+  "description": "Executa lotes de OS cadastrados no Painel Prisma (Supabase) diretamente na aba autenticada do Prisma4.",
+  "permissions": ["storage", "scripting", "tabs", "alarms"],
+  "host_permissions": [
+    "https://*.supabase.co/*",
+    "https://*.cimogps.com.br/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": { "service_worker": "background.js" },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "icon.png",
-    "default_title": "Apont Auto — Prisma4"
+    "default_title": "Apont Auto — Painel Prisma",
+    "default_icon": { "128": "icon128.png" }
   },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "icons": {
-    "48": "icon.png",
-    "128": "icon.png"
-  }
+  "icons": { "128": "icon128.png" }
 }
