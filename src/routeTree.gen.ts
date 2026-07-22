@@ -23,7 +23,6 @@ import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
-import { Route as AuthenticatedRefrigeracaoColaboradoresRouteImport } from './routes/_authenticated/refrigeracao-colaboradores'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
 import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
@@ -115,12 +114,6 @@ const AuthenticatedRefrigeracaoGestorRoute =
   AuthenticatedRefrigeracaoGestorRouteImport.update({
     id: '/refrigeracao-gestor',
     path: '/refrigeracao-gestor',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedRefrigeracaoColaboradoresRoute =
-  AuthenticatedRefrigeracaoColaboradoresRouteImport.update({
-    id: '/refrigeracao-colaboradores',
-    path: '/refrigeracao-colaboradores',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRefrigeracaoRoute =
@@ -255,7 +248,6 @@ export interface FileRoutesByFullPath {
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
-  '/refrigeracao-colaboradores': typeof AuthenticatedRefrigeracaoColaboradoresRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
@@ -289,7 +281,6 @@ export interface FileRoutesByTo {
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
-  '/refrigeracao-colaboradores': typeof AuthenticatedRefrigeracaoColaboradoresRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
@@ -326,7 +317,6 @@ export interface FileRoutesById {
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
-  '/_authenticated/refrigeracao-colaboradores': typeof AuthenticatedRefrigeracaoColaboradoresRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
@@ -364,7 +354,6 @@ export interface FileRouteTypes {
     | '/programacao'
     | '/programacao-taludes'
     | '/refrigeracao'
-    | '/refrigeracao-colaboradores'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
     | '/seguranca-trabalho'
@@ -398,7 +387,6 @@ export interface FileRouteTypes {
     | '/programacao'
     | '/programacao-taludes'
     | '/refrigeracao'
-    | '/refrigeracao-colaboradores'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
     | '/seguranca-trabalho'
@@ -434,7 +422,6 @@ export interface FileRouteTypes {
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-taludes'
     | '/_authenticated/refrigeracao'
-    | '/_authenticated/refrigeracao-colaboradores'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
     | '/_authenticated/seguranca-trabalho'
@@ -557,13 +544,6 @@ declare module '@tanstack/react-router' {
       path: '/refrigeracao-gestor'
       fullPath: '/refrigeracao-gestor'
       preLoaderRoute: typeof AuthenticatedRefrigeracaoGestorRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/refrigeracao-colaboradores': {
-      id: '/_authenticated/refrigeracao-colaboradores'
-      path: '/refrigeracao-colaboradores'
-      fullPath: '/refrigeracao-colaboradores'
-      preLoaderRoute: typeof AuthenticatedRefrigeracaoColaboradoresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/refrigeracao': {
@@ -720,7 +700,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
-  AuthenticatedRefrigeracaoColaboradoresRoute: typeof AuthenticatedRefrigeracaoColaboradoresRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
@@ -747,8 +726,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
-  AuthenticatedRefrigeracaoColaboradoresRoute:
-    AuthenticatedRefrigeracaoColaboradoresRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:
     AuthenticatedRefrigeracaoHistoricoRoute,
