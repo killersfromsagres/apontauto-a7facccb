@@ -436,15 +436,21 @@ function BackorderPage() {
 
         const next = {
           ...r,
-          // Preserva o que veio na planilha. `applied` (regra aprendida) e
-          // `resolveAtivoTree` são apenas fallback quando a coluna estava vazia.
-          predio: r.predio || applied.predio,
-          andar: r.andar || applied.andar,
-          espaco: r.espaco || applied.espaco,
+          // Preserva o que veio na planilha. Depois tenta regra aprendida
+          // / árvore. Se ainda vier vazio e a OS já existir com valor
+          // salvo (correção manual anterior), mantém o valor salvo — a
+          // reimportação nunca destrói uma localização já preenchida.
+          predio: r.predio || applied.predio || prev?.predio || "",
+          andar: r.andar || applied.andar || prev?.andar || "",
+          espaco: r.espaco || applied.espaco || prev?.espaco || "",
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco) || revisaoText,
-          origem_predio_andar_espaco: r.predio || r.andar || r.espaco ? "planilha" : applied.origem_predio_andar_espaco,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco && !(prev?.predio || prev?.andar || prev?.espaco)) || revisaoText,
+          origem_predio_andar_espaco: r.predio || r.andar || r.espaco
+            ? "planilha"
+            : (applied.origem_predio_andar_espaco !== "pendente"
+                ? applied.origem_predio_andar_espaco
+                : (prev?.predio || prev?.andar || prev?.espaco) ? "manual_preservado" : "pendente"),
           origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
@@ -665,27 +671,48 @@ function BackorderPage() {
         const nextEquipe = r.atividade_manual
           ? undefined
           : CATEGORIA_TO_EQUIPE[applied.atividade];
-        const revisao = (applied.origem_predio_andar_espaco === "pendente")
+
+        // Preserva prédio/andar/ambiente já salvos. Só sobrescreve quando:
+        //  - existe regra aprendida para o ativo (fonte confiável), ou
+        //  - o campo salvo está vazio e a árvore/regra devolve algo.
+        // Assim reprocessar nunca destrói uma localização que o usuário
+        // preencheu manualmente sem ter virado regra aprendida.
+        const hasLearnedLoc = applied.origem_predio_andar_espaco === "regra_aprendida";
+        const pickLoc = (prev: string, next: string) => {
+          if (hasLearnedLoc) return next;
+          if (prev) return prev;
+          return next;
+        };
+        const finalPredio = pickLoc(r.predio, applied.predio);
+        const finalAndar = pickLoc(r.andar, applied.andar);
+        const finalEspaco = pickLoc(r.espaco, applied.espaco);
+        const finalOrigemLoc = hasLearnedLoc
+          ? "regra_aprendida"
+          : (r.predio || r.andar || r.espaco)
+            ? (r.origem_predio_andar_espaco || "planilha")
+            : applied.origem_predio_andar_espaco;
+
+        const revisao = (finalOrigemLoc === "pendente")
           || (!r.atividade_manual && applied.origem_equipe === "pendente");
 
         if (
-          applied.predio !== r.predio ||
-          applied.andar !== r.andar ||
-          applied.espaco !== r.espaco ||
+          finalPredio !== r.predio ||
+          finalAndar !== r.andar ||
+          finalEspaco !== r.espaco ||
           nextAtiv !== r.atividade ||
           revisao !== r.revisao_manual ||
-          applied.origem_predio_andar_espaco !== r.origem_predio_andar_espaco ||
+          finalOrigemLoc !== r.origem_predio_andar_espaco ||
           (r.atividade_manual ? "regra_aprendida" : applied.origem_equipe) !== r.origem_equipe
         ) {
           patches.push({
             os: r.os,
-            predio: applied.predio,
-            andar: applied.andar,
-            espaco: applied.espaco,
+            predio: finalPredio,
+            andar: finalAndar,
+            espaco: finalEspaco,
             atividade: r.atividade_manual ? undefined : nextAtiv,
             equipe: nextEquipe,
             revisao_manual: revisao,
-            origem_predio_andar_espaco: applied.origem_predio_andar_espaco,
+            origem_predio_andar_espaco: finalOrigemLoc,
             origem_equipe: r.atividade_manual ? "regra_aprendida" : applied.origem_equipe,
           });
         }
@@ -897,7 +924,9 @@ function BackorderPage() {
 
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
     // Se o "ativo" mudar e nenhum override manual for enviado para
-    // predio/andar/espaço, aplicamos a fórmula (assets_ref).
+    // predio/andar/espaço, tenta inferir: (1) regra aprendida por ativo,
+    // (2) fallback árvore (assets_ref). Nunca sobrescreve valores enviados
+    // no patch.
     const next: Partial<BOSRow> = { ...patch };
     if (
       patch.ativo !== undefined &&
@@ -906,10 +935,16 @@ function BackorderPage() {
       patch.andar === undefined &&
       patch.espaco === undefined
     ) {
-      const resolved = resolveAtivo(assetsMap, patch.ativo);
-      next.predio = resolved.predio;
-      next.andar = resolved.andar;
-      next.espaco = resolved.espaco;
+      const tree = resolveAtivoTree(assetsMap, patch.ativo);
+      const learned = learnedLocation(learnedIndex, patch.ativo);
+      next.predio = learned?.predio ?? tree.predio;
+      next.andar = learned?.andar ?? tree.andar;
+      next.espaco = learned?.espaco ?? tree.espaco;
+      (next as Record<string, unknown>).origem_predio_andar_espaco = learned
+        ? "regra_aprendida"
+        : tree.found
+          ? "arvore_ativos"
+          : "pendente";
     }
     if (patch.atividade && patch.atividade !== r.atividade) {
       next.atividade_manual = true;
@@ -931,25 +966,21 @@ function BackorderPage() {
 
     // ── Aprendizado automático a partir de correções manuais ───────────
     const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
-    const wasReview = r.revisao_manual;
 
-    // Local aprendido: se algum dos campos de local foi editado manualmente
-    // (ou recalculado a partir de novo ativo) e o chamado estava em revisão
-    // ou o ativo não existe na árvore.
+    // Local aprendido: toda vez que o usuário editar manualmente prédio/
+    // andar/ambiente registramos a associação Ativo → Área. Assim a
+    // próxima OS do mesmo ativo já vem preenchida e a "Classificação
+    // de Equipes" nunca sobrescreve o local salvo (a regra aprendida
+    // vence a árvore em applyLearnedToResolved).
     const locChanged =
       (next.predio !== undefined && next.predio !== r.predio) ||
       (next.andar !== undefined && next.andar !== r.andar) ||
       (next.espaco !== undefined && next.espaco !== r.espaco);
-    const tree = ativoKey ? resolveAtivoTree(assetsMap, ativoKey) : { predio: "", andar: "", espaco: "", found: false };
     const willBePredio = next.predio ?? r.predio;
     const willBeAndar = next.andar ?? r.andar;
     const willBeEspaco = next.espaco ?? r.espaco;
-    const treeMismatch = !tree.found ||
-      tree.predio !== willBePredio ||
-      tree.andar !== willBeAndar ||
-      tree.espaco !== willBeEspaco;
 
-    if (ativoKey && locChanged && (wasReview || treeMismatch) && (willBePredio || willBeAndar || willBeEspaco)) {
+    if (ativoKey && locChanged && (willBePredio || willBeAndar || willBeEspaco)) {
       const { data: user } = await supabase.auth.getUser();
       const { error: lerr } = await supabase
         .from("regras_aprendidas_localizacao")
