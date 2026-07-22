@@ -1307,15 +1307,10 @@ function TaludesPage() {
                   cursor: panCursor,
                   touchAction: "none",
                   maxHeight: "calc(100dvh - 8rem)",
-                  aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
-                  // Respeita a proporção original mesmo quando maxHeight limita a altura:
-                  // sem width explícito, w-full mantém 100% e o navegador ignora aspectRatio,
-                  // distorcendo a imagem — o que fazia a demarcação escapar do mapa exportado.
-                  width: imgSize
-                    ? `min(100%, calc((100dvh - 8rem) * ${imgSize.w / imgSize.h}))`
-                    : undefined,
+                  minHeight: "60vh",
                 }}
               >
+
 
                 {/* zoom toolbar */}
                 {imageUrl && (
@@ -1387,12 +1382,13 @@ function TaludesPage() {
                 )}
                 {imageUrl ? (
                   <div
-                    className="relative h-full w-full"
+                    className="relative inline-block max-h-full max-w-full"
                     style={{
                       transform,
                       transformOrigin: originStr,
                       transition: panState ? "none" : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                       willChange: "transform",
+                      lineHeight: 0,
                     }}
                   >
                     {!imgLoaded && (
@@ -1402,7 +1398,7 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="absolute inset-0 block h-full w-full select-none"
+                      className="block max-h-[calc(100dvh-8rem)] max-w-full w-auto h-auto select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
@@ -1416,6 +1412,7 @@ function TaludesPage() {
                         }
                       }}
                     />
+
                     <LogoMaskOverlay
                       masks={imgMasks}
                       showHandles={maskMode}
