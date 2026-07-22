@@ -255,19 +255,22 @@ function CorretivaGestor() {
       </GlassCard>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="os">
-            <Wrench className="mr-1.5 h-4 w-4" /> OS ({filteredOs.length})
+        <TabsList className="grid w-full grid-cols-4 gap-1">
+          <TabsTrigger value="os" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Wrench className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">OS ({filteredOs.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="fotos">
-            <Camera className="mr-1.5 h-4 w-4" /> Fotos ({filterByOs(fotosQuery.data).length})
+          <TabsTrigger value="fotos" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Camera className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Fotos ({filterByOs(fotosQuery.data).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="pecas">
-            <Package className="mr-1.5 h-4 w-4" /> Peças ({filterByOs(pecasQuery.data).length})
+          <TabsTrigger value="pecas" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <Package className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Peças ({filterByOs(pecasQuery.data).length})</span>
           </TabsTrigger>
-          <TabsTrigger value="problemas">
-            <AlertTriangle className="mr-1.5 h-4 w-4" /> Problemas (
-            {filterByOs(problQuery.data).length})
+          <TabsTrigger value="problemas" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
+            <AlertTriangle className="mr-1 hidden h-4 w-4 sm:inline-block" />
+            <span className="truncate">Problemas ({filterByOs(problQuery.data).length})</span>
           </TabsTrigger>
         </TabsList>
 
