@@ -215,6 +215,10 @@ function RefrigeracaoGestor() {
           <BulkUpdateDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
+          <BulkEquipUpdateDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
+          />
+
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })} />
         </>
       }
