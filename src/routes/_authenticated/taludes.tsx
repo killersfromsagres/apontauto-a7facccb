@@ -1324,9 +1324,10 @@ function TaludesPage() {
                   height: "auto",
                   maxWidth: "100%",
                   maxHeight: imgSize
-                    ? `min(${imgSize.h}px, calc(100dvh - 4rem))`
-                    : "calc(100dvh - 4rem)",
+                    ? `min(${imgSize.h}px, calc(100dvh - 2rem))`
+                    : "calc(100dvh - 2rem)",
                   aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
+
                 }}
               >
 
