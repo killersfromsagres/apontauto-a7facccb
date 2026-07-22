@@ -436,15 +436,21 @@ function BackorderPage() {
 
         const next = {
           ...r,
-          // Preserva o que veio na planilha. `applied` (regra aprendida) e
-          // `resolveAtivoTree` são apenas fallback quando a coluna estava vazia.
-          predio: r.predio || applied.predio,
-          andar: r.andar || applied.andar,
-          espaco: r.espaco || applied.espaco,
+          // Preserva o que veio na planilha. Depois tenta regra aprendida
+          // / árvore. Se ainda vier vazio e a OS já existir com valor
+          // salvo (correção manual anterior), mantém o valor salvo — a
+          // reimportação nunca destrói uma localização já preenchida.
+          predio: r.predio || applied.predio || prev?.predio || "",
+          andar: r.andar || applied.andar || prev?.andar || "",
+          espaco: r.espaco || applied.espaco || prev?.espaco || "",
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco) || revisaoText,
-          origem_predio_andar_espaco: r.predio || r.andar || r.espaco ? "planilha" : applied.origem_predio_andar_espaco,
+          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco && !(prev?.predio || prev?.andar || prev?.espaco)) || revisaoText,
+          origem_predio_andar_espaco: r.predio || r.andar || r.espaco
+            ? "planilha"
+            : (applied.origem_predio_andar_espaco !== "pendente"
+                ? applied.origem_predio_andar_espaco
+                : (prev?.predio || prev?.andar || prev?.espaco) ? "manual_preservado" : "pendente"),
           origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
         };
         if (prev) {
