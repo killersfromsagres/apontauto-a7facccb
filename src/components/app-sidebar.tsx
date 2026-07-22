@@ -26,6 +26,7 @@ import {
   AirVent,
   Wrench,
   Cog,
+  Bot,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -84,6 +85,7 @@ const sections: MenuSection[] = [
       
       { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Map },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
+      { key: "automacao-os", title: "Automação de OS (Prisma4)", url: "/automacao-os", icon: Bot },
     ],
   },
   {
