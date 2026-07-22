@@ -4,7 +4,7 @@
 // dispara o content-script na aba autenticada do Prisma4.
 // ============================================================
 
-const VERSAO = "2.0.0";
+const VERSAO = "2.1.0";
 const INTERVALO_POLLING_MIN = 0.5; // 30s
 const HORA_INICIO_JORNADA = 8;
 
