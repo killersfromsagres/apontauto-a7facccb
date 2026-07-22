@@ -939,25 +939,21 @@ function BackorderPage() {
 
     // ── Aprendizado automático a partir de correções manuais ───────────
     const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
-    const wasReview = r.revisao_manual;
 
-    // Local aprendido: se algum dos campos de local foi editado manualmente
-    // (ou recalculado a partir de novo ativo) e o chamado estava em revisão
-    // ou o ativo não existe na árvore.
+    // Local aprendido: toda vez que o usuário editar manualmente prédio/
+    // andar/ambiente registramos a associação Ativo → Área. Assim a
+    // próxima OS do mesmo ativo já vem preenchida e a "Classificação
+    // de Equipes" nunca sobrescreve o local salvo (a regra aprendida
+    // vence a árvore em applyLearnedToResolved).
     const locChanged =
       (next.predio !== undefined && next.predio !== r.predio) ||
       (next.andar !== undefined && next.andar !== r.andar) ||
       (next.espaco !== undefined && next.espaco !== r.espaco);
-    const tree = ativoKey ? resolveAtivoTree(assetsMap, ativoKey) : { predio: "", andar: "", espaco: "", found: false };
     const willBePredio = next.predio ?? r.predio;
     const willBeAndar = next.andar ?? r.andar;
     const willBeEspaco = next.espaco ?? r.espaco;
-    const treeMismatch = !tree.found ||
-      tree.predio !== willBePredio ||
-      tree.andar !== willBeAndar ||
-      tree.espaco !== willBeEspaco;
 
-    if (ativoKey && locChanged && (wasReview || treeMismatch) && (willBePredio || willBeAndar || willBeEspaco)) {
+    if (ativoKey && locChanged && (willBePredio || willBeAndar || willBeEspaco)) {
       const { data: user } = await supabase.auth.getUser();
       const { error: lerr } = await supabase
         .from("regras_aprendidas_localizacao")
