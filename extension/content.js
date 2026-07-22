@@ -1,5 +1,6 @@
 // Content script — executa a automação dentro da página do Prisma4.
-// Replica o fluxo de apontamento-prisma4.js (Playwright) usando DOM nativo.
+// Replica o fluxo de apontamento-prisma4.js (Playwright) usando DOM nativo,
+// com eventos "reais" (mouse + teclado) para SlickGrid e inputs custom.
 (() => {
   if (window.__apontautoRunning) return;
   window.__apontautoRunning = true;
@@ -14,9 +15,7 @@
   function progress(percent, status) { send({ type: "APONTAUTO_PROGRESS", percent, status }); }
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  async function waitWhilePaused() {
-    while (PAUSED && !STOP) await sleep(300);
-  }
+  async function waitWhilePaused() { while (PAUSED && !STOP) await sleep(300); }
 
   async function waitFor(pred, { timeout = 10000, interval = 200, msg = "condição" } = {}) {
     const start = Date.now();
@@ -32,18 +31,45 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  async function waitEl(sel, opts) {
-    return waitFor(() => $(sel), { msg: `seletor ${sel}`, ...opts });
+  async function waitEl(sel, opts) { return waitFor(() => $(sel), { msg: `seletor ${sel}`, ...opts }); }
+  async function waitVisibleEl(sel, opts) {
+    return waitFor(() => {
+      const el = $(sel);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return (r.width > 0 && r.height > 0) ? el : null;
+    }, { msg: `elemento visível ${sel}`, ...opts });
   }
 
   function findByText(text, tag = "*") {
     const t = text.trim();
     return $$(tag).find((el) => (el.textContent || "").trim() === t);
   }
-
   function findContainsText(text, tag = "*") {
     const t = text.trim().toLowerCase();
     return $$(tag).find((el) => (el.textContent || "").trim().toLowerCase().includes(t));
+  }
+
+  // -------- Eventos "reais" --------
+  function fireMouse(el, type, opts = {}) {
+    const r = el.getBoundingClientRect();
+    el.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true, view: window, button: 0, buttons: 1,
+      clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, ...opts,
+    }));
+  }
+  function realClick(el) {
+    if (!el) return;
+    el.scrollIntoView?.({ block: "center", inline: "center" });
+    fireMouse(el, "mouseover");
+    fireMouse(el, "mousedown");
+    fireMouse(el, "mouseup");
+    fireMouse(el, "click");
+    if (typeof el.click === "function") { try { el.click(); } catch (_) {} }
+  }
+  function realDblClick(el) {
+    realClick(el);
+    fireMouse(el, "dblclick");
   }
 
   function setNativeValue(el, value) {
@@ -52,25 +78,47 @@
     if (setter) setter.call(el, value);
     else el.value = value;
     el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  async function clearInput(el) {
+    el.focus();
+    try { el.select?.(); } catch (_) {}
+    setNativeValue(el, "");
+    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+    await sleep(20);
+  }
+
+  async function typeSequentially(el, text, delay = 45) {
+    el.focus();
+    await clearInput(el);
+    for (const ch of String(text)) {
+      if (STOP) throw new Error("Cancelado.");
+      const keyOpts = { key: ch, char: ch, bubbles: true, cancelable: true };
+      el.dispatchEvent(new KeyboardEvent("keydown", keyOpts));
+      el.dispatchEvent(new KeyboardEvent("keypress", keyOpts));
+      setNativeValue(el, el.value + ch);
+      el.dispatchEvent(new KeyboardEvent("keyup", keyOpts));
+      await sleep(delay);
+    }
     el.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
-  async function typeSequentially(el, text, delay = 40) {
-    el.focus();
-    setNativeValue(el, "");
-    for (const ch of text) {
-      if (STOP) throw new Error("Cancelado.");
-      setNativeValue(el, el.value + ch);
-      el.dispatchEvent(new KeyboardEvent("keydown", { key: ch, bubbles: true }));
-      el.dispatchEvent(new KeyboardEvent("keyup", { key: ch, bubbles: true }));
-      await sleep(delay);
-    }
+  async function pressEnter(el) {
+    const o = { key: "Enter", code: "Enter", keyCode: 13, which: 13, bubbles: true, cancelable: true };
+    el.dispatchEvent(new KeyboardEvent("keydown", o));
+    el.dispatchEvent(new KeyboardEvent("keypress", o));
+    el.dispatchEvent(new KeyboardEvent("keyup", o));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    await sleep(80);
   }
 
-  async function pressEnter(el) {
-    el.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
-    el.dispatchEvent(new KeyboardEvent("keypress", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
-    el.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", code: "Enter", keyCode: 13, bubbles: true }));
+  async function pressTab(el) {
+    const o = { key: "Tab", code: "Tab", keyCode: 9, which: 9, bubbles: true, cancelable: true };
+    el.dispatchEvent(new KeyboardEvent("keydown", o));
+    el.dispatchEvent(new KeyboardEvent("keyup", o));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    try { el.blur(); } catch (_) {}
+    await sleep(80);
   }
 
   // ---------------- Login ----------------
@@ -85,7 +133,7 @@
       setNativeValue(passInput, senha);
       const okBtn = findByText("OK", "button") || findContainsText("OK", "button") || $('button[type="submit"], input[type="submit"]');
       if (!okBtn) throw new Error("Botão OK não encontrado.");
-      okBtn.click();
+      realClick(okBtn);
       log("Login enviado, aguardando dashboard…", "info");
       await waitFor(() => findContainsText("Ordens de Serviço", "a"), { timeout: 20000, msg: "menu Ordens de Serviço" });
     } else {
@@ -98,29 +146,32 @@
     log("Navegando: Ordens de Serviço → Registro → OS Completa…", "info");
     const menu = findContainsText("Ordens de Serviço", "a");
     if (!menu) throw new Error("Menu 'Ordens de Serviço' não encontrado.");
-    menu.click();
-    await sleep(400);
+    realClick(menu);
+    await sleep(500);
     let registro = findContainsText("Registro", "a");
     if (!registro) {
-      menu.click();
-      await sleep(600);
+      realClick(menu);
+      await sleep(700);
       registro = await waitFor(() => findContainsText("Registro", "a"), { timeout: 10000, msg: "link Registro" });
     }
-    registro.click();
-    await sleep(400);
-    const osCompleta = await waitFor(() => findContainsText("OS Completa", "a"), { timeout: 10000, msg: "link OS Completa" });
-    osCompleta.click();
-    await waitEl("#TBWorkOrder", { timeout: 15000 });
+    realClick(registro);
     await sleep(500);
+    const osCompleta = await waitFor(() => findContainsText("OS Completa", "a"), { timeout: 10000, msg: "link OS Completa" });
+    realClick(osCompleta);
+    await waitEl("#TBWorkOrder", { timeout: 15000 });
+    await sleep(600);
   }
 
   async function preencherNumeroOS(numeroOS) {
     log(`OS ${numeroOS}: preenchendo número…`, "info");
     const inp = await waitEl("#TBWorkOrder");
-    setNativeValue(inp, numeroOS);
+    inp.focus();
+    await clearInput(inp);
+    await typeSequentially(inp, String(numeroOS), 30);
+    await pressTab(inp);
     // Clique fora para disparar o load
     const alvo = $("#tabWorkOrderCreation1 > div:nth-child(2)") || document.body;
-    alvo.click();
+    realClick(alvo);
     await sleep(1500);
   }
 
@@ -128,18 +179,38 @@
     log("Marcando Estado como CONCLUÍDO…", "info");
     const btn = $("div:nth-child(13) > div:nth-child(2) > .sp-input-cluster-section.code > .sp-input-cluster-container-wrapper > .sp-input-button > .sp-input-cluster-help-button");
     if (!btn) throw new Error("Botão de estado não encontrado.");
-    btn.click();
+    realClick(btn);
     const concluido = await waitFor(() => findByText("CONCLUÍDO"), { timeout: 6000, msg: "opção CONCLUÍDO" });
-    concluido.click();
-    await sleep(400);
+    realClick(concluido);
+    await sleep(500);
   }
 
   // ------------- Mão-de-Obra -------------
   async function esperarLinhas(gridSel, n) {
     await waitFor(() => $$(`${gridSel} .slick-row`).length >= n, {
-      timeout: 12000,
-      msg: `${n} linha(s) em ${gridSel}`,
+      timeout: 12000, msg: `${n} linha(s) em ${gridSel}`,
     });
+  }
+
+  async function editarCelulaGrid(cellContentEl, inputSel, valor, { pressEnterAoFim = true, sequencial = true } = {}) {
+    if (!cellContentEl) throw new Error("Célula não encontrada para edição.");
+    // SlickGrid: um clique seleciona, mais um clique entra em modo edição.
+    realClick(cellContentEl);
+    await sleep(120);
+    let inp = $(inputSel);
+    if (!inp || getComputedStyle(inp).display === "none") {
+      realClick(cellContentEl);
+      await sleep(150);
+      inp = await waitVisibleEl(inputSel, { timeout: 5000 });
+    }
+    if (!inp) inp = await waitVisibleEl(inputSel, { timeout: 5000 });
+    inp.focus();
+    await clearInput(inp);
+    if (sequencial) await typeSequentially(inp, valor, 40);
+    else setNativeValue(inp, String(valor));
+    if (pressEnterAoFim) await pressEnter(inp);
+    await sleep(300);
+    return inp;
   }
 
   async function adicionarMaoDeObra(item, usuarioLogado) {
@@ -149,47 +220,42 @@
     log("Abrindo aba Mão-de-Obra por OS…", "info");
     const abaMO = $$("li").find((li) => (li.textContent || "").includes("Mão-de-Obra por OS"));
     if (!abaMO) throw new Error("Aba Mão-de-Obra não encontrada.");
-    abaMO.click();
-    await sleep(500);
+    realClick(abaMO);
+    await sleep(700);
 
-    const lista = colaboradores.length ? colaboradores : [usuarioLogado];
+    const lista = (colaboradores && colaboradores.length) ? colaboradores : [usuarioLogado];
+
+    // Adiciona todas as linhas primeiro (igual ao script Playwright).
     for (let i = 0; i < lista.length; i++) {
-      const addBtn = $(".grid-btn");
-      if (!addBtn) throw new Error("Botão adicionar linha não encontrado.");
-      addBtn.click();
+      const addBtn = $(`${gridSel} ~ * .grid-btn`) || $(".grid-btn");
+      if (!addBtn) throw new Error("Botão 'Adicionar Linha' não encontrado.");
+      realClick(addBtn);
       await esperarLinhas(gridSel, i + 1);
+      await sleep(200);
     }
 
     for (let i = 0; i < lista.length; i++) {
-      const valorTec = lista[i];
+      const valorTec = String(lista[i]);
       log(`Linha ${i + 1}: técnico "${valorTec}"…`, "info");
 
-      // Clica na célula do técnico (procura pelo código do usuário logado exibido por padrão)
+      // Localiza a célula do técnico da linha i. Preferimos a i-ésima linha, coluna do técnico (l4/l5 conforme grid).
       const grid = $(gridSel);
-      const celTec = $$(".cell-content", grid).find((c) => (c.textContent || "").trim() === usuarioLogado);
-      if (celTec) celTec.click();
-      else $$(`${gridSel} .slick-row`)[i]?.querySelector(".slick-cell")?.click();
-      const inputTec = await waitEl("#CLaborWorkerW", { timeout: 6000 });
-      setNativeValue(inputTec, "");
-      await typeSequentially(inputTec, valorTec, 30);
-      await pressEnter(inputTec);
-      await sleep(500);
+      const rows = $$(".slick-row", grid);
+      const row = rows[i];
+      if (!row) throw new Error(`Linha ${i + 1} não encontrada na grid.`);
+      // Célula do técnico: o script Playwright clica no texto do código do usuário logado.
+      let celTec = $$(".cell-content", row).find((c) => (c.textContent || "").trim() === String(usuarioLogado));
+      if (!celTec) celTec = row.querySelector(".slick-cell.l4 .cell-content") || row.querySelector(".slick-cell.l3 .cell-content") || row.querySelector(".slick-cell .cell-content");
+      await editarCelulaGrid(celTec, "#CLaborWorkerW", valorTec);
 
       log(`Linha ${i + 1}: data início "${dataHoraInicio}"…`, "info");
-      const celData = $$(`${gridSel} .slick-cell.l6 .cell-content`)[i];
-      celData?.click();
-      const inputData = await waitEl("#CLaborInitDateW", { timeout: 6000 });
-      await typeSequentially(inputData, dataHoraInicio, 50);
-      await pressEnter(inputData);
-      await sleep(500);
+      const celData = row.querySelector(".slick-cell.l6 .cell-content");
+      await editarCelulaGrid(celData, "#CLaborInitDateW", dataHoraInicio);
 
       log(`Linha ${i + 1}: tempo trabalho ${duracao}h…`, "info");
-      const celTempo = $$(`${gridSel} .slick-cell.l8 .cell-content`)[i];
-      celTempo?.click();
-      const inputTempo = await waitEl("#CLaborTimeW", { timeout: 6000 });
-      setNativeValue(inputTempo, String(duracao));
-      await pressEnter(inputTempo);
-      await sleep(1200);
+      const celTempo = row.querySelector(".slick-cell.l8 .cell-content");
+      await editarCelulaGrid(celTempo, "#CLaborTimeW", String(duracao));
+      await sleep(700);
     }
     log("Mão-de-Obra preenchida.", "ok");
   }
@@ -199,14 +265,16 @@
     log(`Aba Procedimentos, data ${dataFinal}…`, "info");
     const aba = $$("#formTabs li").find((li) => (li.textContent || "").includes("Procedimentos por OS"));
     if (!aba) throw new Error("Aba Procedimentos não encontrada.");
-    aba.click();
+    realClick(aba);
     await waitEl("#GWorkOrderOperation .slick-row", { timeout: 12000 });
-    await sleep(800);
+    await sleep(1000);
 
-    const linhas = $$("#GWorkOrderOperation .slick-row");
-    for (let i = 0; i < linhas.length; i++) {
+    const totalLinhas = $$("#GWorkOrderOperation .slick-row").length;
+    for (let i = 0; i < totalLinhas; i++) {
       if (STOP) throw new Error("Cancelado.");
+      const linhas = $$("#GWorkOrderOperation .slick-row");
       const linha = linhas[i];
+      if (!linha) continue;
       linha.scrollIntoView?.({ block: "center" });
       const celula = linha.querySelector(".slick-cell.l6 .cell-content");
       if (!celula) continue;
@@ -214,16 +282,13 @@
       let ok = false;
       for (let tent = 0; tent < 3 && !ok; tent++) {
         try {
-          celula.click();
-          await sleep(200);
-          const inp = await waitEl("#COperationDate", { timeout: 4000 });
-          setNativeValue(inp, "");
-          await typeSequentially(inp, dataFinal, 35);
-          await pressEnter(inp);
-          await sleep(500);
+          await editarCelulaGrid(celula, "#COperationDate", dataFinal);
           const txt = (celula.textContent || "").trim();
           if (txt.includes(dataFinal.substring(0, 10))) ok = true;
-          else { document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); await sleep(200); }
+          else {
+            document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            await sleep(250);
+          }
         } catch (e) {
           if (tent === 2) throw new Error(`Data linha ${i + 1}: ${e.message}`);
           await sleep(400);
@@ -232,6 +297,7 @@
     }
 
     if ((categoria || "").toLowerCase() === "refrigeracao") {
+      const linhas = $$("#GWorkOrderOperation .slick-row");
       for (let i = 0; i < linhas.length; i++) {
         const linha = linhas[i];
         linha.scrollIntoView?.({ block: "center" });
@@ -242,12 +308,7 @@
         if (!celMed) continue;
         for (let tent = 0; tent < 3; tent++) {
           try {
-            celMed.click();
-            await sleep(200);
-            const inp = await waitEl("#COperationMeasureValue", { timeout: 4000 });
-            setNativeValue(inp, "0");
-            await pressEnter(inp);
-            await sleep(400);
+            await editarCelulaGrid(celMed, "#COperationMeasureValue", "0", { sequencial: false });
             break;
           } catch (e) {
             if (tent === 2) throw new Error(`Medição linha ${i + 1}: ${e.message}`);
@@ -263,11 +324,10 @@
     log("Salvando OS…", "info");
     const btn = findByText("Salvar", "button") || findContainsText("Salvar", "button") || findContainsText("Salvar", "a");
     if (!btn) throw new Error("Botão Salvar não encontrado.");
-    btn.click();
-    await sleep(2500);
+    realClick(btn);
+    await sleep(2800);
   }
 
-  // ------------- Loop principal -------------
   // ------------- Loop principal -------------
   async function processarOS(item, usuarioLogado) {
     await waitWhilePaused();
@@ -326,5 +386,5 @@
     else if (msg?.type === "APONTAUTO_RESUME") { PAUSED = false; log("Retomado.", "info"); }
   });
 
-  send({ type: "APONTAUTO_LOG", msg: "Runner carregado na página.", kind: "ok" });
+  send({ type: "APONTAUTO_LOG", msg: "Runner carregado na página (v1.1.1).", kind: "ok" });
 })();
