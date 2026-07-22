@@ -13,10 +13,13 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
  * Só aplica ao build do cliente — Nitro/SSR usa seu próprio bundler.
  */
 const HEAVY_VENDORS: Record<string, RegExp> = {
+  "vendor-react": /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
+  "vendor-tanstack": /[\\/]node_modules[\\/]@tanstack[\\/]/,
   "vendor-recharts": /[\\/]node_modules[\\/](recharts|d3-[^/\\]+|victory-vendor|internmap|delaunator|robust-predicates)[\\/]/,
   "vendor-exceljs": /[\\/]node_modules[\\/]exceljs[\\/]/,
   "vendor-xlsx": /[\\/]node_modules[\\/]xlsx[\\/]/,
   "vendor-pdf": /[\\/]node_modules[\\/](jspdf|jspdf-autotable|html-to-image)[\\/]/,
+  "vendor-psd": /[\\/]node_modules[\\/]ag-psd[\\/]/,
   "vendor-daypicker": /[\\/]node_modules[\\/](react-day-picker|date-fns)[\\/]/,
   "vendor-radix": /[\\/]node_modules[\\/]@radix-ui[\\/]/,
   "vendor-icons": /[\\/]node_modules[\\/]lucide-react[\\/]/,
