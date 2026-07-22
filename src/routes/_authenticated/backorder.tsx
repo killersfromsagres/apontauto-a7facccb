@@ -897,7 +897,9 @@ function BackorderPage() {
 
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
     // Se o "ativo" mudar e nenhum override manual for enviado para
-    // predio/andar/espaço, aplicamos a fórmula (assets_ref).
+    // predio/andar/espaço, tenta inferir: (1) regra aprendida por ativo,
+    // (2) fallback árvore (assets_ref). Nunca sobrescreve valores enviados
+    // no patch.
     const next: Partial<BOSRow> = { ...patch };
     if (
       patch.ativo !== undefined &&
@@ -906,10 +908,16 @@ function BackorderPage() {
       patch.andar === undefined &&
       patch.espaco === undefined
     ) {
-      const resolved = resolveAtivo(assetsMap, patch.ativo);
-      next.predio = resolved.predio;
-      next.andar = resolved.andar;
-      next.espaco = resolved.espaco;
+      const tree = resolveAtivoTree(assetsMap, patch.ativo);
+      const learned = learnedLocation(learnedIndex, patch.ativo);
+      next.predio = learned?.predio ?? tree.predio;
+      next.andar = learned?.andar ?? tree.andar;
+      next.espaco = learned?.espaco ?? tree.espaco;
+      (next as Record<string, unknown>).origem_predio_andar_espaco = learned
+        ? "regra_aprendida"
+        : tree.found
+          ? "arvore_ativos"
+          : "pendente";
     }
     if (patch.atividade && patch.atividade !== r.atividade) {
       next.atividade_manual = true;
