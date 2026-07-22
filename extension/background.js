@@ -58,10 +58,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
-  if (msg?.type === "APONTAUTO_STOP") {
-    stopFlag = true;
+  if (msg?.type === "APONTAUTO_STOP" || msg?.type === "APONTAUTO_PAUSE" || msg?.type === "APONTAUTO_RESUME") {
+    if (msg.type === "APONTAUTO_STOP") stopFlag = true;
     if (currentTabId) {
-      chrome.tabs.sendMessage(currentTabId, { type: "APONTAUTO_STOP" }).catch(() => {});
+      chrome.tabs.sendMessage(currentTabId, { type: msg.type }).catch(() => {});
     }
     sendResponse({ ok: true });
     return true;
