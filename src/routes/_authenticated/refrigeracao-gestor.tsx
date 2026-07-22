@@ -215,8 +215,8 @@ function RefrigeracaoGestor() {
 
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 min-w-[220px]">
-            <Search className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full flex-1 items-center gap-2 sm:w-auto sm:min-w-[220px]">
+            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Input
               placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
               value={busca}
@@ -224,10 +224,10 @@ function RefrigeracaoGestor() {
               className="h-9"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="h-9 w-[170px]">
+              <SelectTrigger className="h-9 w-full sm:w-[170px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +241,7 @@ function RefrigeracaoGestor() {
           </div>
           {equipes.length > 0 && (
             <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
-              <SelectTrigger className="h-9 w-[170px]">
+              <SelectTrigger className="h-9 w-full sm:w-[170px]">
                 <SelectValue placeholder="Equipe" />
               </SelectTrigger>
               <SelectContent>
