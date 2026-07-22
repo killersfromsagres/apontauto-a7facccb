@@ -786,7 +786,8 @@ function TaludesPage() {
     toast.info(`Editando talude ${t.numero} — arraste os pontos, clique para adicionar, botão direito para remover. Ctrl+Z desfaz.`);
   };
 
-  // Inicia demarcação de uma nova parte já vinculada ao mesmo numero
+  // Inicia nova demarcação para o mesmo número: ao finalizar, substitui a
+  // demarcação existente preservando a data original.
   const startNewPart = (t: TaludeRow) => {
     resetHistory();
     setEditingPolygonFor(null);
@@ -794,7 +795,7 @@ function TaludesPage() {
     setDrawingNewMode(true);
     setDrawingNumero(String(t.numero));
     setSelectedTaludeId(t.id);
-    toast.info(`Nova parte para talude ${t.numero} — clique no mapa para adicionar pontos`);
+    toast.info(`Redemarcar talude ${t.numero} — a área anterior será substituída, mantendo a data original`);
   };
 
 
