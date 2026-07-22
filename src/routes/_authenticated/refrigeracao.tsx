@@ -159,7 +159,7 @@ function RefrigeracaoPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return osList.filter((o) => {
+    const base = osList.filter((o) => {
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (!q) return true;
       return (
@@ -171,6 +171,17 @@ function RefrigeracaoPage() {
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
       );
+    });
+    return [...base].sort((a, b) => {
+      const pa = (a.predio ?? "\uffff");
+      const pb = (b.predio ?? "\uffff");
+      const pc = pa.localeCompare(pb, "pt-BR", { sensitivity: "base", numeric: true });
+      if (pc !== 0) return pc;
+      const aa = (a.andar ?? "").toString();
+      const ab = (b.andar ?? "").toString();
+      const ac = aa.localeCompare(ab, "pt-BR", { numeric: true, sensitivity: "base" });
+      if (ac !== 0) return ac;
+      return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
   }, [osList, search, equipe]);
 
