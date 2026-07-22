@@ -1398,21 +1398,16 @@ function TaludesPage() {
                   <div
                     ref={imageLayerRef}
                     data-talude-image-layer
-                    className="relative inline-block max-w-full align-middle"
+                    className="relative block h-full w-full align-middle"
                     style={{
                       transform,
                       transformOrigin: originStr,
                       transition: panState ? "none" : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                       willChange: "transform",
                       lineHeight: 0,
-                      // Wrapper shrink-wraps the real rendered image. The SVG
-                      // uses the same box, so screen clicks and PNG export use
-                      // exactly the same 0..100 coordinate system.
-                      aspectRatio: imgSize ? `${imgSize.w} / ${imgSize.h}` : undefined,
-                      width: imgSize
-                        ? `min(100%, calc((100dvh - 8rem) * ${imgSize.w / imgSize.h}))`
-                        : "fit-content",
-                      maxWidth: "100%",
+                      // Wrapper fills the viewport (which itself uses the
+                      // image's aspect ratio). SVG overlay and PNG export
+                      // therefore share the exact same 0..100 coord system.
                     }}
                   >
                     {!imgLoaded && (
@@ -1422,7 +1417,7 @@ function TaludesPage() {
                     <img
                       src={imageUrl}
                       alt={map?.nome}
-                      className="block select-none"
+                      className="block h-full w-full select-none"
                       draggable={false}
                       loading="eager"
                       decoding="async"
@@ -1430,11 +1425,7 @@ function TaludesPage() {
                       style={{
                         filter: imgFilter,
                         display: "block",
-                        width: imgSize ? "100%" : "auto",
-                        height: imgSize ? "100%" : "auto",
-                        objectFit: "contain",
-                        maxWidth: "100%",
-                        maxHeight: "calc(100dvh - 8rem)",
+                        objectFit: "fill",
                       }}
                       onLoad={(e) => {
                         const el = e.currentTarget;
@@ -1444,6 +1435,7 @@ function TaludesPage() {
                         }
                       }}
                     />
+
 
 
                     <LogoMaskOverlay
