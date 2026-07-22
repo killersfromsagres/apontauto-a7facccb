@@ -102,28 +102,51 @@ $("limparBtn").onclick = async () => {
 })();
 
 // ---------- Iniciar ----------
-$("iniciarBtn").onclick = async () => {
+async function iniciar(retomarDe = 0) {
   const usuario = $("usuario").value.trim();
   const senha = $("senha").value;
   if (!usuario || !senha) return log("Salve as credenciais antes.", "err");
   if (!loteCarregado || loteCarregado.length === 0) return log("Importe um lote JSON.", "err");
 
-  resultados = [];
-  progEl.value = 0;
-  statusEl.textContent = "Abrindo Prisma4…";
+  if (retomarDe === 0) resultados = [];
+  await chrome.storage.local.set({ resultados });
+  progEl.value = retomarDe > 0 ? Math.round((retomarDe / loteCarregado.length) * 100) : 0;
+  statusEl.textContent = retomarDe > 0 ? `Retomando da OS ${retomarDe + 1}…` : "Abrindo Prisma4…";
   $("iniciarBtn").disabled = true;
+  $("pausarBtn").disabled = false;
+  $("pausarBtn").textContent = "⏸ Pausar";
+  $("pausarBtn").dataset.state = "running";
   $("pararBtn").disabled = false;
+  if ($("retomarBtn")) $("retomarBtn").disabled = true;
 
   await chrome.runtime.sendMessage({
     type: "APONTAUTO_START",
-    payload: { usuario, senha, lote: loteCarregado },
+    payload: { usuario, senha, lote: loteCarregado, retomarDe },
   });
+}
+
+$("iniciarBtn").onclick = () => iniciar(0);
+
+$("pausarBtn").onclick = async () => {
+  const btn = $("pausarBtn");
+  if (btn.dataset.state === "paused") {
+    await chrome.runtime.sendMessage({ type: "APONTAUTO_RESUME" });
+    btn.textContent = "⏸ Pausar";
+    btn.dataset.state = "running";
+    statusEl.textContent = "Retomando…";
+  } else {
+    await chrome.runtime.sendMessage({ type: "APONTAUTO_PAUSE" });
+    btn.textContent = "▶ Retomar";
+    btn.dataset.state = "paused";
+    statusEl.textContent = "Pausado.";
+  }
 };
 
 $("pararBtn").onclick = async () => {
   await chrome.runtime.sendMessage({ type: "APONTAUTO_STOP" });
   statusEl.textContent = "Cancelado.";
   $("iniciarBtn").disabled = false;
+  $("pausarBtn").disabled = true;
   $("pararBtn").disabled = true;
 };
 
@@ -136,26 +159,84 @@ chrome.runtime.onMessage.addListener((msg) => {
     statusEl.textContent = msg.status;
   } else if (msg?.type === "APONTAUTO_RESULT") {
     resultados.push(msg.result);
+    chrome.storage.local.set({ resultados });
   } else if (msg?.type === "APONTAUTO_DONE") {
     $("iniciarBtn").disabled = false;
+    $("pausarBtn").disabled = true;
+    $("pausarBtn").textContent = "⏸ Pausar";
+    $("pausarBtn").dataset.state = "running";
     $("pararBtn").disabled = true;
-    statusEl.textContent = `Concluído: ${resultados.filter((r) => r.status === "concluido").length}/${resultados.length}`;
+    const ok = resultados.filter((r) => r.status === "concluido").length;
+    statusEl.textContent = `Concluído: ${ok}/${resultados.length}`;
     log("Automação finalizada.", "ok");
+    // Se sobrou trabalho, habilita retomar
+    if (loteCarregado && resultados.length < loteCarregado.length && $("retomarBtn")) {
+      $("retomarBtn").disabled = false;
+    }
   }
 });
 
-// ---------- Exportar relatório ----------
-$("exportarLog").onclick = () => {
-  const payload = {
-    geradoEm: new Date().toISOString(),
-    resultados,
-    log: logEl.innerText,
+// Retomar (aparece se houver botão no HTML)
+if ($("retomarBtn")) {
+  $("retomarBtn").onclick = () => {
+    const proxIdx = resultados.length;
+    iniciar(proxIdx);
   };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+}
+
+// ---------- Restaurar resultados salvos ----------
+(async () => {
+  const { resultados: salvos } = await chrome.storage.local.get("resultados");
+  if (Array.isArray(salvos) && salvos.length) {
+    resultados = salvos;
+    const ok = salvos.filter((r) => r.status === "concluido").length;
+    statusEl.textContent = `Última execução: ${ok}/${salvos.length}`;
+    if (loteCarregado && salvos.length < loteCarregado.length && $("retomarBtn")) {
+      $("retomarBtn").disabled = false;
+    }
+  }
+})();
+
+// ---------- Exportar relatório ----------
+function baixar(blob, nome) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `apontauto-relatorio-${Date.now()}.json`;
+  a.download = nome;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+$("exportarLog").onclick = () => {
+  const payload = {
+    geradoEm: new Date().toISOString(),
+    resumo: {
+      total: resultados.length,
+      concluidas: resultados.filter((r) => r.status === "concluido").length,
+      erros: resultados.filter((r) => r.status === "erro").length,
+    },
+    resultados,
+    log: logEl.innerText,
+  };
+  baixar(
+    new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }),
+    `apontauto-relatorio-${Date.now()}.json`,
+  );
 };
+
+if ($("exportarCsv")) {
+  $("exportarCsv").onclick = () => {
+    const linhas = [["indice", "os", "status", "duracao_seg", "mensagem"]];
+    for (const r of resultados) {
+      linhas.push([
+        r.indice ?? "",
+        r.os ?? "",
+        r.status ?? "",
+        r.duracaoSeg ?? "",
+        (r.mensagem ?? "").replace(/"/g, '""'),
+      ]);
+    }
+    const csv = linhas.map((l) => l.map((c) => `"${String(c)}"`).join(",")).join("\n");
+    baixar(new Blob([csv], { type: "text/csv;charset=utf-8" }), `apontauto-relatorio-${Date.now()}.csv`);
+  };
+}
