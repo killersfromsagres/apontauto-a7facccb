@@ -41,6 +41,10 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
+import {
+  readRefrigOsUpdateFile,
+  type RefrigOsUpdate,
+} from "@/lib/refrigeracao/bulk-update-reader";
 import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
 import { downloadBlob } from "@/lib/download";
 
