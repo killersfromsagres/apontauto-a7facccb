@@ -237,7 +237,8 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
       const [f, p, pr] = await Promise.all([
         supabase.from("refrigeracao_fotos").select("id, storage_path, created_at, legenda").eq("os_id", os.id).order("created_at"),
-        supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, created_at").eq("os_id", os.id).order("created_at"),
+        supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, patrimonio, modelo, btus, status_gestor, created_at").eq("os_id", os.id).order("created_at"),
+
         supabase.from("refrigeracao_problemas").select("id, descricao, gravidade, created_at").eq("os_id", os.id).order("created_at"),
       ]);
       return {
