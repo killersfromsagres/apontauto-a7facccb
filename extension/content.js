@@ -326,6 +326,7 @@
       tecnicos: payload.tecnicos,
       dataHoraInicio: payload.dataHoraInicio,
       duracaoHoras: payload.duracaoHoras,
+      codigoUsuarioPrisma: payload.codigoUsuarioPrisma,
     });
     await preencherProcedimentos(payload.dataHoraFim, payload.categoria);
     await salvar();
