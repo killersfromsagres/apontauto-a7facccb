@@ -110,16 +110,16 @@
   // Edição de célula SlickGrid — reabre editor se necessário e
   // confirma o valor comparando o textContent depois do commit.
   // ---------------------------------------------------------------
-  async function editarCelulaTexto(celula, seletorInput, valor, { tentativas = 3 } = {}) {
+  async function editarCelulaTexto(celula, seletorInput, valor, { tentativas = 3, timeout = 5000 } = {}) {
     const alvo = String(valor).trim();
     for (let i = 0; i < tentativas; i++) {
       realClick(celula);
       let input;
       try {
-        input = await waitFor(seletorInput, { timeout: 2500 });
+        input = await waitFor(seletorInput, { timeout });
       } catch {
         realClick(celula); // segundo clique reabre o editor
-        input = await waitFor(seletorInput, { timeout: 3000 });
+        input = await waitFor(seletorInput, { timeout });
       }
       await fillInput(input, alvo);
       pressEnter(input);
