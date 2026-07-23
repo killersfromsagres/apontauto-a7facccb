@@ -18,7 +18,12 @@ import {
   Save,
   ArrowLeft,
   Download,
+  Link2,
+  Copy,
+  ExternalLink,
+  ImageIcon,
 } from "lucide-react";
+
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
