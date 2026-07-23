@@ -395,7 +395,7 @@ function PecasStatusPage() {
                         p.status_gestor === "em_analise" ? "animate-spin" : ""
                       }`}
                     />
-                    <span className="hidden xs:inline sm:inline">{meta.label}</span>
+                    <span>{meta.label}</span>
                   </Badge>
 
                 </div>
