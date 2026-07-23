@@ -85,7 +85,6 @@ const sections: MenuSection[] = [
       
       { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Map },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
-      { key: "automacao-os", title: "Painel Prisma", url: "/automacao-os", icon: Bot },
     ],
   },
   {
