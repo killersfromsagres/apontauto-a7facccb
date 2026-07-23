@@ -227,27 +227,30 @@ export type Database = {
           created_at: string
           enviado_por: string | null
           id: string
+          image_url: string | null
           legenda: string | null
           os_id: string
-          storage_path: string
+          storage_path: string | null
         }
         Insert: {
           client_uuid?: string | null
           created_at?: string
           enviado_por?: string | null
           id?: string
+          image_url?: string | null
           legenda?: string | null
           os_id: string
-          storage_path: string
+          storage_path?: string | null
         }
         Update: {
           client_uuid?: string | null
           created_at?: string
           enviado_por?: string | null
           id?: string
+          image_url?: string | null
           legenda?: string | null
           os_id?: string
-          storage_path?: string
+          storage_path?: string | null
         }
         Relationships: [
           {
@@ -1069,27 +1072,30 @@ export type Database = {
           created_at: string
           enviado_por: string | null
           id: string
+          image_url: string | null
           legenda: string | null
           os_id: string
-          storage_path: string
+          storage_path: string | null
         }
         Insert: {
           client_uuid?: string | null
           created_at?: string
           enviado_por?: string | null
           id?: string
+          image_url?: string | null
           legenda?: string | null
           os_id: string
-          storage_path: string
+          storage_path?: string | null
         }
         Update: {
           client_uuid?: string | null
           created_at?: string
           enviado_por?: string | null
           id?: string
+          image_url?: string | null
           legenda?: string | null
           os_id?: string
-          storage_path?: string
+          storage_path?: string | null
         }
         Relationships: [
           {

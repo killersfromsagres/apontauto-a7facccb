@@ -132,6 +132,7 @@ function RefrigeracaoPage() {
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+  const [tipoFiltro, setTipoFiltro] = useState<"todas" | "preventiva" | "corretiva">("todas");
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -198,6 +199,11 @@ function RefrigeracaoPage() {
     const q = search.trim().toLowerCase();
     const base = osList.filter((o) => {
       if (!matchEquipe(o.equipe, equipe)) return false;
+      if (tipoFiltro !== "todas") {
+        const t = (o.tipo ?? "").toLowerCase();
+        if (tipoFiltro === "preventiva" && !t.includes("preventiv")) return false;
+        if (tipoFiltro === "corretiva" && !t.includes("corretiv")) return false;
+      }
       if (!q) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
@@ -220,7 +226,7 @@ function RefrigeracaoPage() {
       if (ac !== 0) return ac;
       return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
-  }, [osList, search, equipe]);
+  }, [osList, search, equipe, tipoFiltro]);
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
@@ -282,6 +288,32 @@ function RefrigeracaoPage() {
               />
             </div>
           </div>
+
+          {/* Pílulas de tipo (iOS 17-like) */}
+          <div className="mb-3 flex flex-wrap gap-2">
+            {([
+              { v: "todas", label: "Todas" },
+              { v: "preventiva", label: "Preventivas" },
+              { v: "corretiva", label: "Corretivas" },
+            ] as const).map((opt) => {
+              const active = tipoFiltro === opt.v;
+              return (
+                <button
+                  key={opt.v}
+                  type="button"
+                  onClick={() => setTipoFiltro(opt.v)}
+                  className={`rounded-full border px-4 py-1.5 text-xs font-medium transition-all duration-200 active:scale-95 ${
+                    active
+                      ? "border-primary/40 bg-primary text-primary-foreground shadow-sm"
+                      : "border-white/10 bg-white/5 text-muted-foreground backdrop-blur-xl hover:border-primary/30 hover:text-foreground dark:bg-white/[0.04]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
           {equipe !== "todas" && (
             <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
