@@ -904,6 +904,7 @@ export type Database = {
           data_inicio: string
           duracao_padrao_horas: number
           finalizado_em: string | null
+          hora_inicio_jornada: string
           hora_limite_jornada: string
           id: string
           iniciado_em: string | null
@@ -921,6 +922,7 @@ export type Database = {
           data_inicio?: string
           duracao_padrao_horas?: number
           finalizado_em?: string | null
+          hora_inicio_jornada?: string
           hora_limite_jornada?: string
           id?: string
           iniciado_em?: string | null
@@ -938,6 +940,7 @@ export type Database = {
           data_inicio?: string
           duracao_padrao_horas?: number
           finalizado_em?: string | null
+          hora_inicio_jornada?: string
           hora_limite_jornada?: string
           id?: string
           iniciado_em?: string | null
@@ -954,6 +957,8 @@ export type Database = {
         Row: {
           atualizado_em: string
           criado_em: string
+          data_hora_fim: string | null
+          data_hora_inicio: string | null
           finalizado_em: string | null
           id: string
           iniciado_em: string | null
@@ -967,6 +972,8 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           criado_em?: string
+          data_hora_fim?: string | null
+          data_hora_inicio?: string | null
           finalizado_em?: string | null
           id?: string
           iniciado_em?: string | null
@@ -980,6 +987,8 @@ export type Database = {
         Update: {
           atualizado_em?: string
           criado_em?: string
+          data_hora_fim?: string | null
+          data_hora_inicio?: string | null
           finalizado_em?: string | null
           id?: string
           iniciado_em?: string | null
@@ -1004,27 +1013,27 @@ export type Database = {
         Row: {
           ativo: boolean
           atualizado_em: string
+          codigo_prisma: string | null
           criado_em: string
           id: string
-          matricula: string | null
           nome: string
           user_id: string
         }
         Insert: {
           ativo?: boolean
           atualizado_em?: string
+          codigo_prisma?: string | null
           criado_em?: string
           id?: string
-          matricula?: string | null
           nome: string
           user_id: string
         }
         Update: {
           ativo?: boolean
           atualizado_em?: string
+          codigo_prisma?: string | null
           criado_em?: string
           id?: string
-          matricula?: string | null
           nome?: string
           user_id?: string
         }
