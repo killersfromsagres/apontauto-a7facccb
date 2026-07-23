@@ -1169,39 +1169,48 @@ export type Database = {
       }
       refrigeracao_pecas: {
         Row: {
+          btus: string | null
           client_uuid: string | null
           created_at: string
           descricao: string
           enviado_por: string | null
           id: string
+          modelo: string | null
           observacao: string | null
           os_id: string
+          patrimonio: string | null
           quantidade: number
           status_gestor: Database["public"]["Enums"]["refrig_status_gestor"]
           updated_at: string
           urgencia: Database["public"]["Enums"]["refrig_urgencia"]
         }
         Insert: {
+          btus?: string | null
           client_uuid?: string | null
           created_at?: string
           descricao: string
           enviado_por?: string | null
           id?: string
+          modelo?: string | null
           observacao?: string | null
           os_id: string
+          patrimonio?: string | null
           quantidade?: number
           status_gestor?: Database["public"]["Enums"]["refrig_status_gestor"]
           updated_at?: string
           urgencia?: Database["public"]["Enums"]["refrig_urgencia"]
         }
         Update: {
+          btus?: string | null
           client_uuid?: string | null
           created_at?: string
           descricao?: string
           enviado_por?: string | null
           id?: string
+          modelo?: string | null
           observacao?: string | null
           os_id?: string
+          patrimonio?: string | null
           quantidade?: number
           status_gestor?: Database["public"]["Enums"]["refrig_status_gestor"]
           updated_at?: string

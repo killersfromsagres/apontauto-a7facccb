@@ -50,7 +50,7 @@ type OsRow = {
 };
 
 type Foto = { id: string; storage_path: string; created_at: string; legenda: string | null };
-type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; created_at: string };
+type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; patrimonio: string | null; modelo: string | null; btus: string | null; status_gestor: string | null; created_at: string };
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
 function equipeStyles(equipe: string | null | undefined): { row: string; badge: string } {
@@ -237,7 +237,8 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
       const [f, p, pr] = await Promise.all([
         supabase.from("refrigeracao_fotos").select("id, storage_path, created_at, legenda").eq("os_id", os.id).order("created_at"),
-        supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, created_at").eq("os_id", os.id).order("created_at"),
+        supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, patrimonio, modelo, btus, status_gestor, created_at").eq("os_id", os.id).order("created_at"),
+
         supabase.from("refrigeracao_problemas").select("id, descricao, gravidade, created_at").eq("os_id", os.id).order("created_at"),
       ]);
       return {
@@ -287,6 +288,30 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           </div>
         ) : (
           <div className="space-y-4">
+            <section className="rounded-lg border bg-muted/30 p-3">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-[10px]">{os?.status}</Badge>
+                {os?.equipe && (
+                  <Badge variant="outline" className="text-[10px]">{os.equipe}</Badge>
+                )}
+                {os?.fim && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Concluída em {new Date(os.fim).toLocaleString("pt-BR")}
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+                <InfoField label="Prédio" value={os?.predio ?? "—"} />
+                <InfoField label="Andar" value={os?.andar ?? "—"} />
+                <InfoField label="Local" value={os?.local ?? "—"} />
+                <InfoField label="Máquina / Equipamento" value={os?.equipamento ?? "—"} />
+                <InfoField label="Ativo" value={os?.ativo ?? "—"} mono />
+                {os?.patrimonio && (
+                  <InfoField label="Patrimônio" value={os.patrimonio} mono highlight />
+                )}
+              </div>
+            </section>
+
             <section>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
                 <Camera className="h-4 w-4" /> Fotos ({data?.fotos.length ?? 0})
@@ -329,7 +354,17 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         <span className="font-medium">{p.descricao}</span>
                         <Badge variant="outline" className="text-[10px]">Qtd {p.quantidade}</Badge>
                         <Badge variant="secondary" className="text-[10px]">{p.urgencia}</Badge>
+                        {p.status_gestor && (
+                          <Badge variant="outline" className="text-[10px]">{p.status_gestor}</Badge>
+                        )}
                       </div>
+                      {(p.patrimonio || p.modelo || p.btus) && (
+                        <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                          {p.patrimonio && <span>PAT <span className="font-mono">{p.patrimonio}</span></span>}
+                          {p.modelo && <span>Modelo: {p.modelo}</span>}
+                          {p.btus && <span>{p.btus} BTUs</span>}
+                        </div>
+                      )}
                       {p.observacao && <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>}
                     </li>
                   ))}
@@ -338,6 +373,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 <p className="text-xs text-muted-foreground">Sem pedidos.</p>
               )}
             </section>
+
 
             <section>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -362,5 +398,22 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function InfoField({ label, value, mono, highlight }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`truncate text-sm ${mono ? "font-mono" : ""} ${
+          highlight ? "font-semibold text-emerald-700 dark:text-emerald-300" : ""
+        }`}
+      >
+        {value}
+      </div>
+    </div>
   );
 }

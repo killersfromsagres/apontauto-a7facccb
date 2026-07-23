@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+
 import { toast } from "sonner";
 import {
   Wifi,
@@ -448,6 +450,9 @@ function OsDetail({
     quantidade: string;
     urgencia: string;
     observacao: string;
+    patrimonio: string;
+    modelo: string;
+    btus: string;
   };
   const emptyPeca = (): PecaDraft => ({
     id: uuid(),
@@ -455,6 +460,9 @@ function OsDetail({
     quantidade: "1",
     urgencia: "media",
     observacao: "",
+    patrimonio: (patrim || os.patrimonio || "").trim(),
+    modelo: "",
+    btus: "",
   });
   const [pecas, setPecas] = useState<PecaDraft[]>([]);
 
@@ -474,6 +482,62 @@ function OsDetail({
   useEffect(() => {
     setPatrim(os.patrimonio ?? "");
   }, [os.id, os.patrimonio]);
+
+  // Histórico do mesmo Ativo + Equipamento: sugere patrimônio e mostra alertas
+  const { data: priorInfo } = useQuery({
+    queryKey: ["refrig-prior", os.ativo, os.equipamento, os.id],
+    enabled: !!os.ativo && !!os.equipamento,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const [osRes, pecRes, probRes] = await Promise.all([
+        supabase
+          .from("refrigeracao_os")
+          .select("id, numero_os, patrimonio, status, fim")
+          .eq("ativo", os.ativo)
+          .eq("equipamento", os.equipamento)
+          .neq("id", os.id)
+          .order("fim", { ascending: false, nullsFirst: false })
+          .limit(20),
+        supabase
+          .from("refrigeracao_pecas")
+          .select("id, descricao, quantidade, urgencia, status_gestor, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .eq("refrigeracao_os.ativo", os.ativo)
+          .eq("refrigeracao_os.equipamento", os.equipamento)
+          .neq("os_id", os.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("refrigeracao_problemas")
+          .select("id, descricao, gravidade, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .eq("refrigeracao_os.ativo", os.ativo)
+          .eq("refrigeracao_os.equipamento", os.equipamento)
+          .neq("os_id", os.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      const suggested = (osRes.data ?? [])
+        .map((r: any) => (r.patrimonio ?? "").trim())
+        .find((v: string) => v.length > 0) ?? "";
+      return {
+        suggested,
+        priorOs: (osRes.data ?? []) as any[],
+        pecas: (pecRes.data ?? []) as any[],
+        problemas: (probRes.data ?? []) as any[],
+      };
+    },
+  });
+
+  // Auto-preenche patrimônio a partir de OS anteriores do mesmo Ativo+Equipamento
+  useEffect(() => {
+    const s = (priorInfo?.suggested ?? "").trim();
+    if (!s) return;
+    if ((os.patrimonio ?? "").trim()) return;
+    if (patrim.trim()) return;
+    setPatrim(s);
+  }, [priorInfo?.suggested, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
@@ -496,7 +560,19 @@ function OsDetail({
         }
         if (cancelled) return;
         setPreviews(restored);
-        setPecas(d.pecas ?? []);
+        setPecas(
+          (d.pecas ?? []).map((p: any) => ({
+            id: p.id,
+            descricao: p.descricao ?? "",
+            quantidade: p.quantidade ?? "1",
+            urgencia: p.urgencia ?? "media",
+            observacao: p.observacao ?? "",
+            patrimonio: p.patrimonio ?? "",
+            modelo: p.modelo ?? "",
+            btus: p.btus ?? "",
+          })),
+        );
+
         setProblemas(d.problemas ?? []);
         if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
           setDraftSavedAt(d.updatedAt);
@@ -614,11 +690,15 @@ function OsDetail({
           quantidade: Number(p.quantidade) || 1,
           urgencia: p.urgencia,
           observacao: p.observacao.trim() || null,
+          patrimonio: (p.patrimonio || patrim || os.patrimonio || "").trim() || null,
+          modelo: p.modelo.trim() || null,
+          btus: p.btus.trim() || null,
         },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
+
     for (const pr of problemas) {
       if (!pr.descricao.trim()) continue;
       items.push({
@@ -728,6 +808,61 @@ function OsDetail({
           <ReadOnly label="Data programada" value={fmtDate(os.data_programada)} />
         </div>
       </GlassCard>
+
+      {priorInfo && (priorInfo.pecas.length > 0 || priorInfo.problemas.length > 0 || priorInfo.suggested) && (
+        <GlassCard className="border-amber-500/30 bg-amber-50/60 p-4 dark:bg-amber-500/5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Histórico deste equipamento
+              </h3>
+              <p className="text-xs text-amber-700/90 dark:text-amber-200/80">
+                Encontramos registros anteriores para <span className="font-mono">{os.ativo}</span> · {os.equipamento}.
+              </p>
+              {priorInfo.suggested && !(os.patrimonio ?? "").trim() && (
+                <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-800 dark:text-emerald-300">
+                  Patrimônio sugerido de OS anteriores: <span className="font-mono font-semibold">{priorInfo.suggested}</span> — já preenchido abaixo, revise e salve.
+                </div>
+              )}
+              {priorInfo.pecas.length > 0 && (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                    Peças já solicitadas ({priorInfo.pecas.length})
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {priorInfo.pecas.slice(0, 5).map((p: any) => (
+                      <li key={p.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                        <Badge variant="outline" className="text-[10px]">Qtd {p.quantidade}</Badge>
+                        <span className="font-medium">{p.descricao}</span>
+                        <Badge variant="secondary" className="text-[10px]">{p.urgencia}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{p.status_gestor}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {priorInfo.problemas.length > 0 && (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                    Problemas já sinalizados ({priorInfo.problemas.length})
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {priorInfo.problemas.slice(0, 5).map((pr: any) => (
+                      <li key={pr.id} className="flex flex-wrap items-start gap-1.5 text-xs">
+                        <Badge variant="outline" className="text-[10px]">{pr.gravidade}</Badge>
+                        <span className="line-clamp-2">{pr.descricao}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+
 
       <GlassCard className="p-4">
         <SectionTitle icon={Package} label="Patrimônio (opcional)" />
@@ -894,6 +1029,50 @@ function OsDetail({
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label>Patrimônio</Label>
+                    <Input
+                      value={p.patrimonio}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) =>
+                            x.id === p.id ? { ...x, patrimonio: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      placeholder={patrim || os.patrimonio || "—"}
+                      className="h-11"
+                    />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Preenchido automaticamente com o patrimônio da OS.
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Modelo</Label>
+                    <Input
+                      value={p.modelo}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, modelo: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="Ex.: Split Inverter, Cassete…"
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label>BTUs</Label>
+                    <Input
+                      value={p.btus}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, btus: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="Ex.: 9000, 12000, 24000…"
+                      className="h-11"
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <Label>Observação</Label>
                     <Textarea
@@ -906,8 +1085,10 @@ function OsDetail({
                         )
                       }
                       rows={2}
+                      placeholder="Detalhes adicionais (opcional)"
                     />
                   </div>
+
                 </div>
               </div>
             ))}
