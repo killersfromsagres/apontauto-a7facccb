@@ -809,6 +809,61 @@ function OsDetail({
         </div>
       </GlassCard>
 
+      {priorInfo && (priorInfo.pecas.length > 0 || priorInfo.problemas.length > 0 || priorInfo.suggested) && (
+        <GlassCard className="border-amber-500/30 bg-amber-50/60 p-4 dark:bg-amber-500/5">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Histórico deste equipamento
+              </h3>
+              <p className="text-xs text-amber-700/90 dark:text-amber-200/80">
+                Encontramos registros anteriores para <span className="font-mono">{os.ativo}</span> · {os.equipamento}.
+              </p>
+              {priorInfo.suggested && !(os.patrimonio ?? "").trim() && (
+                <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-800 dark:text-emerald-300">
+                  Patrimônio sugerido de OS anteriores: <span className="font-mono font-semibold">{priorInfo.suggested}</span> — já preenchido abaixo, revise e salve.
+                </div>
+              )}
+              {priorInfo.pecas.length > 0 && (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                    Peças já solicitadas ({priorInfo.pecas.length})
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {priorInfo.pecas.slice(0, 5).map((p: any) => (
+                      <li key={p.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                        <Badge variant="outline" className="text-[10px]">Qtd {p.quantidade}</Badge>
+                        <span className="font-medium">{p.descricao}</span>
+                        <Badge variant="secondary" className="text-[10px]">{p.urgencia}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{p.status_gestor}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {priorInfo.problemas.length > 0 && (
+                <div>
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                    Problemas já sinalizados ({priorInfo.problemas.length})
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {priorInfo.problemas.slice(0, 5).map((pr: any) => (
+                      <li key={pr.id} className="flex flex-wrap items-start gap-1.5 text-xs">
+                        <Badge variant="outline" className="text-[10px]">{pr.gravidade}</Badge>
+                        <span className="line-clamp-2">{pr.descricao}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </GlassCard>
+      )}
+
+
+
       <GlassCard className="p-4">
         <SectionTitle icon={Package} label="Patrimônio (opcional)" />
         <p className="mt-1 text-xs text-muted-foreground">
