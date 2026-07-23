@@ -164,9 +164,16 @@
     );
     if (menu) realClick(menu);
     await sleep(500);
-    const registro = Array.from(document.querySelectorAll("a")).find(
+    let registro = Array.from(document.querySelectorAll("a")).find(
       (a) => (a.textContent || "").trim() === "Registro",
     );
+    if (!registro || registro.offsetParent === null) {
+      if (menu) realClick(menu);
+      await sleep(600);
+      registro = Array.from(document.querySelectorAll("a")).find(
+        (a) => (a.textContent || "").trim() === "Registro",
+      );
+    }
     if (registro) realClick(registro);
     await sleep(400);
     const osc = Array.from(document.querySelectorAll("a")).find(
