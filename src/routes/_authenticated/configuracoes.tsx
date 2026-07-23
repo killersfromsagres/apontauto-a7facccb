@@ -136,9 +136,95 @@ function Page() {
           placeholder="ex: Bocas de Lobo"
         />
       </div>
+
+      <StorageMigrationCard />
     </PageShell>
   );
 }
+
+function StorageMigrationCard() {
+  const { isAdmin } = useIsAdmin();
+  const migrate = useServerFn(migrateRefrigLegacyPhotosToImgBB);
+  const [running, setRunning] = useState(false);
+  const [log, setLog] = useState<
+    Array<{ processed: number; migrated: number; remaining: number; failed: number }>
+  >([]);
+
+  if (!isAdmin) return null;
+
+  const run = async (mode: "batch" | "all") => {
+    setRunning(true);
+    setLog([]);
+    try {
+      // Loop até esvaziar a fila (ou uma única passada quando mode=batch).
+      let guard = 0;
+      while (guard++ < 200) {
+        const r = await migrate({ data: { batchSize: 8 } });
+        setLog((prev) => [
+          ...prev,
+          {
+            processed: r.processed,
+            migrated: r.migrated,
+            failed: r.failed.length,
+            remaining: r.remaining,
+          },
+        ]);
+        if (r.failed.length > 0) {
+          toast.error(`Falha em ${r.failed.length} foto(s): ${r.failed[0]?.error ?? ""}`);
+        }
+        if (mode === "batch") break;
+        if (r.processed === 0 || r.remaining === 0) break;
+      }
+      toast.success("Migração concluída");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha na migração");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <GlassCard className="mt-4">
+      <div className="flex items-start gap-3">
+        <HardDrive className="mt-0.5 h-5 w-5 text-primary" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Otimização de armazenamento — Refrigeração
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Fotos antigas ainda armazenadas no bucket privado são reenviadas ao ImgBB
+            (link público hospedado) e removidas do Storage. Novos uploads já vão direto
+            para o ImgBB — este processo só migra o histórico.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => run("all")} disabled={running}>
+              {running ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <HardDrive className="mr-2 h-4 w-4" />
+              )}
+              Migrar tudo
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => run("batch")} disabled={running}>
+              Migrar 1 lote (8)
+            </Button>
+          </div>
+          {log.length > 0 && (
+            <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
+              {log.map((l, i) => (
+                <li key={i}>
+                  Lote {i + 1}: {l.migrated}/{l.processed} migradas
+                  {l.failed > 0 ? ` · ${l.failed} falhas` : ""} · {l.remaining} restantes
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
+
 
 function TimeField({
   label, value, onChange,
