@@ -82,6 +82,23 @@ function RelogioPage() {
     toast.success("Relógio virtual ativado.");
   };
 
+  const handleApplyTimeOnly = () => {
+    const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(timeOnly.trim());
+    if (!m) {
+      toast.error("Formato inválido. Use HH:MM:SS.");
+      return;
+    }
+    const h = Number(m[1]), mm = Number(m[2]), ss = Number(m[3] ?? "0");
+    if (h > 23 || mm > 59 || ss > 59) {
+      toast.error("Horário fora do intervalo.");
+      return;
+    }
+    const now = new Date(getRealNow());
+    now.setHours(h, mm, ss, 0);
+    enableTimeWarp(now);
+    toast.success(`Horário definido para ${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}.`);
+  };
+
   const handleReset = () => {
     disableTimeWarp();
     setInput(toLocalInputValue(getRealNow()));
