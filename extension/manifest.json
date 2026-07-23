@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Apont Auto — Painel Prisma",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "description": "Executa lotes de OS cadastrados no Painel Prisma (Supabase) diretamente na aba autenticada do Prisma4.",
   "permissions": ["storage", "scripting", "tabs", "alarms"],
   "host_permissions": [
