@@ -162,7 +162,11 @@ export type DraftPeca = {
   quantidade: string;
   urgencia: string;
   observacao: string;
+  patrimonio: string;
+  modelo: string;
+  btus: string;
 };
+
 export type DraftProblema = { id: string; descricao: string; gravidade: string };
 
 export type OsDraft = {
