@@ -483,6 +483,61 @@ function OsDetail({
     setPatrim(os.patrimonio ?? "");
   }, [os.id, os.patrimonio]);
 
+  // Histórico do mesmo Ativo + Equipamento: sugere patrimônio e mostra alertas
+  const { data: priorInfo } = useQuery({
+    queryKey: ["refrig-prior", os.ativo, os.equipamento, os.id],
+    enabled: !!os.ativo && !!os.equipamento,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const [osRes, pecRes, probRes] = await Promise.all([
+        supabase
+          .from("refrigeracao_os")
+          .select("id, numero_os, patrimonio, status, fim")
+          .eq("ativo", os.ativo)
+          .eq("equipamento", os.equipamento)
+          .neq("id", os.id)
+          .order("fim", { ascending: false, nullsFirst: false })
+          .limit(20),
+        supabase
+          .from("refrigeracao_pecas")
+          .select("id, descricao, quantidade, urgencia, status_gestor, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .eq("refrigeracao_os.ativo", os.ativo)
+          .eq("refrigeracao_os.equipamento", os.equipamento)
+          .neq("os_id", os.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("refrigeracao_problemas")
+          .select("id, descricao, gravidade, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .eq("refrigeracao_os.ativo", os.ativo)
+          .eq("refrigeracao_os.equipamento", os.equipamento)
+          .neq("os_id", os.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+      const suggested = (osRes.data ?? [])
+        .map((r: any) => (r.patrimonio ?? "").trim())
+        .find((v: string) => v.length > 0) ?? "";
+      return {
+        suggested,
+        priorOs: (osRes.data ?? []) as any[],
+        pecas: (pecRes.data ?? []) as any[],
+        problemas: (probRes.data ?? []) as any[],
+      };
+    },
+  });
+
+  // Auto-preenche patrimônio a partir de OS anteriores do mesmo Ativo+Equipamento
+  useEffect(() => {
+    const s = (priorInfo?.suggested ?? "").trim();
+    if (!s) return;
+    if ((os.patrimonio ?? "").trim()) return;
+    if (patrim.trim()) return;
+    setPatrim(s);
+  }, [priorInfo?.suggested, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
