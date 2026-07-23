@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Camera, Package, AlertTriangle, Loader2, CheckCircle2, Download } from "lucide-react";
+import { Search, Camera, Package, AlertTriangle, Loader2, CheckCircle2, Download, ExternalLink, Link as LinkIcon } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,7 @@ type OsRow = {
   updated_at: string;
 };
 
-type Foto = { id: string; storage_path: string; created_at: string; legenda: string | null };
+type Foto = { id: string; storage_path: string | null; image_url: string | null; created_at: string; legenda: string | null };
 type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; patrimonio: string | null; modelo: string | null; btus: string | null; status_gestor: string | null; created_at: string };
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
@@ -236,7 +236,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     queryFn: async () => {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
       const [f, p, pr] = await Promise.all([
-        supabase.from("refrigeracao_fotos").select("id, storage_path, created_at, legenda").eq("os_id", os.id).order("created_at"),
+        supabase.from("refrigeracao_fotos").select("id, storage_path, image_url, created_at, legenda").eq("os_id", os.id).order("created_at"),
         supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, patrimonio, modelo, btus, status_gestor, created_at").eq("os_id", os.id).order("created_at"),
 
         supabase.from("refrigeracao_problemas").select("id, descricao, gravidade, created_at").eq("os_id", os.id).order("created_at"),
@@ -250,14 +250,20 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   });
 
   const [urls, setUrls] = useState<Record<string, string>>({});
-  useMemo(() => {
+  useEffect(() => {
     (async () => {
       if (!data?.fotos?.length) return;
       const next: Record<string, string> = {};
+      // Fotos novas usam ImgBB (image_url); antigas continuam no Storage.
+      const legacy: Foto[] = [];
       for (const f of data.fotos) {
+        if (f.image_url) next[f.id] = f.image_url;
+        else if (f.storage_path) legacy.push(f);
+      }
+      for (const f of legacy) {
         const { data: s } = await supabase.storage
           .from("refrigeracao-fotos")
-          .createSignedUrl(f.storage_path, 3600);
+          .createSignedUrl(f.storage_path as string, 3600);
         if (s?.signedUrl) next[f.id] = s.signedUrl;
       }
       setUrls(next);
@@ -267,13 +273,17 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   const downloadPhoto = async (f: Foto, idx: number) => {
     const url = urls[f.id];
     if (!url) return;
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `OS-${os?.numero_os ?? "foto"}-${idx + 1}.jpg`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `OS-${os?.numero_os ?? "foto"}-${idx + 1}.jpg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      window.open(url, "_blank", "noopener");
+    }
   };
 
   return (

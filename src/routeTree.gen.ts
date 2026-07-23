@@ -44,6 +44,7 @@ import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedPrismaIndexRouteImport } from './routes/_authenticated/prisma.index'
+import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedPrismaTecnicosRouteImport } from './routes/_authenticated/prisma.tecnicos'
@@ -242,6 +243,11 @@ const AuthenticatedPrismaIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPrismaRoute,
   } as any)
+const ApiPublicImgbbUploadRoute = ApiPublicImgbbUploadRouteImport.update({
+  id: '/api/public/imgbb-upload',
+  path: '/api/public/imgbb-upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
   id: '/api/public/clima-forecast',
   path: '/api/public/clima-forecast',
@@ -316,6 +322,7 @@ export interface FileRoutesByFullPath {
   '/prisma/tecnicos': typeof AuthenticatedPrismaTecnicosRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
   '/prisma/': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRoutesByTo {
@@ -357,6 +364,7 @@ export interface FileRoutesByTo {
   '/prisma/tecnicos': typeof AuthenticatedPrismaTecnicosRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
   '/prisma': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRoutesById {
@@ -401,6 +409,7 @@ export interface FileRoutesById {
   '/_authenticated/prisma/tecnicos': typeof AuthenticatedPrismaTecnicosRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
   '/_authenticated/prisma/': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRouteTypes {
@@ -445,6 +454,7 @@ export interface FileRouteTypes {
     | '/prisma/tecnicos'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/api/public/imgbb-upload'
     | '/prisma/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/prisma/tecnicos'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/api/public/imgbb-upload'
     | '/prisma'
   id:
     | '__root__'
@@ -529,6 +540,7 @@ export interface FileRouteTypes {
     | '/_authenticated/prisma/tecnicos'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/api/public/imgbb-upload'
     | '/_authenticated/prisma/'
   fileRoutesById: FileRoutesById
 }
@@ -543,6 +555,7 @@ export interface RootRouteChildren {
   ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
+  ApiPublicImgbbUploadRoute: typeof ApiPublicImgbbUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -792,6 +805,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPrismaIndexRouteImport
       parentRoute: typeof AuthenticatedPrismaRoute
     }
+    '/api/public/imgbb-upload': {
+      id: '/api/public/imgbb-upload'
+      path: '/api/public/imgbb-upload'
+      fullPath: '/api/public/imgbb-upload'
+      preLoaderRoute: typeof ApiPublicImgbbUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/clima-forecast': {
       id: '/api/public/clima-forecast'
       path: '/api/public/clima-forecast'
@@ -931,6 +951,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
+  ApiPublicImgbbUploadRoute: ApiPublicImgbbUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
