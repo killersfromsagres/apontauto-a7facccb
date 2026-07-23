@@ -40,6 +40,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as AuthenticatedPrismaIndexRouteImport } from './routes/_authenticated/prisma.index'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 
@@ -211,6 +212,12 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPrismaIndexRoute =
+  AuthenticatedPrismaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPrismaRoute,
+  } as any)
 const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
   id: '/api/public/clima-forecast',
   path: '/api/public/clima-forecast',
@@ -243,7 +250,7 @@ export interface FileRoutesByFullPath {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
-  '/prisma': typeof AuthenticatedPrismaRoute
+  '/prisma': typeof AuthenticatedPrismaRouteWithChildren
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -255,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/prisma/': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -276,7 +284,6 @@ export interface FileRoutesByTo {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
-  '/prisma': typeof AuthenticatedPrismaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/prisma': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -312,7 +320,7 @@ export interface FileRoutesById {
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
-  '/_authenticated/prisma': typeof AuthenticatedPrismaRoute
+  '/_authenticated/prisma': typeof AuthenticatedPrismaRouteWithChildren
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -325,6 +333,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/_authenticated/prisma/': typeof AuthenticatedPrismaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/api/backorder-reclassificar'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/prisma/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -382,7 +392,6 @@ export interface FileRouteTypes {
     | '/painel-legal'
     | '/preventiva'
     | '/preventiva-ac'
-    | '/prisma'
     | '/programacao'
     | '/programacao-taludes'
     | '/refrigeracao'
@@ -395,6 +404,7 @@ export interface FileRouteTypes {
     | '/'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/prisma'
   id:
     | '__root__'
     | '/_authenticated'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/_authenticated/prisma/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -664,6 +675,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prisma/': {
+      id: '/_authenticated/prisma/'
+      path: '/'
+      fullPath: '/prisma/'
+      preLoaderRoute: typeof AuthenticatedPrismaIndexRouteImport
+      parentRoute: typeof AuthenticatedPrismaRoute
+    }
     '/api/public/clima-forecast': {
       id: '/api/public/clima-forecast'
       path: '/api/public/clima-forecast'
@@ -681,6 +699,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedPrismaRouteChildren {
+  AuthenticatedPrismaIndexRoute: typeof AuthenticatedPrismaIndexRoute
+}
+
+const AuthenticatedPrismaRouteChildren: AuthenticatedPrismaRouteChildren = {
+  AuthenticatedPrismaIndexRoute: AuthenticatedPrismaIndexRoute,
+}
+
+const AuthenticatedPrismaRouteWithChildren =
+  AuthenticatedPrismaRoute._addFileChildren(AuthenticatedPrismaRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
@@ -695,7 +724,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
-  AuthenticatedPrismaRoute: typeof AuthenticatedPrismaRoute
+  AuthenticatedPrismaRoute: typeof AuthenticatedPrismaRouteWithChildren
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
@@ -721,7 +750,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedPreventivaAcRoute: AuthenticatedPreventivaAcRoute,
-  AuthenticatedPrismaRoute: AuthenticatedPrismaRoute,
+  AuthenticatedPrismaRoute: AuthenticatedPrismaRouteWithChildren,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
