@@ -105,19 +105,10 @@ function CorretivaPage() {
   const [lockedEquipe, setLockedEquipe] = useState<string | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const email = (data.session?.user?.email ?? "").toLowerCase();
-      if (email.startsWith("hidraulica@")) {
-        setLockedEquipe("Hidráulica");
-        setEquipe("Hidráulica");
-        saveEquipe("Hidráulica");
-      } else {
-        setEquipe(loadEquipe());
-      }
-    })();
+    setEquipe(loadEquipe());
     void reloadEquipes();
   }, []);
+
 
   const reloadEquipes = async () => {
     const { data } = await supabase
