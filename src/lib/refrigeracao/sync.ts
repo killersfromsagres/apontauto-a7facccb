@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { uploadImageToImgBB } from "@/lib/imgbb";
 import {
   outboxAll,
   outboxRemove,
@@ -70,18 +71,19 @@ async function sendOne(item: OutboxItem): Promise<void> {
     if (!blobKey) throw new Error("Foto sem blob");
     const blob = await blobGet(blobKey);
     if (!blob) throw new Error("Blob local ausente");
-    const path = `${uid}/${item.osId}/${item.id}.jpg`;
-    const up = await supabase.storage
-      .from("refrigeracao-fotos")
-      .upload(path, blob, { contentType: "image/jpeg", upsert: true });
-    if (up.error && !/exists/i.test(up.error.message)) throw up.error;
+    // Hospeda no ImgBB (grátis, externo). Supabase guarda apenas a URL.
+    const uploaded = await uploadImageToImgBB(
+      blob,
+      `os-${item.numeroOs}-${item.id}.jpg`,
+    );
     const { error } = await supabase.from("refrigeracao_fotos").insert({
       os_id: item.osId,
-      storage_path: path,
+      image_url: uploaded.url,
+      storage_path: null,
       legenda: item.payload.legenda ?? null,
       client_uuid: item.id,
       enviado_por: uid,
-    });
+    } as any);
     if (error && !isDupError(error)) throw error;
     await blobDelete(blobKey);
     return;
