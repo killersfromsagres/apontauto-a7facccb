@@ -387,14 +387,14 @@ function PecasStatusPage() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`gap-1.5 px-2.5 py-1 text-xs ${meta.badge}`}
+                    className={`shrink-0 gap-1 px-1.5 py-0.5 text-[10px] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs ${meta.badge}`}
                   >
                     <Icon
-                      className={`h-3.5 w-3.5 ${
+                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${
                         p.status_gestor === "em_analise" ? "animate-spin" : ""
                       }`}
                     />
-                    {meta.label}
+                    <span>{meta.label}</span>
                   </Badge>
                 </div>
 
@@ -405,7 +405,7 @@ function PecasStatusPage() {
                       Solicitação rejeitada pelo gestor.
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       {STAGES.map((s, i) => {
                         const done = i <= stageIdx;
                         const active = i === stageIdx;
@@ -413,11 +413,11 @@ function PecasStatusPage() {
                         return (
                           <div
                             key={s}
-                            className="flex flex-1 items-center gap-2"
+                            className="flex flex-1 items-center gap-1 sm:gap-2"
                           >
-                            <div className="flex flex-col items-center gap-1 min-w-0">
+                            <div className="flex min-w-0 flex-col items-center gap-1">
                               <div
-                                className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold transition sm:h-7 sm:w-7 sm:text-[11px] ${
                                   done
                                     ? "border-primary bg-primary text-primary-foreground"
                                     : "border-border bg-muted text-muted-foreground"
@@ -426,7 +426,7 @@ function PecasStatusPage() {
                                 {i + 1}
                               </div>
                               <span
-                                className={`whitespace-nowrap text-[10px] uppercase tracking-wider ${
+                                className={`whitespace-nowrap text-[8px] uppercase tracking-wider sm:text-[10px] ${
                                   done ? "text-foreground" : "text-muted-foreground"
                                 }`}
                               >
@@ -445,6 +445,7 @@ function PecasStatusPage() {
                       })}
                     </div>
                   )}
+
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                     <span>Enviada {timeAgo(p.created_at)}</span>
