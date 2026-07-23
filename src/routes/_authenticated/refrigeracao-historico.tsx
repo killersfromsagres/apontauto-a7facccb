@@ -327,25 +327,58 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 <Camera className="h-4 w-4" /> Fotos ({data?.fotos.length ?? 0})
               </h4>
               {data?.fotos.length ? (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {data.fotos.map((f, idx) => (
-                    <div key={f.id} className="group relative aspect-square overflow-hidden rounded-md border">
-                      {urls[f.id] ? (
-                        <img src={urls[f.id]} className="h-full w-full object-cover" alt="" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">…</div>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => downloadPhoto(f, idx)}
-                        className="absolute right-1 top-1 h-7 w-7 p-0"
-                        disabled={!urls[f.id]}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {data.fotos.map((f, idx) => (
+                      <a
+                        key={f.id}
+                        href={urls[f.id] ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
+                        onClick={(e) => { if (!urls[f.id]) e.preventDefault(); }}
                       >
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  ))}
+                        {urls[f.id] ? (
+                          <img src={urls[f.id]} className="h-full w-full object-cover" alt="" loading="lazy" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">…</div>
+                        )}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <ExternalLink className="h-3.5 w-3.5 text-white" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); downloadPhoto(f, idx); }}
+                            className="pointer-events-auto rounded-full bg-white/20 p-1 text-white backdrop-blur-md transition hover:bg-white/30"
+                            aria-label="Baixar foto"
+                          >
+                            <Download className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  {data.fotos.some((f) => f.image_url) && (
+                    <ul className="space-y-1.5">
+                      {data.fotos
+                        .filter((f) => f.image_url)
+                        .map((f, i) => (
+                          <li key={`link-${f.id}`}>
+                            <a
+                              href={f.image_url as string}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:bg-white/10 active:scale-[0.98]"
+                            >
+                              <LinkIcon className="h-3.5 w-3.5 text-primary" />
+                              <span className="truncate font-mono text-muted-foreground">
+                                Foto {i + 1} · {f.image_url}
+                              </span>
+                              <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60 transition group-hover:opacity-100" />
+                            </a>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">Nenhuma foto.</p>
