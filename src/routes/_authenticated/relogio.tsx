@@ -42,6 +42,11 @@ function RelogioPage() {
     activatedAt: null as number | null,
   }));
   const [input, setInput] = useState<string>(() => toLocalInputValue(getRealNow()));
+  const [timeOnly, setTimeOnly] = useState<string>(() => {
+    const d = new Date(getRealNow());
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  });
   const [realNowTick, setRealNowTick] = useState(getRealNow());
   const [virtualNowTick, setVirtualNowTick] = useState(getVirtualNow());
 
