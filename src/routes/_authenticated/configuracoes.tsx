@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { RotateCcw, Save, Plus, X } from "lucide-react";
+import { RotateCcw, Save, Plus, X, HardDrive, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { migrateRefrigLegacyPhotosToImgBB } from "@/lib/refrigeracao/migrate-to-imgbb.functions";
+
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
