@@ -50,7 +50,7 @@ type OsRow = {
 };
 
 type Foto = { id: string; storage_path: string; created_at: string; legenda: string | null };
-type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; created_at: string };
+type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; patrimonio: string | null; modelo: string | null; btus: string | null; status_gestor: string | null; created_at: string };
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
 function equipeStyles(equipe: string | null | undefined): { row: string; badge: string } {
