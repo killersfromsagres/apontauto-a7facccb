@@ -27,6 +27,7 @@ import {
   Wrench,
   Cog,
   Zap,
+  Clock,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
