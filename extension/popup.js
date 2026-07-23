@@ -3,7 +3,7 @@ const $ = (id) => document.getElementById(id);
 async function get() {
   return chrome.storage.local.get([
     "supabaseUrl", "anonKey", "accessToken", "refreshToken", "expiresAt",
-    "userId", "userEmail", "prismaUrlPattern", "automacaoAtiva",
+    "userId", "userEmail", "prismaUrlPattern", "codigoUsuarioPrisma", "automacaoAtiva",
   ]);
 }
 async function set(patch) { await chrome.storage.local.set(patch); }
@@ -32,7 +32,7 @@ function renderState(cfg) {
 
 async function boot() {
   const cfg = await get();
-  for (const k of ["supabaseUrl", "anonKey", "prismaUrlPattern"]) {
+  for (const k of ["supabaseUrl", "anonKey", "prismaUrlPattern", "codigoUsuarioPrisma"]) {
     if (cfg[k]) $(k).value = cfg[k];
   }
   if (cfg.userEmail) $("email").value = cfg.userEmail;
@@ -45,6 +45,7 @@ $("btnLogin").addEventListener("click", async () => {
   const email = $("email").value.trim();
   const password = $("password").value;
   const prismaUrlPattern = $("prismaUrlPattern").value.trim() || "https://*.cimogps.com.br/*";
+  const codigoUsuarioPrisma = $("codigoUsuarioPrisma").value.trim();
   if (!supabaseUrl || !anonKey || !email || !password) {
     setStatus("Preencha todos os campos.", "err");
     return;
@@ -59,7 +60,7 @@ $("btnLogin").addEventListener("click", async () => {
     const j = await r.json();
     if (!r.ok) throw new Error(j.error_description || j.msg || "Falha ao autenticar.");
     await set({
-      supabaseUrl, anonKey, prismaUrlPattern,
+      supabaseUrl, anonKey, prismaUrlPattern, codigoUsuarioPrisma,
       accessToken: j.access_token,
       refreshToken: j.refresh_token,
       expiresAt: Math.floor(Date.now() / 1000) + (j.expires_in || 3600),
