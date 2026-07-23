@@ -164,9 +164,16 @@
     );
     if (menu) realClick(menu);
     await sleep(500);
-    const registro = Array.from(document.querySelectorAll("a")).find(
+    let registro = Array.from(document.querySelectorAll("a")).find(
       (a) => (a.textContent || "").trim() === "Registro",
     );
+    if (!registro || registro.offsetParent === null) {
+      if (menu) realClick(menu);
+      await sleep(600);
+      registro = Array.from(document.querySelectorAll("a")).find(
+        (a) => (a.textContent || "").trim() === "Registro",
+      );
+    }
     if (registro) realClick(registro);
     await sleep(400);
     const osc = Array.from(document.querySelectorAll("a")).find(
@@ -226,7 +233,7 @@
     return document.querySelectorAll(`${seletorGrid} .slick-row`).length;
   }
 
-  async function preencherMaoDeObra({ tecnicos, dataHoraInicio, duracaoHoras }) {
+  async function preencherMaoDeObra({ tecnicos, dataHoraInicio, duracaoHoras, codigoUsuarioPrisma }) {
     await abrirAba("Mão-de-Obra por OS");
     const seletorGrid = "#GWorkOrderWorkerLabor";
     await waitFor(seletorGrid, { timeout: 8000 });
@@ -239,15 +246,23 @@
       await sleep(200);
     }
 
+    const codigoLogado = (codigoUsuarioPrisma || "").trim();
+
     // 2) preenche cada linha em ordem
     for (let i = 0; i < tecnicos.length; i++) {
-      // re-busca as linhas a cada iteração (SlickGrid recria nós)
       const linhas = document.querySelectorAll(`${seletorGrid} .slick-row`);
       const linha = linhas[i];
       if (!linha) continue;
 
-      // célula de técnico = primeira cell-content da linha
-      const celTec = linha.querySelector(".cell-content");
+      // célula de técnico: prioriza a célula que contém o código do usuário logado
+      // (o Prisma preenche a linha nova com esse código por padrão); fallback = 1ª cell-content
+      let celTec = null;
+      if (codigoLogado) {
+        celTec = Array.from(linha.querySelectorAll(".cell-content")).find(
+          (el) => (el.textContent || "").trim() === codigoLogado,
+        );
+      }
+      if (!celTec) celTec = linha.querySelector(".cell-content");
       if (celTec) await editarCelulaTexto(celTec, "#CLaborWorkerW", tecnicos[i]);
 
       // Data Início — coluna l6
@@ -311,6 +326,7 @@
       tecnicos: payload.tecnicos,
       dataHoraInicio: payload.dataHoraInicio,
       duracaoHoras: payload.duracaoHoras,
+      codigoUsuarioPrisma: payload.codigoUsuarioPrisma,
     });
     await preencherProcedimentos(payload.dataHoraFim, payload.categoria);
     await salvar();

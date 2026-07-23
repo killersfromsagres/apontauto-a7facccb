@@ -4,7 +4,7 @@
 // dispara o content-script na aba autenticada do Prisma4.
 // ============================================================
 
-const VERSAO = "2.1.0";
+const VERSAO = "2.2.0";
 const INTERVALO_POLLING_MIN = 0.5; // 30s
 const HORA_INICIO_JORNADA = 8;
 
@@ -21,6 +21,7 @@ async function getConfig() {
     "userId",
     "userEmail",
     "prismaUrlPattern",
+    "codigoUsuarioPrisma",
     "automacaoAtiva",
   ]);
 }
@@ -249,6 +250,7 @@ async function processarLote(cfg, lote) {
           dataHoraInicio: item.dataHoraInicio,
           dataHoraFim: item.dataHoraFim,
           duracaoHoras: Number(lote.duracao_padrao_horas),
+          codigoUsuarioPrisma: cfg.codigoUsuarioPrisma || "",
         },
       });
       if (!res?.sucesso) throw new Error(res?.erro || "Falha desconhecida");
