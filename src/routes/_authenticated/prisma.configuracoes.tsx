@@ -53,12 +53,12 @@ function ConfigPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
+      a.href = window.URL.createObjectURL(blob);
       a.download = "apontauto-prisma-extension.zip";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(a.href);
+      window.URL.revokeObjectURL(a.href);
       toast.success("Download iniciado");
     } catch (e) {
       toast.error(`Falha no download: ${(e as Error).message}`);
