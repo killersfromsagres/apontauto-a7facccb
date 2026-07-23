@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Apont Auto — Prisma4",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Executa apontamentos de OS no Prisma4 lendo lotes do painel Apont Auto (Supabase).",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"],
   "host_permissions": [
