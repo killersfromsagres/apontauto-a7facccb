@@ -254,17 +254,15 @@
       const linha = linhas[i];
       if (!linha) continue;
 
-      // célula de técnico:
-      // (a) prioriza qualquer elemento dentro do GRID com texto exato = código logado
-      //     (o Prisma preenche a nova linha com esse código por padrão)
-      // (b) fallback: célula .l3 da linha (coluna de técnico no SlickGrid)
-      // (c) fallback final: 1ª .cell-content da linha
+      // Técnico: clica sempre no PRIMEIRO elemento do grid com texto exato = código
+      // do usuário logado. O Prisma preenche cada linha nova com esse código, então
+      // "primeiro" é sempre a próxima linha ainda não preenchida (mesma abordagem
+      // do script Playwright de referência).
       let celTec = null;
       if (codigoLogado) {
-        const candidatos = Array.from(
+        celTec = Array.from(
           document.querySelectorAll(`${seletorGrid} .cell-content, ${seletorGrid} .slick-cell`),
-        ).filter((el) => (el.textContent || "").trim() === codigoLogado && el.offsetParent !== null);
-        celTec = candidatos[i] || candidatos[0] || null;
+        ).find((el) => (el.textContent || "").trim() === codigoLogado && el.offsetParent !== null) || null;
       }
       if (!celTec) celTec = linha.querySelector(".slick-cell.l3 .cell-content");
       if (!celTec) celTec = linha.querySelector(".cell-content");
@@ -285,33 +283,57 @@
   async function preencherProcedimentos(dataFim, categoria) {
     await abrirAba("Procedimentos por OS");
     await waitFor("#GWorkOrderOperation", { timeout: 8000 });
+    await sleep(800); // estabiliza SlickGrid virtualizado
 
-    // Snapshot inicial da contagem (SlickGrid pode reciclar nós, então
-    // buscamos por índice a cada iteração para evitar "campo pula").
     const totalLinhas = document.querySelectorAll("#GWorkOrderOperation .slick-row").length;
 
     for (let i = 0; i < totalLinhas; i++) {
       const linhas = document.querySelectorAll("#GWorkOrderOperation .slick-row");
       const linha = linhas[i];
       if (!linha) continue;
+      linha.scrollIntoView({ block: "center" });
 
-      const codEl = linha.querySelector(".cell-content");
-      const codigo = codEl ? (codEl.textContent || "").trim() : "";
-
-      // Data — sempre re-busca a célula da linha atual
+      // Data — preenchimento atômico (fill + Enter), alinhado ao script Playwright novo.
       const celData = linha.querySelector(".l6 .cell-content");
-      if (celData) {
-        await editarCelulaData(celData, "#COperationDate", dataFim);
+      if (celData && celData.offsetParent !== null) {
+        realClick(celData);
+        await sleep(150);
+        try {
+          const input = await waitFor("#COperationDate", { timeout: 5000 });
+          await fillInput(input, dataFim);
+          pressEnter(input);
+          await waitHidden("#COperationDate", { timeout: 2500 });
+          await sleep(350);
+        } catch (e) {
+          console.warn("Data procedimento linha", i, e.message);
+        }
       }
+    }
 
-      // Medição — apenas categoria refrigeracao + código MED*
-      if (categoria === "refrigeracao" && codigo.toUpperCase().startsWith("MED")) {
-        await sleep(250);
-        const linhas2 = document.querySelectorAll("#GWorkOrderOperation .slick-row");
-        const celMed = linhas2[i]?.querySelector(".l11 .cell-content");
-        if (celMed) await editarCelulaTexto(celMed, "#COperationMeasureValue", "0");
+    if (categoria === "refrigeracao") {
+      for (let i = 0; i < totalLinhas; i++) {
+        const linhas = document.querySelectorAll("#GWorkOrderOperation .slick-row");
+        const linha = linhas[i];
+        if (!linha) continue;
+        const codEl = linha.querySelector(".cell-content");
+        const codigo = codEl ? (codEl.textContent || "").trim() : "";
+        if (!codigo.toUpperCase().startsWith("MED")) continue;
+        linha.scrollIntoView({ block: "center" });
+        const celMed = linha.querySelector(".l11 .cell-content");
+        if (celMed && celMed.offsetParent !== null) {
+          realClick(celMed);
+          await sleep(150);
+          try {
+            const input = await waitFor("#COperationMeasureValue", { timeout: 5000 });
+            await fillInput(input, "0");
+            pressEnter(input);
+            await waitHidden("#COperationMeasureValue", { timeout: 2500 });
+            await sleep(350);
+          } catch (e) {
+            console.warn("Medição linha", i, e.message);
+          }
+        }
       }
-      await sleep(350);
     }
   }
 
