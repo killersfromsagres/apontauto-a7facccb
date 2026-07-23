@@ -148,6 +148,7 @@ const sections: MenuSection[] = [
     icon: Wrench,
     items: [
       { key: "corretiva", title: "Campo (Colaborador)", url: "/corretiva", icon: Wrench },
+      { key: "corretiva-pecas-status", title: "Status de Peças", url: "/corretiva-pecas-status", icon: PackageOpen },
       { key: "corretiva-historico", title: "Histórico de OS", url: "/corretiva-historico", icon: ScrollText },
       { key: "corretiva-gestor", title: "Gestão", url: "/corretiva-gestor", icon: Users },
     ],
