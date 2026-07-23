@@ -42,6 +42,11 @@ function RelogioPage() {
     activatedAt: null as number | null,
   }));
   const [input, setInput] = useState<string>(() => toLocalInputValue(getRealNow()));
+  const [timeOnly, setTimeOnly] = useState<string>(() => {
+    const d = new Date(getRealNow());
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  });
   const [realNowTick, setRealNowTick] = useState(getRealNow());
   const [virtualNowTick, setVirtualNowTick] = useState(getVirtualNow());
 
@@ -75,6 +80,23 @@ function RelogioPage() {
     }
     enableTimeWarp(parsed);
     toast.success("Relógio virtual ativado.");
+  };
+
+  const handleApplyTimeOnly = () => {
+    const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(timeOnly.trim());
+    if (!m) {
+      toast.error("Formato inválido. Use HH:MM:SS.");
+      return;
+    }
+    const h = Number(m[1]), mm = Number(m[2]), ss = Number(m[3] ?? "0");
+    if (h > 23 || mm > 59 || ss > 59) {
+      toast.error("Horário fora do intervalo.");
+      return;
+    }
+    const now = new Date(getRealNow());
+    now.setHours(h, mm, ss, 0);
+    enableTimeWarp(now);
+    toast.success(`Horário definido para ${String(h).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}.`);
   };
 
   const handleReset = () => {
@@ -133,6 +155,34 @@ function RelogioPage() {
               Hora vista pelo app
             </div>
             <div className="mt-1 font-mono text-lg tabular-nums text-primary">{virtualStr}</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Definir horário (HH:MM:SS)</CardTitle>
+          <CardDescription>
+            Rápido: aplica o horário informado usando a data de hoje. O relógio continua correndo a partir daí.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="time-only">Horário</Label>
+              <Input
+                id="time-only"
+                type="time"
+                step={1}
+                value={timeOnly}
+                onChange={(e) => setTimeOnly(e.target.value)}
+                className="font-mono text-base tabular-nums"
+              />
+            </div>
+            <Button onClick={handleApplyTimeOnly} className="gap-2 sm:w-auto">
+              <Play className="h-4 w-4" />
+              Definir Horário
+            </Button>
           </div>
         </CardContent>
       </Card>
