@@ -127,6 +127,7 @@ const sections: MenuSection[] = [
     icon: Snowflake,
     items: [
       { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Thermometer },
+      { key: "refrigeracao-pecas-status", title: "Status de Peças", url: "/refrigeracao-pecas-status", icon: PackageOpen },
       { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: ScrollText },
       { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: Users },
     ],
