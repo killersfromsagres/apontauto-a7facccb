@@ -633,11 +633,15 @@ function OsDetail({
           quantidade: Number(p.quantidade) || 1,
           urgencia: p.urgencia,
           observacao: p.observacao.trim() || null,
+          patrimonio: (p.patrimonio || patrim || os.patrimonio || "").trim() || null,
+          modelo: p.modelo.trim() || null,
+          btus: p.btus.trim() || null,
         },
         createdAt: Date.now(),
         attempts: 0,
       });
     }
+
     for (const pr of problemas) {
       if (!pr.descricao.trim()) continue;
       items.push({
