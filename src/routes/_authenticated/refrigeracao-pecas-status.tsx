@@ -388,15 +388,16 @@ function PecasStatusPage() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`gap-1.5 px-2.5 py-1 text-xs ${meta.badge}`}
+                    className={`shrink-0 gap-1 px-1.5 py-0.5 text-[10px] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs ${meta.badge}`}
                   >
                     <Icon
-                      className={`h-3.5 w-3.5 ${
+                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${
                         p.status_gestor === "em_analise" ? "animate-spin" : ""
                       }`}
                     />
-                    {meta.label}
+                    <span className="hidden xs:inline sm:inline">{meta.label}</span>
                   </Badge>
+
                 </div>
 
                 <div className="p-4">
