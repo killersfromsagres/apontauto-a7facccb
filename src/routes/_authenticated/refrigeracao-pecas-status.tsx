@@ -260,7 +260,7 @@ function PecasStatusPage() {
         </Button>
       }
     >
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
         {(Object.keys(STATUS_META) as StatusGestor[]).map((k) => {
           const meta = STATUS_META[k];
           const Icon = meta.icon;
@@ -275,15 +275,15 @@ function PecasStatusPage() {
               }`}
             >
               <GlassCard
-                className={`p-4 ${active ? "ring-2 ring-primary/60" : ""}`}
+                className={`p-2 sm:p-3 ${active ? "ring-2 ring-primary/60" : ""}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="truncate text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
                     {meta.label}
                   </span>
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+                  <Icon className="h-3 w-3 shrink-0 text-muted-foreground sm:h-3.5 sm:w-3.5" />
                 </div>
-                <div className="mt-2 text-2xl font-semibold tabular-nums">
+                <div className="mt-0.5 text-lg font-semibold tabular-nums sm:text-xl">
                   {counts[k]}
                 </div>
               </GlassCard>
@@ -291,6 +291,7 @@ function PecasStatusPage() {
           );
         })}
       </div>
+
 
       <GlassCard className="mt-4 p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
