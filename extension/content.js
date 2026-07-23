@@ -110,16 +110,16 @@
   // Edição de célula SlickGrid — reabre editor se necessário e
   // confirma o valor comparando o textContent depois do commit.
   // ---------------------------------------------------------------
-  async function editarCelulaTexto(celula, seletorInput, valor, { tentativas = 3 } = {}) {
+  async function editarCelulaTexto(celula, seletorInput, valor, { tentativas = 3, timeout = 5000 } = {}) {
     const alvo = String(valor).trim();
     for (let i = 0; i < tentativas; i++) {
       realClick(celula);
       let input;
       try {
-        input = await waitFor(seletorInput, { timeout: 2500 });
+        input = await waitFor(seletorInput, { timeout });
       } catch {
         realClick(celula); // segundo clique reabre o editor
-        input = await waitFor(seletorInput, { timeout: 3000 });
+        input = await waitFor(seletorInput, { timeout });
       }
       await fillInput(input, alvo);
       pressEnter(input);
@@ -254,16 +254,21 @@
       const linha = linhas[i];
       if (!linha) continue;
 
-      // célula de técnico: prioriza a célula que contém o código do usuário logado
-      // (o Prisma preenche a linha nova com esse código por padrão); fallback = 1ª cell-content
+      // célula de técnico:
+      // (a) prioriza qualquer elemento dentro do GRID com texto exato = código logado
+      //     (o Prisma preenche a nova linha com esse código por padrão)
+      // (b) fallback: célula .l3 da linha (coluna de técnico no SlickGrid)
+      // (c) fallback final: 1ª .cell-content da linha
       let celTec = null;
       if (codigoLogado) {
-        celTec = Array.from(linha.querySelectorAll(".cell-content")).find(
-          (el) => (el.textContent || "").trim() === codigoLogado,
-        );
+        const candidatos = Array.from(
+          document.querySelectorAll(`${seletorGrid} .cell-content, ${seletorGrid} .slick-cell`),
+        ).filter((el) => (el.textContent || "").trim() === codigoLogado && el.offsetParent !== null);
+        celTec = candidatos[i] || candidatos[0] || null;
       }
+      if (!celTec) celTec = linha.querySelector(".slick-cell.l3 .cell-content");
       if (!celTec) celTec = linha.querySelector(".cell-content");
-      if (celTec) await editarCelulaTexto(celTec, "#CLaborWorkerW", tecnicos[i]);
+      if (celTec) await editarCelulaTexto(celTec, "#CLaborWorkerW", tecnicos[i], { timeout: 5000 });
 
       // Data Início — coluna l6
       const celData = linha.querySelector(".slick-cell.l6 .cell-content");
