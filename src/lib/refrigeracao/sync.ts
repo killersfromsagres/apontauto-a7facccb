@@ -28,12 +28,16 @@ async function sendOne(item: OutboxItem): Promise<void> {
       quantidade: item.payload.quantidade ?? 1,
       urgencia: item.payload.urgencia ?? "media",
       observacao: item.payload.observacao ?? null,
+      patrimonio: item.payload.patrimonio ?? null,
+      modelo: item.payload.modelo ?? null,
+      btus: item.payload.btus ?? null,
       client_uuid: item.id,
       enviado_por: uid,
-    });
+    } as any);
     if (error && !isDupError(error)) throw error;
     return;
   }
+
   if (item.kind === "problema") {
     const { error } = await supabase.from("refrigeracao_problemas").insert({
       os_id: item.osId,
