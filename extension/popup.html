@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Apont Auto — Prisma4</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        width: 340px;
+        margin: 0;
+        padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+        background: #0a0a0c;
+        color: #f4f4f5;
+      }
+      h1 { font-size: 14px; margin: 0 0 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+      .sub { font-size: 11px; color: #a1a1aa; margin-bottom: 14px; }
+      label { display: block; font-size: 11px; color: #a1a1aa; margin: 10px 0 4px; }
+      input, button {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #27272a;
+        background: #18181b;
+        color: #fafafa;
+        font-size: 12px;
+      }
+      button {
+        margin-top: 12px;
+        cursor: pointer;
+        background: linear-gradient(135deg, #3b82f6, #a855f7);
+        border: 0;
+        font-weight: 600;
+      }
+      button.secondary { background: #27272a; margin-top: 6px; }
+      .status {
+        margin-top: 14px;
+        padding: 10px;
+        border-radius: 8px;
+        background: #18181b;
+        border: 1px solid #27272a;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+      .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+      .ok { background:#22c55e; } .err { background:#ef4444; } .warn { background:#f59e0b; }
+      a { color: #93c5fd; }
+    </style>
+  </head>
+  <body>
+    <h1>Apont Auto · Prisma4</h1>
+    <div class="sub">Extensão v3.0.0 — lê lotes do Supabase.</div>
+
+    <label for="url">Supabase URL</label>
+    <input id="url" placeholder="https://xxxx.supabase.co" />
+
+    <label for="key">Anon Key (publishable)</label>
+    <input id="key" placeholder="sb_publishable_..." />
+
+    <label for="code">Código do usuário no Prisma</label>
+    <input id="code" placeholder="Ex.: 12345" />
+
+    <button id="save">Salvar</button>
+    <button id="test" class="secondary">Testar conexão</button>
+    <button id="open" class="secondary">Abrir Prisma4</button>
+
+    <div class="status" id="status">
+      <span class="dot warn"></span> Aguardando configuração…
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
