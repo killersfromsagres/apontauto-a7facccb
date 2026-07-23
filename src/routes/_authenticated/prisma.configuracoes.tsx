@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, ShieldAlert, Wifi, WifiOff } from "lucide-react";
+import { Copy, ShieldAlert, Wifi, WifiOff, Download, PackageCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/prisma/configuracoes")({
   component: ConfigPage,
@@ -45,8 +45,92 @@ function ConfigPage() {
     toast.success(`${label} copiado`);
   };
 
+  const [downloading, setDownloading] = useState(false);
+  const downloadExtension = async () => {
+    try {
+      setDownloading(true);
+      const res = await fetch("/apontauto-prisma-extension.zip");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = window.URL.createObjectURL(blob);
+      a.download = "apontauto-prisma-extension.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(a.href);
+      toast.success("Download iniciado");
+    } catch (e) {
+      toast.error(`Falha no download: ${(e as Error).message}`);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+
   return (
     <div className="space-y-5">
+      {/* Download da extensão — botão de destaque */}
+      <section className="group relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-indigo-500/[0.08] via-fuchsia-500/[0.06] to-transparent p-6 backdrop-blur-2xl">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-12 h-56 w-56 rounded-full bg-indigo-500/20 blur-3xl transition-opacity duration-500 group-hover:opacity-80"
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/10 bg-white/5 shadow-inner">
+              <PackageCheck className="h-6 w-6 text-fuchsia-300" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-display text-lg font-semibold tracking-tight">
+                Extensão do navegador
+              </h2>
+              <p className="mt-0.5 text-xs text-white/60">
+                Baixe o pacote <code className="rounded bg-white/10 px-1.5 py-0.5 text-[10px]">.zip</code>,
+                extraia e carregue em <code className="rounded bg-white/10 px-1.5 py-0.5 text-[10px]">chrome://extensions</code>{" "}
+                (Modo desenvolvedor → Carregar sem compactação).
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={downloadExtension}
+            disabled={downloading}
+            aria-busy={downloading}
+            className="group/btn relative isolate inline-flex shrink-0 items-center gap-2.5 overflow-hidden rounded-full border border-white/15 bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(168,85,247,0.55)] outline-none transition-all duration-300 hover:shadow-[0_18px_44px_-12px_rgba(168,85,247,0.75)] hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-fuchsia-400/60 active:translate-y-0 active:scale-[0.98] disabled:cursor-wait disabled:opacity-80"
+          >
+            {/* gradiente base */}
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-10 bg-[linear-gradient(120deg,#4f46e5_0%,#a855f7_50%,#ec4899_100%)] opacity-90"
+            />
+            {/* brilho passando */}
+            <span
+              aria-hidden
+              className="absolute inset-y-0 -left-1/2 -z-10 w-1/2 -skew-x-12 bg-white/25 blur-md transition-transform duration-700 ease-out group-hover/btn:translate-x-[300%]"
+            />
+            <Download
+              className={`h-4 w-4 transition-transform duration-300 ${
+                downloading ? "animate-pulse" : "group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5"
+              }`}
+              strokeWidth={2.5}
+            />
+            <span className="tracking-wide">
+              {downloading ? "Preparando…" : "Baixar extensão"}
+            </span>
+            <span className="ml-1 rounded-full bg-white/15 px-2 py-0.5 font-mono text-[10px] tracking-wider text-white/90">
+              .zip
+            </span>
+          </button>
+        </div>
+      </section>
+
+
       <section className="rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-2xl">
         <div className="mb-4 flex items-center gap-3">
           {connected ? (
