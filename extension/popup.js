@@ -52,7 +52,7 @@ $("test").addEventListener("click", async () => {
 });
 
 $("open").addEventListener("click", () => {
-  chrome.tabs.create({ url: "https://prisma4.prisma.com.br/" });
+  chrome.tabs.create({ url: "https://cimogps.com.br/Prisma4" });
 });
 
 load();
