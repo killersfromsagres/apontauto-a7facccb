@@ -30,7 +30,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*.prisma.com.br/*"],
+      "matches": ["https://cimogps.com.br/*", "https://*.cimogps.com.br/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
