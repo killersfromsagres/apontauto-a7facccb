@@ -5,10 +5,10 @@
   "description": "Executa apontamentos de OS no Prisma4 lendo lotes do painel Apont Auto (Supabase).",
   "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications"],
   "host_permissions": [
-    "https://*.prisma.com.br/*",
-    "http://*/*",
-    "https://*/*"
+    "https://cimogps.com.br/*",
+    "https://*.cimogps.com.br/*"
   ],
+
   "background": {
     "service_worker": "background.js"
   },
