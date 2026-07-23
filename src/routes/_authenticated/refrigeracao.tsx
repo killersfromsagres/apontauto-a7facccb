@@ -1234,6 +1234,139 @@ function OsDetail({
   );
 }
 
+/**
+ * Card exclusivo do fluxo Preventiva: mostra os links públicos (ImgBB) das
+ * fotos já hospedadas para esta OS, com abrir/copiar e estados de upload.
+ * Só renderiza para OS de tipo preventiva.
+ */
+function HostedPhotoLinksCard({
+  osId,
+  tipo,
+  pendingCount,
+}: {
+  osId: string;
+  tipo: string | null;
+  pendingCount: number;
+}) {
+  const isPreventiva = (tipo ?? "").toLowerCase().includes("preventiv");
+  const { data, isLoading, error, refetch, isFetching } = useQuery({
+    queryKey: ["refrig-fotos-links", osId],
+    enabled: isPreventiva,
+    staleTime: 15_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("refrigeracao_fotos")
+        .select("id, image_url, created_at, legenda")
+        .eq("os_id", osId)
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string; image_url: string; created_at: string; legenda: string | null }>;
+    },
+  });
+
+  if (!isPreventiva) return null;
+
+  const copy = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado");
+    } catch {
+      toast.error("Não foi possível copiar");
+    }
+  };
+
+  return (
+    <GlassCard className="p-4">
+      <div className="flex items-center justify-between gap-2">
+        <SectionTitle icon={Link2} label="Foto do equipamento (link hospedado)" />
+        {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Fotos anexadas são hospedadas automaticamente e o link fica salvo aqui.
+        Clique em <span className="font-medium">Abrir</span> para visualizar ou salvar no dispositivo.
+      </p>
+
+      {pendingCount > 0 && (
+        <div className="mt-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-muted-foreground backdrop-blur-xl">
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+          {pendingCount} foto(s) aguardando envio — o link aparece após a sincronização.
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Carregando links…
+        </div>
+      ) : error ? (
+        <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs">
+          <span>Falha ao carregar links.</span>
+          <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={() => refetch()}>
+            Tentar novamente
+          </Button>
+        </div>
+      ) : (data ?? []).length === 0 ? (
+        <div className="mt-3 flex items-center gap-2 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-3 py-3 text-xs text-muted-foreground">
+          <ImageIcon className="h-4 w-4" />
+          Nenhum link disponível ainda. Adicione uma foto acima.
+        </div>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {(data ?? []).map((f) => (
+            <li
+              key={f.id}
+              className="group flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-2 pr-3 backdrop-blur-xl transition-all duration-200 hover:border-primary/30 hover:bg-white/[0.07]"
+            >
+              <a
+                href={f.image_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20"
+                aria-label="Abrir foto"
+              >
+                <img
+                  src={f.image_url}
+                  alt=""
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+              </a>
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-mono text-[11px] text-muted-foreground">
+                  {f.image_url}
+                </div>
+                <div className="text-[10px] text-muted-foreground/70">
+                  {new Date(f.created_at).toLocaleString("pt-BR")}
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-1.5">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-8 rounded-full px-3 text-xs transition-transform active:scale-95"
+                  onClick={() => copy(f.image_url)}
+                >
+                  <Copy className="mr-1 h-3 w-3" /> Copiar
+                </Button>
+                <a
+                  href={f.image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground shadow-sm transition-transform active:scale-95"
+                >
+                  <ExternalLink className="mr-1 h-3 w-3" /> Abrir
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </GlassCard>
+  );
+}
+
+
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div>
