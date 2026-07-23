@@ -74,7 +74,8 @@ type Os = {
 type Foto = {
   id: string;
   os_id: string;
-  storage_path: string;
+  storage_path: string | null;
+  image_url: string | null;
   legenda: string | null;
   created_at: string;
   enviado_por: string | null;
@@ -127,7 +128,7 @@ function RefrigeracaoGestor() {
     queryFn: async (): Promise<Foto[]> => {
       const { data, error } = await supabase
         .from("refrigeracao_fotos")
-        .select("id, os_id, storage_path, legenda, created_at, enviado_por")
+        .select("id, os_id, storage_path, image_url, legenda, created_at, enviado_por")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Foto[];
@@ -711,17 +712,22 @@ function FotosGrid({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const missing = rows.filter((r) => !urls[r.id]);
-      if (missing.length === 0) return;
+      const needSigned = rows.filter((r) => !urls[r.id] && !r.image_url && r.storage_path);
+      const direct: Record<string, string> = {};
+      for (const r of rows) {
+        if (!urls[r.id] && r.image_url) direct[r.id] = r.image_url;
+      }
+      if (Object.keys(direct).length) setUrls((u) => ({ ...u, ...direct }));
+      if (needSigned.length === 0) return;
       const { data, error } = await supabase.storage
         .from("refrigeracao-fotos")
         .createSignedUrls(
-          missing.map((m) => m.storage_path),
+          needSigned.map((m) => m.storage_path as string),
           60 * 60,
         );
       if (error || cancelled) return;
       const next: Record<string, string> = {};
-      missing.forEach((m, i) => {
+      needSigned.forEach((m, i) => {
         const s = data?.[i];
         if (s?.signedUrl) next[m.id] = s.signedUrl;
       });
