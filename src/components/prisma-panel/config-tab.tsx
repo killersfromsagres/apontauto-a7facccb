@@ -89,6 +89,11 @@ export function ConfigTab() {
             <li>Abra <code>chrome://extensions</code> e ative o modo desenvolvedor.</li>
             <li>Clique em "Carregar sem compactação" e selecione a pasta.</li>
             <li>Abra o popup e cole a URL, a chave anon, seu e-mail e senha.</li>
+            <li>
+              <strong>Novo (v2.2):</strong> preencha "Código do usuário no Prisma" com o mesmo
+              código que aparece pré-preenchido na Mão-de-Obra ao abrir uma OS nova — isso deixa a
+              troca de técnico 100% precisa mesmo quando o SlickGrid recicla as linhas.
+            </li>
             <li>Ative a automação e mantenha o Prisma aberto em uma aba do mesmo navegador.</li>
           </ol>
         </div>
