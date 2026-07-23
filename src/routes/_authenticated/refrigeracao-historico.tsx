@@ -400,3 +400,20 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     </Dialog>
   );
 }
+
+function InfoField({ label, value, mono, highlight }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`truncate text-sm ${mono ? "font-mono" : ""} ${
+          highlight ? "font-semibold text-emerald-700 dark:text-emerald-300" : ""
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
