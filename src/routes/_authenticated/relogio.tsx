@@ -161,6 +161,34 @@ function RelogioPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Definir horário (HH:MM:SS)</CardTitle>
+          <CardDescription>
+            Rápido: aplica o horário informado usando a data de hoje. O relógio continua correndo a partir daí.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-2">
+              <Label htmlFor="time-only">Horário</Label>
+              <Input
+                id="time-only"
+                type="time"
+                step={1}
+                value={timeOnly}
+                onChange={(e) => setTimeOnly(e.target.value)}
+                className="font-mono text-base tabular-nums"
+              />
+            </div>
+            <Button onClick={handleApplyTimeOnly} className="gap-2 sm:w-auto">
+              <Play className="h-4 w-4" />
+              Definir Horário
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Definir data e hora</CardTitle>
           <CardDescription>
             Escolha a data/hora inicial. A partir dela o relógio continua contando em tempo real.
