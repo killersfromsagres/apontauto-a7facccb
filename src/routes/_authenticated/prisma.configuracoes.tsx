@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Copy, ShieldAlert, Wifi, WifiOff } from "lucide-react";
+import { Copy, ShieldAlert, Wifi, WifiOff, Download, PackageCheck } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/prisma/configuracoes")({
   component: ConfigPage,
@@ -44,6 +44,29 @@ function ConfigPage() {
     await navigator.clipboard.writeText(text);
     toast.success(`${label} copiado`);
   };
+
+  const [downloading, setDownloading] = useState(false);
+  const downloadExtension = async () => {
+    try {
+      setDownloading(true);
+      const res = await fetch("/apontauto-prisma-extension.zip");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "apontauto-prisma-extension.zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+      toast.success("Download iniciado");
+    } catch (e) {
+      toast.error(`Falha no download: ${(e as Error).message}`);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
 
   return (
     <div className="space-y-5">
