@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, CheckCircle2, Clock, XCircle, Plus, ChevronRight } from "lucide-react";
+import { Activity, CheckCircle2, Clock, XCircle, Plus, ChevronRight, Send } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/prisma/")({
   component: PrismaDashboard,
@@ -124,12 +125,25 @@ function PrismaDashboard() {
           <ul className="space-y-2">
             {lotes.slice(0, 12).map((l) => {
               const pct = l.total_os > 0 ? (l.os_concluidas / l.total_os) * 100 : 0;
+              const enviar = async (e: React.MouseEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const { error } = await supabase
+                  .from("prisma_lotes")
+                  .update({ status: "pendente" })
+                  .eq("id", l.id);
+                if (error) toast.error(error.message);
+                else {
+                  toast.success("Lote enviado para execução.");
+                  qc.invalidateQueries({ queryKey: ["prisma", "lotes"] });
+                }
+              };
               return (
-                <li key={l.id}>
+                <li key={l.id} className="group relative">
                   <Link
                     to="/prisma/novo"
                     search={{ id: l.id }}
-                    className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition hover:border-white/15 hover:bg-white/[0.06]"
+                    className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/[0.03] p-4 transition hover:border-white/15 hover:bg-white/[0.06]"
                   >
                     <StatusPill status={l.status} />
                     <div className="min-w-0 flex-1">
@@ -152,7 +166,16 @@ function PrismaDashboard() {
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/60" />
+                    {l.status === "rascunho" ? (
+                      <button
+                        onClick={enviar}
+                        className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-lg shadow-blue-500/20 transition hover:brightness-110 active:scale-95"
+                      >
+                        <Send className="h-3 w-3" /> Enviar
+                      </button>
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-white/30 transition group-hover:translate-x-0.5 group-hover:text-white/60" />
+                    )}
                   </Link>
                 </li>
               );
