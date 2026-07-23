@@ -26,6 +26,7 @@ import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_a
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
 import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
+import { Route as AuthenticatedPrismaRouteImport } from './routes/_authenticated/prisma'
 import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authenticated/preventiva-ac'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
@@ -133,6 +134,11 @@ const AuthenticatedProgramacaoRoute =
     path: '/programacao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPrismaRoute = AuthenticatedPrismaRouteImport.update({
+  id: '/prisma',
+  path: '/prisma',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPreventivaAcRoute =
   AuthenticatedPreventivaAcRouteImport.update({
     id: '/preventiva-ac',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
+  '/prisma': typeof AuthenticatedPrismaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
+  '/prisma': typeof AuthenticatedPrismaRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -304,6 +312,7 @@ export interface FileRoutesById {
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
+  '/_authenticated/prisma': typeof AuthenticatedPrismaRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
@@ -340,6 +349,7 @@ export interface FileRouteTypes {
     | '/painel-legal'
     | '/preventiva'
     | '/preventiva-ac'
+    | '/prisma'
     | '/programacao'
     | '/programacao-taludes'
     | '/refrigeracao'
@@ -372,6 +382,7 @@ export interface FileRouteTypes {
     | '/painel-legal'
     | '/preventiva'
     | '/preventiva-ac'
+    | '/prisma'
     | '/programacao'
     | '/programacao-taludes'
     | '/refrigeracao'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
     | '/_authenticated/preventiva-ac'
+    | '/_authenticated/prisma'
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-taludes'
     | '/_authenticated/refrigeracao'
@@ -554,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProgramacaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/prisma': {
+      id: '/_authenticated/prisma'
+      path: '/prisma'
+      fullPath: '/prisma'
+      preLoaderRoute: typeof AuthenticatedPrismaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/preventiva-ac': {
       id: '/_authenticated/preventiva-ac'
       path: '/preventiva-ac'
@@ -676,6 +695,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
+  AuthenticatedPrismaRoute: typeof AuthenticatedPrismaRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
@@ -701,6 +721,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedPreventivaAcRoute: AuthenticatedPreventivaAcRoute,
+  AuthenticatedPrismaRoute: AuthenticatedPrismaRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,

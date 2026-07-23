@@ -6,13 +6,14 @@ export const Route = createFileRoute("/_authenticated/prisma")({
   component: PrismaLayout,
 });
 
-const tabs = [
+type Tab = { to: "/prisma" | "/prisma/novo" | "/prisma/tecnicos" | "/prisma/execucoes" | "/prisma/configuracoes"; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+const tabs: Tab[] = [
   { to: "/prisma", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/prisma/novo", label: "Novo Lote", icon: Plus },
   { to: "/prisma/tecnicos", label: "Técnicos & Equipes", icon: Users2 },
   { to: "/prisma/execucoes", label: "Execuções", icon: History },
   { to: "/prisma/configuracoes", label: "Configurações", icon: Settings2 },
-] as const;
+];
 
 function PrismaLayout() {
   const path = useRouterState({ select: (r) => r.location.pathname });
