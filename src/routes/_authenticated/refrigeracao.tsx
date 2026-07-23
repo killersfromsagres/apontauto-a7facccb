@@ -503,7 +503,19 @@ function OsDetail({
         }
         if (cancelled) return;
         setPreviews(restored);
-        setPecas(d.pecas ?? []);
+        setPecas(
+          (d.pecas ?? []).map((p: any) => ({
+            id: p.id,
+            descricao: p.descricao ?? "",
+            quantidade: p.quantidade ?? "1",
+            urgencia: p.urgencia ?? "media",
+            observacao: p.observacao ?? "",
+            patrimonio: p.patrimonio ?? "",
+            modelo: p.modelo ?? "",
+            btus: p.btus ?? "",
+          })),
+        );
+
         setProblemas(d.problemas ?? []);
         if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
           setDraftSavedAt(d.updatedAt);
