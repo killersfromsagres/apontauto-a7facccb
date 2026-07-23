@@ -26,7 +26,7 @@ import {
   AirVent,
   Wrench,
   Cog,
-  Bot,
+  
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
