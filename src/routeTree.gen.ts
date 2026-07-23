@@ -42,6 +42,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as AuthenticatedApontamentoOsRouteImport } from './routes/_authenticated/apontamento-os'
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -226,6 +227,12 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedApontamentoOsRoute =
+  AuthenticatedApontamentoOsRouteImport.update({
+    id: '/apontamento-os',
+    path: '/apontamento-os',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicImgbbUploadRoute = ApiPublicImgbbUploadRouteImport.update({
   id: '/api/public/imgbb-upload',
   path: '/api/public/imgbb-upload',
@@ -250,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/apontamento-os': typeof AuthenticatedApontamentoOsRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -286,6 +294,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/apontamento-os': typeof AuthenticatedApontamentoOsRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -325,6 +334,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/_authenticated/apontamento-os': typeof AuthenticatedApontamentoOsRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/apontamento-os'
     | '/apontamentos'
     | '/backorder'
     | '/clima-tempo'
@@ -401,6 +412,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/apontamento-os'
     | '/apontamentos'
     | '/backorder'
     | '/clima-tempo'
@@ -439,6 +451,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/_authenticated/apontamento-os'
     | '/_authenticated/apontamentos'
     | '/_authenticated/backorder'
     | '/_authenticated/clima-tempo'
@@ -717,6 +730,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/apontamento-os': {
+      id: '/_authenticated/apontamento-os'
+      path: '/apontamento-os'
+      fullPath: '/apontamento-os'
+      preLoaderRoute: typeof AuthenticatedApontamentoOsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/imgbb-upload': {
       id: '/api/public/imgbb-upload'
       path: '/api/public/imgbb-upload'
@@ -742,6 +762,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApontamentoOsRoute: typeof AuthenticatedApontamentoOsRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
@@ -770,6 +791,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApontamentoOsRoute: AuthenticatedApontamentoOsRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
@@ -819,13 +841,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
