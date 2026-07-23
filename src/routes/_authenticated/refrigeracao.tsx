@@ -132,6 +132,7 @@ function RefrigeracaoPage() {
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
+  const [tipoFiltro, setTipoFiltro] = useState<"todas" | "preventiva" | "corretiva">("todas");
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -198,6 +199,11 @@ function RefrigeracaoPage() {
     const q = search.trim().toLowerCase();
     const base = osList.filter((o) => {
       if (!matchEquipe(o.equipe, equipe)) return false;
+      if (tipoFiltro !== "todas") {
+        const t = (o.tipo ?? "").toLowerCase();
+        if (tipoFiltro === "preventiva" && !t.includes("preventiv")) return false;
+        if (tipoFiltro === "corretiva" && !t.includes("corretiv")) return false;
+      }
       if (!q) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
@@ -220,7 +226,7 @@ function RefrigeracaoPage() {
       if (ac !== 0) return ac;
       return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
-  }, [osList, search, equipe]);
+  }, [osList, search, equipe, tipoFiltro]);
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
