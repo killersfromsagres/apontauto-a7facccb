@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Trash2, Users, User } from "lucide-react";
+import { Loader2, Plus, Trash2, Users, User } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/prisma/tecnicos")({
   component: TecnicosPage,
@@ -18,6 +18,8 @@ function TecnicosPage() {
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
   const [nomeEq, setNomeEq] = useState("");
+  const [savingTec, setSavingTec] = useState(false);
+  const [savingEq, setSavingEq] = useState(false);
 
   const { data: tecs = [] } = useQuery({
     queryKey: ["prisma", "tecnicos"],
@@ -51,19 +53,36 @@ function TecnicosPage() {
     },
   });
 
+  const getCurrentUserId = async () => {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) throw new Error("Sessão expirada. Saia e entre novamente.");
+    return data.user.id;
+  };
+
   const addTec = async () => {
-    if (!nome.trim()) return toast.error("Informe o nome.");
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("prisma_tecnicos").insert({
-      user_id: u.user!.id,
-      nome: nome.trim(),
-      codigo_prisma: codigo.trim() || null,
-      ativo: true,
-    });
-    if (error) return toast.error(error.message);
-    setNome("");
-    setCodigo("");
-    qc.invalidateQueries({ queryKey: ["prisma", "tecnicos"] });
+    const cleanNome = nome.trim();
+    const cleanCodigo = codigo.trim();
+    if (!cleanNome) return toast.error("Informe o nome do técnico.");
+    if (savingTec) return;
+    setSavingTec(true);
+    try {
+      const userId = await getCurrentUserId();
+      const { error } = await supabase.from("prisma_tecnicos").insert({
+        user_id: userId,
+        nome: cleanNome,
+        codigo_prisma: cleanCodigo || null,
+        ativo: true,
+      });
+      if (error) throw error;
+      setNome("");
+      setCodigo("");
+      await qc.invalidateQueries({ queryKey: ["prisma", "tecnicos"] });
+      toast.success("Técnico adicionado.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível adicionar o técnico.");
+    } finally {
+      setSavingTec(false);
+    }
   };
 
   const toggleAtivo = async (t: Tecnico) => {
@@ -78,14 +97,24 @@ function TecnicosPage() {
   };
 
   const addEq = async () => {
-    if (!nomeEq.trim()) return toast.error("Informe o nome da equipe.");
-    const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from("prisma_equipes")
-      .insert({ user_id: u.user!.id, nome: nomeEq.trim() });
-    if (error) return toast.error(error.message);
-    setNomeEq("");
-    qc.invalidateQueries({ queryKey: ["prisma", "equipes"] });
+    const cleanNome = nomeEq.trim();
+    if (!cleanNome) return toast.error("Informe o nome da equipe.");
+    if (savingEq) return;
+    setSavingEq(true);
+    try {
+      const userId = await getCurrentUserId();
+      const { error } = await supabase
+        .from("prisma_equipes")
+        .insert({ user_id: userId, nome: cleanNome });
+      if (error) throw error;
+      setNomeEq("");
+      await qc.invalidateQueries({ queryKey: ["prisma", "equipes"] });
+      toast.success("Equipe adicionada.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível adicionar a equipe.");
+    } finally {
+      setSavingEq(false);
+    }
   };
 
   const delEq = async (id: string) => {
@@ -132,8 +161,15 @@ function TecnicosPage() {
             placeholder="Código Prisma"
             className={inputCls}
           />
-          <button onClick={addTec} className={btnPrimary}>
-            <Plus className="h-4 w-4" />
+          <button
+            type="button"
+            onClick={addTec}
+            disabled={savingTec}
+            className={btnPrimary}
+            aria-label="Adicionar técnico"
+            title="Adicionar técnico"
+          >
+            {savingTec ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </button>
         </div>
         <ul className="max-h-[480px] space-y-1.5 overflow-y-auto">
@@ -188,8 +224,15 @@ function TecnicosPage() {
             placeholder="Nome da equipe"
             className={inputCls}
           />
-          <button onClick={addEq} className={btnPrimary}>
-            <Plus className="h-4 w-4" />
+          <button
+            type="button"
+            onClick={addEq}
+            disabled={savingEq}
+            className={btnPrimary}
+            aria-label="Adicionar equipe"
+            title="Adicionar equipe"
+          >
+            {savingEq ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           </button>
         </div>
         <div className="space-y-3">
@@ -236,4 +279,4 @@ function TecnicosPage() {
 const inputCls =
   "w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm outline-none transition placeholder:text-white/30 focus:border-white/30";
 const btnPrimary =
-  "grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-purple-500/20 transition hover:shadow-purple-500/40 active:scale-95";
+  "grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white shadow-lg shadow-purple-500/20 transition hover:shadow-purple-500/40 active:scale-95 disabled:pointer-events-none disabled:opacity-60";
