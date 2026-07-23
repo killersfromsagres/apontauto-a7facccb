@@ -917,6 +917,50 @@ function OsDetail({
                       </SelectContent>
                     </Select>
                   </div>
+                  <div>
+                    <Label>Patrimônio</Label>
+                    <Input
+                      value={p.patrimonio}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) =>
+                            x.id === p.id ? { ...x, patrimonio: e.target.value } : x,
+                          ),
+                        )
+                      }
+                      placeholder={patrim || os.patrimonio || "—"}
+                      className="h-11"
+                    />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      Preenchido automaticamente com o patrimônio da OS.
+                    </p>
+                  </div>
+                  <div>
+                    <Label>Modelo</Label>
+                    <Input
+                      value={p.modelo}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, modelo: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="Ex.: Split Inverter, Cassete…"
+                      className="h-11"
+                    />
+                  </div>
+                  <div>
+                    <Label>BTUs</Label>
+                    <Input
+                      value={p.btus}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, btus: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="Ex.: 9000, 12000, 24000…"
+                      className="h-11"
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <Label>Observação</Label>
                     <Textarea
@@ -929,8 +973,10 @@ function OsDetail({
                         )
                       }
                       rows={2}
+                      placeholder="Detalhes adicionais (opcional)"
                     />
                   </div>
+
                 </div>
               </div>
             ))}
