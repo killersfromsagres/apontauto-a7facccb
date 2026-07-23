@@ -28,7 +28,6 @@ import {
   Cog,
   Zap,
   Clock,
-  Snowflake as SnowflakeIcon,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
