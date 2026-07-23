@@ -448,6 +448,9 @@ function OsDetail({
     quantidade: string;
     urgencia: string;
     observacao: string;
+    patrimonio: string;
+    modelo: string;
+    btus: string;
   };
   const emptyPeca = (): PecaDraft => ({
     id: uuid(),
@@ -455,6 +458,9 @@ function OsDetail({
     quantidade: "1",
     urgencia: "media",
     observacao: "",
+    patrimonio: (patrim || os.patrimonio || "").trim(),
+    modelo: "",
+    btus: "",
   });
   const [pecas, setPecas] = useState<PecaDraft[]>([]);
 
@@ -474,6 +480,7 @@ function OsDetail({
   useEffect(() => {
     setPatrim(os.patrimonio ?? "");
   }, [os.id, os.patrimonio]);
+
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
