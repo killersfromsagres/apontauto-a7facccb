@@ -212,7 +212,56 @@
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 32%, transparent);
+    color: var(--foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--primary) 70%, transparent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
+
+/* Typography helpers — unified hierarchy across all pages */
+@utility text-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+@utility text-metric {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Layered soft/lift shadows for cards/modals */
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+@utility shadow-lift {
+  box-shadow: var(--shadow-lift);
+}
+
+/* Gentle hover lift — opt-in, no baked animation */
+@utility hover-lift {
+  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 240ms ease;
+  &:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+}
+
+/* Mesh gradient background for hero/empty states */
+@utility bg-mesh {
+  background-image: var(--gradient-mesh);
+}
+
 
 /* Ambient background: dramatic indigo aurora.
  * `background-attachment: fixed` em elemento com scroll é um dos maiores
