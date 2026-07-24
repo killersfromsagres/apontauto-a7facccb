@@ -203,11 +203,26 @@ export const EXTERNAL_ACTIVITIES = [
   "Trabalho em altura",
 ] as const;
 
-/** Limite acima do qual atividades externas recebem alerta visual. */
-export const EXTERNAL_ACTIVITY_ALERT_THRESHOLD = 70;
+/** Limite acima do qual atividades externas recebem alerta VERMELHO. */
+export const EXTERNAL_ACTIVITY_ALERT_THRESHOLD = 60;
+/** Qualquer risco relevante de chuva — mesmo fraca — dispara marcação amarela. */
+export const ANY_RAIN_RISK_THRESHOLD = 20;
 
 export function shouldAlertExternalActivities(probability: number | null | undefined): boolean {
   return (probability ?? 0) >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD;
+}
+
+export function hasAnyRainRisk(probability: number | null | undefined): boolean {
+  return (probability ?? 0) >= ANY_RAIN_RISK_THRESHOLD;
+}
+
+export type RiskLevel = "safe" | "watch" | "warning" | "danger";
+export function riskLevelForProbability(probability: number | null | undefined): RiskLevel {
+  const p = probability ?? 0;
+  if (p >= 60) return "danger";
+  if (p >= 40) return "warning";
+  if (p >= ANY_RAIN_RISK_THRESHOLD) return "watch";
+  return "safe";
 }
 
 // ────────────────────────────────────────────────────────────
