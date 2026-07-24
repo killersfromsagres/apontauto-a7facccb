@@ -504,10 +504,7 @@ function ProgramacaoTaludesPage() {
           </GlassCard>
         </div>
 
-              <span>Fonte: Open-Meteo · atualização automática a cada 30 min</span>
-            </div>
-          </GlassCard>
-        </div>
+
 
         {/* Próximos dias úteis */}
         <WeatherForecastStrip
