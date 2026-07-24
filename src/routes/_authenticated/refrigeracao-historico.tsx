@@ -182,11 +182,12 @@ function HistoricoPage() {
               const st = equipeStyles(o.equipe);
               return (
                 <li key={o.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(o)}
-                    className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}
-                  >
+                  <div className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(o)}
+                      className="flex flex-1 items-start gap-3 text-left"
+                    >
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -216,7 +217,11 @@ function HistoricoPage() {
                         {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                       </div>
                     </div>
-                  </button>
+                    </button>
+                    <div className="shrink-0 self-center">
+                      <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
+                    </div>
+                  </div>
                 </li>
               );
             })}
