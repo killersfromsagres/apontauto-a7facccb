@@ -209,3 +209,108 @@ export const EXTERNAL_ACTIVITY_ALERT_THRESHOLD = 70;
 export function shouldAlertExternalActivities(probability: number | null | undefined): boolean {
   return (probability ?? 0) >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD;
 }
+
+// ────────────────────────────────────────────────────────────
+// Detecção de chuva em tempo real (qualquer intensidade)
+// A operação de taludes é interrompida para qualquer chuva, então
+// aqui detectamos garoa/chuva fraca também — não apenas alta prob.
+// ────────────────────────────────────────────────────────────
+export type RainIntensity = "garoa" | "fraca" | "moderada" | "forte" | "tempestade";
+
+export type RainDetection = {
+  detected: boolean;
+  intensity: RainIntensity | null;
+  label: string;
+  emoji: string;
+  mm_atual: number;      // mm na última hora
+  mm_dia: number;        // acumulado do dia
+  weather_code: number | null;
+};
+
+const RAIN_BUCKETS = new Set(["garoa", "chuva", "tempestade"]);
+
+function intensityFromMm(mm: number): RainIntensity {
+  if (mm >= 8) return "forte";
+  if (mm >= 2.5) return "moderada";
+  return "fraca";
+}
+
+function intensityFromCode(code: number | null | undefined): RainIntensity | null {
+  if (code == null) return null;
+  if ([95, 96, 99].includes(code)) return "tempestade";
+  if ([65, 67, 82].includes(code)) return "forte";
+  if ([63, 66, 81].includes(code)) return "moderada";
+  if ([61, 80].includes(code)) return "fraca";
+  if ([51, 53, 55, 56, 57].includes(code)) return "garoa";
+  return null;
+}
+
+const INTENSITY_LABEL: Record<RainIntensity, { label: string; emoji: string }> = {
+  garoa: { label: "Garoa", emoji: "🌦" },
+  fraca: { label: "Chuva fraca", emoji: "🌧" },
+  moderada: { label: "Chuva moderada", emoji: "🌧" },
+  forte: { label: "Chuva forte", emoji: "⛈" },
+  tempestade: { label: "Tempestade", emoji: "⛈" },
+};
+
+export const RAIN_INTENSITY_ORDER: RainIntensity[] = [
+  "garoa",
+  "fraca",
+  "moderada",
+  "forte",
+  "tempestade",
+];
+
+/** Detecta qualquer chuva em curso a partir do current + hourly do Open-Meteo. */
+export function detectRain(data: WeatherResponse | undefined | null): RainDetection {
+  if (!data) {
+    return {
+      detected: false,
+      intensity: null,
+      label: "Sem dados",
+      emoji: "—",
+      mm_atual: 0,
+      mm_dia: 0,
+      weather_code: null,
+    };
+  }
+  const code = data.current?.weather_code ?? null;
+  const bucket = weatherCodeInfo(code).bucket;
+  const mmAtual = Math.max(0, Number(data.current?.rain ?? 0));
+  const mmDia = Math.max(0, Number(data.daily?.rain_sum?.[0] ?? 0));
+
+  // Última hora do array hourly, se disponível — captura chuva iniciando.
+  const nowHour = new Date().getHours();
+  const hourlyRain = Number(data.hourly?.rain?.[nowHour] ?? 0);
+  const mmReferencia = Math.max(mmAtual, hourlyRain);
+
+  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.05;
+
+  if (!chuvaAtiva) {
+    return {
+      detected: false,
+      intensity: null,
+      label: "Sem chuva",
+      emoji: "☀",
+      mm_atual: mmAtual,
+      mm_dia: mmDia,
+      weather_code: code,
+    };
+  }
+
+  const intensity =
+    intensityFromCode(code) ??
+    (mmReferencia > 0 ? intensityFromMm(mmReferencia) : "garoa");
+  const meta = INTENSITY_LABEL[intensity];
+
+  return {
+    detected: true,
+    intensity,
+    label: meta.label,
+    emoji: meta.emoji,
+    mm_atual: mmAtual,
+    mm_dia: mmDia,
+    weather_code: code,
+  };
+}
+
