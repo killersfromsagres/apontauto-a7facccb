@@ -117,11 +117,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
 
-      // Fonte com display=swap; carregamento não-bloqueante nativo.
+      // Fonte carregada de forma NÃO-bloqueante (media=print + swap para 'all' pós-load).
+      // Elimina o render-blocking do CSS de fontes no primeiro paint (LCP/FCP).
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
+        media: "print",
+        onload: "this.media='all'",
       },
+      {
+        rel: "preload",
+        as: "style",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
+      },
+
     ],
     scripts: [
       {
