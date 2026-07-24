@@ -165,7 +165,19 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
             const info = weatherCodeInfo(d.code);
             const isToday = d.iso === todayIso;
             const alert = shouldAlertExternalActivities(d.prob);
-            const risk = riskLevelForProbability(d.prob);
+            // Risco base pela probabilidade — porém qualquer sinal real de
+            // chuva (código WMO de chuva/tempestade ou acumulado > 0mm)
+            // eleva o cartão para pelo menos "watch" (amarelo), garantindo
+            // que dias com garoa/chuva fraca/moderada nunca fiquem verdes.
+            const probRisk = riskLevelForProbability(d.prob);
+            const bucket = info.bucket;
+            const hasRainSignal = bucket === "chuva" || bucket === "tempestade" || d.rain > 0;
+            let risk = probRisk;
+            if (hasRainSignal) {
+              if (bucket === "tempestade" || d.rain >= 5) risk = "danger";
+              else if (d.rain >= 1 && risk !== "danger") risk = "warning";
+              else if (risk === "safe") risk = "watch";
+            }
             const probPct = Math.max(0, Math.min(100, Math.round(d.prob)));
             // Sempre mostra um preenchimento visível — mesmo com 0% aparece
             // um traço mínimo para indicar que o dado foi carregado.
