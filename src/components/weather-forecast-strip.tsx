@@ -190,12 +190,20 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
               <div
                 key={d.iso}
                 className={cn(
-                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-2xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl",
-                  "border-border/50 bg-gradient-to-br from-background/80 to-background/40 backdrop-blur",
-                  isToday && "border-primary/60 ring-1 ring-primary/40",
-                  risk === "watch" && "border-amber-400/50 ring-1 ring-amber-400/30",
-                  risk === "warning" && "border-orange-500/60 ring-1 ring-orange-500/40",
-                  (risk === "danger" || alert) && "border-red-500/60 ring-2 ring-red-500/40 animate-pulse-slow",
+                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-2xl border-2 p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                  // Base — Safe (sem risco de chuva)
+                  risk === "safe" &&
+                    "border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-background/60 to-background/30 hover:border-emerald-500/70 hover:shadow-emerald-500/20",
+                  // Watch — leve
+                  risk === "watch" &&
+                    "border-amber-400/60 bg-gradient-to-br from-amber-400/15 via-amber-400/5 to-background/30 hover:border-amber-400 hover:shadow-amber-400/30",
+                  // Warning — moderado
+                  risk === "warning" &&
+                    "border-orange-500/70 bg-gradient-to-br from-orange-500/20 via-orange-500/8 to-background/30 hover:border-orange-500 hover:shadow-orange-500/40",
+                  // Danger — alto
+                  risk === "danger" &&
+                    "border-red-500/70 bg-gradient-to-br from-red-500/20 via-red-500/8 to-background/30 hover:border-red-500 hover:shadow-red-500/50 animate-pulse-slow",
+                  isToday && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background",
                 )}
               >
                 {isToday && (
