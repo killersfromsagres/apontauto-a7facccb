@@ -1,79 +1,91 @@
-// Service worker — mantém a sessão autenticada e envia heartbeat ao Supabase
-// a cada minuto, gravando em prisma_extensao_status para o painel acender verde.
+// Service worker — fila de lotes e coordenação entre painel e Prisma4.
+// Armazena o payload em chrome.storage.local e sinaliza a aba do Prisma4.
 
-const HEARTBEAT_MIN = 1;
-const VERSION = "3.1.0";
+const VERSION = "1.0.0";
 
-async function getConfig() {
-  return chrome.storage.local.get([
-    "supabaseUrl",
-    "anonKey",
-    "userCode",
-    "accessToken",
-    "userId",
-  ]);
-}
-
-async function sbFetch(path, init = {}) {
-  const cfg = await getConfig();
-  if (!cfg.supabaseUrl || !cfg.anonKey) throw new Error("Supabase não configurado.");
-  const headers = {
-    apikey: cfg.anonKey,
-    Authorization: `Bearer ${cfg.accessToken || cfg.anonKey}`,
-    "Content-Type": "application/json",
-    ...(init.headers || {}),
+async function enqueue(batch) {
+  const stamped = {
+    ...batch,
+    id: batch.id || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    enqueuedAt: new Date().toISOString(),
+    status: "pending",
   };
-  return fetch(`${cfg.supabaseUrl}${path}`, { ...init, headers });
-}
-
-async function heartbeat() {
+  const { queue = [] } = await chrome.storage.local.get(["queue"]);
+  queue.push(stamped);
+  await chrome.storage.local.set({ queue });
+  chrome.action.setBadgeText({ text: String(queue.filter((b) => b.status === "pending").length) });
+  chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
   try {
-    const cfg = await getConfig();
-    if (!cfg.supabaseUrl || !cfg.anonKey || !cfg.accessToken || !cfg.userId) {
-      await chrome.storage.local.set({ lastHeartbeat: Date.now() });
-      return;
-    }
-    const body = [
-      {
-        user_id: cfg.userId,
-        ultima_atividade: new Date().toISOString(),
-        versao: VERSION,
-        info: { code: cfg.userCode || null, ua: navigator.userAgent },
-      },
-    ];
-    const res = await sbFetch(`/rest/v1/prisma_extensao_status?on_conflict=user_id`, {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-      body: JSON.stringify(body),
+    chrome.notifications?.create({
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: "Apont Auto",
+      message: `Lote recebido: ${stamped.os?.length || 0} OS · ${stamped.categoria}. Abra o Prisma4 para executar.`,
     });
-    if (!res.ok) console.warn("[ApontAuto] heartbeat", res.status, await res.text());
-    await chrome.storage.local.set({ lastHeartbeat: Date.now() });
-  } catch (e) {
-    console.warn("[ApontAuto] heartbeat err", e);
-  }
+  } catch { /* noop */ }
+  return stamped.id;
 }
 
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.alarms?.create("heartbeat", { periodInMinutes: HEARTBEAT_MIN });
-  heartbeat();
-});
-chrome.runtime.onStartup?.addListener(() => heartbeat());
-chrome.alarms?.onAlarm.addListener((a) => {
-  if (a.name === "heartbeat") heartbeat();
-});
+async function refreshBadge() {
+  const { queue = [] } = await chrome.storage.local.get(["queue"]);
+  const pending = queue.filter((b) => b.status === "pending").length;
+  chrome.action.setBadgeText({ text: pending > 0 ? String(pending) : "" });
+  chrome.action.setBadgeBackgroundColor({ color: "#10b981" });
+}
 
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "config-updated") {
-    heartbeat().then(() => sendResponse({ ok: true }));
-    return true;
-  }
-  if (msg?.type === "get-config") {
-    getConfig().then(sendResponse);
-    return true;
-  }
-  if (msg?.type === "ping-heartbeat") {
-    heartbeat().then(() => sendResponse({ ok: true }));
-    return true;
-  }
-  return false;
+chrome.runtime.onInstalled.addListener(() => { refreshBadge(); });
+chrome.runtime.onStartup?.addListener(() => refreshBadge());
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  (async () => {
+    try {
+      if (msg?.type === "apontauto:enqueue") {
+        const id = await enqueue(msg.batch);
+        sendResponse({ ok: true, id });
+        return;
+      }
+      if (msg?.type === "apontauto:list") {
+        const { queue = [], history = [] } = await chrome.storage.local.get(["queue", "history"]);
+        sendResponse({ ok: true, queue, history, version: VERSION });
+        return;
+      }
+      if (msg?.type === "apontauto:clear-queue") {
+        await chrome.storage.local.set({ queue: [] });
+        await refreshBadge();
+        sendResponse({ ok: true });
+        return;
+      }
+      if (msg?.type === "apontauto:remove") {
+        const { queue = [] } = await chrome.storage.local.get(["queue"]);
+        await chrome.storage.local.set({ queue: queue.filter((b) => b.id !== msg.id) });
+        await refreshBadge();
+        sendResponse({ ok: true });
+        return;
+      }
+      if (msg?.type === "apontauto:update-status") {
+        const { queue = [], history = [] } = await chrome.storage.local.get(["queue", "history"]);
+        const idx = queue.findIndex((b) => b.id === msg.id);
+        if (idx >= 0) {
+          queue[idx] = { ...queue[idx], ...msg.patch };
+          if (msg.patch?.status === "done" || msg.patch?.status === "error") {
+            history.unshift(queue[idx]);
+            queue.splice(idx, 1);
+          }
+        }
+        await chrome.storage.local.set({ queue, history: history.slice(0, 50) });
+        await refreshBadge();
+        sendResponse({ ok: true });
+        return;
+      }
+      if (msg?.type === "apontauto:open-prisma") {
+        const tab = await chrome.tabs.create({ url: "https://cimogps.com.br/Prisma4/AccountCustom/Login?ReturnUrl=%2fPrisma4", active: true });
+        sendResponse({ ok: true, tabId: tab.id });
+        return;
+      }
+      sendResponse({ ok: false, error: "unknown" });
+    } catch (e) {
+      sendResponse({ ok: false, error: String(e?.message || e) });
+    }
+  })();
+  return true;
 });
