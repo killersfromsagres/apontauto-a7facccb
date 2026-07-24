@@ -94,13 +94,23 @@ function ProgramacaoTaludesPage() {
 
   const current = data?.current;
   const info = weatherCodeInfo(current?.weather_code);
-  const probHoje = data?.daily.precipitation_probability_max[0] ?? 0;
+  // Precisão: prob. da hora atual (hourly) tem prioridade sobre o máximo diário.
+  const probHoraAtual = (() => {
+    if (!data?.hourly?.time?.length) return null;
+    const now = new Date();
+    const hourStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:00`;
+    const idx = data.hourly.time.findIndex((t) => t.startsWith(hourStr));
+    return idx >= 0 ? Number(data.hourly.precipitation_probability?.[idx] ?? 0) : null;
+  })();
+  const probMaxDia = data?.daily.precipitation_probability_max[0] ?? 0;
+  const probHoje = Math.max(probHoraAtual ?? 0, probMaxDia);
   const rainSumHoje = data?.daily.rain_sum[0] ?? 0;
-  const status = situationStatus(probHoje);
-  const alertExternal = shouldAlertExternalActivities(probHoje);
 
   // Detecção precisa de chuva em curso (qualquer intensidade).
   const rain = useMemo(() => detectRain(data), [data]);
+  // Status efetivo: se está chovendo (mesmo garoa), operação = SUSPENSA.
+  const status = effectiveTaludeStatus(probHoje, rain);
+  const alertExternal = shouldAlertExternalActivities(probHoje) || rain.detected;
 
   const panelRef = useRef<HTMLDivElement>(null);
 
