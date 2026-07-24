@@ -91,6 +91,9 @@ function ProgramacaoTaludesPage() {
   const status = situationStatus(probHoje);
   const alertExternal = shouldAlertExternalActivities(probHoje);
 
+  // Detecção precisa de chuva em curso (qualquer intensidade).
+  const rain = useMemo(() => detectRain(data), [data]);
+
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Evidências de chuva
@@ -100,32 +103,52 @@ function ProgramacaoTaludesPage() {
     staleTime: 60_000,
   });
   const [registrandoEvid, setRegistrandoEvid] = useState(false);
-  const handleRegistrarEvidencia = async () => {
-    if (!data || !panelRef.current) return;
-    setRegistrandoEvid(true);
-    try {
-      const { toPng } = await import("html-to-image");
-      const dataUrl = await toPng(panelRef.current, {
-        pixelRatio: 2,
-        backgroundColor: "#0b1220",
-      });
-      const hoje = todayISO();
-      await registrarEvidencia({
-        data: hoje,
-        mensagem:
-          "Atividades de talude interrompidas devido a chuva — condição climática desfavorável registrada como evidência.",
-        imagem_data_url: dataUrl,
-        temperatura: current?.temperature_2m ?? null,
-        condicao: info.label,
-        precipitacao_mm: rainSumHoje,
-        prob_chuva: probHoje,
-      });
+
+  const capturarERegistrar = async (opts: {
+    intensity: RainIntensity | null;
+    label: string;
+    mensagem: string;
+    silent?: boolean;
+  }) => {
+    if (!data || !panelRef.current) return null;
+    const { toPng } = await import("html-to-image");
+    const dataUrl = await toPng(panelRef.current, {
+      pixelRatio: 2,
+      backgroundColor: "#0b1220",
+    });
+    const hoje = todayISO();
+    const mensagemFinal = opts.intensity
+      ? `[${opts.label}] ${opts.mensagem}`
+      : opts.mensagem;
+    const ev = await registrarEvidencia({
+      data: hoje,
+      mensagem: mensagemFinal,
+      imagem_data_url: dataUrl,
+      temperatura: current?.temperature_2m ?? null,
+      condicao: opts.label,
+      precipitacao_mm: rain.mm_dia || rainSumHoje,
+      prob_chuva: probHoje,
+    });
+    if (!opts.silent) {
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `evidencia-chuva-taludes-${hoje}.png`;
+      a.download = `evidencia-chuva-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
       a.click();
+    }
+    qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
+    return ev;
+  };
+
+  const handleRegistrarEvidencia = async () => {
+    setRegistrandoEvid(true);
+    try {
+      await capturarERegistrar({
+        intensity: rain.intensity,
+        label: rain.detected ? rain.label : info.label,
+        mensagem:
+          "Atividades de talude interrompidas devido a chuva — condição climática desfavorável registrada como evidência.",
+      });
       toast.success("Evidência de chuva registrada");
-      qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -133,60 +156,40 @@ function ProgramacaoTaludesPage() {
     }
   };
 
-  return (
-    <PageShell
-      title="Programação de Taludes"
-      description={`Programação integrada ao clima em tempo real — ${WEATHER_LOCATION.cidade} · ${WEATHER_LOCATION.bairro} · ${WEATHER_LOCATION.estado}.`}
-      actions={
-        <>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/clima-tempo">
-              <ExternalLink className="mr-2 h-4 w-4" />
-              Dashboard Clima e Tempo
-            </Link>
-          </Button>
-          <Button variant="outline" onClick={() => weatherQ.refetch()} disabled={weatherQ.isFetching}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", weatherQ.isFetching && "animate-spin")} />
-            Atualizar clima
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-5">
-        {weatherQ.isError && (
-          <div className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm text-red-800 dark:text-red-200">
-            <AlertTriangle className="mr-2 inline h-4 w-4" />
-            Falha ao consultar Open-Meteo. Tente novamente em instantes.
-          </div>
-        )}
+  // Auto-registro: qualquer chuva detectada gera evidência automática,
+  // com dedup por (data + intensidade) para não duplicar durante o dia.
+  const autoRunRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!data || !rain.detected || !rain.intensity) return;
+    if (evidenciasQ.isLoading) return;
+    const chave = `${todayISO()}__${rain.intensity}`;
+    if (autoRunRef.current.has(chave)) return;
+    const jaRegistrada = (evidenciasQ.data ?? []).some(
+      (ev) =>
+        ev.data === todayISO() &&
+        (ev.mensagem?.toLowerCase().includes(`[${rain.label.toLowerCase()}]`) ||
+          (ev.condicao ?? "").toLowerCase() === rain.label.toLowerCase()),
+    );
+    if (jaRegistrada) {
+      autoRunRef.current.add(chave);
+      return;
+    }
+    autoRunRef.current.add(chave);
+    // Aguarda 1s para garantir que o painel esteja renderizado antes do html-to-image.
+    const t = window.setTimeout(() => {
+      void capturarERegistrar({
+        intensity: rain.intensity!,
+        label: rain.label,
+        mensagem: `Chuva detectada automaticamente (${rain.mm_atual.toFixed(1)} mm/h · acumulado ${rain.mm_dia.toFixed(1)} mm). Operação de talude suspensa por segurança.`,
+        silent: true,
+      }).then((ev) => {
+        if (ev) toast.info(`Evidência automática registrada — ${rain.label}`);
+      }).catch((e) => console.warn("[taludes] auto-evidencia", e));
+    }, 1000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, rain.detected, rain.intensity, evidenciasQ.isLoading, evidenciasQ.data]);
 
-        {status.nivel === "reprogramar" && (
-          <div className="rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 to-red-600/10 px-4 py-3 shadow-lg">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3">
-                <CloudRain className="mt-0.5 h-6 w-6 shrink-0 text-red-500 animate-pulse" />
-                <div>
-                  <p className="font-display text-base font-bold text-red-700 dark:text-red-300">
-                    {status.titulo} — atividades de talude devem ser reprogramadas
-                  </p>
-                  <p className="text-xs text-red-800/90 dark:text-red-200/90">
-                    Probabilidade de chuva hoje: {Math.round(probHoje)}%. Registre a evidência para
-                    o histórico.
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleRegistrarEvidencia}
-                disabled={registrandoEvid || !data}
-                className="shrink-0"
-              >
-                {registrandoEvid ? "Registrando…" : "Registrar evidência de chuva"}
-              </Button>
-            </div>
-          </div>
-        )}
 
         <PTCard />
 
