@@ -6,9 +6,12 @@ export function useWeather() {
   return useQuery<WeatherResponse>({
     queryKey: ["open-meteo-weather"],
     queryFn: ({ signal }) => fetchWeather(signal),
-    staleTime: 30 * 60_000,
-    refetchInterval: 30 * 60_000,
-    refetchOnWindowFocus: false,
+    // Precisão: refetch a cada 5 min + ao voltar o foco da aba (para detectar
+    // chuva iniciando o quanto antes na operação de taludes).
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
     refetchOnMount: true,
     retry: 2,
     retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
