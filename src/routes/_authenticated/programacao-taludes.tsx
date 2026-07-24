@@ -364,11 +364,25 @@ function ProgramacaoTaludesPage() {
         <div ref={panelRef}>
           <GlassCard
             className={cn(
-              "space-y-4 transition-shadow",
-              rain.detected && rain.intensity === "garoa" && "ring-2 ring-amber-400/50 animate-drizzle-glow",
-              rain.detected && rain.intensity && rain.intensity !== "garoa" && "ring-2 ring-red-500/50 animate-alert-glow",
-              !rain.detected && dayRisk === "warning" && "ring-1 ring-orange-400/40",
-              !rain.detected && dayRisk === "watch" && "ring-1 ring-amber-400/40",
+              "space-y-4 border-2 transition-all duration-500",
+              // Verde — Operação liberada
+              status.nivel === "normal" &&
+                "border-emerald-500/50 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(16,185,129,0.35)]",
+              // Amarelo — Atenção
+              status.nivel === "atencao" &&
+                "border-amber-400/60 bg-gradient-to-br from-amber-400/15 via-amber-400/5 to-transparent shadow-[0_0_40px_-8px_rgba(251,191,36,0.4)]",
+              // Laranja — Alto risco
+              status.nivel === "alto" &&
+                "border-orange-500/60 bg-gradient-to-br from-orange-500/15 via-orange-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(249,115,22,0.4)]",
+              // Vermelho — Reprogramar (previsão alta, sem chuva ativa)
+              status.nivel === "reprogramar" &&
+                "border-red-500/60 bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(239,68,68,0.4)]",
+              // Suspenso garoa — Amarelo pulsante intenso
+              status.nivel === "suspenso" && rain.intensity === "garoa" &&
+                "border-amber-400 bg-gradient-to-br from-amber-400/25 via-amber-300/10 to-transparent shadow-[0_0_50px_-4px_rgba(251,191,36,0.55)] animate-drizzle-glow",
+              // Suspenso chuva — Vermelho pulsante intenso
+              status.nivel === "suspenso" && rain.intensity && rain.intensity !== "garoa" &&
+                "border-red-500 bg-gradient-to-br from-red-500/25 via-red-400/10 to-transparent shadow-[0_0_50px_-4px_rgba(239,68,68,0.6)] animate-alert-glow",
             )}
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
