@@ -92,12 +92,15 @@ function isDupError(error: any): boolean {
   return /duplicate|23505|unique/i.test(msg);
 }
 
-export function syncPending(): Promise<SyncResult> {
-  if (running) return running;
+export type SyncResultDetailed = SyncResult & { firstError?: string };
+
+export function syncPending(): Promise<SyncResultDetailed> {
+  if (running) return running as Promise<SyncResultDetailed>;
   running = (async () => {
     const items = await outboxAll();
     let sent = 0;
     let failed = 0;
+    let firstError: string | undefined;
     for (const item of items) {
       try {
         await sendOne(item);
@@ -105,16 +108,19 @@ export function syncPending(): Promise<SyncResult> {
         sent++;
       } catch (err: any) {
         failed++;
+        const msg = err?.message ?? String(err);
+        if (!firstError) firstError = `${item.kind}: ${msg}`;
+        console.error("[corretiva/sync]", item.kind, item.id, err);
         await outboxUpdate({
           ...item,
           attempts: item.attempts + 1,
-          lastError: err?.message ?? String(err),
+          lastError: msg,
         });
       }
     }
-    return { sent, failed, remaining: failed };
+    return { sent, failed, remaining: failed, firstError };
   })().finally(() => {
     running = null;
   });
-  return running;
+  return running as Promise<SyncResultDetailed>;
 }
