@@ -39,8 +39,9 @@ export function SlaBell() {
   });
 
 
-  // Realtime only; no polling.
+  // Realtime only; no polling. Só assina quando o usuário pode ver lembretes.
   useEffect(() => {
+    if (!canSeeReminders) return;
     const channel = supabase
       .channel("reminders-bell")
       .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => {
@@ -50,7 +51,8 @@ export function SlaBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, canSeeReminders]);
+
 
   const alerts = useMemo(
     () =>
