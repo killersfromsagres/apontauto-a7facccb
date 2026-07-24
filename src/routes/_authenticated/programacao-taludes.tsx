@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   ClipboardCheck,
-  HardHat,
+  
   ExternalLink,
   History,
   Lock,
