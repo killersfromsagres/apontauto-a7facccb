@@ -131,11 +131,54 @@ function ApontamentoOSPage() {
           setConfig={setConfig}
           onGerado={(item) => setHistorico((h) => [item, ...h])}
         />
+        <AutomacaoPlaywrightCard />
         <HistoricoCard historico={historico} setHistorico={setHistorico} />
       </div>
     </PageShell>
   );
 }
+
+// ---------- Automação Playwright (CMD) ----------
+function AutomacaoPlaywrightCard() {
+  const baixar = () => {
+    fetch("/apontamento-prisma4.zip")
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
+      .then((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "apontamento-prisma4.zip";
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast.success("Download iniciado.");
+      })
+      .catch((e) => toast.error(`Falha ao baixar: ${e.message}`));
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5 text-primary" /> Automação Playwright (CMD)</CardTitle>
+        <CardDescription>Baixe o script Node.js/Playwright que abre o Prisma4, preenche cada OS do lote e salva automaticamente.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={baixar} className="gap-2"><Download className="h-4 w-4" /> Baixar automação (.zip)</Button>
+        </div>
+        <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
+          <li>Descompacte o ZIP em uma pasta local.</li>
+          <li>No CMD/PowerShell dentro da pasta: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npm install</code> e depois <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npx playwright install chromium</code>.</li>
+          <li>Copie <code className="font-mono text-xs">.env.example</code> para <code className="font-mono text-xs">.env</code> e preencha <code className="font-mono text-xs">PRISMA_USUARIO</code>/<code className="font-mono text-xs">PRISMA_SENHA</code>.</li>
+          <li>No painel acima, clique <b>Baixar entradas-os.txt</b> e salve dentro da pasta da automação (substitui o existente).</li>
+          <li>Execute: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">node meczada.js</code> — ou com data forçada: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">node meczada.js "09/07/2026 08:00"</code>.</li>
+        </ol>
+        <p className="text-xs text-muted-foreground">
+          A automação abre o Chromium, faz login no Prisma4 e processa cada OS: número, estado "Concluído", mão-de-obra por técnico/data/horário, procedimentos via data cabeçalho e (categoria refrigeração) medições MED = 0. Ao final, imprime a tabela de resultados.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 // ---------- Colaboradores ----------
 function ColaboradoresCard({
@@ -477,6 +520,24 @@ function NovoLoteCard({
         <div className="flex flex-wrap gap-2">
           <Button onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Gerar e copiar JSON</Button>
           <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Gerar e baixar JSON</Button>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              if (colabIds.length === 0) { toast.error("Selecione ao menos um colaborador."); return; }
+              if (osList.length === 0) { toast.error("Informe pelo menos uma OS."); return; }
+              const d = new Date(dataInicio);
+              if (Number.isNaN(d.getTime())) { toast.error("Data/hora inválida."); return; }
+              const inicio = `${fmtData(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+              const txt =
+                `inicio: ${inicio}\n\n[LOTE]\ncategoria: ${categoria}\ntecnicos: ${colabIds.join(", ")}\nos: ${osList.join(",")}\n`;
+              downloadBlob(new Blob([txt], { type: "text/plain;charset=utf-8" }), "entradas-os.txt");
+              registrar();
+              toast.success("entradas-os.txt gerado.");
+            }}
+          >
+            <FileText className="h-4 w-4" /> Baixar entradas-os.txt
+          </Button>
         </div>
       </CardContent>
     </Card>
