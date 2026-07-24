@@ -56,6 +56,7 @@ import {
 } from "@/lib/refrigeracao/db";
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
+import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 
 import {
   EQUIPES_REFRIGERACAO,
