@@ -150,8 +150,8 @@ export async function updateMarcacao(
   id: string,
   patch: Partial<Pick<TaludeMarcacao, "numero" | "data" | "rotulo" | "observacao" | "cor" | "polygon">>,
 ): Promise<void> {
-  const payload: Record<string, unknown> = { ...patch };
-  if (patch.polygon) payload.polygon = patch.polygon as unknown as never;
+  const payload = { ...patch, polygon: patch.polygon as unknown as never | undefined };
+  if (patch.polygon === undefined) delete (payload as { polygon?: unknown }).polygon;
   const { error } = await supabase.from("talude_marcacoes").update(payload).eq("id", id);
   if (error) throw new Error(error.message);
 }
