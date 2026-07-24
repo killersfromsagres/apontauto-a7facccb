@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './routes/_authenticated/refrigeracao-pecas-status'
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
@@ -91,6 +92,11 @@ const ApiBackorderReclassificarRoute =
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTaludesRoute = AuthenticatedTaludesRouteImport.update({
+  id: '/taludes',
+  path: '/taludes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSegurancaTrabalhoRoute =
@@ -251,6 +257,7 @@ export interface FileRoutesByFullPath {
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
+  '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
+  '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
@@ -320,6 +328,7 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
+  '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -357,6 +366,7 @@ export interface FileRouteTypes {
     | '/refrigeracao-historico'
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
+    | '/taludes'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/api/public/clima'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/refrigeracao-historico'
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
+    | '/taludes'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/_authenticated/refrigeracao-historico'
     | '/_authenticated/refrigeracao-pecas-status'
     | '/_authenticated/seguranca-trabalho'
+    | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/_authenticated/'
@@ -517,6 +529,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/taludes': {
+      id: '/_authenticated/taludes'
+      path: '/taludes'
+      fullPath: '/taludes'
+      preLoaderRoute: typeof AuthenticatedTaludesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/seguranca-trabalho': {
@@ -704,6 +723,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
+  AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -732,6 +752,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRefrigeracaoPecasStatusRoute:
     AuthenticatedRefrigeracaoPecasStatusRoute,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
+  AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }

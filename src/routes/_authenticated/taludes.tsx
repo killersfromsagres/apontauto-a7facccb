@@ -127,7 +127,7 @@ function TaludesPage() {
     <PageShell
       title="Demarcação de Taludes"
       description="Suba um mapa, desenhe polígonos com precisão, atribua número e data — e baixe a imagem final."
-      icon={<MapIcon className="h-6 w-6 text-primary" />}
+      
       actions={
         <Button onClick={() => setUploadOpen(true)} className="gap-2">
           <ImagePlus className="h-4 w-4" /> Novo mapa
@@ -490,7 +490,7 @@ function MapEditor({ map, onBack }: { map: TaludeMap; onBack: () => void }) {
         map.observacao ??
         `Clique em "Desenhar" e marque pontos ao redor do talude. ${marcacoes.length} demarcaç${marcacoes.length === 1 ? "ão" : "ões"}.`
       }
-      icon={<MapIcon className="h-6 w-6 text-primary" />}
+      
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="ghost" onClick={onBack} className="gap-2">
