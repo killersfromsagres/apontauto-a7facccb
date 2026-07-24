@@ -22,12 +22,22 @@ function daysUntil(dateStr: string) {
 
 export function SlaBell() {
   const qc = useQueryClient();
+  const { access, loading: accessLoading } = useMyAccess();
+  // Só usuários com acesso a "outros" (lembretes/SLA) precisam do sino.
+  // Evita fetch + realtime channel desnecessário para colaboradores restritos
+  // (climatizacao, corretivas etc.) — economiza uma conexão ws e uma query.
+  const canSeeReminders =
+    !accessLoading &&
+    (access.isAdmin || access.allowed === null || (access.allowed?.includes("outros") ?? false));
+
   // Shares cache with /outros page — no duplicated fetch.
   const { data: items = [] } = useQuery<Reminder[]>({
     queryKey: ["reminders"],
     queryFn: listReminders,
     staleTime: 60_000,
+    enabled: canSeeReminders,
   });
+
 
   // Realtime only; no polling.
   useEffect(() => {
