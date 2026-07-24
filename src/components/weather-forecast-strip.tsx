@@ -254,27 +254,29 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </span>
                 </div>
 
-                {/* Rain gauge — sempre visível */}
+                {/* Rain gauge — sempre visível, fundo escuro para contraste */}
                 <div className="mt-2">
                   <div className="mb-1 flex items-center justify-between text-[10px]">
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">
                       <CloudRain className="h-3 w-3" />
                       Chuva
                     </span>
-                    <span className={cn("font-bold tabular-nums", probText)}>
+                    <span className={cn("font-extrabold tabular-nums text-[11px]", probText)}>
                       {probPct}%
                     </span>
                   </div>
-                  <div className="relative h-2 overflow-hidden rounded-full bg-muted/70 ring-1 ring-border/40">
+                  <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-foreground/10 ring-1 ring-inset ring-border/60 shadow-inner">
                     <div
                       className={cn(
-                        "h-full rounded-full bg-gradient-to-r shadow-[0_0_8px_-1px_currentColor] transition-[width] duration-700 ease-out",
+                        "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-[0_0_10px_-1px_currentColor] transition-[width] duration-700 ease-out",
                         barGradient,
+                        risk === "danger" && "rain-shimmer",
                       )}
-                      style={{ width: `${barPct}%` }}
+                      style={{ width: `${barPct}%`, minWidth: probPct > 0 ? "8%" : "3%" }}
                     />
                   </div>
                 </div>
+
 
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
