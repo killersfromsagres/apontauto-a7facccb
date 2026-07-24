@@ -19,6 +19,10 @@ import {
   ExternalLink,
   History,
   Lock,
+  MapPin,
+  Sun,
+  Gauge,
+  CalendarClock,
 } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -46,6 +50,8 @@ import {
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
   detectRain,
+  hasAnyRainRisk,
+  riskLevelForProbability,
   type RainIntensity,
 } from "@/lib/weather/open-meteo";
 import {
@@ -55,6 +61,7 @@ import {
   type ChuvaEvidencia,
 } from "@/lib/taludes-programacao/evidencias";
 import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
+import { uploadImageToImgBB } from "@/lib/imgbb";
 
 export const Route = createFileRoute("/_authenticated/programacao-taludes")({
   head: () => ({
