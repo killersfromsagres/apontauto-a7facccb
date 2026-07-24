@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   ClipboardCheck,
-  HardHat,
+  
   ExternalLink,
   History,
   Lock,
@@ -46,9 +46,7 @@ import {
   WEATHER_LOCATION,
   weatherCodeInfo,
   effectiveTaludeStatus,
-  EXTERNAL_ACTIVITIES,
-  shouldAlertExternalActivities,
-  EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+
   detectRain,
   hasAnyRainRisk,
   riskLevelForProbability,
@@ -109,7 +107,7 @@ function ProgramacaoTaludesPage() {
   const rain = useMemo(() => detectRain(data), [data]);
   // Status efetivo: se está chovendo (mesmo garoa), operação = SUSPENSA.
   const status = effectiveTaludeStatus(probHoje, rain);
-  const alertExternal = shouldAlertExternalActivities(probHoje) || rain.detected;
+  
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -364,11 +362,25 @@ function ProgramacaoTaludesPage() {
         <div ref={panelRef}>
           <GlassCard
             className={cn(
-              "space-y-4 transition-shadow",
-              rain.detected && rain.intensity === "garoa" && "ring-2 ring-amber-400/50 animate-drizzle-glow",
-              rain.detected && rain.intensity && rain.intensity !== "garoa" && "ring-2 ring-red-500/50 animate-alert-glow",
-              !rain.detected && dayRisk === "warning" && "ring-1 ring-orange-400/40",
-              !rain.detected && dayRisk === "watch" && "ring-1 ring-amber-400/40",
+              "space-y-4 border-2 transition-all duration-500",
+              // Verde — Operação liberada
+              status.nivel === "normal" &&
+                "border-emerald-500/50 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(16,185,129,0.35)]",
+              // Amarelo — Atenção
+              status.nivel === "atencao" &&
+                "border-amber-400/60 bg-gradient-to-br from-amber-400/15 via-amber-400/5 to-transparent shadow-[0_0_40px_-8px_rgba(251,191,36,0.4)]",
+              // Laranja — Alto risco
+              status.nivel === "alto" &&
+                "border-orange-500/60 bg-gradient-to-br from-orange-500/15 via-orange-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(249,115,22,0.4)]",
+              // Vermelho — Reprogramar (previsão alta, sem chuva ativa)
+              status.nivel === "reprogramar" &&
+                "border-red-500/60 bg-gradient-to-br from-red-500/15 via-red-500/5 to-transparent shadow-[0_0_40px_-8px_rgba(239,68,68,0.4)]",
+              // Suspenso garoa — Amarelo pulsante intenso
+              status.nivel === "suspenso" && rain.intensity === "garoa" &&
+                "border-amber-400 bg-gradient-to-br from-amber-400/25 via-amber-300/10 to-transparent shadow-[0_0_50px_-4px_rgba(251,191,36,0.55)] animate-drizzle-glow",
+              // Suspenso chuva — Vermelho pulsante intenso
+              status.nivel === "suspenso" && rain.intensity && rain.intensity !== "garoa" &&
+                "border-red-500 bg-gradient-to-br from-red-500/25 via-red-400/10 to-transparent shadow-[0_0_50px_-4px_rgba(239,68,68,0.6)] animate-alert-glow",
             )}
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -403,25 +415,25 @@ function ProgramacaoTaludesPage() {
               </div>
               <Badge
                 className={cn(
-                  "px-3 py-1.5 text-sm",
+                  "px-4 py-2 text-sm font-bold shadow-md border-0 whitespace-nowrap",
                   status.nivel === "normal" &&
-                    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                    "bg-emerald-500 text-white hover:bg-emerald-500",
                   status.nivel === "atencao" &&
-                    "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+                    "bg-amber-400 text-amber-950 hover:bg-amber-400",
                   status.nivel === "alto" &&
-                    "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+                    "bg-orange-500 text-white hover:bg-orange-500",
                   status.nivel === "reprogramar" &&
-                    "bg-red-500/15 text-red-700 dark:text-red-300",
+                    "bg-red-500 text-white hover:bg-red-500",
                   status.nivel === "suspenso" && rain.intensity === "garoa" &&
-                    "bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse",
+                    "bg-amber-400 text-amber-950 hover:bg-amber-400 animate-pulse",
                   status.nivel === "suspenso" && rain.intensity !== "garoa" &&
-                    "bg-red-500/20 text-red-700 dark:text-red-300 animate-pulse",
+                    "bg-red-500 text-white hover:bg-red-500 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (
-                  <CheckCircle2 className="mr-1 inline h-4 w-4" />
+                  <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
                 ) : (
-                  <AlertTriangle className="mr-1 inline h-4 w-4" />
+                  <AlertTriangle className="mr-1.5 inline h-4 w-4" />
                 )}
                 {status.titulo}
               </Badge>
@@ -528,32 +540,8 @@ function ProgramacaoTaludesPage() {
         />
 
 
-        {/* Inteligência operacional — atividades externas */}
-        {alertExternal && (
-          <GlassCard className="border border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent">
-            <div className="mb-2 flex items-center gap-2">
-              <HardHat className="h-4 w-4 text-red-500" />
-              <h3 className="font-display text-base font-semibold text-red-700 dark:text-red-300">
-                Serviços externos potencialmente impactados
-              </h3>
-            </div>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Probabilidade de chuva hoje em {Math.round(probHoje)}% (limite de alerta:{" "}
-              {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%). Reavalie a programação das atividades abaixo.
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {EXTERNAL_ACTIVITIES.map((a) => (
-                <Badge
-                  key={a}
-                  variant="outline"
-                  className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
-                >
-                  {a}
-                </Badge>
-              ))}
-            </div>
-          </GlassCard>
-        )}
+
+
 
         {/* Evidências */}
         <EvidenciasChuvaCard

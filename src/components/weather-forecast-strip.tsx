@@ -190,12 +190,20 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
               <div
                 key={d.iso}
                 className={cn(
-                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-2xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl",
-                  "border-border/50 bg-gradient-to-br from-background/80 to-background/40 backdrop-blur",
-                  isToday && "border-primary/60 ring-1 ring-primary/40",
-                  risk === "watch" && "border-amber-400/50 ring-1 ring-amber-400/30",
-                  risk === "warning" && "border-orange-500/60 ring-1 ring-orange-500/40",
-                  (risk === "danger" || alert) && "border-red-500/60 ring-2 ring-red-500/40 animate-pulse-slow",
+                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-2xl border-2 p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl",
+                  // Base — Safe (sem risco de chuva)
+                  risk === "safe" &&
+                    "border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-background/60 to-background/30 hover:border-emerald-500/70 hover:shadow-emerald-500/20",
+                  // Watch — leve
+                  risk === "watch" &&
+                    "border-amber-400/60 bg-gradient-to-br from-amber-400/15 via-amber-400/5 to-background/30 hover:border-amber-400 hover:shadow-amber-400/30",
+                  // Warning — moderado
+                  risk === "warning" &&
+                    "border-orange-500/70 bg-gradient-to-br from-orange-500/20 via-orange-500/8 to-background/30 hover:border-orange-500 hover:shadow-orange-500/40",
+                  // Danger — alto
+                  risk === "danger" &&
+                    "border-red-500/70 bg-gradient-to-br from-red-500/20 via-red-500/8 to-background/30 hover:border-red-500 hover:shadow-red-500/50 animate-pulse-slow",
+                  isToday && "ring-2 ring-primary/50 ring-offset-2 ring-offset-background",
                 )}
               >
                 {isToday && (
@@ -246,27 +254,29 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </span>
                 </div>
 
-                {/* Rain gauge — sempre visível */}
+                {/* Rain gauge — sempre visível, fundo escuro para contraste */}
                 <div className="mt-2">
                   <div className="mb-1 flex items-center justify-between text-[10px]">
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 font-medium text-muted-foreground">
                       <CloudRain className="h-3 w-3" />
                       Chuva
                     </span>
-                    <span className={cn("font-bold tabular-nums", probText)}>
+                    <span className={cn("font-extrabold tabular-nums text-[11px]", probText)}>
                       {probPct}%
                     </span>
                   </div>
-                  <div className="relative h-2 overflow-hidden rounded-full bg-muted/70 ring-1 ring-border/40">
+                  <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-foreground/10 ring-1 ring-inset ring-border/60 shadow-inner">
                     <div
                       className={cn(
-                        "h-full rounded-full bg-gradient-to-r shadow-[0_0_8px_-1px_currentColor] transition-[width] duration-700 ease-out",
+                        "absolute inset-y-0 left-0 rounded-full bg-gradient-to-r shadow-[0_0_10px_-1px_currentColor] transition-[width] duration-700 ease-out",
                         barGradient,
+                        risk === "danger" && "rain-shimmer",
                       )}
-                      style={{ width: `${barPct}%` }}
+                      style={{ width: `${barPct}%`, minWidth: probPct > 0 ? "8%" : "3%" }}
                     />
                   </div>
                 </div>
+
 
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
