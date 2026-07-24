@@ -887,8 +887,8 @@ function EvidenciasChuvaCard({
         <div>
           <h3 className="font-display text-lg font-semibold">Evidências de chuva registradas</h3>
           <p className="text-xs text-muted-foreground">
-            Registros formais de interrupção de atividades por mau tempo — com print, data e
-            mensagem explícita.
+            Imagens hospedadas no ImgBB — o Supabase armazena apenas o link, sem sobrecarregar o
+            storage. Clique no card para abrir a imagem em uma nova aba.
           </p>
         </div>
         <Badge variant="outline" className="shrink-0">
@@ -898,54 +898,103 @@ function EvidenciasChuvaCard({
 
       {ordenadas.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
-          Nenhuma evidência registrada ainda. Quando o painel indicar chuva hoje, use o botão
-          "Registrar evidência de chuva".
+          Nenhuma evidência registrada ainda. Quando houver chuva, o sistema registra automaticamente
+          e hospeda a imagem no ImgBB.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ordenadas.map((ev) => (
-            <div
-              key={ev.id}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/30"
-            >
-              <button
-                type="button"
-                onClick={() => setPreview(ev)}
-                className="relative block h-32 w-full overflow-hidden bg-slate-900"
+          {ordenadas.map((ev, idx) => {
+            const hosted = ev.imagem_data_url?.startsWith("http");
+            const registrado = new Date(ev.created_at);
+            return (
+              <div
+                key={ev.id}
+                className="group animate-evidence-pop flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background/40 backdrop-blur transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-xl"
+                style={{ animationDelay: `${Math.min(idx * 60, 400)}ms` }}
               >
-                <img
-                  src={ev.imagem_data_url}
-                  alt={`Evidência de chuva em ${fmtBR(ev.data)}`}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
-                  <CloudRain className="h-3.5 w-3.5" />
-                  {fmtBR(ev.data)}
-                </div>
-              </button>
-              <div className="flex flex-1 flex-col gap-2 p-3">
-                <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
-                <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>
-                    {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"} ·{" "}
-                    {ev.condicao ?? "—"}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm("Remover esta evidência?")) void onRemove(ev.id);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                <a
+                  href={ev.imagem_data_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative block h-36 w-full overflow-hidden bg-slate-900"
+                  title="Abrir imagem hospedada no ImgBB"
+                >
+                  <img
+                    src={ev.imagem_data_url}
+                    alt={`Evidência de chuva em ${fmtBR(ev.data)}`}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+                  {/* Badge animado com data */}
+                  <div className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md shadow-lg transition-all group-hover:scale-105">
+                    <CalendarClock className="h-3 w-3 animate-pulse" />
+                    {fmtBR(ev.data)}
+                  </div>
+
+                  {hosted && (
+                    <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[9px] font-bold text-white shadow-md">
+                      <ExternalLink className="h-2.5 w-2.5" />
+                      ImgBB
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between text-[10px] text-white/90">
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <CloudRain className="h-3 w-3" />
+                      {ev.condicao ?? "—"}
+                    </span>
+                    <span className="tabular-nums opacity-90">
+                      {registrado.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                </a>
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                  <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
+                  <div className="mt-auto flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span className="tabular-nums">
+                        {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"}
+                      </span>
+                      {ev.prob_chuva != null && (
+                        <span className="rounded-md bg-blue-500/10 px-1.5 py-0.5 font-semibold text-blue-700 dark:text-blue-300">
+                          {Math.round(ev.prob_chuva)}% chuva
+                        </span>
+                      )}
+                      {ev.precipitacao_mm != null && ev.precipitacao_mm > 0 && (
+                        <span className="rounded-md bg-sky-500/10 px-1.5 py-0.5 font-semibold text-sky-700 dark:text-sky-300">
+                          {ev.precipitacao_mm.toFixed(1)}mm
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setPreview(ev)}
+                        title="Detalhes"
+                      >
+                        <History className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          if (confirm("Remover esta evidência?")) void onRemove(ev.id);
+                        }}
+                        title="Remover"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -958,11 +1007,18 @@ function EvidenciasChuvaCard({
           </DialogHeader>
           {preview && (
             <div className="space-y-3">
-              <img
-                src={preview.imagem_data_url}
-                alt="Evidência"
-                className="w-full rounded-lg border border-border/50"
-              />
+              <a
+                href={preview.imagem_data_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-lg border border-border/50"
+              >
+                <img
+                  src={preview.imagem_data_url}
+                  alt="Evidência"
+                  className="w-full transition-transform hover:scale-[1.01]"
+                />
+              </a>
               <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
                 {preview.mensagem}
               </div>
@@ -985,9 +1041,15 @@ function EvidenciasChuvaCard({
                 </div>
               </div>
               <div className="text-[11px] text-muted-foreground">
-                Registrado em {new Date(preview.created_at).toLocaleString("pt-BR")}
+                Registrado em {new Date(preview.created_at).toLocaleString("pt-BR")} · imagem hospedada externamente (ImgBB)
               </div>
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <a href={preview.imagem_data_url} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm">
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    Abrir no ImgBB
+                  </Button>
+                </a>
                 <a
                   href={preview.imagem_data_url}
                   download={`evidencia-chuva-taludes-${preview.data}.png`}
