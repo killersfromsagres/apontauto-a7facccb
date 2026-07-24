@@ -544,26 +544,33 @@ function NovoLoteCard({
         )}
 
         <div className="flex flex-wrap gap-2">
-          <Button onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Gerar e copiar JSON</Button>
-          <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Gerar e baixar JSON</Button>
           <Button
-            variant="outline"
             className="gap-2"
             onClick={() => {
               if (colabIds.length === 0) { toast.error("Selecione ao menos um colaborador."); return; }
               if (osList.length === 0) { toast.error("Informe pelo menos uma OS."); return; }
-              const d = new Date(dataInicio);
-              if (Number.isNaN(d.getTime())) { toast.error("Data/hora inválida."); return; }
-              const inicio = `${fmtData(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-              const txt =
-                `inicio: ${inicio}\n\n[LOTE]\ncategoria: ${categoria}\ntecnicos: ${colabIds.join(", ")}\nos: ${osList.join(",")}\n`;
-              downloadBlob(new Blob([txt], { type: "text/plain;charset=utf-8" }), "entradas-os.txt");
-              registrar();
-              toast.success("entradas-os.txt gerado.");
+              const batch = { ...gerarPayload(), id: uid(), source: "apontauto-panel" };
+              const reqId = Math.random().toString(36).slice(2);
+              const onAck = (ev: MessageEvent) => {
+                const d = ev.data as { source?: string; type?: string; requestId?: string; response?: { ok?: boolean; error?: string } } | null;
+                if (d?.source !== "apontauto-extension" || d.type !== "enqueue:ack" || d.requestId !== reqId) return;
+                window.removeEventListener("message", onAck);
+                clearTimeout(timer);
+                if (d.response?.ok) { toast.success("Lote enviado para a extensão."); registrar(); }
+                else toast.error(`Extensão recusou o lote: ${d.response?.error || "erro"}`);
+              };
+              const timer = setTimeout(() => {
+                window.removeEventListener("message", onAck);
+                toast.error("Extensão não respondeu. Instale-a e recarregue a página.");
+              }, 2500);
+              window.addEventListener("message", onAck);
+              window.postMessage({ source: "apontauto-panel", type: "enqueue", batch, requestId: reqId }, "*");
             }}
           >
-            <FileText className="h-4 w-4" /> Baixar entradas-os.txt
+            <Snowflake className="h-4 w-4" /> Enviar para a extensão
           </Button>
+          <Button variant="outline" onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Copiar JSON</Button>
+          <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Baixar JSON</Button>
         </div>
       </CardContent>
     </Card>
