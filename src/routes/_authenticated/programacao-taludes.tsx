@@ -10,7 +10,6 @@ import {
   Thermometer,
   RefreshCw,
   Trash2,
-  Download,
   AlertTriangle,
   CheckCircle2,
   ShieldCheck,
@@ -29,12 +28,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useWeather } from "@/hooks/use-weather";
@@ -111,30 +104,40 @@ function ProgramacaoTaludesPage() {
     silent?: boolean;
   }) => {
     if (!data || !panelRef.current) return null;
-    const { toPng } = await import("html-to-image");
+    const [{ toPng }, { uploadImageToImgBB }] = await Promise.all([
+      import("html-to-image"),
+      import("@/lib/imgbb"),
+    ]);
     const dataUrl = await toPng(panelRef.current, {
       pixelRatio: 2,
       backgroundColor: "#0b1220",
     });
     const hoje = todayISO();
+
+    // Converte dataURL -> Blob e envia ao ImgBB (evita sobrecarregar o Supabase).
+    const blob = await (await fetch(dataUrl)).blob();
+    const filename = `evidencia-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
+    let hostedUrl = dataUrl;
+    try {
+      const up = await uploadImageToImgBB(blob, filename);
+      hostedUrl = up.display_url || up.url;
+    } catch (err) {
+      // fallback: mantém dataURL localmente para não perder o registro.
+      console.warn("[evidencia] ImgBB indisponível, salvando base64:", err);
+    }
+
     const mensagemFinal = opts.intensity
       ? `[${opts.label}] ${opts.mensagem}`
       : opts.mensagem;
     const ev = await registrarEvidencia({
       data: hoje,
       mensagem: mensagemFinal,
-      imagem_data_url: dataUrl,
+      imagem_data_url: hostedUrl,
       temperatura: current?.temperature_2m ?? null,
       condicao: opts.label,
       precipitacao_mm: rain.mm_dia || rainSumHoje,
       prob_chuva: probHoje,
     });
-    if (!opts.silent) {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `evidencia-chuva-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
-      a.click();
-    }
     qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
     return ev;
   };
@@ -276,10 +279,40 @@ function ProgramacaoTaludesPage() {
 
         {/* Painel climático — Open-Meteo */}
         <div ref={panelRef}>
-          <GlassCard className="space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <GlassCard
+            className={cn(
+              "relative space-y-4 overflow-hidden transition-all duration-500",
+              rain.detected && "ring-2 ring-red-500/40 shadow-[0_0_40px_-10px_rgba(239,68,68,0.55)]",
+            )}
+          >
+            {/* Overlay animado de alerta em qualquer chuva/garoa */}
+            {rain.detected && (
+              <div
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute inset-0 -z-0 opacity-70",
+                  rain.intensity === "garoa" || rain.intensity === "fraca"
+                    ? "bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.18),transparent_55%),radial-gradient(circle_at_80%_90%,rgba(59,130,246,0.15),transparent_60%)]"
+                    : "bg-[radial-gradient(circle_at_20%_10%,rgba(251,191,36,0.22),transparent_55%),radial-gradient(circle_at_80%_90%,rgba(239,68,68,0.25),transparent_60%)]",
+                )}
+              />
+            )}
+            {rain.detected && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-px left-0 h-[3px] w-full animate-pulse bg-gradient-to-r from-transparent via-red-500/70 to-transparent"
+              />
+            )}
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="text-5xl leading-none">{info.emoji}</div>
+                <div
+                  className={cn(
+                    "text-5xl leading-none transition-transform duration-500",
+                    rain.detected && "animate-bounce",
+                  )}
+                >
+                  {info.emoji}
+                </div>
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
                     Clima agora — {WEATHER_LOCATION.cidade} · {WEATHER_LOCATION.bairro}
@@ -291,14 +324,30 @@ function ProgramacaoTaludesPage() {
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Prob. de chuva hoje: {Math.round(probHoje)}% · Chuva prevista:{" "}
-                    {rainSumHoje.toFixed(1)} mm
+                    Sensação {current ? `${Math.round(current.apparent_temperature)}°C` : "—"} ·
+                    Prob. chuva hoje: {Math.round(probHoje)}% · Prev. {rainSumHoje.toFixed(1)} mm
                   </div>
+                  {rain.detected && rain.intensity && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Badge
+                        className={cn(
+                          "border animate-pulse",
+                          rainBadgeTone[rain.intensity],
+                        )}
+                      >
+                        <CloudRain className="mr-1 inline h-3 w-3" />
+                        {rain.label} em curso
+                      </Badge>
+                      <span className="text-[11px] text-muted-foreground">
+                        {rain.mm_atual.toFixed(1)} mm/h · acumulado {rain.mm_dia.toFixed(1)} mm
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Badge
                 className={cn(
-                  "px-3 py-1.5 text-sm",
+                  "relative px-3 py-1.5 text-sm",
                   status.nivel === "normal" &&
                     "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
                   status.nivel === "atencao" &&
@@ -306,7 +355,7 @@ function ProgramacaoTaludesPage() {
                   status.nivel === "alto" &&
                     "bg-orange-500/15 text-orange-700 dark:text-orange-300",
                   status.nivel === "reprogramar" &&
-                    "bg-red-500/15 text-red-700 dark:text-red-300",
+                    "bg-red-500/15 text-red-700 dark:text-red-300 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (
@@ -318,7 +367,7 @@ function ProgramacaoTaludesPage() {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-4">
               <MiniMetric
                 icon={<Thermometer className="h-4 w-4" />}
                 label="Temperatura"
@@ -341,12 +390,12 @@ function ProgramacaoTaludesPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="relative flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 Última atualização:{" "}
                 {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"}
               </span>
-              <span>Fonte: Open-Meteo · atualização automática a cada 30 min</span>
+              <span>Fonte: MET Norway / Open-Meteo · auto a cada 30 min</span>
             </div>
           </GlassCard>
         </div>
@@ -721,19 +770,20 @@ function EvidenciasChuvaCard({
   evidencias: ChuvaEvidencia[];
   onRemove: (id: string) => Promise<void>;
 }) {
-  const [preview, setPreview] = useState<ChuvaEvidencia | null>(null);
   const ordenadas = useMemo(
     () => [...evidencias].sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [evidencias],
   );
+
+  const isHosted = (u: string) => /^https?:\/\//i.test(u);
+
   return (
     <GlassCard>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-end justify-between gap-3">
         <div>
           <h3 className="font-display text-lg font-semibold">Evidências de chuva registradas</h3>
           <p className="text-xs text-muted-foreground">
-            Registros formais de interrupção de atividades por mau tempo — com print, data e
-            mensagem explícita.
+            Hospedadas via ImgBB — clique no card para abrir a imagem original em nova aba.
           </p>
         </div>
         <Badge variant="outline" className="shrink-0">
@@ -742,111 +792,96 @@ function EvidenciasChuvaCard({
       </div>
 
       {ordenadas.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
-          Nenhuma evidência registrada ainda. Quando o painel indicar chuva hoje, use o botão
-          "Registrar evidência de chuva".
+        <div className="rounded-xl border border-dashed border-border/60 py-10 text-center text-sm text-muted-foreground">
+          Nenhuma evidência registrada ainda. Quando o painel indicar qualquer chuva, o registro é
+          gerado e enviado automaticamente ao ImgBB.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ordenadas.map((ev) => (
-            <div
-              key={ev.id}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/30"
-            >
-              <button
-                type="button"
-                onClick={() => setPreview(ev)}
-                className="relative block h-32 w-full overflow-hidden bg-slate-900"
+          {ordenadas.map((ev, idx) => {
+            const hosted = isHosted(ev.imagem_data_url);
+            const dataFmt = fmtBR(ev.data);
+            const horaFmt = new Date(ev.created_at).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <a
+                key={ev.id}
+                href={ev.imagem_data_url}
+                target={hosted ? "_blank" : undefined}
+                rel={hosted ? "noopener noreferrer" : undefined}
+                style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+                className={cn(
+                  "group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background/40",
+                  "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl",
+                  "animate-card-rise",
+                )}
               >
-                <img
-                  src={ev.imagem_data_url}
-                  alt={`Evidência de chuva em ${fmtBR(ev.data)}`}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
-                  <CloudRain className="h-3.5 w-3.5" />
-                  {fmtBR(ev.data)}
+                <div className="relative block h-36 w-full overflow-hidden bg-slate-900">
+                  <img
+                    src={ev.imagem_data_url}
+                    alt={`Evidência de chuva em ${dataFmt}`}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                  {/* Data animada, canto superior */}
+                  <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur transition-transform group-hover:scale-105">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                    </span>
+                    {dataFmt}
+                  </div>
+                  {/* Rodapé card */}
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
+                    <CloudRain className="h-3.5 w-3.5 text-sky-200" />
+                    <span>{horaFmt}</span>
+                    {hosted && (
+                      <span className="inline-flex items-center gap-0.5 rounded-md bg-sky-500/80 px-1.5 py-[1px] text-[9px] uppercase tracking-wider">
+                        <ExternalLink className="h-2.5 w-2.5" />
+                        ImgBB
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </button>
-              <div className="flex flex-1 flex-col gap-2 p-3">
-                <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
-                <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>
-                    {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"} ·{" "}
-                    {ev.condicao ?? "—"}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm("Remover esta evidência?")) void onRemove(ev.id);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                  <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
+                  <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <span>
+                        {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"}
+                      </span>
+                      <span aria-hidden>·</span>
+                      <span className="max-w-[100px] truncate">{ev.condicao ?? "—"}</span>
+                      {ev.prob_chuva != null && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span>{Math.round(ev.prob_chuva)}%</span>
+                        </>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-destructive/80 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm("Remover esta evidência?")) void onRemove(ev.id);
+                      }}
+                      aria-label="Remover evidência"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </a>
+            );
+          })}
         </div>
       )}
-
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Evidência de chuva — {preview ? fmtBR(preview.data) : ""}
-            </DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <div className="space-y-3">
-              <img
-                src={preview.imagem_data_url}
-                alt="Evidência"
-                className="w-full rounded-lg border border-border/50"
-              />
-              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
-                {preview.mensagem}
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-                <div>
-                  <div className="font-semibold text-foreground">Data</div>
-                  {fmtBR(preview.data)}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Temperatura</div>
-                  {preview.temperatura != null ? `${Math.round(preview.temperatura)}°C` : "—"}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Condição</div>
-                  {preview.condicao ?? "—"}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Prob. chuva</div>
-                  {preview.prob_chuva != null ? `${Math.round(preview.prob_chuva)}%` : "—"}
-                </div>
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Registrado em {new Date(preview.created_at).toLocaleString("pt-BR")}
-              </div>
-              <div className="flex justify-end">
-                <a
-                  href={preview.imagem_data_url}
-                  download={`evidencia-chuva-taludes-${preview.data}.png`}
-                >
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Baixar imagem
-                  </Button>
-                </a>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </GlassCard>
   );
 }
