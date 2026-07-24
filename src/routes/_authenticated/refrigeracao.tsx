@@ -200,9 +200,16 @@ function RefrigeracaoPage() {
       refreshPending();
       doSync(true);
     })();
-    const on = () => doSync(false);
+    const on = () => doSync(true);
     window.addEventListener("online", on);
-    return () => window.removeEventListener("online", on);
+    const focus = () => { if (navigator.onLine) doSync(true); };
+    window.addEventListener("focus", focus);
+    const iv = window.setInterval(() => { if (navigator.onLine) doSync(true); }, 30_000);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("focus", focus);
+      window.clearInterval(iv);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
