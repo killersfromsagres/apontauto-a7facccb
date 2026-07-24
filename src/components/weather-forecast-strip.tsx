@@ -1,11 +1,13 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWeather } from "@/hooks/use-weather";
 import {
   weatherCodeInfo,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+  ANY_RAIN_RISK_THRESHOLD,
+  riskLevelForProbability,
 } from "@/lib/weather/open-meteo";
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
