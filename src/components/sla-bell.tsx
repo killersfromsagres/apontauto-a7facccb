@@ -64,7 +64,11 @@ export function SlaBell() {
     [items],
   );
 
+  // Colaborador sem acesso a lembretes: não renderiza o sino (economiza ícone/popover).
+  if (!canSeeReminders) return null;
+
   return (
+
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
