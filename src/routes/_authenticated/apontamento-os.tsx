@@ -477,6 +477,24 @@ function NovoLoteCard({
         <div className="flex flex-wrap gap-2">
           <Button onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Gerar e copiar JSON</Button>
           <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Gerar e baixar JSON</Button>
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => {
+              if (colabIds.length === 0) { toast.error("Selecione ao menos um colaborador."); return; }
+              if (osList.length === 0) { toast.error("Informe pelo menos uma OS."); return; }
+              const d = new Date(dataInicio);
+              if (Number.isNaN(d.getTime())) { toast.error("Data/hora inválida."); return; }
+              const inicio = `${fmtData(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+              const txt =
+                `inicio: ${inicio}\n\n[LOTE]\ncategoria: ${categoria}\ntecnicos: ${colabIds.join(", ")}\nos: ${osList.join(",")}\n`;
+              downloadBlob(new Blob([txt], { type: "text/plain;charset=utf-8" }), "entradas-os.txt");
+              registrar();
+              toast.success("entradas-os.txt gerado.");
+            }}
+          >
+            <FileText className="h-4 w-4" /> Baixar entradas-os.txt
+          </Button>
         </div>
       </CardContent>
     </Card>
