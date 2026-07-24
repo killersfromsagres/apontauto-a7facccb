@@ -46,7 +46,6 @@ import {
   WEATHER_LOCATION,
   weatherCodeInfo,
   effectiveTaludeStatus,
-  effectiveTaludeStatus,
 
   detectRain,
   hasAnyRainRisk,
