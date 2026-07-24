@@ -542,32 +542,8 @@ function ProgramacaoTaludesPage() {
         />
 
 
-        {/* Inteligência operacional — atividades externas */}
-        {alertExternal && (
-          <GlassCard className="border border-red-500/40 bg-gradient-to-br from-red-500/10 to-transparent">
-            <div className="mb-2 flex items-center gap-2">
-              <HardHat className="h-4 w-4 text-red-500" />
-              <h3 className="font-display text-base font-semibold text-red-700 dark:text-red-300">
-                Serviços externos potencialmente impactados
-              </h3>
-            </div>
-            <p className="mb-3 text-xs text-muted-foreground">
-              Probabilidade de chuva hoje em {Math.round(probHoje)}% (limite de alerta:{" "}
-              {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%). Reavalie a programação das atividades abaixo.
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {EXTERNAL_ACTIVITIES.map((a) => (
-                <Badge
-                  key={a}
-                  variant="outline"
-                  className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
-                >
-                  {a}
-                </Badge>
-              ))}
-            </div>
-          </GlassCard>
-        )}
+
+
 
         {/* Evidências */}
         <EvidenciasChuvaCard
