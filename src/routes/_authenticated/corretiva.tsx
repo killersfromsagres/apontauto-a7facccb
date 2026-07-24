@@ -128,13 +128,19 @@ function CorretivaPage() {
   const refreshPending = async () => setPending((await outboxAll()).length);
 
   const doSync = async (silent = false) => {
-    if (!navigator.onLine) return;
+    if (!navigator.onLine) {
+      if (!silent) toast.error("Sem conexão com a internet.");
+      return;
+    }
     setSyncing(true);
     try {
       const r = await syncPending();
       if (!silent && r.sent > 0) toast.success(`${r.sent} registro(s) sincronizado(s).`);
-      if (r.failed > 0 && !silent) toast.error(`${r.failed} pendente(s) — tentaremos novamente.`);
+      if (r.failed > 0 && !silent) {
+        toast.error(r.firstError ? `Falha: ${r.firstError}` : `${r.failed} pendente(s) — tentaremos novamente.`);
+      }
     } catch (e: any) {
+      console.error("[corretiva] doSync fatal", e);
       if (!silent) toast.error(e?.message ?? "Falha ao sincronizar");
     } finally {
       setSyncing(false);
@@ -171,9 +177,16 @@ function CorretivaPage() {
       refreshPending();
       doSync(true);
     })();
-    const on = () => doSync(false);
+    const on = () => doSync(true);
     window.addEventListener("online", on);
-    return () => window.removeEventListener("online", on);
+    const focus = () => { if (navigator.onLine) doSync(true); };
+    window.addEventListener("focus", focus);
+    const iv = window.setInterval(() => { if (navigator.onLine) doSync(true); }, 30_000);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("focus", focus);
+      window.clearInterval(iv);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
