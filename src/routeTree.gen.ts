@@ -21,7 +21,6 @@ import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/back
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
-import { Route as AuthenticatedRelogioRouteImport } from './routes/_authenticated/relogio'
 import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './routes/_authenticated/refrigeracao-pecas-status'
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
@@ -108,11 +107,6 @@ const AuthenticatedSegurancaTrabalhoRoute =
     path: '/seguranca-trabalho',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedRelogioRoute = AuthenticatedRelogioRouteImport.update({
-  id: '/relogio',
-  path: '/relogio',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedRefrigeracaoPecasStatusRoute =
   AuthenticatedRefrigeracaoPecasStatusRouteImport.update({
     id: '/refrigeracao-pecas-status',
@@ -278,7 +272,6 @@ export interface FileRoutesByFullPath {
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/relogio': typeof AuthenticatedRelogioRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -315,7 +308,6 @@ export interface FileRoutesByTo {
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/relogio': typeof AuthenticatedRelogioRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
@@ -355,7 +347,6 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/_authenticated/relogio': typeof AuthenticatedRelogioRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
@@ -396,7 +387,6 @@ export interface FileRouteTypes {
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
     | '/refrigeracao-pecas-status'
-    | '/relogio'
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
@@ -433,7 +423,6 @@ export interface FileRouteTypes {
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
     | '/refrigeracao-pecas-status'
-    | '/relogio'
     | '/seguranca-trabalho'
     | '/taludes'
     | '/usuarios'
@@ -472,7 +461,6 @@ export interface FileRouteTypes {
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
     | '/_authenticated/refrigeracao-pecas-status'
-    | '/_authenticated/relogio'
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/taludes'
     | '/_authenticated/usuarios'
@@ -581,13 +569,6 @@ declare module '@tanstack/react-router' {
       path: '/seguranca-trabalho'
       fullPath: '/seguranca-trabalho'
       preLoaderRoute: typeof AuthenticatedSegurancaTrabalhoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/relogio': {
-      id: '/_authenticated/relogio'
-      path: '/relogio'
-      fullPath: '/relogio'
-      preLoaderRoute: typeof AuthenticatedRelogioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/refrigeracao-pecas-status': {
@@ -783,7 +764,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  AuthenticatedRelogioRoute: typeof AuthenticatedRelogioRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -815,7 +795,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRefrigeracaoHistoricoRoute,
   AuthenticatedRefrigeracaoPecasStatusRoute:
     AuthenticatedRefrigeracaoPecasStatusRoute,
-  AuthenticatedRelogioRoute: AuthenticatedRelogioRoute,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
