@@ -16,7 +16,7 @@ import {
   ChartColumn,
   PackageOpen,
   CloudSun,
-  CloudRainWind,
+  
   Scale,
   Snowflake,
   Thermometer,
