@@ -46,9 +46,8 @@ import {
   WEATHER_LOCATION,
   weatherCodeInfo,
   effectiveTaludeStatus,
-  EXTERNAL_ACTIVITIES,
-  shouldAlertExternalActivities,
-  EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+  effectiveTaludeStatus,
+
   detectRain,
   hasAnyRainRisk,
   riskLevelForProbability,
