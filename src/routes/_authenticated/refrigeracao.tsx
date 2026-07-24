@@ -1248,10 +1248,8 @@ function HostedPhotoLinksCard({
   tipo: string | null;
   pendingCount: number;
 }) {
-  const isPreventiva = (tipo ?? "").toLowerCase().includes("preventiv");
   const { data, isLoading, error, refetch, isFetching } = useQuery({
     queryKey: ["refrig-fotos-links", osId],
-    enabled: isPreventiva,
     staleTime: 15_000,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -1265,7 +1263,9 @@ function HostedPhotoLinksCard({
     },
   });
 
-  if (!isPreventiva) return null;
+  void tipo;
+
+
 
   const copy = async (url: string) => {
     try {

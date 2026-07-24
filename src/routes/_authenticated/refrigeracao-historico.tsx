@@ -323,9 +323,34 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
             </section>
 
             <section>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                <Camera className="h-4 w-4" /> Fotos ({data?.fotos.length ?? 0})
-              </h4>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Camera className="h-4 w-4" /> Fotos ({data?.fotos.length ?? 0})
+                </h4>
+                {(() => {
+                  const links = (data?.fotos ?? [])
+                    .map((f) => f.image_url || urls[f.id])
+                    .filter((u): u is string => !!u);
+                  if (!links.length) return null;
+                  return (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-full"
+                      onClick={() => {
+                        links.forEach((u, i) => {
+                          setTimeout(() => window.open(u, "_blank", "noopener"), i * 120);
+                        });
+                      }}
+                    >
+                      <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                      Abrir {links.length} foto{links.length > 1 ? "s" : ""}
+                    </Button>
+                  );
+                })()}
+              </div>
+
               {data?.fotos.length ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
