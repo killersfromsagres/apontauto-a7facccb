@@ -88,6 +88,25 @@ function useOnlineStatus() {
   return online;
 }
 
+type SyncResultLike = Awaited<ReturnType<typeof syncPending>>;
+
+function describePendingItem(item: OutboxItem): string {
+  const suffix = item.lastError ? `: ${item.lastError}` : " sem erro detalhado registrado";
+  return `${item.kind} · OS ${item.numeroOs}${suffix}`;
+}
+
+async function getSyncFailureMessage(result: SyncResultLike): Promise<string> {
+  const direct = result.firstError ?? result.errors?.[0]?.message;
+  if (direct) return `Falha: ${direct}`;
+
+  const pendingItems = await outboxAll().catch(() => [] as OutboxItem[]);
+  const itemWithError = pendingItems.find((item) => item.lastError) ?? pendingItems[0];
+  if (itemWithError) return `Falha: ${describePendingItem(itemWithError)}`;
+
+  const total = result.remaining || result.failed || 1;
+  return `${total} pendente(s) — tentaremos novamente.`;
+}
+
 type EquipeRow = { id: string; nome: string; colaboradores: string; ordem: number };
 
 function CorretivaPage() {
@@ -137,7 +156,7 @@ function CorretivaPage() {
       const r = await syncPending();
       if (!silent && r.sent > 0) toast.success(`${r.sent} registro(s) sincronizado(s).`);
       if (r.failed > 0 && !silent) {
-        toast.error(r.firstError ? `Falha: ${r.firstError}` : `${r.failed} pendente(s) — tentaremos novamente.`);
+        toast.error(await getSyncFailureMessage(r));
       }
     } catch (e: any) {
       console.error("[corretiva] doSync fatal", e);
@@ -552,8 +571,9 @@ function OsDetail({
       onPatchLocal({ patrimonio: v || null });
       onQueued();
       if (online) {
-        await syncPending();
+        const r = await syncPending();
         onQueued();
+        if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
       }
       toast.success("Patrimônio salvo.");
     } catch (e: any) {
@@ -668,6 +688,7 @@ function OsDetail({
           const r = await syncPending();
           onQueued();
           if (r.sent > 0) toast.success(`${r.sent} enviado(s) ao servidor.`);
+          if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
         } catch {}
       }
     } finally {

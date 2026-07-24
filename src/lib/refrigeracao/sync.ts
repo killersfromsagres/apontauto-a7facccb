@@ -9,13 +9,43 @@ import {
   type OutboxItem,
 } from "./db";
 
-let running: Promise<SyncResult> | null = null;
+let running: Promise<SyncResultDetailed> | null = null;
 
 export type SyncResult = {
   sent: number;
   failed: number;
   remaining: number;
 };
+
+export type SyncItemError = {
+  id: string;
+  kind: OutboxItem["kind"];
+  numeroOs: string;
+  message: string;
+};
+
+export type SyncResultDetailed = SyncResult & {
+  firstError?: string;
+  errors: SyncItemError[];
+};
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string" && err.trim()) return err;
+  if (typeof err === "object" && err !== null) {
+    const record = err as Record<string, unknown>;
+    const message = record.message ?? record.error_description ?? record.error;
+    if (typeof message === "string" && message.trim()) return message;
+    try {
+      return JSON.stringify(record);
+    } catch {}
+  }
+  return "Erro desconhecido ao sincronizar";
+}
+
+function formatItemError(item: OutboxItem, message: string): string {
+  return `${item.kind} · OS ${item.numeroOs}: ${message}`;
+}
 
 async function sendOne(item: OutboxItem): Promise<void> {
   const { data: sess } = await supabase.auth.getSession();
@@ -96,15 +126,14 @@ function isDupError(error: any): boolean {
   return /duplicate|23505|unique/i.test(msg);
 }
 
-export type SyncResultDetailed = SyncResult & { firstError?: string };
-
 export function syncPending(): Promise<SyncResultDetailed> {
-  if (running) return running as Promise<SyncResultDetailed>;
+  if (running) return running;
   running = (async () => {
     const items = await outboxAll();
     let sent = 0;
     let failed = 0;
     let firstError: string | undefined;
+    const errors: SyncItemError[] = [];
     for (const item of items) {
       try {
         await sendOne(item);
@@ -112,8 +141,10 @@ export function syncPending(): Promise<SyncResultDetailed> {
         sent++;
       } catch (err: any) {
         failed++;
-        const msg = err?.message ?? String(err);
-        if (!firstError) firstError = `${item.kind}: ${msg}`;
+        const msg = getErrorMessage(err);
+        const formatted = formatItemError(item, msg);
+        errors.push({ id: item.id, kind: item.kind, numeroOs: item.numeroOs, message: msg });
+        if (!firstError) firstError = formatted;
         console.error("[refrigeracao/sync]", item.kind, item.id, err);
         await outboxUpdate({
           ...item,
@@ -122,9 +153,10 @@ export function syncPending(): Promise<SyncResultDetailed> {
         });
       }
     }
-    return { sent, failed, remaining: failed, firstError };
+    const remaining = (await outboxAll()).length;
+    return { sent, failed, remaining, firstError, errors };
   })().finally(() => {
     running = null;
   });
-  return running as Promise<SyncResultDetailed>;
+  return running;
 }
