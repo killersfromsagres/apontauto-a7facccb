@@ -777,19 +777,20 @@ function EvidenciasChuvaCard({
   evidencias: ChuvaEvidencia[];
   onRemove: (id: string) => Promise<void>;
 }) {
-  const [preview, setPreview] = useState<ChuvaEvidencia | null>(null);
   const ordenadas = useMemo(
     () => [...evidencias].sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [evidencias],
   );
+
+  const isHosted = (u: string) => /^https?:\/\//i.test(u);
+
   return (
     <GlassCard>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-4 flex items-end justify-between gap-3">
         <div>
           <h3 className="font-display text-lg font-semibold">Evidências de chuva registradas</h3>
           <p className="text-xs text-muted-foreground">
-            Registros formais de interrupção de atividades por mau tempo — com print, data e
-            mensagem explícita.
+            Hospedadas via ImgBB — clique no card para abrir a imagem original em nova aba.
           </p>
         </div>
         <Badge variant="outline" className="shrink-0">
@@ -798,111 +799,96 @@ function EvidenciasChuvaCard({
       </div>
 
       {ordenadas.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border/60 py-8 text-center text-sm text-muted-foreground">
-          Nenhuma evidência registrada ainda. Quando o painel indicar chuva hoje, use o botão
-          "Registrar evidência de chuva".
+        <div className="rounded-xl border border-dashed border-border/60 py-10 text-center text-sm text-muted-foreground">
+          Nenhuma evidência registrada ainda. Quando o painel indicar qualquer chuva, o registro é
+          gerado e enviado automaticamente ao ImgBB.
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ordenadas.map((ev) => (
-            <div
-              key={ev.id}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border/50 bg-background/30"
-            >
-              <button
-                type="button"
-                onClick={() => setPreview(ev)}
-                className="relative block h-32 w-full overflow-hidden bg-slate-900"
+          {ordenadas.map((ev, idx) => {
+            const hosted = isHosted(ev.imagem_data_url);
+            const dataFmt = fmtBR(ev.data);
+            const horaFmt = new Date(ev.created_at).toLocaleTimeString("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <a
+                key={ev.id}
+                href={ev.imagem_data_url}
+                target={hosted ? "_blank" : undefined}
+                rel={hosted ? "noopener noreferrer" : undefined}
+                style={{ animationDelay: `${Math.min(idx * 60, 480)}ms` }}
+                className={cn(
+                  "group relative flex flex-col overflow-hidden rounded-2xl border border-border/50 bg-background/40",
+                  "transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-xl",
+                  "animate-card-rise",
+                )}
               >
-                <img
-                  src={ev.imagem_data_url}
-                  alt={`Evidência de chuva em ${fmtBR(ev.data)}`}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
-                  <CloudRain className="h-3.5 w-3.5" />
-                  {fmtBR(ev.data)}
+                <div className="relative block h-36 w-full overflow-hidden bg-slate-900">
+                  <img
+                    src={ev.imagem_data_url}
+                    alt={`Evidência de chuva em ${dataFmt}`}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
+                  {/* Data animada, canto superior */}
+                  <div className="absolute right-2 top-2 flex items-center gap-1 rounded-full border border-white/25 bg-black/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-white backdrop-blur transition-transform group-hover:scale-105">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-500" />
+                    </span>
+                    {dataFmt}
+                  </div>
+                  {/* Rodapé card */}
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 text-xs font-semibold text-white">
+                    <CloudRain className="h-3.5 w-3.5 text-sky-200" />
+                    <span>{horaFmt}</span>
+                    {hosted && (
+                      <span className="inline-flex items-center gap-0.5 rounded-md bg-sky-500/80 px-1.5 py-[1px] text-[9px] uppercase tracking-wider">
+                        <ExternalLink className="h-2.5 w-2.5" />
+                        ImgBB
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </button>
-              <div className="flex flex-1 flex-col gap-2 p-3">
-                <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
-                <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span>
-                    {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"} ·{" "}
-                    {ev.condicao ?? "—"}
-                  </span>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-destructive hover:text-destructive"
-                    onClick={() => {
-                      if (confirm("Remover esta evidência?")) void onRemove(ev.id);
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                  <p className="line-clamp-3 text-xs text-foreground/90">{ev.mensagem}</p>
+                  <div className="mt-auto flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-2">
+                      <span>
+                        {ev.temperatura != null ? `${Math.round(ev.temperatura)}°C` : "—"}
+                      </span>
+                      <span aria-hidden>·</span>
+                      <span className="max-w-[100px] truncate">{ev.condicao ?? "—"}</span>
+                      {ev.prob_chuva != null && (
+                        <>
+                          <span aria-hidden>·</span>
+                          <span>{Math.round(ev.prob_chuva)}%</span>
+                        </>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      className="rounded-md p-1 text-destructive/80 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm("Remover esta evidência?")) void onRemove(ev.id);
+                      }}
+                      aria-label="Remover evidência"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </a>
+            );
+          })}
         </div>
       )}
-
-      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              Evidência de chuva — {preview ? fmtBR(preview.data) : ""}
-            </DialogTitle>
-          </DialogHeader>
-          {preview && (
-            <div className="space-y-3">
-              <img
-                src={preview.imagem_data_url}
-                alt="Evidência"
-                className="w-full rounded-lg border border-border/50"
-              />
-              <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-800 dark:text-red-200">
-                {preview.mensagem}
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4">
-                <div>
-                  <div className="font-semibold text-foreground">Data</div>
-                  {fmtBR(preview.data)}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Temperatura</div>
-                  {preview.temperatura != null ? `${Math.round(preview.temperatura)}°C` : "—"}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Condição</div>
-                  {preview.condicao ?? "—"}
-                </div>
-                <div>
-                  <div className="font-semibold text-foreground">Prob. chuva</div>
-                  {preview.prob_chuva != null ? `${Math.round(preview.prob_chuva)}%` : "—"}
-                </div>
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Registrado em {new Date(preview.created_at).toLocaleString("pt-BR")}
-              </div>
-              <div className="flex justify-end">
-                <a
-                  href={preview.imagem_data_url}
-                  download={`evidencia-chuva-taludes-${preview.data}.png`}
-                >
-                  <Button variant="outline" size="sm">
-                    <Download className="mr-2 h-4 w-4" />
-                    Baixar imagem
-                  </Button>
-                </a>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </GlassCard>
   );
 }
