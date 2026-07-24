@@ -133,10 +133,10 @@ function AuthenticatedLayout() {
     <SidebarProvider>
       <div className="flex min-h-dvh w-full app-bg">
         <AppSidebar />
-        <SidebarInset className="flex min-h-dvh flex-1 flex-col bg-transparent">
+        <SidebarInset className="flex min-h-dvh min-w-0 flex-1 flex-col bg-transparent">
           <AppHeader />
           <AccessGuard />
-          <main className="flex-1 pb-[env(safe-area-inset-bottom)] [contain:paint]">
+          <main className="min-w-0 flex-1 overflow-x-clip pb-[env(safe-area-inset-bottom)] [contain:paint]">
             {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
 
