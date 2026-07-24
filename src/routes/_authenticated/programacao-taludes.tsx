@@ -45,6 +45,8 @@ import {
   EXTERNAL_ACTIVITIES,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+  detectRain,
+  type RainIntensity,
 } from "@/lib/weather/open-meteo";
 import {
   listarEvidencias,
