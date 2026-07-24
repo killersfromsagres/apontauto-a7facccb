@@ -154,10 +154,6 @@ const sections: MenuSection[] = [
   },
   {
     kind: "item",
-    item: { key: "relogio", title: "Relógio Virtual", url: "/relogio", icon: Clock },
-  },
-  {
-    kind: "item",
     item: { key: "apontamento-os", title: "Apontamento OS", url: "/apontamento-os", icon: Snowflake },
   },
   {
