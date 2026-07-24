@@ -59,8 +59,12 @@ export async function uploadMapImage(file: File): Promise<{
       : error.message;
     throw new Error(msg);
   }
-  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
-  return { url: data.publicUrl, width, height };
+  // Bucket é privado (públicos bloqueados no workspace). Usamos signed URL de longa duração.
+  const { data, error: signErr } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (signErr || !data) throw new Error(signErr?.message || "Falha ao gerar URL da imagem");
+  return { url: data.signedUrl, width, height };
 }
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
