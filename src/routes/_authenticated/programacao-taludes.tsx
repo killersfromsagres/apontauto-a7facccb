@@ -45,7 +45,7 @@ import { useWeather } from "@/hooks/use-weather";
 import {
   WEATHER_LOCATION,
   weatherCodeInfo,
-  situationStatus,
+  effectiveTaludeStatus,
   EXTERNAL_ACTIVITIES,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
@@ -93,13 +93,23 @@ function ProgramacaoTaludesPage() {
 
   const current = data?.current;
   const info = weatherCodeInfo(current?.weather_code);
-  const probHoje = data?.daily.precipitation_probability_max[0] ?? 0;
+  // Precisão: prob. da hora atual (hourly) tem prioridade sobre o máximo diário.
+  const probHoraAtual = (() => {
+    if (!data?.hourly?.time?.length) return null;
+    const now = new Date();
+    const hourStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}T${String(now.getHours()).padStart(2, "0")}:00`;
+    const idx = data.hourly.time.findIndex((t) => t.startsWith(hourStr));
+    return idx >= 0 ? Number(data.hourly.precipitation_probability?.[idx] ?? 0) : null;
+  })();
+  const probMaxDia = data?.daily.precipitation_probability_max[0] ?? 0;
+  const probHoje = Math.max(probHoraAtual ?? 0, probMaxDia);
   const rainSumHoje = data?.daily.rain_sum[0] ?? 0;
-  const status = situationStatus(probHoje);
-  const alertExternal = shouldAlertExternalActivities(probHoje);
 
   // Detecção precisa de chuva em curso (qualquer intensidade).
   const rain = useMemo(() => detectRain(data), [data]);
+  // Status efetivo: se está chovendo (mesmo garoa), operação = SUSPENSA.
+  const status = effectiveTaludeStatus(probHoje, rain);
+  const alertExternal = shouldAlertExternalActivities(probHoje) || rain.detected;
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -384,9 +394,10 @@ function ProgramacaoTaludesPage() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Sensação {current ? `${Math.round(current.apparent_temperature)}°C` : "—"} ·
-                    Prob. chuva hoje: <b className={cn(
+                    Prob. chuva agora: <b className={cn(
                       dayRisk === "danger" ? "text-red-500" : dayRisk === "warning" ? "text-orange-500" : dayRisk === "watch" ? "text-amber-500" : "text-emerald-500"
-                    )}>{Math.round(probHoje)}%</b> · Acumulado {rainSumHoje.toFixed(1)} mm
+                    )}>{Math.round(probHoraAtual ?? probHoje)}%</b>
+                    {" · "}Pico dia: <b>{Math.round(probMaxDia)}%</b> · Acumulado {rainSumHoje.toFixed(1)} mm
                   </div>
                 </div>
               </div>
@@ -401,6 +412,10 @@ function ProgramacaoTaludesPage() {
                     "bg-orange-500/15 text-orange-700 dark:text-orange-300",
                   status.nivel === "reprogramar" &&
                     "bg-red-500/15 text-red-700 dark:text-red-300",
+                  status.nivel === "suspenso" && rain.intensity === "garoa" &&
+                    "bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse",
+                  status.nivel === "suspenso" && rain.intensity !== "garoa" &&
+                    "bg-red-500/20 text-red-700 dark:text-red-300 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (

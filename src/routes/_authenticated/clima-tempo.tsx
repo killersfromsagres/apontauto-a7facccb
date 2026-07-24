@@ -84,6 +84,12 @@ const STATUS_STYLES: Record<
     text: "text-red-700 dark:text-red-300",
     ring: "ring-red-400/50",
   },
+  suspenso: {
+    border: "border-red-500/70",
+    bg: "from-red-500/25 to-red-500/5",
+    text: "text-red-700 dark:text-red-300",
+    ring: "ring-red-400/50",
+  },
 };
 
 function ClimaTempoPage() {

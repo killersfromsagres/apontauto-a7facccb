@@ -147,8 +147,8 @@ export function weatherCodeInfo(code: number | null | undefined): WeatherCodeInf
 // Situação operacional baseada na probabilidade de chuva
 // ────────────────────────────────────────────────────────────
 export type OperationalStatus = {
-  nivel: "normal" | "atencao" | "alto" | "reprogramar";
-  cor: string; // token color hint
+  nivel: "normal" | "atencao" | "alto" | "reprogramar" | "suspenso";
+  cor: string;
   emoji: string;
   titulo: string;
   descricao: string;
@@ -156,40 +156,34 @@ export type OperationalStatus = {
 
 export function situationStatus(probability: number | null | undefined): OperationalStatus {
   const p = Math.max(0, Math.min(100, Math.round(probability ?? 0)));
-  if (p < 20) {
+  if (p < 20) return { nivel: "normal", cor: "emerald", emoji: "🟢", titulo: "Operação Normal", descricao: "Condições favoráveis para atividades externas." };
+  if (p < 60) return { nivel: "atencao", cor: "amber", emoji: "🟡", titulo: "Atenção", descricao: "Possibilidade moderada de chuva — monitore." };
+  if (p <= 80) return { nivel: "alto", cor: "orange", emoji: "🟠", titulo: "Alto risco de chuva", descricao: "Considere antecipar tarefas críticas e proteger áreas expostas." };
+  return { nivel: "reprogramar", cor: "red", emoji: "🔴", titulo: "Recomenda-se reprogramação", descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados." };
+}
+
+/**
+ * Status efetivo para TALUDES — qualquer chuva (inclusive garoa) suspende a
+ * atividade por segurança, independente da probabilidade prevista.
+ */
+export function effectiveTaludeStatus(
+  probability: number | null | undefined,
+  rain: { detected: boolean; intensity: RainIntensity | null; label: string } | null | undefined,
+): OperationalStatus {
+  if (rain?.detected) {
+    const isDrizzle = rain.intensity === "garoa";
     return {
-      nivel: "normal",
-      cor: "emerald",
-      emoji: "🟢",
-      titulo: "Operação Normal",
-      descricao: "Condições favoráveis para atividades externas.",
+      nivel: "suspenso",
+      cor: isDrizzle ? "amber" : "red",
+      emoji: isDrizzle ? "🟠" : "🔴",
+      titulo: isDrizzle
+        ? "Operação SUSPENSA — Garoa em curso"
+        : `Operação SUSPENSA — ${rain.label} em curso`,
+      descricao:
+        "Qualquer precipitação interrompe as atividades de talude. Aguarde céu limpo e liberação da PT.",
     };
   }
-  if (p < 60) {
-    return {
-      nivel: "atencao",
-      cor: "amber",
-      emoji: "🟡",
-      titulo: "Atenção",
-      descricao: "Possibilidade moderada de chuva — monitore.",
-    };
-  }
-  if (p <= 80) {
-    return {
-      nivel: "alto",
-      cor: "orange",
-      emoji: "🟠",
-      titulo: "Alto risco de chuva",
-      descricao: "Considere antecipar tarefas críticas e proteger áreas expostas.",
-    };
-  }
-  return {
-    nivel: "reprogramar",
-    cor: "red",
-    emoji: "🔴",
-    titulo: "Recomenda-se reprogramação",
-    descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados.",
-  };
+  return situationStatus(probability);
 }
 
 /** Atividades externas que sofrem impacto direto de chuva. */
