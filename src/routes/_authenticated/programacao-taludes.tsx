@@ -395,9 +395,10 @@ function ProgramacaoTaludesPage() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Sensação {current ? `${Math.round(current.apparent_temperature)}°C` : "—"} ·
-                    Prob. chuva hoje: <b className={cn(
+                    Prob. chuva agora: <b className={cn(
                       dayRisk === "danger" ? "text-red-500" : dayRisk === "warning" ? "text-orange-500" : dayRisk === "watch" ? "text-amber-500" : "text-emerald-500"
-                    )}>{Math.round(probHoje)}%</b> · Acumulado {rainSumHoje.toFixed(1)} mm
+                    )}>{Math.round(probHoraAtual ?? probHoje)}%</b>
+                    {" · "}Pico dia: <b>{Math.round(probMaxDia)}%</b> · Acumulado {rainSumHoje.toFixed(1)} mm
                   </div>
                 </div>
               </div>
@@ -412,6 +413,10 @@ function ProgramacaoTaludesPage() {
                     "bg-orange-500/15 text-orange-700 dark:text-orange-300",
                   status.nivel === "reprogramar" &&
                     "bg-red-500/15 text-red-700 dark:text-red-300",
+                  status.nivel === "suspenso" && rain.intensity === "garoa" &&
+                    "bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse",
+                  status.nivel === "suspenso" && rain.intensity !== "garoa" &&
+                    "bg-red-500/20 text-red-700 dark:text-red-300 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (
