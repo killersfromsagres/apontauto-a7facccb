@@ -1604,3 +1604,37 @@ body {
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 }
+
+/* Taludes / clima — animações de alerta e UI */
+@keyframes pulse-slow-kf {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+.animate-pulse-slow { animation: pulse-slow-kf 2.4s ease-in-out infinite; }
+
+@keyframes rain-shimmer-kf {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.rain-shimmer {
+  background-size: 200% 100%;
+  animation: rain-shimmer-kf 3s linear infinite;
+}
+
+@keyframes evidence-pop-kf {
+  0% { opacity: 0; transform: translateY(6px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-evidence-pop { animation: evidence-pop-kf 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes alert-glow-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50% { box-shadow: 0 0 24px 6px rgba(239, 68, 68, 0.25); }
+}
+.animate-alert-glow { animation: alert-glow-kf 2.6s ease-in-out infinite; }
+
+@keyframes drizzle-glow-kf {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.3); }
+  50% { box-shadow: 0 0 22px 4px rgba(251, 191, 36, 0.25); }
+}
+.animate-drizzle-glow { animation: drizzle-glow-kf 2.6s ease-in-out infinite; }

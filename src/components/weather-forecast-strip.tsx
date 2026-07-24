@@ -1,11 +1,13 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat } from "lucide-react";
+import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWeather } from "@/hooks/use-weather";
 import {
   weatherCodeInfo,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+  ANY_RAIN_RISK_THRESHOLD,
+  riskLevelForProbability,
 } from "@/lib/weather/open-meteo";
 
 const WEEK_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -163,19 +165,57 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
             const info = weatherCodeInfo(d.code);
             const isToday = d.iso === todayIso;
             const alert = shouldAlertExternalActivities(d.prob);
+            const risk = riskLevelForProbability(d.prob);
+            const probPct = Math.max(0, Math.min(100, Math.round(d.prob)));
+            // Sempre mostra um preenchimento visível — mesmo com 0% aparece
+            // um traço mínimo para indicar que o dado foi carregado.
+            const barPct = probPct === 0 ? 3 : Math.max(6, probPct);
+            const barGradient =
+              risk === "danger"
+                ? "from-red-500 via-red-500 to-red-600"
+                : risk === "warning"
+                  ? "from-amber-400 via-amber-500 to-orange-500"
+                  : risk === "watch"
+                    ? "from-yellow-300 via-yellow-400 to-amber-400"
+                    : "from-emerald-400 via-emerald-500 to-emerald-500";
+            const probText =
+              risk === "danger"
+                ? "text-red-600 dark:text-red-400"
+                : risk === "warning"
+                  ? "text-orange-600 dark:text-orange-400"
+                  : risk === "watch"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-emerald-600 dark:text-emerald-400";
             return (
               <div
                 key={d.iso}
                 className={cn(
-                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
-                  "border-border/50 bg-background/60 backdrop-blur",
+                  "group relative flex w-40 shrink-0 snap-start flex-col rounded-2xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl",
+                  "border-border/50 bg-gradient-to-br from-background/80 to-background/40 backdrop-blur",
                   isToday && "border-primary/60 ring-1 ring-primary/40",
-                  alert && "border-red-500/50 ring-1 ring-red-500/30",
+                  risk === "watch" && "border-amber-400/50 ring-1 ring-amber-400/30",
+                  risk === "warning" && "border-orange-500/60 ring-1 ring-orange-500/40",
+                  (risk === "danger" || alert) && "border-red-500/60 ring-2 ring-red-500/40 animate-pulse-slow",
                 )}
               >
                 {isToday && (
                   <span className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
                     Hoje
+                  </span>
+                )}
+                {risk !== "safe" && !isToday && (
+                  <span
+                    className={cn(
+                      "absolute -top-2 right-2 z-10 inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm",
+                      risk === "danger"
+                        ? "border-red-500/60 bg-red-500 text-white"
+                        : risk === "warning"
+                          ? "border-orange-500/60 bg-orange-500 text-white"
+                          : "border-amber-400/60 bg-amber-400 text-black",
+                    )}
+                  >
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    {risk === "danger" ? "Chuva" : risk === "warning" ? "Risco" : "Atenção"}
                   </span>
                 )}
                 <div className="flex items-baseline justify-between">
@@ -206,37 +246,24 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </span>
                 </div>
 
-                {/* Rain gauge */}
+                {/* Rain gauge — sempre visível */}
                 <div className="mt-2">
                   <div className="mb-1 flex items-center justify-between text-[10px]">
                     <span className="inline-flex items-center gap-1 text-muted-foreground">
                       <CloudRain className="h-3 w-3" />
                       Chuva
                     </span>
-                    <span
-                      className={cn(
-                        "font-bold",
-                        d.prob >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD
-                          ? "text-red-600 dark:text-red-400"
-                          : d.prob >= 40
-                            ? "text-amber-600 dark:text-amber-400"
-                            : "text-emerald-600 dark:text-emerald-400",
-                      )}
-                    >
-                      {Math.round(d.prob)}%
+                    <span className={cn("font-bold tabular-nums", probText)}>
+                      {probPct}%
                     </span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted/60">
+                  <div className="relative h-2 overflow-hidden rounded-full bg-muted/70 ring-1 ring-border/40">
                     <div
                       className={cn(
-                        "h-full rounded-full transition-all duration-500",
-                        d.prob >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD
-                          ? "bg-gradient-to-r from-red-500 to-red-600"
-                          : d.prob >= 40
-                            ? "bg-gradient-to-r from-amber-400 to-amber-500"
-                            : "bg-gradient-to-r from-emerald-400 to-emerald-500",
+                        "h-full rounded-full bg-gradient-to-r shadow-[0_0_8px_-1px_currentColor] transition-[width] duration-700 ease-out",
+                        barGradient,
                       )}
-                      style={{ width: `${Math.max(4, Math.min(100, d.prob))}%` }}
+                      style={{ width: `${barPct}%` }}
                     />
                   </div>
                 </div>
@@ -252,16 +279,28 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </span>
                 </div>
 
-                {alert && (
+                {(alert || risk === "danger") && (
                   <div className="mt-2 inline-flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-red-700 dark:text-red-300">
                     <HardHat className="h-2.5 w-2.5" />
                     Externo em risco
                   </div>
                 )}
+                {!alert && risk === "warning" && (
+                  <div className="mt-2 inline-flex items-center gap-1 rounded-md border border-orange-500/40 bg-orange-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-orange-700 dark:text-orange-300">
+                    <AlertTriangle className="h-2.5 w-2.5" />
+                    Programar com atenção
+                  </div>
+                )}
+                {!alert && risk === "watch" && (
+                  <div className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+                    <CloudRain className="h-2.5 w-2.5" />
+                    Chuva possível
+                  </div>
+                )}
 
                 <div className="sr-only">
                   {WEEK_LONG[d.dow]} — {info.label} — máx {Math.round(d.tmax)}° / mín{" "}
-                  {Math.round(d.tmin)}° — {Math.round(d.prob)}% de chuva
+                  {Math.round(d.tmin)}° — {probPct}% de chuva. Limite crítico: {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%. Limite de alerta leve: {ANY_RAIN_RISK_THRESHOLD}%.
                 </div>
               </div>
             );
