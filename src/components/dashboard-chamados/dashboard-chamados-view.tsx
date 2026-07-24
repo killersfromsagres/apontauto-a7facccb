@@ -132,9 +132,9 @@ function QuickAccessStrip() {
               <Link
                 key={`${m.key}-${idx}`}
                 to={m.to}
-                className="glass-tile group flex shrink-0 items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium transition-all hover:-translate-y-0.5 hover:border-primary/60 hover:text-foreground"
+                className="glass-tile group flex shrink-0 items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.04] hover:border-primary/60 hover:text-foreground hover:shadow-[0_8px_20px_-10px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
               >
-                <m.icon className={`h-3.5 w-3.5 ${m.tint}`} strokeWidth={2} />
+                <m.icon className={`h-3.5 w-3.5 ${m.tint} transition-transform duration-200 group-hover:scale-110 group-hover:drop-shadow-[0_0_6px_currentColor]`} strokeWidth={2} />
                 <span>{m.title}</span>
               </Link>
             ))}
