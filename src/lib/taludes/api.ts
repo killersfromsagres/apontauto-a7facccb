@@ -37,20 +37,62 @@ async function requireUserId(): Promise<string> {
   return data.user.id;
 }
 
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4MB — safe for edge body limits
+const MAX_DIMENSION = 2400;
+
 export async function uploadMapImage(file: File): Promise<{
   url: string;
   width: number;
   height: number;
 }> {
+  const prepared = await prepareImageForUpload(file);
   const form = new FormData();
-  form.append("image", file);
-  form.append("name", file.name);
+  form.append("image", prepared.blob, prepared.filename);
+  form.append("name", prepared.filename);
   const res = await fetch("/api/public/imgbb-upload", { method: "POST", body: form });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json?.error ?? `Falha no upload (${res.status})`);
-  const url = json.url as string;
+  const raw = await res.text();
+  let json: any = null;
+  try { json = raw ? JSON.parse(raw) : null; } catch { /* non-JSON */ }
+  if (!res.ok || !json?.url) {
+    const msg = json?.error
+      ?? (res.status === 413 || /too large/i.test(raw) ? "Imagem muito grande. Tente uma foto menor." : null)
+      ?? (raw && raw.length < 200 ? raw : `Falha no upload (${res.status})`);
+    throw new Error(msg);
+  }
+  return { url: json.url as string, width: prepared.width, height: prepared.height };
+}
+
+async function prepareImageForUpload(file: File): Promise<{ blob: Blob; filename: string; width: number; height: number }> {
   const { width, height } = await readImageDimensions(file);
-  return { url, width, height };
+  const scale = Math.min(1, MAX_DIMENSION / Math.max(width, height));
+  const needsResize = scale < 1 || file.size > MAX_UPLOAD_BYTES;
+  if (!needsResize) {
+    return { blob: file, filename: file.name, width, height };
+  }
+  const targetW = Math.round(width * scale);
+  const targetH = Math.round(height * scale);
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas indisponível");
+  ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+  bitmap.close?.();
+
+  let quality = 0.9;
+  let blob: Blob | null = await canvasToBlob(canvas, quality);
+  while (blob && blob.size > MAX_UPLOAD_BYTES && quality > 0.4) {
+    quality -= 0.1;
+    blob = await canvasToBlob(canvas, quality);
+  }
+  if (!blob) throw new Error("Falha ao processar imagem");
+  const filename = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+  return { blob, filename, width: targetW, height: targetH };
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", quality));
 }
 
 function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
