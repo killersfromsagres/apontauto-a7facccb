@@ -286,10 +286,40 @@ function ProgramacaoTaludesPage() {
 
         {/* Painel climático — Open-Meteo */}
         <div ref={panelRef}>
-          <GlassCard className="space-y-4">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <GlassCard
+            className={cn(
+              "relative space-y-4 overflow-hidden transition-all duration-500",
+              rain.detected && "ring-2 ring-red-500/40 shadow-[0_0_40px_-10px_rgba(239,68,68,0.55)]",
+            )}
+          >
+            {/* Overlay animado de alerta em qualquer chuva/garoa */}
+            {rain.detected && (
+              <div
+                aria-hidden
+                className={cn(
+                  "pointer-events-none absolute inset-0 -z-0 opacity-70",
+                  rain.intensity === "garoa" || rain.intensity === "fraca"
+                    ? "bg-[radial-gradient(circle_at_20%_10%,rgba(56,189,248,0.18),transparent_55%),radial-gradient(circle_at_80%_90%,rgba(59,130,246,0.15),transparent_60%)]"
+                    : "bg-[radial-gradient(circle_at_20%_10%,rgba(251,191,36,0.22),transparent_55%),radial-gradient(circle_at_80%_90%,rgba(239,68,68,0.25),transparent_60%)]",
+                )}
+              />
+            )}
+            {rain.detected && (
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -top-px left-0 h-[3px] w-full animate-pulse bg-gradient-to-r from-transparent via-red-500/70 to-transparent"
+              />
+            )}
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
-                <div className="text-5xl leading-none">{info.emoji}</div>
+                <div
+                  className={cn(
+                    "text-5xl leading-none transition-transform duration-500",
+                    rain.detected && "animate-bounce",
+                  )}
+                >
+                  {info.emoji}
+                </div>
                 <div>
                   <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
                     Clima agora — {WEATHER_LOCATION.cidade} · {WEATHER_LOCATION.bairro}
@@ -301,14 +331,30 @@ function ProgramacaoTaludesPage() {
                     </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    Prob. de chuva hoje: {Math.round(probHoje)}% · Chuva prevista:{" "}
-                    {rainSumHoje.toFixed(1)} mm
+                    Sensação {current ? `${Math.round(current.apparent_temperature)}°C` : "—"} ·
+                    Prob. chuva hoje: {Math.round(probHoje)}% · Prev. {rainSumHoje.toFixed(1)} mm
                   </div>
+                  {rain.detected && rain.intensity && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Badge
+                        className={cn(
+                          "border animate-pulse",
+                          rainBadgeTone[rain.intensity],
+                        )}
+                      >
+                        <CloudRain className="mr-1 inline h-3 w-3" />
+                        {rain.label} em curso
+                      </Badge>
+                      <span className="text-[11px] text-muted-foreground">
+                        {rain.mm_atual.toFixed(1)} mm/h · acumulado {rain.mm_dia.toFixed(1)} mm
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
               <Badge
                 className={cn(
-                  "px-3 py-1.5 text-sm",
+                  "relative px-3 py-1.5 text-sm",
                   status.nivel === "normal" &&
                     "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
                   status.nivel === "atencao" &&
@@ -316,7 +362,7 @@ function ProgramacaoTaludesPage() {
                   status.nivel === "alto" &&
                     "bg-orange-500/15 text-orange-700 dark:text-orange-300",
                   status.nivel === "reprogramar" &&
-                    "bg-red-500/15 text-red-700 dark:text-red-300",
+                    "bg-red-500/15 text-red-700 dark:text-red-300 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (
@@ -328,7 +374,7 @@ function ProgramacaoTaludesPage() {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-4">
               <MiniMetric
                 icon={<Thermometer className="h-4 w-4" />}
                 label="Temperatura"
@@ -351,12 +397,12 @@ function ProgramacaoTaludesPage() {
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+            <div className="relative flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 Última atualização:{" "}
                 {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"}
               </span>
-              <span>Fonte: Open-Meteo · atualização automática a cada 30 min</span>
+              <span>Fonte: MET Norway / Open-Meteo · auto a cada 30 min</span>
             </div>
           </GlassCard>
         </div>
