@@ -158,12 +158,9 @@ const sections: MenuSection[] = [
   },
   {
     kind: "item",
-    item: { key: "apontamento-os", title: "Apontamento OS", url: "/apontamento-os", icon: Snowflake },
-  },
-  {
-    kind: "item",
     item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Cog },
   },
+
 ];
 
 
