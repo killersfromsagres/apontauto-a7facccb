@@ -417,25 +417,25 @@ function ProgramacaoTaludesPage() {
               </div>
               <Badge
                 className={cn(
-                  "px-3 py-1.5 text-sm",
+                  "px-4 py-2 text-sm font-bold shadow-md border-0 whitespace-nowrap",
                   status.nivel === "normal" &&
-                    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                    "bg-emerald-500 text-white hover:bg-emerald-500",
                   status.nivel === "atencao" &&
-                    "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+                    "bg-amber-400 text-amber-950 hover:bg-amber-400",
                   status.nivel === "alto" &&
-                    "bg-orange-500/15 text-orange-700 dark:text-orange-300",
+                    "bg-orange-500 text-white hover:bg-orange-500",
                   status.nivel === "reprogramar" &&
-                    "bg-red-500/15 text-red-700 dark:text-red-300",
+                    "bg-red-500 text-white hover:bg-red-500",
                   status.nivel === "suspenso" && rain.intensity === "garoa" &&
-                    "bg-amber-500/20 text-amber-700 dark:text-amber-300 animate-pulse",
+                    "bg-amber-400 text-amber-950 hover:bg-amber-400 animate-pulse",
                   status.nivel === "suspenso" && rain.intensity !== "garoa" &&
-                    "bg-red-500/20 text-red-700 dark:text-red-300 animate-pulse",
+                    "bg-red-500 text-white hover:bg-red-500 animate-pulse",
                 )}
               >
                 {status.nivel === "normal" ? (
-                  <CheckCircle2 className="mr-1 inline h-4 w-4" />
+                  <CheckCircle2 className="mr-1.5 inline h-4 w-4" />
                 ) : (
-                  <AlertTriangle className="mr-1 inline h-4 w-4" />
+                  <AlertTriangle className="mr-1.5 inline h-4 w-4" />
                 )}
                 {status.titulo}
               </Badge>
