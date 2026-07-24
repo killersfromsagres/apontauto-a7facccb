@@ -190,8 +190,89 @@ function ProgramacaoTaludesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, rain.detected, rain.intensity, evidenciasQ.isLoading, evidenciasQ.data]);
 
+  const rainAlertActive = rain.detected || status.nivel === "reprogramar";
+  const rainBadgeTone: Record<RainIntensity, string> = {
+    garoa: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40",
+    fraca: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40",
+    moderada: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40",
+    forte: "bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-500/40",
+    tempestade: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/50",
+  };
+
+  return (
+    <PageShell
+      title="Programação de Taludes"
+      description={`Programação integrada ao clima em tempo real — ${WEATHER_LOCATION.cidade} · ${WEATHER_LOCATION.bairro} · ${WEATHER_LOCATION.estado}.`}
+      actions={
+        <>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/clima-tempo">
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Dashboard Clima e Tempo
+            </Link>
+          </Button>
+          <Button variant="outline" onClick={() => weatherQ.refetch()} disabled={weatherQ.isFetching}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", weatherQ.isFetching && "animate-spin")} />
+            Atualizar clima
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-5">
+        {weatherQ.isError && (
+          <div className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm text-red-800 dark:text-red-200">
+            <AlertTriangle className="mr-2 inline h-4 w-4" />
+            Falha ao consultar Open-Meteo. Tente novamente em instantes.
+          </div>
+        )}
+
+        {rainAlertActive && (
+          <div className="rounded-xl border-2 border-red-500/60 bg-gradient-to-r from-red-500/20 to-red-600/10 px-4 py-3 shadow-lg">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <CloudRain className="mt-0.5 h-6 w-6 shrink-0 text-red-500 animate-pulse" />
+                <div className="min-w-0">
+                  <p className="font-display text-base font-bold text-red-700 dark:text-red-300">
+                    {rain.detected
+                      ? `${rain.emoji} ${rain.label} em curso — operação de talude interrompida`
+                      : `${status.titulo} — atividades de talude devem ser reprogramadas`}
+                  </p>
+                  <p className="text-xs text-red-800/90 dark:text-red-200/90">
+                    {rain.detected ? (
+                      <>
+                        Precipitação atual: <b>{rain.mm_atual.toFixed(1)} mm/h</b> · acumulado hoje:{" "}
+                        <b>{rain.mm_dia.toFixed(1)} mm</b> · prob. do dia: {Math.round(probHoje)}%. Evidência
+                        automática já registrada no histórico.
+                      </>
+                    ) : (
+                      <>
+                        Probabilidade de chuva hoje: {Math.round(probHoje)}%. Registre a evidência para o
+                        histórico.
+                      </>
+                    )}
+                  </p>
+                  {rain.detected && rain.intensity && (
+                    <Badge className={cn("mt-2 border", rainBadgeTone[rain.intensity])}>
+                      Intensidade: {rain.label}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleRegistrarEvidencia}
+                disabled={registrandoEvid || !data}
+                className="shrink-0"
+              >
+                {registrandoEvid ? "Registrando…" : "Registrar evidência manual"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         <PTCard />
+
 
         {/* Painel climático — Open-Meteo */}
         <div ref={panelRef}>
