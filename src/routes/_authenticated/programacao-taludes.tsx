@@ -118,29 +118,42 @@ function ProgramacaoTaludesPage() {
     silent?: boolean;
   }) => {
     if (!data || !panelRef.current) return null;
-    const { toPng } = await import("html-to-image");
-    const dataUrl = await toPng(panelRef.current, {
+    const { toBlob } = await import("html-to-image");
+    const blob = await toBlob(panelRef.current, {
       pixelRatio: 2,
       backgroundColor: "#0b1220",
     });
+    if (!blob) throw new Error("Falha ao capturar screenshot");
+
     const hoje = todayISO();
+    const filename = `evidencia-taludes-${opts.intensity ?? "manual"}-${hoje}-${Date.now()}.png`;
+
+    // 1) Hospeda a imagem no ImgBB (não sobrecarrega Supabase Storage).
+    let hostedUrl: string;
+    try {
+      const upload = await uploadImageToImgBB(blob, filename);
+      hostedUrl = upload.display_url || upload.url;
+    } catch (e) {
+      throw new Error(`Falha ao hospedar imagem no ImgBB: ${(e as Error).message}`);
+    }
+
     const mensagemFinal = opts.intensity
       ? `[${opts.label}] ${opts.mensagem}`
       : opts.mensagem;
+
+    // 2) Persiste APENAS a URL pública no banco.
     const ev = await registrarEvidencia({
       data: hoje,
       mensagem: mensagemFinal,
-      imagem_data_url: dataUrl,
+      imagem_data_url: hostedUrl,
       temperatura: current?.temperature_2m ?? null,
       condicao: opts.label,
       precipitacao_mm: rain.mm_dia || rainSumHoje,
       prob_chuva: probHoje,
     });
+
     if (!opts.silent) {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `evidencia-chuva-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
-      a.click();
+      window.open(hostedUrl, "_blank", "noopener,noreferrer");
     }
     qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
     return ev;
@@ -155,7 +168,7 @@ function ProgramacaoTaludesPage() {
         mensagem:
           "Atividades de talude interrompidas devido a chuva — condição climática desfavorável registrada como evidência.",
       });
-      toast.success("Evidência de chuva registrada");
+      toast.success("Evidência registrada e hospedada no ImgBB");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -198,6 +211,8 @@ function ProgramacaoTaludesPage() {
   }, [data, rain.detected, rain.intensity, evidenciasQ.isLoading, evidenciasQ.data]);
 
   const rainAlertActive = rain.detected || status.nivel === "reprogramar";
+  const anyRainRisk = hasAnyRainRisk(probHoje);
+  const dayRisk = riskLevelForProbability(probHoje);
   const rainBadgeTone: Record<RainIntensity, string> = {
     garoa: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/40",
     fraca: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/40",
