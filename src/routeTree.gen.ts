@@ -25,7 +25,6 @@ import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './rout
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
-import { Route as AuthenticatedProgramacaoTaludesRouteImport } from './routes/_authenticated/programacao-taludes'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authenticated/preventiva-ac'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
@@ -128,12 +127,6 @@ const AuthenticatedRefrigeracaoRoute =
   AuthenticatedRefrigeracaoRouteImport.update({
     id: '/refrigeracao',
     path: '/refrigeracao',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedProgramacaoTaludesRoute =
-  AuthenticatedProgramacaoTaludesRouteImport.update({
-    id: '/programacao-taludes',
-    path: '/programacao-taludes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedProgramacaoRoute =
@@ -259,7 +252,6 @@ export interface FileRoutesByFullPath {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
-  '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -294,7 +286,6 @@ export interface FileRoutesByTo {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
-  '/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -332,7 +323,6 @@ export interface FileRoutesById {
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
-  '/_authenticated/programacao-taludes': typeof AuthenticatedProgramacaoTaludesRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -371,7 +361,6 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
-    | '/programacao-taludes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -406,7 +395,6 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
-    | '/programacao-taludes'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -443,7 +431,6 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva'
     | '/_authenticated/preventiva-ac'
     | '/_authenticated/programacao'
-    | '/_authenticated/programacao-taludes'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
@@ -584,13 +571,6 @@ declare module '@tanstack/react-router' {
       path: '/refrigeracao'
       fullPath: '/refrigeracao'
       preLoaderRoute: typeof AuthenticatedRefrigeracaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/programacao-taludes': {
-      id: '/_authenticated/programacao-taludes'
-      path: '/programacao-taludes'
-      fullPath: '/programacao-taludes'
-      preLoaderRoute: typeof AuthenticatedProgramacaoTaludesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/programacao': {
@@ -738,7 +718,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
-  AuthenticatedProgramacaoTaludesRoute: typeof AuthenticatedProgramacaoTaludesRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -766,7 +745,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedPreventivaAcRoute: AuthenticatedPreventivaAcRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
-  AuthenticatedProgramacaoTaludesRoute: AuthenticatedProgramacaoTaludesRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:

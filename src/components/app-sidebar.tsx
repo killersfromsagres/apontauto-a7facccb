@@ -16,7 +16,7 @@ import {
   ChartColumn,
   PackageOpen,
   CloudSun,
-  CloudRainWind,
+  
   Scale,
   Snowflake,
   Thermometer,
@@ -83,7 +83,7 @@ const sections: MenuSection[] = [
       { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarDays },
       { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
       
-      { key: "taludes", title: "Programação de Taludes", url: "/taludes", icon: Map },
+      { key: "taludes", title: "Demarcação de Taludes", url: "/taludes", icon: Map },
       { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
     ],
   },
@@ -114,7 +114,7 @@ const sections: MenuSection[] = [
       { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: ChartColumn },
       { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageOpen },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
-      { key: "programacao-taludes", title: "Taludes (Clima)", url: "/programacao-taludes", icon: CloudRainWind },
+      
       { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: Scale },
     ],
   },
