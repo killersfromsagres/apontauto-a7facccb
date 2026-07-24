@@ -45,7 +45,6 @@ import { useWeather } from "@/hooks/use-weather";
 import {
   WEATHER_LOCATION,
   weatherCodeInfo,
-  situationStatus,
   effectiveTaludeStatus,
   EXTERNAL_ACTIVITIES,
   shouldAlertExternalActivities,
