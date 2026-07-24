@@ -46,6 +46,7 @@ import {
   WEATHER_LOCATION,
   weatherCodeInfo,
   situationStatus,
+  effectiveTaludeStatus,
   EXTERNAL_ACTIVITIES,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
