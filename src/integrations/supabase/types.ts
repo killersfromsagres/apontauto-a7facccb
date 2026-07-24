@@ -1339,256 +1339,88 @@ export type Database = {
       talude_maps: {
         Row: {
           created_at: string
-          escala_m_por_px: number | null
           id: string
-          image_height: number | null
-          image_path: string
-          image_width: number | null
+          image_height: number
+          image_url: string
+          image_width: number
           nome: string
+          observacao: string | null
           owner_id: string
-          periodicidade_dias: number
           updated_at: string
         }
         Insert: {
           created_at?: string
-          escala_m_por_px?: number | null
           id?: string
-          image_height?: number | null
-          image_path: string
-          image_width?: number | null
+          image_height: number
+          image_url: string
+          image_width: number
           nome: string
+          observacao?: string | null
           owner_id: string
-          periodicidade_dias?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
-          escala_m_por_px?: number | null
           id?: string
-          image_height?: number | null
-          image_path?: string
-          image_width?: number | null
+          image_height?: number
+          image_url?: string
+          image_width?: number
           nome?: string
+          observacao?: string | null
           owner_id?: string
-          periodicidade_dias?: number
           updated_at?: string
         }
         Relationships: []
       }
-      taludes: {
+      talude_marcacoes: {
         Row: {
-          area_m2: number | null
-          cor: string | null
+          cor: string
           created_at: string
-          data_conclusao: string | null
-          data_execucao: string | null
-          data_programada: string | null
+          data: string
           id: string
           map_id: string
-          nome: string | null
           numero: number
-          observacoes: string | null
+          observacao: string | null
           owner_id: string
-          perimetro_m: number | null
-          periodicidade_dias: number | null
           polygon: Json
-          proxima_data: string | null
-          status: string
+          rotulo: string | null
           updated_at: string
         }
         Insert: {
-          area_m2?: number | null
-          cor?: string | null
+          cor?: string
           created_at?: string
-          data_conclusao?: string | null
-          data_execucao?: string | null
-          data_programada?: string | null
+          data?: string
           id?: string
           map_id: string
-          nome?: string | null
           numero: number
-          observacoes?: string | null
+          observacao?: string | null
           owner_id: string
-          perimetro_m?: number | null
-          periodicidade_dias?: number | null
-          polygon?: Json
-          proxima_data?: string | null
-          status?: string
+          polygon: Json
+          rotulo?: string | null
           updated_at?: string
         }
         Update: {
-          area_m2?: number | null
-          cor?: string | null
+          cor?: string
           created_at?: string
-          data_conclusao?: string | null
-          data_execucao?: string | null
-          data_programada?: string | null
+          data?: string
           id?: string
           map_id?: string
-          nome?: string | null
           numero?: number
-          observacoes?: string | null
+          observacao?: string | null
           owner_id?: string
-          perimetro_m?: number | null
-          periodicidade_dias?: number | null
           polygon?: Json
-          proxima_data?: string | null
-          status?: string
+          rotulo?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "taludes_map_id_fkey"
+            foreignKeyName: "talude_marcacoes_map_id_fkey"
             columns: ["map_id"]
             isOneToOne: false
             referencedRelation: "talude_maps"
             referencedColumns: ["id"]
           },
         ]
-      }
-      taludes_chuva_evidencias: {
-        Row: {
-          condicao: string | null
-          created_at: string
-          created_by: string | null
-          data: string
-          id: string
-          imagem_data_url: string
-          mensagem: string
-          precipitacao_mm: number | null
-          prob_chuva: number | null
-          temperatura: number | null
-        }
-        Insert: {
-          condicao?: string | null
-          created_at?: string
-          created_by?: string | null
-          data: string
-          id?: string
-          imagem_data_url: string
-          mensagem: string
-          precipitacao_mm?: number | null
-          prob_chuva?: number | null
-          temperatura?: number | null
-        }
-        Update: {
-          condicao?: string | null
-          created_at?: string
-          created_by?: string | null
-          data?: string
-          id?: string
-          imagem_data_url?: string
-          mensagem?: string
-          precipitacao_mm?: number | null
-          prob_chuva?: number | null
-          temperatura?: number | null
-        }
-        Relationships: []
-      }
-      taludes_clima_config: {
-        Row: {
-          id: boolean
-          latitude: number
-          limite_mm_chuva: number
-          limite_prob_chuva: number
-          longitude: number
-          updated_at: string
-        }
-        Insert: {
-          id?: boolean
-          latitude?: number
-          limite_mm_chuva?: number
-          limite_prob_chuva?: number
-          longitude?: number
-          updated_at?: string
-        }
-        Update: {
-          id?: boolean
-          latitude?: number
-          limite_mm_chuva?: number
-          limite_prob_chuva?: number
-          longitude?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      taludes_clima_snapshot: {
-        Row: {
-          atualizado_em: string
-          choveu: boolean
-          condicao: string | null
-          data: string
-          precipitacao_mm_prev: number | null
-          precipitacao_mm_real: number | null
-          prob_chuva_prev: number | null
-          temp_max: number | null
-          temp_min: number | null
-        }
-        Insert: {
-          atualizado_em?: string
-          choveu?: boolean
-          condicao?: string | null
-          data: string
-          precipitacao_mm_prev?: number | null
-          precipitacao_mm_real?: number | null
-          prob_chuva_prev?: number | null
-          temp_max?: number | null
-          temp_min?: number | null
-        }
-        Update: {
-          atualizado_em?: string
-          choveu?: boolean
-          condicao?: string | null
-          data?: string
-          precipitacao_mm_prev?: number | null
-          precipitacao_mm_real?: number | null
-          prob_chuva_prev?: number | null
-          temp_max?: number | null
-          temp_min?: number | null
-        }
-        Relationships: []
-      }
-      taludes_programacao: {
-        Row: {
-          created_at: string
-          data_programada: string
-          equipe: string
-          id: string
-          observacoes: string
-          os_atividade: string
-          situacao: Database["public"]["Enums"]["talude_situacao"]
-          talude: string
-          tipo_servico: Database["public"]["Enums"]["talude_tipo_servico"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          data_programada: string
-          equipe?: string
-          id?: string
-          observacoes?: string
-          os_atividade: string
-          situacao?: Database["public"]["Enums"]["talude_situacao"]
-          talude: string
-          tipo_servico?: Database["public"]["Enums"]["talude_tipo_servico"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          data_programada?: string
-          equipe?: string
-          id?: string
-          observacoes?: string
-          os_atividade?: string
-          situacao?: Database["public"]["Enums"]["talude_situacao"]
-          talude?: string
-          tipo_servico?: Database["public"]["Enums"]["talude_tipo_servico"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       user_roles: {
         Row: {
@@ -1657,14 +1489,6 @@ export type Database = {
       refrigeracao_os_status: "aberta" | "em_andamento" | "resolvida"
       refrigeracao_status_gestor: "novo" | "visto" | "andamento" | "resolvido"
       refrigeracao_urgencia: "baixa" | "media" | "alta" | "urgente"
-      talude_situacao: "programado" | "realizado" | "adiado_chuva" | "cancelado"
-      talude_tipo_servico:
-        | "rocada"
-        | "contencao"
-        | "drenagem"
-        | "inspecao"
-        | "plantio"
-        | "outro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1825,15 +1649,6 @@ export const Constants = {
       refrigeracao_os_status: ["aberta", "em_andamento", "resolvida"],
       refrigeracao_status_gestor: ["novo", "visto", "andamento", "resolvido"],
       refrigeracao_urgencia: ["baixa", "media", "alta", "urgente"],
-      talude_situacao: ["programado", "realizado", "adiado_chuva", "cancelado"],
-      talude_tipo_servico: [
-        "rocada",
-        "contencao",
-        "drenagem",
-        "inspecao",
-        "plantio",
-        "outro",
-      ],
     },
   },
 } as const
