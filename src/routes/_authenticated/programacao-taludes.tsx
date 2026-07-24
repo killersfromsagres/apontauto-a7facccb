@@ -107,7 +107,7 @@ function ProgramacaoTaludesPage() {
   const rain = useMemo(() => detectRain(data), [data]);
   // Status efetivo: se está chovendo (mesmo garoa), operação = SUSPENSA.
   const status = effectiveTaludeStatus(probHoje, rain);
-  const alertExternal = shouldAlertExternalActivities(probHoje) || rain.detected;
+  
 
   const panelRef = useRef<HTMLDivElement>(null);
 
