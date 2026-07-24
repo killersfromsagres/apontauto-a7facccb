@@ -27,7 +27,6 @@ import {
   Wrench,
   Cog,
   Zap,
-  Clock,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -151,10 +150,6 @@ const sections: MenuSection[] = [
       { key: "corretiva-historico", title: "Histórico de OS", url: "/corretiva-historico", icon: ScrollText },
       { key: "corretiva-gestor", title: "Gestão", url: "/corretiva-gestor", icon: Users },
     ],
-  },
-  {
-    kind: "item",
-    item: { key: "relogio", title: "Relógio Virtual", url: "/relogio", icon: Clock },
   },
   {
     kind: "item",
