@@ -1,19 +1,20 @@
 {
   "manifest_version": 3,
-  "name": "Apont Auto — Prisma4",
-  "version": "3.1.0",
-  "description": "Executa apontamentos de OS no Prisma4 lendo lotes do painel Apont Auto (Supabase).",
-  "permissions": ["storage", "activeTab", "scripting", "tabs", "notifications", "alarms"],
+  "name": "Apont Auto — Automação Prisma4",
+  "version": "1.0.0",
+  "description": "Executa apontamentos de OS no Prisma4 direto pelo navegador, integrado ao painel Apont Auto.",
+  "permissions": ["storage", "tabs", "scripting", "notifications", "alarms"],
   "host_permissions": [
     "https://cimogps.com.br/*",
     "https://*.cimogps.com.br/*",
-    "https://*.supabase.co/*"
+    "https://apontauto.lovable.app/*",
+    "https://*.lovable.app/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
-  "background": {
-    "service_worker": "background.js"
-  },
+  "background": { "service_worker": "background.js" },
   "action": {
-    "default_title": "Apont Auto — Prisma4",
+    "default_title": "Apont Auto — Automação Prisma4",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
@@ -31,8 +32,19 @@
   "content_scripts": [
     {
       "matches": ["https://cimogps.com.br/*", "https://*.cimogps.com.br/*"],
-      "js": ["content.js"],
+      "js": ["automation.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://apontauto.lovable.app/*",
+        "https://*.lovable.app/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*"
+      ],
+      "js": ["bridge.js"],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ]
 }

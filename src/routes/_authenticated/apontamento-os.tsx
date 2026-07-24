@@ -131,22 +131,38 @@ function ApontamentoOSPage() {
           setConfig={setConfig}
           onGerado={(item) => setHistorico((h) => [item, ...h])}
         />
-        <AutomacaoPlaywrightCard />
+        <ExtensaoCard />
         <HistoricoCard historico={historico} setHistorico={setHistorico} />
       </div>
     </PageShell>
   );
 }
 
-// ---------- Automação Playwright (CMD) ----------
-function AutomacaoPlaywrightCard() {
+// ---------- Extensão do navegador ----------
+function ExtensaoCard() {
+  const [instalada, setInstalada] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="apontauto-extension"]');
+    if (meta || document.documentElement.dataset.apontautoExtension) { setInstalada(true); return; }
+    const reqId = Math.random().toString(36).slice(2);
+    const onMsg = (ev: MessageEvent) => {
+      const d = ev.data as { source?: string; type?: string; requestId?: string } | null;
+      if (d?.source === "apontauto-extension" && d.type === "pong" && d.requestId === reqId) setInstalada(true);
+    };
+    window.addEventListener("message", onMsg);
+    window.postMessage({ source: "apontauto-panel", type: "ping", requestId: reqId }, "*");
+    const t = setTimeout(() => setInstalada((v) => v ?? false), 1200);
+    return () => { clearTimeout(t); window.removeEventListener("message", onMsg); };
+  }, []);
+
   const baixar = () => {
-    fetch("/apontamento-prisma4.zip")
+    fetch("/apontauto-prisma4-extension.zip")
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.blob(); })
       .then((blob) => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = "apontamento-prisma4.zip";
+        a.download = "apontauto-prisma4-extension.zip";
         a.click();
         URL.revokeObjectURL(a.href);
         toast.success("Download iniciado.");
@@ -157,22 +173,32 @@ function AutomacaoPlaywrightCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5 text-primary" /> Automação Playwright (CMD)</CardTitle>
-        <CardDescription>Baixe o script Node.js/Playwright que abre o Prisma4, preenche cada OS do lote e salva automaticamente.</CardDescription>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <CardTitle className="flex items-center gap-2"><Download className="h-5 w-5 text-primary" /> Extensão do navegador (Chrome/Edge)</CardTitle>
+            <CardDescription>Automação 100% pelo navegador. Envie o lote e execute direto no Prisma4 — sem CMD nem Node.js.</CardDescription>
+          </div>
+          {instalada !== null && (
+            <Badge variant={instalada ? "default" : "outline"} className={instalada ? "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/20" : ""}>
+              {instalada ? "Extensão detectada" : "Extensão não instalada"}
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <Button onClick={baixar} className="gap-2"><Download className="h-4 w-4" /> Baixar automação (.zip)</Button>
+          <Button onClick={baixar} className="gap-2"><Download className="h-4 w-4" /> Baixar extensão (.zip)</Button>
         </div>
         <ol className="list-decimal space-y-1.5 pl-5 text-sm text-muted-foreground">
           <li>Descompacte o ZIP em uma pasta local.</li>
-          <li>No CMD/PowerShell dentro da pasta: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npm install</code> e depois <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">npx playwright install chromium</code>.</li>
-          <li>Copie <code className="font-mono text-xs">.env.example</code> para <code className="font-mono text-xs">.env</code> e preencha <code className="font-mono text-xs">PRISMA_USUARIO</code>/<code className="font-mono text-xs">PRISMA_SENHA</code>.</li>
-          <li>No painel acima, clique <b>Baixar entradas-os.txt</b> e salve dentro da pasta da automação (substitui o existente).</li>
-          <li>Execute: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">node meczada.js</code> — ou com data forçada: <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">node meczada.js "09/07/2026 08:00"</code>.</li>
+          <li>Abra <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">chrome://extensions</code> (ou <code className="font-mono text-xs">edge://extensions</code>).</li>
+          <li>Ative <b>Modo desenvolvedor</b> e clique em <b>Carregar sem compactação</b>. Selecione a pasta descompactada.</li>
+          <li>Clique no ícone da extensão, informe seu <b>usuário/senha do Prisma4</b> e salve.</li>
+          <li>Recarregue esta página, monte o lote acima e clique em <b>Enviar para a extensão</b>.</li>
+          <li>Abra o Prisma4 (a extensão faz login automaticamente) e clique em <b>Executar próximo</b> no overlay verde.</li>
         </ol>
         <p className="text-xs text-muted-foreground">
-          A automação abre o Chromium, faz login no Prisma4 e processa cada OS: número, estado "Concluído", mão-de-obra por técnico/data/horário, procedimentos via data cabeçalho e (categoria refrigeração) medições MED = 0. Ao final, imprime a tabela de resultados.
+          A extensão replica o fluxo antigo do Playwright/CMD: número da OS → estado "Concluído" → mão-de-obra por técnico/data/horário → procedimentos via data cabeçalho → medições MED=0 (refrigeração) → salvar. Nada roda em servidor — as credenciais ficam só no seu navegador.
         </p>
       </CardContent>
     </Card>
@@ -518,26 +544,33 @@ function NovoLoteCard({
         )}
 
         <div className="flex flex-wrap gap-2">
-          <Button onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Gerar e copiar JSON</Button>
-          <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Gerar e baixar JSON</Button>
           <Button
-            variant="outline"
             className="gap-2"
             onClick={() => {
               if (colabIds.length === 0) { toast.error("Selecione ao menos um colaborador."); return; }
               if (osList.length === 0) { toast.error("Informe pelo menos uma OS."); return; }
-              const d = new Date(dataInicio);
-              if (Number.isNaN(d.getTime())) { toast.error("Data/hora inválida."); return; }
-              const inicio = `${fmtData(d)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
-              const txt =
-                `inicio: ${inicio}\n\n[LOTE]\ncategoria: ${categoria}\ntecnicos: ${colabIds.join(", ")}\nos: ${osList.join(",")}\n`;
-              downloadBlob(new Blob([txt], { type: "text/plain;charset=utf-8" }), "entradas-os.txt");
-              registrar();
-              toast.success("entradas-os.txt gerado.");
+              const batch = { ...gerarPayload(), id: uid(), source: "apontauto-panel" };
+              const reqId = Math.random().toString(36).slice(2);
+              const onAck = (ev: MessageEvent) => {
+                const d = ev.data as { source?: string; type?: string; requestId?: string; response?: { ok?: boolean; error?: string } } | null;
+                if (d?.source !== "apontauto-extension" || d.type !== "enqueue:ack" || d.requestId !== reqId) return;
+                window.removeEventListener("message", onAck);
+                clearTimeout(timer);
+                if (d.response?.ok) { toast.success("Lote enviado para a extensão."); registrar(); }
+                else toast.error(`Extensão recusou o lote: ${d.response?.error || "erro"}`);
+              };
+              const timer = setTimeout(() => {
+                window.removeEventListener("message", onAck);
+                toast.error("Extensão não respondeu. Instale-a e recarregue a página.");
+              }, 2500);
+              window.addEventListener("message", onAck);
+              window.postMessage({ source: "apontauto-panel", type: "enqueue", batch, requestId: reqId }, "*");
             }}
           >
-            <FileText className="h-4 w-4" /> Baixar entradas-os.txt
+            <Snowflake className="h-4 w-4" /> Enviar para a extensão
           </Button>
+          <Button variant="outline" onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Copiar JSON</Button>
+          <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Baixar JSON</Button>
         </div>
       </CardContent>
     </Card>
