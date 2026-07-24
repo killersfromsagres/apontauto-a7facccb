@@ -28,6 +28,7 @@ import {
   matchEquipe,
   type EquipeFiltro,
 } from "@/lib/refrigeracao/equipe";
+import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-historico")({
   component: HistoricoPage,
