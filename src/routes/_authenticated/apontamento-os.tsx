@@ -549,6 +549,15 @@ function NovoLoteCard({
             onClick={() => {
               if (colabIds.length === 0) { toast.error("Selecione ao menos um colaborador."); return; }
               if (osList.length === 0) { toast.error("Informe pelo menos uma OS."); return; }
+              const extInstalada =
+                !!document.querySelector('meta[name="apontauto-extension"]') ||
+                !!document.documentElement.dataset.apontautoExtension;
+              if (!extInstalada) {
+                toast.error("Extensão não detectada. Baixe/instale abaixo e recarregue a página.", {
+                  description: "Enquanto isso, use 'Baixar JSON' e importe manualmente.",
+                });
+                return;
+              }
               const batch = { ...gerarPayload(), id: uid(), source: "apontauto-panel" };
               const reqId = Math.random().toString(36).slice(2);
               const onAck = (ev: MessageEvent) => {
@@ -561,8 +570,8 @@ function NovoLoteCard({
               };
               const timer = setTimeout(() => {
                 window.removeEventListener("message", onAck);
-                toast.error("Extensão não respondeu. Instale-a e recarregue a página.");
-              }, 2500);
+                toast.error("Extensão não respondeu a tempo. Recarregue a página e tente novamente.");
+              }, 6000);
               window.addEventListener("message", onAck);
               window.postMessage({ source: "apontauto-panel", type: "enqueue", batch, requestId: reqId }, "*");
             }}
@@ -572,6 +581,7 @@ function NovoLoteCard({
           <Button variant="outline" onClick={gerarECopiar} className="gap-2"><Copy className="h-4 w-4" /> Copiar JSON</Button>
           <Button variant="outline" onClick={gerarEBaixar} className="gap-2"><Download className="h-4 w-4" /> Baixar JSON</Button>
         </div>
+
       </CardContent>
     </Card>
   );
