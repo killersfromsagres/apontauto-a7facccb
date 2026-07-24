@@ -37,5 +37,30 @@ $("clear").addEventListener("click", async () => {
   refresh();
 });
 
+$("import").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", async (ev) => {
+  const file = ev.target.files?.[0];
+  if (!file) return;
+  try {
+    const txt = await file.text();
+    const data = JSON.parse(txt);
+    const batches = Array.isArray(data) ? data : [data];
+    let ok = 0, fail = 0;
+    for (const b of batches) {
+      if (!b || typeof b !== "object") { fail++; continue; }
+      const batch = { ...b, source: b.source || "apontauto-panel" };
+      const resp = await chrome.runtime.sendMessage({ type: "apontauto:enqueue", batch });
+      if (resp?.ok) ok++; else fail++;
+    }
+    $("status").textContent = `Importado: ${ok} lote(s)${fail ? ` · ${fail} falha(s)` : ""}.`;
+    refresh();
+  } catch (e) {
+    $("status").textContent = `JSON inválido: ${e.message}`;
+  } finally {
+    ev.target.value = "";
+  }
+});
+
 chrome.storage.onChanged.addListener(refresh);
 refresh();
+
