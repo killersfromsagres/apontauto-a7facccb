@@ -9,6 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { listReminders, type Reminder } from "@/lib/reminders";
 import { supabase } from "@/integrations/supabase/client";
+import { useMyAccess } from "@/hooks/use-my-access";
+
 
 function daysUntil(dateStr: string) {
   const t = new Date();
@@ -20,15 +22,26 @@ function daysUntil(dateStr: string) {
 
 export function SlaBell() {
   const qc = useQueryClient();
+  const { access, loading: accessLoading } = useMyAccess();
+  // Só usuários com acesso a "outros" (lembretes/SLA) precisam do sino.
+  // Evita fetch + realtime channel desnecessário para colaboradores restritos
+  // (climatizacao, corretivas etc.) — economiza uma conexão ws e uma query.
+  const canSeeReminders =
+    !accessLoading &&
+    (access.isAdmin || access.allowed === null || (access.allowed?.includes("outros") ?? false));
+
   // Shares cache with /outros page — no duplicated fetch.
   const { data: items = [] } = useQuery<Reminder[]>({
     queryKey: ["reminders"],
     queryFn: listReminders,
     staleTime: 60_000,
+    enabled: canSeeReminders,
   });
 
-  // Realtime only; no polling.
+
+  // Realtime only; no polling. Só assina quando o usuário pode ver lembretes.
   useEffect(() => {
+    if (!canSeeReminders) return;
     const channel = supabase
       .channel("reminders-bell")
       .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, () => {
@@ -38,7 +51,8 @@ export function SlaBell() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qc]);
+  }, [qc, canSeeReminders]);
+
 
   const alerts = useMemo(
     () =>
@@ -50,7 +64,11 @@ export function SlaBell() {
     [items],
   );
 
+  // Colaborador sem acesso a lembretes: não renderiza o sino (economiza ícone/popover).
+  if (!canSeeReminders) return null;
+
   return (
+
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">

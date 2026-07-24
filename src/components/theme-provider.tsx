@@ -10,20 +10,21 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("dark");
-
-  useEffect(() => {
-    const stored = (typeof window !== "undefined" && localStorage.getItem("theme")) as Theme | null;
-    const initial: Theme =
-      stored ?? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-    setThemeState(initial);
-  }, []);
+  // Inicialização síncrona (evita flash de tema errado no primeiro paint).
+  // Em SSR/pre-render usa "dark" como fallback consistente com <html> antes da hidratação.
+  const [theme, setThemeState] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "dark";
+    const stored = localStorage.getItem("theme") as Theme | null;
+    if (stored === "light" || stored === "dark") return stored;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("theme", theme);
+    try { localStorage.setItem("theme", theme); } catch {}
   }, [theme]);
+
 
   return (
     <ThemeContext.Provider
