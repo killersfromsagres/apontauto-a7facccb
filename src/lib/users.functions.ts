@@ -114,7 +114,6 @@ export const MENU_KEYS = [
   "corretiva-historico",
   "corretiva-gestor",
   "taludes",
-  "programacao-taludes",
   "apontamentos",
   "painel-legal",
   "refrigeracao",
