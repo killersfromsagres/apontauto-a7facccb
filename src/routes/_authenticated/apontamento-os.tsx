@@ -131,7 +131,7 @@ function ApontamentoOSPage() {
           setConfig={setConfig}
           onGerado={(item) => setHistorico((h) => [item, ...h])}
         />
-        <AutomacaoPlaywrightCard />
+        <ExtensaoCard />
         <HistoricoCard historico={historico} setHistorico={setHistorico} />
       </div>
     </PageShell>
