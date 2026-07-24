@@ -162,41 +162,7 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
           {days.map((d) => {
             const info = weatherCodeInfo(d.code);
             const isToday = d.iso === todayIso;
-            const prob = Math.max(0, Math.min(100, Number.isFinite(d.prob) ? d.prob : 0));
-            const rainMm = Math.max(0, Number.isFinite(d.rain) ? d.rain : 0);
-            const alert = shouldAlertExternalActivities(prob);
-            const anyRain = prob >= 25 || rainMm >= 0.2;
-            const barWidth = Math.max(prob > 0 ? 6 : 2, Math.min(100, prob));
-
-            const tone =
-              prob >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD
-                ? {
-                    ring: "border-red-500/60 ring-1 ring-red-500/40 shadow-[0_0_25px_-8px_rgba(239,68,68,0.55)]",
-                    text: "text-red-600 dark:text-red-400",
-                    bar: "bg-[linear-gradient(90deg,#ef4444,#dc2626)]",
-                    glow: "shadow-[0_0_10px_rgba(239,68,68,0.55)]",
-                  }
-                : prob >= 40
-                  ? {
-                      ring: "border-amber-500/50 ring-1 ring-amber-500/30",
-                      text: "text-amber-600 dark:text-amber-400",
-                      bar: "bg-[linear-gradient(90deg,#f59e0b,#d97706)]",
-                      glow: "shadow-[0_0_8px_rgba(245,158,11,0.45)]",
-                    }
-                  : anyRain
-                    ? {
-                        ring: "border-sky-500/50 ring-1 ring-sky-500/30",
-                        text: "text-sky-600 dark:text-sky-400",
-                        bar: "bg-[linear-gradient(90deg,#38bdf8,#0284c7)]",
-                        glow: "shadow-[0_0_8px_rgba(56,189,248,0.45)]",
-                      }
-                    : {
-                        ring: "",
-                        text: "text-emerald-600 dark:text-emerald-400",
-                        bar: "bg-[linear-gradient(90deg,#34d399,#10b981)]",
-                        glow: "",
-                      };
-
+            const alert = shouldAlertExternalActivities(d.prob);
             return (
               <div
                 key={d.iso}
@@ -204,17 +170,12 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   "group relative flex w-40 shrink-0 snap-start flex-col rounded-xl border p-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg",
                   "border-border/50 bg-background/60 backdrop-blur",
                   isToday && "border-primary/60 ring-1 ring-primary/40",
-                  tone.ring,
+                  alert && "border-red-500/50 ring-1 ring-red-500/30",
                 )}
               >
                 {isToday && (
                   <span className="absolute -top-2 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary-foreground shadow-md">
                     Hoje
-                  </span>
-                )}
-                {alert && !isToday && (
-                  <span className="absolute -top-2 right-2 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-black text-white shadow ring-2 ring-background">
-                    !
                   </span>
                 )}
                 <div className="flex items-baseline justify-between">
@@ -227,12 +188,7 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                       {String(d.date.getMonth() + 1).padStart(2, "0")}
                     </div>
                   </div>
-                  <div
-                    className={cn(
-                      "text-3xl leading-none transition-transform duration-300 group-hover:scale-110",
-                      alert && "animate-pulse",
-                    )}
-                  >
+                  <div className="text-3xl leading-none transition-transform duration-300 group-hover:scale-110">
                     {info.emoji}
                   </div>
                 </div>
@@ -257,33 +213,38 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                       <CloudRain className="h-3 w-3" />
                       Chuva
                     </span>
-                    <span className={cn("font-bold tabular-nums", tone.text)}>
-                      {Math.round(prob)}%
+                    <span
+                      className={cn(
+                        "font-bold",
+                        d.prob >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD
+                          ? "text-red-600 dark:text-red-400"
+                          : d.prob >= 40
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-emerald-600 dark:text-emerald-400",
+                      )}
+                    >
+                      {Math.round(d.prob)}%
                     </span>
                   </div>
-                  <div className="relative h-2 overflow-hidden rounded-full bg-muted/70 ring-1 ring-inset ring-border/40">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted/60">
                     <div
                       className={cn(
-                        "absolute inset-y-0 left-0 rounded-full transition-[width] duration-700 ease-out",
-                        tone.bar,
-                        tone.glow,
+                        "h-full rounded-full transition-all duration-500",
+                        d.prob >= EXTERNAL_ACTIVITY_ALERT_THRESHOLD
+                          ? "bg-gradient-to-r from-red-500 to-red-600"
+                          : d.prob >= 40
+                            ? "bg-gradient-to-r from-amber-400 to-amber-500"
+                            : "bg-gradient-to-r from-emerald-400 to-emerald-500",
                       )}
-                      style={{ width: `${barWidth}%` }}
+                      style={{ width: `${Math.max(4, Math.min(100, d.prob))}%` }}
                     />
-                    {anyRain && (
-                      <div
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0 animate-pulse bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.25),transparent)]"
-                        style={{ width: `${barWidth}%` }}
-                      />
-                    )}
                   </div>
                 </div>
 
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     <Droplets className="h-2.5 w-2.5" />
-                    {rainMm.toFixed(1)}mm
+                    {d.rain.toFixed(1)}mm
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <Wind className="h-2.5 w-2.5" />
@@ -291,21 +252,16 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </span>
                 </div>
 
-                {alert ? (
+                {alert && (
                   <div className="mt-2 inline-flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-red-700 dark:text-red-300">
                     <HardHat className="h-2.5 w-2.5" />
                     Externo em risco
                   </div>
-                ) : anyRain ? (
-                  <div className="mt-2 inline-flex items-center gap-1 rounded-md border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-sky-700 dark:text-sky-300">
-                    <CloudRain className="h-2.5 w-2.5" />
-                    Possível chuva fraca
-                  </div>
-                ) : null}
+                )}
 
                 <div className="sr-only">
                   {WEEK_LONG[d.dow]} — {info.label} — máx {Math.round(d.tmax)}° / mín{" "}
-                  {Math.round(d.tmin)}° — {Math.round(prob)}% de chuva
+                  {Math.round(d.tmin)}° — {Math.round(d.prob)}% de chuva
                 </div>
               </div>
             );
