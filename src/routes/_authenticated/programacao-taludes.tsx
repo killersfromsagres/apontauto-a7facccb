@@ -111,30 +111,40 @@ function ProgramacaoTaludesPage() {
     silent?: boolean;
   }) => {
     if (!data || !panelRef.current) return null;
-    const { toPng } = await import("html-to-image");
+    const [{ toPng }, { uploadImageToImgBB }] = await Promise.all([
+      import("html-to-image"),
+      import("@/lib/imgbb"),
+    ]);
     const dataUrl = await toPng(panelRef.current, {
       pixelRatio: 2,
       backgroundColor: "#0b1220",
     });
     const hoje = todayISO();
+
+    // Converte dataURL -> Blob e envia ao ImgBB (evita sobrecarregar o Supabase).
+    const blob = await (await fetch(dataUrl)).blob();
+    const filename = `evidencia-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
+    let hostedUrl = dataUrl;
+    try {
+      const up = await uploadImageToImgBB(blob, filename);
+      hostedUrl = up.display_url || up.url;
+    } catch (err) {
+      // fallback: mantém dataURL localmente para não perder o registro.
+      console.warn("[evidencia] ImgBB indisponível, salvando base64:", err);
+    }
+
     const mensagemFinal = opts.intensity
       ? `[${opts.label}] ${opts.mensagem}`
       : opts.mensagem;
     const ev = await registrarEvidencia({
       data: hoje,
       mensagem: mensagemFinal,
-      imagem_data_url: dataUrl,
+      imagem_data_url: hostedUrl,
       temperatura: current?.temperature_2m ?? null,
       condicao: opts.label,
       precipitacao_mm: rain.mm_dia || rainSumHoje,
       prob_chuva: probHoje,
     });
-    if (!opts.silent) {
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `evidencia-chuva-taludes-${opts.intensity ?? "manual"}-${hoje}.png`;
-      a.click();
-    }
     qc.invalidateQueries({ queryKey: ["taludes-chuva-evidencias"] });
     return ev;
   };
