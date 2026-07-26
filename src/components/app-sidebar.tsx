@@ -27,6 +27,8 @@ import {
   Wrench,
   Cog,
   Zap,
+  Sparkles,
+
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
