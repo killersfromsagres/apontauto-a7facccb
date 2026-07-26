@@ -40,6 +40,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as AuthenticatedApontArcanoRouteImport } from './routes/_authenticated/apont-arcano'
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -213,6 +214,12 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedApontArcanoRoute =
+  AuthenticatedApontArcanoRouteImport.update({
+    id: '/apont-arcano',
+    path: '/apont-arcano',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicImgbbUploadRoute = ApiPublicImgbbUploadRouteImport.update({
   id: '/api/public/imgbb-upload',
   path: '/api/public/imgbb-upload',
@@ -237,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/apont-arcano': typeof AuthenticatedApontArcanoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -271,6 +279,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/apont-arcano': typeof AuthenticatedApontArcanoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -308,6 +317,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/_authenticated/apont-arcano': typeof AuthenticatedApontArcanoRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/apont-arcano'
     | '/apontamentos'
     | '/backorder'
     | '/clima-tempo'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/apont-arcano'
     | '/apontamentos'
     | '/backorder'
     | '/clima-tempo'
@@ -416,6 +428,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/_authenticated/apont-arcano'
     | '/_authenticated/apontamentos'
     | '/_authenticated/backorder'
     | '/_authenticated/clima-tempo'
@@ -678,6 +691,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/apont-arcano': {
+      id: '/_authenticated/apont-arcano'
+      path: '/apont-arcano'
+      fullPath: '/apont-arcano'
+      preLoaderRoute: typeof AuthenticatedApontArcanoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/imgbb-upload': {
       id: '/api/public/imgbb-upload'
       path: '/api/public/imgbb-upload'
@@ -703,6 +723,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedApontArcanoRoute: typeof AuthenticatedApontArcanoRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
@@ -729,6 +750,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedApontArcanoRoute: AuthenticatedApontArcanoRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
