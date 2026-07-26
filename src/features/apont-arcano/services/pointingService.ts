@@ -106,7 +106,7 @@ export async function createBatch(params: {
   jobs: JobPayload[];
 }): Promise<string> {
   const { data, error } = await supabase.rpc("create_pointing_batch", {
-    p_name: params.name,
+    p_name: params.name ?? "",
     p_team_id: params.teamId,
     p_settings: params.settings as never,
     p_jobs: params.jobs as never,
