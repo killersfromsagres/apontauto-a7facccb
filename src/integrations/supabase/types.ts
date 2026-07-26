@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      agent_devices: {
-        Row: {
-          app_version: string | null
-          created_at: string
-          device_name: string
-          id: string
-          last_seen_at: string
-          metadata: Json
-          platform: string | null
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          app_version?: string | null
-          created_at?: string
-          device_name?: string
-          id?: string
-          last_seen_at?: string
-          metadata?: Json
-          platform?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          app_version?: string | null
-          created_at?: string
-          device_name?: string
-          id?: string
-          last_seen_at?: string
-          metadata?: Json
-          platform?: string | null
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       app_settings: {
         Row: {
           created_at: string
@@ -682,198 +643,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      maintenance_teams: {
-        Row: {
-          active: boolean
-          category: string
-          created_at: string
-          duration_minutes: number
-          duration_text: string
-          id: string
-          name: string
-          technicians: string[]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          active?: boolean
-          category?: string
-          created_at?: string
-          duration_minutes?: number
-          duration_text?: string
-          id?: string
-          name: string
-          technicians?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          active?: boolean
-          category?: string
-          created_at?: string
-          duration_minutes?: number
-          duration_text?: string
-          id?: string
-          name?: string
-          technicians?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pointing_batches: {
-        Row: {
-          created_at: string
-          id: string
-          name: string | null
-          settings: Json
-          status: string
-          team_id: string | null
-          team_name: string | null
-          total_jobs: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name?: string | null
-          settings?: Json
-          status?: string
-          team_id?: string | null
-          team_name?: string | null
-          total_jobs?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string | null
-          settings?: Json
-          status?: string
-          team_id?: string | null
-          team_name?: string | null
-          total_jobs?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pointing_batches_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pointing_jobs: {
-        Row: {
-          agent_id: string | null
-          attempts: number
-          batch_id: string
-          category: string
-          claimed_at: string | null
-          created_at: string
-          duration_minutes: number
-          duration_text: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          os_number: string
-          position: number
-          result_message: string | null
-          scheduled_end: string
-          scheduled_start: string
-          screenshot_path: string | null
-          stage: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["pointing_job_status"]
-          team_id: string | null
-          team_name: string
-          technicians: string[]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          agent_id?: string | null
-          attempts?: number
-          batch_id: string
-          category?: string
-          claimed_at?: string | null
-          created_at?: string
-          duration_minutes?: number
-          duration_text?: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          os_number: string
-          position?: number
-          result_message?: string | null
-          scheduled_end: string
-          scheduled_start: string
-          screenshot_path?: string | null
-          stage?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["pointing_job_status"]
-          team_id?: string | null
-          team_name?: string
-          technicians?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Update: {
-          agent_id?: string | null
-          attempts?: number
-          batch_id?: string
-          category?: string
-          claimed_at?: string | null
-          created_at?: string
-          duration_minutes?: number
-          duration_text?: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          os_number?: string
-          position?: number
-          result_message?: string | null
-          scheduled_end?: string
-          scheduled_start?: string
-          screenshot_path?: string | null
-          stage?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["pointing_job_status"]
-          team_id?: string | null
-          team_name?: string
-          technicians?: string[]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pointing_jobs_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "agent_devices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pointing_jobs_batch_id_fkey"
-            columns: ["batch_id"]
-            isOneToOne: false
-            referencedRelation: "pointing_batches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pointing_jobs_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_teams"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       preventiva_ac_registros: {
         Row: {
@@ -1679,87 +1448,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cancel_queued_pointing_job: {
-        Args: { p_job_id: string }
-        Returns: {
-          agent_id: string | null
-          attempts: number
-          batch_id: string
-          category: string
-          claimed_at: string | null
-          created_at: string
-          duration_minutes: number
-          duration_text: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          os_number: string
-          position: number
-          result_message: string | null
-          scheduled_end: string
-          scheduled_start: string
-          screenshot_path: string | null
-          stage: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["pointing_job_status"]
-          team_id: string | null
-          team_name: string
-          technicians: string[]
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "pointing_jobs"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
-      claim_pointing_jobs: {
-        Args: { p_agent_id: string; p_limit?: number }
-        Returns: {
-          agent_id: string | null
-          attempts: number
-          batch_id: string
-          category: string
-          claimed_at: string | null
-          created_at: string
-          duration_minutes: number
-          duration_text: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          os_number: string
-          position: number
-          result_message: string | null
-          scheduled_end: string
-          scheduled_start: string
-          screenshot_path: string | null
-          stage: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["pointing_job_status"]
-          team_id: string | null
-          team_name: string
-          technicians: string[]
-          updated_at: string
-          user_id: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "pointing_jobs"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      create_pointing_batch: {
-        Args: {
-          p_jobs: Json
-          p_name: string
-          p_settings: Json
-          p_team_id: string
-        }
-        Returns: string
-      }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
@@ -1767,46 +1455,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      requeue_stale_pointing_jobs: {
-        Args: { p_minutes?: number }
-        Returns: number
-      }
-      retry_pointing_job: {
-        Args: { p_job_id: string }
-        Returns: {
-          agent_id: string | null
-          attempts: number
-          batch_id: string
-          category: string
-          claimed_at: string | null
-          created_at: string
-          duration_minutes: number
-          duration_text: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          os_number: string
-          position: number
-          result_message: string | null
-          scheduled_end: string
-          scheduled_start: string
-          screenshot_path: string | null
-          stage: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["pointing_job_status"]
-          team_id: string | null
-          team_name: string
-          technicians: string[]
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "pointing_jobs"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       sst_can_access: { Args: never; Returns: boolean }
     }
@@ -1820,13 +1468,6 @@ export type Database = {
         | "rejeitado"
         | "concluido"
       corretiva_urgencia: "baixa" | "media" | "alta"
-      pointing_job_status:
-        | "queued"
-        | "processing"
-        | "review"
-        | "completed"
-        | "failed"
-        | "cancelled"
       prisma_lote_categoria: "refrigeracao" | "geral"
       prisma_lote_status:
         | "rascunho"
@@ -1985,14 +1626,6 @@ export const Constants = {
         "concluido",
       ],
       corretiva_urgencia: ["baixa", "media", "alta"],
-      pointing_job_status: [
-        "queued",
-        "processing",
-        "review",
-        "completed",
-        "failed",
-        "cancelled",
-      ],
       prisma_lote_categoria: ["refrigeracao", "geral"],
       prisma_lote_status: [
         "rascunho",

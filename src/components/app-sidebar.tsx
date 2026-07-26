@@ -27,8 +27,6 @@ import {
   Wrench,
   Cog,
   Zap,
-  Sparkles,
-
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -116,10 +114,9 @@ const sections: MenuSection[] = [
       { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: ChartColumn },
       { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageOpen },
       { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
-      { key: "apont-arcano", title: "Apont Arcano", url: "/apont-arcano", icon: Sparkles },
+      
       { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: Scale },
     ],
-
   },
   {
     kind: "group",

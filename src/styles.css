@@ -1676,39 +1676,3 @@ body {
     font-size: 16px; /* evita zoom automático no iOS */
   }
 }
-
-/* ── Apont Arcano — painel arcano (preto profundo + violeta pulsante) ───────── */
-.arcano-hero {
-  background:
-    radial-gradient(120% 140% at 12% 0%, color-mix(in oklab, var(--primary) 18%, transparent), transparent 62%),
-    radial-gradient(90% 120% at 100% 100%, color-mix(in oklab, var(--primary) 12%, transparent), transparent 60%),
-    color-mix(in oklab, var(--background) 88%, black);
-}
-.arcano-hero::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  border: 1px solid color-mix(in oklab, var(--primary) 34%, transparent);
-  animation: arcano-pulse 3.6s ease-in-out infinite;
-}
-.arcano-panel {
-  background: color-mix(in oklab, var(--background) 82%, black);
-  border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
-  backdrop-filter: blur(10px);
-}
-.arcano-row {
-  transition: border-color 0.25s ease, background-color 0.25s ease, transform 0.25s ease;
-}
-.arcano-row:hover {
-  border-color: color-mix(in oklab, var(--primary) 38%, transparent);
-  background-color: color-mix(in oklab, var(--primary) 6%, transparent);
-}
-@keyframes arcano-pulse {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .arcano-hero::after { animation: none; }
-}
