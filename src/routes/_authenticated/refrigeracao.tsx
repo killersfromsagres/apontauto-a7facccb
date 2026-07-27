@@ -295,7 +295,7 @@ function RefrigeracaoPage() {
       {!selected ? (
         <GlassCard className="p-4">
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2 sm:min-w-[240px]">
+            <div className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-2 sm:min-w-[240px]">
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Minha equipe
               </span>
