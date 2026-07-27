@@ -20,11 +20,11 @@ export function PageShell({
           {eyebrow && (
             <div className="text-eyebrow mb-2">{eyebrow}</div>
           )}
-          <h2 className="font-display text-2xl font-bold leading-[1.1] tracking-tight sm:text-4xl md:text-5xl">
+          <h2 className="font-display text-[1.375rem] font-bold leading-[1.15] tracking-tight sm:text-4xl md:text-5xl">
             <span className="text-gradient break-words">{title}</span>
           </h2>
           {description && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground sm:mt-3 sm:text-base">
+            <p className="mt-1.5 line-clamp-3 max-w-2xl text-[13px] leading-relaxed text-muted-foreground sm:mt-3 sm:line-clamp-none sm:text-base">
               {description}
             </p>
           )}

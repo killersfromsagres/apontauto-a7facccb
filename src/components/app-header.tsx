@@ -62,14 +62,14 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border/50 bg-background/70 px-3 pt-[env(safe-area-inset-top)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:gap-3 sm:px-4">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 sm:h-16 border-b border-border/50 bg-background/70 px-3 pt-[env(safe-area-inset-top)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:gap-3 sm:px-4">
       <SidebarToggle />
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <div className="relative shrink-0">
           <img
             src={logoAsset.url}
             alt="Apont Auto — Sistema Automático de Apontamento"
-            className="relative h-10 w-10 object-contain sm:h-12 sm:w-12"
+            className="relative h-9 w-9 object-contain sm:h-12 sm:w-12"
             loading="eager"
             decoding="async"
             fetchPriority="high"
