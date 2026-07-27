@@ -718,13 +718,18 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
       const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
 
+      const normz = (s: unknown) =>
+        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       let auto = 0;
       const classificadas = rows.map((r) => {
+        const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
+        if (cadastrada) return { ...r, equipe: cadastrada };
         if (equipeReconhecida(r.equipe)) return r;
         const c = classificarEquipeOs(r, nomes);
         auto++;
         return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
       });
+
       setAutoCount(auto);
       setPreview(classificadas);
       if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
