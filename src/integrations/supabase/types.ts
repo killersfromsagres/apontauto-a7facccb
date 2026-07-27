@@ -304,6 +304,9 @@ export type Database = {
       corretiva_os: {
         Row: {
           andar: string | null
+          assinatura_em: string | null
+          assinatura_nome: string | null
+          assinatura_url: string | null
           ativo: string
           created_at: string
           criado_por: string | null
@@ -325,6 +328,9 @@ export type Database = {
         }
         Insert: {
           andar?: string | null
+          assinatura_em?: string | null
+          assinatura_nome?: string | null
+          assinatura_url?: string | null
           ativo: string
           created_at?: string
           criado_por?: string | null
@@ -346,6 +352,9 @@ export type Database = {
         }
         Update: {
           andar?: string | null
+          assinatura_em?: string | null
+          assinatura_nome?: string | null
+          assinatura_url?: string | null
           ativo?: string
           created_at?: string
           criado_por?: string | null
@@ -374,6 +383,7 @@ export type Database = {
           descricao: string
           enviado_por: string | null
           id: string
+          modelo: string | null
           observacao: string | null
           os_id: string
           quantidade: number
@@ -387,6 +397,7 @@ export type Database = {
           descricao: string
           enviado_por?: string | null
           id?: string
+          modelo?: string | null
           observacao?: string | null
           os_id: string
           quantidade?: number
@@ -400,6 +411,7 @@ export type Database = {
           descricao?: string
           enviado_por?: string | null
           id?: string
+          modelo?: string | null
           observacao?: string | null
           os_id?: string
           quantidade?: number
