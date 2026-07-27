@@ -22,7 +22,9 @@ import {
   Fan,
   AirVent,
   Wrench,
+  ClipboardList,
   Cog,
+
   type LucideIcon,
 } from "lucide-react";
 
