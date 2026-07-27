@@ -233,6 +233,132 @@ export type Database = {
         }
         Relationships: []
       }
+      controle_centros_custo: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          observacao: string | null
+          responsavel: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          observacao?: string | null
+          responsavel?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          observacao?: string | null
+          responsavel?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      controle_envios_facilities: {
+        Row: {
+          canal: string | null
+          centro_custo: string | null
+          created_at: string
+          criado_por: string | null
+          destinatario: string | null
+          enviado_em: string
+          id: string
+          itens: Json
+          observacao: string | null
+          total_itens: number
+        }
+        Insert: {
+          canal?: string | null
+          centro_custo?: string | null
+          created_at?: string
+          criado_por?: string | null
+          destinatario?: string | null
+          enviado_em?: string
+          id?: string
+          itens?: Json
+          observacao?: string | null
+          total_itens?: number
+        }
+        Update: {
+          canal?: string | null
+          centro_custo?: string | null
+          created_at?: string
+          criado_por?: string | null
+          destinatario?: string | null
+          enviado_em?: string
+          id?: string
+          itens?: Json
+          observacao?: string | null
+          total_itens?: number
+        }
+        Relationships: []
+      }
+      controle_materiais_meta: {
+        Row: {
+          atualizado_por: string | null
+          centro_custo: string | null
+          created_at: string
+          data_solicitacao_facilities: string | null
+          fornecedor: string | null
+          id: string
+          item_id: string
+          numero_requisicao: string | null
+          observacao: string | null
+          origem: string
+          solicitado_por: string | null
+          status_compra: string
+          tipo: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          atualizado_por?: string | null
+          centro_custo?: string | null
+          created_at?: string
+          data_solicitacao_facilities?: string | null
+          fornecedor?: string | null
+          id?: string
+          item_id: string
+          numero_requisicao?: string | null
+          observacao?: string | null
+          origem: string
+          solicitado_por?: string | null
+          status_compra?: string
+          tipo: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          atualizado_por?: string | null
+          centro_custo?: string | null
+          created_at?: string
+          data_solicitacao_facilities?: string | null
+          fornecedor?: string | null
+          id?: string
+          item_id?: string
+          numero_requisicao?: string | null
+          observacao?: string | null
+          origem?: string
+          solicitado_por?: string | null
+          status_compra?: string
+          tipo?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: []
+      }
       corretiva_equipes: {
         Row: {
           colaboradores: string

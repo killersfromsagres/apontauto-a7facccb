@@ -118,6 +118,7 @@ export const MENU_KEYS = [
   "painel-legal",
   "refrigeracao",
   "refrigeracao-gestor",
+  "controle-materiais",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
@@ -374,4 +375,62 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
       .upsert({ id: data.userId, allowed_menus: data.allowed } as any, { onConflict: "id" });
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+/**
+ * Provisiona (cria ou atualiza) o login dedicado ao módulo
+ * "Controle de Materiais". Somente administradores podem executar.
+ */
+export const provisionControleUser = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .handler(async ({ context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    const login = "controle";
+    const email = loginToEmail(login);
+    const password = "123456@felipe";
+    const allowed = ["controle-materiais"];
+
+    const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    if (listErr) throw new Error(listErr.message);
+
+    let user = list.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    let created = false;
+
+    if (!user) {
+      const { data: createdRes, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { login, full_name: "Controle de Materiais" },
+      });
+      if (createErr) throw new Error(createErr.message);
+      user = createdRes.user!;
+      created = true;
+    } else {
+      const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        password,
+        email_confirm: true,
+        ban_duration: "none",
+        user_metadata: { login, full_name: "Controle de Materiais" },
+      } as any);
+      if (updErr) throw new Error(updErr.message);
+    }
+
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert(
+        { id: user.id, full_name: "Controle de Materiais", allowed_menus: allowed } as any,
+        { onConflict: "id" },
+      );
+    if (profErr) throw new Error(profErr.message);
+
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
+    await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
+
+    return { ok: true, created, login, email };
   });

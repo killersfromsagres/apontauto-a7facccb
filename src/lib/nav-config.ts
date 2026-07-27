@@ -22,7 +22,9 @@ import {
   Fan,
   AirVent,
   Wrench,
+  ClipboardList,
   Cog,
+
   type LucideIcon,
 } from "lucide-react";
 
@@ -124,10 +126,26 @@ export const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "suprimentos-grp",
+    title: "Suprimentos",
+    icon: PackageOpen,
+    items: [
+      {
+        key: "controle-materiais",
+        title: "Controle de Materiais",
+        short: "Materiais",
+        url: "/controle-materiais",
+        icon: ClipboardList,
+      },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: Cog },
   },
 ];
+
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [

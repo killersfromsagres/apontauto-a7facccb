@@ -5,6 +5,7 @@ import { RotateCcw, Save, Plus, X, HardDrive, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { migrateRefrigLegacyPhotosToImgBB } from "@/lib/refrigeracao/migrate-to-imgbb.functions";
+import { provisionControleUser } from "@/lib/users.functions";
 
 
 import { PageShell } from "@/components/page-shell";
@@ -138,6 +139,7 @@ function Page() {
       </div>
 
       <StorageMigrationCard />
+      <ControleAccessCard />
     </PageShell>
   );
 }
@@ -225,6 +227,51 @@ function StorageMigrationCard() {
   );
 }
 
+
+function ControleAccessCard() {
+  const { isAdmin } = useIsAdmin();
+  const provision = useServerFn(provisionControleUser);
+  const [running, setRunning] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const run = async () => {
+    setRunning(true);
+    try {
+      const r: any = await provision();
+      toast.success(
+        r?.created
+          ? "Login \"controle\" criado com acesso ao Controle de Materiais."
+          : "Login \"controle\" atualizado (senha e permissões aplicadas).",
+      );
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao provisionar o acesso.");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <GlassCard className="mt-4">
+      <div className="flex items-start gap-3">
+        <HardDrive className="mt-0.5 h-5 w-5 text-primary" />
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+            Acesso — Controle de Materiais
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Cria (ou reaplica) o login <strong>controle</strong>, com acesso exclusivo ao módulo
+            Controle de Materiais.
+          </p>
+          <Button size="sm" className="mt-3" onClick={() => run()} disabled={running}>
+            {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Provisionar login "controle"
+          </Button>
+        </div>
+      </div>
+    </GlassCard>
+  );
+}
 
 function TimeField({
   label, value, onChange,
