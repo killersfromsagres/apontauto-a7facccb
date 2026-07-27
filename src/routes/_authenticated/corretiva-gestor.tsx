@@ -583,10 +583,16 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
     try {
       const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
+      const normz = (s: unknown) =>
+        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const rows = parsed.linhas.map((r) => {
+        const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
+        if (cadastrada) return { ...r, equipe: cadastrada };
+        if (equipeReconhecida(r.equipe)) return r;
         const c = classificarEquipeOs(r, nomes);
         return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
       });
+
       const { error, count } = await supabase
         .from("corretiva_os")
         .upsert(rows as any, { onConflict: "numero_os", count: "exact" });
