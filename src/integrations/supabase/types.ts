@@ -310,6 +310,7 @@ export type Database = {
           ativo: string
           created_at: string
           criado_por: string | null
+          data_criacao: string | null
           data_programada: string | null
           data_sla: string | null
           equipamento: string
@@ -322,6 +323,7 @@ export type Database = {
           numero_os: string
           patrimonio: string | null
           predio: string | null
+          solicitante: string | null
           status: Database["public"]["Enums"]["corretiva_os_status"]
           tipo: string | null
           updated_at: string
@@ -334,6 +336,7 @@ export type Database = {
           ativo: string
           created_at?: string
           criado_por?: string | null
+          data_criacao?: string | null
           data_programada?: string | null
           data_sla?: string | null
           equipamento: string
@@ -346,6 +349,7 @@ export type Database = {
           numero_os: string
           patrimonio?: string | null
           predio?: string | null
+          solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
           updated_at?: string
@@ -358,6 +362,7 @@ export type Database = {
           ativo?: string
           created_at?: string
           criado_por?: string | null
+          data_criacao?: string | null
           data_programada?: string | null
           data_sla?: string | null
           equipamento?: string
@@ -370,6 +375,7 @@ export type Database = {
           numero_os?: string
           patrimonio?: string | null
           predio?: string | null
+          solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
           updated_at?: string

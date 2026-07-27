@@ -14,6 +14,8 @@ import {
   Loader2,
   Wrench,
   Filter,
+  FileSpreadsheet,
+  ClipboardPaste,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -41,6 +43,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
 import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
 import { equipeStyles } from "@/lib/corretiva/equipe";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  parseColagemCorretiva,
+  baixarModeloCorretiva,
+  CORRETIVA_TEMPLATE_HEADERS,
+} from "@/lib/corretiva/paste";
 
 const OWNER_EMAIL = "gabrielvlp33@gmail.com";
 
@@ -206,12 +214,19 @@ function CorretivaGestor() {
       description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
+          <Button size="sm" variant="ghost" onClick={() => void baixarModeloCorretiva()}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Modelo de planilha
+          </Button>
+          <ColarOsDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
+          />
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
           />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
         </>
       }
+
     >
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -548,6 +563,116 @@ function NewOsDialog({ onDone }: { onDone: () => void }) {
           </Button>
           <Button onClick={save} disabled={saving}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Criar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ColarOsDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const parsed = useMemo(() => parseColagemCorretiva(texto), [texto]);
+
+  const importar = async () => {
+    if (parsed.linhas.length === 0) return toast.warning("Cole ao menos uma linha com o número da OS.");
+    setSaving(true);
+    try {
+      const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
+      const nomes = (eqs ?? []).map((e: any) => e.nome as string);
+      const rows = parsed.linhas.map((r) => {
+        const c = classificarEquipeOs(r, nomes);
+        return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
+      });
+      const { error, count } = await supabase
+        .from("corretiva_os")
+        .upsert(rows as any, { onConflict: "numero_os", count: "exact" });
+      if (error) throw error;
+      toast.success(`${count ?? rows.length} OS enviadas para o Campo (Colaborador).`);
+      setOpen(false);
+      setTexto("");
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao importar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <ClipboardPaste className="mr-2 h-4 w-4" /> Colar OS
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Colar OS (sem planilha)</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Cole uma OS por linha, nesta ordem:{" "}
+            <b>{CORRETIVA_TEMPLATE_HEADERS.join(" · ")}</b>. Separe as colunas com Tab (copiando do
+            Excel), ponto e vírgula ou vírgula. A equipe é definida automaticamente pela descrição.
+          </p>
+          <Textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={8}
+            className="font-mono text-xs"
+            placeholder={"1540100; Troca de torneira; Prédio A; 2º andar; Banheiro; 27/07/2026; Maria Souza"}
+          />
+          {parsed.linhas.length > 0 && (
+            <div className="rounded-md border">
+              <div className="border-b bg-muted/50 px-3 py-2 text-xs font-medium">
+                Prévia — {parsed.linhas.length} OS
+                {parsed.ignoradas > 0 && ` · ${parsed.ignoradas} linha(s) ignorada(s)`}
+              </div>
+              <div className="max-h-56 overflow-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground">
+                    <tr>
+                      <Th>OS</Th>
+                      <Th>Atividade</Th>
+                      <Th>Prédio</Th>
+                      <Th>Andar</Th>
+                      <Th>Local</Th>
+                      <Th>Criação</Th>
+                      <Th>Solicitante</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {parsed.linhas.slice(0, 50).map((r) => (
+                      <tr key={r.numero_os} className="border-t">
+                        <Td className="font-mono">{r.numero_os}</Td>
+                        <Td className="max-w-[200px] truncate">{r.nome_os ?? "—"}</Td>
+                        <Td>{r.predio ?? "—"}</Td>
+                        <Td>{r.andar ?? "—"}</Td>
+                        <Td>{r.local ?? "—"}</Td>
+                        <Td>
+                          {r.data_criacao
+                            ? new Date(`${r.data_criacao}T12:00:00`).toLocaleDateString("pt-BR")
+                            : "—"}
+                        </Td>
+                        <Td>{r.solicitante ?? "—"}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={importar} disabled={saving || parsed.linhas.length === 0}>
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Enviar para o Campo
           </Button>
         </DialogFooter>
       </DialogContent>
