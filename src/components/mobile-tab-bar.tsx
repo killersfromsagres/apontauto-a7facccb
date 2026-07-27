@@ -20,12 +20,6 @@ export const MobileTabBar = memo(function MobileTabBar() {
   const isActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
-  const tabs = [
-    ...(hasDashboard
-      ? [{ key: "dashboard", url: "/", title: "Início", icon: undefined as never }]
-      : []),
-  ];
-
   return (
     <nav
       aria-label="Navegação principal"
