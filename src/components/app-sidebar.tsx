@@ -1,35 +1,6 @@
-import { memo, useMemo, useState, useEffect } from "react";
+import { memo, useState, useEffect } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import {
-  Gauge,
-  CalendarRange,
-  CalendarDays,
-  CalendarClock,
-  Hammer,
-  Map,
-  PenLine,
-  ShieldAlert,
-  HardHat,
-  WashingMachine,
-  Shirt,
-  Factory,
-  ChartColumn,
-  PackageOpen,
-  CloudSun,
-  
-  Scale,
-  Snowflake,
-  Thermometer,
-  ScrollText,
-  Users,
-  Fan,
-  AirVent,
-  Wrench,
-  Cog,
-  Zap,
-  ChevronRight,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import {
   Sidebar,
@@ -54,146 +25,13 @@ import {
 
 const logoAsset = { url: "/apontauto-logo.png" };
 
-import { useIsAdmin } from "@/hooks/use-is-admin";
-import { useAllowedMenus } from "@/hooks/use-allowed-menus";
-import { supabase } from "@/integrations/supabase/client";
-
-type MenuItem = {
-  key: string;
-  title: string;
-  url: string;
-  icon: LucideIcon;
-};
-
-type MenuSection =
-  | { kind: "item"; item: MenuItem }
-  | { kind: "group"; key: string; title: string; icon: LucideIcon; items: MenuItem[] };
-
-const sections: MenuSection[] = [
-  {
-    kind: "item",
-    item: { key: "dashboard", title: "Dashboard", url: "/", icon: Gauge },
-  },
-  {
-    kind: "group",
-    key: "programacao-grp",
-    title: "Programação",
-    icon: CalendarRange,
-    items: [
-      { key: "programacao", title: "Programação Semanal", url: "/programacao", icon: CalendarDays },
-      { key: "preventiva", title: "Preventiva (legado)", url: "/preventiva", icon: CalendarClock },
-      
-      { key: "taludes", title: "Demarcação de Taludes", url: "/taludes", icon: Map },
-      { key: "apontamentos", title: "Apontamentos", url: "/apontamentos", icon: PenLine },
-    ],
-  },
-  {
-    kind: "group",
-    key: "seguranca-grp",
-    title: "Segurança do Trabalho",
-    icon: ShieldAlert,
-    items: [
-      { key: "seguranca-trabalho", title: "Segurança do Trabalho", url: "/seguranca-trabalho", icon: HardHat },
-    ],
-  },
-  {
-    kind: "group",
-    key: "rouparia-grp",
-    title: "Rouparia",
-    icon: Shirt,
-    items: [
-      { key: "lavanderia", title: "Controle de Lavanderia", url: "/lavanderia", icon: WashingMachine },
-    ],
-  },
-  {
-    kind: "group",
-    key: "operacao-grp",
-    title: "Operação",
-    icon: Factory,
-    items: [
-      { key: "dashboard-chamados", title: "Dashboard de Chamados", url: "/dashboard-chamados", icon: ChartColumn },
-      { key: "backorder", title: "Backorders", url: "/backorder", icon: PackageOpen },
-      { key: "clima-tempo", title: "Clima e Tempo", url: "/clima-tempo", icon: CloudSun },
-      
-      { key: "painel-legal", title: "Painel de Itens Legais", url: "/painel-legal", icon: Scale },
-    ],
-  },
-  {
-    kind: "group",
-    key: "refrigeracao-grp",
-    title: "Refrigeração",
-    icon: Snowflake,
-    items: [
-      { key: "refrigeracao", title: "Campo (Colaborador)", url: "/refrigeracao", icon: Thermometer },
-      { key: "refrigeracao-pecas-status", title: "Status de Peças", url: "/refrigeracao-pecas-status", icon: PackageOpen },
-      { key: "refrigeracao-historico", title: "Histórico de OS", url: "/refrigeracao-historico", icon: ScrollText },
-      { key: "refrigeracao-gestor", title: "Gestão", url: "/refrigeracao-gestor", icon: Users },
-    ],
-  },
-  {
-    kind: "group",
-    key: "preventiva-ac-grp",
-    title: "Preventiva AC",
-    icon: Fan,
-    items: [
-      { key: "preventiva-ac", title: "Cadastro PMOC", url: "/preventiva-ac", icon: AirVent },
-    ],
-  },
-  {
-    kind: "group",
-    key: "corretiva-grp",
-    title: "Corretiva",
-    icon: Wrench,
-    items: [
-      { key: "corretiva", title: "Campo (Colaborador)", url: "/corretiva", icon: Wrench },
-      { key: "corretiva-pecas-status", title: "Status de Peças", url: "/corretiva-pecas-status", icon: PackageOpen },
-      { key: "corretiva-historico", title: "Histórico de OS", url: "/corretiva-historico", icon: ScrollText },
-      { key: "corretiva-gestor", title: "Gestão", url: "/corretiva-gestor", icon: Users },
-    ],
-  },
-  {
-    kind: "item",
-    item: { key: "configuracoes", title: "Configurações", url: "/configuracoes", icon: Cog },
-  },
-
-];
-
+import { useVisibleSections, type MenuItem, type MenuSection } from "@/lib/nav-config";
 
 export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { isAdmin, loading: loadingAdmin } = useIsAdmin();
-  const { allowed, loading: loadingAllowed } = useAllowedMenus();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
-  const loadingAccess = loadingAdmin || loadingAllowed;
-
-  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setOwnerEmail(data.session?.user?.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setOwnerEmail(s?.user?.email ?? null));
-    return () => sub.subscription.unsubscribe();
-  }, []);
-  const isOwner = (ownerEmail ?? "").trim().toLowerCase() === "gabrielvlp33@gmail.com";
-
-  const visibleSections = useMemo<MenuSection[]>(() => {
-    if (loadingAccess) return [];
-    const canSee = (key: string) => {
-      if (key === "configuracoes") return isOwner;
-      if (key === "refrigeracao-gestor") return isOwner || isAdmin;
-      if (key === "corretiva-gestor") return isOwner || isAdmin;
-      return isAdmin ? true : !allowed || allowed.includes(key);
-    };
-    const out: MenuSection[] = [];
-    for (const s of sections) {
-      if (s.kind === "item") {
-        if (canSee(s.item.key)) out.push(s);
-      } else {
-        const items = s.items.filter((i) => canSee(i.key));
-        if (items.length > 0) out.push({ ...s, items });
-      }
-    }
-    return out;
-  }, [loadingAccess, isAdmin, allowed, isOwner]);
+  const { visibleSections } = useVisibleSections();
 
   const isItemActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);

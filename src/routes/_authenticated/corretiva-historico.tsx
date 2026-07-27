@@ -156,7 +156,7 @@ function HistoricoPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por OS, ativo, equipamento, prédio, local…"
+              placeholder="Buscar OS, ativo, equipamento…"
               className="h-11 text-base"
             />
           </div>
