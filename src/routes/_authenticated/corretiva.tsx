@@ -18,6 +18,7 @@ import {
   Save,
   ArrowLeft,
   Download,
+  PenLine,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -56,8 +57,11 @@ import {
   loadEquipe,
   saveEquipe,
   matchEquipe,
+  equipeStyles,
   type EquipeFiltro,
 } from "@/lib/corretiva/equipe";
+import { SignaturePad } from "@/components/corretiva/signature-pad";
+import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
@@ -218,7 +222,6 @@ function CorretivaPage() {
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
         o.equipamento.toLowerCase().includes(q) ||
-        (o.patrimonio ?? "").toLowerCase().includes(q) ||
         (o.nome_os ?? "").toLowerCase().includes(q) ||
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
@@ -319,7 +322,7 @@ function CorretivaPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
+                placeholder="Buscar por OS, nome, ativo, prédio, local…"
                 className="h-11 text-base"
               />
             </div>
