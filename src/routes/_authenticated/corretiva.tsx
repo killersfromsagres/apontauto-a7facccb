@@ -487,14 +487,15 @@ function OsDetail({
   type Preview = { id: string; url: string; blobKey: string };
   const [previews, setPreviews] = useState<Preview[]>([]);
 
-  // Patrimônio (opcional — colaborador preenche)
-  const [patrim, setPatrim] = useState(os.patrimonio ?? "");
-  const [savingPatrim, setSavingPatrim] = useState(false);
+  // Rubrica do solicitante (confirma que o serviço foi realizado)
+  const [assinatura, setAssinatura] = useState<string | null>(null);
+  const [assinaturaNome, setAssinaturaNome] = useState("");
 
   // Peças (lista) — permite solicitar várias peças diferentes em uma única transação
   type PecaDraft = {
     id: string;
     descricao: string;
+    modelo: string;
     quantidade: string;
     urgencia: string;
     observacao: string;
@@ -502,6 +503,7 @@ function OsDetail({
   const emptyPeca = (): PecaDraft => ({
     id: uuid(),
     descricao: "",
+    modelo: "",
     quantidade: "1",
     urgencia: "media",
     observacao: "",
@@ -521,9 +523,6 @@ function OsDetail({
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
-  useEffect(() => {
-    setPatrim(os.patrimonio ?? "");
-  }, [os.id, os.patrimonio]);
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
@@ -532,6 +531,8 @@ function OsDetail({
     setPreviews([]);
     setPecas([]);
     setProblemas([]);
+    setAssinatura(null);
+    setAssinaturaNome("");
     (async () => {
       try {
         const d = await draftGet(os.id);
@@ -546,8 +547,10 @@ function OsDetail({
         }
         if (cancelled) return;
         setPreviews(restored);
-        setPecas(d.pecas ?? []);
+        setPecas((d.pecas ?? []).map((p) => ({ ...p, modelo: p.modelo ?? "" })));
         setProblemas(d.problemas ?? []);
+        setAssinatura(d.assinatura ?? null);
+        setAssinaturaNome(d.assinaturaNome ?? "");
         if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
           setDraftSavedAt(d.updatedAt);
         }
@@ -563,7 +566,7 @@ function OsDetail({
   useEffect(() => {
     if (!draftLoaded) return;
     const hasAny =
-      previews.length > 0 || pecas.length > 0 || problemas.length > 0;
+      previews.length > 0 || pecas.length > 0 || problemas.length > 0 || !!assinatura;
     const t = setTimeout(() => {
       if (!hasAny) {
         draftDelete(os.id).catch(() => {});
@@ -575,6 +578,8 @@ function OsDetail({
         fotos: previews.map((p) => ({ id: p.id, blobKey: p.blobKey })),
         pecas,
         problemas,
+        assinatura,
+        assinaturaNome,
         updatedAt: Date.now(),
       };
       draftPut(draft)
@@ -582,37 +587,8 @@ function OsDetail({
         .catch(() => {});
     }, 400);
     return () => clearTimeout(t);
-  }, [previews, pecas, problemas, draftLoaded, os.id]);
+  }, [previews, pecas, problemas, assinatura, assinaturaNome, draftLoaded, os.id]);
 
-
-  const savePatrimonio = async () => {
-    const v = patrim.trim();
-    if (v === (os.patrimonio ?? "")) return;
-    setSavingPatrim(true);
-    try {
-      await outboxAdd({
-        id: uuid(),
-        kind: "patrimonio",
-        osId: os.id,
-        numeroOs: os.numero_os,
-        payload: { patrimonio: v || null },
-        createdAt: Date.now(),
-        attempts: 0,
-      });
-      onPatchLocal({ patrimonio: v || null });
-      onQueued();
-      if (online) {
-        const r = await syncPending();
-        onQueued();
-        if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
-      }
-      toast.success("Patrimônio salvo.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Falha ao salvar patrimônio");
-    } finally {
-      setSavingPatrim(false);
-    }
-  };
 
   const onPickFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -662,6 +638,7 @@ function OsDetail({
         numeroOs: os.numero_os,
         payload: {
           descricao: p.descricao.trim(),
+          modelo: p.modelo.trim() || null,
           quantidade: Number(p.quantidade) || 1,
           urgencia: p.urgencia,
           observacao: p.observacao.trim() || null,
@@ -686,6 +663,20 @@ function OsDetail({
       toast.warning("Nada para salvar. Adicione foto, peça ou problema.");
       return;
     }
+    if (!assinatura) {
+      toast.error("Colete a rubrica do solicitante antes de finalizar.");
+      return;
+    }
+    const assinadoEm = new Date().toISOString();
+    items.push({
+      id: uuid(),
+      kind: "assinatura",
+      osId: os.id,
+      numeroOs: os.numero_os,
+      payload: { dataUrl: assinatura, nome: assinaturaNome.trim() || null, assinadoEm },
+      createdAt: Date.now(),
+      attempts: 0,
+    });
     // Marca a OS como Concluída ao enviar
     const nowIso = new Date().toISOString();
     items.push({
@@ -704,6 +695,8 @@ function OsDetail({
       setPreviews([]);
       setPecas([]);
       setProblemas([]);
+      setAssinatura(null);
+      setAssinaturaNome("");
       await draftDelete(os.id).catch(() => {});
       setDraftSavedAt(null);
       onPatchLocal({ status: "concluida", fim: nowIso });
@@ -778,33 +771,6 @@ function OsDetail({
           <ReadOnly label="Equipe" value={os.equipe ?? "—"} />
           <ReadOnly label="Data SLA" value={fmtDate(os.data_sla)} />
           <ReadOnly label="Data programada" value={fmtDate(os.data_programada)} />
-        </div>
-      </GlassCard>
-
-      <GlassCard className="p-4">
-        <SectionTitle icon={Package} label="Patrimônio (opcional)" />
-        <p className="mt-1 text-xs text-muted-foreground">
-          Se você identificou o número de patrimônio do equipamento em campo, registre aqui.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Input
-            value={patrim}
-            onChange={(e) => setPatrim(e.target.value)}
-            placeholder="Ex.: PAT-01234"
-            className="h-11 max-w-xs"
-          />
-          <Button
-            onClick={savePatrimonio}
-            disabled={savingPatrim || patrim.trim() === (os.patrimonio ?? "")}
-            className="h-11"
-          >
-            {savingPatrim ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            Salvar patrimônio
-          </Button>
         </div>
       </GlassCard>
 
@@ -904,6 +870,19 @@ function OsDetail({
                           l.map((x) => (x.id === p.id ? { ...x, descricao: e.target.value } : x)),
                         )
                       }
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label>Modelo / especificação</Label>
+                    <Input
+                      value={p.modelo}
+                      onChange={(e) =>
+                        setPecas((l) =>
+                          l.map((x) => (x.id === p.id ? { ...x, modelo: e.target.value } : x)),
+                        )
+                      }
+                      placeholder="ex.: Torneira, Lâmpada..."
                       className="h-11"
                     />
                   </div>
@@ -1039,6 +1018,26 @@ function OsDetail({
         )}
       </GlassCard>
 
+
+      <GlassCard className="p-4">
+        <SectionTitle icon={PenLine} label="Rubrica do solicitante" />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Peça ao solicitante que assine na tela com o dedo, confirmando que o serviço foi
+          realizado. A rubrica é obrigatória para finalizar a OS.
+        </p>
+        <div className="mt-3 space-y-3">
+          <div>
+            <Label>Nome do solicitante</Label>
+            <Input
+              value={assinaturaNome}
+              onChange={(e) => setAssinaturaNome(e.target.value)}
+              placeholder="Ex.: Maria Silva"
+              className="h-11 max-w-sm"
+            />
+          </div>
+          <SignaturePad value={assinatura} onChange={setAssinatura} />
+        </div>
+      </GlassCard>
 
       <div className="sticky bottom-2 z-10">
         <Button
