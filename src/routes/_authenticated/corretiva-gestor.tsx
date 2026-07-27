@@ -217,6 +217,9 @@ function CorretivaGestor() {
           <Button size="sm" variant="ghost" onClick={() => void baixarModeloCorretiva()}>
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Modelo de planilha
           </Button>
+          <LimparTudoDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva"] })}
+          />
           <ColarOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
           />
@@ -225,6 +228,7 @@ function CorretivaGestor() {
           />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
         </>
+
       }
 
     >
@@ -570,6 +574,84 @@ function NewOsDialog({ onDone }: { onDone: () => void }) {
   );
 }
 
+function LimparTudoDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [confirma, setConfirma] = useState("");
+  const [limpando, setLimpando] = useState(false);
+
+  const limpar = async () => {
+    setLimpando(true);
+    try {
+      const { data: ids, error: e0 } = await supabase.from("corretiva_os").select("id");
+      if (e0) throw e0;
+      const osIds = (ids ?? []).map((r: any) => r.id as string);
+      if (osIds.length === 0) {
+        toast.info("Não há OS para limpar.");
+        setOpen(false);
+        return;
+      }
+      for (const tabela of [
+        "corretiva_fotos",
+        "corretiva_pecas",
+        "corretiva_problemas",
+      ] as const) {
+        const { error } = await supabase.from(tabela).delete().in("os_id", osIds);
+        if (error) throw error;
+      }
+      const { error } = await supabase.from("corretiva_os").delete().in("id", osIds);
+      if (error) throw error;
+      toast.success(`${osIds.length} OS removidas. Pode importar novamente.`);
+      setOpen(false);
+      setConfirma("");
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao limpar");
+    } finally {
+      setLimpando(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" /> Limpar tudo
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Limpar todas as OS de Corretiva</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Isso apaga <b>todas</b> as OS, junto com fotos, peças e problemas vinculados. A ação não
+            pode ser desfeita — use antes de importar a planilha novamente.
+          </p>
+          <div className="space-y-1.5">
+            <Label>
+              Digite <b>LIMPAR</b> para confirmar
+            </Label>
+            <Input value={confirma} onChange={(e) => setConfirma(e.target.value)} placeholder="LIMPAR" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={limpar}
+            disabled={limpando || confirma.trim().toUpperCase() !== "LIMPAR"}
+          >
+            {limpando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Limpar tudo
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 function ColarOsDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [texto, setTexto] = useState("");
@@ -583,10 +665,16 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
     try {
       const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
+      const normz = (s: unknown) =>
+        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       const rows = parsed.linhas.map((r) => {
+        const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
+        if (cadastrada) return { ...r, equipe: cadastrada };
+        if (equipeReconhecida(r.equipe)) return r;
         const c = classificarEquipeOs(r, nomes);
         return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
       });
+
       const { error, count } = await supabase
         .from("corretiva_os")
         .upsert(rows as any, { onConflict: "numero_os", count: "exact" });
@@ -617,14 +705,17 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
           <p className="text-xs text-muted-foreground">
             Cole uma OS por linha, nesta ordem:{" "}
             <b>{CORRETIVA_TEMPLATE_HEADERS.join(" · ")}</b>. Separe as colunas com Tab (copiando do
-            Excel), ponto e vírgula ou vírgula. A equipe é definida automaticamente pela descrição.
+            Excel), ponto e vírgula ou vírgula. Deixe <b>Equipe</b> em branco para o sistema
+            identificar automaticamente pela descrição.
           </p>
           <Textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             rows={8}
             className="font-mono text-xs"
-            placeholder={"1540100; Troca de torneira; Prédio A; 2º andar; Banheiro; 27/07/2026; Maria Souza"}
+            placeholder={
+              "1540100; Troca de torneira; Prédio A; 2º andar; Banheiro; Hidráulica; 27/07/2026; Maria Souza"
+            }
           />
           {parsed.linhas.length > 0 && (
             <div className="rounded-md border">
@@ -641,6 +732,7 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
                       <Th>Prédio</Th>
                       <Th>Andar</Th>
                       <Th>Local</Th>
+                      <Th>Equipe</Th>
                       <Th>Criação</Th>
                       <Th>Solicitante</Th>
                     </tr>
@@ -653,6 +745,13 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
                         <Td>{r.predio ?? "—"}</Td>
                         <Td>{r.andar ?? "—"}</Td>
                         <Td>{r.local ?? "—"}</Td>
+                        <Td>
+                          {r.equipe ?? (
+                            <span className="text-muted-foreground">
+                              {classificarEquipeOs(r).equipe} (auto)
+                            </span>
+                          )}
+                        </Td>
                         <Td>
                           {r.data_criacao
                             ? new Date(`${r.data_criacao}T12:00:00`).toLocaleDateString("pt-BR")
@@ -701,13 +800,18 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
       const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
 
+      const normz = (s: unknown) =>
+        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       let auto = 0;
       const classificadas = rows.map((r) => {
+        const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
+        if (cadastrada) return { ...r, equipe: cadastrada };
         if (equipeReconhecida(r.equipe)) return r;
         const c = classificarEquipeOs(r, nomes);
         auto++;
         return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
       });
+
       setAutoCount(auto);
       setPreview(classificadas);
       if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
