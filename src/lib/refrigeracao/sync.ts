@@ -101,15 +101,16 @@ async function sendOne(item: OutboxItem): Promise<void> {
     if (!blobKey) throw new Error("Foto sem blob");
     const blob = await blobGet(blobKey);
     if (!blob) throw new Error("Blob local ausente");
-    // Hospeda no ImgBB (grátis, externo). Supabase guarda apenas a URL.
-    const uploaded = await uploadImageToImgBB(
+    // Hospeda no ImgBB; se falhar, cai para o Storage (nunca perde a foto).
+    const uploaded = await uploadPhotoWithFallback(
       blob,
       `os-${item.numeroOs}-${item.id}.jpg`,
+      "refrigeracao-fotos",
     );
     const { error } = await supabase.from("refrigeracao_fotos").insert({
       os_id: item.osId,
-      image_url: uploaded.url,
-      storage_path: null,
+      image_url: uploaded.url || null,
+      storage_path: uploaded.storagePath,
       legenda: item.payload.legenda ?? null,
       client_uuid: item.id,
       enviado_por: uid,
