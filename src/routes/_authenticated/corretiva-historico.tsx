@@ -341,10 +341,14 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto sm:w-full">
         <DialogHeader>
-          <DialogTitle>
-            OS {os?.numero_os} — {os?.nome_os ?? "sem título"}
-          </DialogTitle>
+          <DialogTitle className="text-base sm:text-lg">OS {os?.numero_os}</DialogTitle>
         </DialogHeader>
+        {os?.nome_os && (
+          <div className="max-h-40 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-white/5 p-3 text-sm leading-snug whitespace-pre-wrap break-words">
+            {os.nome_os}
+          </div>
+        )}
+
         {isLoading ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
             <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
