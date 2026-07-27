@@ -1768,3 +1768,16 @@ button,
 [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Legibilidade do texto "shine" em tema claro (era branco sobre fundo claro) */
+:root:not(.dark) .shine-text {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--foreground) 72%, transparent) 0%,
+    color-mix(in oklab, var(--foreground) 72%, transparent) 40%,
+    var(--foreground) 50%,
+    color-mix(in oklab, var(--foreground) 72%, transparent) 60%,
+    color-mix(in oklab, var(--foreground) 72%, transparent) 100%
+  );
+  background-size: 200% 100%;
+}
