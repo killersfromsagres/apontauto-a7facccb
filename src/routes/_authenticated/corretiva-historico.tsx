@@ -12,6 +12,7 @@ import {
   Download,
   ExternalLink,
   Link as LinkIcon,
+  PenLine,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -32,7 +33,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { loadEquipe, saveEquipe, matchEquipe, type EquipeFiltro } from "@/lib/corretiva/equipe";
+import {
+  loadEquipe,
+  saveEquipe,
+  matchEquipe,
+  equipeStyles,
+  type EquipeFiltro,
+} from "@/lib/corretiva/equipe";
+import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 
 export const Route = createFileRoute("/_authenticated/corretiva-historico")({
   component: HistoricoPage,
@@ -49,6 +57,9 @@ type OsRow = {
   equipamento: string;
   equipe: string | null;
   patrimonio: string | null;
+  assinatura_url: string | null;
+  assinatura_nome: string | null;
+  assinatura_em: string | null;
   status: string;
   fim: string | null;
   updated_at: string;
@@ -60,6 +71,7 @@ type Peca = {
   quantidade: number;
   urgencia: string;
   observacao: string | null;
+  modelo: string | null;
   created_at: string;
 };
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
@@ -90,7 +102,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, status, fim, updated_at",
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, fim, updated_at",
         )
         .in("status", ["concluida", "cancelada"])
         .order("updated_at", { ascending: false })
@@ -105,7 +117,7 @@ function HistoricoPage() {
     return rows.filter((o) => {
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (!q) return true;
-      return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.patrimonio, o.predio, o.local]
+      return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.predio, o.local]
         .filter(Boolean)
         .some((v) => (v as string).toLowerCase().includes(q));
     });
@@ -144,7 +156,7 @@ function HistoricoPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por OS, ativo, equipamento, patrimônio, prédio, local…"
+              placeholder="Buscar por OS, ativo, equipamento, prédio, local…"
               className="h-11 text-base"
             />
           </div>
@@ -178,42 +190,69 @@ function HistoricoPage() {
             {filtered.map((o) => {
               const cancelada = o.status === "cancelada";
               const Icon = cancelada ? XCircle : CheckCircle2;
+              const st = equipeStyles(o.equipe);
+              const rowCls = cancelada
+                ? "border-l-4 border-destructive/60 hover:bg-accent/60"
+                : "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20";
               return (
                 <li key={o.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(o)}
-                    className="flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition hover:bg-accent/60"
-                  >
-                    <Icon
-                      className={`mt-0.5 h-5 w-5 shrink-0 ${
-                        cancelada ? "text-destructive" : "text-emerald-500"
-                      }`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {o.status}
-                        </Badge>
-                        {o.fim && !cancelada && (
-                          <span className="text-xs text-muted-foreground">
-                            concluída em {new Date(o.fim).toLocaleString("pt-BR")}
+                  <div className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
+                    <button
+                      type="button"
+                      onClick={() => setOpen(o)}
+                      className="flex flex-1 items-start gap-3 text-left"
+                    >
+                      <Icon
+                        className={`mt-0.5 h-5 w-5 shrink-0 ${
+                          cancelada ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"
+                        }`}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`font-mono text-sm font-semibold ${cancelada ? "" : "text-emerald-800 dark:text-emerald-300"}`}>
+                            OS {o.numero_os}
                           </span>
+                          {cancelada ? (
+                            <Badge variant="secondary" className="text-[10px]">
+                              cancelada
+                            </Badge>
+                          ) : (
+                            <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+                              <CheckCircle2 className="mr-1 h-3 w-3" /> Finalizada
+                            </Badge>
+                          )}
+                          {o.equipe && (
+                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                              <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                              {o.equipe}
+                            </Badge>
+                          )}
+                          {o.assinatura_url && (
+                            <Badge variant="outline" className="text-[10px]">
+                              <PenLine className="mr-1 h-3 w-3" /> Rubricada
+                            </Badge>
+                          )}
+                          {o.fim && !cancelada && (
+                            <span className="text-xs text-muted-foreground">
+                              concluída em {new Date(o.fim).toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                        </div>
+                        {o.nome_os && (
+                          <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
                         )}
+                        <div className="truncate text-sm text-muted-foreground">
+                          {o.equipamento} · Ativo {o.ativo}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground/80">
+                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                        </div>
                       </div>
-                      {o.nome_os && (
-                        <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
-                      )}
-                      <div className="truncate text-sm text-muted-foreground">
-                        {o.equipamento} · Ativo {o.ativo}
-                        {o.patrimonio ? ` · PAT ${o.patrimonio}` : ""}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground/80">
-                        {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                      </div>
+                    </button>
+                    <div className="shrink-0 self-center">
+                      <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
                     </div>
-                  </button>
+                  </div>
                 </li>
               );
             })}
@@ -240,7 +279,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           .order("created_at"),
         supabase
           .from("corretiva_pecas")
-          .select("id, descricao, quantidade, urgencia, observacao, created_at")
+          .select("id, descricao, modelo, quantidade, urgencia, observacao, created_at")
           .eq("os_id", os.id)
           .order("created_at"),
         supabase
@@ -384,6 +423,11 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                     <li key={p.id} className="rounded-md border bg-background/40 p-3 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{p.descricao}</span>
+                        {p.modelo && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {p.modelo}
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-[10px]">
                           Qtd {p.quantidade}
                         </Badge>
@@ -401,6 +445,21 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 <p className="text-xs text-muted-foreground">Sem pedidos.</p>
               )}
             </section>
+
+            {os?.assinatura_url && (
+              <section>
+                <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  <PenLine className="h-4 w-4" /> Rubrica do solicitante
+                </h4>
+                <div className="rounded-2xl border border-white/10 bg-white p-3">
+                  <img src={os.assinatura_url} alt="Rubrica do solicitante" className="max-h-32" />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {os.assinatura_nome ? `${os.assinatura_nome} · ` : ""}
+                  {os.assinatura_em ? new Date(os.assinatura_em).toLocaleString("pt-BR") : ""}
+                </p>
+              </section>
+            )}
 
             <section>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
