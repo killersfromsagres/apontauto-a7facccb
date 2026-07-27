@@ -1676,3 +1676,95 @@ body {
     font-size: 16px; /* evita zoom automático no iOS */
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * Mobile UX pass — toque confortável, diálogos e barras de ação
+ * ──────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Alvos de toque: botões e campos com altura mínima confortável */
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a.btn,
+  .touch-target {
+    min-height: 44px;
+  }
+  button[class*="h-7"],
+  button[class*="h-8"] {
+    min-height: 40px;
+  }
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  [role="combobox"],
+  [data-slot="select-trigger"] {
+    min-height: 44px;
+  }
+  /* Checkbox / radio maiores e mais fáceis de acertar */
+  [role="checkbox"],
+  [role="radio"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-width: 22px;
+    min-height: 22px;
+  }
+  label {
+    line-height: 1.35;
+  }
+
+  /* Diálogos/sheets ocupam a tela com rolagem interna e respeitam safe-area */
+  [data-slot="dialog-content"],
+  [data-slot="alert-dialog-content"] {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: calc(100dvh - 2.5rem) !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+    border-radius: 1.25rem;
+  }
+  /* Rodapé de diálogo: botões empilhados e largos (fácil de tocar) */
+  [data-slot="dialog-footer"] > *,
+  [data-slot="alert-dialog-footer"] > * {
+    width: 100%;
+  }
+
+  /* Abas roláveis horizontalmente em vez de comprimidas */
+  [role="tablist"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+  }
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+  [role="tab"] {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Barras de ação fixas ficam acima da navegação inferior */
+  .sticky.bottom-0,
+  .sticky.bottom-2 {
+    bottom: calc(4.5rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Toasts acima da barra inferior */
+  [data-sonner-toaster][data-y-position="bottom"] {
+    bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Tipografia mais econômica em telas pequenas */
+  .text-eyebrow {
+    letter-spacing: 0.16em;
+  }
+}
+
+/* Remove o realce azul do toque no Android/iOS */
+a,
+button,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
