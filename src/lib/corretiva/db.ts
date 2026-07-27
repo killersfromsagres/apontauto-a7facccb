@@ -165,6 +165,7 @@ export type DraftFoto = { id: string; blobKey: string };
 export type DraftPeca = {
   id: string;
   descricao: string;
+  modelo: string;
   quantidade: string;
   urgencia: string;
   observacao: string;
@@ -177,6 +178,9 @@ export type OsDraft = {
   pecas: DraftPeca[];
   problemas: DraftProblema[];
   patrimonio?: string;
+  /** Rubrica do solicitante (dataURL PNG) e nome de quem assinou. */
+  assinatura?: string | null;
+  assinaturaNome?: string;
   updatedAt: number;
 };
 
