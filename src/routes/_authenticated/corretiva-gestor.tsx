@@ -564,12 +564,26 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
   const onFile = async (f: File | null) => {
     setFile(f);
     setPreview([]);
+    setAutoCount(0);
     if (!f) return;
     setParsing(true);
     try {
       const rows = await readCorretivaOsFile(f);
-      setPreview(rows);
+      // Busca os nomes de equipe cadastrados para casar a classificação automática.
+      const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
+      const nomes = (eqs ?? []).map((e: any) => e.nome as string);
+
+      let auto = 0;
+      const classificadas = rows.map((r) => {
+        if (equipeReconhecida(r.equipe)) return r;
+        const c = classificarEquipeOs(r, nomes);
+        auto++;
+        return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
+      });
+      setAutoCount(auto);
+      setPreview(classificadas);
       if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
+      else if (auto > 0) toast.success(`${auto} OS classificadas automaticamente por equipe.`);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao ler planilha");
     } finally {
