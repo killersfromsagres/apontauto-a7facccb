@@ -67,15 +67,15 @@ export function parseColagemCorretiva(texto: string): ColarResultado {
       andar: cells[3] || null,
       local: cells[4] || null,
       tipo: null,
-      equipe: null,
+      equipe: cells[5] || null,
       data_sla: null,
       data_programada: null,
       inicio: null,
       fim: null,
       ativo: "—",
       equipamento: cells[1] || "—",
-      solicitante: cells[6] || null,
-      data_criacao: parseDateBR(cells[5] ?? ""),
+      solicitante: cells[7] || null,
+      data_criacao: parseDateBR(cells[6] ?? ""),
     });
   }
 
@@ -95,12 +95,32 @@ export async function baixarModeloCorretiva() {
       "Prédio A",
       "2º andar",
       "Banheiro masculino",
+      "Hidráulica",
       "27/07/2026",
       "Maria Souza",
     ],
+    [
+      "1540101",
+      "Lâmpada queimada na sala de reunião",
+      "Prédio B",
+      "3º andar",
+      "Sala de reunião",
+      "",
+      "27/07/2026",
+      "João Lima",
+    ],
   ];
   const ws = XLSX.utils.aoa_to_sheet(exemplo);
-  ws["!cols"] = [{ wch: 14 }, { wch: 46 }, { wch: 18 }, { wch: 14 }, { wch: 24 }, { wch: 16 }, { wch: 24 }];
+  ws["!cols"] = [
+    { wch: 14 },
+    { wch: 46 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 24 },
+    { wch: 16 },
+    { wch: 16 },
+    { wch: 24 },
+  ];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "OS Corretiva");
   const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -111,3 +131,4 @@ export async function baixarModeloCorretiva() {
     "modelo-os-corretiva.xlsx",
   );
 }
+
