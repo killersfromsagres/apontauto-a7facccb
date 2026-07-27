@@ -56,13 +56,33 @@ async function sendOne(item: OutboxItem): Promise<void> {
     const { error } = await supabase.from("corretiva_pecas").insert({
       os_id: item.osId,
       descricao: item.payload.descricao,
+      modelo: item.payload.modelo ?? null,
       quantidade: item.payload.quantidade ?? 1,
       urgencia: item.payload.urgencia ?? "media",
       observacao: item.payload.observacao ?? null,
       client_uuid: item.id,
       enviado_por: uid,
-    });
+    } as any);
     if (error && !isDupError(error)) throw error;
+    return;
+  }
+  if (item.kind === "assinatura") {
+    const dataUrl: string | undefined = item.payload.dataUrl;
+    if (!dataUrl) throw new Error("Rubrica vazia");
+    const blob = await (await fetch(dataUrl)).blob();
+    const uploaded = await uploadImageToImgBB(
+      blob,
+      `rubrica-os-${item.numeroOs}-${item.id}.png`,
+    );
+    const { error } = await supabase
+      .from("corretiva_os")
+      .update({
+        assinatura_url: uploaded.url,
+        assinatura_nome: item.payload.nome ?? null,
+        assinatura_em: item.payload.assinadoEm ?? new Date().toISOString(),
+      } as any)
+      .eq("id", item.osId);
+    if (error) throw error;
     return;
   }
   if (item.kind === "problema") {

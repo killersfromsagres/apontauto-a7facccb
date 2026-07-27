@@ -20,9 +20,20 @@ type FotoRow = {
   legenda: string | null;
 };
 
-async function fetchFotos(osId: string): Promise<FotoRow[]> {
+export type FotosModulo = "refrigeracao" | "corretiva";
+
+const TABELA: Record<FotosModulo, "refrigeracao_fotos" | "corretiva_fotos"> = {
+  refrigeracao: "refrigeracao_fotos",
+  corretiva: "corretiva_fotos",
+};
+const BUCKET: Record<FotosModulo, string> = {
+  refrigeracao: "refrigeracao-fotos",
+  corretiva: "corretiva-fotos",
+};
+
+async function fetchFotos(osId: string, modulo: FotosModulo): Promise<FotoRow[]> {
   const { data, error } = await supabase
-    .from("refrigeracao_fotos")
+    .from(TABELA[modulo])
     .select("id, image_url, storage_path, created_at, legenda")
     .eq("os_id", osId)
     .order("created_at", { ascending: false });
@@ -30,8 +41,8 @@ async function fetchFotos(osId: string): Promise<FotoRow[]> {
   return (data ?? []) as FotoRow[];
 }
 
-async function resolveStorageUrl(path: string): Promise<string | null> {
-  const { data } = await supabase.storage.from("refrigeracao-fotos").createSignedUrl(path, 3600);
+async function resolveStorageUrl(path: string, modulo: FotosModulo): Promise<string | null> {
+  const { data } = await supabase.storage.from(BUCKET[modulo]).createSignedUrl(path, 3600);
   return data?.signedUrl ?? null;
 }
 
@@ -46,6 +57,7 @@ export function OsPhotosButton({
   size = "sm",
   className = "",
   label = "Fotos",
+  modulo = "refrigeracao",
 }: {
   osId: string;
   numeroOs?: string | null;
@@ -53,21 +65,22 @@ export function OsPhotosButton({
   size?: "sm" | "default";
   className?: string;
   label?: string;
+  modulo?: FotosModulo;
 }) {
   const [open, setOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["refrig-fotos-os-btn", osId],
+    queryKey: ["fotos-os-btn", modulo, osId],
     enabled: open,
     staleTime: 15_000,
     queryFn: async () => {
-      const rows = await fetchFotos(osId);
+      const rows = await fetchFotos(osId, modulo);
       // Resolve URLs (ImgBB direto ou signed URL do Storage)
       const withUrl = await Promise.all(
         rows.map(async (r) => {
           if (r.image_url) return { ...r, url: r.image_url };
           if (r.storage_path) {
-            const u = await resolveStorageUrl(r.storage_path);
+            const u = await resolveStorageUrl(r.storage_path, modulo);
             return { ...r, url: u };
           }
           return { ...r, url: null };

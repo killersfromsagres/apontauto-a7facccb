@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
+import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
+import { equipeStyles } from "@/lib/corretiva/equipe";
 
 const OWNER_EMAIL = "gabrielvlp33@gmail.com";
 
@@ -560,16 +562,31 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [autoCount, setAutoCount] = useState(0);
 
   const onFile = async (f: File | null) => {
     setFile(f);
     setPreview([]);
+    setAutoCount(0);
     if (!f) return;
     setParsing(true);
     try {
       const rows = await readCorretivaOsFile(f);
-      setPreview(rows);
+      // Busca os nomes de equipe cadastrados para casar a classificação automática.
+      const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
+      const nomes = (eqs ?? []).map((e: any) => e.nome as string);
+
+      let auto = 0;
+      const classificadas = rows.map((r) => {
+        if (equipeReconhecida(r.equipe)) return r;
+        const c = classificarEquipeOs(r, nomes);
+        auto++;
+        return { ...r, equipe: c.equipeCadastrada ?? c.equipe };
+      });
+      setAutoCount(auto);
+      setPreview(classificadas);
       if (rows.length === 0) toast.warning("Nenhuma linha válida encontrada.");
+      else if (auto > 0) toast.success(`${auto} OS classificadas automaticamente por equipe.`);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao ler planilha");
     } finally {
@@ -628,8 +645,13 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
           </div>
           {preview.length > 0 && (
             <div className="rounded-md border">
-              <div className="border-b bg-muted/50 px-3 py-2 text-xs font-medium">
-                Prévia — {preview.length} linhas
+              <div className="flex flex-wrap items-center gap-2 border-b bg-muted/50 px-3 py-2 text-xs font-medium">
+                <span>Prévia — {preview.length} linhas</span>
+                {autoCount > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {autoCount} equipe(s) definida(s) automaticamente
+                  </Badge>
+                )}
               </div>
               <div className="max-h-64 overflow-auto">
                 <table className="w-full text-xs">
@@ -637,25 +659,40 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
                     <tr>
                       <Th>OS</Th>
                       <Th>Nome</Th>
+                      <Th>Equipe</Th>
                       <Th>Local</Th>
                       <Th>Ativo</Th>
                       <Th>Equipamento</Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.slice(0, 50).map((r, i) => (
+                    {preview.slice(0, 50).map((r, i) => {
+                      const st = equipeStyles(r.equipe);
+                      return (
                       <tr key={i} className="border-t">
                         <Td className="font-mono">{r.numero_os}</Td>
                         <Td className="max-w-[160px] truncate">{r.nome_os ?? "—"}</Td>
+                        <Td>
+                          {r.equipe ? (
+                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                              <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                              {r.equipe}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </Td>
                         <Td className="text-muted-foreground">
                           {[r.predio, r.andar, r.local].filter(Boolean).join(" · ") || "—"}
                         </Td>
                         <Td>{r.ativo}</Td>
                         <Td className="max-w-[180px] truncate">{r.equipamento}</Td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
+
                 {preview.length > 50 && (
                   <div className="border-t p-2 text-center text-[10px] text-muted-foreground">
                     +{preview.length - 50} linhas não exibidas na prévia.
