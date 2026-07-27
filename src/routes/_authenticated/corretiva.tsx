@@ -393,21 +393,11 @@ function CorretivaPage() {
                               {o.equipe}
                             </Badge>
                           )}
-                          {o.tipo && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {o.tipo}
-                            </Badge>
-                          )}
                         </div>
-                        {o.nome_os && (
-                          <div className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>
-                            {o.nome_os}
-                          </div>
-                        )}
-                        <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                          {o.equipamento} · Ativo {o.ativo}
+                        <div className={`mt-1 text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>
+                          {o.nome_os?.trim() || "Sem descrição da atividade"}
                         </div>
-                        <div className="truncate text-xs text-muted-foreground/80">
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground/80">
                           {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                         </div>
                       </div>
