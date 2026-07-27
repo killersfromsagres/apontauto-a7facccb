@@ -30,7 +30,11 @@ export async function uploadPhotoWithFallback(
     throw new Error("ImgBB sem URL");
   } catch (imgbbErr) {
     console.warn("[upload] ImgBB falhou, usando Storage:", imgbbErr);
-    const path = `${new Date().toISOString().slice(0, 10)}/${Date.now()}-${safeName(filename)}`;
+    const { data: sess } = await supabase.auth.getSession();
+    const uid = sess.session?.user?.id;
+    if (!uid) throw new Error("Sem sessão para salvar a imagem");
+    // O prefixo com o id do usuário é exigido pelas políticas do bucket.
+    const path = `${uid}/${Date.now()}-${safeName(filename)}`;
     const { error } = await supabase.storage.from(bucket).upload(path, blob, {
       contentType: blob.type || "image/jpeg",
       upsert: true,
