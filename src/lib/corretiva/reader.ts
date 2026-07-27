@@ -17,6 +17,8 @@ export type CorretivaOsImport = {
   fim: string | null;
   ativo: string;
   equipamento: string;
+  solicitante: string | null;
+  data_criacao: string | null;
 };
 
 const norm = (s: unknown) =>
@@ -29,10 +31,18 @@ const norm = (s: unknown) =>
 
 const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
   numero_os: ["ordemdeservico", "os", "numeroos", "nos", "ordemservico"],
-  nome_os: ["nomeos", "nome", "descricao", "descricaoos"],
+  nome_os: [
+    "nomeos",
+    "nome",
+    "descricao",
+    "descricaoos",
+    "descricaodaatividade",
+    "descricaoatividade",
+    "atividade",
+  ],
   predio: ["predio", "edificio"],
   andar: ["andar", "pavimento"],
-  local: ["local", "localizacao", "sala"],
+  local: ["local", "localizacao", "sala", "ambiente"],
   tipo: ["tipo", "tipoos", "tipomanutencao"],
   equipe: ["equipe", "time", "responsavel"],
   data_sla: ["datasla", "sla", "prazosla"],
@@ -41,6 +51,8 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
   fim: ["fim", "datafim", "dtfim", "termino", "conclusao"],
   ativo: ["ativo", "tag", "codigoativo"],
   equipamento: ["equipamento", "descricaoequip", "descequipamento"],
+  solicitante: ["solicitante", "nomedosolicitante", "requisitante", "nomesolicitante"],
+  data_criacao: ["datadacriacao", "datacriacao", "criadaem", "dataabertura", "dataabertaem"],
 };
 
 function excelSerialToDate(n: number): Date | null {
@@ -110,12 +122,12 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     }
   }
 
-  const required: (keyof CorretivaOsImport)[] = ["numero_os", "ativo", "equipamento"];
+  const required: (keyof CorretivaOsImport)[] = ["numero_os"];
   const present = new Set(headerMap.values());
   const missing = required.filter((r) => !present.has(r));
   if (missing.length) {
     throw new Error(
-      `Colunas obrigatórias ausentes: ${missing.join(", ")}. Cabeçalhos esperados: Ordem de Serviço, Ativo, Equipamento.`,
+      `Colunas obrigatórias ausentes: ${missing.join(", ")}. Cabeçalho mínimo esperado: Ordem de Serviço.`,
     );
   }
 
@@ -125,7 +137,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     for (const [rawKey, target] of headerMap) {
       const raw = r[rawKey];
       const val = raw === "" || raw == null ? null : String(raw).trim();
-      if (target === "data_sla" || target === "data_programada") {
+      if (target === "data_sla" || target === "data_programada" || target === "data_criacao") {
         rec[target] = toISODate(parseDate(raw));
       } else if (target === "inicio" || target === "fim") {
         rec[target] = toISODateTime(parseDate(raw));
@@ -136,7 +148,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     const numero = (rec.numero_os ?? "").toString().trim();
     const ativo = (rec.ativo ?? "").toString().trim();
     const equipamento = (rec.equipamento ?? "").toString().trim();
-    if (!numero || !ativo || !equipamento) continue;
+    if (!numero) continue;
     out.push({
       numero_os: numero,
       nome_os: rec.nome_os ?? null,
@@ -149,8 +161,10 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
       data_programada: rec.data_programada ?? null,
       inicio: rec.inicio ?? null,
       fim: rec.fim ?? null,
-      ativo,
-      equipamento,
+      ativo: ativo || "—",
+      equipamento: equipamento || "—",
+      solicitante: rec.solicitante ?? null,
+      data_criacao: rec.data_criacao ?? null,
     });
   }
 
