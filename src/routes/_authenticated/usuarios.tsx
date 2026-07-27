@@ -64,6 +64,8 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "painel-legal": "Painel de Itens Legais",
   refrigeracao: "Refrigeração (Campo)",
   "refrigeracao-gestor": "Refrigeração — Gestão",
+  "controle-materiais": "Controle de Materiais",
+
   configuracoes: "Configurações",
 };
 
