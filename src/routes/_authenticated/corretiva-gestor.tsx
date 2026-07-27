@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
+import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
+import { equipeStyles } from "@/lib/corretiva/equipe";
 
 const OWNER_EMAIL = "gabrielvlp33@gmail.com";
 
@@ -560,6 +562,7 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [autoCount, setAutoCount] = useState(0);
 
   const onFile = async (f: File | null) => {
     setFile(f);
