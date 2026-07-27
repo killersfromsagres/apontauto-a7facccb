@@ -4,7 +4,7 @@ import {
   CalendarRange,
   CalendarDays,
   CalendarClock,
-  Map,
+  Map as MapIcon,
   PenLine,
   ShieldAlert,
   HardHat,
@@ -56,7 +56,7 @@ export const sections: MenuSection[] = [
     items: [
       { key: "programacao", title: "Programação Semanal", short: "Programação", url: "/programacao", icon: CalendarDays },
       { key: "preventiva", title: "Preventiva (legado)", short: "Preventiva", url: "/preventiva", icon: CalendarClock },
-      { key: "taludes", title: "Demarcação de Taludes", short: "Taludes", url: "/taludes", icon: Map },
+      { key: "taludes", title: "Demarcação de Taludes", short: "Taludes", url: "/taludes", icon: MapIcon },
       { key: "apontamentos", title: "Apontamentos", short: "Apont.", url: "/apontamentos", icon: PenLine },
     ],
   },
