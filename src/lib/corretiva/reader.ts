@@ -106,19 +106,29 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
   if (rows.length === 0) return [];
 
-  // Mapeia cada header do arquivo para uma chave do CorretivaOsImport
+  // Mapeia cada header do arquivo para uma chave do CorretivaOsImport.
+  // 1ª passada: correspondência exata (evita que "Nome do Solicitante" caia em nome_os)
+  // 2ª passada: correspondência por prefixo, só para headers ainda não mapeados.
   const firstRow = rows[0];
   const headerMap = new Map<string, keyof CorretivaOsImport>();
-  for (const rawKey of Object.keys(firstRow)) {
+  const entries = Object.entries(HEADER_ALIASES) as [keyof CorretivaOsImport, string[]][];
+  const keys = Object.keys(firstRow);
+
+  for (const rawKey of keys) {
     const nk = norm(rawKey);
-    for (const [target, aliases] of Object.entries(HEADER_ALIASES) as [
-      keyof CorretivaOsImport,
-      string[],
-    ][]) {
-      if (aliases.some((a) => nk === a || nk.startsWith(a))) {
-        headerMap.set(rawKey, target);
-        break;
-      }
+    const exact = entries.find(([, aliases]) => aliases.some((a) => nk === a));
+    if (exact) headerMap.set(rawKey, exact[0]);
+  }
+  const taken = new Set(headerMap.values());
+  for (const rawKey of keys) {
+    if (headerMap.has(rawKey)) continue;
+    const nk = norm(rawKey);
+    const pref = entries.find(
+      ([target, aliases]) => !taken.has(target) && aliases.some((a) => nk.startsWith(a)),
+    );
+    if (pref) {
+      headerMap.set(rawKey, pref[0]);
+      taken.add(pref[0]);
     }
   }
 

@@ -69,7 +69,7 @@ export const Route = createFileRoute("/_authenticated/corretiva")({
 });
 
 const OS_COLUMNS =
-  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at";
+  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, data_criacao";
 
 function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -755,6 +755,8 @@ function OsDetail({
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+          <ReadOnly label="Solicitante" value={os.solicitante?.trim() || "—"} />
+          <ReadOnly label="Data da criação" value={fmtDate(os.data_criacao ?? null)} />
           <ReadOnly label="Prédio" value={os.predio ?? "—"} />
           <ReadOnly label="Andar" value={os.andar ?? "—"} />
           <ReadOnly label="Local" value={os.local ?? "—"} />
