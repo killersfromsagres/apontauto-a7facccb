@@ -217,6 +217,9 @@ function CorretivaGestor() {
           <Button size="sm" variant="ghost" onClick={() => void baixarModeloCorretiva()}>
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Modelo de planilha
           </Button>
+          <LimparTudoDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva"] })}
+          />
           <ColarOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
           />
@@ -225,6 +228,7 @@ function CorretivaGestor() {
           />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
         </>
+
       }
 
     >
