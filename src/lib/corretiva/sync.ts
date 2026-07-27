@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToImgBB } from "@/lib/imgbb";
+import { uploadPhotoWithFallback } from "@/lib/photo-upload";
 import {
   outboxAll,
   outboxRemove,
