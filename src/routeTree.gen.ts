@@ -36,6 +36,7 @@ import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
+import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
@@ -191,6 +192,12 @@ const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   path: '/corretiva',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedControleMateriaisRoute =
+  AuthenticatedControleMateriaisRouteImport.update({
+    id: '/controle-materiais',
+    path: '/controle-materiais',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
@@ -241,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -275,6 +283,7 @@ export interface FileRoutesByTo {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -312,6 +321,7 @@ export interface FileRoutesById {
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -350,6 +360,7 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/clima-tempo'
     | '/configuracoes'
+    | '/controle-materiais'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
@@ -384,6 +395,7 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/clima-tempo'
     | '/configuracoes'
+    | '/controle-materiais'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
@@ -420,6 +432,7 @@ export interface FileRouteTypes {
     | '/_authenticated/backorder'
     | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
+    | '/_authenticated/controle-materiais'
     | '/_authenticated/corretiva'
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
@@ -650,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCorretivaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/controle-materiais': {
+      id: '/_authenticated/controle-materiais'
+      path: '/controle-materiais'
+      fullPath: '/controle-materiais'
+      preLoaderRoute: typeof AuthenticatedControleMateriaisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/configuracoes': {
       id: '/_authenticated/configuracoes'
       path: '/configuracoes'
@@ -707,6 +727,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
@@ -733,6 +754,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
