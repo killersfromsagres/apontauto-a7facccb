@@ -755,6 +755,8 @@ function OsDetail({
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+          <ReadOnly label="Solicitante" value={os.solicitante?.trim() || "—"} />
+          <ReadOnly label="Data da criação" value={fmtDate(os.data_criacao ?? null)} />
           <ReadOnly label="Prédio" value={os.predio ?? "—"} />
           <ReadOnly label="Andar" value={os.andar ?? "—"} />
           <ReadOnly label="Local" value={os.local ?? "—"} />
