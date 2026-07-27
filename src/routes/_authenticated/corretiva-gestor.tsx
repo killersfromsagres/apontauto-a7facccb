@@ -678,9 +678,6 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
                         <Td>{r.solicitante ?? "—"}</Td>
                       </tr>
                     ))}
-
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               </div>
