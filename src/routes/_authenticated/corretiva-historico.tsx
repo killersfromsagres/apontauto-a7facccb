@@ -238,13 +238,14 @@ function HistoricoPage() {
                             </span>
                           )}
                         </div>
-                        {o.nome_os && (
-                          <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
+                        {o.nome_os ? (
+                          <div className="mt-1 max-h-24 overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-white/5 p-2 text-sm font-medium leading-snug whitespace-pre-wrap break-words sm:max-h-28">
+                            {o.nome_os}
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm text-muted-foreground">Sem descrição da atividade</div>
                         )}
-                        <div className="truncate text-sm text-muted-foreground">
-                          {o.equipamento} · Ativo {o.ativo}
-                        </div>
-                        <div className="truncate text-xs text-muted-foreground/80">
+                        <div className="mt-1 break-words text-xs text-muted-foreground/80">
                           {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                         </div>
                       </div>
