@@ -574,6 +574,84 @@ function NewOsDialog({ onDone }: { onDone: () => void }) {
   );
 }
 
+function LimparTudoDialog({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [confirma, setConfirma] = useState("");
+  const [limpando, setLimpando] = useState(false);
+
+  const limpar = async () => {
+    setLimpando(true);
+    try {
+      const { data: ids, error: e0 } = await supabase.from("corretiva_os").select("id");
+      if (e0) throw e0;
+      const osIds = (ids ?? []).map((r: any) => r.id as string);
+      if (osIds.length === 0) {
+        toast.info("Não há OS para limpar.");
+        setOpen(false);
+        return;
+      }
+      for (const tabela of [
+        "corretiva_fotos",
+        "corretiva_pecas",
+        "corretiva_problemas",
+      ] as const) {
+        const { error } = await supabase.from(tabela).delete().in("os_id", osIds);
+        if (error) throw error;
+      }
+      const { error } = await supabase.from("corretiva_os").delete().in("id", osIds);
+      if (error) throw error;
+      toast.success(`${osIds.length} OS removidas. Pode importar novamente.`);
+      setOpen(false);
+      setConfirma("");
+      onDone();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Falha ao limpar");
+    } finally {
+      setLimpando(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" /> Limpar tudo
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Limpar todas as OS de Corretiva</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Isso apaga <b>todas</b> as OS, junto com fotos, peças e problemas vinculados. A ação não
+            pode ser desfeita — use antes de importar a planilha novamente.
+          </p>
+          <div className="space-y-1.5">
+            <Label>
+              Digite <b>LIMPAR</b> para confirmar
+            </Label>
+            <Input value={confirma} onChange={(e) => setConfirma(e.target.value)} placeholder="LIMPAR" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={limpar}
+            disabled={limpando || confirma.trim().toUpperCase() !== "LIMPAR"}
+          >
+            {limpando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Limpar tudo
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+
 function ColarOsDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [texto, setTexto] = useState("");
