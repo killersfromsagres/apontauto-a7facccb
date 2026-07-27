@@ -70,9 +70,10 @@ async function sendOne(item: OutboxItem): Promise<void> {
     const dataUrl: string | undefined = item.payload.dataUrl;
     if (!dataUrl) throw new Error("Rubrica vazia");
     const blob = await (await fetch(dataUrl)).blob();
-    const uploaded = await uploadImageToImgBB(
+    const uploaded = await uploadPhotoWithFallback(
       blob,
       `rubrica-os-${item.numeroOs}-${item.id}.png`,
+      "corretiva-fotos",
     );
     const { error } = await supabase
       .from("corretiva_os")
