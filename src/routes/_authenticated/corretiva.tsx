@@ -220,8 +220,6 @@ function CorretivaPage() {
       if (!q) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
-        o.ativo.toLowerCase().includes(q) ||
-        o.equipamento.toLowerCase().includes(q) ||
         (o.nome_os ?? "").toLowerCase().includes(q) ||
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
@@ -322,7 +320,7 @@ function CorretivaPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar OS, ativo, local…"
+                placeholder="Buscar OS, descrição, local…"
                 className="h-11 text-base"
               />
             </div>
@@ -393,21 +391,11 @@ function CorretivaPage() {
                               {o.equipe}
                             </Badge>
                           )}
-                          {o.tipo && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              {o.tipo}
-                            </Badge>
-                          )}
                         </div>
-                        {o.nome_os && (
-                          <div className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>
-                            {o.nome_os}
-                          </div>
-                        )}
-                        <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                          {o.equipamento} · Ativo {o.ativo}
+                        <div className={`mt-1 text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>
+                          {o.nome_os?.trim() || "Sem descrição da atividade"}
                         </div>
-                        <div className="truncate text-xs text-muted-foreground/80">
+                        <div className="mt-0.5 truncate text-xs text-muted-foreground/80">
                           {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                         </div>
                       </div>
@@ -755,16 +743,18 @@ function OsDetail({
               OS selecionada
             </div>
             <div className="truncate font-mono text-lg font-bold">#{os.numero_os}</div>
-            {os.nome_os && (
-              <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
-            )}
           </div>
           <Badge variant="outline" className="text-[10px]">{os.status}</Badge>
         </div>
+        <div className="mb-3 rounded-2xl border border-border/60 bg-muted/30 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+            Descrição da atividade
+          </div>
+          <div className="mt-1 whitespace-pre-wrap text-sm font-medium">
+            {os.nome_os?.trim() || "—"}
+          </div>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-          <ReadOnly label="Ativo" value={os.ativo} />
-          <ReadOnly label="Equipamento" value={os.equipamento} />
-          <ReadOnly label="Tipo" value={os.tipo ?? "—"} />
           <ReadOnly label="Prédio" value={os.predio ?? "—"} />
           <ReadOnly label="Andar" value={os.andar ?? "—"} />
           <ReadOnly label="Local" value={os.local ?? "—"} />
