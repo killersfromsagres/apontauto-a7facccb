@@ -218,7 +218,7 @@ function CorretivaGestor() {
           <div className="flex w-full flex-1 items-center gap-2 sm:w-auto sm:min-w-[220px]">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             <Input
-              placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
+              placeholder="Buscar OS, ativo, local…"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               className="h-9"

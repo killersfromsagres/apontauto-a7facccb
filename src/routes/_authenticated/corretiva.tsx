@@ -322,7 +322,7 @@ function CorretivaPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por OS, nome, ativo, prédio, local…"
+                placeholder="Buscar OS, ativo, local…"
                 className="h-11 text-base"
               />
             </div>

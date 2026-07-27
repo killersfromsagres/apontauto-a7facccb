@@ -321,7 +321,7 @@ function RefrigeracaoPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por OS, nome, ativo, prédio, local, patrimônio…"
+                placeholder="Buscar OS, ativo, local…"
                 className="h-11 text-base"
               />
             </div>
