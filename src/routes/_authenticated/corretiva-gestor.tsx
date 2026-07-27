@@ -206,12 +206,19 @@ function CorretivaGestor() {
       description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
+          <Button size="sm" variant="ghost" onClick={() => void baixarModeloCorretiva()}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" /> Modelo de planilha
+          </Button>
+          <ColarOsDialog
+            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
+          />
           <ImportOsDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
           />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
         </>
       }
+
     >
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
