@@ -623,14 +623,17 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
           <p className="text-xs text-muted-foreground">
             Cole uma OS por linha, nesta ordem:{" "}
             <b>{CORRETIVA_TEMPLATE_HEADERS.join(" · ")}</b>. Separe as colunas com Tab (copiando do
-            Excel), ponto e vírgula ou vírgula. A equipe é definida automaticamente pela descrição.
+            Excel), ponto e vírgula ou vírgula. Deixe <b>Equipe</b> em branco para o sistema
+            identificar automaticamente pela descrição.
           </p>
           <Textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
             rows={8}
             className="font-mono text-xs"
-            placeholder={"1540100; Troca de torneira; Prédio A; 2º andar; Banheiro; 27/07/2026; Maria Souza"}
+            placeholder={
+              "1540100; Troca de torneira; Prédio A; 2º andar; Banheiro; Hidráulica; 27/07/2026; Maria Souza"
+            }
           />
           {parsed.linhas.length > 0 && (
             <div className="rounded-md border">
@@ -647,6 +650,7 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
                       <Th>Prédio</Th>
                       <Th>Andar</Th>
                       <Th>Local</Th>
+                      <Th>Equipe</Th>
                       <Th>Criação</Th>
                       <Th>Solicitante</Th>
                     </tr>
@@ -660,11 +664,21 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
                         <Td>{r.andar ?? "—"}</Td>
                         <Td>{r.local ?? "—"}</Td>
                         <Td>
+                          {r.equipe ?? (
+                            <span className="text-muted-foreground">
+                              {classificarEquipeOs(r).equipe} (auto)
+                            </span>
+                          )}
+                        </Td>
+                        <Td>
                           {r.data_criacao
                             ? new Date(`${r.data_criacao}T12:00:00`).toLocaleDateString("pt-BR")
                             : "—"}
                         </Td>
                         <Td>{r.solicitante ?? "—"}</Td>
+                      </tr>
+                    ))}
+
                       </tr>
                     ))}
                   </tbody>
