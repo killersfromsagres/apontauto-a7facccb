@@ -1,5 +1,5 @@
 // Colagem rápida de OS de Corretiva (alternativa à planilha) e modelo .xlsx.
-// Colunas na ordem: OS · Descrição da Atividade · Prédio · Andar · Local · Data da Criação · Nome do Solicitante
+// Colunas na ordem: OS · Descrição da Atividade · Prédio · Andar · Local · Equipe · Data da Criação · Nome do Solicitante
 
 import type { CorretivaOsImport } from "./reader";
 import { downloadBlob } from "@/lib/download";
@@ -10,9 +10,11 @@ export const CORRETIVA_TEMPLATE_HEADERS = [
   "Prédio",
   "Andar",
   "Local",
+  "Equipe",
   "Data da Criação",
   "Nome do Solicitante",
 ] as const;
+
 
 function parseDateBR(v: string): string | null {
   const s = v.trim();
