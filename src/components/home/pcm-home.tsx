@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -17,7 +17,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import {
+  EmptyState,
+  ErrorState,
+  KpiCard,
+  SkeletonState,
+  StatusBadge,
+} from "@/components/pcm";
 import { useVisibleSections, allMenuItems, type MenuItem } from "@/lib/nav-config";
 import { fetchFillMetrics } from "@/features/assets/services/fill-metrics";
 import { getActiveCatalog } from "@/features/assets/services/asset-catalog";
@@ -48,6 +54,7 @@ const fmtDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
 
 export function PcmHome({ userName }: { userName?: string | null }) {
+  const navigate = useNavigate();
   const { visibleItems, canAccess } = useVisibleSections();
   const canFill = canAccess("assets-fill");
   const canCatalog = canAccess("assets-catalog");
@@ -140,38 +147,40 @@ export function PcmHome({ userName }: { userName?: string | null }) {
       {/* KPIs */}
       {(canFill || canCatalog) && (
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Kpi
+          <KpiCard
             label="Arquivos processados"
-            value={m ? nf.format(m.files) : null}
+            value={m ? nf.format(m.files) : "—"}
             hint={m ? `${nf.format(m.files30d)} nos últimos 30 dias` : undefined}
-            icon={FileSpreadsheet}
-            tone="blue"
+            icon={<FileSpreadsheet className="size-4" aria-hidden />}
             loading={metrics.isLoading}
           />
-          <Kpi
+          <KpiCard
             label="Linhas preenchidas"
-            value={m ? nf.format(m.rowsMatched) : null}
+            value={m ? nf.format(m.rowsMatched) : "—"}
             hint={m ? `de ${nf.format(m.rowsTotal)} linhas com ativo` : undefined}
-            icon={Rows3}
-            tone="violet"
+            icon={<Rows3 className="size-4" aria-hidden />}
             loading={metrics.isLoading}
           />
-          <Kpi
+          <KpiCard
             label="Taxa de correspondência"
-            value={m ? `${m.matchRate.toLocaleString("pt-BR")}%` : null}
+            value={m ? `${m.matchRate.toLocaleString("pt-BR")}%` : "—"}
             hint={m && m.rowsTotal === 0 ? "sem processamentos" : "média histórica"}
-            icon={Percent}
-            tone={m && m.matchRate >= 90 ? "green" : "blue"}
+            icon={<Percent className="size-4" aria-hidden />}
             loading={metrics.isLoading}
           />
-          <Kpi
+          <KpiCard
             label="Ativos pendentes"
-            value={m ? nf.format(m.pendingUnmatched) : null}
+            value={m ? nf.format(m.pendingUnmatched) : "—"}
             hint={m && m.pendingUnmatched === 0 ? "nada a resolver" : "aguardando resolução"}
-            icon={SearchX}
-            tone={m && m.pendingUnmatched > 0 ? "amber" : "green"}
+            icon={<SearchX className="size-4" aria-hidden />}
             loading={metrics.isLoading}
-            to={m && m.pendingUnmatched > 0 ? "/inteligencia-ativos/nao-encontrados" : undefined}
+            onClick={
+              m && m.pendingUnmatched > 0
+                ? () => {
+                    void navigate({ to: "/inteligencia-ativos/nao-encontrados" });
+                  }
+                : undefined
+            }
           />
         </section>
       )}
@@ -192,14 +201,17 @@ export function PcmHome({ userName }: { userName?: string | null }) {
             </div>
 
             {jobs.isLoading ? (
-              <div className="space-y-2 p-4">
-                {[0, 1, 2].map((i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-lg" />
-                ))}
-              </div>
+              <SkeletonState rows={3} className="p-4" />
+            ) : jobs.isError ? (
+              <ErrorState
+                className="m-4"
+                description="Não conseguimos buscar os processamentos recentes."
+                onRetry={() => void jobs.refetch()}
+              />
             ) : (jobs.data?.length ?? 0) === 0 ? (
               <EmptyState
-                icon={Inbox}
+                className="m-4 border-0"
+                icon={<Inbox className="size-5" aria-hidden />}
                 title="Nenhum processamento ainda"
                 description="Envie a primeira planilha para preencher prédio, andar e ambiente automaticamente."
                 action={
@@ -223,18 +235,11 @@ export function PcmHome({ userName }: { userName?: string | null }) {
                           {nf.format(j.unmatched_rows)} sem match
                         </p>
                       </div>
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-                          rate >= 90
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                            : rate >= 60
-                              ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                              : "border-destructive/30 bg-destructive/10 text-destructive",
-                        )}
-                      >
-                        {rate}%
-                      </span>
+                      <StatusBadge
+                        className="shrink-0"
+                        status={`${rate}%`}
+                        tone={rate >= 90 ? "success" : rate >= 60 ? "warning" : "danger"}
+                      />
                     </li>
                   );
                 })}
@@ -273,7 +278,8 @@ export function PcmHome({ userName }: { userName?: string | null }) {
               </div>
             ) : (
               <EmptyState
-                icon={Database}
+                className="mt-3 border-0"
+                icon={<Database className="size-5" aria-hidden />}
                 title="Sem catálogo ativo"
                 description="Nenhuma versão da base foi ativada."
                 action={
@@ -308,84 +314,6 @@ export function PcmHome({ userName }: { userName?: string | null }) {
           </div>
         </section>
       )}
-    </div>
-  );
-}
-
-const TONES: Record<string, string> = {
-  blue: "from-primary/20 to-transparent text-primary",
-  violet: "from-violet-500/20 to-transparent text-violet-300",
-  green: "from-emerald-500/20 to-transparent text-emerald-300",
-  amber: "from-amber-500/20 to-transparent text-amber-300",
-};
-
-function Kpi({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone = "blue",
-  loading,
-  to,
-}: {
-  label: string;
-  value: string | null;
-  hint?: string;
-  icon: typeof Gauge;
-  tone?: keyof typeof TONES | string;
-  loading?: boolean;
-  to?: string;
-}) {
-  const body = (
-    <div className="glow-card relative h-full overflow-hidden p-3.5 sm:p-4">
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b opacity-70",
-          TONES[tone] ?? TONES.blue,
-        )}
-      />
-      <div className="relative flex items-start justify-between gap-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-          {label}
-        </p>
-        <Icon className={cn("h-4 w-4 shrink-0", (TONES[tone] ?? TONES.blue).split(" ").pop())} />
-      </div>
-      {loading || value === null ? (
-        <Skeleton className="relative mt-3 h-7 w-20 rounded" />
-      ) : (
-        <p className="relative mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-          {value}
-        </p>
-      )}
-      {hint && <p className="relative mt-1 truncate text-[11px] text-muted-foreground">{hint}</p>}
-    </div>
-  );
-  return to ? (
-    <Link to={to} className="block h-full">
-      {body}
-    </Link>
-  ) : (
-    body
-  );
-}
-
-function EmptyState({
-  icon: Icon,
-  title,
-  description,
-  action,
-}: {
-  icon: typeof Gauge;
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-      <Icon className="h-6 w-6 text-muted-foreground/60" />
-      <p className="text-sm font-medium">{title}</p>
-      <p className="max-w-xs text-xs text-muted-foreground">{description}</p>
-      {action}
     </div>
   );
 }
