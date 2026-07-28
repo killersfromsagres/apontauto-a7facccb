@@ -119,6 +119,7 @@ export const MENU_KEYS = [
   "refrigeracao",
   "refrigeracao-gestor",
   "controle-materiais",
+  "base-ativos",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
