@@ -10,7 +10,7 @@ import type { AssetRecord } from "../../types";
 
 // Recorte real da base DEMARCHI.
 const BASE: AssetRecord[] = [
-  { code: "DEM", name: "DEMARCHI", level: "PLANTA", parentCode: "MRISS-CP06" },
+  { code: "DEM", name: "DEMARCHI", level: "PLANTA", parentCode: null },
   { code: "DEMPZ", name: "E171", level: "PRÉDIO / ÁREA", parentCode: "DEM" },
   { code: "DEMPZTE", name: "TÉRREO", level: "ANDAR / PAVIMENTO", parentCode: "DEMPZ" },
   {
