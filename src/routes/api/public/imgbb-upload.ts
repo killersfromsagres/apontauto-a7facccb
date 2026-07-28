@@ -30,20 +30,48 @@ export const Route = createFileRoute("/api/public/imgbb-upload")({
         if (!(file instanceof Blob)) {
           return Response.json({ error: "Campo image ausente" }, { status: 400 });
         }
-        if (file.size > 15 * 1024 * 1024) {
+        if (file.size === 0) {
+          return Response.json({ error: "Imagem vazia" }, { status: 400 });
+        }
+        if (file.size > MAX_BYTES) {
           return Response.json({ error: "Imagem excede 15MB" }, { status: 413 });
         }
+        const mime = (file.type || "").toLowerCase().split(";")[0];
+        if (!ALLOWED_MIME.has(mime)) {
+          return Response.json(
+            { error: "Tipo de arquivo não permitido. Envie JPG, PNG ou WEBP." },
+            { status: 415 },
+          );
+        }
 
-        // ImgBB aceita base64 no campo image via multipart.
+        const rawName =
+          typeof (file as File).name === "string" ? (file as File).name : "";
+        const providedName = form.get("name");
+        const baseName = sanitizeName(
+          typeof providedName === "string" && providedName.trim()
+            ? providedName
+            : rawName,
+        );
+        if (rawName && !hasAllowedExtension(rawName)) {
+          return Response.json(
+            { error: "Extensão de arquivo não permitida." },
+            { status: 415 },
+          );
+        }
+        // Assinatura binária precisa bater com o MIME declarado.
         const buf = await file.arrayBuffer();
+        if (!looksLikeImage(new Uint8Array(buf.slice(0, 16)))) {
+          return Response.json(
+            { error: "Conteúdo do arquivo não é uma imagem válida." },
+            { status: 415 },
+          );
+        }
         const b64 = arrayBufferToBase64(buf);
 
         const upstream = new FormData();
         upstream.append("image", b64);
-        const name = form.get("name");
-        if (typeof name === "string" && name.trim()) {
-          upstream.append("name", name.trim().slice(0, 120));
-        }
+        if (baseName) upstream.append("name", baseName);
+
 
         let res: Response;
         try {
