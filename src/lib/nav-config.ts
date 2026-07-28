@@ -157,6 +157,36 @@ export const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "inteligencia-ativos-grp",
+    title: "Inteligência de Ativos",
+    icon: Sparkles,
+    items: [
+      {
+        key: "inteligencia-ativos",
+        title: "Preencher Planilha",
+        short: "Preencher",
+        url: "/inteligencia-ativos/preencher",
+        icon: FileSpreadsheet,
+      },
+      {
+        key: "inteligencia-ativos-nao-encontrados",
+        title: "Ativos não encontrados",
+        short: "Pendências",
+        url: "/inteligencia-ativos/nao-encontrados",
+        icon: SearchX,
+      },
+      {
+        key: "inteligencia-ativos-historico",
+        title: "Histórico",
+        short: "Histórico",
+        url: "/inteligencia-ativos/historico",
+        icon: ScrollText,
+      },
+    ],
+  },
+
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: Cog },
   },
