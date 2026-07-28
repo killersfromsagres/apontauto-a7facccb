@@ -5,11 +5,12 @@ import { Lock, Eye, EyeOff, UserRound, ShieldCheck, Loader2, X } from "lucide-re
 
 import { supabase } from "@/integrations/supabase/client";
 import {
-  saveCredentials,
-  loadCredentials,
+  saveLogin,
+  loadLogin,
   clearCredentials,
   touchCredentials,
 } from "@/lib/auth/saved-credentials";
+
 import {
   AlertDialog,
   AlertDialogAction,
