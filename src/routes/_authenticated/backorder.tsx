@@ -82,7 +82,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, readBackorderWorkbook, type BackorderRow } from "@/lib/backorder/reader";
 import { assetsIndexFromGraph, describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
-import { loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
+import { invalidateAssetGraphCache, loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
 
 // Motor de ativos único: usa o catálogo ativo (PCM) e cai na base legada
 // `assets_ref` automaticamente quando ainda não há catálogo importado.
@@ -540,6 +540,9 @@ function BackorderPage() {
         const { error } = await supabase.from("assets_ref").upsert(chunk, { onConflict: "ativo" });
         if (error) throw error;
       }
+
+      // Base legada mudou: descarta o cache do grafo compartilhado.
+      invalidateAssetGraphCache();
 
       // Recalcula Prédio/Andar/Espaço de todos os chamados usando a base atualizada
       const nextMap = makeAssetsMap([
