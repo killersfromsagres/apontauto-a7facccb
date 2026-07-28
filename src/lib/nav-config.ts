@@ -24,6 +24,7 @@ import {
   Wrench,
   ClipboardList,
   Cog,
+  Database,
 
   type LucideIcon,
 } from "lucide-react";
