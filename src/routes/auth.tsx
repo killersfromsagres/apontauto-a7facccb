@@ -317,14 +317,15 @@ function AuthPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Salvar dados de login?
+              Lembrar este usuário?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja salvar seus dados de login para entrar automaticamente nas
-              próximas sessões? Ficam armazenados apenas neste navegador, de
-              forma ofuscada, e expiram em 30 dias. Use somente em dispositivos
-              pessoais.
+              Podemos lembrar apenas o seu nome de usuário neste navegador para
+              agilizar o próximo acesso. Sua senha nunca é armazenada: a
+              reconexão automática usa somente a sessão segura do sistema, que
+              expira em 30 dias.
             </AlertDialogDescription>
+
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não</AlertDialogCancel>
