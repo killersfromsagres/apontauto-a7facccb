@@ -202,6 +202,54 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_events: {
+        Row: {
+          action: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          module_key: string | null
+          new_data: Json | null
+          old_data: Json | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          module_key?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          module_key?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       backorder_atividade_override: {
         Row: {
           atividade: string
@@ -961,6 +1009,81 @@ export type Database = {
           technicians?: string[]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      pcm_permissions: {
+        Row: {
+          action: string
+          created_at: string
+          key: string
+          label: string
+          module_key: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          key: string
+          label?: string
+          module_key: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          key?: string
+          label?: string
+          module_key?: string
+        }
+        Relationships: []
+      }
+      pcm_role_permissions: {
+        Row: {
+          permission_key: string
+          role_key: string
+        }
+        Insert: {
+          permission_key: string
+          role_key: string
+        }
+        Update: {
+          permission_key?: string
+          role_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pcm_role_permissions_permission_key_fkey"
+            columns: ["permission_key"]
+            isOneToOne: false
+            referencedRelation: "pcm_permissions"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "pcm_role_permissions_role_key_fkey"
+            columns: ["role_key"]
+            isOneToOne: false
+            referencedRelation: "pcm_roles"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
+      pcm_roles: {
+        Row: {
+          created_at: string
+          key: string
+          label: string
+          rank: number
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          label: string
+          rank?: number
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          label?: string
+          rank?: number
         }
         Relationships: []
       }
@@ -2031,6 +2154,68 @@ export type Database = {
           },
         ]
       }
+      user_module_access: {
+        Row: {
+          actions: string[]
+          created_at: string
+          granted_by: string | null
+          id: string
+          module_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actions?: string[]
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          module_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actions?: string[]
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          module_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_pcm_roles: {
+        Row: {
+          created_at: string
+          granted_by: string | null
+          id: string
+          role_key: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role_key: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          role_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_pcm_roles_role_key_fkey"
+            columns: ["role_key"]
+            isOneToOne: false
+            referencedRelation: "pcm_roles"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2057,6 +2242,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_module: {
+        Args: { module_key: string; required_action?: string }
+        Returns: boolean
+      }
       cancel_queued_pointing_job: {
         Args: { p_job_id: string }
         Returns: {
