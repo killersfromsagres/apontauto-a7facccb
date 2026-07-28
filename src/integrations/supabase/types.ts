@@ -2146,6 +2146,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      pcm_fill_metrics: { Args: never; Returns: Json }
       requeue_stale_pointing_jobs: {
         Args: { p_minutes?: number }
         Returns: number
