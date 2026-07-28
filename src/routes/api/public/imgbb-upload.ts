@@ -1,5 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+const MAX_BYTES = 15 * 1024 * 1024;
+const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+const ALLOWED_EXT = [".jpg", ".jpeg", ".png", ".webp"];
+
+/** Remove diretórios, caracteres de controle e mantém apenas um nome simples. */
+function sanitizeName(name: string): string {
+  return name
+    .split(/[\\/]/)
+    .pop()!
+    .replace(/\.[^.]+$/, "")
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^[-.]+/, "")
+    .slice(0, 100);
+}
+
+function hasAllowedExtension(name: string): boolean {
+  const lower = name.toLowerCase();
+  return ALLOWED_EXT.some((ext) => lower.endsWith(ext));
+}
+
+/** Confere os magic bytes de JPEG, PNG e WEBP. */
+function looksLikeImage(head: Uint8Array): boolean {
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return true; // JPEG
+  if (
+    head[0] === 0x89 &&
+    head[1] === 0x50 &&
+    head[2] === 0x4e &&
+    head[3] === 0x47
+  )
+    return true; // PNG
+  const ascii = String.fromCharCode(...Array.from(head.subarray(0, 12)));
+  return ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP";
+}
+
+
 /**
  * Proxy de upload de imagens para o ImgBB.
  * Mantém a IMGBB_API_KEY no servidor (nunca exposta ao browser).
