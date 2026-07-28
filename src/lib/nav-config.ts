@@ -25,6 +25,10 @@ import {
   ClipboardList,
   Cog,
   Database,
+  Sparkles,
+  FileSpreadsheet,
+  SearchX,
+
 
   type LucideIcon,
 } from "lucide-react";
