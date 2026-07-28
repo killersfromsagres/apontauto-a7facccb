@@ -25,6 +25,10 @@ import {
   ClipboardList,
   Cog,
   Database,
+  Sparkles,
+  FileSpreadsheet,
+  SearchX,
+
 
   type LucideIcon,
 } from "lucide-react";
@@ -157,6 +161,36 @@ export const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "inteligencia-ativos-grp",
+    title: "Inteligência de Ativos",
+    icon: Sparkles,
+    items: [
+      {
+        key: "inteligencia-ativos",
+        title: "Preencher Planilha",
+        short: "Preencher",
+        url: "/inteligencia-ativos/preencher",
+        icon: FileSpreadsheet,
+      },
+      {
+        key: "inteligencia-ativos-nao-encontrados",
+        title: "Ativos não encontrados",
+        short: "Pendências",
+        url: "/inteligencia-ativos/nao-encontrados",
+        icon: SearchX,
+      },
+      {
+        key: "inteligencia-ativos-historico",
+        title: "Histórico",
+        short: "Histórico",
+        url: "/inteligencia-ativos/historico",
+        icon: ScrollText,
+      },
+    ],
+  },
+
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: Cog },
   },
@@ -203,6 +237,8 @@ export function useVisibleSections() {
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       if (key === "corretiva-gestor") return isOwner || isAdmin;
       if (key === "base-ativos") return isOwner || isAdmin;
+      if (key.startsWith("inteligencia-ativos")) return isOwner || isAdmin;
+
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];
