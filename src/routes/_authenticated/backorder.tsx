@@ -1751,17 +1751,17 @@ function TableView({
                         onCheckedChange={(v) => onToggle(r, Boolean(v))}
                       />
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{r.os}</TableCell>
-                    <TableCell className="max-w-[320px] truncate" title={r.nome}>
+                    <TableCell className="whitespace-nowrap font-mono text-xs">{r.os}</TableCell>
+                    <TableCell className="max-w-[360px] truncate" title={r.nome}>
                       {r.nome}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap text-xs">
                       <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.predio} field="predio" />
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap text-xs">
                       <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.andar} field="andar" />
                     </TableCell>
-                    <TableCell className="max-w-[220px] truncate text-xs" title={r.espaco || r.ativo}>
+                    <TableCell className="max-w-[240px] truncate text-xs" title={r.espaco || r.ativo}>
                       <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
                     </TableCell>
                     <TableCell>
