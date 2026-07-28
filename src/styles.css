@@ -70,125 +70,129 @@
 :root {
   --radius: 0.875rem;
 
-  --background: oklch(0.985 0.006 240);
-  --foreground: oklch(0.16 0.05 245);
+  /* Light — "Frosted Aqua": gelo levemente azulado + teal translúcido */
+  --background: oklch(0.985 0.008 210);
+  --foreground: oklch(0.20 0.045 235);
 
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.05 245);
+  --card-foreground: oklch(0.20 0.045 235);
 
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.05 245);
+  --popover-foreground: oklch(0.20 0.045 235);
 
-  --primary: oklch(0.56 0.22 250);
-  --primary-foreground: oklch(0.99 0.005 240);
-  --primary-glow: oklch(0.78 0.16 230);
+  --primary: oklch(0.62 0.11 205);
+  --primary-foreground: oklch(0.99 0.005 210);
+  --primary-glow: oklch(0.84 0.10 195);
 
-  --secondary: oklch(0.965 0.015 240);
-  --secondary-foreground: oklch(0.22 0.07 245);
+  --secondary: oklch(0.965 0.016 205);
+  --secondary-foreground: oklch(0.26 0.06 230);
 
-  --muted: oklch(0.965 0.012 240);
-  --muted-foreground: oklch(0.48 0.03 245);
+  --muted: oklch(0.963 0.013 205);
+  --muted-foreground: oklch(0.50 0.03 220);
 
-  --accent: oklch(0.945 0.04 235);
-  --accent-foreground: oklch(0.25 0.1 245);
+  --accent: oklch(0.945 0.042 200);
+  --accent-foreground: oklch(0.28 0.08 225);
 
   --destructive: oklch(0.6 0.23 27);
   --destructive-foreground: oklch(0.99 0.005 240);
 
-  --success: oklch(0.66 0.16 155);
+  --success: oklch(0.66 0.16 165);
   --success-foreground: oklch(0.99 0.005 240);
   --warning: oklch(0.78 0.16 75);
   --warning-foreground: oklch(0.2 0.05 60);
-  --info: oklch(0.7 0.14 220);
+  --info: oklch(0.7 0.12 205);
   --info-foreground: oklch(0.99 0.005 240);
 
-  --border: oklch(0.905 0.015 240);
-  --input: oklch(0.9 0.02 240);
-  --ring: oklch(0.56 0.22 250);
+  --border: oklch(0.905 0.017 205);
+  --input: oklch(0.9 0.022 205);
+  --ring: oklch(0.62 0.11 205);
 
-  --chart-1: oklch(0.58 0.22 245);
-  --chart-2: oklch(0.75 0.16 220);
-  --chart-3: oklch(0.72 0.18 155);
+  --chart-1: oklch(0.62 0.11 205);
+  --chart-2: oklch(0.80 0.11 195);
+  --chart-3: oklch(0.72 0.15 165);
   --chart-4: oklch(0.78 0.17 65);
   --chart-5: oklch(0.65 0.22 20);
 
-  --sidebar: oklch(0.98 0.01 240);
-  --sidebar-foreground: oklch(0.2 0.06 245);
-  --sidebar-primary: oklch(0.56 0.22 250);
-  --sidebar-primary-foreground: oklch(0.99 0.005 240);
-  --sidebar-accent: oklch(0.94 0.025 240);
-  --sidebar-accent-foreground: oklch(0.25 0.1 245);
-  --sidebar-border: oklch(0.9 0.02 240);
-  --sidebar-ring: oklch(0.56 0.22 250);
+  --sidebar: oklch(0.98 0.012 205);
+  --sidebar-foreground: oklch(0.24 0.05 230);
+  --sidebar-primary: oklch(0.62 0.11 205);
+  --sidebar-primary-foreground: oklch(0.99 0.005 210);
+  --sidebar-accent: oklch(0.94 0.03 200);
+  --sidebar-accent-foreground: oklch(0.28 0.08 225);
+  --sidebar-border: oklch(0.9 0.022 205);
+  --sidebar-ring: oklch(0.62 0.11 205);
 
   --shadow-elegant: 0 10px 30px -12px color-mix(in oklch, var(--primary) 30%, transparent);
   --shadow-glow: 0 0 60px -10px color-mix(in oklch, var(--primary-glow) 50%, transparent);
   --shadow-soft: 0 1px 2px -1px color-mix(in srgb, black 8%, transparent), 0 4px 12px -4px color-mix(in srgb, black 8%, transparent);
   --shadow-lift: 0 4px 8px -2px color-mix(in srgb, black 10%, transparent), 0 20px 40px -12px color-mix(in oklch, var(--primary) 20%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
-  --gradient-mesh: radial-gradient(at 30% 20%, color-mix(in oklch, var(--primary) 12%, transparent) 0, transparent 50%), radial-gradient(at 80% 80%, color-mix(in oklch, var(--primary-glow) 10%, transparent) 0, transparent 50%);
+  --gradient-mesh: radial-gradient(at 30% 20%, color-mix(in oklch, var(--primary) 12%, transparent) 0, transparent 50%), radial-gradient(at 80% 80%, color-mix(in oklch, var(--primary-glow) 12%, transparent) 0, transparent 50%);
+
 }
 
-/* Dark theme — Corporativo confiável: navy profundo + azul aço.
-   Base: #0f1b3d bg · #1e3a5f surface · #3b6fa0 primary · #e8edf3 fg */
+/* Dark theme — "Liquid Aqua Glass" (referência): quase-preto azulado
+   + vidro turquesa translúcido. Base: #050c14 bg · #0d1a24 surface
+   · #6fd8dd primary · #e6f6f8 fg */
 .dark {
-  --background: oklch(0.16 0.05 260);
-  --foreground: oklch(0.95 0.012 250);
+  --background: oklch(0.155 0.022 230);
+  --foreground: oklch(0.96 0.014 200);
 
-  --card: oklch(0.22 0.055 255);
-  --card-foreground: oklch(0.95 0.012 250);
+  --card: oklch(0.235 0.032 220);
+  --card-foreground: oklch(0.96 0.014 200);
 
-  --popover: oklch(0.20 0.055 258);
-  --popover-foreground: oklch(0.95 0.012 250);
+  --popover: oklch(0.205 0.030 224);
+  --popover-foreground: oklch(0.96 0.014 200);
 
-  --primary: oklch(0.62 0.11 245);
-  --primary-foreground: oklch(0.98 0.005 250);
-  --primary-glow: oklch(0.74 0.10 235);
+  --primary: oklch(0.80 0.105 196);
+  --primary-foreground: oklch(0.18 0.035 220);
+  --primary-glow: oklch(0.90 0.075 192);
 
-  --secondary: oklch(0.26 0.055 255);
-  --secondary-foreground: oklch(0.95 0.012 250);
+  --secondary: oklch(0.27 0.034 218);
+  --secondary-foreground: oklch(0.96 0.014 200);
 
-  --muted: oklch(0.24 0.05 255);
-  --muted-foreground: oklch(0.75 0.028 245);
+  --muted: oklch(0.25 0.030 220);
+  --muted-foreground: oklch(0.78 0.030 200);
 
-  --accent: oklch(0.34 0.075 250);
-  --accent-foreground: oklch(0.96 0.012 250);
+  --accent: oklch(0.36 0.055 200);
+  --accent-foreground: oklch(0.97 0.014 195);
 
   --destructive: oklch(0.63 0.19 22);
   --destructive-foreground: oklch(0.99 0.005 240);
 
-  --success: oklch(0.7 0.15 155);
-  --success-foreground: oklch(0.12 0.03 155);
+  --success: oklch(0.75 0.14 168);
+  --success-foreground: oklch(0.14 0.03 168);
   --warning: oklch(0.8 0.16 75);
   --warning-foreground: oklch(0.18 0.05 60);
-  --info: oklch(0.72 0.13 220);
-  --info-foreground: oklch(0.12 0.04 220);
+  --info: oklch(0.80 0.10 200);
+  --info-foreground: oklch(0.14 0.035 205);
 
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.62 0.11 245);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.80 0.105 196);
 
-  --chart-1: oklch(0.62 0.11 245);
-  --chart-2: oklch(0.74 0.10 220);
-  --chart-3: oklch(0.72 0.14 165);
+  --chart-1: oklch(0.80 0.105 196);
+  --chart-2: oklch(0.88 0.08 190);
+  --chart-3: oklch(0.74 0.13 168);
   --chart-4: oklch(0.78 0.15 70);
   --chart-5: oklch(0.68 0.20 25);
 
-  --sidebar: oklch(0.14 0.05 260);
-  --sidebar-foreground: oklch(0.90 0.02 245);
-  --sidebar-primary: oklch(0.62 0.11 245);
-  --sidebar-primary-foreground: oklch(0.98 0.005 250);
-  --sidebar-accent: oklch(0.26 0.065 255);
-  --sidebar-accent-foreground: oklch(0.96 0.012 250);
-  --sidebar-border: oklch(1 0 0 / 7%);
-  --sidebar-ring: oklch(0.62 0.11 245);
+  --sidebar: oklch(0.135 0.020 232);
+  --sidebar-foreground: oklch(0.91 0.022 200);
+  --sidebar-primary: oklch(0.80 0.105 196);
+  --sidebar-primary-foreground: oklch(0.18 0.035 220);
+  --sidebar-accent: oklch(0.27 0.040 212);
+  --sidebar-accent-foreground: oklch(0.97 0.014 195);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.80 0.105 196);
 
-  --shadow-elegant: 0 24px 60px -28px color-mix(in oklch, var(--primary) 45%, transparent), 0 2px 8px -2px color-mix(in srgb, black 40%, transparent);
+  --shadow-elegant: 0 24px 60px -28px color-mix(in oklch, var(--primary) 45%, transparent), 0 2px 8px -2px color-mix(in srgb, black 55%, transparent);
   --shadow-glow: 0 0 80px -18px color-mix(in oklch, var(--primary-glow) 45%, transparent);
-  --shadow-soft: 0 1px 2px -1px color-mix(in srgb, black 40%, transparent), 0 6px 20px -8px color-mix(in srgb, black 45%, transparent);
-  --shadow-lift: 0 6px 12px -3px color-mix(in srgb, black 40%, transparent), 0 24px 48px -16px color-mix(in oklch, var(--primary) 35%, transparent);
+  --shadow-soft: 0 1px 2px -1px color-mix(in srgb, black 45%, transparent), 0 6px 20px -8px color-mix(in srgb, black 50%, transparent);
+  --shadow-lift: 0 6px 12px -3px color-mix(in srgb, black 45%, transparent), 0 24px 48px -16px color-mix(in oklch, var(--primary) 30%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
-  --gradient-mesh: radial-gradient(at 20% 10%, color-mix(in oklch, var(--primary) 18%, transparent) 0, transparent 50%), radial-gradient(at 85% 90%, color-mix(in oklch, var(--primary-glow) 15%, transparent) 0, transparent 55%);
+  --gradient-mesh: radial-gradient(at 20% 10%, color-mix(in oklch, var(--primary) 16%, transparent) 0, transparent 52%), radial-gradient(at 85% 90%, color-mix(in oklch, var(--primary-glow) 12%, transparent) 0, transparent 58%);
+
 }
 
 @layer base {
@@ -282,9 +286,9 @@
     z-index: -1;
     pointer-events: none;
     background-image:
-      radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 30%, transparent) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 22%, transparent) 0%, transparent 60%),
-      radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 70%);
+      radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 20%, transparent) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 7%, transparent) 0%, transparent 70%);
     contain: strict;
     will-change: opacity;
   }
@@ -305,25 +309,38 @@
   }
 }
 
-/* Liquid Glass — iOS 26 style translucent panel.
-   Depth comes from blur + saturation + edge refraction, never solid fill. */
+/* Liquid Glass — painel translúcido de vidro turquesa (referência).
+   Profundidade vem de blur + saturação + refração nas bordas, nunca fill sólido. */
 @utility glass-surface {
-  background: color-mix(in oklch, var(--card) 22%, transparent);
-  border: 1px solid color-mix(in srgb, white 16%, transparent);
-  backdrop-filter: blur(28px) saturate(180%);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in oklab, var(--primary) 12%, transparent) 0%,
+      transparent 42%,
+      color-mix(in oklab, var(--primary-glow) 8%, transparent) 100%
+    ),
+    color-mix(in oklch, var(--card) 24%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 22%, color-mix(in srgb, white 16%, transparent));
+  backdrop-filter: blur(30px) saturate(190%);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, black 18%, transparent),
-    0 20px 60px -30px color-mix(in srgb, black 55%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 26%, transparent),
+    inset 0 0 22px -10px color-mix(in oklab, var(--primary-glow) 45%, transparent),
+    inset 0 -1px 0 color-mix(in srgb, black 20%, transparent),
+    0 20px 60px -30px color-mix(in srgb, black 60%, transparent);
 }
 
 /* Inner tile (buttons/links inside a glass card) — same recipe, tighter blur */
 @utility glass-tile {
-  background: color-mix(in oklch, var(--card) 14%, transparent);
-  border: 1px solid color-mix(in srgb, white 12%, transparent);
-  backdrop-filter: blur(16px) saturate(160%);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in oklab, var(--primary) 8%, transparent) 0%, transparent 60%),
+    color-mix(in oklch, var(--card) 16%, transparent);
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, color-mix(in srgb, white 12%, transparent));
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 16%, transparent),
+    inset 0 0 14px -8px color-mix(in oklab, var(--primary-glow) 40%, transparent);
 }
+
 
 /* Specular sheen sweep for premium cards on hover */
 @keyframes card-sheen-sweep {
