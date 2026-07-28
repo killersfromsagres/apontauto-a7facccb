@@ -1694,20 +1694,20 @@ function TableView({
       </div>
 
       <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60">
-        <Table>
+        <Table className="min-w-[1360px]">
           <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             <TableRow>
-              <TableHead className="w-10">✓</TableHead>
-              <TableHead>OS</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Prédio</TableHead>
-              <TableHead>Andar</TableHead>
-              <TableHead>Espaço</TableHead>
-              <TableHead>Atividade</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Equipe</TableHead>
-              <TableHead>Solicitante</TableHead>
-              <TableHead>Dias</TableHead>
+              <TableHead className="w-10 whitespace-nowrap">✓</TableHead>
+              <TableHead className="w-[90px] whitespace-nowrap">OS</TableHead>
+              <TableHead className="min-w-[280px] whitespace-nowrap">Nome</TableHead>
+              <TableHead className="w-[110px] whitespace-nowrap">Prédio</TableHead>
+              <TableHead className="w-[130px] whitespace-nowrap">Andar</TableHead>
+              <TableHead className="min-w-[180px] whitespace-nowrap">Espaço</TableHead>
+              <TableHead className="w-[230px] whitespace-nowrap">Atividade</TableHead>
+              <TableHead className="w-[110px] whitespace-nowrap">Data</TableHead>
+              <TableHead className="w-[150px] whitespace-nowrap">Equipe</TableHead>
+              <TableHead className="min-w-[190px] whitespace-nowrap">Solicitante</TableHead>
+              <TableHead className="w-[80px] whitespace-nowrap">Dias</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
