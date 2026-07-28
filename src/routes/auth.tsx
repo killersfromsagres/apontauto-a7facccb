@@ -124,7 +124,7 @@ function AuthPage() {
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
       // a escolha (Sim/Não) no diálogo.
-      pendingCreds.current = { email: loginEmail, password };
+      pendingCreds.current = { email: loginEmail };
       setAskSave(true);
     } catch (err) {
       triggerShake();
@@ -136,8 +136,9 @@ function AuthPage() {
 
   const handleSaveChoice = (save: boolean) => {
     if (save && pendingCreds.current) {
-      saveCredentials(pendingCreds.current);
-      toast.success("Credenciais salvas neste dispositivo.");
+      saveLogin(pendingCreds.current.email);
+      toast.success("Usuário lembrado neste dispositivo.");
+
     } else if (!save) {
       clearCredentials();
     }
