@@ -11,6 +11,7 @@ export interface LoadedAssetGraph {
   source: "catalog" | "legacy" | "empty";
   catalogId: string | null;
   catalogName: string | null;
+  catalogVersion: number | null;
   total: number;
 }
 
@@ -29,6 +30,7 @@ export async function loadActiveAssetGraph(force = false): Promise<LoadedAssetGr
   let source: LoadedAssetGraph["source"] = "empty";
   let catalogId: string | null = null;
   let catalogName: string | null = null;
+  let catalogVersion: number | null = null;
 
   try {
     const catalog = await getActiveCatalog();
@@ -38,6 +40,7 @@ export async function loadActiveAssetGraph(force = false): Promise<LoadedAssetGr
         source = "catalog";
         catalogId = catalog.id;
         catalogName = catalog.name;
+        catalogVersion = catalog.version ?? null;
       }
     }
   } catch {
@@ -58,6 +61,7 @@ export async function loadActiveAssetGraph(force = false): Promise<LoadedAssetGr
     source,
     catalogId,
     catalogName,
+    catalogVersion,
     total: records.length,
   };
   cache = { at: Date.now(), value };
