@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/download";
+import { supabase } from "@/integrations/supabase/client";
 import { loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
 import {
   DEFAULT_FILL_OPTIONS,
@@ -58,8 +59,10 @@ import {
   type Totals,
 } from "@/features/assets/services/sheet-fill";
 import {
+  buildBlankTemplate,
   buildUnmatchedReport,
   loadWorkbook,
+  processedFileName,
   validateFile,
   writeProcessed,
   type LoadedWorkbook,
@@ -170,6 +173,12 @@ function PreencherPlanilha() {
   const [fatal, setFatal] = useState<string | null>(null);
   const [showTech, setShowTech] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [output, setOutput] = useState<{ fileName: string; size: number } | null>(null);
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUserEmail(data.user?.email ?? ""));
+  }, []);
   const [dragging, setDragging] = useState(false);
 
   const workerRef = useRef<Worker | null>(null);
@@ -380,8 +389,34 @@ function PreencherPlanilha() {
     if (!loaded) return;
     setBusy(true);
     try {
-      const { blob, fileName } = await writeProcessed(loaded, plans);
+      const catalogAssets = options.includeCatalogSheet
+        ? Array.from(graph?.byCode.values() ?? []).map((n) => ({
+            code: n.code,
+            name: n.name,
+            level: n.rawLevel || n.level,
+            parentCode: n.parentCode ?? "",
+          }))
+        : undefined;
+
+      const { blob, fileName, validation } = await writeProcessed(loaded, plans, {
+        originalFileName: loaded.fileName,
+        user: userEmail,
+        catalogName,
+        catalogVersion: catalogQuery.data?.catalogVersion ?? null,
+        processedAt: new Date(),
+        durationMs: duration,
+        options,
+        totals: totals as unknown as Record<string, number>,
+        catalogAssets,
+      });
       downloadBlob(blob, fileName);
+      setOutput({ fileName, size: blob.size });
+      if (!validation.ok) {
+        toast.warning("Arquivo gerado, mas a validação encontrou pendências.");
+        setFatal(validation.refErrors.join("\n"));
+      } else {
+        toast.success("Planilha processada gerada e validada.");
+      }
     } catch (e) {
       toast.error("Falha ao gerar o arquivo.");
       setFatal(e instanceof Error ? e.message : String(e));
@@ -390,11 +425,21 @@ function PreencherPlanilha() {
     }
   };
 
+  const downloadTemplate = async () => {
+    try {
+      const { blob, fileName } = await buildBlankTemplate();
+      downloadBlob(blob, fileName);
+    } catch {
+      toast.error("Não foi possível gerar o modelo.");
+    }
+  };
+
   const downloadUnmatched = async () => {
     if (!loaded) return;
     const { blob, fileName } = await buildUnmatchedReport(loaded.fileName, plans);
     downloadBlob(blob, fileName);
   };
+
 
   const downloadFailureReport = () => {
     const text = [
@@ -426,6 +471,7 @@ function PreencherPlanilha() {
     setPlans([]);
     setOverrides({});
     setErrors([]);
+    setOutput(null);
     setFatal(null);
     setStep("upload");
   };
@@ -543,6 +589,13 @@ function PreencherPlanilha() {
               >
                 {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Upload className="mr-2 h-5 w-5" />}
                 Selecionar arquivo
+              </Button>
+              <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                className="h-10 rounded-2xl border-primary/30 bg-background/40"
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
               </Button>
               <p className="text-[11px] text-muted-foreground">
                 O conteúdo da planilha é processado no seu navegador e nunca é enviado a serviços de IA.
@@ -702,6 +755,12 @@ function PreencherPlanilha() {
                 hint="Anota o código do ativo e o catálogo utilizado."
                 checked={options.addComment}
                 onChange={(v) => setOptions((o) => ({ ...o, addComment: v }))}
+              />
+              <ToggleRow
+                label="Incluir aba “Base de Ativos Utilizada”"
+                hint="Aba oculta com o catálogo aplicado, para auditoria."
+                checked={options.includeCatalogSheet}
+                onChange={(v) => setOptions((o) => ({ ...o, includeCatalogSheet: v }))}
               />
             </GlassCard>
             <StepNav onBack={() => setStep("mapeamento")} onNext={() => setStep("previa")} nextLabel="Ver prévia" />
@@ -884,26 +943,52 @@ function PreencherPlanilha() {
               </GlassCard>
             )}
 
-            <GlassCard className="flex flex-wrap gap-2">
-              <Button onClick={downloadProcessed} disabled={busy} className="bg-gradient-to-r from-primary to-violet-500">
-                {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-                Baixar planilha processada
-              </Button>
-              <Button variant="outline" onClick={downloadUnmatched}>
-                <Download className="mr-2 h-4 w-4" /> Relatório de não encontrados
-              </Button>
-              <Button variant="outline" asChild>
-                <Link to="/inteligencia-ativos/nao-encontrados">
-                  <Search className="mr-2 h-4 w-4" /> Revisar não encontrados
-                </Link>
-              </Button>
-              <Button variant="outline" onClick={saveTemplate}>
-                <Save className="mr-2 h-4 w-4" /> Salvar mapeamento como modelo
-              </Button>
-              <Button variant="ghost" onClick={reset}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Processar outro arquivo
-              </Button>
+            <GlassCard className="space-y-3">
+              <button
+                type="button"
+                onClick={downloadProcessed}
+                disabled={busy}
+                className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-violet-500/10 to-transparent p-4 text-left transition-all hover:border-primary/60 hover:shadow-elegant disabled:opacity-60 sm:p-5"
+              >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-white shadow-elegant">
+                  {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-base font-bold sm:text-lg">Baixar planilha processada</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {(output?.fileName ?? processedFileName())} ·{" "}
+                    {output
+                      ? `${(output.size / 1024 / 1024).toFixed(2)} MB`
+                      : `~${((loaded?.fileSize ?? 0) / 1024 / 1024 + 0.15).toFixed(2)} MB estimados`}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                    Cópia do original com abas “Resumo do Processamento” e “Ativos Não Encontrados”.
+                  </p>
+                </div>
+                {output && <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />}
+              </button>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={downloadUnmatched}>
+                  <Download className="mr-2 h-4 w-4" /> Relatório de não encontrados
+                </Button>
+                <Button variant="outline" onClick={downloadTemplate}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link to="/inteligencia-ativos/nao-encontrados">
+                    <Search className="mr-2 h-4 w-4" /> Revisar não encontrados
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={saveTemplate}>
+                  <Save className="mr-2 h-4 w-4" /> Salvar mapeamento como modelo
+                </Button>
+                <Button variant="ghost" onClick={reset}>
+                  <RefreshCw className="mr-2 h-4 w-4" /> Processar outro arquivo
+                </Button>
+              </div>
             </GlassCard>
+
           </div>
         )}
 

@@ -242,12 +242,15 @@ export interface FillOptions {
   addMethodColumn: boolean;
   /** Adicionar comentário na célula com código + catálogo. */
   addComment: boolean;
+  /** Incluir a aba (oculta) "Base de Ativos Utilizada". */
+  includeCatalogSheet: boolean;
 }
 
 export const DEFAULT_FILL_OPTIONS: FillOptions = {
   overwrite: false,
   addMethodColumn: true,
   addComment: false,
+  includeCatalogSheet: false,
 };
 
 export interface RowResult {
