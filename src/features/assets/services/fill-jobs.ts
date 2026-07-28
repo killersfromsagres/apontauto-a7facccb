@@ -2,6 +2,8 @@
 // nunca sai do navegador).
 
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeFileName, saveJobSchema } from "../schemas";
+
 import type { SheetPlan } from "./spreadsheet-io";
 import type { Totals } from "./sheet-fill";
 
