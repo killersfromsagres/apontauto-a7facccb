@@ -6,7 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
 
-const OWNER_ADMIN_EMAIL = "gabrielvlp33@gmail.com";
+const OWNER_ADMIN_EMAIL = "admin@apontauto.local";
 const LOGIN_DOMAIN = "apontauto.local";
 const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
 

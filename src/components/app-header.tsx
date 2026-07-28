@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 const logoAsset = { url: "/apontauto-logo.png" };
 
-const ADMIN_EMAIL = "gabrielvlp33@gmail.com";
+const ADMIN_EMAIL = "admin@apontauto.local";
 
 export function AppHeader() {
   const navigate = useNavigate();
