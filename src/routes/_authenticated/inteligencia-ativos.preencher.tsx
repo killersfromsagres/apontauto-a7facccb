@@ -775,15 +775,15 @@ function PreencherPlanilha() {
                           <td className="px-3 py-1.5 text-muted-foreground">{r.row}</td>
                           <td className="px-3 py-1.5 font-mono">{r.code}</td>
                           {[0, 1, 2].map((k) => (
-                            <>
-                              <td key={`c${k}`} className="px-3 py-1.5 text-muted-foreground">
+                            <Fragment key={k}>
+                              <td className="px-3 py-1.5 text-muted-foreground">
                                 {r.current[k] || "—"}
                               </td>
-                              <td key={`n${k}`} className="px-1 py-1">
+                              <td className="px-1 py-1">
                                 <input
                                   value={calc[k]}
                                   onChange={(e) => {
-                                    const next: [string, string, string] = [...calc] as any;
+                                    const next: [string, string, string] = [...calc] as [string, string, string];
                                     next[k] = e.target.value;
                                     setOverrides((o) => ({ ...o, [key]: next }));
                                   }}
@@ -793,8 +793,9 @@ function PreencherPlanilha() {
                                   )}
                                 />
                               </td>
-                            </>
+                            </Fragment>
                           ))}
+
                           <td className="px-3 py-1.5 text-muted-foreground">{r.method}</td>
                           <td className="px-3 py-1.5">
                             <Badge variant="outline" className={cn("text-[10px]", STATUS_TONE[r.status])}>
