@@ -75,6 +75,14 @@ export const sections: MenuSection[] = [
     icon: CalendarRange,
     items: [
       { key: "programacao", title: "Programação Semanal", short: "Programação", url: "/programacao", icon: CalendarDays },
+      {
+        key: "backlog-inteligente",
+        title: "Backlog Inteligente",
+        short: "Backlog",
+        url: "/backlog-inteligente",
+        icon: ListChecks,
+        keywords: ["prioridade", "score", "sla", "reincidência", "fila"],
+      },
       { key: "preventiva", title: "Preventiva (legado)", short: "Preventiva", url: "/preventiva", icon: CalendarClock },
       { key: "taludes", title: "Demarcação de Taludes", short: "Taludes", url: "/taludes", icon: MapIcon },
       { key: "apontamentos", title: "Apontamentos", short: "Apont.", url: "/apontamentos", icon: PenLine },
