@@ -5,11 +5,12 @@ import { Lock, Eye, EyeOff, UserRound, ShieldCheck, Loader2, X } from "lucide-re
 
 import { supabase } from "@/integrations/supabase/client";
 import {
-  saveCredentials,
-  loadCredentials,
+  saveLogin,
+  loadLogin,
   clearCredentials,
   touchCredentials,
 } from "@/lib/auth/saved-credentials";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,7 +51,7 @@ function AuthPage() {
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
-  const pendingCreds = useRef<{ email: string; password: string } | null>(null);
+  const pendingCreds = useRef<{ email: string } | null>(null);
   const autoTried = useRef(false);
   const autoCancelled = useRef(false);
 
@@ -64,35 +65,34 @@ function AuthPage() {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  // Login automático: se há credenciais salvas, tenta autenticar sem interação.
+  // Reconexão automática: nenhuma senha é guardada. Usamos apenas a sessão
+  // persistida (refresh token) do backend; se ela ainda for válida, o usuário
+  // entra direto. Caso contrário, apenas pré-preenchemos o usuário.
   useEffect(() => {
     if (autoTried.current) return;
     autoTried.current = true;
-    const saved = loadCredentials();
+    const saved = loadLogin();
     if (!saved) return;
     setEmail(saved.email.replace(/@apontauto\.local$/, ""));
     setAutoLogin(true);
-    supabase.auth
-      .signInWithPassword({ email: saved.email, password: saved.password })
-      .then(({ error }) => {
-        if (autoCancelled.current) return;
-        if (error) {
-          clearCredentials();
-          toast.info("Credenciais salvas expiraram. Faça login novamente.");
-          setAutoLogin(false);
-        } else {
-          touchCredentials();
-          toast.success("Login automático realizado.");
-          navigate({ to: "/" });
-        }
-      });
+    supabase.auth.getSession().then(({ data }) => {
+      if (autoCancelled.current) return;
+      if (data.session) {
+        touchCredentials();
+        toast.success("Sessão restaurada.");
+        navigate({ to: "/" });
+      } else {
+        setAutoLogin(false);
+      }
+    });
   }, [navigate]);
 
   const cancelAutoLogin = () => {
     autoCancelled.current = true;
     setAutoLogin(false);
-    toast.info("Login automático cancelado.");
+    toast.info("Reconexão automática cancelada.");
   };
+
 
   const triggerShake = () => {
     setShake(true);
@@ -124,7 +124,7 @@ function AuthPage() {
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
       // a escolha (Sim/Não) no diálogo.
-      pendingCreds.current = { email: loginEmail, password };
+      pendingCreds.current = { email: loginEmail };
       setAskSave(true);
     } catch (err) {
       triggerShake();
@@ -136,8 +136,9 @@ function AuthPage() {
 
   const handleSaveChoice = (save: boolean) => {
     if (save && pendingCreds.current) {
-      saveCredentials(pendingCreds.current);
-      toast.success("Credenciais salvas neste dispositivo.");
+      saveLogin(pendingCreds.current.email);
+      toast.success("Usuário lembrado neste dispositivo.");
+
     } else if (!save) {
       clearCredentials();
     }
@@ -316,14 +317,15 @@ function AuthPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
-              Salvar dados de login?
+              Lembrar este usuário?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja salvar seus dados de login para entrar automaticamente nas
-              próximas sessões? Ficam armazenados apenas neste navegador, de
-              forma ofuscada, e expiram em 30 dias. Use somente em dispositivos
-              pessoais.
+              Podemos lembrar apenas o seu nome de usuário neste navegador para
+              agilizar o próximo acesso. Sua senha nunca é armazenada: a
+              reconexão automática usa somente a sessão segura do sistema, que
+              expira em 30 dias.
             </AlertDialogDescription>
+
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não</AlertDialogCancel>
