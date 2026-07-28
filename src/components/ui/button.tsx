@@ -21,6 +21,8 @@ const buttonVariants = cva(
           "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90",
         outline:
           "border border-input bg-background/60 backdrop-blur-sm shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/50",
+        glass:
+          "glass-pill text-foreground hover:text-foreground",
         soft:
           "bg-primary/10 text-primary hover:bg-primary/15 border border-primary/15",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
