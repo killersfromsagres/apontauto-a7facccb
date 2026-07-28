@@ -47,6 +47,7 @@ import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
 import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } from './routes/_authenticated/inteligencia-ativos.nao-encontrados'
+import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -255,6 +256,12 @@ const AuthenticatedInteligenciaAtivosNaoEncontradosRoute =
     path: '/inteligencia-ativos/nao-encontrados',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedInteligenciaAtivosHistoricoRoute =
+  AuthenticatedInteligenciaAtivosHistoricoRouteImport.update({
+    id: '/inteligencia-ativos/historico',
+    path: '/inteligencia-ativos/historico',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -289,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
@@ -328,6 +336,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
+  '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
@@ -369,6 +378,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
@@ -410,6 +420,7 @@ export interface FileRouteTypes {
     | '/taludes'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/'
+    | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
@@ -489,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/_authenticated/'
+    | '/_authenticated/inteligencia-ativos/historico'
     | '/_authenticated/inteligencia-ativos/nao-encontrados'
     | '/_authenticated/inteligencia-ativos/preencher'
     | '/api/public/clima'
@@ -778,6 +791,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/inteligencia-ativos/historico': {
+      id: '/_authenticated/inteligencia-ativos/historico'
+      path: '/inteligencia-ativos/historico'
+      fullPath: '/inteligencia-ativos/historico'
+      preLoaderRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -807,6 +827,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
 }
@@ -840,6 +861,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedInteligenciaAtivosHistoricoRoute:
+    AuthenticatedInteligenciaAtivosHistoricoRoute,
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute:
     AuthenticatedInteligenciaAtivosNaoEncontradosRoute,
   AuthenticatedInteligenciaAtivosPreencherRoute:
