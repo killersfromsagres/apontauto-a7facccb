@@ -1671,10 +1671,18 @@ body {
     max-width: 100%;
     height: auto;
   }
-  /* Evita textos gigantes estourando o container em mobile */
-  h1, h2, h3, h4, p, span, a, li, td, th, label, button {
-    overflow-wrap: anywhere;
-    word-break: break-word;
+  /* Evita textos longos estourando o container sem quebrar palavras letra por letra. */
+  h1, h2, h3, h4, p, a, li, label {
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  span {
+    overflow-wrap: inherit;
+    word-break: inherit;
+  }
+  td, th, button, [role="button"], [role="tab"], [role="menuitem"], [role="option"] {
+    overflow-wrap: normal;
+    word-break: normal;
   }
   /* Tabelas em containers rolam ao invés de estourar */
   table { max-width: 100%; }
