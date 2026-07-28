@@ -1812,25 +1812,25 @@ function TableView({
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap text-xs">
                       {r.termino_sla ? new Date(r.termino_sla).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="whitespace-nowrap text-xs">
                       <span
-                        className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium"
+                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium"
                         style={{
                           background: `${(EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8"}22`,
                           color: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? undefined,
                         }}
                       >
                         <span
-                          className="h-1.5 w-1.5 rounded-full"
+                          className="h-1.5 w-1.5 shrink-0 rounded-full"
                           style={{ background: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8" }}
                         />
                         {r.equipe || "—"}
                       </span>
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-xs" title={r.outros}>
+                    <TableCell className="max-w-[220px] truncate text-xs" title={r.outros}>
                       {r.outros}
                     </TableCell>
                     <TableCell>
