@@ -37,7 +37,7 @@ export const AppSidebar = memo(function AppSidebar() {
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
+    <Sidebar collapsible="icon" variant="floating" className="border-sidebar-border/60">
       <SidebarHeader className="border-b border-sidebar-border/50">
         <div className="flex items-center gap-2.5 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 transition-[padding,gap] duration-200 ease-out">
           <div className="relative shrink-0 transition-all duration-200 ease-out h-10 w-10 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
@@ -66,7 +66,7 @@ export const AppSidebar = memo(function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
-            Módulos
+            Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
