@@ -39,6 +39,7 @@ import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
+import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
@@ -209,6 +210,11 @@ const AuthenticatedClimaTempoRoute = AuthenticatedClimaTempoRouteImport.update({
   path: '/clima-tempo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBaseAtivosRoute = AuthenticatedBaseAtivosRouteImport.update({
+  id: '/base-ativos',
+  path: '/base-ativos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
   id: '/backorder',
   path: '/backorder',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -281,6 +288,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
+  '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/apontamentos'
     | '/backorder'
+    | '/base-ativos'
     | '/clima-tempo'
     | '/configuracoes'
     | '/controle-materiais'
@@ -393,6 +403,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/apontamentos'
     | '/backorder'
+    | '/base-ativos'
     | '/clima-tempo'
     | '/configuracoes'
     | '/controle-materiais'
@@ -430,6 +441,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/_authenticated/apontamentos'
     | '/_authenticated/backorder'
+    | '/_authenticated/base-ativos'
     | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
@@ -684,6 +696,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClimaTempoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/base-ativos': {
+      id: '/_authenticated/base-ativos'
+      path: '/base-ativos'
+      fullPath: '/base-ativos'
+      preLoaderRoute: typeof AuthenticatedBaseAtivosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/backorder': {
       id: '/_authenticated/backorder'
       path: '/backorder'
@@ -725,6 +744,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
+  AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
@@ -752,6 +772,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
+  AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
