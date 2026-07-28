@@ -82,7 +82,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, readBackorderWorkbook, type BackorderRow } from "@/lib/backorder/reader";
 import { assetsIndexFromGraph, describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
-import { invalidateAssetGraphCache, loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
+import { loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
 
 // Motor de ativos único: usa o catálogo ativo (PCM) e cai na base legada
 // `assets_ref` automaticamente quando ainda não há catálogo importado.
@@ -109,7 +109,6 @@ import {
 } from "@/lib/backorder/classify";
 import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
-import { fillLocationsInWorkbook } from "@/lib/backorder/fill-locations";
 import { downloadBlob } from "@/lib/download";
 import {
   DEFAULT_CONFIG,
@@ -195,7 +194,6 @@ function BackorderPage() {
   const backorderInputRef = useRef<HTMLInputElement>(null);
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
-  const fillLocInputRef = useRef<HTMLInputElement>(null);
   const targetPct = TARGET_PCT_DEFAULT;
 
   const loadConfig = useCallback(async () => {
