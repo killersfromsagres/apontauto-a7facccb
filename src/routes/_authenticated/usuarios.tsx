@@ -67,6 +67,17 @@ const MENU_LABELS: Record<MenuKey, string> = {
   refrigeracao: "Refrigeração (Campo)",
   "refrigeracao-gestor": "Refrigeração — Gestão",
   "controle-materiais": "Controle de Materiais",
+  "assets-fill": "Ativos — Preencher planilha",
+  "assets-catalog": "Ativos — Base/Catálogo",
+  "assets-history": "Ativos — Histórico",
+  "assets-unmatched": "Ativos — Não encontrados",
+  "dashboard-chamados": "Dashboard de Chamados",
+  "clima-tempo": "Clima e Tempo",
+  "preventiva-ac": "Preventiva AC (PMOC)",
+  "seguranca-trabalho": "Segurança do Trabalho",
+  "corretiva-pecas-status": "Corretiva — Status de Peças",
+  "refrigeracao-pecas-status": "Refrigeração — Status de Peças",
+  "refrigeracao-historico": "Refrigeração — Histórico",
 
   configuracoes: "Configurações",
 };

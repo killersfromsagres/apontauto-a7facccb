@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { useMyAccess } from "@/hooks/use-my-access";
+import { menuKeysForPath } from "@/lib/nav-config";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
 
@@ -21,13 +22,11 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-// Mapeia o primeiro segmento da URL para uma chave de menu (mesma usada em
-// `MENU_KEYS` / `allowed_menus`). `null` = rota sempre permitida (auth página, etc.).
-function pathToMenuKey(pathname: string): string | null {
-  if (pathname === "/" || pathname === "") return "dashboard";
-  const seg = pathname.split("/").filter(Boolean)[0];
-  if (!seg) return "dashboard";
-  return seg;
+// Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
+// com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
+function pathKeys(pathname: string): string[] | null {
+  if (pathname === "/" || pathname === "") return ["dashboard"];
+  return menuKeysForPath(pathname);
 }
 
 function AccessGuard() {
@@ -39,11 +38,11 @@ function AccessGuard() {
     if (loading) return;
     if (access.isAdmin) return; // admin acessa tudo
 
-    const key = pathToMenuKey(pathname);
-    if (!key) return;
+    const keys = pathKeys(pathname);
+    if (!keys) return;
 
     // Rota exclusiva de admin
-    if (key === "usuarios") {
+    if (keys.includes("usuarios")) {
       toast.error("Área restrita a administradores.");
       navigate({ to: "/", replace: true });
       return;
@@ -54,7 +53,7 @@ function AccessGuard() {
     // Lista vazia: não redireciona (evita loop) — o layout mostra tela de retry.
     if (access.allowed.length === 0) return;
 
-    if (!access.allowed.includes(key)) {
+    if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
       const target =
@@ -70,11 +69,11 @@ function AccessGuard() {
 function canRenderPath(pathname: string, access: ReturnType<typeof useMyAccess>["access"], loading: boolean) {
   if (loading) return false;
   if (access.isAdmin) return true;
-  const key = pathToMenuKey(pathname);
-  if (!key) return true;
-  if (key === "usuarios") return false;
+  const keys = pathKeys(pathname);
+  if (!keys) return true;
+  if (keys.includes("usuarios")) return false;
   if (!access.allowed) return true;
-  return access.allowed.includes(key);
+  return keys.some((k) => access.allowed!.includes(k));
 }
 
 function AccessFallback({ loading, noMenus }: { loading: boolean; noMenus: boolean }) {

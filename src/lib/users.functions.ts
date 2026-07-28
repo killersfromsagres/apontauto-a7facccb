@@ -121,6 +121,17 @@ export const MENU_KEYS = [
   "controle-materiais",
   "base-ativos",
   "inteligencia-ativos",
+  "assets-fill",
+  "assets-catalog",
+  "assets-history",
+  "assets-unmatched",
+  "dashboard-chamados",
+  "clima-tempo",
+  "preventiva-ac",
+  "seguranca-trabalho",
+  "corretiva-pecas-status",
+  "refrigeracao-pecas-status",
+  "refrigeracao-historico",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];

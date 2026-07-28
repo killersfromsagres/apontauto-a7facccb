@@ -6,6 +6,7 @@ import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
+import { GlobalSearch } from "./global-search";
 import { supabase } from "@/integrations/supabase/client";
 import { clearCredentials } from "@/lib/auth/saved-credentials";
 import {
@@ -98,6 +99,7 @@ export function AppHeader() {
             {email}
           </span>
         )}
+        <GlobalSearch />
         <SlaBell />
         <ThemeToggle />
         <AlertDialog>
