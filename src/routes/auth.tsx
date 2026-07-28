@@ -51,7 +51,7 @@ function AuthPage() {
   const [shake, setShake] = useState(false);
   const [askSave, setAskSave] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
-  const pendingCreds = useRef<{ email: string; password: string } | null>(null);
+  const pendingCreds = useRef<{ email: string } | null>(null);
   const autoTried = useRef(false);
   const autoCancelled = useRef(false);
 
@@ -65,35 +65,34 @@ function AuthPage() {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
-  // Login automático: se há credenciais salvas, tenta autenticar sem interação.
+  // Reconexão automática: nenhuma senha é guardada. Usamos apenas a sessão
+  // persistida (refresh token) do backend; se ela ainda for válida, o usuário
+  // entra direto. Caso contrário, apenas pré-preenchemos o usuário.
   useEffect(() => {
     if (autoTried.current) return;
     autoTried.current = true;
-    const saved = loadCredentials();
+    const saved = loadLogin();
     if (!saved) return;
     setEmail(saved.email.replace(/@apontauto\.local$/, ""));
     setAutoLogin(true);
-    supabase.auth
-      .signInWithPassword({ email: saved.email, password: saved.password })
-      .then(({ error }) => {
-        if (autoCancelled.current) return;
-        if (error) {
-          clearCredentials();
-          toast.info("Credenciais salvas expiraram. Faça login novamente.");
-          setAutoLogin(false);
-        } else {
-          touchCredentials();
-          toast.success("Login automático realizado.");
-          navigate({ to: "/" });
-        }
-      });
+    supabase.auth.getSession().then(({ data }) => {
+      if (autoCancelled.current) return;
+      if (data.session) {
+        touchCredentials();
+        toast.success("Sessão restaurada.");
+        navigate({ to: "/" });
+      } else {
+        setAutoLogin(false);
+      }
+    });
   }, [navigate]);
 
   const cancelAutoLogin = () => {
     autoCancelled.current = true;
     setAutoLogin(false);
-    toast.info("Login automático cancelado.");
+    toast.info("Reconexão automática cancelada.");
   };
+
 
   const triggerShake = () => {
     setShake(true);
