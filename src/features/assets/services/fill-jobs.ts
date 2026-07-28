@@ -86,15 +86,21 @@ export async function saveJob(input: SaveJobInput): Promise<string | null> {
   const userId = userRes?.user?.id;
   if (!userId) return null;
 
+  const safe = saveJobSchema.parse({
+    ...input,
+    fileName: sanitizeFileName(input.fileName),
+  });
+
   const { data, error } = await db
     .from("spreadsheet_jobs")
     .insert({
       user_id: userId,
-      catalog_id: input.catalogId,
+      catalog_id: safe.catalogId,
       kind: "fill",
-      file_name: input.fileName,
-      file_size: input.fileSize,
-      file_type: input.fileType,
+      file_name: safe.fileName,
+      file_size: safe.fileSize,
+      file_type: safe.fileType,
+
       sheet_name: input.plans.map((p) => p.sheetName).join(", ").slice(0, 200),
       status: "completed",
       progress: 100,
