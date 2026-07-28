@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import {
@@ -81,7 +81,15 @@ import {
 
 import { supabase } from "@/integrations/supabase/client";
 import { readAssetsFile, readBackorderFile, readBackorderWorkbook, type BackorderRow } from "@/lib/backorder/reader";
-import { describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import { assetsIndexFromGraph, describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
+import { invalidateAssetGraphCache, loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
+
+// Motor de ativos único: usa o catálogo ativo (PCM) e cai na base legada
+// `assets_ref` automaticamente quando ainda não há catálogo importado.
+async function loadAssetsIndex(force = false): Promise<AssetsMap> {
+  const { graph } = await loadActiveAssetGraph(force);
+  return assetsIndexFromGraph(graph);
+}
 import {
   buildLearnedIndex,
   applyLearnedToResolved,
@@ -188,7 +196,6 @@ function BackorderPage() {
   const assetsInputRef = useRef<HTMLInputElement>(null);
   const instrucaoInputRef = useRef<HTMLInputElement>(null);
   const fillLocInputRef = useRef<HTMLInputElement>(null);
-  const [fillingLoc, setFillingLoc] = useState(false);
   const targetPct = TARGET_PCT_DEFAULT;
 
   const loadConfig = useCallback(async () => {
@@ -228,10 +235,7 @@ function BackorderPage() {
 
   const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
-    const { data } = await supabase
-      .from("assets_ref")
-      .select("ativo, denominacao, nivel, codigo_pai");
-    setAssetsMap(makeAssetsMap((data as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? []));
+    setAssetsMap(await loadAssetsIndex());
   }, []);
 
   const [rulesDB, setRulesDB] = useState<RuleRow[]>([]);
@@ -350,14 +354,8 @@ function BackorderPage() {
   async function handleBackorderImport(file: File) {
     setImporting(true);
     try {
-      // 1) carrega assets_ref inteiro em memória (com hierarquia)
-      const { data: assetsRaw, error: assetsErr } = await supabase
-        .from("assets_ref")
-        .select("ativo, denominacao, nivel, codigo_pai");
-      if (assetsErr) throw assetsErr;
-      const assetsMap = makeAssetsMap(
-        (assetsRaw as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>) ?? [],
-      );
+      // 1) carrega o grafo de ativos vigente (catálogo ativo ou base legada)
+      const assetsMap = await loadAssetsIndex(true);
 
       const { rows: parsed, embeddedAssets } = await readBackorderWorkbook(file, assetsMap);
       if (parsed.length === 0) {
@@ -597,49 +595,11 @@ function BackorderPage() {
     }
   }
 
-  // Preenche Prédio/Andar/Ambiente em qualquer planilha enviada, replicando
-  // o VLOOKUP manual — usa a aba `ativos` do próprio arquivo (se houver) +
-  // a base persistida em `assets_ref` como fallback.
-  async function handlePreencherLocalizacoes(file: File) {
-    setFillingLoc(true);
-    const t = toast.loading("Preenchendo Prédio / Andar / Ambiente…");
-    try {
-      const { data: assetsRaw } = await supabase
-        .from("assets_ref")
-        .select("ativo, denominacao, nivel, codigo_pai");
-      const base = makeAssetsMap(
-        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
-      );
-      const result = await fillLocationsInWorkbook(file, base);
-      downloadBlob(result.blob, result.filename);
-      const detalhes = result.sheetsProcessed
-        .map((s) => `${s.name}: ${s.filled}${s.missing ? ` (${s.missing} sem match)` : ""}`)
-        .join(" · ");
-      if (result.sheetsProcessed.length === 0) {
-        toast.warning("Nenhuma aba com colunas Ativo + Prédio/Andar/Ambiente encontrada.", { id: t });
-      } else {
-        toast.success(
-          `Preenchido: ${result.totalFilled} linha(s)${result.totalMissing ? `, ${result.totalMissing} sem match` : ""}. ${detalhes}`,
-          { id: t },
-        );
-      }
-    } catch (e: any) {
-      console.error(e);
-      toast.error(e?.message ?? "Falha ao preencher localizações", { id: t });
-    } finally {
-      setFillingLoc(false);
-    }
-  }
   async function handleReprocessarChamados() {
     setImporting(true);
     const t = toast.loading("Reprocessando chamados com a base inteligente…");
     try {
-      const { data: assetsRaw } = await supabase
-        .from("assets_ref")
-        .select("ativo, denominacao, nivel, codigo_pai");
-      const map = makeAssetsMap(
-        (assetsRaw ?? []) as Array<{ ativo: string; denominacao: string; nivel?: string; codigo_pai?: string | null }>,
-      );
+      const map = await loadAssetsIndex(true);
       setAssetsMap(map);
 
       await loadLearnedRules();
@@ -1325,12 +1285,11 @@ function BackorderPage() {
               <DropdownMenuItem onClick={handleReprocessarChamados} disabled={importing}>
                 <RefreshCw className="mr-2 h-4 w-4" /> Reprocessar Chamados
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => fillLocInputRef.current?.click()}
-                disabled={fillingLoc}
-              >
-                <Database className="mr-2 h-4 w-4" />
-                {fillingLoc ? "Preenchendo…" : "Preencher Prédio/Andar/Ambiente"}
+              <DropdownMenuItem asChild>
+                <Link to="/inteligencia-ativos/preencher">
+                  <Database className="mr-2 h-4 w-4" />
+                  Preencher Prédio/Andar/Ambiente
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleValidarBase} disabled={importing}>
                 <ShieldAlert className="mr-2 h-4 w-4" /> Validar Base
@@ -1379,17 +1338,6 @@ function BackorderPage() {
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) void handleInstrucaoImport(f);
-              e.currentTarget.value = "";
-            }}
-          />
-          <input
-            ref={fillLocInputRef}
-            type="file"
-            accept=".xlsx"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void handlePreencherLocalizacoes(f);
               e.currentTarget.value = "";
             }}
           />
