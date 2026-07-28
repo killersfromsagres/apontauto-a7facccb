@@ -45,6 +45,7 @@ import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authent
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
+import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -241,6 +242,12 @@ const ApiPublicClimaRoute = ApiPublicClimaRouteImport.update({
   path: '/api/public/clima',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedInteligenciaAtivosPreencherRoute =
+  AuthenticatedInteligenciaAtivosPreencherRouteImport.update({
+    id: '/inteligencia-ativos/preencher',
+    path: '/inteligencia-ativos/preencher',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/taludes': typeof AuthenticatedTaludesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
@@ -312,6 +320,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
+  '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
@@ -351,6 +360,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/taludes'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
@@ -427,6 +438,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/'
+    | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
@@ -465,6 +477,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/_authenticated/'
+    | '/_authenticated/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
@@ -738,6 +751,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicClimaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/inteligencia-ativos/preencher': {
+      id: '/_authenticated/inteligencia-ativos/preencher'
+      path: '/inteligencia-ativos/preencher'
+      fullPath: '/inteligencia-ativos/preencher'
+      preLoaderRoute: typeof AuthenticatedInteligenciaAtivosPreencherRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -767,6 +787,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -798,6 +819,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedInteligenciaAtivosPreencherRoute:
+    AuthenticatedInteligenciaAtivosPreencherRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
