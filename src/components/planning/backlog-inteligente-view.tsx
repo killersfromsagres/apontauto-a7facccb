@@ -142,14 +142,14 @@ export function BacklogInteligenteView() {
       header: "Criticidade",
       sortValue: (r) => r.row.criticidade,
       className: "whitespace-nowrap",
-      cell: ({ row }) => <PriorityBadge value={row.criticidade} />,
+      cell: ({ row }) => <PriorityBadge priority={row.criticidade} />,
     },
     {
       key: "status",
       header: "Status",
       sortValue: (r) => r.row.statusNorm,
       className: "whitespace-nowrap",
-      cell: ({ row }) => <StatusBadge value={row.status || row.statusNorm} />,
+      cell: ({ row }) => <StatusBadge status={row.status || row.statusNorm} />,
     },
     {
       key: "local",
