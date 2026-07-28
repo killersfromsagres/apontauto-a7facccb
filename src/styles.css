@@ -131,66 +131,68 @@
 
 }
 
-/* Dark theme — Corporativo confiável: navy profundo + azul aço.
-   Base: #0f1b3d bg · #1e3a5f surface · #3b6fa0 primary · #e8edf3 fg */
+/* Dark theme — "Liquid Aqua Glass" (referência): quase-preto azulado
+   + vidro turquesa translúcido. Base: #050c14 bg · #0d1a24 surface
+   · #6fd8dd primary · #e6f6f8 fg */
 .dark {
-  --background: oklch(0.16 0.05 260);
-  --foreground: oklch(0.95 0.012 250);
+  --background: oklch(0.155 0.022 230);
+  --foreground: oklch(0.96 0.014 200);
 
-  --card: oklch(0.22 0.055 255);
-  --card-foreground: oklch(0.95 0.012 250);
+  --card: oklch(0.235 0.032 220);
+  --card-foreground: oklch(0.96 0.014 200);
 
-  --popover: oklch(0.20 0.055 258);
-  --popover-foreground: oklch(0.95 0.012 250);
+  --popover: oklch(0.205 0.030 224);
+  --popover-foreground: oklch(0.96 0.014 200);
 
-  --primary: oklch(0.62 0.11 245);
-  --primary-foreground: oklch(0.98 0.005 250);
-  --primary-glow: oklch(0.74 0.10 235);
+  --primary: oklch(0.80 0.105 196);
+  --primary-foreground: oklch(0.18 0.035 220);
+  --primary-glow: oklch(0.90 0.075 192);
 
-  --secondary: oklch(0.26 0.055 255);
-  --secondary-foreground: oklch(0.95 0.012 250);
+  --secondary: oklch(0.27 0.034 218);
+  --secondary-foreground: oklch(0.96 0.014 200);
 
-  --muted: oklch(0.24 0.05 255);
-  --muted-foreground: oklch(0.75 0.028 245);
+  --muted: oklch(0.25 0.030 220);
+  --muted-foreground: oklch(0.78 0.030 200);
 
-  --accent: oklch(0.34 0.075 250);
-  --accent-foreground: oklch(0.96 0.012 250);
+  --accent: oklch(0.36 0.055 200);
+  --accent-foreground: oklch(0.97 0.014 195);
 
   --destructive: oklch(0.63 0.19 22);
   --destructive-foreground: oklch(0.99 0.005 240);
 
-  --success: oklch(0.7 0.15 155);
-  --success-foreground: oklch(0.12 0.03 155);
+  --success: oklch(0.75 0.14 168);
+  --success-foreground: oklch(0.14 0.03 168);
   --warning: oklch(0.8 0.16 75);
   --warning-foreground: oklch(0.18 0.05 60);
-  --info: oklch(0.72 0.13 220);
-  --info-foreground: oklch(0.12 0.04 220);
+  --info: oklch(0.80 0.10 200);
+  --info-foreground: oklch(0.14 0.035 205);
 
-  --border: oklch(1 0 0 / 9%);
-  --input: oklch(1 0 0 / 13%);
-  --ring: oklch(0.62 0.11 245);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.80 0.105 196);
 
-  --chart-1: oklch(0.62 0.11 245);
-  --chart-2: oklch(0.74 0.10 220);
-  --chart-3: oklch(0.72 0.14 165);
+  --chart-1: oklch(0.80 0.105 196);
+  --chart-2: oklch(0.88 0.08 190);
+  --chart-3: oklch(0.74 0.13 168);
   --chart-4: oklch(0.78 0.15 70);
   --chart-5: oklch(0.68 0.20 25);
 
-  --sidebar: oklch(0.14 0.05 260);
-  --sidebar-foreground: oklch(0.90 0.02 245);
-  --sidebar-primary: oklch(0.62 0.11 245);
-  --sidebar-primary-foreground: oklch(0.98 0.005 250);
-  --sidebar-accent: oklch(0.26 0.065 255);
-  --sidebar-accent-foreground: oklch(0.96 0.012 250);
-  --sidebar-border: oklch(1 0 0 / 7%);
-  --sidebar-ring: oklch(0.62 0.11 245);
+  --sidebar: oklch(0.135 0.020 232);
+  --sidebar-foreground: oklch(0.91 0.022 200);
+  --sidebar-primary: oklch(0.80 0.105 196);
+  --sidebar-primary-foreground: oklch(0.18 0.035 220);
+  --sidebar-accent: oklch(0.27 0.040 212);
+  --sidebar-accent-foreground: oklch(0.97 0.014 195);
+  --sidebar-border: oklch(1 0 0 / 8%);
+  --sidebar-ring: oklch(0.80 0.105 196);
 
-  --shadow-elegant: 0 24px 60px -28px color-mix(in oklch, var(--primary) 45%, transparent), 0 2px 8px -2px color-mix(in srgb, black 40%, transparent);
+  --shadow-elegant: 0 24px 60px -28px color-mix(in oklch, var(--primary) 45%, transparent), 0 2px 8px -2px color-mix(in srgb, black 55%, transparent);
   --shadow-glow: 0 0 80px -18px color-mix(in oklch, var(--primary-glow) 45%, transparent);
-  --shadow-soft: 0 1px 2px -1px color-mix(in srgb, black 40%, transparent), 0 6px 20px -8px color-mix(in srgb, black 45%, transparent);
-  --shadow-lift: 0 6px 12px -3px color-mix(in srgb, black 40%, transparent), 0 24px 48px -16px color-mix(in oklch, var(--primary) 35%, transparent);
+  --shadow-soft: 0 1px 2px -1px color-mix(in srgb, black 45%, transparent), 0 6px 20px -8px color-mix(in srgb, black 50%, transparent);
+  --shadow-lift: 0 6px 12px -3px color-mix(in srgb, black 45%, transparent), 0 24px 48px -16px color-mix(in oklch, var(--primary) 30%, transparent);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
-  --gradient-mesh: radial-gradient(at 20% 10%, color-mix(in oklch, var(--primary) 18%, transparent) 0, transparent 50%), radial-gradient(at 85% 90%, color-mix(in oklch, var(--primary-glow) 15%, transparent) 0, transparent 55%);
+  --gradient-mesh: radial-gradient(at 20% 10%, color-mix(in oklch, var(--primary) 16%, transparent) 0, transparent 52%), radial-gradient(at 85% 90%, color-mix(in oklch, var(--primary-glow) 12%, transparent) 0, transparent 58%);
+
 }
 
 @layer base {
