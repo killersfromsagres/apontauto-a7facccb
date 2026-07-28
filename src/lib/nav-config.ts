@@ -202,6 +202,7 @@ export function useVisibleSections() {
       if (key === "configuracoes") return isOwner;
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       if (key === "corretiva-gestor") return isOwner || isAdmin;
+      if (key === "base-ativos") return isOwner || isAdmin;
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];
