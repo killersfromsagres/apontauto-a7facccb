@@ -16,3 +16,10 @@ export {
   type TimelineItem,
   type AuditEvent,
 } from "./timeline";
+export { PageHeader, ModuleHeader, type PageHeaderProps } from "./page-header";
+export { DataTable, type DataTableColumn, type DataTableProps } from "./data-table";
+export { DetailDrawer, DetailRow, type DetailDrawerProps } from "./detail-drawer";
+export { AdvancedFiltersDrawer } from "./advanced-filters-drawer";
+export { EntityPicker, type EntityOption } from "./entity-picker";
+export { DateRangePicker, type DateRange } from "./date-range-picker";
+export { AgentStatusIndicator, type AgentStatus } from "./agent-status-indicator";
