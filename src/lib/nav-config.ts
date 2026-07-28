@@ -141,6 +141,21 @@ export const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "pcm-grp",
+    title: "PCM",
+    icon: Database,
+    items: [
+      {
+        key: "base-ativos",
+        title: "Base de Ativos",
+        short: "Ativos",
+        url: "/base-ativos",
+        icon: Database,
+      },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: Cog },
   },
