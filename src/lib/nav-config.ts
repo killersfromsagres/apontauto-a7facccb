@@ -24,6 +24,7 @@ import {
   Wrench,
   ClipboardList,
   Cog,
+  Database,
 
   type LucideIcon,
 } from "lucide-react";
@@ -141,6 +142,21 @@ export const sections: MenuSection[] = [
     ],
   },
   {
+    kind: "group",
+    key: "pcm-grp",
+    title: "PCM",
+    icon: Database,
+    items: [
+      {
+        key: "base-ativos",
+        title: "Base de Ativos",
+        short: "Ativos",
+        url: "/base-ativos",
+        icon: Database,
+      },
+    ],
+  },
+  {
     kind: "item",
     item: { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: Cog },
   },
@@ -186,6 +202,7 @@ export function useVisibleSections() {
       if (key === "configuracoes") return isOwner;
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       if (key === "corretiva-gestor") return isOwner || isAdmin;
+      if (key === "base-ativos") return isOwner || isAdmin;
       return isAdmin ? true : !allowed || allowed.includes(key);
     };
     const out: MenuSection[] = [];

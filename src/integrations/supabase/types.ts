@@ -74,6 +74,104 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_catalogs: {
+        Row: {
+          business_unit: string | null
+          created_at: string
+          id: string
+          imported_at: string | null
+          imported_by: string | null
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          source_filename: string | null
+          total_assets: number | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          business_unit?: string | null
+          created_at?: string
+          id?: string
+          imported_at?: string | null
+          imported_by?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          source_filename?: string | null
+          total_assets?: number | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          business_unit?: string | null
+          created_at?: string
+          id?: string
+          imported_at?: string | null
+          imported_by?: string | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          source_filename?: string | null
+          total_assets?: number | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      assets: {
+        Row: {
+          business_unit: string
+          catalog_id: string
+          code: string
+          created_at: string
+          id: string
+          level: string
+          metadata: Json | null
+          name: string
+          normalized_code: string
+          parent_code: string | null
+          parent_name: string
+          updated_at: string
+        }
+        Insert: {
+          business_unit?: string
+          catalog_id: string
+          code: string
+          created_at?: string
+          id?: string
+          level?: string
+          metadata?: Json | null
+          name?: string
+          normalized_code: string
+          parent_code?: string | null
+          parent_name?: string
+          updated_at?: string
+        }
+        Update: {
+          business_unit?: string
+          catalog_id?: string
+          code?: string
+          created_at?: string
+          id?: string
+          level?: string
+          metadata?: Json | null
+          name?: string
+          normalized_code?: string
+          parent_code?: string | null
+          parent_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "asset_catalogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assets_ref: {
         Row: {
           ativo: string
@@ -1495,6 +1593,142 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      spreadsheet_jobs: {
+        Row: {
+          catalog_id: string | null
+          column_mapping: Json
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          finished_at: string | null
+          id: string
+          kind: string
+          matched_rows: number
+          options: Json
+          processed_rows: number
+          progress: number
+          sheet_name: string | null
+          started_at: string | null
+          status: string
+          total_rows: number
+          totals: Json
+          unmatched_rows: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          catalog_id?: string | null
+          column_mapping?: Json
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          matched_rows?: number
+          options?: Json
+          processed_rows?: number
+          progress?: number
+          sheet_name?: string | null
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          totals?: Json
+          unmatched_rows?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          catalog_id?: string | null
+          column_mapping?: Json
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          matched_rows?: number
+          options?: Json
+          processed_rows?: number
+          progress?: number
+          sheet_name?: string | null
+          started_at?: string | null
+          status?: string
+          total_rows?: number
+          totals?: Json
+          unmatched_rows?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_jobs_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "asset_catalogs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spreadsheet_unmatched: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          job_id: string
+          raw_row: Json
+          reason: string
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_code: string | null
+          row_number: number
+          sheet_name: string
+          status: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          id?: string
+          job_id: string
+          raw_row?: Json
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_code?: string | null
+          row_number?: number
+          sheet_name?: string
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          raw_row?: Json
+          reason?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_code?: string | null
+          row_number?: number
+          sheet_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_unmatched_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "spreadsheet_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sst_aso_historico: {
         Row: {
