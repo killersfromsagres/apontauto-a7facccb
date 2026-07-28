@@ -230,7 +230,7 @@ export function useVisibleSections() {
       active = false;
     };
   }, []);
-  const isOwner = (ownerEmail ?? "").trim().toLowerCase() === "gabrielvlp33@gmail.com";
+  const isOwner = (ownerEmail ?? "").trim().toLowerCase() === "admin@apontauto.local";
 
   const visibleSections = useMemo<MenuSection[]>(() => {
     if (loading) return [];

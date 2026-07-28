@@ -50,7 +50,7 @@ import {
   CORRETIVA_TEMPLATE_HEADERS,
 } from "@/lib/corretiva/paste";
 
-const OWNER_EMAIL = "gabrielvlp33@gmail.com";
+const OWNER_EMAIL = "admin@apontauto.local";
 
 export const Route = createFileRoute("/_authenticated/corretiva-gestor")({
   beforeLoad: async () => {
