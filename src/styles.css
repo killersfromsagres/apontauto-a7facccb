@@ -286,9 +286,9 @@
     z-index: -1;
     pointer-events: none;
     background-image:
-      radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 30%, transparent) 0%, transparent 55%),
-      radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 22%, transparent) 0%, transparent 60%),
-      radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 8%, transparent) 0%, transparent 70%);
+      radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in oklch, var(--primary) 20%, transparent) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 50% at 85% 100%, color-mix(in oklch, var(--primary-glow) 14%, transparent) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, color-mix(in oklch, var(--chart-2) 7%, transparent) 0%, transparent 70%);
     contain: strict;
     will-change: opacity;
   }
