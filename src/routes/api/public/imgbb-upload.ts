@@ -48,6 +48,13 @@ export const Route = createFileRoute("/api/public/imgbb-upload")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Rota /api/public/* não passa pela proteção do site: valida a sessão aqui.
+        const { getRequestUser, unauthorized } = await import(
+          "@/lib/api-auth.server"
+        );
+        const caller = await getRequestUser(request);
+        if (!caller) return unauthorized();
+
         const key = process.env.IMGBB_API_KEY;
         if (!key) {
           return Response.json(
@@ -55,6 +62,7 @@ export const Route = createFileRoute("/api/public/imgbb-upload")({
             { status: 500 },
           );
         }
+
 
         let form: FormData;
         try {

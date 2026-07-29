@@ -143,6 +143,12 @@ export const Route = createFileRoute("/api/backorder-reclassificar")({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const { getRequestUser, unauthorized } = await import(
+            "@/lib/api-auth.server"
+          );
+          const caller = await getRequestUser(request);
+          if (!caller) return unauthorized();
+
           const input = InputSchema.parse(await request.json());
           const results = await classifyItems(input.items);
           return Response.json({ results });
