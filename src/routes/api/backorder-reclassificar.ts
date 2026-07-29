@@ -5,16 +5,20 @@ import { generateText, NoObjectGeneratedError, Output } from "ai";
 import { z } from "zod";
 
 const InputSchema = z.object({
-  items: z.array(
-    z.object({
-      os: z.string(),
-      descricao: z.string().optional(),
-      ativo: z.string().optional(),
-      solicitante: z.string().optional(),
-      predio: z.string().optional(),
-    }),
-  ),
+  items: z
+    .array(
+      z.object({
+        os: z.string().min(1).max(60),
+        descricao: z.string().max(500).optional(),
+        ativo: z.string().max(120).optional(),
+        solicitante: z.string().max(120).optional(),
+        predio: z.string().max(120).optional(),
+      }),
+    )
+    .min(1)
+    .max(500),
 });
+
 
 const AiOutputSchema = z.object({
   results: z.array(
@@ -143,6 +147,12 @@ export const Route = createFileRoute("/api/backorder-reclassificar")({
     handlers: {
       POST: async ({ request }) => {
         try {
+          const { getRequestUser, unauthorized } = await import(
+            "@/lib/api-auth.server"
+          );
+          const caller = await getRequestUser(request);
+          if (!caller) return unauthorized();
+
           const input = InputSchema.parse(await request.json());
           const results = await classifyItems(input.items);
           return Response.json({ results });

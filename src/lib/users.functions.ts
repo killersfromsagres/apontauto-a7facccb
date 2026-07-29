@@ -402,7 +402,10 @@ export const provisionControleUser = createServerFn({ method: "POST" })
 
     const login = "controle";
     const email = loginToEmail(login);
-    const password = "123456@felipe";
+    // Senha vem de segredo do servidor (nunca fixa no código).
+    const password = process.env.CONTROLE_USER_PASSWORD;
+    if (!password) throw new Error("CONTROLE_USER_PASSWORD não configurada");
+
     const allowed = ["controle-materiais"];
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
