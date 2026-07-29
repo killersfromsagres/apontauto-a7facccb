@@ -2385,35 +2385,126 @@ export type Database = {
         }
         Relationships: []
       }
+      talude_geometry_events: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          id: string
+          map_id: string
+          marcacao_id: string | null
+          new_polygon: Json | null
+          old_polygon: Json | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          map_id: string
+          marcacao_id?: string | null
+          new_polygon?: Json | null
+          old_polygon?: Json | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          map_id?: string
+          marcacao_id?: string | null
+          new_polygon?: Json | null
+          old_polygon?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talude_geometry_events_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "talude_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talude_map_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          map_id: string
+          reason: string | null
+          snapshot: Json
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          map_id: string
+          reason?: string | null
+          snapshot: Json
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          map_id?: string
+          reason?: string | null
+          snapshot?: Json
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talude_map_versions_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "talude_maps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talude_maps: {
         Row: {
+          calibrated_at: string | null
+          calibrated_by: string | null
+          calibration: Json | null
           created_at: string
           id: string
           image_height: number
           image_url: string
           image_width: number
+          meters_per_unit: number | null
           nome: string
           observacao: string | null
           owner_id: string
           updated_at: string
         }
         Insert: {
+          calibrated_at?: string | null
+          calibrated_by?: string | null
+          calibration?: Json | null
           created_at?: string
           id?: string
           image_height: number
           image_url: string
           image_width: number
+          meters_per_unit?: number | null
           nome: string
           observacao?: string | null
           owner_id: string
           updated_at?: string
         }
         Update: {
+          calibrated_at?: string | null
+          calibrated_by?: string | null
+          calibration?: Json | null
           created_at?: string
           id?: string
           image_height?: number
           image_url?: string
           image_width?: number
+          meters_per_unit?: number | null
           nome?: string
           observacao?: string | null
           owner_id?: string
@@ -2423,43 +2514,100 @@ export type Database = {
       }
       talude_marcacoes: {
         Row: {
+          bloqueado: boolean
+          codigo: string | null
           cor: string
           created_at: string
           data: string
+          data_executada: string | null
+          data_prevista: string | null
+          equipe: string | null
+          estado_operacional: string | null
           id: string
+          inclinacao: number | null
           map_id: string
+          nome: string | null
           numero: number
           observacao: string | null
+          opacidade: number
+          ordem: number
           owner_id: string
           polygon: Json
+          proxima_inspecao: string | null
+          rascunho: boolean
+          risco: string | null
           rotulo: string | null
+          servico_atual: string | null
+          setor: string | null
+          tipo_solo: string | null
+          ultima_inspecao: string | null
           updated_at: string
+          vegetacao: string | null
+          visivel: boolean
         }
         Insert: {
+          bloqueado?: boolean
+          codigo?: string | null
           cor?: string
           created_at?: string
           data?: string
+          data_executada?: string | null
+          data_prevista?: string | null
+          equipe?: string | null
+          estado_operacional?: string | null
           id?: string
+          inclinacao?: number | null
           map_id: string
+          nome?: string | null
           numero: number
           observacao?: string | null
+          opacidade?: number
+          ordem?: number
           owner_id: string
           polygon: Json
+          proxima_inspecao?: string | null
+          rascunho?: boolean
+          risco?: string | null
           rotulo?: string | null
+          servico_atual?: string | null
+          setor?: string | null
+          tipo_solo?: string | null
+          ultima_inspecao?: string | null
           updated_at?: string
+          vegetacao?: string | null
+          visivel?: boolean
         }
         Update: {
+          bloqueado?: boolean
+          codigo?: string | null
           cor?: string
           created_at?: string
           data?: string
+          data_executada?: string | null
+          data_prevista?: string | null
+          equipe?: string | null
+          estado_operacional?: string | null
           id?: string
+          inclinacao?: number | null
           map_id?: string
+          nome?: string | null
           numero?: number
           observacao?: string | null
+          opacidade?: number
+          ordem?: number
           owner_id?: string
           polygon?: Json
+          proxima_inspecao?: string | null
+          rascunho?: boolean
+          risco?: string | null
           rotulo?: string | null
+          servico_atual?: string | null
+          setor?: string | null
+          tipo_solo?: string | null
+          ultima_inspecao?: string | null
           updated_at?: string
+          vegetacao?: string | null
+          visivel?: boolean
         }
         Relationships: [
           {

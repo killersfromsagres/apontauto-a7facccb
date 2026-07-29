@@ -1933,3 +1933,29 @@ button,
     line-height: 1.4;
   }
 }
+
+/* ===== Impressão A4 paisagem (mapas de taludes e relatórios) ===== */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  aside,
+  nav,
+  [data-sidebar],
+  [data-mobile-tabbar],
+  button {
+    display: none !important;
+  }
+
+  img,
+  svg {
+    break-inside: avoid;
+  }
+}

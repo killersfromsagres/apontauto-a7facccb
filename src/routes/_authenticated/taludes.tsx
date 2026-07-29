@@ -1,19 +1,29 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft,
+  Copy,
   Download,
+  Eye,
+  EyeOff,
+  FileJson,
+  FileText,
+  History,
+  Image as ImageIcon,
   ImagePlus,
   Loader2,
+  Lock,
   Map as MapIcon,
+  MoveDown,
+  MoveUp,
   Pencil,
-  Plus,
+  Printer,
+  Ruler,
   Save,
   Trash2,
-  Undo2,
-  X,
+  Unlock,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -31,6 +41,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -41,20 +57,39 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { downloadBlob } from "@/lib/download";
+import { PolygonEditor, type EditorPolygon } from "@/components/taludes/polygon-editor";
+import {
+  CORES_TALUDE,
+  TaludePropertiesPanel,
+} from "@/components/taludes/talude-properties-panel";
 import {
   createMap,
-  createMarcacao,
+  createMarcacaoFull,
+  createVersion,
   deleteMap,
   deleteMarcacao,
   listMaps,
   listMarcacoes,
+  listVersions,
+  logGeometryEvent,
+  restoreVersion,
+  updateMap,
   updateMarcacao,
   uploadMapImage,
   type Point,
   type TaludeMap,
+  type TaludeMapVersion,
   type TaludeMarcacao,
 } from "@/lib/taludes/api";
-import { renderMapToBlob } from "@/lib/taludes/render";
+import {
+  exportGeoJson,
+  exportJson,
+  exportPdf,
+  exportPng,
+  scaleOf,
+} from "@/lib/taludes/export";
+import { metersPerPixel } from "@/lib/taludes/geometry";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
   head: () => ({
@@ -63,12 +98,12 @@ export const Route = createFileRoute("/_authenticated/taludes")({
       {
         name: "description",
         content:
-          "Suba imagens de mapas, demarque áreas de taludes com precisão e baixe o mapa final com numeração e datas.",
+          "Editor profissional de taludes: polígonos precisos, calibração de escala, versões, histórico e exportação em PNG, PDF, JSON e GeoJSON.",
       },
       { property: "og:title", content: "Demarcação de Taludes" },
       {
         property: "og:description",
-        content: "Sistema de demarcação e catalogação de taludes.",
+        content: "Editor profissional de demarcação e catalogação de taludes.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -76,17 +111,6 @@ export const Route = createFileRoute("/_authenticated/taludes")({
   }),
   component: TaludesPage,
 });
-
-const CORES = [
-  "#f59e0b",
-  "#ef4444",
-  "#22c55e",
-  "#3b82f6",
-  "#a855f7",
-  "#ec4899",
-  "#14b8a6",
-  "#f97316",
-];
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -115,19 +139,13 @@ function TaludesPage() {
   });
 
   if (openMap) {
-    return (
-      <MapEditor
-        map={openMap}
-        onBack={() => setOpenMap(null)}
-      />
-    );
+    return <MapEditor map={openMap} onBack={() => setOpenMap(null)} />;
   }
 
   return (
     <PageShell
       title="Demarcação de Taludes"
-      description="Suba um mapa, desenhe polígonos com precisão, atribua número e data — e baixe a imagem final."
-      
+      description="Editor profissional: polígonos precisos, calibração de escala, versões e exportações."
       actions={
         <Button onClick={() => setUploadOpen(true)} className="gap-2">
           <ImagePlus className="h-4 w-4" /> Novo mapa
@@ -139,15 +157,11 @@ function TaludesPage() {
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando mapas…
         </div>
       ) : mapsQuery.data && mapsQuery.data.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {mapsQuery.data.map((m) => (
-            <GlassCard key={m.id} className="p-0 overflow-hidden group">
-              <button
-                type="button"
-                onClick={() => setOpenMap(m)}
-                className="block w-full text-left"
-              >
-                <div className="relative aspect-video bg-muted overflow-hidden">
+            <GlassCard key={m.id} className="group overflow-hidden p-0">
+              <button type="button" onClick={() => setOpenMap(m)} className="block w-full text-left">
+                <div className="relative aspect-video overflow-hidden bg-muted">
                   <img
                     src={m.image_url}
                     alt={m.nome}
@@ -155,20 +169,20 @@ function TaludesPage() {
                     className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
                   />
                 </div>
-                <div className="p-4 space-y-1">
-                  <div className="font-semibold text-base truncate">{m.nome}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="space-y-1 p-4">
+                  <div className="truncate text-base font-semibold">{m.nome}</div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     Criado em {fmtBr(m.created_at)}
+                    {scaleOf(m) ? (
+                      <Badge variant="secondary" className="h-5">Calibrado</Badge>
+                    ) : (
+                      <Badge variant="outline" className="h-5 text-amber-500">Sem escala</Badge>
+                    )}
                   </div>
                 </div>
               </button>
-              <div className="px-4 pb-4 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  className="flex-1 gap-1"
-                  onClick={() => setOpenMap(m)}
-                >
+              <div className="flex gap-2 px-4 pb-4">
+                <Button size="sm" variant="secondary" className="flex-1 gap-1" onClick={() => setOpenMap(m)}>
                   <Pencil className="h-3.5 w-3.5" /> Abrir
                 </Button>
                 <Button
@@ -176,6 +190,7 @@ function TaludesPage() {
                   variant="ghost"
                   className="text-destructive hover:text-destructive"
                   onClick={() => setDeleteTarget(m)}
+                  aria-label="Excluir mapa"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -184,11 +199,11 @@ function TaludesPage() {
           ))}
         </div>
       ) : (
-        <GlassCard className="py-16 text-center space-y-3">
-          <MapIcon className="h-10 w-10 mx-auto text-muted-foreground" />
+        <GlassCard className="space-y-3 py-16 text-center">
+          <MapIcon className="mx-auto h-10 w-10 text-muted-foreground" />
           <div className="text-lg font-medium">Nenhum mapa cadastrado</div>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            Clique em <b>Novo mapa</b> para enviar uma imagem e começar a demarcar as áreas de taludes.
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">
+            Clique em <b>Novo mapa</b> para enviar uma imagem e começar a demarcar.
           </p>
           <div>
             <Button onClick={() => setUploadOpen(true)} className="gap-2">
@@ -208,16 +223,12 @@ function TaludesPage() {
         }}
       />
 
-      <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-      >
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir mapa</AlertDialogTitle>
             <AlertDialogDescription>
-              Isso remove o mapa <b>{deleteTarget?.nome}</b> e todas as suas
-              demarcações. Ação irreversível.
+              Isso remove o mapa <b>{deleteTarget?.nome}</b> e todas as suas demarcações. Ação irreversível.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -263,20 +274,13 @@ function UploadMapDialog({
     if (!file) return;
     const u = URL.createObjectURL(file);
     setPreview(u);
-    if (!nome) setNome(file.name.replace(/\.[^.]+$/, ""));
+    setNome((n) => n || file.name.replace(/\.[^.]+$/, ""));
     return () => URL.revokeObjectURL(u);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file]);
 
   const handleSubmit = async () => {
-    if (!file) {
-      toast.error("Selecione uma imagem do mapa");
-      return;
-    }
-    if (!nome.trim()) {
-      toast.error("Dê um nome ao mapa");
-      return;
-    }
+    if (!file) return toast.error("Selecione uma imagem do mapa");
+    if (!nome.trim()) return toast.error("Dê um nome ao mapa");
     setUploading(true);
     try {
       const uploaded = await uploadMapImage(file);
@@ -313,8 +317,8 @@ function UploadMapDialog({
             />
           </div>
           {preview && (
-            <div className="rounded-xl overflow-hidden border bg-muted">
-              <img src={preview} alt="Pré-visualização" className="w-full max-h-64 object-contain" />
+            <div className="overflow-hidden rounded-xl border bg-muted">
+              <img src={preview} alt="Pré-visualização" className="max-h-64 w-full object-contain" />
             </div>
           )}
           <div>
@@ -347,22 +351,27 @@ function UploadMapDialog({
 
 /* ================================ EDITOR ================================ */
 
-interface DraftMarc {
-  polygon: Point[];
-  numero: number;
-  data: string;
-  rotulo: string;
-  observacao: string;
-  cor: string;
-}
+const DRAFT_KEY = (id: string) => `talude-draft:${id}`;
 
-function MapEditor({ map, onBack }: { map: TaludeMap; onBack: () => void }) {
+function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => void }) {
   const qc = useQueryClient();
+  const { isAdmin } = useIsAdmin();
+  const [map, setMap] = useState(initialMap);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TaludeMarcacao | null>(null);
+  const [calPending, setCalPending] = useState<{ a: Point; b: Point } | null>(null);
+  const [calMeters, setCalMeters] = useState("");
+  const [versionsOpen, setVersionsOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
   const marcQuery = useQuery({
     queryKey: ["talude_marcacoes", map.id],
     queryFn: () => listMarcacoes(map.id),
   });
-  const marcacoes = marcQuery.data ?? [];
+  const marcacoes = useMemo(
+    () => [...(marcQuery.data ?? [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || a.numero - b.numero),
+    [marcQuery.data],
+  );
 
   const nextNumero = useMemo(() => {
     const nums = marcacoes.map((m) => m.numero);
@@ -371,111 +380,165 @@ function MapEditor({ map, onBack }: { map: TaludeMap; onBack: () => void }) {
     return n;
   }, [marcacoes]);
 
-  const [mode, setMode] = useState<"view" | "draw">("view");
-  const [draftPts, setDraftPts] = useState<Point[]>([]);
-  const [draftDialog, setDraftDialog] = useState<DraftMarc | null>(null);
-  const [editing, setEditing] = useState<TaludeMarcacao | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const invalidate = useCallback(
+    () => qc.invalidateQueries({ queryKey: ["talude_marcacoes", map.id] }),
+    [qc, map.id],
+  );
 
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [displaySize, setDisplaySize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  /* ------------------------------ mutações ------------------------------ */
 
-  const measure = useCallback(() => {
-    const el = imgRef.current;
-    if (!el) return;
-    setDisplaySize({ w: el.clientWidth, h: el.clientHeight });
-  }, []);
-
-  useEffect(() => {
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (imgRef.current) ro.observe(imgRef.current);
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [measure]);
-
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (mode !== "draw") return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setDraftPts((prev) => [...prev, { x, y }]);
-  };
-
-  const cancelDraw = () => {
-    setDraftPts([]);
-    setMode("view");
-  };
-
-  const finishDraw = () => {
-    if (draftPts.length < 3) {
-      toast.error("Adicione pelo menos 3 pontos");
-      return;
-    }
-    setDraftDialog({
-      polygon: draftPts,
-      numero: nextNumero,
-      data: todayIso(),
-      rotulo: "",
-      observacao: "",
-      cor: CORES[(nextNumero - 1) % CORES.length],
-    });
-  };
-
-  const undoPoint = () => setDraftPts((p) => p.slice(0, -1));
-
-  const createMarc = useMutation({
-    mutationFn: (input: DraftMarc) =>
-      createMarcacao({
-        map_id: map.id,
-        numero: input.numero,
-        data: input.data,
-        rotulo: input.rotulo.trim() || null,
-        observacao: input.observacao.trim() || null,
-        cor: input.cor,
-        polygon: input.polygon,
-      }),
-    onSuccess: () => {
-      toast.success("Demarcação salva");
-      qc.invalidateQueries({ queryKey: ["talude_marcacoes", map.id] });
-      setDraftDialog(null);
-      setDraftPts([]);
-      setMode("view");
+  const create = useMutation({
+    mutationFn: async (points: Point[]) => {
+      const created = await createMarcacaoFull(map.id, {
+        numero: nextNumero,
+        data: todayIso(),
+        cor: CORES_TALUDE[(nextNumero - 1) % CORES_TALUDE.length],
+        polygon: points,
+        ordem: marcacoes.length,
+        opacidade: 0.32,
+      });
+      await logGeometryEvent(map.id, created.id, "create", null, points);
+      return created;
+    },
+    onSuccess: (created) => {
+      toast.success(`Talude ${created.numero} demarcado`);
+      setSelectedId(created.id);
+      invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const editMarc = useMutation({
-    mutationFn: (input: { id: string; patch: Partial<TaludeMarcacao> }) =>
-      updateMarcacao(input.id, input.patch),
-    onSuccess: () => {
-      toast.success("Demarcação atualizada");
-      qc.invalidateQueries({ queryKey: ["talude_marcacoes", map.id] });
-      setEditing(null);
+  const patchMarc = useMutation({
+    mutationFn: async (input: {
+      id: string;
+      patch: Partial<TaludeMarcacao>;
+      geometryBefore?: Point[];
+    }) => {
+      await updateMarcacao(input.id, input.patch);
+      if (input.patch.polygon) {
+        await logGeometryEvent(
+          map.id,
+          input.id,
+          "update",
+          input.geometryBefore ?? null,
+          input.patch.polygon,
+        );
+      }
     },
+    onSuccess: () => invalidate(),
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const removeMarc = useMutation({
-    mutationFn: (id: string) => deleteMarcacao(id),
+  const remove = useMutation({
+    mutationFn: async (m: TaludeMarcacao) => {
+      await logGeometryEvent(map.id, m.id, "delete", m.polygon, null);
+      await deleteMarcacao(m.id);
+    },
     onSuccess: () => {
       toast.success("Demarcação removida");
-      qc.invalidateQueries({ queryKey: ["talude_marcacoes", map.id] });
+      setDeleteTarget(null);
+      setSelectedId(null);
+      invalidate();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const [exporting, setExporting] = useState(false);
-  const handleExport = async () => {
+  const duplicate = useMutation({
+    mutationFn: async (m: TaludeMarcacao) => {
+      const shifted = m.polygon.map((p) => ({
+        x: Math.min(100, p.x + 2),
+        y: Math.min(100, p.y + 2),
+      }));
+      return createMarcacaoFull(map.id, {
+        ...m,
+        numero: nextNumero,
+        polygon: shifted,
+        ordem: marcacoes.length,
+        codigo: m.codigo ? `${m.codigo}-CÓPIA` : null,
+      } as never);
+    },
+    onSuccess: () => {
+      toast.success("Demarcação duplicada");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const snapshot = useMutation({
+    mutationFn: (reason: string) => createVersion(map, marcacoes, reason),
+    onSuccess: () => {
+      toast.success("Versão salva no histórico");
+      qc.invalidateQueries({ queryKey: ["talude_versions", map.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  /* ----------------------------- rascunho local ----------------------------- */
+
+  const handleDraft = useCallback(
+    (id: string, points: Point[]) => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY(map.id),
+          JSON.stringify({ id, points, at: Date.now() }),
+        );
+      } catch {
+        /* storage cheio — ignorar */
+      }
+    },
+    [map.id],
+  );
+
+  const handleGeometry = useCallback(
+    (id: string, points: Point[]) => {
+      const before = marcacoes.find((m) => m.id === id)?.polygon;
+      patchMarc.mutate({ id, patch: { polygon: points }, geometryBefore: before });
+      try {
+        localStorage.removeItem(DRAFT_KEY(map.id));
+      } catch {
+        /* ignore */
+      }
+    },
+    [marcacoes, patchMarc, map.id],
+  );
+
+  /* ------------------------------- calibração ------------------------------- */
+
+  const applyCalibration = async () => {
+    if (!calPending) return;
+    const meters = Number(calMeters.replace(",", "."));
+    if (!meters || meters <= 0) return toast.error("Informe a distância real em metros");
+    const cal = { a: calPending.a, b: calPending.b, meters };
+    const mpp = metersPerPixel(cal, map.image_width, map.image_height);
+    try {
+      await updateMap(map.id, {
+        calibration: cal,
+        meters_per_unit: mpp,
+        calibrated_at: new Date().toISOString(),
+      });
+      setMap((m) => ({ ...m, calibration: cal, meters_per_unit: mpp }));
+      setCalPending(null);
+      setCalMeters("");
+      toast.success("Escala calibrada — áreas e perímetros disponíveis");
+      qc.invalidateQueries({ queryKey: ["talude_maps"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao calibrar");
+    }
+  };
+
+  /* ------------------------------- exportações ------------------------------ */
+
+  const slug = map.nome.replace(/[^\w\-]+/g, "_");
+
+  const runExport = async (kind: "png" | "pdf" | "json" | "geojson") => {
     setExporting(true);
     try {
-      const blob = await renderMapToBlob(map.image_url, marcacoes);
-      downloadBlob(blob, `${map.nome.replace(/[^\w\-]+/g, "_")}.png`);
-      toast.success("Imagem exportada");
+      if (kind === "png") downloadBlob(await exportPng(map, marcacoes), `${slug}.png`);
+      if (kind === "pdf")
+        downloadBlob(await exportPdf(map, marcacoes, "Equipe PCM"), `${slug}.pdf`);
+      if (kind === "json") downloadBlob(exportJson(map, marcacoes), `${slug}-backup.json`);
+      if (kind === "geojson") downloadBlob(exportGeoJson(map, marcacoes), `${slug}.geojson`);
+      toast.success("Exportação concluída");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao exportar");
     } finally {
@@ -483,423 +546,344 @@ function MapEditor({ map, onBack }: { map: TaludeMap; onBack: () => void }) {
     }
   };
 
+  const editorPolygons: EditorPolygon[] = marcacoes.map((m) => ({
+    id: m.id,
+    points: m.polygon,
+    color: m.cor,
+    opacity: m.opacidade ?? 0.32,
+    visible: m.visivel !== false,
+    locked: !!m.bloqueado,
+    label: String(m.numero),
+  }));
+
+  const selected = marcacoes.find((m) => m.id === selectedId) ?? null;
+  const calibrado = scaleOf(map) != null;
+
   return (
     <PageShell
       title={map.nome}
-      description={
-        map.observacao ??
-        `Clique em "Desenhar" e marque pontos ao redor do talude. ${marcacoes.length} demarcaç${marcacoes.length === 1 ? "ão" : "ões"}.`
-      }
-      
+      description={`${marcacoes.length} demarcaç${marcacoes.length === 1 ? "ão" : "ões"} · ${
+        calibrado ? "escala calibrada" : "mapa sem calibração"
+      }`}
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="ghost" onClick={onBack} className="gap-2">
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
+          <Button variant="secondary" onClick={() => setVersionsOpen(true)} className="gap-2">
+            <History className="h-4 w-4" /> Versões
+          </Button>
           <Button
             variant="secondary"
-            onClick={handleExport}
-            disabled={exporting || marcacoes.length === 0}
+            onClick={() => snapshot.mutate("Versão manual")}
+            disabled={snapshot.isPending}
             className="gap-2"
           >
-            {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-            Baixar PNG
+            {snapshot.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Salvar versão
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="gap-2" disabled={exporting || marcacoes.length === 0}>
+                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => runExport("png")}>
+                <ImageIcon className="mr-2 h-4 w-4" /> PNG em alta resolução
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runExport("pdf")}>
+                <FileText className="mr-2 h-4 w-4" /> PDF A4 paisagem com legenda
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runExport("json")}>
+                <FileJson className="mr-2 h-4 w-4" /> JSON de backup
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => runExport("geojson")} disabled={!calibrado}>
+                <FileJson className="mr-2 h-4 w-4" /> GeoJSON {calibrado ? "" : "(requer calibração)"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.print()}>
+                <Printer className="mr-2 h-4 w-4" /> Imprimir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       }
     >
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <GlassCard className="p-3 space-y-3">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            {mode === "view" ? (
-              <Button onClick={() => setMode("draw")} className="gap-2">
-                <Plus className="h-4 w-4" /> Desenhar nova área
-              </Button>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={undoPoint}
-                  disabled={draftPts.length === 0}
-                  className="gap-1"
-                >
-                  <Undo2 className="h-3.5 w-3.5" /> Desfazer ponto
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={finishDraw}
-                  disabled={draftPts.length < 3}
-                  className="gap-1"
-                >
-                  <Save className="h-3.5 w-3.5" /> Concluir ({draftPts.length})
-                </Button>
-                <Button size="sm" variant="ghost" onClick={cancelDraw} className="gap-1">
-                  <X className="h-3.5 w-3.5" /> Cancelar
-                </Button>
-              </div>
-            )}
-            <Badge variant="secondary">
-              {marcacoes.length} demarcaç{marcacoes.length === 1 ? "ão" : "ões"}
-            </Badge>
-          </div>
-
-          <div
-            ref={wrapRef}
-            className="relative w-full rounded-xl overflow-hidden border bg-muted select-none"
-            style={{ aspectRatio: `${map.image_width} / ${map.image_height}` }}
-            onClick={handleClick}
-          >
-            <img
-              ref={imgRef}
-              src={map.image_url}
-              alt={map.nome}
-              onLoad={measure}
-              draggable={false}
-              className="absolute inset-0 h-full w-full object-contain pointer-events-none"
-            />
-            {displaySize.w > 0 && (
-              <svg
-                className={`absolute inset-0 h-full w-full ${mode === "draw" ? "cursor-crosshair" : "cursor-default"}`}
-                viewBox={`0 0 ${displaySize.w} ${displaySize.h}`}
-                preserveAspectRatio="none"
-              >
-                {marcacoes.map((m) => {
-                  const pts = m.polygon
-                    .map((p) => `${(p.x / 100) * displaySize.w},${(p.y / 100) * displaySize.h}`)
-                    .join(" ");
-                  const cx =
-                    (m.polygon.reduce((a, p) => a + p.x, 0) / m.polygon.length / 100) *
-                    displaySize.w;
-                  const cy =
-                    (m.polygon.reduce((a, p) => a + p.y, 0) / m.polygon.length / 100) *
-                    displaySize.h;
-                  const isSel = selectedId === m.id;
-                  return (
-                    <g
-                      key={m.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedId(m.id);
-                      }}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <polygon
-                        points={pts}
-                        fill={m.cor}
-                        fillOpacity={isSel ? 0.45 : 0.28}
-                        stroke={m.cor}
-                        strokeWidth={isSel ? 3 : 2}
-                      />
-                      <text
-                        x={cx}
-                        y={cy}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fontSize={Math.max(14, displaySize.w * 0.022)}
-                        fontWeight={800}
-                        fill="#fde047"
-                        stroke="#0f172a"
-                        strokeWidth={3}
-                        paintOrder="stroke"
-                      >
-                        {m.numero}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {mode === "draw" && draftPts.length > 0 && (
-                  <>
-                    <polygon
-                      points={draftPts
-                        .map((p) => `${(p.x / 100) * displaySize.w},${(p.y / 100) * displaySize.h}`)
-                        .join(" ")}
-                      fill="#0ea5e9"
-                      fillOpacity={0.25}
-                      stroke="#0ea5e9"
-                      strokeWidth={2}
-                      strokeDasharray="6 4"
-                    />
-                    {draftPts.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={(p.x / 100) * displaySize.w}
-                        cy={(p.y / 100) * displaySize.h}
-                        r={5}
-                        fill="#ffffff"
-                        stroke="#0ea5e9"
-                        strokeWidth={2}
-                      />
-                    ))}
-                  </>
-                )}
-              </svg>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            Modo desenho: clique para adicionar cada ponto do contorno do talude. Precisa de no mínimo 3 pontos. Ao concluir, preencha número e data.
-          </p>
-        </GlassCard>
-
-        <GlassCard className="p-4 space-y-3">
-          <div className="font-semibold">Demarcações</div>
-          {marcacoes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma área ainda. Use <b>Desenhar nova área</b>.
-            </p>
-          ) : (
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
-              {marcacoes.map((m) => (
-                <div
-                  key={m.id}
-                  className={`rounded-xl border p-3 flex gap-3 items-start hover:bg-accent/40 transition-colors ${
-                    selectedId === m.id ? "ring-2 ring-primary" : ""
-                  }`}
-                  onMouseEnter={() => setSelectedId(m.id)}
-                >
-                  <div
-                    className="mt-1 h-8 w-8 rounded-lg flex items-center justify-center font-bold text-white shadow"
-                    style={{ backgroundColor: m.cor }}
-                  >
-                    {m.numero}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">
-                      {m.rotulo || `Talude ${m.numero}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {fmtBr(m.data)}
-                    </div>
-                    {m.observacao && (
-                      <div className="text-xs mt-1 line-clamp-2 text-muted-foreground">
-                        {m.observacao}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
-                      onClick={() => setEditing(m)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-destructive hover:text-destructive"
-                      onClick={() => {
-                        if (confirm(`Excluir demarcação ${m.numero}?`)) removeMarc.mutate(m.id);
-                      }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
+        <GlassCard className="space-y-3 p-3">
+          {!calibrado && (
+            <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
+              <Ruler className="h-4 w-4 text-amber-500" />
+              Mapa <b>não calibrado</b>: use a ferramenta “Calibrar escala” para habilitar área e perímetro em metros.
             </div>
           )}
+          <PolygonEditor
+            imageUrl={map.image_url}
+            imageWidth={map.image_width}
+            imageHeight={map.image_height}
+            polygons={editorPolygons}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onGeometryChange={handleGeometry}
+            onDraftChange={handleDraft}
+            onCreate={(pts) => create.mutate(pts)}
+            calibration={map.calibration}
+            onCalibrate={(a, b) => setCalPending({ a, b })}
+          />
         </GlassCard>
+
+        <div className="space-y-4">
+          <GlassCard className="space-y-2 p-4">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold">Camadas</div>
+              <Badge variant="secondary">{marcacoes.length}</Badge>
+            </div>
+            {marcacoes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma área. Use a ferramenta <b>Desenhar</b> no editor.
+              </p>
+            ) : (
+              <div className="max-h-[40vh] space-y-1.5 overflow-y-auto pr-1">
+                {marcacoes.map((m, i) => (
+                  <div
+                    key={m.id}
+                    className={`flex items-center gap-2 rounded-xl border p-2 transition-colors ${
+                      selectedId === m.id ? "ring-2 ring-primary" : "hover:bg-accent/40"
+                    }`}
+                    onClick={() => setSelectedId(m.id)}
+                  >
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white"
+                      style={{ backgroundColor: m.cor }}
+                    >
+                      {m.numero}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm">
+                      {m.nome || m.rotulo || m.codigo || `Talude ${m.numero}`}
+                    </span>
+                    <IconBtn
+                      label={m.visivel === false ? "Mostrar" : "Ocultar"}
+                      onClick={() => patchMarc.mutate({ id: m.id, patch: { visivel: m.visivel === false } })}
+                    >
+                      {m.visivel === false ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </IconBtn>
+                    <IconBtn
+                      label={m.bloqueado ? "Desbloquear" : "Bloquear"}
+                      onClick={() => patchMarc.mutate({ id: m.id, patch: { bloqueado: !m.bloqueado } })}
+                    >
+                      {m.bloqueado ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                    </IconBtn>
+                    <IconBtn
+                      label="Subir camada"
+                      disabled={i === 0}
+                      onClick={() => {
+                        const prev = marcacoes[i - 1];
+                        patchMarc.mutate({ id: m.id, patch: { ordem: prev.ordem ?? i - 1 } });
+                        patchMarc.mutate({ id: prev.id, patch: { ordem: m.ordem ?? i } });
+                      }}
+                    >
+                      <MoveUp className="h-3.5 w-3.5" />
+                    </IconBtn>
+                    <IconBtn
+                      label="Descer camada"
+                      disabled={i === marcacoes.length - 1}
+                      onClick={() => {
+                        const nxt = marcacoes[i + 1];
+                        patchMarc.mutate({ id: m.id, patch: { ordem: nxt.ordem ?? i + 1 } });
+                        patchMarc.mutate({ id: nxt.id, patch: { ordem: m.ordem ?? i } });
+                      }}
+                    >
+                      <MoveDown className="h-3.5 w-3.5" />
+                    </IconBtn>
+                    <IconBtn label="Duplicar" onClick={() => duplicate.mutate(m)}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </IconBtn>
+                    <IconBtn label="Excluir" danger onClick={() => setDeleteTarget(m)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </IconBtn>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard className="space-y-3 p-4">
+            <div className="font-semibold">Dados do talude</div>
+            {selected ? (
+              <TaludePropertiesPanel key={selected.id} map={map} marcacao={selected} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Selecione uma demarcação no mapa ou na lista de camadas.
+              </p>
+            )}
+          </GlassCard>
+        </div>
       </div>
 
-      {/* Dialog: nova demarcação */}
-      <Dialog
-        open={!!draftDialog}
-        onOpenChange={(o) => {
-          if (!o) setDraftDialog(null);
-        }}
-      >
-        <DialogContent className="max-w-md">
+      {/* Calibração */}
+      <Dialog open={!!calPending} onOpenChange={(o) => !o && setCalPending(null)}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Nova demarcação</DialogTitle>
+            <DialogTitle>Calibrar escala</DialogTitle>
           </DialogHeader>
-          {draftDialog && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Número</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={draftDialog.numero}
-                    onChange={(e) =>
-                      setDraftDialog({ ...draftDialog, numero: Number(e.target.value) || 1 })
-                    }
-                  />
-                </div>
-                <div>
-                  <Label>Data</Label>
-                  <Input
-                    type="date"
-                    value={draftDialog.data}
-                    onChange={(e) => setDraftDialog({ ...draftDialog, data: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <Label>Rótulo (opcional)</Label>
-                <Input
-                  value={draftDialog.rotulo}
-                  onChange={(e) => setDraftDialog({ ...draftDialog, rotulo: e.target.value })}
-                  placeholder="Ex.: Talude Norte"
-                />
-              </div>
-              <div>
-                <Label>Cor</Label>
-                <ColorPicker
-                  value={draftDialog.cor}
-                  onChange={(cor) => setDraftDialog({ ...draftDialog, cor })}
-                />
-              </div>
-              <div>
-                <Label>Observação</Label>
-                <Textarea
-                  rows={2}
-                  value={draftDialog.observacao}
-                  onChange={(e) => setDraftDialog({ ...draftDialog, observacao: e.target.value })}
-                />
-              </div>
-            </div>
-          )}
+          <div className="space-y-2">
+            <Label>Distância real entre os dois pontos (metros)</Label>
+            <Input
+              type="number"
+              inputMode="decimal"
+              value={calMeters}
+              onChange={(e) => setCalMeters(e.target.value)}
+              placeholder="Ex.: 25"
+            />
+          </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDraftDialog(null)}>
+            <Button variant="ghost" onClick={() => setCalPending(null)}>
               Cancelar
             </Button>
-            <Button
-              onClick={() => draftDialog && createMarc.mutate(draftDialog)}
-              disabled={createMarc.isPending}
-              className="gap-2"
-            >
-              {createMarc.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
-              Salvar
-            </Button>
+            <Button onClick={applyCalibration}>Aplicar escala</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: editar */}
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Editar demarcação</DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <EditMarcacaoForm
-              value={editing}
-              onSubmit={(patch) => editMarc.mutate({ id: editing.id, patch })}
-              submitting={editMarc.isPending}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Exclusão */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir demarcação</AlertDialogTitle>
+            <AlertDialogDescription>
+              O talude {deleteTarget?.numero} será removido do mapa. O histórico de geometria é preservado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && remove.mutate(deleteTarget)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <VersionsDialog
+        open={versionsOpen}
+        onOpenChange={setVersionsOpen}
+        mapId={map.id}
+        canRestore={isAdmin}
+        onRestored={invalidate}
+      />
     </PageShell>
   );
 }
 
-function ColorPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function IconBtn({
+  children,
+  label,
+  onClick,
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+}) {
   return (
-    <div className="flex flex-wrap gap-2 mt-1">
-      {CORES.map((c) => (
-        <button
-          key={c}
-          type="button"
-          onClick={() => onChange(c)}
-          className={`h-8 w-8 rounded-lg border-2 transition-transform ${
-            value === c ? "ring-2 ring-primary scale-110" : "border-transparent"
-          }`}
-          style={{ backgroundColor: c }}
-          aria-label={`Cor ${c}`}
-        />
-      ))}
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-8 w-8 rounded-lg border cursor-pointer"
-      />
-    </div>
+    <Button
+      size="icon"
+      variant="ghost"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      className={`h-7 w-7 shrink-0 ${danger ? "text-destructive hover:text-destructive" : ""}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      {children}
+    </Button>
   );
 }
 
-function EditMarcacaoForm({
-  value,
-  onSubmit,
-  submitting,
+function VersionsDialog({
+  open,
+  onOpenChange,
+  mapId,
+  canRestore,
+  onRestored,
 }: {
-  value: TaludeMarcacao;
-  onSubmit: (patch: Partial<TaludeMarcacao>) => void;
-  submitting: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  mapId: string;
+  canRestore: boolean;
+  onRestored: () => void;
 }) {
-  const [numero, setNumero] = useState(value.numero);
-  const [data, setData] = useState(value.data);
-  const [rotulo, setRotulo] = useState(value.rotulo ?? "");
-  const [observacao, setObservacao] = useState(value.observacao ?? "");
-  const [cor, setCor] = useState(value.cor);
+  const qc = useQueryClient();
+  const q = useQuery({
+    queryKey: ["talude_versions", mapId],
+    queryFn: () => listVersions(mapId),
+    enabled: open,
+  });
+
+  const restore = useMutation({
+    mutationFn: (v: TaludeMapVersion) => restoreVersion(v),
+    onSuccess: () => {
+      toast.success("Versão restaurada");
+      qc.invalidateQueries({ queryKey: ["talude_versions", mapId] });
+      onRestored();
+      onOpenChange(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
-    <>
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label>Número</Label>
-            <Input
-              type="number"
-              min={1}
-              value={numero}
-              onChange={(e) => setNumero(Number(e.target.value) || 1)}
-            />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Histórico de versões</DialogTitle>
+        </DialogHeader>
+        {q.isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
           </div>
-          <div>
-            <Label>Data</Label>
-            <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
+        ) : (q.data?.length ?? 0) === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Nenhuma versão salva ainda. Use <b>Salvar versão</b> para criar um ponto de restauração.
+          </p>
+        ) : (
+          <div className="max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+            {q.data!.map((v) => (
+              <div key={v.id} className="flex items-center gap-3 rounded-xl border p-3">
+                <Badge variant="secondary">v{v.version_number}</Badge>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm">{v.reason || "Sem descrição"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(v.created_at).toLocaleString("pt-BR")} ·{" "}
+                    {v.snapshot?.marcacoes?.length ?? 0} demarcações
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={!canRestore || restore.isPending}
+                  onClick={() => restore.mutate(v)}
+                >
+                  Restaurar
+                </Button>
+              </div>
+            ))}
           </div>
-        </div>
-        <div>
-          <Label>Rótulo</Label>
-          <Input value={rotulo} onChange={(e) => setRotulo(e.target.value)} />
-        </div>
-        <div>
-          <Label>Cor</Label>
-          <ColorPicker value={cor} onChange={setCor} />
-        </div>
-        <div>
-          <Label>Observação</Label>
-          <Textarea
-            rows={2}
-            value={observacao}
-            onChange={(e) => setObservacao(e.target.value)}
-          />
-        </div>
-      </div>
-      <DialogFooter className="mt-4">
-        <Button
-          onClick={() =>
-            onSubmit({
-              numero,
-              data,
-              rotulo: rotulo.trim() || null,
-              observacao: observacao.trim() || null,
-              cor,
-            })
-          }
-          disabled={submitting}
-          className="gap-2"
-        >
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          Salvar alterações
-        </Button>
-      </DialogFooter>
-    </>
+        )}
+        {!canRestore && (
+          <p className="text-xs text-muted-foreground">
+            Somente administradores e gestores podem restaurar versões.
+          </p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
