@@ -86,6 +86,7 @@ const dt = (s: string) => new Date(s).toLocaleString("pt-BR", { dateStyle: "shor
 function FrotaPage() {
   const { allowed, isLoading } = useCanAccessModule("abastecimento", "read");
   const { allowed: canWrite } = useCanAccessModule("abastecimento", "create");
+  const { allowed: canEditVehicle } = useCanAccessModule("abastecimento", "update");
   const [tab, setTab] = useState("visao");
 
   const vehicles = useQuery({ queryKey: ["frota", "vehicles"], queryFn: listVehicles, enabled: allowed });
@@ -176,7 +177,7 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="veiculos">
-          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} canWrite={canWrite} />
+          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} canWrite={canEditVehicle} />
         </TabsContent>
 
         <TabsContent value="historico">
