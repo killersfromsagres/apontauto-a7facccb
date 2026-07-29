@@ -10,15 +10,15 @@ import pickup from "@/assets/frota/pickup.png";
 import van from "@/assets/frota/van.png";
 import truck from "@/assets/frota/truck.png";
 import moto from "@/assets/frota/moto.png";
-import saveiroAsset from "@/assets/frota/saveiro.png.asset.json";
-import fiorinoAsset from "@/assets/frota/fiorino.png.asset.json";
+import saveiroPhoto from "@/assets/frota/saveiro.png";
+import fiorinoPhoto from "@/assets/frota/fiorino.png";
 
 const PHOTO: Record<BodyType, string> = { hatch, sedan, suv, pickup, van, truck, moto };
 
 /** Fotos reais da frota — têm prioridade sobre a silhueta genérica. */
 const MODEL_PHOTO: [RegExp, string][] = [
-  [/saveiro/i, saveiroAsset.url],
-  [/fiorino/i, fiorinoAsset.url],
+  [/saveiro/i, saveiroPhoto],
+  [/fiorino/i, fiorinoPhoto],
 ];
 
 function realPhotoFor(text: string): string | undefined {
