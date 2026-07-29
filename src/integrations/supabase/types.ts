@@ -270,53 +270,199 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_filtro_ativos: {
+        Row: {
+          atualizado_em: string
+          codigo: string | null
+          criado_em: string
+          criado_por: string | null
+          id: string
+          instalado_em: string | null
+          local_instalacao: string | null
+          marca: string | null
+          modelo: string | null
+          numero_serie: string | null
+          observacao: string | null
+          periodicidade_dias: number
+          ponto_id: string
+          proxima_troca: string | null
+          situacao: string
+          tipo_filtro: string
+          ultima_troca: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          codigo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          instalado_em?: string | null
+          local_instalacao?: string | null
+          marca?: string | null
+          modelo?: string | null
+          numero_serie?: string | null
+          observacao?: string | null
+          periodicidade_dias?: number
+          ponto_id: string
+          proxima_troca?: string | null
+          situacao?: string
+          tipo_filtro?: string
+          ultima_troca?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          codigo?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          instalado_em?: string | null
+          local_instalacao?: string | null
+          marca?: string | null
+          modelo?: string | null
+          numero_serie?: string | null
+          observacao?: string | null
+          periodicidade_dias?: number
+          ponto_id?: string
+          proxima_troca?: string | null
+          situacao?: string
+          tipo_filtro?: string
+          ultima_troca?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_filtro_ativos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_filtro_eventos: {
+        Row: {
+          autor: string | null
+          comentario: string | null
+          criado_em: string
+          foto_url: string | null
+          id: string
+          situacao_anterior: string | null
+          situacao_nova: string | null
+          solicitacao_id: string
+          tipo: string
+        }
+        Insert: {
+          autor?: string | null
+          comentario?: string | null
+          criado_em?: string
+          foto_url?: string | null
+          id?: string
+          situacao_anterior?: string | null
+          situacao_nova?: string | null
+          solicitacao_id: string
+          tipo: string
+        }
+        Update: {
+          autor?: string | null
+          comentario?: string | null
+          criado_em?: string
+          foto_url?: string | null
+          id?: string
+          situacao_anterior?: string | null
+          situacao_nova?: string | null
+          solicitacao_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_filtro_eventos_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agua_filtro_solicitacoes: {
         Row: {
+          atendida_por: string | null
           atendimento: string | null
+          ativo_id: string | null
           atualizado_em: string
           concluida_em: string | null
           criado_em: string
           criado_por: string | null
           descricao: string | null
+          foto_conclusao_url: string | null
           foto_url: string | null
           id: string
+          motivo_cancelamento: string | null
+          numero: number
+          observacao_conclusao: string | null
+          origem: string
           ponto_id: string
           prevista_para: string | null
           prioridade: string
           situacao: string
+          sla_horas: number | null
           tipo: string
+          vence_em: string | null
         }
         Insert: {
+          atendida_por?: string | null
           atendimento?: string | null
+          ativo_id?: string | null
           atualizado_em?: string
           concluida_em?: string | null
           criado_em?: string
           criado_por?: string | null
           descricao?: string | null
+          foto_conclusao_url?: string | null
           foto_url?: string | null
           id?: string
+          motivo_cancelamento?: string | null
+          numero?: number
+          observacao_conclusao?: string | null
+          origem?: string
           ponto_id: string
           prevista_para?: string | null
           prioridade?: string
           situacao?: string
+          sla_horas?: number | null
           tipo?: string
+          vence_em?: string | null
         }
         Update: {
+          atendida_por?: string | null
           atendimento?: string | null
+          ativo_id?: string | null
           atualizado_em?: string
           concluida_em?: string | null
           criado_em?: string
           criado_por?: string | null
           descricao?: string | null
+          foto_conclusao_url?: string | null
           foto_url?: string | null
           id?: string
+          motivo_cancelamento?: string | null
+          numero?: number
+          observacao_conclusao?: string | null
+          origem?: string
           ponto_id?: string
           prevista_para?: string | null
           prioridade?: string
           situacao?: string
+          sla_horas?: number | null
           tipo?: string
+          vence_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_ativos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agua_filtro_solicitacoes_ponto_id_fkey"
             columns: ["ponto_id"]
