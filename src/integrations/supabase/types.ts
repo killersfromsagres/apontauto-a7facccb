@@ -507,6 +507,94 @@ export type Database = {
           },
         ]
       }
+      agua_retificacoes: {
+        Row: {
+          campo: string
+          criado_em: string
+          id: string
+          motivo: string
+          usuario_id: string | null
+          valor_anterior: Json | null
+          valor_novo: Json | null
+          visita_id: string
+        }
+        Insert: {
+          campo: string
+          criado_em?: string
+          id?: string
+          motivo: string
+          usuario_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+          visita_id: string
+        }
+        Update: {
+          campo?: string
+          criado_em?: string
+          id?: string
+          motivo?: string
+          usuario_id?: string | null
+          valor_anterior?: Json | null
+          valor_novo?: Json | null
+          visita_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_retificacoes_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "agua_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_rota_ocorrencias: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          descricao: string | null
+          divergencia: number | null
+          id: string
+          rota_id: string
+          situacao: string
+          tipo: string
+          tratativa: string | null
+          usuario_id: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          descricao?: string | null
+          divergencia?: number | null
+          id?: string
+          rota_id: string
+          situacao?: string
+          tipo?: string
+          tratativa?: string | null
+          usuario_id?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          descricao?: string | null
+          divergencia?: number | null
+          id?: string
+          rota_id?: string
+          situacao?: string
+          tipo?: string
+          tratativa?: string | null
+          usuario_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_rota_ocorrencias_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rotas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agua_rota_versoes: {
         Row: {
           criado_em: string
@@ -549,19 +637,35 @@ export type Database = {
         Row: {
           atualizado_em: string
           atualizado_por: string | null
+          bags_ajustes: number | null
           bags_carregadas: number | null
+          bags_danificadas: number | null
+          bags_recolhidas: number | null
+          bags_restantes: number | null
+          checklist_confirmado: boolean
           colaborador_principal: string | null
           colaborador_secundario: string | null
+          confirmado_principal: boolean
+          confirmado_secundario: boolean
           criado_em: string
           criado_por: string | null
           data: string
+          divergencia_bags: number | null
+          divergencia_justificativa: string | null
           equipe: string
           finalizada_em: string | null
+          foto_carga_final_url: string | null
+          foto_carga_url: string | null
+          hodometro_final: number | null
+          hodometro_inicial: number | null
           horario_previsto: string | null
           id: string
           iniciada_em: string | null
           motivo_cancelamento: string | null
           observacao: string | null
+          observacao_final: string | null
+          observacao_inicial: string | null
+          saida_real: string | null
           status: string
           supervisor: string | null
           template_key: string
@@ -572,19 +676,35 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           atualizado_por?: string | null
+          bags_ajustes?: number | null
           bags_carregadas?: number | null
+          bags_danificadas?: number | null
+          bags_recolhidas?: number | null
+          bags_restantes?: number | null
+          checklist_confirmado?: boolean
           colaborador_principal?: string | null
           colaborador_secundario?: string | null
+          confirmado_principal?: boolean
+          confirmado_secundario?: boolean
           criado_em?: string
           criado_por?: string | null
           data: string
+          divergencia_bags?: number | null
+          divergencia_justificativa?: string | null
           equipe?: string
           finalizada_em?: string | null
+          foto_carga_final_url?: string | null
+          foto_carga_url?: string | null
+          hodometro_final?: number | null
+          hodometro_inicial?: number | null
           horario_previsto?: string | null
           id?: string
           iniciada_em?: string | null
           motivo_cancelamento?: string | null
           observacao?: string | null
+          observacao_final?: string | null
+          observacao_inicial?: string | null
+          saida_real?: string | null
           status?: string
           supervisor?: string | null
           template_key?: string
@@ -595,19 +715,35 @@ export type Database = {
         Update: {
           atualizado_em?: string
           atualizado_por?: string | null
+          bags_ajustes?: number | null
           bags_carregadas?: number | null
+          bags_danificadas?: number | null
+          bags_recolhidas?: number | null
+          bags_restantes?: number | null
+          checklist_confirmado?: boolean
           colaborador_principal?: string | null
           colaborador_secundario?: string | null
+          confirmado_principal?: boolean
+          confirmado_secundario?: boolean
           criado_em?: string
           criado_por?: string | null
           data?: string
+          divergencia_bags?: number | null
+          divergencia_justificativa?: string | null
           equipe?: string
           finalizada_em?: string | null
+          foto_carga_final_url?: string | null
+          foto_carga_url?: string | null
+          hodometro_final?: number | null
+          hodometro_inicial?: number | null
           horario_previsto?: string | null
           id?: string
           iniciada_em?: string | null
           motivo_cancelamento?: string | null
           observacao?: string | null
+          observacao_final?: string | null
+          observacao_inicial?: string | null
+          saida_real?: string | null
           status?: string
           supervisor?: string | null
           template_key?: string
@@ -654,21 +790,33 @@ export type Database = {
       }
       agua_visitas: {
         Row: {
+          assinatura_url: string | null
+          atendimento_em: string | null
           atualizado_em: string
           bags_entregues: number | null
           bags_previstas: number
+          bags_recolhidas: number | null
+          condicao: string | null
           criado_em: string
           data: string
+          deslocamento_em: string | null
           dia_semana: number
+          estoque_antes: number | null
+          estoque_depois: number | null
           excepcional: boolean
           executado_em: string | null
           executado_por: string | null
           foto_url: string | null
+          fotos: Json
           id: string
+          latitude: number | null
+          local_confirmado: boolean
+          longitude: number | null
           motivo: string | null
           observacao: string | null
           ordem: number
           ponto_id: string
+          recebido_por: string | null
           responsavel: string | null
           rota_id: string | null
           status: string
@@ -676,21 +824,33 @@ export type Database = {
           veiculo: string | null
         }
         Insert: {
+          assinatura_url?: string | null
+          atendimento_em?: string | null
           atualizado_em?: string
           bags_entregues?: number | null
           bags_previstas?: number
+          bags_recolhidas?: number | null
+          condicao?: string | null
           criado_em?: string
           data: string
+          deslocamento_em?: string | null
           dia_semana: number
+          estoque_antes?: number | null
+          estoque_depois?: number | null
           excepcional?: boolean
           executado_em?: string | null
           executado_por?: string | null
           foto_url?: string | null
+          fotos?: Json
           id?: string
+          latitude?: number | null
+          local_confirmado?: boolean
+          longitude?: number | null
           motivo?: string | null
           observacao?: string | null
           ordem?: number
           ponto_id: string
+          recebido_por?: string | null
           responsavel?: string | null
           rota_id?: string | null
           status?: string
@@ -698,21 +858,33 @@ export type Database = {
           veiculo?: string | null
         }
         Update: {
+          assinatura_url?: string | null
+          atendimento_em?: string | null
           atualizado_em?: string
           bags_entregues?: number | null
           bags_previstas?: number
+          bags_recolhidas?: number | null
+          condicao?: string | null
           criado_em?: string
           data?: string
+          deslocamento_em?: string | null
           dia_semana?: number
+          estoque_antes?: number | null
+          estoque_depois?: number | null
           excepcional?: boolean
           executado_em?: string | null
           executado_por?: string | null
           foto_url?: string | null
+          fotos?: Json
           id?: string
+          latitude?: number | null
+          local_confirmado?: boolean
+          longitude?: number | null
           motivo?: string | null
           observacao?: string | null
           ordem?: number
           ponto_id?: string
+          recebido_por?: string | null
           responsavel?: string | null
           rota_id?: string | null
           status?: string
