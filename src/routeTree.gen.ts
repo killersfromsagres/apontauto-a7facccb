@@ -63,6 +63,7 @@ import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './
 import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } from './routes/_authenticated/inteligencia-ativos.nao-encontrados'
 import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
 import { Route as AuthenticatedAtivoCodeRouteImport } from './routes/_authenticated/ativo.$code'
+import { Route as AuthenticatedAbastecimentoAguaRouteImport } from './routes/_authenticated/abastecimento.agua'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 
@@ -364,6 +365,12 @@ const AuthenticatedAtivoCodeRoute = AuthenticatedAtivoCodeRouteImport.update({
   path: '/ativo/$code',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAbastecimentoAguaRoute =
+  AuthenticatedAbastecimentoAguaRouteImport.update({
+    id: '/agua',
+    path: '/agua',
+    getParentRoute: () => AuthenticatedAbastecimentoRoute,
+  } as any)
 const ApiPublicHooksWeatherMonitorRoute =
   ApiPublicHooksWeatherMonitorRouteImport.update({
     id: '/api/public/hooks/weather-monitor',
@@ -424,6 +431,7 @@ export interface FileRoutesByFullPath {
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
+  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -480,6 +488,7 @@ export interface FileRoutesByTo {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/': typeof AuthenticatedIndexRoute
+  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -539,6 +548,7 @@ export interface FileRoutesById {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
   '/_authenticated/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -598,6 +608,7 @@ export interface FileRouteTypes {
     | '/api/backorder-reclassificar'
     | '/api/bi-feed'
     | '/api/imgbb-upload'
+    | '/abastecimento/agua'
     | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/'
+    | '/abastecimento/agua'
     | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -712,6 +724,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/_authenticated/'
+    | '/_authenticated/abastecimento/agua'
     | '/_authenticated/ativo/$code'
     | '/_authenticated/inteligencia-ativos/historico'
     | '/_authenticated/inteligencia-ativos/nao-encontrados'
@@ -1120,6 +1133,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAtivoCodeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/abastecimento/agua': {
+      id: '/_authenticated/abastecimento/agua'
+      path: '/agua'
+      fullPath: '/abastecimento/agua'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoRoute
+    }
     '/api/public/hooks/weather-monitor': {
       id: '/api/public/hooks/weather-monitor'
       path: '/api/public/hooks/weather-monitor'
@@ -1138,11 +1158,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAbastecimentoRouteChildren {
+  AuthenticatedAbastecimentoAguaRoute: typeof AuthenticatedAbastecimentoAguaRoute
   AuthenticatedAbastecimentoIndexRoute: typeof AuthenticatedAbastecimentoIndexRoute
 }
 
 const AuthenticatedAbastecimentoRouteChildren: AuthenticatedAbastecimentoRouteChildren =
   {
+    AuthenticatedAbastecimentoAguaRoute: AuthenticatedAbastecimentoAguaRoute,
     AuthenticatedAbastecimentoIndexRoute: AuthenticatedAbastecimentoIndexRoute,
   }
 

@@ -26,11 +26,11 @@ export const Route = createFileRoute("/_authenticated/abastecimento/agua")({
   component: AguaLayout,
 });
 
-const TABS = [
+const TABS: { to: string; label: string; icon: typeof Droplets; exact?: boolean }[] = [
   { to: "/abastecimento/agua", label: "Rota do dia", icon: Droplets, exact: true },
   { to: "/abastecimento/agua/filtros", label: "Pontos e filtros", icon: Filter },
   { to: "/abastecimento/agua/historico", label: "Histórico", icon: History },
-] as const;
+];
 
 function AguaLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
