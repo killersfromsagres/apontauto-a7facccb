@@ -1,12 +1,7 @@
-import { Moon, Sun } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "./theme-provider";
-
+/**
+ * Industrial Obsidian é dark-only: o alternador de tema foi descontinuado.
+ * Mantido como no-op para preservar os pontos de importação existentes.
+ */
 export function ThemeToggle() {
-  const { theme, toggle } = useTheme();
-  return (
-    <Button variant="ghost" size="icon" onClick={toggle} aria-label="Alternar tema">
-      {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-    </Button>
-  );
+  return null;
 }
