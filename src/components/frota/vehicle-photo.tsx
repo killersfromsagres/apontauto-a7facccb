@@ -10,8 +10,21 @@ import pickup from "@/assets/frota/pickup.png";
 import van from "@/assets/frota/van.png";
 import truck from "@/assets/frota/truck.png";
 import moto from "@/assets/frota/moto.png";
+import saveiroAsset from "@/assets/frota/saveiro.png.asset.json";
+import fiorinoAsset from "@/assets/frota/fiorino.png.asset.json";
 
 const PHOTO: Record<BodyType, string> = { hatch, sedan, suv, pickup, van, truck, moto };
+
+/** Fotos reais da frota — têm prioridade sobre a silhueta genérica. */
+const MODEL_PHOTO: [RegExp, string][] = [
+  [/saveiro/i, saveiroAsset.url],
+  [/fiorino/i, fiorinoAsset.url],
+];
+
+function realPhotoFor(text: string): string | undefined {
+  for (const [re, url] of MODEL_PHOTO) if (re.test(text)) return url;
+  return undefined;
+}
 
 /** Ajuste sutil de matiz para aproximar a miniatura da cor cadastrada. */
 const TINT: [RegExp, string][] = [
@@ -49,16 +62,17 @@ export const VehiclePhoto = memo(function VehiclePhoto({
   className?: string;
 }) {
   const type = inferBodyType({ brand, model, version });
+  const real = realPhotoFor(`${brand ?? ""} ${model ?? ""} ${version ?? ""}`);
 
   return (
     <img
-      src={PHOTO[type]}
+      src={real ?? PHOTO[type]}
       alt={title ?? "Miniatura do veículo"}
       loading="lazy"
       decoding="async"
-      width={768}
-      height={512}
-      style={{ filter: tintFor(color) }}
+      width={512}
+      height={344}
+      style={real ? undefined : { filter: tintFor(color) }}
       className={cn("h-full w-full object-contain", className)}
     />
   );
