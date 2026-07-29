@@ -70,6 +70,8 @@ import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/publ
 import { Route as AuthenticatedAbastecimentoAguaRotaRouteImport } from './routes/_authenticated/abastecimento.agua.rota'
 import { Route as AuthenticatedAbastecimentoAguaProgramacaoRouteImport } from './routes/_authenticated/abastecimento.agua.programacao'
 import { Route as AuthenticatedAbastecimentoAguaHistoricoRouteImport } from './routes/_authenticated/abastecimento.agua.historico'
+import { Route as AuthenticatedAbastecimentoAguaEvidenciasRouteImport } from './routes/_authenticated/abastecimento.agua.evidencias'
+import { Route as AuthenticatedAbastecimentoAguaBagsRouteImport } from './routes/_authenticated/abastecimento.agua.bags'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -411,6 +413,18 @@ const AuthenticatedAbastecimentoAguaHistoricoRoute =
     path: '/historico',
     getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
   } as any)
+const AuthenticatedAbastecimentoAguaEvidenciasRoute =
+  AuthenticatedAbastecimentoAguaEvidenciasRouteImport.update({
+    id: '/evidencias',
+    path: '/evidencias',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
+const AuthenticatedAbastecimentoAguaBagsRoute =
+  AuthenticatedAbastecimentoAguaBagsRouteImport.update({
+    id: '/bags',
+    path: '/bags',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -467,6 +481,8 @@ export interface FileRoutesByFullPath {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
+  '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
+  '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
@@ -527,6 +543,8 @@ export interface FileRoutesByTo {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
+  '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
+  '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
@@ -591,6 +609,8 @@ export interface FileRoutesById {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
+  '/_authenticated/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
+  '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/_authenticated/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/_authenticated/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/_authenticated/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
@@ -655,6 +675,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/abastecimento/'
+    | '/abastecimento/agua/bags'
+    | '/abastecimento/agua/evidencias'
     | '/abastecimento/agua/historico'
     | '/abastecimento/agua/programacao'
     | '/abastecimento/agua/rota'
@@ -715,6 +737,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/abastecimento'
+    | '/abastecimento/agua/bags'
+    | '/abastecimento/agua/evidencias'
     | '/abastecimento/agua/historico'
     | '/abastecimento/agua/programacao'
     | '/abastecimento/agua/rota'
@@ -778,6 +802,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/_authenticated/abastecimento/'
+    | '/_authenticated/abastecimento/agua/bags'
+    | '/_authenticated/abastecimento/agua/evidencias'
     | '/_authenticated/abastecimento/agua/historico'
     | '/_authenticated/abastecimento/agua/programacao'
     | '/_authenticated/abastecimento/agua/rota'
@@ -1232,10 +1258,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAbastecimentoAguaHistoricoRouteImport
       parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
     }
+    '/_authenticated/abastecimento/agua/evidencias': {
+      id: '/_authenticated/abastecimento/agua/evidencias'
+      path: '/evidencias'
+      fullPath: '/abastecimento/agua/evidencias'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaEvidenciasRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
+    '/_authenticated/abastecimento/agua/bags': {
+      id: '/_authenticated/abastecimento/agua/bags'
+      path: '/bags'
+      fullPath: '/abastecimento/agua/bags'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaBagsRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
   }
 }
 
 interface AuthenticatedAbastecimentoAguaRouteChildren {
+  AuthenticatedAbastecimentoAguaBagsRoute: typeof AuthenticatedAbastecimentoAguaBagsRoute
+  AuthenticatedAbastecimentoAguaEvidenciasRoute: typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   AuthenticatedAbastecimentoAguaHistoricoRoute: typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   AuthenticatedAbastecimentoAguaProgramacaoRoute: typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   AuthenticatedAbastecimentoAguaRotaRoute: typeof AuthenticatedAbastecimentoAguaRotaRoute
@@ -1244,6 +1286,10 @@ interface AuthenticatedAbastecimentoAguaRouteChildren {
 
 const AuthenticatedAbastecimentoAguaRouteChildren: AuthenticatedAbastecimentoAguaRouteChildren =
   {
+    AuthenticatedAbastecimentoAguaBagsRoute:
+      AuthenticatedAbastecimentoAguaBagsRoute,
+    AuthenticatedAbastecimentoAguaEvidenciasRoute:
+      AuthenticatedAbastecimentoAguaEvidenciasRoute,
     AuthenticatedAbastecimentoAguaHistoricoRoute:
       AuthenticatedAbastecimentoAguaHistoricoRoute,
     AuthenticatedAbastecimentoAguaProgramacaoRoute:
