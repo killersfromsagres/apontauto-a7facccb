@@ -1,26 +1,10 @@
-import { createElement, memo, useEffect, useRef, useState } from "react";
-import { Car, Lock, RotateCw } from "lucide-react";
+import { memo } from "react";
+import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { VEHICLE_STATUS_LABEL, vehicleLabel, type Vehicle } from "@/lib/frota/api";
-
-let modelViewerPromise: Promise<void> | null = null;
-
-/** Carrega o web component <model-viewer> uma única vez, sob demanda. */
-function ensureModelViewer(): Promise<void> {
-  if (typeof window === "undefined") return Promise.resolve();
-  if (modelViewerPromise) return modelViewerPromise;
-  modelViewerPromise = new Promise<void>((resolve, reject) => {
-    if (customElements.get("model-viewer")) return resolve();
-    const s = document.createElement("script");
-    s.type = "module";
-    s.src = "https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js";
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("3D indisponível"));
-    document.head.appendChild(s);
-  });
-  return modelViewerPromise;
-}
+import { VehicleThumb } from "@/components/frota/vehicle-thumb";
+import { formatPlate } from "@/lib/frota/plate";
 
 const STATUS_TONE: Record<string, string> = {
   disponivel: "text-emerald-300 bg-emerald-400/10 border-emerald-400/30",
@@ -30,6 +14,10 @@ const STATUS_TONE: Record<string, string> = {
   inativo: "text-muted-foreground bg-muted/20 border-border/50",
 };
 
+/**
+ * Card do veículo com miniatura realista (SVG) — sem download de modelo 3D,
+ * carrega instantâneo e mantém o visual moderno em qualquer aparelho.
+ */
 export const VehicleCard3D = memo(function VehicleCard3D({
   vehicle,
   active,
@@ -39,24 +27,7 @@ export const VehicleCard3D = memo(function VehicleCard3D({
   active: boolean;
   onSelect: (v: Vehicle) => void;
 }) {
-  const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const hostRef = useRef<HTMLDivElement>(null);
-
-  // Só o card ativo instancia um renderizador 3D — e apenas se houver GLB.
-  useEffect(() => {
-    if (!active || !vehicle.model_glb_url || failed) return;
-    let cancelled = false;
-    ensureModelViewer()
-      .then(() => !cancelled && setReady(true))
-      .catch(() => !cancelled && setFailed(true));
-    return () => {
-      cancelled = true;
-    };
-  }, [active, vehicle.model_glb_url, failed]);
-
-  const show3d = active && ready && !!vehicle.model_glb_url && !failed;
-  const poster = vehicle.model_poster_url || vehicle.thumbnail_url;
+  const photo = vehicle.thumbnail_url || vehicle.model_poster_url;
 
   return (
     <button
@@ -70,38 +41,29 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           : "border-border/50 bg-card/40 hover:border-primary/40",
       )}
     >
-      <div
-        ref={hostRef}
-        className="relative flex h-36 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent"
-      >
-        {show3d ? (
-          createElement("model-viewer", {
-            src: vehicle.model_glb_url!,
-            poster: poster ?? undefined,
-            "camera-controls": true,
-            "touch-action": "pan-y",
-            "disable-zoom": true,
-            "auto-rotate": true,
-            loading: "lazy",
-            style: { width: "100%", height: "100%" },
-          })
-        ) : poster ? (
+      <div className="relative flex h-32 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent">
+        {photo ? (
           <img
-            src={poster}
+            src={photo}
             alt={vehicleLabel(vehicle)}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-contain"
+            className="h-full w-full object-contain p-2"
           />
         ) : (
-          <Car className="h-14 w-14 text-primary/50" strokeWidth={1.25} />
+          <VehicleThumb
+            brand={vehicle.brand}
+            model={vehicle.model}
+            version={vehicle.version}
+            color={vehicle.color}
+            title={vehicleLabel(vehicle)}
+            className={cn(
+              "h-full w-full px-4 py-3 drop-shadow-[0_8px_18px_rgba(0,0,0,.45)] transition-transform duration-300",
+              active ? "scale-105" : "group-hover:scale-105",
+            )}
+          />
         )}
 
-        {active && vehicle.model_glb_url && !show3d && !failed && (
-          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-background/70 px-2 py-1 text-[10px] text-muted-foreground">
-            <RotateCw className="h-3 w-3 animate-spin" /> carregando 3D
-          </span>
-        )}
         {vehicle.status === "bloqueado" && (
           <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/20 px-2 py-1 text-[10px] font-semibold text-rose-200">
             <Lock className="h-3 w-3" /> Bloqueado
@@ -109,7 +71,7 @@ export const VehicleCard3D = memo(function VehicleCard3D({
         )}
       </div>
 
-      {/* Identificação textual sempre visível — o 3D é apenas apoio. */}
+      {/* Identificação textual sempre visível. */}
       <div className="space-y-1 p-3">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-xs font-bold tracking-widest text-primary">
@@ -125,12 +87,15 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           </span>
         </div>
         <p className="truncate text-sm font-semibold">{vehicleLabel(vehicle)}</p>
-        <p className="font-mono text-xs text-muted-foreground">
-          {vehicle.plate ? vehicle.plate : "placa não cadastrada"} ·{" "}
-          {vehicle.year_model ?? "—"}
-        </p>
+        <div className="flex items-center gap-2">
+          <span className="rounded-md border border-border/60 bg-background/60 px-2 py-0.5 font-mono text-[11px] font-bold tracking-widest">
+            {formatPlate(vehicle.plate) || "SEM PLACA"}
+          </span>
+          <span className="font-mono text-[11px] text-muted-foreground">
+            {vehicle.year_model ?? "—"}
+          </span>
+        </div>
       </div>
     </button>
   );
 });
-
