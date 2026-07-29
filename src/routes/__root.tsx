@@ -186,7 +186,11 @@ function RootComponent() {
 
   useEffect(() => {
     registerServiceWorker();
+    void import("@/features/observability/services/error-log").then((m) =>
+      m.installErrorTelemetry(),
+    );
   }, []);
+
 
   return (
     <QueryClientProvider client={queryClient}>

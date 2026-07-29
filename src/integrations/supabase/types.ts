@@ -567,6 +567,48 @@ export type Database = {
         }
         Relationships: []
       }
+      client_error_logs: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          level: string
+          message: string
+          metadata: Json
+          module_key: string | null
+          origin: string
+          route: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          level?: string
+          message: string
+          metadata?: Json
+          module_key?: string | null
+          origin?: string
+          route?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          level?: string
+          message?: string
+          metadata?: Json
+          module_key?: string | null
+          origin?: string
+          route?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       controle_centros_custo: {
         Row: {
           ativo: boolean
@@ -1127,6 +1169,36 @@ export type Database = {
           size_bytes?: number
           url?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      integration_heartbeats: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          id: string
+          integration: string
+          message: string | null
+          metadata: Json
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          integration: string
+          message?: string | null
+          metadata?: Json
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          integration?: string
+          message?: string | null
+          metadata?: Json
+          status?: string
         }
         Relationships: []
       }
