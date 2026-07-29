@@ -21,7 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { TermsAcceptDialog } from "@/components/terms-accept-dialog";
+import { TermsSummaryDialog } from "@/components/terms-summary-dialog";
+import { recordTermsAcceptance } from "@/lib/auth/terms";
 const logo = { url: "/apontauto-logo.png" };
 
 export const Route = createFileRoute("/auth")({
@@ -110,16 +111,10 @@ function AuthPage() {
     try {
       const raw = email.trim().toLowerCase();
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
-      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
-      try {
-        localStorage.setItem(
-          "apontauto:terms-accepted",
-          JSON.stringify({ email: loginEmail, acceptedAt: new Date().toISOString(), version: "1.0" }),
-        );
-      } catch {
-        // ignore storage errors
-      }
+      // Evidência oficial do aceite fica no banco, não no navegador.
+      if (data.user) await recordTermsAcceptance(data.user.id);
       toast.success("Bem-vindo!");
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
@@ -160,12 +155,43 @@ function AuthPage() {
   };
 
   return (
-    <div className="auth-bg relative flex min-h-dvh items-center justify-center px-4 py-10">
-      <div className="auth-grid" aria-hidden />
+    <div className="auth-bg relative flex min-h-dvh items-center justify-center px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+      <main className="relative z-10 grid w-full max-w-5xl items-center gap-10 lg:grid-cols-[1.1fr_minmax(0,420px)]">
+        {/* Coluna visual — apenas desktop */}
+        <section className="hidden lg:block">
+          <img
+            src={logo.url}
+            alt="Apont Auto"
+            className="mb-6 h-20 w-auto object-contain"
+            draggable={false}
+          />
+          <h2 className="max-w-md font-display text-3xl font-semibold leading-tight text-white">
+            Planejamento e Controle de Manutenção, do campo à gestão.
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
+            Ordens de serviço, ativos, taludes, clima, frota e materiais em uma única
+            plataforma operacional.
+          </p>
+          <dl className="mt-8 flex flex-wrap gap-3">
+            {[
+              { label: "Disponibilidade", value: "24/7" },
+              { label: "Segurança", value: "RBAC + auditoria" },
+              { label: "Sincronização", value: "Offline-first" },
+            ].map((i) => (
+              <div
+                key={i.label}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm"
+              >
+                <dt className="text-[11px] uppercase tracking-wide text-white/45">{i.label}</dt>
+                <dd className="mt-0.5 text-sm font-medium text-white/85">{i.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
-      <main className="relative z-10 w-full max-w-md">
+        {/* Card de login */}
         <div
-          className={`relative rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:p-9 ${
+          className={`relative mx-auto w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-8 ${
             shake ? "auth-shake" : ""
           }`}
           style={{
@@ -178,22 +204,21 @@ function AuthPage() {
             className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
           />
 
-          <div className="auth-logo-in mb-4 flex flex-col items-center sm:mb-6">
-            <div className="relative mx-auto grid h-40 w-40 place-items-center xs:h-48 xs:w-48 sm:h-56 sm:w-56 md:h-64 md:w-64">
-              <img
-                src={logo.url}
-                alt="PCM · Planejador de Manutenção"
-                className="h-full w-full object-contain"
-                draggable={false}
-              />
-            </div>
-            <h1 className="-mt-4 text-center text-lg font-semibold tracking-tight text-white sm:-mt-6 sm:text-xl md:-mt-8">
-              Sistema Exclusivo
+          <div className="auth-logo-in mb-6 flex flex-col items-center lg:items-start">
+            <img
+              src={logo.url}
+              alt="Apont Auto"
+              className="h-14 w-auto object-contain lg:hidden"
+              draggable={false}
+            />
+            <h1 className="mt-3 text-center font-display text-xl font-semibold tracking-tight text-white lg:mt-0 lg:text-left">
+              Acesso ao sistema
             </h1>
-            <p className="mt-1 text-center text-sm text-white/60">
-              Faça seu login para continuar
+            <p className="mt-1 text-center text-sm text-white/55 lg:text-left">
+              Entre com suas credenciais corporativas.
             </p>
           </div>
+
 
           <form onSubmit={submit} className="space-y-4" noValidate>
             <div className="auth-field">
@@ -241,49 +266,34 @@ function AuthPage() {
 
 
 
-            <button
-              type="button"
-              onClick={() => setTermsOpen(true)}
-              aria-pressed={acceptTerms}
-              className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-lg border p-3 text-left text-xs transition-all duration-300 ${
-                acceptTerms
-                  ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100 shadow-[0_0_0_1px_rgba(52,211,153,0.25),0_8px_24px_-12px_rgba(52,211,153,0.5)]"
-                  : "border-white/10 bg-white/5 text-white/70 hover:border-cyan-300/40 hover:bg-white/[0.07] hover:text-white"
-              }`}
-            >
-              <span
-                className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border transition-all duration-300 ${
-                  acceptTerms
-                    ? "animate-in zoom-in-50 border-emerald-400/60 bg-emerald-500 text-white shadow-[0_0_16px_rgba(52,211,153,0.6)]"
-                    : "border-white/20 bg-white/5 text-transparent group-hover:border-cyan-300/60"
-                }`}
-                aria-hidden
-              >
-                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12l5 5L20 7" />
-                </svg>
-              </span>
-              <span className="leading-relaxed">
-                {acceptTerms ? (
-                  <span className="animate-in fade-in slide-in-from-left-1">
-                    Termos aceitos — obrigado por confirmar.
-                  </span>
-                ) : (
-                  <>
-                    Li e aceito os <span className="font-semibold text-cyan-300">Termos de Uso</span>{" "}
-                    e a{" "}
-                    <span className="font-semibold text-cyan-300">Política de Privacidade</span>{" "}
-                    <span className="text-white/40">(clique para ler)</span>
-                  </>
-                )}
-              </span>
-              {!acceptTerms && (
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 group-hover:translate-x-full"
-                />
-              )}
-            </button>
+            <div className="flex items-start gap-3 text-xs text-white/70">
+              <input
+                id="terms"
+                type="checkbox"
+                className="auth-checkbox mt-0.5"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+              />
+              <label htmlFor="terms" className="cursor-pointer leading-relaxed">
+                Li e aceito os{" "}
+                <a href="/termos" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                  Termos de Uso
+                </a>{" "}
+                e a{" "}
+                <a href="/privacidade" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                  Política de Privacidade
+                </a>
+                .{" "}
+                <button
+                  type="button"
+                  onClick={() => setTermsOpen(true)}
+                  className="text-white/50 underline underline-offset-2 hover:text-white/80"
+                >
+                  Ver resumo
+                </button>
+              </label>
+            </div>
+
 
             <button type="submit" className="auth-btn" disabled={loading || !acceptTerms}>
               {loading ? (
@@ -297,17 +307,20 @@ function AuthPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs tracking-wide text-white/50">
-          Dev by:{" "}
-          <span className="shine-text font-semibold">Gabriel Vitor</span>
+      </main>
+
+      <footer className="absolute inset-x-0 bottom-4 z-10 px-4 text-center">
+        <p className="text-xs tracking-wide text-white/45">
+          Dev by: <span className="shine-text font-semibold">Gabriel Vitor</span>
         </p>
-        <nav className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/40">
+        <nav className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/35">
           <a href="/sobre" className="hover:text-white/70">Sobre</a>
           <a href="/contato" className="hover:text-white/70">Contato</a>
           <a href="/privacidade" className="hover:text-white/70">Privacidade</a>
           <a href="/termos" className="hover:text-white/70">Termos</a>
         </nav>
-      </main>
+      </footer>
+
 
       {/* Tela intermediária travada: só fecha ao clicar em Sim ou Não. */}
       <AlertDialog open={askSave}>
@@ -372,11 +385,7 @@ function AuthPage() {
         </div>
       )}
 
-      <TermsAcceptDialog
-        open={termsOpen}
-        onOpenChange={setTermsOpen}
-        onAccept={() => setAcceptTerms(true)}
-      />
+      <TermsSummaryDialog open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   );
 }
