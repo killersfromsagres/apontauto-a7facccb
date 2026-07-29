@@ -191,11 +191,22 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "abastecimento",
-        title: "Abastecimento",
-        short: "Combustível",
+        title: "Frota e Abastecimento",
+        short: "Frota",
         url: "/abastecimento",
         icon: Fuel,
-        keywords: ["combustível", "diesel", "litros", "frota", "veículo", "hodômetro"],
+        keywords: [
+          "combustível",
+          "diesel",
+          "litros",
+          "frota",
+          "veículo",
+          "hodômetro",
+          "checklist",
+          "ocorrência",
+          "consumo",
+        ],
+
       },
     ],
   },
