@@ -8,6 +8,7 @@ import {
   History,
   LayoutDashboard,
   MapPin,
+  Route as RouteIcon,
 
   PackageCheck,
   Settings,
@@ -44,7 +45,7 @@ const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] =
   { to: "/abastecimento/agua", label: "Visão Geral", icon: LayoutDashboard, exact: true },
   { to: "/abastecimento/agua/pontos", label: "Pontos de Entrega", icon: MapPin },
   { to: "/abastecimento/agua/programacao", label: "Programação", icon: Calendar },
-  { to: "/abastecimento/agua/rotas", label: "Rotas", icon: Route2 },
+  { to: "/abastecimento/agua/rotas", label: "Rotas", icon: RouteIcon },
 
 
 
