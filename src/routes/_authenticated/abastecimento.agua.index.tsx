@@ -115,10 +115,10 @@ function RotaDoDia() {
       </GlassCard>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard title="Pontos do dia" value={kpis.total} icon={<Droplets className="h-4 w-4" />} />
-        <KpiCard title="Concluídos" value={kpis.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <KpiCard title="Pendentes" value={kpis.pendentes} icon={<CircleSlash className="h-4 w-4" />} />
-        <KpiCard title="Bags entregues" value={kpis.bags} icon={<PackageCheck className="h-4 w-4" />} />
+        <KpiCard label="Pontos do dia" value={kpis.total} icon={<Droplets className="h-4 w-4" />} />
+        <KpiCard label="Concluídos" value={kpis.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <KpiCard label="Pendentes" value={kpis.pendentes} icon={<CircleSlash className="h-4 w-4" />} />
+        <KpiCard label="Bags entregues" value={kpis.bags} icon={<PackageCheck className="h-4 w-4" />} />
       </div>
 
       {visitas.isLoading ? (

@@ -67,6 +67,7 @@ import { Route as AuthenticatedAbastecimentoAguaRouteImport } from './routes/_au
 import { Route as AuthenticatedAbastecimentoAguaIndexRouteImport } from './routes/_authenticated/abastecimento.agua.index'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
+import { Route as AuthenticatedAbastecimentoAguaFiltrosRouteImport } from './routes/_authenticated/abastecimento.agua.filtros'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -390,6 +391,12 @@ const ApiPublicHooksPluviometroRoute =
     path: '/api/public/hooks/pluviometro',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAbastecimentoAguaFiltrosRoute =
+  AuthenticatedAbastecimentoAguaFiltrosRouteImport.update({
+    id: '/filtros',
+    path: '/filtros',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -446,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
+  '/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -503,6 +511,7 @@ export interface FileRoutesByTo {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
+  '/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -564,6 +573,7 @@ export interface FileRoutesById {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
+  '/_authenticated/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/_authenticated/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -625,6 +635,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/abastecimento/'
+    | '/abastecimento/agua/filtros'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/abastecimento/agua/'
@@ -682,6 +693,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/abastecimento'
+    | '/abastecimento/agua/filtros'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/abastecimento/agua'
@@ -742,6 +754,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/_authenticated/abastecimento/'
+    | '/_authenticated/abastecimento/agua/filtros'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/_authenticated/abastecimento/agua/'
@@ -1172,15 +1185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPluviometroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/abastecimento/agua/filtros': {
+      id: '/_authenticated/abastecimento/agua/filtros'
+      path: '/filtros'
+      fullPath: '/abastecimento/agua/filtros'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaFiltrosRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
   }
 }
 
 interface AuthenticatedAbastecimentoAguaRouteChildren {
+  AuthenticatedAbastecimentoAguaFiltrosRoute: typeof AuthenticatedAbastecimentoAguaFiltrosRoute
   AuthenticatedAbastecimentoAguaIndexRoute: typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 
 const AuthenticatedAbastecimentoAguaRouteChildren: AuthenticatedAbastecimentoAguaRouteChildren =
   {
+    AuthenticatedAbastecimentoAguaFiltrosRoute:
+      AuthenticatedAbastecimentoAguaFiltrosRoute,
     AuthenticatedAbastecimentoAguaIndexRoute:
       AuthenticatedAbastecimentoAguaIndexRoute,
   }
