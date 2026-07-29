@@ -53,6 +53,62 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_filtro_solicitacoes: {
+        Row: {
+          atendimento: string | null
+          atualizado_em: string
+          concluida_em: string | null
+          criado_em: string
+          criado_por: string | null
+          descricao: string | null
+          foto_url: string | null
+          id: string
+          ponto_id: string
+          prevista_para: string | null
+          prioridade: string
+          situacao: string
+          tipo: string
+        }
+        Insert: {
+          atendimento?: string | null
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          ponto_id: string
+          prevista_para?: string | null
+          prioridade?: string
+          situacao?: string
+          tipo?: string
+        }
+        Update: {
+          atendimento?: string | null
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          ponto_id?: string
+          prevista_para?: string | null
+          prioridade?: string
+          situacao?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agua_import_lotes: {
         Row: {
           arquivo_hash: string
