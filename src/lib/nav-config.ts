@@ -26,6 +26,7 @@ import {
   Boxes,
   ClipboardCheck,
   FileSpreadsheet,
+  Fuel,
   SearchX,
   type LucideIcon,
 } from "lucide-react";
@@ -265,6 +266,18 @@ export function menuKeysForPath(pathname: string): string[] | null {
   return seg ? [seg] : null;
 }
 
+/** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
+const RESTRICTED_KEYS = [
+  "abastecimento",
+  "frota-checklist",
+  "frota-historico",
+  "frota-gestao",
+  "bi-studio",
+  "notificacoes-admin",
+  "auditoria",
+  "confiabilidade",
+];
+
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [
   "corretiva",
@@ -306,6 +319,12 @@ export function useVisibleSections() {
     if (loading) return [];
     const canSee = (item: MenuItem) => {
       const key = item.key;
+      // Módulos restritos: negação por padrão (nunca liberados por
+      // `allowed_menus = null` do sistema legado). Espelha a lista de
+      // `can_access_module` no banco.
+      if (RESTRICTED_KEYS.includes(key)) {
+        return isOwner || isAdmin || (allowed?.includes(key) ?? false);
+      }
       if (key === "configuracoes") return isOwner;
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       if (key === "corretiva-gestor") return isOwner || isAdmin;
