@@ -69,6 +69,10 @@
 /* Light theme — clean canvas with cool electric-blue accents */
 :root {
   --radius: 0.875rem;
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-slow: 280ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Light — "Frosted Aqua": gelo levemente azulado + teal translúcido */
   --background: oklch(0.985 0.008 210);
@@ -135,27 +139,38 @@
    Base: #05070C bg · #0D1422 surface · #121C2E elevated
    · #4F8CFF primary · #52E5FF glow · #8B5CF6 violeta técnico · #F4F7FB fg */
 .dark {
-  --background: oklch(0.128 0.013 264);
-  --foreground: oklch(0.975 0.006 256);
+  /* Tokens ancorados na paleta oficial Industrial Obsidian */
+  --obsidian-abyss: #05070C;
+  --obsidian-deep: #080D16;
+  --obsidian-surface: #0D1422;
+  --obsidian-elevated: #121C2E;
 
-  --card: oklch(0.192 0.031 263);
-  --card-foreground: oklch(0.975 0.006 256);
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-slow: 280ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --popover: oklch(0.159 0.021 261);
-  --popover-foreground: oklch(0.975 0.006 256);
+  --background: #05070C;
+  --foreground: #F4F7FB;
 
-  --primary: oklch(0.657 0.182 262);
-  --primary-foreground: oklch(0.975 0.006 256);
-  --primary-glow: oklch(0.854 0.127 212);
+  --card: #0D1422;
+  --card-foreground: #F4F7FB;
 
-  --secondary: oklch(0.227 0.038 262);
-  --secondary-foreground: oklch(0.975 0.006 256);
+  --popover: #080D16;
+  --popover-foreground: #F4F7FB;
 
-  --muted: oklch(0.227 0.038 262);
-  --muted-foreground: oklch(0.711 0.035 257);
+  --primary: #4F8CFF;
+  --primary-foreground: #05070C;
+  --primary-glow: #52E5FF;
 
-  --accent: oklch(0.29 0.055 264);
-  --accent-foreground: oklch(0.975 0.006 256);
+  --secondary: #121C2E;
+  --secondary-foreground: #F4F7FB;
+
+  --muted: #121C2E;
+  --muted-foreground: #94A3B8;
+
+  --accent: #16223A;
+  --accent-foreground: #F4F7FB;
 
   --destructive: oklch(0.64 0.20 24);
   --destructive-foreground: oklch(0.99 0.005 240);
@@ -164,27 +179,27 @@
   --success-foreground: oklch(0.14 0.03 165);
   --warning: oklch(0.80 0.16 78);
   --warning-foreground: oklch(0.18 0.05 60);
-  --info: oklch(0.854 0.127 212);
-  --info-foreground: oklch(0.14 0.035 240);
+  --info: #52E5FF;
+  --info-foreground: #05070C;
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.657 0.182 262);
+  --ring: #4F8CFF;
 
-  --chart-1: oklch(0.657 0.182 262);
-  --chart-2: oklch(0.854 0.127 212);
-  --chart-3: oklch(0.606 0.219 293);
+  --chart-1: #4F8CFF;
+  --chart-2: #52E5FF;
+  --chart-3: #8B5CF6;
   --chart-4: oklch(0.72 0.15 163);
   --chart-5: oklch(0.80 0.16 78);
 
-  --sidebar: oklch(0.159 0.021 261);
+  --sidebar: #080D16;
   --sidebar-foreground: oklch(0.90 0.012 256);
-  --sidebar-primary: oklch(0.657 0.182 262);
-  --sidebar-primary-foreground: oklch(0.975 0.006 256);
-  --sidebar-accent: oklch(0.227 0.038 262);
-  --sidebar-accent-foreground: oklch(0.975 0.006 256);
+  --sidebar-primary: #4F8CFF;
+  --sidebar-primary-foreground: #05070C;
+  --sidebar-accent: #121C2E;
+  --sidebar-accent-foreground: #F4F7FB;
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.657 0.182 262);
+  --sidebar-ring: #4F8CFF;
 
   --shadow-elegant: 0 24px 60px -28px color-mix(in oklch, var(--primary) 40%, transparent), 0 2px 8px -2px color-mix(in srgb, black 60%, transparent);
   --shadow-glow: 0 0 70px -22px color-mix(in oklch, var(--primary-glow) 40%, transparent);
@@ -194,6 +209,13 @@
   --gradient-mesh: radial-gradient(at 18% 6%, color-mix(in oklch, var(--primary) 14%, transparent) 0, transparent 55%), radial-gradient(at 88% 92%, color-mix(in oklch, var(--chart-3) 10%, transparent) 0, transparent 58%);
 
 }
+
+/* Gradiente global diagonal (preto azulado → azul-marinho profundo) */
+.dark body {
+  background-image: linear-gradient(155deg, #05070C 0%, #080D16 45%, #0B1526 100%);
+  background-attachment: fixed;
+}
+
 
 
 @layer base {
