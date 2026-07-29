@@ -53,6 +53,143 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_bag_movimentos: {
+        Row: {
+          bag_tipo_id: string
+          criado_em: string
+          criado_por: string
+          id: string
+          idempotency_key: string | null
+          motivo: string | null
+          ocorrido_em: string
+          origem: string
+          ponto_id: string | null
+          quantidade: number
+          responsavel: string | null
+          rota_id: string | null
+          tipo: string
+          veiculo: string | null
+          visita_id: string | null
+        }
+        Insert: {
+          bag_tipo_id: string
+          criado_em?: string
+          criado_por?: string
+          id?: string
+          idempotency_key?: string | null
+          motivo?: string | null
+          ocorrido_em?: string
+          origem?: string
+          ponto_id?: string | null
+          quantidade: number
+          responsavel?: string | null
+          rota_id?: string | null
+          tipo: string
+          veiculo?: string | null
+          visita_id?: string | null
+        }
+        Update: {
+          bag_tipo_id?: string
+          criado_em?: string
+          criado_por?: string
+          id?: string
+          idempotency_key?: string | null
+          motivo?: string | null
+          ocorrido_em?: string
+          origem?: string
+          ponto_id?: string | null
+          quantidade?: number
+          responsavel?: string | null
+          rota_id?: string | null
+          tipo?: string
+          veiculo?: string | null
+          visita_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_bag_movimentos_bag_tipo_id_fkey"
+            columns: ["bag_tipo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_bag_tipos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_bag_movimentos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_bag_movimentos_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rotas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_bag_movimentos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "agua_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_bag_tipos: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          capacidade_label: string | null
+          capacidade_litros: number | null
+          codigo: string
+          criado_em: string
+          criado_por: string | null
+          estoque_atual: number
+          estoque_minimo: number
+          fornecedor: string | null
+          id: string
+          local_armazenamento: string | null
+          nome: string
+          observacao: string | null
+          unidade: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          capacidade_label?: string | null
+          capacidade_litros?: number | null
+          codigo: string
+          criado_em?: string
+          criado_por?: string | null
+          estoque_atual?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          local_armazenamento?: string | null
+          nome: string
+          observacao?: string | null
+          unidade?: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          capacidade_label?: string | null
+          capacidade_litros?: number | null
+          codigo?: string
+          criado_em?: string
+          criado_por?: string | null
+          estoque_atual?: number
+          estoque_minimo?: number
+          fornecedor?: string | null
+          id?: string
+          local_armazenamento?: string | null
+          nome?: string
+          observacao?: string | null
+          unidade?: string
+        }
+        Relationships: []
+      }
       agua_excecoes: {
         Row: {
           atualizado_em: string
@@ -185,6 +322,101 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_fotos: {
+        Row: {
+          altura: number | null
+          capturada_em: string | null
+          criado_em: string
+          enviada_em: string
+          enviada_por: string
+          filtro_solicitacao_id: string | null
+          id: string
+          image_hash: string | null
+          image_url: string
+          largura: number | null
+          metadados: Json
+          mime_type: string | null
+          origem: string
+          ponto_id: string | null
+          rota_id: string | null
+          size_bytes: number | null
+          thumbnail_url: string | null
+          tipo: string
+          visita_id: string | null
+        }
+        Insert: {
+          altura?: number | null
+          capturada_em?: string | null
+          criado_em?: string
+          enviada_em?: string
+          enviada_por?: string
+          filtro_solicitacao_id?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url: string
+          largura?: number | null
+          metadados?: Json
+          mime_type?: string | null
+          origem?: string
+          ponto_id?: string | null
+          rota_id?: string | null
+          size_bytes?: number | null
+          thumbnail_url?: string | null
+          tipo?: string
+          visita_id?: string | null
+        }
+        Update: {
+          altura?: number | null
+          capturada_em?: string | null
+          criado_em?: string
+          enviada_em?: string
+          enviada_por?: string
+          filtro_solicitacao_id?: string | null
+          id?: string
+          image_hash?: string | null
+          image_url?: string
+          largura?: number | null
+          metadados?: Json
+          mime_type?: string | null
+          origem?: string
+          ponto_id?: string | null
+          rota_id?: string | null
+          size_bytes?: number | null
+          thumbnail_url?: string | null
+          tipo?: string
+          visita_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_fotos_filtro_solicitacao_id_fkey"
+            columns: ["filtro_solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_fotos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_fotos_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rotas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_fotos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "agua_visitas"
             referencedColumns: ["id"]
           },
         ]
@@ -907,6 +1139,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agua_whatsapp_envios: {
+        Row: {
+          criado_em: string
+          destinatario_hash: string | null
+          destinatario_mascarado: string | null
+          entregue_em: string | null
+          enviado_em: string | null
+          escopo_id: string | null
+          escopo_tipo: string
+          id: string
+          iniciado_por: string
+          lido_em: string | null
+          mensagem_versao: string | null
+          modo: string
+          provider_message_id: string | null
+          qtd_fotos: number
+          status: string
+          tentativas: number
+          ultimo_erro: string | null
+        }
+        Insert: {
+          criado_em?: string
+          destinatario_hash?: string | null
+          destinatario_mascarado?: string | null
+          entregue_em?: string | null
+          enviado_em?: string | null
+          escopo_id?: string | null
+          escopo_tipo: string
+          id?: string
+          iniciado_por?: string
+          lido_em?: string | null
+          mensagem_versao?: string | null
+          modo?: string
+          provider_message_id?: string | null
+          qtd_fotos?: number
+          status?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Update: {
+          criado_em?: string
+          destinatario_hash?: string | null
+          destinatario_mascarado?: string | null
+          entregue_em?: string | null
+          enviado_em?: string | null
+          escopo_id?: string | null
+          escopo_tipo?: string
+          id?: string
+          iniciado_por?: string
+          lido_em?: string | null
+          mensagem_versao?: string | null
+          modo?: string
+          provider_message_id?: string | null
+          qtd_fotos?: number
+          status?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Relationships: []
       }
       app_settings: {
         Row: {
