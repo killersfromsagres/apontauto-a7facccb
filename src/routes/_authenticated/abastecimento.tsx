@@ -32,6 +32,8 @@ import {
 import { DataTable, EmptyState, KpiCard, type DataTableColumn } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { VehicleCard3D } from "@/components/frota/vehicle-card-3d";
+import { VehicleEditDialog } from "@/components/frota/vehicle-edit-dialog";
+import { formatPlate } from "@/lib/frota/plate";
 import {
   computeConsumption,
   createFueling,
@@ -84,6 +86,7 @@ const dt = (s: string) => new Date(s).toLocaleString("pt-BR", { dateStyle: "shor
 function FrotaPage() {
   const { allowed, isLoading } = useCanAccessModule("abastecimento", "read");
   const { allowed: canWrite } = useCanAccessModule("abastecimento", "create");
+  const { allowed: canEditVehicle } = useCanAccessModule("abastecimento", "update");
   const [tab, setTab] = useState("visao");
 
   const vehicles = useQuery({ queryKey: ["frota", "vehicles"], queryFn: listVehicles, enabled: allowed });
@@ -174,7 +177,7 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="veiculos">
-          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} />
+          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} canWrite={canEditVehicle} />
         </TabsContent>
 
         <TabsContent value="historico">
@@ -370,10 +373,12 @@ function VehiclesTab({
   vehicles,
   fuelings,
   checklists,
+  canWrite,
 }: {
   vehicles: Vehicle[];
   fuelings: Fueling[];
   checklists: Checklist[];
+  canWrite: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(vehicles[0]?.id ?? null);
   const vehicle = vehicles.find((v) => v.id === selected) ?? vehicles[0];
@@ -392,14 +397,18 @@ function VehiclesTab({
       </div>
 
       <GlassCard className="space-y-4">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">{vehicle.prefix}</p>
-          <h3 className="font-display text-xl font-bold">{vehicleLabel(vehicle)}</h3>
-          <p className="text-sm text-muted-foreground">
-            {vehicle.plate ?? "sem placa"} · {vehicle.color ?? "cor não informada"} ·{" "}
-            {VEHICLE_STATUS_LABEL[vehicle.status]}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-widest text-primary">{vehicle.prefix}</p>
+            <h3 className="font-display text-xl font-bold">{vehicleLabel(vehicle)}</h3>
+            <p className="text-sm text-muted-foreground">
+              {formatPlate(vehicle.plate) || "sem placa"} · {vehicle.color ?? "cor não informada"} ·{" "}
+              {VEHICLE_STATUS_LABEL[vehicle.status]}
+            </p>
+          </div>
+          {canWrite && <VehicleEditDialog key={vehicle.id} vehicle={vehicle} />}
         </div>
+
         {vehicle.block_reason && (
           <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-sm text-rose-200">
             Motivo do bloqueio: {vehicle.block_reason}
