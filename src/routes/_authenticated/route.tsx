@@ -7,6 +7,8 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
+import { ForcePasswordChange } from "@/components/force-password-change";
+
 import { useMyAccess } from "@/hooks/use-my-access";
 import { menuKeysForPath } from "@/lib/nav-config";
 import { Button } from "@/components/ui/button";
@@ -140,6 +142,8 @@ function AuthenticatedLayout() {
             {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
           <MobileTabBar />
+          <ForcePasswordChange />
+
         </SidebarInset>
       </div>
     </SidebarProvider>

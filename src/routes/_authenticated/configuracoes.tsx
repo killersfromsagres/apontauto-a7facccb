@@ -232,17 +232,20 @@ function ControleAccessCard() {
   const { isAdmin } = useIsAdmin();
   const provision = useServerFn(provisionControleUser);
   const [running, setRunning] = useState(false);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
   if (!isAdmin) return null;
 
   const run = async () => {
     setRunning(true);
+    setTempPassword(null);
     try {
       const r: any = await provision();
+      setTempPassword(r?.tempPassword ?? null);
       toast.success(
         r?.created
-          ? "Login \"controle\" criado com acesso ao Controle de Materiais."
-          : "Login \"controle\" atualizado (senha e permissões aplicadas).",
+          ? "Login \"controle\" criado com senha temporária."
+          : "Login \"controle\" atualizado com nova senha temporária.",
       );
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao provisionar o acesso.");
@@ -254,24 +257,49 @@ function ControleAccessCard() {
   return (
     <GlassCard className="mt-4">
       <div className="flex items-start gap-3">
-        <HardDrive className="mt-0.5 h-5 w-5 text-primary" />
-        <div className="flex-1">
+        <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Acesso — Controle de Materiais
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Cria (ou reaplica) o login <strong>controle</strong>, com acesso exclusivo ao módulo
-            Controle de Materiais.
+            Controle de Materiais. A senha é temporária, gerada no servidor e exibida uma única
+            vez — o usuário precisa trocá-la no primeiro acesso.
           </p>
           <Button size="sm" className="mt-3" onClick={() => run()} disabled={running}>
             {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Provisionar login "controle"
+            Gerar acesso temporário
           </Button>
+
+          {tempPassword && (
+            <div className="mt-3 rounded-xl border border-warning/40 bg-warning/10 p-3">
+              <p className="text-xs font-medium text-foreground">
+                Senha temporária (copie agora, não será exibida novamente):
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <code className="select-all rounded-lg bg-background/70 px-3 py-1.5 font-mono text-sm">
+                  {tempPassword}
+                </code>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard?.writeText(tempPassword);
+                    toast.success("Senha copiada.");
+                  }}
+                >
+                  Copiar
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </GlassCard>
   );
 }
+
 
 function TimeField({
   label, value, onChange,

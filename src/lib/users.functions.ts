@@ -394,9 +394,21 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Gera uma senha temporária forte no servidor (nunca fixa, nunca em código). */
+function generateTempPassword(length = 16): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
+  const bytes = new Uint32Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("");
+}
+
 /**
  * Provisiona (cria ou atualiza) o login dedicado ao módulo
  * "Controle de Materiais". Somente administradores podem executar.
+ *
+ * Segurança: a senha é temporária, gerada aleatoriamente no servidor a cada
+ * provisionamento e devolvida uma única vez ao administrador. O usuário é
+ * marcado com `must_change_password`, o que obriga a troca no primeiro acesso.
  */
 export const provisionControleUser = createServerFn({ method: "POST" })
   .middleware([requireUsersAuth])
@@ -406,11 +418,14 @@ export const provisionControleUser = createServerFn({ method: "POST" })
 
     const login = "controle";
     const email = loginToEmail(login);
-    // Senha vem de segredo do servidor (nunca fixa no código).
-    const password = process.env.CONTROLE_USER_PASSWORD;
-    if (!password) throw new Error("CONTROLE_USER_PASSWORD não configurada");
+    const password = generateTempPassword();
 
     const allowed = ["controle-materiais"];
+    const metadata = {
+      login,
+      full_name: "Controle de Materiais",
+      must_change_password: true,
+    };
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
@@ -426,7 +441,7 @@ export const provisionControleUser = createServerFn({ method: "POST" })
         email,
         password,
         email_confirm: true,
-        user_metadata: { login, full_name: "Controle de Materiais" },
+        user_metadata: metadata,
       });
       if (createErr) throw new Error(createErr.message);
       user = createdRes.user!;
@@ -436,7 +451,7 @@ export const provisionControleUser = createServerFn({ method: "POST" })
         password,
         email_confirm: true,
         ban_duration: "none",
-        user_metadata: { login, full_name: "Controle de Materiais" },
+        user_metadata: metadata,
       } as any);
       if (updErr) throw new Error(updErr.message);
     }
@@ -452,5 +467,7 @@ export const provisionControleUser = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
 
-    return { ok: true, created, login, email };
+    // A senha temporária é exibida uma única vez para o administrador.
+    return { ok: true, created, login, email, tempPassword: password };
   });
+
