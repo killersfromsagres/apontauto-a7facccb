@@ -210,9 +210,7 @@ export async function listProgramacao(): Promise<ProgramacaoItem[]> {
 export async function listVisitas(inicio: string, fim: string): Promise<Visita[]> {
   const { data, error } = await db
     .from("agua_visitas")
-    .select(
-      "id, ponto_id, data, dia_semana, status, motivo, bags_previstas, bags_entregues, foto_url, observacao, responsavel, veiculo, executado_em",
-    )
+    .select(VISITA_FIELDS)
     .gte("data", inicio)
     .lte("data", fim)
     .order("data", { ascending: false });
@@ -374,12 +372,7 @@ export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
 /** Registra execução gerando sempre um evento de auditoria (nunca sobrescreve o histórico). */
 export async function registrarVisita(
   visitaId: string,
-  patch: Partial<
-    Pick<
-      Visita,
-      "status" | "bags_entregues" | "foto_url" | "observacao" | "motivo" | "responsavel" | "veiculo"
-    >
-  >,
+  patch: Record<string, unknown>,
 ): Promise<void> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
