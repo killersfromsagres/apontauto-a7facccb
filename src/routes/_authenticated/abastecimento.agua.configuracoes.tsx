@@ -113,7 +113,10 @@ function Configuracoes() {
         </div>
       </GlassCard>
 
+      {acesso.allowed && <GeracaoCard />}
+
       <div className="grid gap-3 sm:grid-cols-2">
+
         <GlassCard className="space-y-2 p-4">
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />
