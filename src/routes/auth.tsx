@@ -111,16 +111,10 @@ function AuthPage() {
     try {
       const raw = email.trim().toLowerCase();
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
-      const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
-      try {
-        localStorage.setItem(
-          "apontauto:terms-accepted",
-          JSON.stringify({ email: loginEmail, acceptedAt: new Date().toISOString(), version: "1.0" }),
-        );
-      } catch {
-        // ignore storage errors
-      }
+      // Evidência oficial do aceite fica no banco, não no navegador.
+      if (data.user) await recordTermsAcceptance(data.user.id);
       toast.success("Bem-vindo!");
       // Tela intermediária obrigatória: sempre pergunta se deseja salvar
       // para login automático. A navegação para "/" ocorre somente após
