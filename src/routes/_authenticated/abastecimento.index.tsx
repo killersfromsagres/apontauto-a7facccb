@@ -57,7 +57,7 @@ const ChecklistWizard = lazy(() =>
   import("@/components/frota/checklist-wizard").then((m) => ({ default: m.ChecklistWizard })),
 );
 
-export const Route = createFileRoute("/_authenticated/abastecimento")({
+export const Route = createFileRoute("/_authenticated/abastecimento/")({
   head: () => ({
     meta: [
       { title: "Frota, Checklist e Abastecimento | Apont Auto PCM" },

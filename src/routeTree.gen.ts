@@ -55,7 +55,7 @@ import { Route as AuthenticatedBackorderRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
-import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
+import { Route as AuthenticatedAbastecimentoIndexRouteImport } from './routes/_authenticated/abastecimento.index'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
@@ -318,10 +318,10 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAbastecimentoRoute =
-  AuthenticatedAbastecimentoRouteImport.update({
-    id: '/abastecimento',
-    path: '/abastecimento',
+const AuthenticatedAbastecimentoIndexRoute =
+  AuthenticatedAbastecimentoIndexRouteImport.update({
+    id: '/abastecimento/',
+    path: '/abastecimento/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
@@ -378,7 +378,6 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -423,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
@@ -433,7 +433,6 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -479,6 +478,7 @@ export interface FileRoutesByTo {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
@@ -491,7 +491,6 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -537,6 +536,7 @@ export interface FileRoutesById {
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
+  '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
@@ -550,7 +550,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/abastecimento'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -595,6 +594,7 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/abastecimento/'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
   fileRoutesByTo: FileRoutesByTo
@@ -605,7 +605,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/abastecimento'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -651,6 +650,7 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/abastecimento'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
   id:
@@ -662,7 +662,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/_authenticated/abastecimento'
     | '/_authenticated/apontamentos'
     | '/_authenticated/auditoria'
     | '/_authenticated/backlog-inteligente'
@@ -708,6 +707,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
+    | '/_authenticated/abastecimento/'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
   fileRoutesById: FileRoutesById
@@ -1053,11 +1053,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/abastecimento': {
-      id: '/_authenticated/abastecimento'
+    '/_authenticated/abastecimento/': {
+      id: '/_authenticated/abastecimento/'
       path: '/abastecimento'
-      fullPath: '/abastecimento'
-      preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
+      fullPath: '/abastecimento/'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/clima-forecast': {
@@ -1120,7 +1120,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
@@ -1161,10 +1160,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
+  AuthenticatedAbastecimentoIndexRoute: typeof AuthenticatedAbastecimentoIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
@@ -1212,6 +1211,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedInteligenciaAtivosNaoEncontradosRoute,
   AuthenticatedInteligenciaAtivosPreencherRoute:
     AuthenticatedInteligenciaAtivosPreencherRoute,
+  AuthenticatedAbastecimentoIndexRoute: AuthenticatedAbastecimentoIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
