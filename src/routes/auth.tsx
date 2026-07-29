@@ -21,7 +21,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { TermsAcceptDialog } from "@/components/terms-accept-dialog";
+import { TermsSummaryDialog } from "@/components/terms-summary-dialog";
+import { recordTermsAcceptance } from "@/lib/auth/terms";
 const logo = { url: "/apontauto-logo.png" };
 
 export const Route = createFileRoute("/auth")({
