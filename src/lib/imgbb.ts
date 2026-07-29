@@ -17,10 +17,18 @@ export async function uploadImageToImgBB(
   form.append("image", blob, filename);
   form.append("name", filename.replace(/\.[^.]+$/, ""));
 
+  // O proxy exige sessão válida (a rota /api/public/* não é protegida pelo site).
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sem sessão para enviar a imagem");
+
   const res = await fetch("/api/public/imgbb-upload", {
     method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
+
   const json = (await res.json().catch(() => ({}))) as any;
   if (!res.ok || !json?.url) {
     throw new Error(json?.error ?? `Upload falhou (${res.status})`);
