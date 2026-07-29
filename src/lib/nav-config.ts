@@ -221,6 +221,23 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "bi-grp",
+    title: "Inteligência e BI",
+    icon: ChartColumn,
+    items: [
+      {
+        key: "dashboard-chamados",
+        title: "Dashboard de Chamados",
+        short: "Chamados",
+        url: "/dashboard-chamados",
+        icon: ChartColumn,
+        keywords: ["indicadores", "equipes", "bi", "gráficos", "análise"],
+      },
+    ],
+  },
+
+  {
+    kind: "group",
     key: "admin-grp",
     title: "Administração",
     icon: Cog,
