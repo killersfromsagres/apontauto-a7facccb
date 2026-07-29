@@ -355,7 +355,7 @@ const DRAFT_KEY = (id: string) => `talude-draft:${id}`;
 
 function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => void }) {
   const qc = useQueryClient();
-  const isAdmin = useIsAdmin();
+  const { isAdmin } = useIsAdmin();
   const [map, setMap] = useState(initialMap);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TaludeMarcacao | null>(null);
