@@ -5,6 +5,7 @@
 //     React/TanStack dedupe, error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { VitePWA } from "vite-plugin-pwa";
 
 /**
  * Vendors pesados isolados em chunks estáveis: garante cache HTTP compartilhado
@@ -34,6 +35,67 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    plugins: [
+      // Modo offline do app de campo. `injectRegister: null` + `devOptions.enabled: false`
+      // garantem que o único registrador é o wrapper protegido (src/lib/pwa/register-sw.ts).
+      VitePWA({
+        registerType: "autoUpdate",
+        injectRegister: null,
+        filename: "sw.js",
+        devOptions: { enabled: false },
+        includeAssets: ["favicon.ico", "apontauto-logo.png"],
+        manifest: {
+          id: "/",
+          name: "Apont Auto PCM",
+          short_name: "Apont Auto",
+          description:
+            "Planejamento e controle de manutenção: ordens de serviço, apontamentos de campo e frota.",
+          start_url: "/",
+          scope: "/",
+          display: "standalone",
+          orientation: "portrait",
+          background_color: "#050c14",
+          theme_color: "#050c14",
+          lang: "pt-BR",
+          icons: [
+            { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
+            { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+            { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          ],
+        },
+        workbox: {
+          globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+          navigateFallbackDenylist: [/^\/~oauth/, /^\/api\//],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          runtimeCaching: [
+            {
+              urlPattern: ({ request }) => request.mode === "navigate",
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "html-navigations",
+                networkTimeoutSeconds: 4,
+                expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 },
+              },
+            },
+            {
+              urlPattern: ({ url, request, sameOrigin }) =>
+                sameOrigin &&
+                (request.destination === "script" ||
+                  request.destination === "style" ||
+                  request.destination === "font") &&
+                url.pathname.startsWith("/_build/"),
+              handler: "CacheFirst",
+              options: {
+                cacheName: "static-assets",
+                expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
+          ],
+        },
+      }),
+    ],
     build: {
       // Suprime warnings falsos de chunk grande em rotas legitimamente pesadas.
       chunkSizeWarningLimit: 900,

@@ -14,6 +14,8 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "@/components/loading-screen";
+import { OfflineBanner } from "@/components/offline-banner";
+import { registerServiceWorker } from "@/lib/pwa/register-sw";
 
 function NotFoundComponent() {
   return (
@@ -105,6 +107,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", href: "/favicon.ico" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/pwa-192.png" },
       // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
       { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
       // Reduz latência da primeira chamada auth/DB
@@ -186,10 +190,15 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LoadingScreen />
+        <OfflineBanner />
         <Outlet />
         <Toaster richColors position="top-right" />
       </ThemeProvider>
