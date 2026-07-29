@@ -146,3 +146,67 @@ function Configuracoes() {
     </div>
   );
 }
+
+/** Horário (fuso São Paulo) em que o sistema gera as rotas do dia automaticamente. */
+function GeracaoCard() {
+  const [settings, save] = useSettings();
+  const atual = Number((settings as Record<string, any>).aguaGeracao?.hora ?? 5);
+  const [hora, setHora] = useState(String(atual));
+  const [salvando, setSalvando] = useState(false);
+
+  useEffect(() => {
+    setHora(String(atual));
+  }, [atual]);
+
+  return (
+    <GlassCard className="space-y-3 p-4">
+      <div className="flex items-center gap-2">
+        <Clock className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-semibold">Geração automática de rotas</h2>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Todo dia, no horário abaixo (fuso America/São Paulo), o sistema gera as rotas e paradas a
+        partir da programação semanal, respeitando feriados e exceções. A rotina é idempotente:
+        rodar de novo não duplica nada.
+      </p>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="space-y-1">
+          <Label htmlFor="hora-geracao">Hora de execução</Label>
+          <select
+            id="hora-geracao"
+            value={hora}
+            onChange={(e) => setHora(e.target.value)}
+            className="h-11 w-[120px] rounded-xl border border-border/60 bg-card/40 px-3 text-sm"
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={String(h)}>
+                {String(h).padStart(2, "0")}:00
+              </option>
+            ))}
+          </select>
+        </div>
+        <Button
+          className="min-h-[44px]"
+          disabled={salvando}
+          onClick={async () => {
+            setSalvando(true);
+            try {
+              await save({
+                ...(settings as never),
+                aguaGeracao: { hora: Number(hora) },
+              } as never);
+              toast.success("Horário salvo.");
+            } catch (e) {
+              toast.error((e as Error)?.message ?? "Falha ao salvar horário.");
+            } finally {
+              setSalvando(false);
+            }
+          }}
+        >
+          Salvar horário
+        </Button>
+      </div>
+    </GlassCard>
+  );
+}
+
