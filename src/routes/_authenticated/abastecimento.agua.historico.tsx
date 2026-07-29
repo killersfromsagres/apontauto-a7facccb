@@ -10,12 +10,17 @@ import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/pcm";
 import {
   VISITA_STATUS_LABEL,
-  addDaysISO,
   hojeISO,
   listPontos,
-  listVisitasPeriodo,
+  listVisitas,
   pontoLabel,
 } from "@/lib/agua/api";
+
+function addDaysISO(iso: string, days: number): string {
+  const d = new Date(`${iso}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/historico")({
   component: HistoricoAgua,
@@ -29,7 +34,7 @@ function HistoricoAgua() {
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
   const visitas = useQuery({
     queryKey: ["agua", "historico", de, ate],
-    queryFn: () => listVisitasPeriodo(de, ate),
+    queryFn: () => listVisitas(de, ate),
   });
 
   const porId = useMemo(
