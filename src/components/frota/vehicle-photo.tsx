@@ -63,16 +63,17 @@ export const VehiclePhoto = memo(function VehiclePhoto({
   className?: string;
 }) {
   const type = inferBodyType({ brand, model, version });
+  const real = realPhotoFor(`${brand ?? ""} ${model ?? ""} ${version ?? ""}`);
 
   return (
     <img
-      src={PHOTO[type]}
+      src={real ?? PHOTO[type]}
       alt={title ?? "Miniatura do veículo"}
       loading="lazy"
       decoding="async"
-      width={768}
-      height={512}
-      style={{ filter: tintFor(color) }}
+      width={512}
+      height={344}
+      style={real ? undefined : { filter: tintFor(color) }}
       className={cn("h-full w-full object-contain", className)}
     />
   );
