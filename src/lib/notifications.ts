@@ -20,7 +20,7 @@ export type NotificationStatus =
 
 export type TargetMode = "all" | "users" | "roles" | "modules" | "teams";
 
-import type { StatusTone } from "@/components/pcm";
+
 
 export const CATEGORIES: {
   key: NotificationCategory;
