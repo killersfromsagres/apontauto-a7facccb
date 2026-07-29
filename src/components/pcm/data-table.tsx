@@ -19,7 +19,12 @@ export type DataTableColumn<T> = {
   headClassName?: string;
   /** Valor usado na ordenação; ausente = coluna não ordenável. */
   sortValue?: (row: T) => string | number | null | undefined;
+  /** No mobile: destaca a coluna como título do card (a primeira é o padrão). */
+  mobilePrimary?: boolean;
+  /** No mobile: oculta a coluna do card (ruído/densidade). */
+  mobileHidden?: boolean;
 };
+
 
 export type DataTableProps<T> = {
   data: T[];
