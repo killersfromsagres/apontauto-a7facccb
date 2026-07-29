@@ -64,6 +64,7 @@ import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } fro
 import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
 import { Route as AuthenticatedAtivoCodeRouteImport } from './routes/_authenticated/ativo.$code'
 import { Route as AuthenticatedAbastecimentoAguaRouteImport } from './routes/_authenticated/abastecimento.agua'
+import { Route as AuthenticatedAbastecimentoAguaIndexRouteImport } from './routes/_authenticated/abastecimento.agua.index'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 
@@ -371,6 +372,12 @@ const AuthenticatedAbastecimentoAguaRoute =
     path: '/agua',
     getParentRoute: () => AuthenticatedAbastecimentoRoute,
   } as any)
+const AuthenticatedAbastecimentoAguaIndexRoute =
+  AuthenticatedAbastecimentoAguaIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
 const ApiPublicHooksWeatherMonitorRoute =
   ApiPublicHooksWeatherMonitorRouteImport.update({
     id: '/api/public/hooks/weather-monitor',
@@ -431,7 +438,7 @@ export interface FileRoutesByFullPath {
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
-  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
+  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRouteWithChildren
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
+  '/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -488,7 +496,6 @@ export interface FileRoutesByTo {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/': typeof AuthenticatedIndexRoute
-  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -498,6 +505,7 @@ export interface FileRoutesByTo {
   '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
+  '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -548,7 +556,7 @@ export interface FileRoutesById {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRoute
+  '/_authenticated/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRouteWithChildren
   '/_authenticated/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -558,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
+  '/_authenticated/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -618,6 +627,7 @@ export interface FileRouteTypes {
     | '/abastecimento/'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
+    | '/abastecimento/agua/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -665,7 +675,6 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/'
-    | '/abastecimento/agua'
     | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -675,6 +684,7 @@ export interface FileRouteTypes {
     | '/abastecimento'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
+    | '/abastecimento/agua'
   id:
     | '__root__'
     | '/_authenticated'
@@ -734,6 +744,7 @@ export interface FileRouteTypes {
     | '/_authenticated/abastecimento/'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
+    | '/_authenticated/abastecimento/agua/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1140,6 +1151,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAbastecimentoAguaRouteImport
       parentRoute: typeof AuthenticatedAbastecimentoRoute
     }
+    '/_authenticated/abastecimento/agua/': {
+      id: '/_authenticated/abastecimento/agua/'
+      path: '/'
+      fullPath: '/abastecimento/agua/'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaIndexRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
     '/api/public/hooks/weather-monitor': {
       id: '/api/public/hooks/weather-monitor'
       path: '/api/public/hooks/weather-monitor'
@@ -1157,14 +1175,30 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedAbastecimentoAguaRouteChildren {
+  AuthenticatedAbastecimentoAguaIndexRoute: typeof AuthenticatedAbastecimentoAguaIndexRoute
+}
+
+const AuthenticatedAbastecimentoAguaRouteChildren: AuthenticatedAbastecimentoAguaRouteChildren =
+  {
+    AuthenticatedAbastecimentoAguaIndexRoute:
+      AuthenticatedAbastecimentoAguaIndexRoute,
+  }
+
+const AuthenticatedAbastecimentoAguaRouteWithChildren =
+  AuthenticatedAbastecimentoAguaRoute._addFileChildren(
+    AuthenticatedAbastecimentoAguaRouteChildren,
+  )
+
 interface AuthenticatedAbastecimentoRouteChildren {
-  AuthenticatedAbastecimentoAguaRoute: typeof AuthenticatedAbastecimentoAguaRoute
+  AuthenticatedAbastecimentoAguaRoute: typeof AuthenticatedAbastecimentoAguaRouteWithChildren
   AuthenticatedAbastecimentoIndexRoute: typeof AuthenticatedAbastecimentoIndexRoute
 }
 
 const AuthenticatedAbastecimentoRouteChildren: AuthenticatedAbastecimentoRouteChildren =
   {
-    AuthenticatedAbastecimentoAguaRoute: AuthenticatedAbastecimentoAguaRoute,
+    AuthenticatedAbastecimentoAguaRoute:
+      AuthenticatedAbastecimentoAguaRouteWithChildren,
     AuthenticatedAbastecimentoIndexRoute: AuthenticatedAbastecimentoIndexRoute,
   }
 
