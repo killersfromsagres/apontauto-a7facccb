@@ -28,6 +28,7 @@ import {
   Boxes,
   ClipboardCheck,
   FileSpreadsheet,
+  Droplets,
   Fuel,
   FileClock,
   SearchX,
@@ -233,6 +234,14 @@ export const sections: MenuSection[] = [
           "consumo",
         ],
 
+      },
+      {
+        key: "abastecimento",
+        title: "Entrega de Água",
+        short: "Água",
+        url: "/abastecimento/agua",
+        icon: Droplets,
+        keywords: ["água", "bags", "galão", "programação", "gps", "prédio", "andar"],
       },
     ],
   },

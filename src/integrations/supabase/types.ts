@@ -53,6 +53,273 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_import_lotes: {
+        Row: {
+          arquivo_hash: string
+          arquivo_nome: string
+          criado_em: string
+          criado_por: string | null
+          desfeito_em: string | null
+          desfeito_por: string | null
+          divergencias: Json
+          id: string
+          resumo: Json
+          status: string
+          total_linhas: number
+          total_pontos: number
+          total_visitas: number
+        }
+        Insert: {
+          arquivo_hash: string
+          arquivo_nome: string
+          criado_em?: string
+          criado_por?: string | null
+          desfeito_em?: string | null
+          desfeito_por?: string | null
+          divergencias?: Json
+          id?: string
+          resumo?: Json
+          status?: string
+          total_linhas?: number
+          total_pontos?: number
+          total_visitas?: number
+        }
+        Update: {
+          arquivo_hash?: string
+          arquivo_nome?: string
+          criado_em?: string
+          criado_por?: string | null
+          desfeito_em?: string | null
+          desfeito_por?: string | null
+          divergencias?: Json
+          id?: string
+          resumo?: Json
+          status?: string
+          total_linhas?: number
+          total_pontos?: number
+          total_visitas?: number
+        }
+        Relationships: []
+      }
+      agua_pontos: {
+        Row: {
+          andar: string
+          ativo: boolean
+          atualizado_em: string
+          bags_padrao: number
+          codigo: string
+          criado_em: string
+          espaco: string
+          id: string
+          janela_fim: string | null
+          janela_inicio: string | null
+          lote_id: string | null
+          observacao: string | null
+          ordem: number
+          predio: string
+          responsavel: string | null
+          veiculo: string | null
+        }
+        Insert: {
+          andar?: string
+          ativo?: boolean
+          atualizado_em?: string
+          bags_padrao?: number
+          codigo: string
+          criado_em?: string
+          espaco?: string
+          id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
+          lote_id?: string | null
+          observacao?: string | null
+          ordem?: number
+          predio: string
+          responsavel?: string | null
+          veiculo?: string | null
+        }
+        Update: {
+          andar?: string
+          ativo?: boolean
+          atualizado_em?: string
+          bags_padrao?: number
+          codigo?: string
+          criado_em?: string
+          espaco?: string
+          id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
+          lote_id?: string | null
+          observacao?: string | null
+          ordem?: number
+          predio?: string
+          responsavel?: string | null
+          veiculo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_pontos_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "agua_import_lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_programacao: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          bags: number
+          criado_em: string
+          dia_semana: number
+          id: string
+          lote_id: string | null
+          ordem: number
+          origem: string
+          ponto_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          bags?: number
+          criado_em?: string
+          dia_semana: number
+          id?: string
+          lote_id?: string | null
+          ordem?: number
+          origem?: string
+          ponto_id: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          bags?: number
+          criado_em?: string
+          dia_semana?: number
+          id?: string
+          lote_id?: string | null
+          ordem?: number
+          origem?: string
+          ponto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_programacao_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "agua_import_lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_programacao_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_visita_eventos: {
+        Row: {
+          criado_em: string
+          dados: Json
+          id: string
+          tipo: string
+          usuario_id: string | null
+          visita_id: string
+        }
+        Insert: {
+          criado_em?: string
+          dados?: Json
+          id?: string
+          tipo: string
+          usuario_id?: string | null
+          visita_id: string
+        }
+        Update: {
+          criado_em?: string
+          dados?: Json
+          id?: string
+          tipo?: string
+          usuario_id?: string | null
+          visita_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_visita_eventos_visita_id_fkey"
+            columns: ["visita_id"]
+            isOneToOne: false
+            referencedRelation: "agua_visitas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_visitas: {
+        Row: {
+          atualizado_em: string
+          bags_entregues: number | null
+          bags_previstas: number
+          criado_em: string
+          data: string
+          dia_semana: number
+          executado_em: string | null
+          executado_por: string | null
+          foto_url: string | null
+          id: string
+          motivo: string | null
+          observacao: string | null
+          ponto_id: string
+          responsavel: string | null
+          status: string
+          veiculo: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          bags_entregues?: number | null
+          bags_previstas?: number
+          criado_em?: string
+          data: string
+          dia_semana: number
+          executado_em?: string | null
+          executado_por?: string | null
+          foto_url?: string | null
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          ponto_id: string
+          responsavel?: string | null
+          status?: string
+          veiculo?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          bags_entregues?: number | null
+          bags_previstas?: number
+          criado_em?: string
+          data?: string
+          dia_semana?: number
+          executado_em?: string | null
+          executado_por?: string | null
+          foto_url?: string | null
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          ponto_id?: string
+          responsavel?: string | null
+          status?: string
+          veiculo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_visitas_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           created_at: string
@@ -4403,6 +4670,8 @@ export type Database = {
       }
     }
     Functions: {
+      agua_can: { Args: { required_action?: string }; Returns: boolean }
+      agua_is_gestor: { Args: never; Returns: boolean }
       audit_redact: { Args: { payload: Json }; Returns: Json }
       can_access_backorder: {
         Args: { required_action?: string }
