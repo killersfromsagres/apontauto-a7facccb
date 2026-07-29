@@ -163,9 +163,10 @@ export function PolygonEditor({
   /* -------------------------------- histórico ------------------------------- */
 
   const pushHistory = useCallback((id: string, before: Point[]) => {
-    setUndoStack((s) => [...s.slice(-49), { id, points: before }]);
+    setUndoStack((s) => pushEntry(s, { id, points: before }));
     setRedoStack([]);
   }, []);
+
 
   const undo = useCallback(() => {
     setUndoStack((stack) => {
