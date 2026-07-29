@@ -233,6 +233,14 @@ export const sections: MenuSection[] = [
     title: "Administração",
     icon: Cog,
     items: [
+      {
+        key: "notificacoes",
+        title: "Central de Notificações",
+        short: "Avisos",
+        url: "/notificacoes",
+        icon: BellRing,
+        keywords: ["aviso", "alerta", "comunicado", "notificação"],
+      },
       { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: ClipboardCheck },
     ],
   },
