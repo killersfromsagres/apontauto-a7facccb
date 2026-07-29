@@ -43,6 +43,7 @@ import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -236,6 +237,12 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAbastecimentoRoute =
+  AuthenticatedAbastecimentoRouteImport.update({
+    id: '/abastecimento',
+    path: '/abastecimento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicImgbbUploadRoute = ApiPublicImgbbUploadRouteImport.update({
   id: '/api/public/imgbb-upload',
   path: '/api/public/imgbb-upload',
@@ -278,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
@@ -318,6 +326,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
@@ -361,6 +370,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/abastecimento'
     | '/apontamentos'
     | '/backlog-inteligente'
     | '/backorder'
@@ -445,6 +456,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/abastecimento'
     | '/apontamentos'
     | '/backlog-inteligente'
     | '/backorder'
@@ -487,6 +499,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/_authenticated/abastecimento'
     | '/_authenticated/apontamentos'
     | '/_authenticated/backlog-inteligente'
     | '/_authenticated/backorder'
@@ -776,6 +789,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/abastecimento': {
+      id: '/_authenticated/abastecimento'
+      path: '/abastecimento'
+      fullPath: '/abastecimento'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/imgbb-upload': {
       id: '/api/public/imgbb-upload'
       path: '/api/public/imgbb-upload'
@@ -822,6 +842,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
@@ -854,6 +875,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,

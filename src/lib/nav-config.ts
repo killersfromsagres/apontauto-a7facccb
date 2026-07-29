@@ -26,6 +26,7 @@ import {
   Boxes,
   ClipboardCheck,
   FileSpreadsheet,
+  Fuel,
   SearchX,
   type LucideIcon,
 } from "lucide-react";
@@ -72,7 +73,7 @@ export const sections: MenuSection[] = [
   {
     kind: "group",
     key: "planejamento-grp",
-    title: "Planejamento",
+    title: "Planejamento PCM",
     icon: CalendarRange,
     items: [
       { key: "programacao", title: "Programação Semanal", short: "Programação", url: "/programacao", icon: CalendarDays },
@@ -85,9 +86,14 @@ export const sections: MenuSection[] = [
         keywords: ["prioridade", "score", "sla", "reincidência", "fila"],
       },
       { key: "preventiva", title: "Preventiva (legado)", short: "Preventiva", url: "/preventiva", icon: CalendarClock },
-      { key: "taludes", title: "Demarcação de Taludes", short: "Taludes", url: "/taludes", icon: MapIcon },
-      { key: "apontamentos", title: "Apontamentos", short: "Apont.", url: "/apontamentos", icon: PenLine },
-      { key: "clima-tempo", title: "Clima e Tempo", short: "Clima", url: "/clima-tempo", icon: CloudSun },
+      {
+        key: "apontamentos",
+        title: "Apontamentos de OS",
+        short: "Apont.",
+        url: "/apontamentos",
+        icon: PenLine,
+        keywords: ["gerar", "distribuir", "apontamento"],
+      },
     ],
   },
   {
@@ -111,7 +117,7 @@ export const sections: MenuSection[] = [
   {
     kind: "group",
     key: "ativos-grp",
-    title: "Ativos e Localização",
+    title: "Ativos e Confiabilidade",
     icon: Boxes,
     items: [
       {
@@ -152,13 +158,69 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "taludes-grp",
+    title: "Taludes e Clima",
+    icon: MapIcon,
+    items: [
+      {
+        key: "taludes",
+        title: "Demarcação de Taludes",
+        short: "Taludes",
+        url: "/taludes",
+        icon: MapIcon,
+        keywords: ["mapa", "polígono", "demarcação", "pt"],
+      },
+      {
+        key: "clima-tempo",
+        title: "Clima e Tempo",
+        short: "Clima",
+        url: "/clima-tempo",
+        icon: CloudSun,
+        keywords: ["chuva", "previsão", "evidência", "sbc"],
+      },
+    ],
+  },
+  {
+    kind: "group",
+    key: "frota-grp",
+    title: "Frota e Abastecimento",
+    icon: Fuel,
+    items: [
+      {
+        key: "abastecimento",
+        title: "Abastecimento",
+        short: "Combustível",
+        url: "/abastecimento",
+        icon: Fuel,
+        keywords: ["combustível", "diesel", "litros", "frota", "veículo", "hodômetro"],
+      },
+    ],
+  },
+  {
+    kind: "group",
+    key: "materiais-grp",
+    title: "Materiais e Serviços",
+    icon: ClipboardList,
+    items: [
+      {
+        key: "controle-materiais",
+        title: "Controle de Materiais",
+        short: "Materiais",
+        url: "/controle-materiais",
+        icon: ClipboardList,
+        keywords: ["peças", "compras", "centro de custo", "facilities"],
+      },
+      { key: "lavanderia", title: "Controle de Lavanderia", short: "Lavanderia", url: "/lavanderia", icon: WashingMachine },
+    ],
+  },
+  {
+    kind: "group",
     key: "conformidade-grp",
-    title: "Conformidade",
+    title: "Segurança e Conformidade",
     icon: ShieldCheck,
     items: [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", short: "SST", url: "/seguranca-trabalho", icon: HardHat },
       { key: "painel-legal", title: "Painel de Itens Legais", short: "Legal", url: "/painel-legal", icon: Scale },
-      { key: "lavanderia", title: "Controle de Lavanderia", short: "Lavanderia", url: "/lavanderia", icon: WashingMachine },
     ],
   },
   {
@@ -167,11 +229,11 @@ export const sections: MenuSection[] = [
     title: "Administração",
     icon: Cog,
     items: [
-      { key: "controle-materiais", title: "Controle de Materiais", short: "Materiais", url: "/controle-materiais", icon: ClipboardList },
       { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: ClipboardCheck },
     ],
   },
 ];
+
 
 /** Lista achatada de todos os itens de menu conhecidos. */
 export const allMenuItems: MenuItem[] = sections.flatMap((s) =>
@@ -203,6 +265,18 @@ export function menuKeysForPath(pathname: string): string[] | null {
   const seg = pathname.split("/").filter(Boolean)[0];
   return seg ? [seg] : null;
 }
+
+/** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
+const RESTRICTED_KEYS = [
+  "abastecimento",
+  "frota-checklist",
+  "frota-historico",
+  "frota-gestao",
+  "bi-studio",
+  "notificacoes-admin",
+  "auditoria",
+  "confiabilidade",
+];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [
@@ -245,6 +319,12 @@ export function useVisibleSections() {
     if (loading) return [];
     const canSee = (item: MenuItem) => {
       const key = item.key;
+      // Módulos restritos: negação por padrão (nunca liberados por
+      // `allowed_menus = null` do sistema legado). Espelha a lista de
+      // `can_access_module` no banco.
+      if (RESTRICTED_KEYS.includes(key)) {
+        return isOwner || isAdmin || (allowed?.includes(key) ?? false);
+      }
       if (key === "configuracoes") return isOwner;
       if (key === "refrigeracao-gestor") return isOwner || isAdmin;
       if (key === "corretiva-gestor") return isOwner || isAdmin;
