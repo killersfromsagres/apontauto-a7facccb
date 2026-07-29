@@ -407,7 +407,9 @@ export function EntregaDialog({
                 />
               </label>
             </div>
+            <FilaFotosAviso />
           </div>
+
 
           <div className="space-y-2">
             <Label>Assinatura simples (opcional)</Label>
