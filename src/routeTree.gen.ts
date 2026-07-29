@@ -68,6 +68,7 @@ import { Route as AuthenticatedAbastecimentoAguaIndexRouteImport } from './route
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 import { Route as ApiPublicHooksAguaGerarRotasRouteImport } from './routes/api/public/hooks/agua-gerar-rotas'
+import { Route as AuthenticatedAbastecimentoAguaRotasRouteImport } from './routes/_authenticated/abastecimento.agua.rotas'
 import { Route as AuthenticatedAbastecimentoAguaRotaRouteImport } from './routes/_authenticated/abastecimento.agua.rota'
 import { Route as AuthenticatedAbastecimentoAguaProgramacaoRouteImport } from './routes/_authenticated/abastecimento.agua.programacao'
 import { Route as AuthenticatedAbastecimentoAguaPontosRouteImport } from './routes/_authenticated/abastecimento.agua.pontos'
@@ -406,6 +407,12 @@ const ApiPublicHooksAguaGerarRotasRoute =
     path: '/api/public/hooks/agua-gerar-rotas',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthenticatedAbastecimentoAguaRotasRoute =
+  AuthenticatedAbastecimentoAguaRotasRouteImport.update({
+    id: '/rotas',
+    path: '/rotas',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
 const AuthenticatedAbastecimentoAguaRotaRoute =
   AuthenticatedAbastecimentoAguaRotaRouteImport.update({
     id: '/rota',
@@ -525,6 +532,7 @@ export interface FileRoutesByFullPath {
   '/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
   '/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
+  '/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -592,6 +600,7 @@ export interface FileRoutesByTo {
   '/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
   '/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
+  '/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -663,6 +672,7 @@ export interface FileRoutesById {
   '/_authenticated/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
   '/_authenticated/abastecimento/agua/programacao': typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   '/_authenticated/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
+  '/_authenticated/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -734,6 +744,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/pontos'
     | '/abastecimento/agua/programacao'
     | '/abastecimento/agua/rota'
+    | '/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
@@ -801,6 +812,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/pontos'
     | '/abastecimento/agua/programacao'
     | '/abastecimento/agua/rota'
+    | '/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
@@ -871,6 +883,7 @@ export interface FileRouteTypes {
     | '/_authenticated/abastecimento/agua/pontos'
     | '/_authenticated/abastecimento/agua/programacao'
     | '/_authenticated/abastecimento/agua/rota'
+    | '/_authenticated/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
@@ -1310,6 +1323,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksAguaGerarRotasRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/abastecimento/agua/rotas': {
+      id: '/_authenticated/abastecimento/agua/rotas'
+      path: '/rotas'
+      fullPath: '/abastecimento/agua/rotas'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaRotasRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
     '/_authenticated/abastecimento/agua/rota': {
       id: '/_authenticated/abastecimento/agua/rota'
       path: '/rota'
@@ -1386,6 +1406,7 @@ interface AuthenticatedAbastecimentoAguaRouteChildren {
   AuthenticatedAbastecimentoAguaPontosRoute: typeof AuthenticatedAbastecimentoAguaPontosRoute
   AuthenticatedAbastecimentoAguaProgramacaoRoute: typeof AuthenticatedAbastecimentoAguaProgramacaoRoute
   AuthenticatedAbastecimentoAguaRotaRoute: typeof AuthenticatedAbastecimentoAguaRotaRoute
+  AuthenticatedAbastecimentoAguaRotasRoute: typeof AuthenticatedAbastecimentoAguaRotasRoute
   AuthenticatedAbastecimentoAguaIndexRoute: typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 
@@ -1409,6 +1430,8 @@ const AuthenticatedAbastecimentoAguaRouteChildren: AuthenticatedAbastecimentoAgu
       AuthenticatedAbastecimentoAguaProgramacaoRoute,
     AuthenticatedAbastecimentoAguaRotaRoute:
       AuthenticatedAbastecimentoAguaRotaRoute,
+    AuthenticatedAbastecimentoAguaRotasRoute:
+      AuthenticatedAbastecimentoAguaRotasRoute,
     AuthenticatedAbastecimentoAguaIndexRoute:
       AuthenticatedAbastecimentoAguaIndexRoute,
   }
