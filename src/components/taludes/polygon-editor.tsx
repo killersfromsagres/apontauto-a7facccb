@@ -36,6 +36,8 @@ import {
   snapToGrid,
   validatePolygon,
 } from "@/lib/taludes/geometry";
+import { pushEntry } from "@/lib/taludes/history";
+
 
 export interface EditorPolygon {
   id: string;
