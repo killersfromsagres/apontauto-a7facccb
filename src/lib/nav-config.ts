@@ -61,15 +61,8 @@ export const sections: MenuSection[] = [
     icon: LayoutDashboard,
     items: [
       { key: "dashboard", title: "Home Operacional", short: "Início", url: "/", icon: Gauge, keywords: ["home", "início", "kpi"] },
-      {
-        key: "dashboard-chamados",
-        title: "Dashboard de Chamados",
-        short: "Chamados",
-        url: "/dashboard-chamados",
-        icon: ChartColumn,
-        keywords: ["indicadores", "equipes"],
-      },
     ],
+
   },
   {
     kind: "group",
