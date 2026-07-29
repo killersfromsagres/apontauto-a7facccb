@@ -234,6 +234,14 @@ export const sections: MenuSection[] = [
         ],
 
       },
+      {
+        key: "abastecimento",
+        title: "Entrega de Água",
+        short: "Água",
+        url: "/abastecimento/agua",
+        icon: Droplets,
+        keywords: ["água", "bags", "galão", "programação", "gps", "prédio", "andar"],
+      },
     ],
   },
   {
