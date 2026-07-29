@@ -370,10 +370,12 @@ function VehiclesTab({
   vehicles,
   fuelings,
   checklists,
+  canWrite,
 }: {
   vehicles: Vehicle[];
   fuelings: Fueling[];
   checklists: Checklist[];
+  canWrite: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(vehicles[0]?.id ?? null);
   const vehicle = vehicles.find((v) => v.id === selected) ?? vehicles[0];
@@ -392,14 +394,18 @@ function VehiclesTab({
       </div>
 
       <GlassCard className="space-y-4">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-primary">{vehicle.prefix}</p>
-          <h3 className="font-display text-xl font-bold">{vehicleLabel(vehicle)}</h3>
-          <p className="text-sm text-muted-foreground">
-            {vehicle.plate ?? "sem placa"} · {vehicle.color ?? "cor não informada"} ·{" "}
-            {VEHICLE_STATUS_LABEL[vehicle.status]}
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="font-mono text-xs uppercase tracking-widest text-primary">{vehicle.prefix}</p>
+            <h3 className="font-display text-xl font-bold">{vehicleLabel(vehicle)}</h3>
+            <p className="text-sm text-muted-foreground">
+              {formatPlate(vehicle.plate) || "sem placa"} · {vehicle.color ?? "cor não informada"} ·{" "}
+              {VEHICLE_STATUS_LABEL[vehicle.status]}
+            </p>
+          </div>
+          {canWrite && <VehicleEditDialog key={vehicle.id} vehicle={vehicle} />}
         </div>
+
         {vehicle.block_reason && (
           <div className="rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-sm text-rose-200">
             Motivo do bloqueio: {vehicle.block_reason}
