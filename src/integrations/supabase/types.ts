@@ -2619,6 +2619,180 @@ export type Database = {
           },
         ]
       }
+      talude_pt_events: {
+        Row: {
+          actor_id: string | null
+          actor_nome: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          motivo: string | null
+          origem: string
+          pt_id: string
+          to_status: string
+          weather_event_id: string | null
+          weather_snapshot: Json
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_nome?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          pt_id: string
+          to_status: string
+          weather_event_id?: string | null
+          weather_snapshot?: Json
+        }
+        Update: {
+          actor_id?: string | null
+          actor_nome?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          motivo?: string | null
+          origem?: string
+          pt_id?: string
+          to_status?: string
+          weather_event_id?: string | null
+          weather_snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talude_pt_events_pt_id_fkey"
+            columns: ["pt_id"]
+            isOneToOne: false
+            referencedRelation: "talude_pt_releases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talude_pt_events_weather_event_id_fkey"
+            columns: ["weather_event_id"]
+            isOneToOne: false
+            referencedRelation: "weather_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      talude_pt_releases: {
+        Row: {
+          analise_em: string | null
+          anexos: Json
+          assinatura_em: string | null
+          assinatura_nome: string | null
+          assinatura_url: string | null
+          created_at: string
+          created_by: string | null
+          data_trabalho: string
+          encerrada_em: string | null
+          equipe: string | null
+          id: string
+          liberada_em: string | null
+          liberador_id: string | null
+          liberador_nome: string | null
+          map_id: string | null
+          marcacao_ids: string[]
+          numero_pt: string
+          observacoes: string | null
+          retomada_em: string | null
+          revogada_em: string | null
+          riscos: string | null
+          servico: string
+          solicitada_em: string
+          solicitante: string
+          solicitante_id: string | null
+          status: string
+          suspensa_em: string | null
+          taludes_label: string | null
+          updated_at: string
+          weather_event_id: string | null
+          weather_snapshot: Json
+        }
+        Insert: {
+          analise_em?: string | null
+          anexos?: Json
+          assinatura_em?: string | null
+          assinatura_nome?: string | null
+          assinatura_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_trabalho: string
+          encerrada_em?: string | null
+          equipe?: string | null
+          id?: string
+          liberada_em?: string | null
+          liberador_id?: string | null
+          liberador_nome?: string | null
+          map_id?: string | null
+          marcacao_ids?: string[]
+          numero_pt: string
+          observacoes?: string | null
+          retomada_em?: string | null
+          revogada_em?: string | null
+          riscos?: string | null
+          servico: string
+          solicitada_em?: string
+          solicitante: string
+          solicitante_id?: string | null
+          status?: string
+          suspensa_em?: string | null
+          taludes_label?: string | null
+          updated_at?: string
+          weather_event_id?: string | null
+          weather_snapshot?: Json
+        }
+        Update: {
+          analise_em?: string | null
+          anexos?: Json
+          assinatura_em?: string | null
+          assinatura_nome?: string | null
+          assinatura_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_trabalho?: string
+          encerrada_em?: string | null
+          equipe?: string | null
+          id?: string
+          liberada_em?: string | null
+          liberador_id?: string | null
+          liberador_nome?: string | null
+          map_id?: string | null
+          marcacao_ids?: string[]
+          numero_pt?: string
+          observacoes?: string | null
+          retomada_em?: string | null
+          revogada_em?: string | null
+          riscos?: string | null
+          servico?: string
+          solicitada_em?: string
+          solicitante?: string
+          solicitante_id?: string | null
+          status?: string
+          suspensa_em?: string | null
+          taludes_label?: string | null
+          updated_at?: string
+          weather_event_id?: string | null
+          weather_snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "talude_pt_releases_map_id_fkey"
+            columns: ["map_id"]
+            isOneToOne: false
+            referencedRelation: "talude_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "talude_pt_releases_weather_event_id_fkey"
+            columns: ["weather_event_id"]
+            isOneToOne: false
+            referencedRelation: "weather_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       terms_acceptances: {
         Row: {
           accepted_at: string
@@ -2732,6 +2906,165 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      weather_events: {
+        Row: {
+          accumulated_mm: number
+          affected_scope: Json
+          confidence: number
+          confirmation_type: string
+          confirmed_by: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          max_intensity: string | null
+          notes: string | null
+          release_required: boolean
+          sources: string[]
+          started_at: string
+          status: string
+          updated_at: string
+          wait_minutes: number
+        }
+        Insert: {
+          accumulated_mm?: number
+          affected_scope?: Json
+          confidence?: number
+          confirmation_type?: string
+          confirmed_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          max_intensity?: string | null
+          notes?: string | null
+          release_required?: boolean
+          sources?: string[]
+          started_at?: string
+          status?: string
+          updated_at?: string
+          wait_minutes?: number
+        }
+        Update: {
+          accumulated_mm?: number
+          affected_scope?: Json
+          confidence?: number
+          confirmation_type?: string
+          confirmed_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          max_intensity?: string | null
+          notes?: string | null
+          release_required?: boolean
+          sources?: string[]
+          started_at?: string
+          status?: string
+          updated_at?: string
+          wait_minutes?: number
+        }
+        Relationships: []
+      }
+      weather_observations: {
+        Row: {
+          confidence: number
+          created_at: string
+          created_by: string | null
+          data_type: string
+          distance_km: number | null
+          humidity_pct: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          observed_at: string
+          precipitation_mm: number
+          precipitation_probability: number | null
+          rain_rate_mm_h: number | null
+          raw_expires_at: string | null
+          raw_payload: Json | null
+          source: string
+          source_station_id: string | null
+          temperature_c: number | null
+          weather_code: number | null
+          wind_kmh: number | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          distance_km?: number | null
+          humidity_pct?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          observed_at?: string
+          precipitation_mm?: number
+          precipitation_probability?: number | null
+          rain_rate_mm_h?: number | null
+          raw_expires_at?: string | null
+          raw_payload?: Json | null
+          source: string
+          source_station_id?: string | null
+          temperature_c?: number | null
+          weather_code?: number | null
+          wind_kmh?: number | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          data_type?: string
+          distance_km?: number | null
+          humidity_pct?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          observed_at?: string
+          precipitation_mm?: number
+          precipitation_probability?: number | null
+          rain_rate_mm_h?: number | null
+          raw_expires_at?: string | null
+          raw_payload?: Json | null
+          source?: string
+          source_station_id?: string | null
+          temperature_c?: number | null
+          weather_code?: number | null
+          wind_kmh?: number | null
+        }
+        Relationships: []
+      }
+      weather_source_health: {
+        Row: {
+          consecutive_errors: number
+          last_error: string | null
+          last_run_at: string | null
+          last_success_at: string | null
+          latency_ms: number | null
+          source: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          consecutive_errors?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          latency_ms?: number | null
+          source: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          consecutive_errors?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          last_success_at?: string | null
+          latency_ms?: number | null
+          source?: string
+          state?: string
+          updated_at?: string
         }
         Relationships: []
       }

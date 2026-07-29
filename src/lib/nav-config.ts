@@ -166,6 +166,14 @@ export const sections: MenuSection[] = [
         keywords: ["mapa", "polígono", "demarcação", "pt"],
       },
       {
+        key: "taludes-pt",
+        title: "PT — Permissão de Trabalho",
+        short: "PT Taludes",
+        url: "/taludes-pt",
+        icon: ShieldCheck,
+        keywords: ["pt", "permissão", "bombeiros", "liberação", "chuva", "suspensão"],
+      },
+      {
         key: "clima-tempo",
         title: "Clima e Tempo",
         short: "Clima",

@@ -19,6 +19,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as AuthenticatedTaludesPtRouteImport } from './routes/_authenticated/taludes-pt'
 import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './routes/_authenticated/refrigeracao-pecas-status'
@@ -53,6 +54,8 @@ import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
 import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } from './routes/_authenticated/inteligencia-ativos.nao-encontrados'
 import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
+import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
+import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
@@ -102,6 +105,11 @@ const ApiBackorderReclassificarRoute =
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTaludesPtRoute = AuthenticatedTaludesPtRouteImport.update({
+  id: '/taludes-pt',
+  path: '/taludes-pt',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedTaludesRoute = AuthenticatedTaludesRouteImport.update({
@@ -296,6 +304,18 @@ const AuthenticatedInteligenciaAtivosHistoricoRoute =
     path: '/inteligencia-ativos/historico',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksWeatherMonitorRoute =
+  ApiPublicHooksWeatherMonitorRouteImport.update({
+    id: '/api/public/hooks/weather-monitor',
+    path: '/api/public/hooks/weather-monitor',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksPluviometroRoute =
+  ApiPublicHooksPluviometroRouteImport.update({
+    id: '/api/public/hooks/pluviometro',
+    path: '/api/public/hooks/pluviometro',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -333,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
+  '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -341,6 +362,8 @@ export interface FileRoutesByFullPath {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
+  '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -377,6 +400,7 @@ export interface FileRoutesByTo {
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/taludes': typeof AuthenticatedTaludesRoute
+  '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/': typeof AuthenticatedIndexRoute
@@ -386,6 +410,8 @@ export interface FileRoutesByTo {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
+  '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -424,6 +450,7 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
+  '/_authenticated/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -433,6 +460,8 @@ export interface FileRoutesById {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/imgbb-upload': typeof ApiPublicImgbbUploadRoute
+  '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -472,6 +501,7 @@ export interface FileRouteTypes {
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/taludes'
+    | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/inteligencia-ativos/historico'
@@ -480,6 +510,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
+    | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/weather-monitor'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -516,6 +548,7 @@ export interface FileRouteTypes {
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/taludes'
+    | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/'
@@ -525,6 +558,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
+    | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/weather-monitor'
   id:
     | '__root__'
     | '/_authenticated'
@@ -562,6 +597,7 @@ export interface FileRouteTypes {
     | '/_authenticated/refrigeracao-pecas-status'
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/taludes'
+    | '/_authenticated/taludes-pt'
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/_authenticated/'
@@ -571,6 +607,8 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/imgbb-upload'
+    | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/weather-monitor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -585,6 +623,8 @@ export interface RootRouteChildren {
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
   ApiPublicImgbbUploadRoute: typeof ApiPublicImgbbUploadRoute
+  ApiPublicHooksPluviometroRoute: typeof ApiPublicHooksPluviometroRoute
+  ApiPublicHooksWeatherMonitorRoute: typeof ApiPublicHooksWeatherMonitorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -657,6 +697,13 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/taludes-pt': {
+      id: '/_authenticated/taludes-pt'
+      path: '/taludes-pt'
+      fullPath: '/taludes-pt'
+      preLoaderRoute: typeof AuthenticatedTaludesPtRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/taludes': {
@@ -897,6 +944,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/weather-monitor': {
+      id: '/api/public/hooks/weather-monitor'
+      path: '/api/public/hooks/weather-monitor'
+      fullPath: '/api/public/hooks/weather-monitor'
+      preLoaderRoute: typeof ApiPublicHooksWeatherMonitorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/pluviometro': {
+      id: '/api/public/hooks/pluviometro'
+      path: '/api/public/hooks/pluviometro'
+      fullPath: '/api/public/hooks/pluviometro'
+      preLoaderRoute: typeof ApiPublicHooksPluviometroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -929,6 +990,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
+  AuthenticatedTaludesPtRoute: typeof AuthenticatedTaludesPtRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -968,6 +1030,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRefrigeracaoPecasStatusRoute,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
+  AuthenticatedTaludesPtRoute: AuthenticatedTaludesPtRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedInteligenciaAtivosHistoricoRoute:
@@ -993,6 +1056,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
   ApiPublicImgbbUploadRoute: ApiPublicImgbbUploadRoute,
+  ApiPublicHooksPluviometroRoute: ApiPublicHooksPluviometroRoute,
+  ApiPublicHooksWeatherMonitorRoute: ApiPublicHooksWeatherMonitorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
