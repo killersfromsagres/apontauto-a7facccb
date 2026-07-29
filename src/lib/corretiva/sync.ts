@@ -74,6 +74,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
       blob,
       `rubrica-os-${item.numeroOs}-${item.id}.png`,
       "corretiva-fotos",
+      { module: "corretiva", entityType: "corretiva_os", entityId: item.osId },
     );
     const { error } = await supabase
       .from("corretiva_os")
@@ -123,6 +124,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
       blob,
       `os-${item.numeroOs}-${item.id}.jpg`,
       "corretiva-fotos",
+      { module: "corretiva", entityType: "corretiva_fotos", entityId: item.osId },
     );
     const { error } = await supabase.from("corretiva_fotos").insert({
       os_id: item.osId,
