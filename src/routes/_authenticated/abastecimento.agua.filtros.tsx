@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { AlertTriangle, FileSpreadsheet, Info, Loader2, Upload } from "lucide-react";
+import { Filter, Loader2, Plus } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -17,288 +19,259 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
+import { cn } from "@/lib/utils";
 import {
-  aplicarImportacao,
-  atualizarPonto,
+  FILTRO_PRIORIDADE_LABEL,
+  FILTRO_SITUACAO_LABEL,
+  FILTRO_TIPOS,
+  atualizarFiltro,
+  criarFiltro,
+  listFiltros,
   listPontos,
-  listProgramacao,
-  loteComHash,
   pontoLabel,
+  type FiltroPrioridade,
+  type FiltroSituacao,
 } from "@/lib/agua/api";
-import { DIA_LABEL, DIAS, lerPlanilhaAgua, sha256Hex, type LeituraAgua } from "@/lib/agua/reader";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/filtros")({
-  component: PontosEFiltros,
+  component: SolicitacoesFiltro,
 });
 
-function PontosEFiltros() {
-  const qc = useQueryClient();
-  const gestor = useCanAccessModule("abastecimento", "update").allowed;
-  const inputRef = useRef<HTMLInputElement>(null);
+const SITUACOES: FiltroSituacao[] = ["aberta", "em_atendimento", "concluida", "cancelada"];
 
-  const [busca, setBusca] = useState("");
-  const [dia, setDia] = useState<string>("todos");
-  const [previa, setPrevia] = useState<{
-    leitura: LeituraAgua;
-    nome: string;
-    hash: string;
-    duplicado: boolean;
-  } | null>(null);
-  const [lendo, setLendo] = useState(false);
+const SITUACAO_TONE: Record<FiltroSituacao, string> = {
+  aberta: "border-sky-400/40 bg-sky-500/10",
+  em_atendimento: "border-amber-400/40 bg-amber-500/10",
+  concluida: "border-emerald-400/40 bg-emerald-500/10",
+  cancelada: "border-border/60 bg-muted/20",
+};
+
+const PRIORIDADE_TONE: Record<FiltroPrioridade, string> = {
+  baixa: "border-border/60 text-muted-foreground",
+  media: "border-amber-400/40 text-amber-300",
+  alta: "border-rose-400/40 text-rose-300",
+};
+
+function SolicitacoesFiltro() {
+  const qc = useQueryClient();
+  const podeEscrever = useCanAccessModule("abastecimento", "update").allowed;
+
+  const [pontoId, setPontoId] = useState("");
+  const [tipo, setTipo] = useState(FILTRO_TIPOS[0]);
+  const [prioridade, setPrioridade] = useState<FiltroPrioridade>("media");
+  const [descricao, setDescricao] = useState("");
+  const [prevista, setPrevista] = useState("");
+  const [aba, setAba] = useState<FiltroSituacao | "todas">("aberta");
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
-  const prog = useQuery({ queryKey: ["agua", "programacao"], queryFn: listProgramacao });
+  const filtros = useQuery({ queryKey: ["agua", "filtros"], queryFn: listFiltros });
 
-  const diasPorPonto = useMemo(() => {
-    const m = new Map<string, number[]>();
-    for (const p of prog.data ?? []) {
-      const arr = m.get(p.ponto_id) ?? [];
-      arr.push(p.dia_semana);
-      m.set(p.ponto_id, arr.sort());
-    }
-    return m;
-  }, [prog.data]);
+  const porId = useMemo(() => new Map((pontos.data ?? []).map((p) => [p.id, p])), [pontos.data]);
 
-  const lista = useMemo(() => {
-    const termo = busca.trim().toUpperCase();
-    return (pontos.data ?? []).filter((p) => {
-      const dias = diasPorPonto.get(p.id) ?? [];
-      if (dia !== "todos" && !dias.includes(Number(dia))) return false;
-      if (!termo) return true;
-      return `${p.predio} ${p.andar} ${p.espaco}`.includes(termo);
-    });
-  }, [pontos.data, diasPorPonto, busca, dia]);
+  const lista = useMemo(
+    () => (filtros.data ?? []).filter((f) => aba === "todas" || f.situacao === aba),
+    [filtros.data, aba],
+  );
 
-  async function selecionarArquivo(file: File) {
-    setLendo(true);
-    try {
-      const buf = await file.arrayBuffer();
-      const hash = await sha256Hex(buf.slice(0));
-      const leitura = lerPlanilhaAgua(buf);
-      const jaImportado = await loteComHash(hash);
-      setPrevia({ leitura, nome: file.name, hash, duplicado: Boolean(jaImportado) });
-    } catch (e) {
-      toast.error((e as Error)?.message ?? "Não foi possível ler a planilha.");
-    } finally {
-      setLendo(false);
-    }
-  }
-
-  const aplicar = useMutation({
-    mutationFn: async () => {
-      if (!previa) throw new Error("Nenhuma pré-visualização carregada.");
-      return aplicarImportacao({
-        leitura: previa.leitura,
-        arquivoNome: previa.nome,
-        hash: previa.hash,
-      });
-    },
+  const criar = useMutation({
+    mutationFn: () =>
+      criarFiltro({
+        ponto_id: pontoId,
+        tipo,
+        prioridade,
+        descricao: descricao.trim() || null,
+        prevista_para: prevista || null,
+      }),
     onSuccess: () => {
-      toast.success("Programação importada.");
-      setPrevia(null);
-      qc.invalidateQueries({ queryKey: ["agua"] });
+      toast.success("Solicitação registrada.");
+      setDescricao("");
+      setPrevista("");
+      setPontoId("");
+      void qc.invalidateQueries({ queryKey: ["agua", "filtros"] });
     },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha na importação."),
+    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao registrar."),
   });
 
-  const editar = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Record<string, unknown> }) =>
-      atualizarPonto(id, patch),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["agua", "pontos"] }),
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao salvar."),
+  const mudarSituacao = useMutation({
+    mutationFn: ({ id, situacao }: { id: string; situacao: FiltroSituacao }) =>
+      atualizarFiltro(id, { situacao }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["agua", "filtros"] }),
+    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao atualizar."),
   });
 
   return (
     <div className="space-y-4">
-      {gestor && (
+      {podeEscrever && (
         <GlassCard className="space-y-3 p-4">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Importar planilha de programação</h2>
+            <Filter className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold">Nova solicitação de filtro</h2>
           </div>
-          <p className="text-xs text-muted-foreground">
-            As abas diárias são usadas como rota real; a aba consolidada é comparada e as
-            divergências ficam visíveis antes de confirmar. Nada é gravado parcialmente.
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void selecionarArquivo(f);
-              e.target.value = "";
-            }}
-          />
-          <Button variant="secondary" disabled={lendo} onClick={() => inputRef.current?.click()}>
-            {lendo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-            Selecionar arquivo
-          </Button>
 
-          {previa && (
-            <div className="space-y-3 rounded-2xl border border-border/60 bg-background/40 p-3">
-              <p className="text-sm font-medium">{previa.nome}</p>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                <Info2 label="Linhas lidas" value={previa.leitura.totalLinhas} />
-                <Info2 label="Pontos canônicos" value={previa.leitura.pontos.length} />
-                <Info2 label="Visitas/semana" value={previa.leitura.totalVisitas} />
-                <Info2
-                  label="Divergências"
-                  value={previa.leitura.divergencias.length}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2 text-xs">
-                {DIAS.map((d) => (
-                  <span key={d.dia} className="rounded-full border border-border/60 px-2 py-0.5">
-                    {d.label}: {previa.leitura.porDia[d.dia] ?? 0}
-                  </span>
-                ))}
-              </div>
-
-              <div className="max-h-64 space-y-1 overflow-auto">
-                {previa.leitura.divergencias.map((d, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 rounded-lg border border-border/50 bg-card/40 p-2 text-xs"
-                  >
-                    {d.severidade === "info" ? (
-                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-300" />
-                    ) : (
-                      <AlertTriangle
-                        className={
-                          d.severidade === "erro"
-                            ? "mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300"
-                            : "mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"
-                        }
-                      />
-                    )}
-                    <span>{d.mensagem}</span>
-                  </div>
-                ))}
-              </div>
-
-              {previa.duplicado && (
-                <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 p-2 text-xs text-amber-200">
-                  Este arquivo já foi importado antes (mesmo conteúdo). Confirme apenas se quiser
-                  reaplicar a programação.
-                </p>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  disabled={
-                    aplicar.isPending ||
-                    previa.leitura.divergencias.some((d) => d.severidade === "erro")
-                  }
-                  onClick={() => aplicar.mutate()}
-                >
-                  {aplicar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {previa.duplicado ? "Confirmar mesmo assim" : "Confirmar importação"}
-                </Button>
-                <Button variant="ghost" onClick={() => setPrevia(null)}>
-                  Cancelar
-                </Button>
-              </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Ponto</Label>
+              <Select value={pontoId} onValueChange={setPontoId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o ponto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(pontos.data ?? []).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {pontoLabel(p)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
+            <div className="space-y-1">
+              <Label>Tipo</Label>
+              <Select value={tipo} onValueChange={setTipo}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FILTRO_TIPOS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Prioridade</Label>
+              <Select
+                value={prioridade}
+                onValueChange={(v) => setPrioridade(v as FiltroPrioridade)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(["baixa", "media", "alta"] as FiltroPrioridade[]).map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {FILTRO_PRIORIDADE_LABEL[p]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="filtro-prevista">Prevista para</Label>
+              <Input
+                id="filtro-prevista"
+                type="date"
+                value={prevista}
+                onChange={(e) => setPrevista(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1 sm:col-span-2 lg:col-span-3">
+              <Label htmlFor="filtro-desc">Descrição</Label>
+              <Textarea
+                id="filtro-desc"
+                rows={2}
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
+                placeholder="Ex.: filtro saturado, vazamento na base do purificador…"
+              />
+            </div>
+          </div>
+
+          <Button
+            className="min-h-[44px]"
+            disabled={!pontoId || criar.isPending}
+            onClick={() => criar.mutate()}
+          >
+            {criar.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Registrar solicitação
+          </Button>
         </GlassCard>
       )}
 
-      <GlassCard className="space-y-3 p-4">
-        <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
-          <div className="space-y-1">
-            <Label htmlFor="busca">Buscar ponto</Label>
-            <Input
-              id="busca"
-              placeholder="Prédio, andar ou espaço"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Dia da semana</Label>
-            <Select value={dia} onValueChange={setDia}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os dias</SelectItem>
-                {DIAS.map((d) => (
-                  <SelectItem key={d.dia} value={String(d.dia)}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        {(["aberta", "em_atendimento", "concluida", "cancelada", "todas"] as const).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setAba(s)}
+            className={cn(
+              "min-h-[40px] shrink-0 rounded-full border px-3 text-xs font-medium",
+              aba === s
+                ? "border-primary/60 bg-primary/15 text-primary"
+                : "border-border/60 bg-card/40 text-muted-foreground",
+            )}
+          >
+            {s === "todas" ? "Todas" : FILTRO_SITUACAO_LABEL[s]}
+          </button>
+        ))}
+      </div>
+
+      {filtros.isLoading ? (
+        <div className="space-y-2">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-20 rounded-2xl" />
+          ))}
         </div>
-
-        {lista.length === 0 ? (
-          <EmptyState
-            title="Nenhum ponto encontrado"
-            description="Importe a planilha ou ajuste os filtros de busca."
-          />
-        ) : (
-          <div className="space-y-2">
-            {lista.map((p) => {
-              const dias = diasPorPonto.get(p.id) ?? [];
-              return (
-                <div
-                  key={p.id}
-                  className="grid gap-2 rounded-2xl border border-border/50 bg-card/40 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{pontoLabel(p)}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {dias.length ? dias.map((d) => DIA_LABEL[d]).join(" · ") : "Sem programação"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Bags</Label>
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-9 w-20"
-                      defaultValue={p.bags_padrao}
-                      disabled={!gestor}
-                      onBlur={(e) => {
-                        const v = Number(e.target.value);
-                        if (Number.isFinite(v) && v !== p.bags_padrao) {
-                          editar.mutate({ id: p.id, patch: { bags_padrao: v } });
-                        }
-                      }}
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      className="h-9 w-20"
-                      defaultValue={p.ordem}
-                      disabled={!gestor}
-                      title="Ordem da rota"
-                      onBlur={(e) => {
-                        const v = Number(e.target.value);
-                        if (Number.isFinite(v) && v !== p.ordem) {
-                          editar.mutate({ id: p.id, patch: { ordem: v } });
-                        }
-                      }}
-                    />
-                  </div>
+      ) : lista.length === 0 ? (
+        <EmptyState
+          title="Nenhuma solicitação"
+          description="Registre pedidos de troca, limpeza ou reparo de filtros por ponto."
+        />
+      ) : (
+        <div className="space-y-2">
+          {lista.map((f) => (
+            <div
+              key={f.id}
+              className={cn("space-y-2 rounded-2xl border p-3", SITUACAO_TONE[f.situacao])}
+            >
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {porId.get(f.ponto_id) ? pontoLabel(porId.get(f.ponto_id)!) : "Ponto removido"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {f.tipo} · aberta em {new Date(f.criado_em).toLocaleDateString("pt-BR")}
+                    {f.prevista_para
+                      ? ` · prevista ${f.prevista_para.split("-").reverse().join("/")}`
+                      : ""}
+                  </p>
+                  {f.descricao && <p className="mt-1 text-xs">{f.descricao}</p>}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </GlassCard>
-    </div>
-  );
-}
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full border px-2 py-0.5 text-[11px]",
+                    PRIORIDADE_TONE[f.prioridade],
+                  )}
+                >
+                  {FILTRO_PRIORIDADE_LABEL[f.prioridade]}
+                </span>
+              </div>
 
-function Info2({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/40 p-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-base font-semibold">{value}</p>
+              {podeEscrever && (
+                <div className="flex flex-wrap gap-2">
+                  {SITUACOES.filter((s) => s !== f.situacao).map((s) => (
+                    <Button
+                      key={s}
+                      size="sm"
+                      variant="secondary"
+                      className="min-h-[36px]"
+                      disabled={mudarSituacao.isPending}
+                      onClick={() => mudarSituacao.mutate({ id: f.id, situacao: s })}
+                    >
+                      {FILTRO_SITUACAO_LABEL[s]}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
