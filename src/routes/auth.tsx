@@ -352,11 +352,7 @@ function AuthPage() {
         </div>
       )}
 
-      <TermsAcceptDialog
-        open={termsOpen}
-        onOpenChange={setTermsOpen}
-        onAccept={() => setAcceptTerms(true)}
-      />
+      <TermsSummaryDialog open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   );
 }
