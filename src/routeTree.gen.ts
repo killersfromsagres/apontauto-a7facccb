@@ -42,6 +42,7 @@ import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
+import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
 import { Route as ApiPublicImgbbUploadRouteImport } from './routes/api/public/imgbb-upload'
@@ -231,6 +232,11 @@ const AuthenticatedBacklogInteligenteRoute =
     path: '/backlog-inteligente',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
+  id: '/auditoria',
+  path: '/auditoria',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedApontamentosRoute =
   AuthenticatedApontamentosRouteImport.update({
     id: '/apontamentos',
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
+  '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
+  '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
@@ -417,6 +426,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/abastecimento'
     | '/apontamentos'
+    | '/auditoria'
     | '/backlog-inteligente'
     | '/backorder'
     | '/base-ativos'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/abastecimento'
     | '/apontamentos'
+    | '/auditoria'
     | '/backlog-inteligente'
     | '/backorder'
     | '/base-ativos'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/_authenticated/abastecimento'
     | '/_authenticated/apontamentos'
+    | '/_authenticated/auditoria'
     | '/_authenticated/backlog-inteligente'
     | '/_authenticated/backorder'
     | '/_authenticated/base-ativos'
@@ -782,6 +794,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBacklogInteligenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/auditoria': {
+      id: '/_authenticated/auditoria'
+      path: '/auditoria'
+      fullPath: '/auditoria'
+      preLoaderRoute: typeof AuthenticatedAuditoriaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/apontamentos': {
       id: '/_authenticated/apontamentos'
       path: '/apontamentos'
@@ -844,6 +863,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
+  AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
@@ -877,6 +897,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
+  AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
