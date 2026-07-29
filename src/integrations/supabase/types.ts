@@ -751,6 +751,116 @@ export type Database = {
           },
         ]
       }
+      frota_abastecimentos: {
+        Row: {
+          combustivel: string
+          created_at: string
+          created_by: string | null
+          cupom: string | null
+          data_abastecimento: string
+          hodometro: number | null
+          id: string
+          litros: number
+          motorista: string | null
+          observacoes: string | null
+          placa: string
+          posto: string | null
+          updated_at: string
+          valor_litro: number | null
+          valor_total: number | null
+          veiculo_id: string | null
+        }
+        Insert: {
+          combustivel?: string
+          created_at?: string
+          created_by?: string | null
+          cupom?: string | null
+          data_abastecimento?: string
+          hodometro?: number | null
+          id?: string
+          litros: number
+          motorista?: string | null
+          observacoes?: string | null
+          placa: string
+          posto?: string | null
+          updated_at?: string
+          valor_litro?: number | null
+          valor_total?: number | null
+          veiculo_id?: string | null
+        }
+        Update: {
+          combustivel?: string
+          created_at?: string
+          created_by?: string | null
+          cupom?: string | null
+          data_abastecimento?: string
+          hodometro?: number | null
+          id?: string
+          litros?: number
+          motorista?: string | null
+          observacoes?: string | null
+          placa?: string
+          posto?: string | null
+          updated_at?: string
+          valor_litro?: number | null
+          valor_total?: number | null
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "frota_abastecimentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "frota_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      frota_veiculos: {
+        Row: {
+          ano: number | null
+          created_at: string
+          created_by: string | null
+          hodometro_atual: number
+          id: string
+          marca: string | null
+          modelo: string | null
+          observacoes: string | null
+          placa: string
+          situacao: string
+          tipo: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano?: number | null
+          created_at?: string
+          created_by?: string | null
+          hodometro_atual?: number
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          observacoes?: string | null
+          placa: string
+          situacao?: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number | null
+          created_at?: string
+          created_by?: string | null
+          hodometro_atual?: number
+          id?: string
+          marca?: string | null
+          modelo?: string | null
+          observacoes?: string | null
+          placa?: string
+          situacao?: string
+          tipo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lavanderia_colaboradores: {
         Row: {
           created_at: string
