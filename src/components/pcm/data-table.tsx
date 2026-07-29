@@ -172,7 +172,7 @@ export function DataTable<T>({
 
       <div
         ref={scrollRef}
-        className="hidden overflow-x-auto rounded-2xl border border-border/60 md:block"
+        className="table-scroll hidden overflow-x-auto overscroll-x-contain rounded-2xl border border-border/60 md:block"
         style={virtualize ? { maxHeight: virtualHeight, overflowY: "auto" } : undefined}
       >
         <Table>
