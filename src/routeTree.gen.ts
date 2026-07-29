@@ -30,6 +30,7 @@ import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authent
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
+import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
@@ -165,6 +166,12 @@ const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   path: '/outros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificacoesRoute =
+  AuthenticatedNotificacoesRouteImport.update({
+    id: '/notificacoes',
+    path: '/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedLavanderiaRoute = AuthenticatedLavanderiaRouteImport.update({
   id: '/lavanderia',
   path: '/lavanderia',
@@ -306,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -348,6 +356,7 @@ export interface FileRoutesByTo {
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -393,6 +402,7 @@ export interface FileRoutesById {
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
@@ -439,6 +449,7 @@ export interface FileRouteTypes {
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
     | '/lavanderia'
+    | '/notificacoes'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -481,6 +492,7 @@ export interface FileRouteTypes {
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
     | '/lavanderia'
+    | '/notificacoes'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -525,6 +537,7 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva-pecas-status'
     | '/_authenticated/dashboard-chamados'
     | '/_authenticated/lavanderia'
+    | '/_authenticated/notificacoes'
     | '/_authenticated/outros'
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
@@ -710,6 +723,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOutrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notificacoes': {
+      id: '/_authenticated/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/notificacoes'
+      preLoaderRoute: typeof AuthenticatedNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lavanderia': {
       id: '/_authenticated/lavanderia'
       path: '/lavanderia'
@@ -876,6 +896,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
+  AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
@@ -911,6 +932,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedCorretivaPecasStatusRoute,
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
+  AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
