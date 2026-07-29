@@ -41,14 +41,14 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           : "border-border/50 bg-card/40 hover:border-primary/40",
       )}
     >
-      <div className="relative flex h-20 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent">
+      <div className="relative flex h-16 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent p-2">
         {photo ? (
           <img
             src={photo}
             alt={vehicleLabel(vehicle)}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-contain p-1.5"
+            className="max-h-full max-w-[70%] object-contain"
           />
         ) : (
           <VehiclePhoto
