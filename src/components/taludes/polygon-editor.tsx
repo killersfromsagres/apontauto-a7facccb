@@ -431,8 +431,17 @@ export function PolygonEditor({
     if (poly.locked) return;
     e.stopPropagation();
     const before = geometryOf(poly);
-    dragRef.current = { kind: "vertex", id: poly.id, index, before };
+    const at = toPercent(e.clientX, e.clientY);
+    const v = before[index];
+    dragRef.current = {
+      kind: "vertex",
+      id: poly.id,
+      index,
+      before,
+      grab: { x: v.x - at.x, y: v.y - at.y },
+    };
     setWorking((w) => ({ ...w, [poly.id]: before }));
+
     onSelect(poly.id);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
