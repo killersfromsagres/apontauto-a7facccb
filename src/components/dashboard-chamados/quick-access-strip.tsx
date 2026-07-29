@@ -33,7 +33,7 @@ export function QuickAccessStrip() {
 
   return (
     <GlassCard delay={0.05}>
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex shrink-0 items-center gap-2">
           <div className="glass-tile rounded-lg p-1.5">
             <ArrowRight className="h-4 w-4 text-primary" strokeWidth={1.75} />
@@ -46,7 +46,7 @@ export function QuickAccessStrip() {
               <Link
                 key={`${m.key}-${idx}`}
                 to={m.to}
-                className="glass-tile group flex shrink-0 items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.04] hover:border-primary/60 hover:text-foreground hover:shadow-[0_8px_20px_-10px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
+                className="glass-tile group flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-border/60 px-4 py-1.5 text-xs font-medium transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.04] hover:border-primary/60 hover:text-foreground hover:shadow-[0_8px_20px_-10px_color-mix(in_oklab,var(--primary)_55%,transparent)]"
               >
                 <m.icon
                   className={`h-3.5 w-3.5 ${m.tint} transition-transform duration-200 group-hover:scale-110 group-hover:drop-shadow-[0_0_6px_currentColor]`}

@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto">
+    // `table-scroll` adiciona no mobile a dica visual de rolagem horizontal
+    // e mantém o gesto de swipe contido na tabela (sem arrastar a página).
+    <div className="table-scroll relative w-full overflow-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+
       <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   ),

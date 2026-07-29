@@ -359,11 +359,11 @@ function CorretivaPage() {
                   : st.row;
                 return (
                 <li key={o.id}>
-                  <div className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
+                  <div className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
                     <button
                       type="button"
                       onClick={() => setSelectedId(o.id)}
-                      className="flex flex-1 items-start gap-3 text-left"
+                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
                     >
                       {isDone ? (
                         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
