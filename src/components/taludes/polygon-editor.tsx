@@ -379,9 +379,14 @@ export function PolygonEditor({
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
     const wasPanning = !!panRef.current;
+    const down = downRef.current;
+    downRef.current = null;
     panRef.current = null;
     endDrag();
-    if (wasPanning || movedRef.current) return;
+    // Tolerância de toque: pequenos tremores não invalidam o clique.
+    const slipped = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 : false;
+    if (wasPanning || (movedRef.current && slipped)) return;
+
 
     // clique simples no palco
     const p = toPercent(e.clientX, e.clientY);
