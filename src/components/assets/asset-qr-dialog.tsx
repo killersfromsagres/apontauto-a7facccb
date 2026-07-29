@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import QRCode from "qrcode";
 import { Download, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,21 @@ export function AssetQrDialog({
 
   useEffect(() => {
     if (!open) return;
-    QRCode.toDataURL(url, { width: 512, margin: 1, errorCorrectionLevel: "M" })
-      .then(setPng)
-      .catch(() => setPng(null));
+    let cancelled = false;
+    // Carregamento sob demanda: a lib de QR só é baixada ao abrir o diálogo.
+    void import("qrcode")
+      .then(({ default: QRCode }) =>
+        QRCode.toDataURL(url, { width: 512, margin: 1, errorCorrectionLevel: "M" }),
+      )
+      .then((data) => {
+        if (!cancelled) setPng(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPng(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open, url]);
 
   return (

@@ -1,5 +1,3 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import { maskCpf } from "@/lib/frota/cpf";
 import { vehicleLabel, type Checklist, type Vehicle } from "@/lib/frota/api";
@@ -31,6 +29,11 @@ export async function exportChecklistPdf(opts: {
   responsibleName?: string;
 }) {
   const { checklist, vehicle, items, photos, collaborators } = opts;
+  // Carregamento sob demanda: jsPDF só entra no bundle ao exportar.
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
 
