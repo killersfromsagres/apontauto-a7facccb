@@ -110,8 +110,16 @@ export function PolygonEditor({
 
   const spaceRef = useRef(false);
   const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const downRef = useRef<{ x: number; y: number } | null>(null);
   const dragRef = useRef<
-    | { kind: "vertex"; id: string; index: number; before: Point[] }
+    | {
+        kind: "vertex";
+        id: string;
+        index: number;
+        before: Point[];
+        /** Diferença entre o vértice e o ponteiro no início do arrasto. */
+        grab: Point;
+      }
     | { kind: "move"; id: string; before: Point[]; start: Point }
     | null
   >(null);
@@ -124,11 +132,35 @@ export function PolygonEditor({
     [working],
   );
 
+  /**
+   * Descarta geometria local assim que os dados salvos chegam. Sem isso o
+   * editor podia exibir um contorno antigo enquanto o PNG/PDF usava o
+   * polígono do banco — as duas versões ficavam fora de lugar.
+   */
+  useEffect(() => {
+    setWorking((w) => {
+      const keys = Object.keys(w);
+      if (keys.length === 0) return w;
+      const dragging = dragRef.current?.id;
+      const next: Record<string, Point[]> = {};
+      let changed = false;
+      for (const k of keys) {
+        if (k === dragging) {
+          next[k] = w[k];
+          continue;
+        }
+        changed = true;
+      }
+      return changed ? next : w;
+    });
+  }, [polygons]);
+
+
   /* ------------------------------ coordenadas ------------------------------ */
 
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
     const rect = stageRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
+    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     return clampPoint({
       x: ((clientX - rect.left) / rect.width) * 100,
       y: ((clientY - rect.top) / rect.height) * 100,
@@ -141,19 +173,23 @@ export function PolygonEditor({
     return { x: rect.width / 100, y: rect.height / 100 };
   }, []);
 
+  /**
+   * Aproximação assistida. Nunca aproxima de vértices do próprio polígono
+   * em edição (isso fazia o ponto "saltar" para o vizinho).
+   */
   const applySnap = useCallback(
-    (p: Point, excludeId?: string, excludeIndex?: number): Point => {
+    (p: Point, excludeId?: string): Point => {
       let out = grid ? snapToGrid(p, 1) : p;
       if (!snap) return clampPoint(out);
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
       for (const poly of polygons) {
         if (!poly.visible) continue;
+        if (poly.id === excludeId) continue;
         const pts = geometryOf(poly);
-        pts.forEach((v, i) => {
-          if (poly.id === excludeId && i === excludeIndex) return;
+        pts.forEach((v) => {
           const d = Math.hypot((v.x - p.x) * per.x, (v.y - p.y) * per.y);
-          if (d < 10 && (!best || d < best.d)) best = { d, pt: v };
+          if (d < 8 && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
@@ -161,6 +197,7 @@ export function PolygonEditor({
     },
     [grid, snap, polygons, geometryOf, pxPerPercent],
   );
+
 
   /* -------------------------------- histórico ------------------------------- */
 
@@ -278,7 +315,9 @@ export function PolygonEditor({
 
   const onPointerDown = (e: React.PointerEvent) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    downRef.current = { x: e.clientX, y: e.clientY };
     movedRef.current = false;
+
 
     if (pointersRef.current.size === 2) {
       const [a, b] = [...pointersRef.current.values()];
@@ -333,9 +372,12 @@ export function PolygonEditor({
     movedRef.current = true;
     if (drag.kind === "vertex") {
       const next = [...(working[drag.id] ?? drag.before)];
-      next[drag.index] = applySnap(p, drag.id, drag.index);
+      // Mantém a distância original entre o ponteiro e o vértice: sem "pulo".
+      const raw = clampPoint({ x: p.x + drag.grab.x, y: p.y + drag.grab.y });
+      next[drag.index] = applySnap(raw, drag.id);
       setWorking((w) => ({ ...w, [drag.id]: next }));
       onDraftChange?.(drag.id, next);
+
     } else if (drag.kind === "move") {
       const dx = p.x - drag.start.x;
       const dy = p.y - drag.start.y;
@@ -361,9 +403,16 @@ export function PolygonEditor({
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
     const wasPanning = !!panRef.current;
+    const down = downRef.current;
+    downRef.current = null;
     panRef.current = null;
+    const hadDrag = !!dragRef.current;
     endDrag();
-    if (wasPanning || movedRef.current) return;
+    // Tolerância de toque: pequenos tremores não invalidam o clique.
+    const slipped = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 : false;
+    if (wasPanning || hadDrag || (movedRef.current && slipped)) return;
+
+
 
     // clique simples no palco
     const p = toPercent(e.clientX, e.clientY);
@@ -415,8 +464,17 @@ export function PolygonEditor({
     if (poly.locked) return;
     e.stopPropagation();
     const before = geometryOf(poly);
-    dragRef.current = { kind: "vertex", id: poly.id, index, before };
+    const at = toPercent(e.clientX, e.clientY);
+    const v = before[index];
+    dragRef.current = {
+      kind: "vertex",
+      id: poly.id,
+      index,
+      before,
+      grab: { x: v.x - at.x, y: v.y - at.y },
+    };
     setWorking((w) => ({ ...w, [poly.id]: before }));
+
     onSelect(poly.id);
     (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
   };
