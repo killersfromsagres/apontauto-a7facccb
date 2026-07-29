@@ -157,60 +157,153 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_ponto_merges: {
+        Row: {
+          criado_em: string
+          destino_id: string
+          destino_snapshot: Json
+          id: string
+          motivo: string | null
+          origem_id: string
+          origem_snapshot: Json
+          usuario_id: string | null
+        }
+        Insert: {
+          criado_em?: string
+          destino_id: string
+          destino_snapshot?: Json
+          id?: string
+          motivo?: string | null
+          origem_id: string
+          origem_snapshot?: Json
+          usuario_id?: string | null
+        }
+        Update: {
+          criado_em?: string
+          destino_id?: string
+          destino_snapshot?: Json
+          id?: string
+          motivo?: string | null
+          origem_id?: string
+          origem_snapshot?: Json
+          usuario_id?: string | null
+        }
+        Relationships: []
+      }
       agua_pontos: {
         Row: {
+          acesso_observacoes: string | null
           andar: string
           ativo: boolean
           atualizado_em: string
+          atualizado_por: string | null
+          bag_capacidade_litros: number | null
+          bag_tipo: string | null
           bags_padrao: number
           codigo: string
+          contato_telefone: string | null
           criado_em: string
+          criado_por: string | null
+          descricao: string | null
+          epi_descricao: string | null
           espaco: string
+          estoque_minimo: number | null
+          frequencia: string | null
           id: string
+          imagem_url: string | null
           janela_fim: string | null
           janela_inicio: string | null
+          latitude: number | null
+          longitude: number | null
           lote_id: string | null
+          mesclado_em: string | null
+          mesclado_para: string | null
           observacao: string | null
           ordem: number
           predio: string
+          prioridade: string
+          qr_code: string | null
+          requer_epi: boolean
           responsavel: string | null
+          tempo_estimado_min: number | null
           veiculo: string | null
+          veiculo_recomendado: string | null
         }
         Insert: {
+          acesso_observacoes?: string | null
           andar?: string
           ativo?: boolean
           atualizado_em?: string
+          atualizado_por?: string | null
+          bag_capacidade_litros?: number | null
+          bag_tipo?: string | null
           bags_padrao?: number
           codigo: string
+          contato_telefone?: string | null
           criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          epi_descricao?: string | null
           espaco?: string
+          estoque_minimo?: number | null
+          frequencia?: string | null
           id?: string
+          imagem_url?: string | null
           janela_fim?: string | null
           janela_inicio?: string | null
+          latitude?: number | null
+          longitude?: number | null
           lote_id?: string | null
+          mesclado_em?: string | null
+          mesclado_para?: string | null
           observacao?: string | null
           ordem?: number
           predio: string
+          prioridade?: string
+          qr_code?: string | null
+          requer_epi?: boolean
           responsavel?: string | null
+          tempo_estimado_min?: number | null
           veiculo?: string | null
+          veiculo_recomendado?: string | null
         }
         Update: {
+          acesso_observacoes?: string | null
           andar?: string
           ativo?: boolean
           atualizado_em?: string
+          atualizado_por?: string | null
+          bag_capacidade_litros?: number | null
+          bag_tipo?: string | null
           bags_padrao?: number
           codigo?: string
+          contato_telefone?: string | null
           criado_em?: string
+          criado_por?: string | null
+          descricao?: string | null
+          epi_descricao?: string | null
           espaco?: string
+          estoque_minimo?: number | null
+          frequencia?: string | null
           id?: string
+          imagem_url?: string | null
           janela_fim?: string | null
           janela_inicio?: string | null
+          latitude?: number | null
+          longitude?: number | null
           lote_id?: string | null
+          mesclado_em?: string | null
+          mesclado_para?: string | null
           observacao?: string | null
           ordem?: number
           predio?: string
+          prioridade?: string
+          qr_code?: string | null
+          requer_epi?: boolean
           responsavel?: string | null
+          tempo_estimado_min?: number | null
           veiculo?: string | null
+          veiculo_recomendado?: string | null
         }
         Relationships: [
           {
@@ -218,6 +311,13 @@ export type Database = {
             columns: ["lote_id"]
             isOneToOne: false
             referencedRelation: "agua_import_lotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_pontos_mesclado_para_fkey"
+            columns: ["mesclado_para"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
             referencedColumns: ["id"]
           },
         ]
