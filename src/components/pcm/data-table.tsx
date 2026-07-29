@@ -1,4 +1,5 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Table,
   TableBody,
@@ -37,6 +38,10 @@ export type DataTableProps<T> = {
   onRowClick?: (row: T) => void;
   /** Quantidade inicial exibida; o restante entra via "Carregar mais". */
   pageSize?: number;
+  /** Acima deste total de linhas o corpo da tabela é virtualizado (desktop). */
+  virtualizeAfter?: number;
+  /** Altura máxima da área rolável quando virtualizada. */
+  virtualHeight?: number;
   className?: string;
 };
 
@@ -51,10 +56,13 @@ export function DataTable<T>({
   emptyAction,
   onRowClick,
   pageSize = 50,
+  virtualizeAfter = 100,
+  virtualHeight = 620,
   className,
 }: DataTableProps<T>) {
   const [sort, setSort] = useState<{ key: string; dir: "asc" | "desc" } | null>(null);
   const [visible, setVisible] = useState(pageSize);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const sorted = useMemo(() => {
     if (!sort) return data;
@@ -77,6 +85,7 @@ export function DataTable<T>({
   }
 
   const rows = sorted.slice(0, visible);
+  const virtualize = rows.length > virtualizeAfter;
   const mobileCols = columns.filter((c) => !c.mobileHidden);
   const primaryCol = mobileCols.find((c) => c.mobilePrimary) ?? mobileCols[0];
   const secondaryCols = mobileCols.filter((c) => c.key !== primaryCol?.key);
@@ -161,7 +170,11 @@ export function DataTable<T>({
         })}
       </div>
 
-      <div className="hidden overflow-x-auto rounded-2xl border border-border/60 md:block">
+      <div
+        ref={scrollRef}
+        className="hidden overflow-x-auto rounded-2xl border border-border/60 md:block"
+        style={virtualize ? { maxHeight: virtualHeight, overflowY: "auto" } : undefined}
+      >
         <Table>
 
           <TableHeader>
@@ -202,7 +215,16 @@ export function DataTable<T>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map((row, index) => (
+            {virtualize ? (
+              <VirtualRows
+                rows={rows}
+                columns={columns}
+                rowKey={rowKey}
+                onRowClick={onRowClick}
+                scrollRef={scrollRef}
+              />
+            ) : (
+              rows.map((row, index) => (
               <TableRow
                 key={rowKey(row, index)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
@@ -212,9 +234,10 @@ export function DataTable<T>({
                   <TableCell key={col.key} className={col.className}>
                     {col.cell(row, index)}
                   </TableCell>
-                ))}
-              </TableRow>
-            ))}
+                  ))}
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
@@ -227,5 +250,70 @@ export function DataTable<T>({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Corpo virtualizado: só as linhas visíveis vão para o DOM, com espaçadores
+ * acima/abaixo para preservar a barra de rolagem. Mantém tabelas de milhares
+ * de registros fluidas mesmo em celulares e máquinas modestas.
+ */
+function VirtualRows<T>({
+  rows,
+  columns,
+  rowKey,
+  onRowClick,
+  scrollRef,
+}: {
+  rows: T[];
+  columns: DataTableColumn<T>[];
+  rowKey: (row: T, index: number) => string;
+  onRowClick?: (row: T) => void;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 52,
+    overscan: 12,
+  });
+
+  const items = virtualizer.getVirtualItems();
+  const paddingTop = items.length ? items[0].start : 0;
+  const paddingBottom = items.length
+    ? virtualizer.getTotalSize() - items[items.length - 1].end
+    : 0;
+
+  return (
+    <>
+      {paddingTop > 0 ? (
+        <TableRow aria-hidden>
+          <TableCell colSpan={columns.length} style={{ height: paddingTop, padding: 0 }} />
+        </TableRow>
+      ) : null}
+      {items.map((item) => {
+        const row = rows[item.index];
+        return (
+          <TableRow
+            key={rowKey(row, item.index)}
+            data-index={item.index}
+            ref={virtualizer.measureElement}
+            onClick={onRowClick ? () => onRowClick(row) : undefined}
+            className={cn(onRowClick && "cursor-pointer")}
+          >
+            {columns.map((col) => (
+              <TableCell key={col.key} className={col.className}>
+                {col.cell(row, item.index)}
+              </TableCell>
+            ))}
+          </TableRow>
+        );
+      })}
+      {paddingBottom > 0 ? (
+        <TableRow aria-hidden>
+          <TableCell colSpan={columns.length} style={{ height: paddingBottom, padding: 0 }} />
+        </TableRow>
+      ) : null}
+    </>
   );
 }

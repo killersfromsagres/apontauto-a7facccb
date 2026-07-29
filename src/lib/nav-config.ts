@@ -262,6 +262,8 @@ export const sections: MenuSection[] = [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", short: "SST", url: "/seguranca-trabalho", icon: HardHat },
       { key: "painel-legal", title: "Painel de Itens Legais", short: "Legal", url: "/painel-legal", icon: Scale },
       { key: "auditoria", title: "Trilha de Auditoria", short: "Auditoria", url: "/auditoria", icon: FileClock, keywords: ["log", "histórico", "rastreabilidade", "compliance"] },
+      { key: "observabilidade", title: "Painel Técnico", short: "Técnico", url: "/observabilidade", icon: Activity, keywords: ["erros", "logs", "integrações", "saúde", "monitoramento", "offline"] },
+
 
     ],
   },
@@ -366,6 +368,7 @@ const RESTRICTED_KEYS = [
   "bi-studio",
   "notificacoes-admin",
   "auditoria",
+  "observabilidade",
   "confiabilidade",
 ];
 

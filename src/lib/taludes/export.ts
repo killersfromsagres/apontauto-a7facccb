@@ -1,5 +1,3 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import type { CalibrationData, TaludeMap, TaludeMarcacao } from "./api";
 import { areaPx, formatArea, formatLength, metersPerPixel, perimeterPx } from "./geometry";
@@ -48,6 +46,11 @@ export async function exportPdf(
   const png = await exportPng(map, marcacoes);
   const dataUrl = await blobToDataUrl(png);
 
+  // Carregamento sob demanda: jsPDF só entra no bundle ao exportar.
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
