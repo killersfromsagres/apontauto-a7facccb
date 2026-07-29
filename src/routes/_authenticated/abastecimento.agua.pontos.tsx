@@ -234,7 +234,7 @@ function CadastroPontos() {
         <SkeletonState rows={4} />
       ) : lista.length === 0 ? (
         <EmptyState
-          icon={MapPin}
+          icon={<MapPin className="size-5" aria-hidden />}
           title="Nenhum ponto cadastrado"
           description="Cadastre manualmente ou importe a planilha na aba Programação."
         />
