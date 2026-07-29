@@ -9,13 +9,6 @@ export type MyAccess = { isAdmin: boolean; allowed: string[] | null };
 // Falha fechada: `null` significa acesso total, então estados sem sessão,
 // erro de rede ou token ainda não anexado não podem cair em "ver tudo".
 const EMPTY: MyAccess = { isAdmin: false, allowed: [] };
-const OWNER_ADMIN_EMAIL = "admin@apontauto.local";
-const FULL_ADMIN: MyAccess = { isAdmin: true, allowed: null };
-
-function isOwnerAdminEmail(email: string | null | undefined) {
-  return (email ?? "").trim().toLowerCase() === OWNER_ADMIN_EMAIL;
-}
-
 async function readAccessDirect(uid: string): Promise<MyAccess> {
   const [roleRes, profRes] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", uid),
@@ -23,12 +16,10 @@ async function readAccessDirect(uid: string): Promise<MyAccess> {
   ]);
   const isAdmin = (roleRes.data ?? []).some((r: any) => r.role === "admin");
   if (isAdmin) return { isAdmin: true, allowed: null };
-  // NULL no banco = sem restrição customizada = acesso total (mesma
-  // semântica do servidor em `get_my_allowed_menus`). Só devolvemos
-  // lista vazia quando o admin explicitamente marcou `allowed_menus = {}`.
+  // Negação por padrão: sem lista explícita de menus, nada é liberado
+  // (mesma semântica do banco em `get_my_allowed_menus`/`can_access_module`).
   const raw = profRes.data?.allowed_menus as string[] | null | undefined;
-  const allowed = raw === null || raw === undefined ? null : raw;
-  return { isAdmin: false, allowed };
+  return { isAdmin: false, allowed: raw ?? [] };
 }
 
 
@@ -64,17 +55,7 @@ export function useMyAccess() {
     queryFn: async () => {
       const { data: s } = await supabase.auth.getSession();
       if (!s.session) return EMPTY;
-      const email = s.session.user?.email ?? null;
       const uid = s.session.user?.id;
-      // Fallback fail-open EXCLUSIVO para o dono/admin principal.
-      if (isOwnerAdminEmail(email)) {
-        try {
-          const res = (await fetchFn()) as MyAccess;
-          return { ...res, isAdmin: true, allowed: null };
-        } catch {
-          return FULL_ADMIN;
-        }
-      }
       try {
         const res = (await fetchFn()) as MyAccess;
         // Se o servidor voltou vazio por qualquer motivo transitório,

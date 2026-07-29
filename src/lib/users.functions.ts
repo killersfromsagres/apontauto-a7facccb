@@ -6,7 +6,6 @@ import type { Database } from "@/integrations/supabase/types";
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
 
-const OWNER_ADMIN_EMAIL = "admin@apontauto.local";
 const LOGIN_DOMAIN = "apontauto.local";
 const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
 
@@ -166,10 +165,6 @@ async function assertCallerIsAdmin(supabase: any, userId: string) {
   if (!data) throw new Error("Apenas administradores podem executar esta ação.");
 }
 
-function isOwnerAdminEmail(email: string | null | undefined) {
-  return (email ?? "").trim().toLowerCase() === OWNER_ADMIN_EMAIL;
-}
-
 /**
  * Retorna se o usuário autenticado atual é administrador.
  */
@@ -202,13 +197,12 @@ export const getMyAllowedMenus = createServerFn({ method: "GET" })
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
-    const email = typeof context.claims?.email === "string" ? context.claims.email : "";
     const [adminRes, menusRes] = await Promise.all([
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
       context.supabase.rpc("get_my_allowed_menus"),
     ]);
     if (adminRes.error) throw new Error(adminRes.error.message);
-    const isAdmin = Boolean(adminRes.data) || isOwnerAdminEmail(email);
+    const isAdmin = Boolean(adminRes.data);
     if (isAdmin) return { isAdmin: true, allowed: null };
 
     // Se a RPC falhar por qualquer motivo, cair para leitura direta do perfil
