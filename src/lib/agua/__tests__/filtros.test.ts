@@ -76,8 +76,9 @@ describe("estadoSla", () => {
 
   it("marca vencido, atenção e no prazo", () => {
     expect(estadoSla({ ...base, vence_em: "2026-01-20T06:00:00Z" }, HOJE).estado).toBe("vencido");
-    // 12h decorridas de 13h totais → 92% do prazo
-    expect(estadoSla({ ...base, vence_em: "2026-01-20T17:00:00Z" }, HOJE).estado).toBe("atencao");
+    // 12h decorridas de 15h totais → 80% do prazo
+    expect(estadoSla({ ...base, vence_em: "2026-01-20T15:00:00Z" }, HOJE).estado).toBe("atencao");
+
     expect(estadoSla({ ...base, vence_em: "2026-01-23T00:00:00Z" }, HOJE).estado).toBe("no_prazo");
   });
 
