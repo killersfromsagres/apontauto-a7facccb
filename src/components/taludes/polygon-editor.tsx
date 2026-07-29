@@ -291,7 +291,9 @@ export function PolygonEditor({
 
   const onPointerDown = (e: React.PointerEvent) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    downRef.current = { x: e.clientX, y: e.clientY };
     movedRef.current = false;
+
 
     if (pointersRef.current.size === 2) {
       const [a, b] = [...pointersRef.current.values()];
