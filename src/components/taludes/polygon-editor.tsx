@@ -382,10 +382,12 @@ export function PolygonEditor({
     const down = downRef.current;
     downRef.current = null;
     panRef.current = null;
+    const hadDrag = !!dragRef.current;
     endDrag();
     // Tolerância de toque: pequenos tremores não invalidam o clique.
     const slipped = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 : false;
-    if (wasPanning || (movedRef.current && slipped)) return;
+    if (wasPanning || hadDrag || (movedRef.current && slipped)) return;
+
 
 
     // clique simples no palco
