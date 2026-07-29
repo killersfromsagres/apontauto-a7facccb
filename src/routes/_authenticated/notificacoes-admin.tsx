@@ -221,9 +221,14 @@ function NotificacoesAdminPage() {
               : form.targetMode === "modules"
                 ? "module_key"
                 : "team_key";
-        const { error } = await supabase.from("notification_targets").insert(
-          form.targets.map((v) => ({ notification_id: id as string, [col]: v })),
-        );
+        const rows = form.targets.map((v) => ({
+          notification_id: id as string,
+          user_id: col === "user_id" ? v : null,
+          role_key: col === "role_key" ? v : null,
+          module_key: col === "module_key" ? v : null,
+          team_key: col === "team_key" ? v : null,
+        }));
+        const { error } = await supabase.from("notification_targets").insert(rows);
         if (error) throw error;
       }
     },
