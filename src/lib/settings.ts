@@ -94,7 +94,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   },
   defaultTaskMinutes: 60,
   workdays: [1, 2, 3, 4, 5],
+  aguaWhatsapp: DEFAULT_AGUA_WHATSAPP,
 };
+
 
 let cache: AppSettings = DEFAULT_SETTINGS;
 let rowId: string | null = null;
