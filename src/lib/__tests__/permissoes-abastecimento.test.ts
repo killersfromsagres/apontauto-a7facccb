@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { canSeeMenuItem, isRestrictedModule, type MenuItem } from "@/lib/nav-config";
 
-const item = (key: string): MenuItem => ({ key, label: key, url: `/${key}` }) as MenuItem;
+const item = (key: string): MenuItem =>
+  ({ key, title: key, url: `/${key}`, icon: (() => null) as unknown }) as unknown as MenuItem;
 
 const abastecimento = item("abastecimento");
 
