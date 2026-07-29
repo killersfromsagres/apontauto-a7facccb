@@ -3,6 +3,33 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface WhatsAppNumeroAdmin {
+  label: string;
+  /** Apenas dígitos com DDI (ex.: 5511999999999). */
+  numero: string;
+}
+
+/** Configuração do botão "Enviar evidências ao WhatsApp" (item 11). */
+export interface AguaWhatsappConfig {
+  /** Modelo configurável da mensagem (item 11.4). */
+  template: string;
+  /** Números administrativos salvos — mascarados para quem não é gestor. */
+  numeros: WhatsAppNumeroAdmin[];
+  /** Limite de links por mensagem para evitar textos enormes (item 11.2). */
+  maxLinks: number;
+  /** Acima desta quantidade de fotos, gera um PDF resumido único. */
+  pdfAcimaDe: number;
+  /** Modo avançado opcional — Cloud API oficial da Meta (item 11.3). */
+  cloud: {
+    habilitado: boolean;
+    /** Só permite disparo real depois que o administrador validar. */
+    validado: boolean;
+    sandbox: boolean;
+    destinatarios: string[];
+    limiteDiario: number;
+  };
+}
+
 export interface AppSettings {
   siteAllowed: string;
   refrig1: string[];
@@ -17,7 +44,33 @@ export interface AppSettings {
   };
   defaultTaskMinutes: number;
   workdays: number[];
+  aguaWhatsapp: AguaWhatsappConfig;
 }
+
+export const DEFAULT_AGUA_WHATSAPP: AguaWhatsappConfig = {
+  template: `*Abastecimento de Água — Evidências da Rota*
+Data: {data}
+Equipe: {equipe}
+Veículo: {veiculo}
+Progresso: {progresso}
+Bags entregues: {bags}
+Ocorrências: {ocorrencias}
+
+{lista}
+
+_Registro gerado automaticamente pelo Apont Auto._`,
+  numeros: [],
+  maxLinks: 30,
+  pdfAcimaDe: 12,
+  cloud: {
+    habilitado: false,
+    validado: false,
+    sandbox: true,
+    destinatarios: [],
+    limiteDiario: 50,
+  },
+};
+
 
 export const DEFAULT_SETTINGS: AppSettings = {
   siteAllowed: "DEMARCHI",
