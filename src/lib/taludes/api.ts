@@ -166,7 +166,10 @@ export async function updateMap(
   id: string,
   patch: Partial<Pick<TaludeMap, "nome" | "observacao" | "calibration" | "meters_per_unit" | "calibrated_at" | "calibrated_by">>,
 ): Promise<void> {
-  const { error } = await supabase.from("talude_maps").update(patch).eq("id", id);
+  const { error } = await supabase
+    .from("talude_maps")
+    .update(patch as never)
+    .eq("id", id);
   if (error) throw new Error(error.message);
 }
 
