@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { createElement, memo, useEffect, useRef, useState } from "react";
 import { Car, Lock, RotateCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -75,17 +75,16 @@ export const VehicleCard3D = memo(function VehicleCard3D({
         className="relative flex h-36 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent"
       >
         {show3d ? (
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ((<model-viewer
-            src={vehicle.model_glb_url!}
-            poster={poster ?? undefined}
-            camera-controls
-            touch-action="pan-y"
-            disable-zoom
-            auto-rotate
-            loading="lazy"
-            style={{ width: "100%", height: "100%" }}
-          />) as any)
+          createElement("model-viewer", {
+            src: vehicle.model_glb_url!,
+            poster: poster ?? undefined,
+            "camera-controls": true,
+            "touch-action": "pan-y",
+            "disable-zoom": true,
+            "auto-rotate": true,
+            loading: "lazy",
+            style: { width: "100%", height: "100%" },
+          })
         ) : poster ? (
           <img
             src={poster}
@@ -135,12 +134,3 @@ export const VehicleCard3D = memo(function VehicleCard3D({
   );
 });
 
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace JSX {
-    interface IntrinsicElements {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      "model-viewer": any;
-    }
-  }
-}
