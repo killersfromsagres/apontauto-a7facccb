@@ -50,6 +50,12 @@ function AuthPage() {
 
   const [loading, setLoading] = useState(false);
   const [shake, setShake] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+    terms?: string;
+  }>({});
+
   const [askSave, setAskSave] = useState(false);
   const [autoLogin, setAutoLogin] = useState(false);
   const pendingCreds = useRef<{ email: string } | null>(null);
