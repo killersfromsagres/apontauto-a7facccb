@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import {
+  Activity,
   Gauge,
   LayoutDashboard,
   CalendarRange,
@@ -81,6 +82,14 @@ export const sections: MenuSection[] = [
         icon: ListChecks,
         keywords: ["prioridade", "score", "sla", "reincidência", "fila"],
       },
+      {
+        key: "capacidade",
+        title: "Capacidade das Equipes",
+        short: "Capacidade",
+        url: "/programacao-capacidade",
+        icon: CalendarRange,
+        keywords: ["jornada", "ausência", "carga", "gargalo", "hh"],
+      },
       { key: "preventiva", title: "Preventiva (legado)", short: "Preventiva", url: "/preventiva", icon: CalendarClock },
       {
         key: "apontamentos",
@@ -108,6 +117,14 @@ export const sections: MenuSection[] = [
       { key: "refrigeracao-historico", title: "Refrigeração — Histórico", short: "Histórico", url: "/refrigeracao-historico", icon: ScrollText },
       { key: "refrigeracao-gestor", title: "Refrigeração — Gestão", short: "Gestão", url: "/refrigeracao-gestor", icon: Users },
       { key: "preventiva-ac", title: "Preventiva AC (PMOC)", short: "PMOC", url: "/preventiva-ac", icon: AirVent },
+      {
+        key: "materiais-os",
+        title: "Materiais por OS",
+        short: "Materiais",
+        url: "/materiais-os",
+        icon: PackageOpen,
+        keywords: ["reserva", "estoque", "lead time", "crítico", "sla"],
+      },
     ],
   },
   {
@@ -149,6 +166,14 @@ export const sections: MenuSection[] = [
         short: "Histórico",
         url: "/inteligencia-ativos/historico",
         icon: ScrollText,
+      },
+      {
+        key: "confiabilidade",
+        title: "Confiabilidade e Causa Raiz",
+        short: "Confiab.",
+        url: "/confiabilidade",
+        icon: Activity,
+        keywords: ["mtbf", "mttr", "pareto", "5 porquês", "ishikawa", "saúde"],
       },
     ],
   },

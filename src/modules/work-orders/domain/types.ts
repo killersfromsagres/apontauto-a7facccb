@@ -1,7 +1,8 @@
 /**
  * Núcleo compartilhado de Ordens de Serviço (WorkOrderEngine).
- * Item 5.1 do prompt mestre: uma única definição de domínio para todas as
- * modalidades (corretiva, refrigeração, preventiva, inspeções, PMOC...).
+ * Item 5.1 do prompt mestre + item 26 da Fase 10: uma única definição de
+ * domínio e um único ciclo de vida canônico para todas as modalidades
+ * (corretiva, refrigeração, preventiva, inspeções, PMOC...).
  */
 
 export type WorkOrderModality =
@@ -17,13 +18,20 @@ export type WorkOrderModality =
   | "inspecao"
   | "pmoc";
 
+/**
+ * Estados canônicos do ciclo de vida. Cada modalidade pode RESTRINGIR
+ * transições, mas nunca criar estados ou regras próprias em outras páginas.
+ */
 export type WorkOrderStatus =
   | "aberta"
+  | "triagem"
+  | "aguardando_planejamento"
   | "programada"
-  | "em_execucao"
   | "aguardando_material"
-  | "aguardando_aprovacao"
+  | "liberada"
+  | "em_execucao"
   | "pausada"
+  | "aguardando_validacao"
   | "concluida"
   | "cancelada";
 
@@ -78,4 +86,17 @@ export type WorkOrderModalityConfig = {
   allowsPhotos: boolean;
   /** Habilita fila offline (outbox) para a modalidade. */
   offline: boolean;
+};
+
+/** Registro imutável de uma transição (tabela `work_order_transitions`). */
+export type WorkOrderTransitionRecord = {
+  id: string;
+  modalidade: string;
+  work_order_id: string | null;
+  numero_os: string;
+  de_status: string | null;
+  para_status: string;
+  motivo: string | null;
+  user_id: string | null;
+  created_at: string;
 };

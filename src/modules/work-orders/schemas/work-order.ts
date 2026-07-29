@@ -2,14 +2,18 @@ import { z } from "zod";
 
 export const workOrderStatusSchema = z.enum([
   "aberta",
+  "triagem",
+  "aguardando_planejamento",
   "programada",
-  "em_execucao",
   "aguardando_material",
-  "aguardando_aprovacao",
+  "liberada",
+  "em_execucao",
   "pausada",
+  "aguardando_validacao",
   "concluida",
   "cancelada",
 ]);
+
 
 export const workOrderPrioritySchema = z.enum(["critica", "alta", "media", "baixa"]);
 

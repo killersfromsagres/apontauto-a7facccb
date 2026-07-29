@@ -119,6 +119,60 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_criticality: {
+        Row: {
+          asset_code: string
+          asset_name: string | null
+          classe_abc: string
+          created_at: string
+          custo_parada_hora: number | null
+          id: string
+          impacto_ambiental: number
+          impacto_operacional: number
+          impacto_seguranca: number
+          lead_time_dias: number | null
+          observacao: string | null
+          proxima_preventiva: string | null
+          redundancia: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          asset_code: string
+          asset_name?: string | null
+          classe_abc?: string
+          created_at?: string
+          custo_parada_hora?: number | null
+          id?: string
+          impacto_ambiental?: number
+          impacto_operacional?: number
+          impacto_seguranca?: number
+          lead_time_dias?: number | null
+          observacao?: string | null
+          proxima_preventiva?: string | null
+          redundancia?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          asset_code?: string
+          asset_name?: string | null
+          classe_abc?: string
+          created_at?: string
+          custo_parada_hora?: number | null
+          id?: string
+          impacto_ambiental?: number
+          impacto_operacional?: number
+          impacto_seguranca?: number
+          lead_time_dias?: number | null
+          observacao?: string | null
+          proxima_preventiva?: string | null
+          redundancia?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       assets: {
         Row: {
           business_unit: string
@@ -473,6 +527,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      capacity_settings: {
+        Row: {
+          created_at: string
+          dias_semana: number[]
+          eficiencia: number
+          equipe: string
+          id: string
+          minutos_dia: number
+          minutos_por_os: number
+          observacao: string | null
+          tecnicos: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dias_semana?: number[]
+          eficiencia?: number
+          equipe: string
+          id?: string
+          minutos_dia?: number
+          minutos_por_os?: number
+          observacao?: string | null
+          tecnicos?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dias_semana?: number[]
+          eficiencia?: number
+          equipe?: string
+          id?: string
+          minutos_dia?: number
+          minutos_por_os?: number
+          observacao?: string | null
+          tecnicos?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       controle_centros_custo: {
         Row: {
@@ -845,6 +938,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      data_quality_fixes: {
+        Row: {
+          acao: string
+          antes: Json
+          created_at: string
+          depois: Json
+          entity_id: string
+          entity_type: string
+          id: string
+          issue_key: string
+          observacao: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acao?: string
+          antes?: Json
+          created_at?: string
+          depois?: Json
+          entity_id: string
+          entity_type: string
+          id?: string
+          issue_key: string
+          observacao?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          antes?: Json
+          created_at?: string
+          depois?: Json
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          issue_key?: string
+          observacao?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       frota_abastecimentos: {
         Row: {
@@ -1256,6 +1388,119 @@ export type Database = {
           technicians?: string[]
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      material_movements: {
+        Row: {
+          created_at: string
+          de_status: string | null
+          id: string
+          observacao: string | null
+          para_status: string | null
+          quantidade: number
+          reservation_id: string
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          observacao?: string | null
+          para_status?: string | null
+          quantidade?: number
+          reservation_id: string
+          tipo: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          observacao?: string | null
+          para_status?: string | null
+          quantidade?: number
+          reservation_id?: string
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_movements_reservation_id_fkey"
+            columns: ["reservation_id"]
+            isOneToOne: false
+            referencedRelation: "material_reservations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_reservations: {
+        Row: {
+          afeta_sla: boolean
+          centro_custo: string | null
+          codigo: string | null
+          created_at: string
+          created_by: string | null
+          critico: boolean
+          descricao: string
+          estoque_minimo: number | null
+          id: string
+          lead_time_dias: number | null
+          modalidade: string
+          numero_os: string
+          observacao: string | null
+          qtd_consumida: number
+          qtd_entregue: number
+          qtd_separada: number
+          qtd_solicitada: number
+          status: string
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          afeta_sla?: boolean
+          centro_custo?: string | null
+          codigo?: string | null
+          created_at?: string
+          created_by?: string | null
+          critico?: boolean
+          descricao: string
+          estoque_minimo?: number | null
+          id?: string
+          lead_time_dias?: number | null
+          modalidade?: string
+          numero_os: string
+          observacao?: string | null
+          qtd_consumida?: number
+          qtd_entregue?: number
+          qtd_separada?: number
+          qtd_solicitada?: number
+          status?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          afeta_sla?: boolean
+          centro_custo?: string | null
+          codigo?: string | null
+          created_at?: string
+          created_by?: string | null
+          critico?: boolean
+          descricao?: string
+          estoque_minimo?: number | null
+          id?: string
+          lead_time_dias?: number | null
+          modalidade?: string
+          numero_os?: string
+          observacao?: string | null
+          qtd_consumida?: number
+          qtd_entregue?: number
+          qtd_separada?: number
+          qtd_solicitada?: number
+          status?: string
+          unidade?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1768,6 +2013,119 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rca_actions: {
+        Row: {
+          acao: string
+          analysis_id: string
+          created_at: string
+          created_by: string | null
+          eficaz: boolean | null
+          evidencia_url: string | null
+          id: string
+          observacao: string | null
+          prazo: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          analysis_id: string
+          created_at?: string
+          created_by?: string | null
+          eficaz?: boolean | null
+          evidencia_url?: string | null
+          id?: string
+          observacao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          analysis_id?: string
+          created_at?: string
+          created_by?: string | null
+          eficaz?: boolean | null
+          evidencia_url?: string | null
+          id?: string
+          observacao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rca_actions_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "rca_analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rca_analyses: {
+        Row: {
+          asset_code: string | null
+          asset_name: string | null
+          causa_raiz: string | null
+          created_at: string
+          created_by: string | null
+          eficacia_observacao: string | null
+          eficacia_validada: boolean
+          id: string
+          ishikawa: Json
+          modalidade: string | null
+          modo_falha: string | null
+          numero_os: string | null
+          ocorrencias: number
+          porques: Json
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          asset_code?: string | null
+          asset_name?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          created_by?: string | null
+          eficacia_observacao?: string | null
+          eficacia_validada?: boolean
+          id?: string
+          ishikawa?: Json
+          modalidade?: string | null
+          modo_falha?: string | null
+          numero_os?: string | null
+          ocorrencias?: number
+          porques?: Json
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          asset_code?: string | null
+          asset_name?: string | null
+          causa_raiz?: string | null
+          created_at?: string
+          created_by?: string | null
+          eficacia_observacao?: string | null
+          eficacia_validada?: boolean
+          id?: string
+          ishikawa?: Json
+          modalidade?: string | null
+          modo_falha?: string | null
+          numero_os?: string | null
+          ocorrencias?: number
+          porques?: Json
+          status?: string
+          titulo?: string
           updated_at?: string
         }
         Relationships: []
@@ -2895,6 +3253,45 @@ export type Database = {
           },
         ]
       }
+      team_absences: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          equipe: string
+          fim: string
+          id: string
+          inicio: string
+          motivo: string
+          observacao: string | null
+          tecnico: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          equipe: string
+          fim: string
+          id?: string
+          inicio: string
+          motivo?: string
+          observacao?: string | null
+          tecnico: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          equipe?: string
+          fim?: string
+          id?: string
+          inicio?: string
+          motivo?: string
+          observacao?: string | null
+          tecnico?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       terms_acceptances: {
         Row: {
           accepted_at: string
@@ -3668,6 +4065,45 @@ export type Database = {
           source?: string
           state?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      work_order_transitions: {
+        Row: {
+          created_at: string
+          de_status: string | null
+          id: string
+          metadata: Json
+          modalidade: string
+          motivo: string | null
+          numero_os: string
+          para_status: string
+          user_id: string | null
+          work_order_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          metadata?: Json
+          modalidade: string
+          motivo?: string | null
+          numero_os: string
+          para_status: string
+          user_id?: string | null
+          work_order_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          de_status?: string | null
+          id?: string
+          metadata?: Json
+          modalidade?: string
+          motivo?: string | null
+          numero_os?: string
+          para_status?: string
+          user_id?: string | null
+          work_order_id?: string | null
         }
         Relationships: []
       }

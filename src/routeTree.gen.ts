@@ -28,6 +28,8 @@ import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './rout
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
+import { Route as AuthenticatedQualidadeDadosRouteImport } from './routes/_authenticated/qualidade-dados'
+import { Route as AuthenticatedProgramacaoCapacidadeRouteImport } from './routes/_authenticated/programacao-capacidade'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authenticated/preventiva-ac'
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
@@ -35,6 +37,7 @@ import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenti
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
 import { Route as AuthenticatedNotificacoesAdminRouteImport } from './routes/_authenticated/notificacoes-admin'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
+import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenticated/materiais-os'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
@@ -43,6 +46,7 @@ import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_auth
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBiStudioRouteImport } from './routes/_authenticated/bi-studio'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
@@ -57,6 +61,7 @@ import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
 import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } from './routes/_authenticated/inteligencia-ativos.nao-encontrados'
 import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
+import { Route as AuthenticatedAtivoCodeRouteImport } from './routes/_authenticated/ativo.$code'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 
@@ -160,6 +165,18 @@ const AuthenticatedRefrigeracaoRoute =
     path: '/refrigeracao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedQualidadeDadosRoute =
+  AuthenticatedQualidadeDadosRouteImport.update({
+    id: '/qualidade-dados',
+    path: '/qualidade-dados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProgramacaoCapacidadeRoute =
+  AuthenticatedProgramacaoCapacidadeRouteImport.update({
+    id: '/programacao-capacidade',
+    path: '/programacao-capacidade',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProgramacaoRoute =
   AuthenticatedProgramacaoRouteImport.update({
     id: '/programacao',
@@ -198,6 +215,12 @@ const AuthenticatedNotificacoesRoute =
   AuthenticatedNotificacoesRouteImport.update({
     id: '/notificacoes',
     path: '/notificacoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMateriaisOsRoute =
+  AuthenticatedMateriaisOsRouteImport.update({
+    id: '/materiais-os',
+    path: '/materiais-os',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedLavanderiaRoute = AuthenticatedLavanderiaRouteImport.update({
@@ -244,6 +267,12 @@ const AuthenticatedConfiguracoesRoute =
   AuthenticatedConfiguracoesRouteImport.update({
     id: '/configuracoes',
     path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedConfiabilidadeRoute =
+  AuthenticatedConfiabilidadeRouteImport.update({
+    id: '/confiabilidade',
+    path: '/confiabilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedClimaTempoRoute = AuthenticatedClimaTempoRouteImport.update({
@@ -322,6 +351,11 @@ const AuthenticatedInteligenciaAtivosHistoricoRoute =
     path: '/inteligencia-ativos/historico',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAtivoCodeRoute = AuthenticatedAtivoCodeRouteImport.update({
+  id: '/ativo/$code',
+  path: '/ativo/$code',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicHooksWeatherMonitorRoute =
   ApiPublicHooksWeatherMonitorRouteImport.update({
     id: '/api/public/hooks/weather-monitor',
@@ -351,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
+  '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
@@ -359,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -366,6 +402,8 @@ export interface FileRoutesByFullPath {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
+  '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -377,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
+  '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
@@ -401,6 +440,7 @@ export interface FileRoutesByTo {
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
+  '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
@@ -409,6 +449,7 @@ export interface FileRoutesByTo {
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/outros': typeof AuthenticatedOutrosRoute
@@ -416,6 +457,8 @@ export interface FileRoutesByTo {
   '/preventiva': typeof AuthenticatedPreventivaRoute
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
+  '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -428,6 +471,7 @@ export interface FileRoutesByTo {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/': typeof AuthenticatedIndexRoute
+  '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
@@ -454,6 +498,7 @@ export interface FileRoutesById {
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/_authenticated/bi-studio': typeof AuthenticatedBiStudioRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
+  '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
@@ -462,6 +507,7 @@ export interface FileRoutesById {
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
+  '/_authenticated/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
@@ -469,6 +515,8 @@ export interface FileRoutesById {
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
+  '/_authenticated/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/_authenticated/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -481,6 +529,7 @@ export interface FileRoutesById {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
@@ -508,6 +557,7 @@ export interface FileRouteTypes {
     | '/base-ativos'
     | '/bi-studio'
     | '/clima-tempo'
+    | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
     | '/corretiva'
@@ -516,6 +566,7 @@ export interface FileRouteTypes {
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
     | '/lavanderia'
+    | '/materiais-os'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/outros'
@@ -523,6 +574,8 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
+    | '/programacao-capacidade'
+    | '/qualidade-dados'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -534,6 +587,7 @@ export interface FileRouteTypes {
     | '/api/backorder-reclassificar'
     | '/api/bi-feed'
     | '/api/imgbb-upload'
+    | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
@@ -558,6 +612,7 @@ export interface FileRouteTypes {
     | '/base-ativos'
     | '/bi-studio'
     | '/clima-tempo'
+    | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
     | '/corretiva'
@@ -566,6 +621,7 @@ export interface FileRouteTypes {
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
     | '/lavanderia'
+    | '/materiais-os'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/outros'
@@ -573,6 +629,8 @@ export interface FileRouteTypes {
     | '/preventiva'
     | '/preventiva-ac'
     | '/programacao'
+    | '/programacao-capacidade'
+    | '/qualidade-dados'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -585,6 +643,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/'
+    | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
@@ -610,6 +669,7 @@ export interface FileRouteTypes {
     | '/_authenticated/base-ativos'
     | '/_authenticated/bi-studio'
     | '/_authenticated/clima-tempo'
+    | '/_authenticated/confiabilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
     | '/_authenticated/corretiva'
@@ -618,6 +678,7 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva-pecas-status'
     | '/_authenticated/dashboard-chamados'
     | '/_authenticated/lavanderia'
+    | '/_authenticated/materiais-os'
     | '/_authenticated/notificacoes'
     | '/_authenticated/notificacoes-admin'
     | '/_authenticated/outros'
@@ -625,6 +686,8 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva'
     | '/_authenticated/preventiva-ac'
     | '/_authenticated/programacao'
+    | '/_authenticated/programacao-capacidade'
+    | '/_authenticated/qualidade-dados'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
@@ -637,6 +700,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/_authenticated/'
+    | '/_authenticated/ativo/$code'
     | '/_authenticated/inteligencia-ativos/historico'
     | '/_authenticated/inteligencia-ativos/nao-encontrados'
     | '/_authenticated/inteligencia-ativos/preencher'
@@ -800,6 +864,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRefrigeracaoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/qualidade-dados': {
+      id: '/_authenticated/qualidade-dados'
+      path: '/qualidade-dados'
+      fullPath: '/qualidade-dados'
+      preLoaderRoute: typeof AuthenticatedQualidadeDadosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/programacao-capacidade': {
+      id: '/_authenticated/programacao-capacidade'
+      path: '/programacao-capacidade'
+      fullPath: '/programacao-capacidade'
+      preLoaderRoute: typeof AuthenticatedProgramacaoCapacidadeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/programacao': {
       id: '/_authenticated/programacao'
       path: '/programacao'
@@ -847,6 +925,13 @@ declare module '@tanstack/react-router' {
       path: '/notificacoes'
       fullPath: '/notificacoes'
       preLoaderRoute: typeof AuthenticatedNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/materiais-os': {
+      id: '/_authenticated/materiais-os'
+      path: '/materiais-os'
+      fullPath: '/materiais-os'
+      preLoaderRoute: typeof AuthenticatedMateriaisOsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/lavanderia': {
@@ -903,6 +988,13 @@ declare module '@tanstack/react-router' {
       path: '/configuracoes'
       fullPath: '/configuracoes'
       preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/confiabilidade': {
+      id: '/_authenticated/confiabilidade'
+      path: '/confiabilidade'
+      fullPath: '/confiabilidade'
+      preLoaderRoute: typeof AuthenticatedConfiabilidadeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/clima-tempo': {
@@ -1003,6 +1095,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/ativo/$code': {
+      id: '/_authenticated/ativo/$code'
+      path: '/ativo/$code'
+      fullPath: '/ativo/$code'
+      preLoaderRoute: typeof AuthenticatedAtivoCodeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/weather-monitor': {
       id: '/api/public/hooks/weather-monitor'
       path: '/api/public/hooks/weather-monitor'
@@ -1029,6 +1128,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
   AuthenticatedBiStudioRoute: typeof AuthenticatedBiStudioRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
+  AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
@@ -1037,6 +1137,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
+  AuthenticatedMateriaisOsRoute: typeof AuthenticatedMateriaisOsRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedNotificacoesAdminRoute: typeof AuthenticatedNotificacoesAdminRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
@@ -1044,6 +1145,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
+  AuthenticatedProgramacaoCapacidadeRoute: typeof AuthenticatedProgramacaoCapacidadeRoute
+  AuthenticatedQualidadeDadosRoute: typeof AuthenticatedQualidadeDadosRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -1053,6 +1156,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTaludesPtRoute: typeof AuthenticatedTaludesPtRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedAtivoCodeRoute: typeof AuthenticatedAtivoCodeRoute
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
@@ -1067,6 +1171,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
   AuthenticatedBiStudioRoute: AuthenticatedBiStudioRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
+  AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
@@ -1076,6 +1181,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedCorretivaPecasStatusRoute,
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
+  AuthenticatedMateriaisOsRoute: AuthenticatedMateriaisOsRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedNotificacoesAdminRoute: AuthenticatedNotificacoesAdminRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
@@ -1083,6 +1189,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
   AuthenticatedPreventivaAcRoute: AuthenticatedPreventivaAcRoute,
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
+  AuthenticatedProgramacaoCapacidadeRoute:
+    AuthenticatedProgramacaoCapacidadeRoute,
+  AuthenticatedQualidadeDadosRoute: AuthenticatedQualidadeDadosRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:
@@ -1094,6 +1203,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTaludesPtRoute: AuthenticatedTaludesPtRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedAtivoCodeRoute: AuthenticatedAtivoCodeRoute,
   AuthenticatedInteligenciaAtivosHistoricoRoute:
     AuthenticatedInteligenciaAtivosHistoricoRoute,
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute:
