@@ -64,6 +64,36 @@ export async function listVehicles(): Promise<Vehicle[]> {
   return (data ?? []) as Vehicle[];
 }
 
+export type VehiclePatch = Partial<
+  Pick<
+    Vehicle,
+    | "plate"
+    | "brand"
+    | "model"
+    | "version"
+    | "year_model"
+    | "year_manufacture"
+    | "color"
+    | "chassis_last6"
+    | "fuel_type"
+    | "status"
+    | "thumbnail_url"
+  >
+>;
+
+/** Atualiza o cadastro do veículo (placa, cor, ano, status…). */
+export async function updateVehicle(id: string, patch: VehiclePatch): Promise<Vehicle> {
+  const { data, error } = await db
+    .from("vehicles")
+    .update(patch)
+    .eq("id", id)
+    .select(VEHICLE_FIELDS)
+    .single();
+  if (error) throw error;
+  return data as Vehicle;
+}
+
+
 export type Checklist = {
   id: string;
   protocol: string;
