@@ -178,7 +178,7 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="historico">
-          <HistoryTab checklists={chks} loading={checklists.isLoading} />
+          <HistoryTab checklists={chks} vehicles={list} loading={checklists.isLoading} />
         </TabsContent>
 
         <TabsContent value="ocorrencias">
@@ -433,17 +433,25 @@ function Metric({ label, value }: { label: string; value: string }) {
 
 // ----------------------------------------------------------------- histórico
 
-function HistoryTab({ checklists, loading }: { checklists: Checklist[]; loading: boolean }) {
-  const [openId, setOpenId] = useState<string | null>(null);
+function HistoryTab({
+  checklists,
+  vehicles,
+  loading,
+}: {
+  checklists: Checklist[];
+  vehicles: Vehicle[];
+  loading: boolean;
+}) {
+  const [open, setOpen] = useState<Checklist | null>(null);
   const detail = useQuery({
-    queryKey: ["frota", "checklist", openId],
-    enabled: !!openId,
-    queryFn: () => getChecklistDetail(openId!),
+    queryKey: ["frota", "checklist", open?.id],
+    enabled: !!open,
+    queryFn: () => getChecklistDetail(open!.id),
   });
 
   const columns: DataTableColumn<Checklist>[] = [
     { key: "protocolo", header: "Protocolo", mobilePrimary: true, cell: (r) => <span className="font-mono text-xs">{r.protocol}</span> },
-    { key: "data", header: "Data", cell: (r) => <span className="whitespace-nowrap">{dt(r.created_at)}</span>, sortValue: (r) => r.created_at },
+    { key: "data", header: "Data", cell: (r) => <span className="whitespace-nowrap">{dt(r.submitted_at)}</span>, sortValue: (r) => r.submitted_at },
     { key: "tipo", header: "Tipo", cell: (r) => r.checklist_type },
     { key: "score", header: "Score", cell: (r) => `${r.integrity_score}/100`, sortValue: (r) => r.integrity_score },
     {
@@ -470,12 +478,12 @@ function HistoryTab({ checklists, loading }: { checklists: Checklist[]; loading:
         columns={columns}
         rowKey={(r) => r.id}
         loading={loading}
-        onRowClick={(r) => setOpenId(r.id)}
+        onRowClick={(r) => setOpen(r)}
         emptyTitle="Nenhum checklist registrado"
         pageSize={25}
       />
 
-      {openId && (
+      {open && (
         <GlassCard className="space-y-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-display text-lg font-bold">Detalhe do checklist</h3>
@@ -486,13 +494,17 @@ function HistoryTab({ checklists, loading }: { checklists: Checklist[]; loading:
                 className="min-h-[40px]"
                 disabled={!detail.data}
                 onClick={async () => {
-                  const { generateChecklistPdf } = await import("@/lib/frota/pdf");
-                  await generateChecklistPdf(detail.data!);
+                  const { exportChecklistPdf } = await import("@/lib/frota/pdf");
+                  await exportChecklistPdf({
+                    checklist: open,
+                    vehicle: vehicles.find((v) => v.id === open.vehicle_id),
+                    ...detail.data!,
+                  });
                 }}
               >
                 <Download className="mr-1 h-4 w-4" /> PDF
               </Button>
-              <Button variant="ghost" size="sm" className="min-h-[40px]" onClick={() => setOpenId(null)}>
+              <Button variant="ghost" size="sm" className="min-h-[40px]" onClick={() => setOpen(null)}>
                 Fechar
               </Button>
             </div>
@@ -502,9 +514,9 @@ function HistoryTab({ checklists, loading }: { checklists: Checklist[]; loading:
           {detail.data && (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
-                <Metric label="Protocolo" value={detail.data.checklist.protocol} />
-                <Metric label="Hodômetro" value={`${detail.data.checklist.odometer_km} km`} />
-                <Metric label="Score" value={`${detail.data.checklist.integrity_score}/100`} />
+                <Metric label="Protocolo" value={open.protocol} />
+                <Metric label="Hodômetro" value={`${open.odometer_km} km`} />
+                <Metric label="Score" value={`${open.integrity_score}/100`} />
               </div>
 
               <div className="space-y-1">
@@ -562,7 +574,7 @@ function OccurrencesTab({
     { key: "veiculo", header: "Veículo", cell: (r) => vehicles.find((v) => v.id === r.vehicle_id)?.prefix ?? "—" },
     { key: "sev", header: "Severidade", cell: (r) => SEVERITY_LABEL[(r.severity ?? "media") as keyof typeof SEVERITY_LABEL] },
     { key: "estado", header: "Estado", cell: (r) => r.state },
-    { key: "data", header: "Aberta em", cell: (r) => <span className="whitespace-nowrap">{dt(r.created_at)}</span>, sortValue: (r) => r.created_at },
+    { key: "data", header: "Aberta em", cell: (r) => <span className="whitespace-nowrap">{dt(r.opened_at)}</span>, sortValue: (r) => r.opened_at },
   ];
   return (
     <DataTable
