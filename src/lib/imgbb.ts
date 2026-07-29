@@ -1,5 +1,5 @@
 /**
- * Upload de imagem para o ImgBB via proxy interno /api/public/imgbb-upload.
+ * Upload de imagem para o ImgBB via proxy interno /api/imgbb-upload.
  * Retorna a URL pública que deve ser gravada no banco (nunca o binário).
  */
 export type ImgBBUploadResult = {
@@ -30,13 +30,13 @@ export async function uploadImageToImgBB(
   if (origin.entityType) form.append("entity_type", origin.entityType);
   if (origin.entityId) form.append("entity_id", origin.entityId);
 
-  // O proxy exige sessão válida (a rota /api/public/* não é protegida pelo site).
+  // O proxy exige sessão válida e permissão de escrita no módulo informado.
   const { supabase } = await import("@/integrations/supabase/client");
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("Sem sessão para enviar a imagem");
 
-  const res = await fetch("/api/public/imgbb-upload", {
+  const res = await fetch("/api/imgbb-upload", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
     body: form,
