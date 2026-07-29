@@ -584,10 +584,13 @@ export async function criarFiltro(input: {
   ponto_id: string;
   tipo: string;
   prioridade: FiltroPrioridade;
+  ativo_id?: string | null;
+  origem?: string;
   descricao?: string | null;
   prevista_para?: string | null;
   foto_url?: string | null;
 }): Promise<void> {
+
   const { data: userData } = await supabase.auth.getUser();
   const { error } = await db.from("agua_filtro_solicitacoes").insert({
     ...input,
