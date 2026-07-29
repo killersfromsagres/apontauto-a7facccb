@@ -278,7 +278,7 @@ function CorretivaGestor() {
       </GlassCard>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid w-full grid-cols-4 gap-1">
+        <TabsList className="w-full gap-1 md:grid md:grid-cols-4">
           <TabsTrigger value="os" className="min-w-0 px-1 text-[11px] sm:px-3 sm:text-sm">
             <Wrench className="mr-1 hidden h-4 w-4 sm:inline-block" />
             <span className="truncate">OS ({filteredOs.length})</span>
