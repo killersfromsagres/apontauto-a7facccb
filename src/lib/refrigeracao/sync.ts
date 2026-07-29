@@ -106,6 +106,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
       blob,
       `os-${item.numeroOs}-${item.id}.jpg`,
       "refrigeracao-fotos",
+      { module: "refrigeracao", entityType: "refrigeracao_fotos", entityId: item.osId },
     );
     const { error } = await supabase.from("refrigeracao_fotos").insert({
       os_id: item.osId,

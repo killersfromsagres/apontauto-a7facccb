@@ -111,6 +111,30 @@ export const Route = createFileRoute("/api/public/imgbb-upload")({
             { status: 415 },
           );
         }
+        // Impressão digital do conteúdo (auditoria e deduplicação).
+        const sha256 = await sha256Hex(buf);
+
+        // Limite por usuário: no máximo 120 envios em 10 minutos.
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+        const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        const { count } = await supabaseAdmin
+          .from("image_uploads")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", caller.userId)
+          .gte("created_at", since);
+        if ((count ?? 0) >= 120) {
+          return Response.json(
+            { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
+            { status: 429, headers: { "Retry-After": "600" } },
+          );
+        }
+
+        const moduleKey = typeof form.get("module") === "string" ? String(form.get("module")).slice(0, 60) : null;
+        const entityType = typeof form.get("entity_type") === "string" ? String(form.get("entity_type")).slice(0, 60) : null;
+        const entityId = typeof form.get("entity_id") === "string" ? String(form.get("entity_id")).slice(0, 120) : null;
+
         const b64 = arrayBufferToBase64(buf);
 
         const upstream = new FormData();
@@ -141,16 +165,41 @@ export const Route = createFileRoute("/api/public/imgbb-upload")({
           );
         }
 
+        // Trilha de auditoria: quem enviou, de onde e qual conteúdo.
+        const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
+          _user_id: caller.userId,
+          _role: "admin",
+        });
+        await supabaseAdmin.from("image_uploads").insert({
+          user_id: caller.userId,
+          module_key: moduleKey,
+          entity_type: entityType,
+          entity_id: entityId,
+          sha256,
+          size_bytes: file.size,
+          mime_type: mime,
+          url: json.data.url as string,
+          delete_url: (json.data.delete_url as string) ?? null,
+        });
+
         return Response.json({
           url: json.data.url as string,
           display_url: json.data.display_url as string,
-          delete_url: json.data.delete_url as string,
+          // delete_url é destrutivo: só administradores recebem.
+          delete_url: isAdmin ? (json.data.delete_url as string) : null,
           thumb: json.data?.thumb?.url ?? null,
         });
       },
     },
   },
 });
+
+async function sha256Hex(buf: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 function arrayBufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);

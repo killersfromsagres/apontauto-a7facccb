@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { uploadImageToImgBB } from "@/lib/imgbb";
+import { uploadImageToImgBB, type ImgBBUploadOrigin } from "@/lib/imgbb";
 
 export type UploadedPhoto = {
   /** URL pública (ImgBB) ou URL assinada longa (Storage) */
@@ -23,9 +23,10 @@ export async function uploadPhotoWithFallback(
   blob: Blob,
   filename: string,
   bucket: string,
+  origin: ImgBBUploadOrigin = {},
 ): Promise<UploadedPhoto> {
   try {
-    const up = await uploadImageToImgBB(blob, filename);
+    const up = await uploadImageToImgBB(blob, filename, origin);
     if (up?.url) return { url: up.url, storagePath: null };
     throw new Error("ImgBB sem URL");
   } catch (imgbbErr) {

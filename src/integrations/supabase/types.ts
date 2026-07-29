@@ -861,6 +861,48 @@ export type Database = {
         }
         Relationships: []
       }
+      image_uploads: {
+        Row: {
+          created_at: string
+          delete_url: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          mime_type: string
+          module_key: string | null
+          sha256: string
+          size_bytes: number
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delete_url?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          mime_type: string
+          module_key?: string | null
+          sha256: string
+          size_bytes: number
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delete_url?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          mime_type?: string
+          module_key?: string | null
+          sha256?: string
+          size_bytes?: number
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       lavanderia_colaboradores: {
         Row: {
           created_at: string
