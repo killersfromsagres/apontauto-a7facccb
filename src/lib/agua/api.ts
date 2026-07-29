@@ -546,20 +546,28 @@ export const FILTRO_TIPOS = ["troca", "limpeza", "reparo", "instalação"];
 
 export interface FiltroSolicitacao {
   id: string;
+  numero: number | null;
   ponto_id: string;
+  ativo_id: string | null;
+  origem: string;
   tipo: string;
   prioridade: FiltroPrioridade;
   situacao: FiltroSituacao;
   descricao: string | null;
   foto_url: string | null;
+  foto_conclusao_url: string | null;
+  observacao_conclusao: string | null;
+  motivo_cancelamento: string | null;
   prevista_para: string | null;
   concluida_em: string | null;
   atendimento: string | null;
+  sla_horas: number | null;
+  vence_em: string | null;
   criado_em: string;
 }
 
 const FILTRO_FIELDS =
-  "id, ponto_id, tipo, prioridade, situacao, descricao, foto_url, prevista_para, concluida_em, atendimento, criado_em";
+  "id, numero, ponto_id, ativo_id, origem, tipo, prioridade, situacao, descricao, foto_url, foto_conclusao_url, observacao_conclusao, motivo_cancelamento, prevista_para, concluida_em, atendimento, sla_horas, vence_em, criado_em";
 
 export async function listFiltros(): Promise<FiltroSolicitacao[]> {
   const { data, error } = await db
@@ -570,6 +578,7 @@ export async function listFiltros(): Promise<FiltroSolicitacao[]> {
   if (error) throw error;
   return (data ?? []) as FiltroSolicitacao[];
 }
+
 
 export async function criarFiltro(input: {
   ponto_id: string;
