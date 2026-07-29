@@ -216,19 +216,19 @@ export const getMyAccess = createServerFn({ method: "GET" })
     const isAdmin = Boolean(adminRes.data);
     if (isAdmin) return { isAdmin: true, allowed: null };
 
-    // Se a RPC falhar por qualquer motivo, cair para leitura direta do perfil
-    // via RLS (self-read). Nunca devolver `[]` implicitamente.
+    // Se a RPC falhar por qualquer motivo, cair para leitura direta das
+    // permissões efetivas via RLS (self-read). Nunca devolver `null` (=tudo).
     let allowed: string[] | null;
     if (menusRes.error) {
-      const { data: prof } = await context.supabase
-        .from("profiles")
-        .select("allowed_menus")
-        .eq("id", context.userId)
-        .maybeSingle();
-      allowed = (prof?.allowed_menus as string[] | null | undefined) ?? null;
+      const { data: uma } = await context.supabase
+        .from("user_module_access")
+        .select("module_key")
+        .eq("user_id", context.userId);
+      allowed = (uma ?? []).map((r: any) => r.module_key as string);
     } else {
       allowed = (menusRes.data as string[] | null) ?? null;
     }
+
     return { isAdmin: false, allowed };
   });
 
@@ -261,18 +261,24 @@ export const listAppUsers = createServerFn({ method: "GET" })
     if (authErr) throw new Error(authErr.message);
 
     const ids = authList.users.map((u) => u.id);
-    const [{ data: roles }, { data: profs }] = await Promise.all([
+    const [{ data: roles }, { data: profs }, { data: umaRows }] = await Promise.all([
       supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids),
-      supabaseAdmin.from("profiles").select("id, full_name, allowed_menus").in("id", ids),
+      supabaseAdmin.from("profiles").select("id, full_name").in("id", ids),
+      supabaseAdmin.from("user_module_access").select("user_id, module_key").in("user_id", ids),
     ]);
     const roleMap = new Map<string, Role>();
     (roles ?? []).forEach((r: any) => {
       if (r.role === "admin" || !roleMap.has(r.user_id)) roleMap.set(r.user_id, r.role);
     });
-    const profMap = new Map<string, { full_name: string | null; allowed_menus: string[] | null }>();
-    (profs ?? []).forEach((p: any) =>
-      profMap.set(p.id, { full_name: p.full_name, allowed_menus: p.allowed_menus }),
-    );
+    const profMap = new Map<string, { full_name: string | null }>();
+    (profs ?? []).forEach((p: any) => profMap.set(p.id, { full_name: p.full_name }));
+    const accessMap = new Map<string, string[]>();
+    (umaRows ?? []).forEach((r: any) => {
+      const list = accessMap.get(r.user_id) ?? [];
+      list.push(r.module_key);
+      accessMap.set(r.user_id, list);
+    });
+
 
     return {
       users: authList.users.map((u) => {
@@ -289,7 +295,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
           fullName: prof?.full_name ?? ((u.user_metadata as any)?.full_name ?? null),
           role,
           banned: Boolean((u as any).banned_until),
-          allowedMenus: role === "admin" ? null : (prof ? prof.allowed_menus : []),
+          allowedMenus: role === "admin" ? null : (accessMap.get(u.id) ?? []),
           createdAt: u.created_at,
         };
       }),
@@ -391,8 +397,35 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
       .from("profiles")
       .upsert({ id: data.userId, allowed_menus: data.allowed } as any, { onConflict: "id" });
     if (error) throw new Error(error.message);
+    // Fonte de verdade do RBAC: `user_module_access`. O banco nega por padrão,
+    // então a lista de menus precisa ser espelhada aqui para valer de fato.
+    await syncModuleAccess(supabaseAdmin, data.userId, data.allowed, context.userId);
     return { ok: true };
   });
+
+/**
+ * Espelha a lista de módulos liberados em `user_module_access`, que é a
+ * fonte única usada pelas políticas RLS (`can_access_module`).
+ */
+async function syncModuleAccess(
+  supabaseAdmin: any,
+  userId: string,
+  allowed: string[] | null,
+  grantedBy: string,
+) {
+  const keys = Array.isArray(allowed) ? Array.from(new Set(allowed)) : [];
+  await supabaseAdmin.from("user_module_access").delete().eq("user_id", userId);
+  if (keys.length === 0) return;
+  const rows = keys.map((module_key) => ({
+    user_id: userId,
+    module_key,
+    actions: ["all"],
+    granted_by: grantedBy,
+  }));
+  const { error } = await supabaseAdmin.from("user_module_access").insert(rows);
+  if (error) throw new Error(error.message);
+}
+
 
 /** Gera uma senha temporária forte no servidor (nunca fixa, nunca em código). */
 function generateTempPassword(length = 16): string {
@@ -464,8 +497,11 @@ export const provisionControleUser = createServerFn({ method: "POST" })
       );
     if (profErr) throw new Error(profErr.message);
 
+    await syncModuleAccess(supabaseAdmin, user.id, allowed as string[], context.userId);
+
     await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
+
 
     // A senha temporária é exibida uma única vez para o administrador.
     return { ok: true, created, login, email, tempPassword: password };

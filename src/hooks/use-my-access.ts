@@ -10,17 +10,18 @@ export type MyAccess = { isAdmin: boolean; allowed: string[] | null };
 // erro de rede ou token ainda não anexado não podem cair em "ver tudo".
 const EMPTY: MyAccess = { isAdmin: false, allowed: [] };
 async function readAccessDirect(uid: string): Promise<MyAccess> {
-  const [roleRes, profRes] = await Promise.all([
+  const [roleRes, umaRes] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", uid),
-    supabase.from("profiles").select("allowed_menus").eq("id", uid).maybeSingle(),
+    supabase.from("user_module_access").select("module_key").eq("user_id", uid),
   ]);
   const isAdmin = (roleRes.data ?? []).some((r: any) => r.role === "admin");
   if (isAdmin) return { isAdmin: true, allowed: null };
-  // Negação por padrão: sem lista explícita de menus, nada é liberado
-  // (mesma semântica do banco em `get_my_allowed_menus`/`can_access_module`).
-  const raw = profRes.data?.allowed_menus as string[] | null | undefined;
-  return { isAdmin: false, allowed: raw ?? [] };
+  // Negação por padrão: a fonte de verdade é `user_module_access`
+  // (mesma semântica de `get_my_allowed_menus`/`can_access_module` no banco).
+  const allowed = (umaRes.data ?? []).map((r: any) => r.module_key as string);
+  return { isAdmin: false, allowed };
 }
+
 
 
 // Inscrição única global no auth: em vez de cada componente que usa
