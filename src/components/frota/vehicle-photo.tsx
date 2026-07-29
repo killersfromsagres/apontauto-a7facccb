@@ -13,6 +13,20 @@ import moto from "@/assets/frota/moto.png";
 
 const PHOTO: Record<BodyType, string> = { hatch, sedan, suv, pickup, van, truck, moto };
 
+import saveiroAsset from "@/assets/frota/saveiro.png.asset.json";
+import fiorinoAsset from "@/assets/frota/fiorino.png.asset.json";
+
+/** Fotos reais da frota — têm prioridade sobre a silhueta genérica. */
+const MODEL_PHOTO: [RegExp, string][] = [
+  [/saveiro/i, saveiroAsset.url],
+  [/fiorino/i, fiorinoAsset.url],
+];
+
+function realPhotoFor(text: string): string | undefined {
+  for (const [re, url] of MODEL_PHOTO) if (re.test(text)) return url;
+  return undefined;
+}
+
 /** Ajuste sutil de matiz para aproximar a miniatura da cor cadastrada. */
 const TINT: [RegExp, string][] = [
   [/pret|black/i, "brightness(.45) saturate(.4)"],
