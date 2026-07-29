@@ -19,7 +19,7 @@ export type NotificationStatus =
 
 export type TargetMode = "all" | "users" | "roles" | "modules" | "teams";
 
-export type StatusTone = "primary" | "success" | "warning" | "danger" | "muted";
+import type { StatusTone } from "@/components/pcm";
 
 export const CATEGORIES: {
   key: NotificationCategory;
@@ -30,7 +30,7 @@ export const CATEGORIES: {
   { key: "sucesso", label: "Sucesso", tone: "success" },
   { key: "atencao", label: "Atenção", tone: "warning" },
   { key: "critico", label: "Crítico", tone: "danger" },
-  { key: "manutencao", label: "Manutenção", tone: "muted" },
+  { key: "manutencao", label: "Manutenção", tone: "neutral" },
   { key: "clima", label: "Clima", tone: "primary" },
   { key: "pt", label: "PT (Permissão de Trabalho)", tone: "warning" },
   { key: "seguranca", label: "Segurança", tone: "danger" },
@@ -56,7 +56,7 @@ export const STATUS_LABEL: Record<NotificationStatus, string> = {
 };
 
 export const STATUS_TONE: Record<NotificationStatus, StatusTone> = {
-  draft: "muted",
+  draft: "neutral",
   scheduled: "primary",
   published: "success",
   paused: "warning",
