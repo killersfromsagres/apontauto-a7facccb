@@ -1,32 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Filter, Loader2, Plus } from "lucide-react";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { GlassCard } from "@/components/glass-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { EmptyState } from "@/components/pcm";
 import { FiltroAtivosTab } from "@/components/agua/filtro-ativos-tab";
 import { FiltroDetalheDialog } from "@/components/agua/filtro-detalhe-dialog";
+import { FiltroNovaSolicitacao } from "@/components/agua/filtro-nova-solicitacao";
+import { FiltroPreventivaTab } from "@/components/agua/filtro-preventiva-tab";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { cn } from "@/lib/utils";
 import {
   FILTRO_PRIORIDADE_LABEL,
   FILTRO_SITUACAO_LABEL,
-  FILTRO_TIPOS,
-  criarFiltro,
   listFiltros,
   listPontos,
   pontoLabel,
@@ -34,16 +20,34 @@ import {
   type FiltroSituacao,
   type FiltroSolicitacao,
 } from "@/lib/agua/api";
-import { estadoSla, gerarPreventivas, listFiltroAtivos, type FiltroAtivo } from "@/lib/agua/filtros";
+import {
+  SITUACOES_ABERTAS,
+  ativosReincidentes,
+  estadoSla,
+  listFiltroAtivos,
+} from "@/lib/agua/filtros";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/filtros")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    qr: typeof search.qr === "string" ? search.qr : undefined,
+  }),
   component: SolicitacoesFiltro,
 });
 
 const SITUACAO_TONE: Record<FiltroSituacao, string> = {
   aberta: "border-sky-400/40 bg-sky-500/10",
+  solicitada: "border-sky-400/40 bg-sky-500/10",
+  em_triagem: "border-sky-400/40 bg-sky-500/5",
+  aprovada: "border-indigo-400/40 bg-indigo-500/10",
+  rejeitada: "border-border/60 bg-muted/20",
+  aguardando_material: "border-amber-400/40 bg-amber-500/5",
+  programada: "border-violet-400/40 bg-violet-500/10",
+  em_deslocamento: "border-amber-400/40 bg-amber-500/10",
+  em_execucao: "border-amber-400/40 bg-amber-500/10",
   em_atendimento: "border-amber-400/40 bg-amber-500/10",
   concluida: "border-emerald-400/40 bg-emerald-500/10",
+  validada: "border-emerald-400/50 bg-emerald-500/15",
+  reaberta: "border-rose-400/40 bg-rose-500/10",
   cancelada: "border-border/60 bg-muted/20",
 };
 
@@ -53,18 +57,21 @@ const PRIORIDADE_TONE: Record<FiltroPrioridade, string> = {
   alta: "border-rose-400/40 text-rose-300",
 };
 
+const GRUPOS = [
+  ["abertas", "Em aberto"],
+  ["programada", "Programadas"],
+  ["concluida", "Concluídas"],
+  ["validada", "Validadas"],
+  ["cancelada", "Encerradas"],
+  ["todas", "Todas"],
+] as const;
+
 function SolicitacoesFiltro() {
-  const qc = useQueryClient();
+  const { qr } = useSearch({ from: "/_authenticated/abastecimento/agua/filtros" });
   const podeEscrever = useCanAccessModule("abastecimento", "update").allowed;
 
-  const [aba, setAba] = useState<"solicitacoes" | "ativos">("solicitacoes");
-  const [pontoId, setPontoId] = useState("");
-  const [ativoId, setAtivoId] = useState("");
-  const [tipo, setTipo] = useState(FILTRO_TIPOS[0]);
-  const [prioridade, setPrioridade] = useState<FiltroPrioridade>("media");
-  const [descricao, setDescricao] = useState("");
-  const [prevista, setPrevista] = useState("");
-  const [situacao, setSituacao] = useState<FiltroSituacao | "todas">("aberta");
+  const [aba, setAba] = useState<"solicitacoes" | "ativos" | "preventiva">("solicitacoes");
+  const [grupo, setGrupo] = useState<(typeof GRUPOS)[number][0]>("abertas");
   const [detalhe, setDetalhe] = useState<FiltroSolicitacao | null>(null);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
@@ -72,57 +79,36 @@ function SolicitacoesFiltro() {
   const ativos = useQuery({ queryKey: ["agua", "filtro-ativos"], queryFn: listFiltroAtivos });
 
   const porId = useMemo(() => new Map((pontos.data ?? []).map((p) => [p.id, p])), [pontos.data]);
-  const ativosDoPonto = useMemo(
-    () => (ativos.data ?? []).filter((a) => a.ponto_id === pontoId && a.situacao === "ativo"),
-    [ativos.data, pontoId],
+  const porAtivo = useMemo(() => new Map((ativos.data ?? []).map((a) => [a.id, a])), [ativos.data]);
+
+  /** Abertura por QR Code do filtro (item 12.2). */
+  const ativoDoQr = useMemo(
+    () => (qr ? (ativos.data ?? []).find((a) => a.qr_token === qr) ?? null : null),
+    [qr, ativos.data],
+  );
+  useEffect(() => {
+    if (ativoDoQr) setAba("solicitacoes");
+  }, [ativoDoQr]);
+
+  const reincidentes = useMemo(
+    () => ativosReincidentes(filtros.data ?? [], 90),
+    [filtros.data],
   );
 
-  const lista = useMemo(
-    () => (filtros.data ?? []).filter((f) => situacao === "todas" || f.situacao === situacao),
-    [filtros.data, situacao],
-  );
+  const lista = useMemo(() => {
+    const base = filtros.data ?? [];
+    if (grupo === "todas") return base;
+    if (grupo === "abertas") return base.filter((f) => SITUACOES_ABERTAS.includes(f.situacao));
+    if (grupo === "programada")
+      return base.filter((f) =>
+        ["programada", "em_deslocamento", "em_execucao", "em_atendimento"].includes(f.situacao),
+      );
+    if (grupo === "cancelada")
+      return base.filter((f) => ["cancelada", "rejeitada"].includes(f.situacao));
+    return base.filter((f) => f.situacao === grupo);
+  }, [filtros.data, grupo]);
 
   const nomePonto = (id: string) => (porId.get(id) ? pontoLabel(porId.get(id)!) : "Ponto removido");
-
-  const criar = useMutation({
-    mutationFn: () =>
-      criarFiltro({
-        ponto_id: pontoId,
-        ativo_id: ativoId || null,
-        tipo,
-        prioridade,
-        origem: "gestor",
-        descricao: descricao.trim() || null,
-        prevista_para: prevista || null,
-      }),
-    onSuccess: () => {
-      toast.success("Solicitação registrada.");
-      setDescricao("");
-      setPrevista("");
-      setPontoId("");
-      setAtivoId("");
-      void qc.invalidateQueries({ queryKey: ["agua", "filtros"] });
-    },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao registrar."),
-  });
-
-  const preventivas = useMutation({
-    mutationFn: (todos: FiltroAtivo[]) => {
-      const abertas = new Set(
-        (filtros.data ?? [])
-          .filter((f) => f.ativo_id && (f.situacao === "aberta" || f.situacao === "em_atendimento"))
-          .map((f) => f.ativo_id as string),
-      );
-      return gerarPreventivas(todos, abertas, 30);
-    },
-    onSuccess: (n) => {
-      toast[n ? "success" : "info"](
-        n ? `${n} solicitação(ões) preventiva(s) aberta(s).` : "Nenhum ativo pendente na janela.",
-      );
-      void qc.invalidateQueries({ queryKey: ["agua", "filtros"] });
-    },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao gerar preventivas."),
-  });
 
   return (
     <div className="space-y-4">
@@ -130,7 +116,8 @@ function SolicitacoesFiltro() {
         {(
           [
             ["solicitacoes", "Solicitações"],
-            ["ativos", "Ativos de filtro"],
+            ["ativos", "Pontos de filtro"],
+            ["preventiva", "Preventiva"],
           ] as const
         ).map(([k, label]) => (
           <button
@@ -149,143 +136,34 @@ function SolicitacoesFiltro() {
         ))}
       </div>
 
-      {aba === "ativos" ? (
-        <FiltroAtivosTab
-          podeEscrever={podeEscrever}
-          gerando={preventivas.isPending}
-          onGerarPreventivas={(todos) => preventivas.mutate(todos)}
-        />
-      ) : (
+      {aba === "ativos" && <FiltroAtivosTab podeEscrever={podeEscrever} />}
+      {aba === "preventiva" && <FiltroPreventivaTab podeEscrever={podeEscrever} />}
+
+      {aba === "solicitacoes" && (
         <>
-          {podeEscrever && (
-            <GlassCard className="space-y-3 p-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Nova solicitação de filtro</h2>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-1 sm:col-span-2">
-                  <Label>Ponto</Label>
-                  <Select
-                    value={pontoId}
-                    onValueChange={(v) => {
-                      setPontoId(v);
-                      setAtivoId("");
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o ponto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(pontos.data ?? []).map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {pontoLabel(p)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {ativosDoPonto.length > 0 && (
-                  <div className="space-y-1 sm:col-span-2">
-                    <Label>Equipamento (opcional)</Label>
-                    <Select value={ativoId} onValueChange={setAtivoId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Vincular a um filtro cadastrado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ativosDoPonto.map((a) => (
-                          <SelectItem key={a.id} value={a.id}>
-                            {[a.codigo, a.marca, a.modelo, a.tipo_filtro].filter(Boolean).join(" · ")}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                <div className="space-y-1">
-                  <Label>Tipo</Label>
-                  <Select value={tipo} onValueChange={setTipo}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FILTRO_TIPOS.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label>Prioridade (define o SLA)</Label>
-                  <Select
-                    value={prioridade}
-                    onValueChange={(v) => setPrioridade(v as FiltroPrioridade)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="alta">Alta · 24h</SelectItem>
-                      <SelectItem value="media">Média · 72h</SelectItem>
-                      <SelectItem value="baixa">Baixa · 7 dias</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="filtro-prevista">Prevista para</Label>
-                  <Input
-                    id="filtro-prevista"
-                    type="date"
-                    value={prevista}
-                    onChange={(e) => setPrevista(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1 sm:col-span-2 lg:col-span-3">
-                  <Label htmlFor="filtro-desc">Descrição</Label>
-                  <Textarea
-                    id="filtro-desc"
-                    rows={2}
-                    value={descricao}
-                    onChange={(e) => setDescricao(e.target.value)}
-                    placeholder="Ex.: filtro saturado, vazamento na base do purificador…"
-                  />
-                </div>
-              </div>
-
-              <Button
-                className="min-h-[44px]"
-                disabled={!pontoId || criar.isPending}
-                onClick={() => criar.mutate()}
-              >
-                {criar.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Registrar solicitação
-              </Button>
-            </GlassCard>
+          {ativoDoQr && (
+            <p className="rounded-2xl border border-primary/40 bg-primary/10 p-3 text-xs text-primary">
+              Filtro identificado por QR Code:{" "}
+              {[ativoDoQr.codigo, ativoDoQr.predio, ativoDoQr.espaco].filter(Boolean).join(" · ")}
+            </p>
           )}
 
+          <FiltroNovaSolicitacao ativoInicial={ativoDoQr} />
+
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {(["aberta", "em_atendimento", "concluida", "cancelada", "todas"] as const).map((s) => (
+            {GRUPOS.map(([k, label]) => (
               <button
-                key={s}
+                key={k}
                 type="button"
-                onClick={() => setSituacao(s)}
+                onClick={() => setGrupo(k)}
                 className={cn(
                   "min-h-[40px] shrink-0 rounded-full border px-3 text-xs font-medium",
-                  situacao === s
+                  grupo === k
                     ? "border-primary/60 bg-primary/15 text-primary"
                     : "border-border/60 bg-card/40 text-muted-foreground",
                 )}
               >
-                {s === "todas" ? "Todas" : FILTRO_SITUACAO_LABEL[s]}
+                {label}
               </button>
             ))}
           </div>
@@ -305,6 +183,7 @@ function SolicitacoesFiltro() {
             <div className="space-y-2">
               {lista.map((f) => {
                 const sla = estadoSla(f);
+                const reincidente = f.ativo_id && reincidentes.has(f.ativo_id);
                 return (
                   <button
                     key={f.id}
@@ -319,14 +198,16 @@ function SolicitacoesFiltro() {
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">
                           {f.numero ? `#${f.numero} · ` : ""}
-                          {nomePonto(f.ponto_id)}
+                          {f.predio || nomePonto(f.ponto_id)}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {f.tipo} · {f.origem} · aberta em{" "}
+                          {FILTRO_SITUACAO_LABEL[f.situacao]} · {f.tipo} · aberta em{" "}
                           {new Date(f.criado_em).toLocaleDateString("pt-BR")}
-                          {f.prevista_para
-                            ? ` · prevista ${f.prevista_para.split("-").reverse().join("/")}`
-                            : ""}
+                          {f.programada_em
+                            ? ` · troca ${new Date(f.programada_em).toLocaleString("pt-BR")}`
+                            : f.prevista_para
+                              ? ` · prevista ${f.prevista_para.split("-").reverse().join("/")}`
+                              : ""}
                         </p>
                         {f.descricao && <p className="mt-1 line-clamp-2 text-xs">{f.descricao}</p>}
                       </div>
@@ -339,6 +220,11 @@ function SolicitacoesFiltro() {
                         >
                           {FILTRO_PRIORIDADE_LABEL[f.prioridade]}
                         </span>
+                        {reincidente && (
+                          <span className="rounded-full border border-rose-400/50 px-2 py-0.5 text-[11px] text-rose-300">
+                            reincidente
+                          </span>
+                        )}
                         {sla.estado !== "encerrado" && (
                           <span
                             className={cn(
@@ -369,8 +255,9 @@ function SolicitacoesFiltro() {
 
       <FiltroDetalheDialog
         solicitacao={detalhe}
-        titulo={detalhe ? nomePonto(detalhe.ponto_id) : ""}
+        titulo={detalhe ? detalhe.predio || nomePonto(detalhe.ponto_id) : ""}
         podeEscrever={podeEscrever}
+        ativo={detalhe?.ativo_id ? porAtivo.get(detalhe.ativo_id) ?? null : null}
         onOpenChange={(open) => !open && setDetalhe(null)}
       />
     </div>

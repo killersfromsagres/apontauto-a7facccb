@@ -8,24 +8,37 @@ import {
   type FiltroAtivo,
 } from "@/lib/agua/filtros";
 
-const ativo = (over: Partial<FiltroAtivo> = {}): FiltroAtivo => ({
-  id: "a1",
-  ponto_id: "p1",
-  codigo: null,
-  marca: "IBBL",
-  modelo: "FR600",
-  numero_serie: null,
-  tipo_filtro: "refil",
-  local_instalacao: null,
-  instalado_em: "2025-01-10",
-  ultima_troca: null,
-  periodicidade_dias: 180,
-  proxima_troca: "2026-02-10",
-  situacao: "ativo",
-  observacao: null,
-  criado_em: "",
-  ...over,
-});
+const ativo = (over: Partial<FiltroAtivo> = {}): FiltroAtivo =>
+  ({
+    id: "a1",
+    ponto_id: "p1",
+    codigo: null,
+    predio: null,
+    andar_setor: null,
+    espaco: null,
+    tipo_equipamento: "Purificador",
+    fabricante: "IBBL",
+    marca: "IBBL",
+    modelo: "FR600",
+    modelo_elemento: null,
+    patrimonio: null,
+    numero_serie: null,
+    tipo_filtro: "refil",
+    local_instalacao: null,
+    instalado_em: "2025-01-10",
+    ultima_troca: null,
+    periodicidade_dias: 180,
+    proxima_troca: "2026-02-10",
+    condicao_atual: "boa",
+    situacao: "ativo",
+    responsavel: null,
+    foto_url: null,
+    qr_token: "tok-1",
+    observacao: null,
+    criado_em: "",
+    ...over,
+  }) as FiltroAtivo;
+
 
 const HOJE = new Date("2026-01-20T12:00:00");
 

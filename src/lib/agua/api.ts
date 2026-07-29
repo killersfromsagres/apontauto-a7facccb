@@ -526,13 +526,42 @@ export async function mesclarPontos(args: {
 /* Solicitações de filtro                                              */
 /* ------------------------------------------------------------------ */
 
-export type FiltroSituacao = "aberta" | "em_atendimento" | "concluida" | "cancelada";
+/**
+ * Workflow completo (item 12.3). `aberta` e `em_atendimento` são valores
+ * legados mantidos para as solicitações criadas antes da ampliação.
+ */
+export type FiltroSituacao =
+  | "aberta"
+  | "em_atendimento"
+  | "solicitada"
+  | "em_triagem"
+  | "aprovada"
+  | "rejeitada"
+  | "aguardando_material"
+  | "programada"
+  | "em_deslocamento"
+  | "em_execucao"
+  | "concluida"
+  | "validada"
+  | "reaberta"
+  | "cancelada";
+
 export type FiltroPrioridade = "baixa" | "media" | "alta";
 
 export const FILTRO_SITUACAO_LABEL: Record<FiltroSituacao, string> = {
-  aberta: "Aberta",
-  em_atendimento: "Em atendimento",
+  aberta: "Solicitada",
+  solicitada: "Solicitada",
+  em_triagem: "Em triagem",
+  aprovada: "Aprovada",
+  rejeitada: "Rejeitada",
+  aguardando_material: "Aguardando material",
+  programada: "Programada",
+  em_deslocamento: "Em deslocamento",
+  em_execucao: "Em execução",
+  em_atendimento: "Em execução",
   concluida: "Concluída",
+  validada: "Validada pelo solicitante",
+  reaberta: "Reaberta",
   cancelada: "Cancelada",
 };
 
@@ -564,10 +593,59 @@ export interface FiltroSolicitacao {
   sla_horas: number | null;
   vence_em: string | null;
   criado_em: string;
+  /* 12.2 — identificação e contexto */
+  solicitante_nome: string | null;
+  predio: string | null;
+  andar_setor: string | null;
+  espaco: string | null;
+  motivos: string[];
+  motivo_outro: string | null;
+  telefone: string | null;
+  disponibilidade_acesso: string | null;
+  os_relacionada: string | null;
+  motivo_rejeicao: string | null;
+  /* 12.4 — programação */
+  responsavel_nome: string | null;
+  responsavel_2_nome: string | null;
+  programada_em: string | null;
+  veiculo_id: string | null;
+  material_descricao: string | null;
+  material_quantidade: number | null;
+  material_reservado: boolean;
+  incluir_na_rota: boolean;
+  lembrete_em: string | null;
+  observacao_programacao: string | null;
+  /* 12.5 — conclusão */
+  foto_antes_url: string | null;
+  foto_depois_url: string | null;
+  filtro_utilizado: string | null;
+  lote: string | null;
+  quantidade_utilizada: number | null;
+  colaborador_conclusao: string | null;
+  descarte_destino: string | null;
+  condicao_apos: string | null;
+  nova_proxima_troca: string | null;
+  assinatura_url: string | null;
+  /* 12.7 — validação e avaliação */
+  validada_em: string | null;
+  reaberturas: number;
+  avaliacao_nota: number | null;
+  avaliacao_comentario: string | null;
 }
 
-const FILTRO_FIELDS =
-  "id, numero, ponto_id, ativo_id, origem, tipo, prioridade, situacao, descricao, foto_url, foto_conclusao_url, observacao_conclusao, motivo_cancelamento, prevista_para, concluida_em, atendimento, sla_horas, vence_em, criado_em";
+const FILTRO_FIELDS = [
+  "id, numero, ponto_id, ativo_id, origem, tipo, prioridade, situacao, descricao",
+  "foto_url, foto_conclusao_url, observacao_conclusao, motivo_cancelamento",
+  "prevista_para, concluida_em, atendimento, sla_horas, vence_em, criado_em",
+  "solicitante_nome, predio, andar_setor, espaco, motivos, motivo_outro, telefone",
+  "disponibilidade_acesso, os_relacionada, motivo_rejeicao",
+  "responsavel_nome, responsavel_2_nome, programada_em, veiculo_id",
+  "material_descricao, material_quantidade, material_reservado, incluir_na_rota",
+  "lembrete_em, observacao_programacao",
+  "foto_antes_url, foto_depois_url, filtro_utilizado, lote, quantidade_utilizada",
+  "colaborador_conclusao, descarte_destino, condicao_apos, nova_proxima_troca, assinatura_url",
+  "validada_em, reaberturas, avaliacao_nota, avaliacao_comentario",
+].join(", ");
 
 export async function listFiltros(): Promise<FiltroSolicitacao[]> {
   const { data, error } = await db
@@ -589,10 +667,21 @@ export async function criarFiltro(input: {
   descricao?: string | null;
   prevista_para?: string | null;
   foto_url?: string | null;
+  situacao?: FiltroSituacao;
+  solicitante_nome?: string | null;
+  predio?: string | null;
+  andar_setor?: string | null;
+  espaco?: string | null;
+  motivos?: string[];
+  motivo_outro?: string | null;
+  telefone?: string | null;
+  disponibilidade_acesso?: string | null;
+  os_relacionada?: string | null;
 }): Promise<void> {
 
   const { data: userData } = await supabase.auth.getUser();
   const { error } = await db.from("agua_filtro_solicitacoes").insert({
+    situacao: "solicitada",
     ...input,
     criado_por: userData.user?.id ?? null,
   });

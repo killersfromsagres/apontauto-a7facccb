@@ -272,59 +272,92 @@ export type Database = {
       }
       agua_filtro_ativos: {
         Row: {
+          andar_setor: string | null
           atualizado_em: string
           codigo: string | null
+          condicao_atual: string
           criado_em: string
           criado_por: string | null
+          espaco: string | null
+          fabricante: string | null
+          foto_url: string | null
           id: string
           instalado_em: string | null
           local_instalacao: string | null
           marca: string | null
           modelo: string | null
+          modelo_elemento: string | null
           numero_serie: string | null
           observacao: string | null
+          patrimonio: string | null
           periodicidade_dias: number
           ponto_id: string
+          predio: string | null
           proxima_troca: string | null
+          qr_token: string
+          responsavel: string | null
           situacao: string
+          tipo_equipamento: string | null
           tipo_filtro: string
           ultima_troca: string | null
         }
         Insert: {
+          andar_setor?: string | null
           atualizado_em?: string
           codigo?: string | null
+          condicao_atual?: string
           criado_em?: string
           criado_por?: string | null
+          espaco?: string | null
+          fabricante?: string | null
+          foto_url?: string | null
           id?: string
           instalado_em?: string | null
           local_instalacao?: string | null
           marca?: string | null
           modelo?: string | null
+          modelo_elemento?: string | null
           numero_serie?: string | null
           observacao?: string | null
+          patrimonio?: string | null
           periodicidade_dias?: number
           ponto_id: string
+          predio?: string | null
           proxima_troca?: string | null
+          qr_token?: string
+          responsavel?: string | null
           situacao?: string
+          tipo_equipamento?: string | null
           tipo_filtro?: string
           ultima_troca?: string | null
         }
         Update: {
+          andar_setor?: string | null
           atualizado_em?: string
           codigo?: string | null
+          condicao_atual?: string
           criado_em?: string
           criado_por?: string | null
+          espaco?: string | null
+          fabricante?: string | null
+          foto_url?: string | null
           id?: string
           instalado_em?: string | null
           local_instalacao?: string | null
           marca?: string | null
           modelo?: string | null
+          modelo_elemento?: string | null
           numero_serie?: string | null
           observacao?: string | null
+          patrimonio?: string | null
           periodicidade_dias?: number
           ponto_id?: string
+          predio?: string | null
           proxima_troca?: string | null
+          qr_token?: string
+          responsavel?: string | null
           situacao?: string
+          tipo_equipamento?: string | null
           tipo_filtro?: string
           ultima_troca?: string | null
         }
@@ -382,80 +415,246 @@ export type Database = {
           },
         ]
       }
-      agua_filtro_solicitacoes: {
+      agua_filtro_preventivas: {
         Row: {
-          atendida_por: string | null
-          atendimento: string | null
-          ativo_id: string | null
+          ativo_id: string
           atualizado_em: string
           concluida_em: string | null
           criado_em: string
           criado_por: string | null
+          id: string
+          justificativa: string | null
+          prevista_para: string
+          reagendada_de: string | null
+          solicitacao_id: string | null
+          status: string
+        }
+        Insert: {
+          ativo_id: string
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          justificativa?: string | null
+          prevista_para: string
+          reagendada_de?: string | null
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Update: {
+          ativo_id?: string
+          atualizado_em?: string
+          concluida_em?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          id?: string
+          justificativa?: string | null
+          prevista_para?: string
+          reagendada_de?: string | null
+          solicitacao_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_filtro_preventivas_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_filtro_preventivas_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_filtro_solicitacoes: {
+        Row: {
+          andar_setor: string | null
+          assinatura_url: string | null
+          atendida_por: string | null
+          atendimento: string | null
+          ativo_id: string | null
+          atualizado_em: string
+          avaliacao_comentario: string | null
+          avaliacao_nota: number | null
+          colaborador_conclusao: string | null
+          concluida_em: string | null
+          condicao_apos: string | null
+          criado_em: string
+          criado_por: string | null
+          descarte_destino: string | null
           descricao: string | null
+          disponibilidade_acesso: string | null
+          espaco: string | null
+          filtro_utilizado: string | null
+          foto_antes_url: string | null
           foto_conclusao_url: string | null
+          foto_depois_url: string | null
           foto_url: string | null
           id: string
+          incluir_na_rota: boolean
+          lembrete_em: string | null
+          lote: string | null
+          material_descricao: string | null
+          material_quantidade: number | null
+          material_reservado: boolean
           motivo_cancelamento: string | null
+          motivo_outro: string | null
+          motivo_rejeicao: string | null
+          motivos: string[]
+          nova_proxima_troca: string | null
           numero: number
           observacao_conclusao: string | null
+          observacao_programacao: string | null
           origem: string
+          os_relacionada: string | null
           ponto_id: string
+          predio: string | null
           prevista_para: string | null
           prioridade: string
+          programada_em: string | null
+          quantidade_utilizada: number | null
+          reaberturas: number
+          responsavel_2_nome: string | null
+          responsavel_nome: string | null
           situacao: string
           sla_horas: number | null
+          solicitante_nome: string | null
+          telefone: string | null
           tipo: string
+          validada_em: string | null
+          veiculo_id: string | null
           vence_em: string | null
         }
         Insert: {
+          andar_setor?: string | null
+          assinatura_url?: string | null
           atendida_por?: string | null
           atendimento?: string | null
           ativo_id?: string | null
           atualizado_em?: string
+          avaliacao_comentario?: string | null
+          avaliacao_nota?: number | null
+          colaborador_conclusao?: string | null
           concluida_em?: string | null
+          condicao_apos?: string | null
           criado_em?: string
           criado_por?: string | null
+          descarte_destino?: string | null
           descricao?: string | null
+          disponibilidade_acesso?: string | null
+          espaco?: string | null
+          filtro_utilizado?: string | null
+          foto_antes_url?: string | null
           foto_conclusao_url?: string | null
+          foto_depois_url?: string | null
           foto_url?: string | null
           id?: string
+          incluir_na_rota?: boolean
+          lembrete_em?: string | null
+          lote?: string | null
+          material_descricao?: string | null
+          material_quantidade?: number | null
+          material_reservado?: boolean
           motivo_cancelamento?: string | null
+          motivo_outro?: string | null
+          motivo_rejeicao?: string | null
+          motivos?: string[]
+          nova_proxima_troca?: string | null
           numero?: number
           observacao_conclusao?: string | null
+          observacao_programacao?: string | null
           origem?: string
+          os_relacionada?: string | null
           ponto_id: string
+          predio?: string | null
           prevista_para?: string | null
           prioridade?: string
+          programada_em?: string | null
+          quantidade_utilizada?: number | null
+          reaberturas?: number
+          responsavel_2_nome?: string | null
+          responsavel_nome?: string | null
           situacao?: string
           sla_horas?: number | null
+          solicitante_nome?: string | null
+          telefone?: string | null
           tipo?: string
+          validada_em?: string | null
+          veiculo_id?: string | null
           vence_em?: string | null
         }
         Update: {
+          andar_setor?: string | null
+          assinatura_url?: string | null
           atendida_por?: string | null
           atendimento?: string | null
           ativo_id?: string | null
           atualizado_em?: string
+          avaliacao_comentario?: string | null
+          avaliacao_nota?: number | null
+          colaborador_conclusao?: string | null
           concluida_em?: string | null
+          condicao_apos?: string | null
           criado_em?: string
           criado_por?: string | null
+          descarte_destino?: string | null
           descricao?: string | null
+          disponibilidade_acesso?: string | null
+          espaco?: string | null
+          filtro_utilizado?: string | null
+          foto_antes_url?: string | null
           foto_conclusao_url?: string | null
+          foto_depois_url?: string | null
           foto_url?: string | null
           id?: string
+          incluir_na_rota?: boolean
+          lembrete_em?: string | null
+          lote?: string | null
+          material_descricao?: string | null
+          material_quantidade?: number | null
+          material_reservado?: boolean
           motivo_cancelamento?: string | null
+          motivo_outro?: string | null
+          motivo_rejeicao?: string | null
+          motivos?: string[]
+          nova_proxima_troca?: string | null
           numero?: number
           observacao_conclusao?: string | null
+          observacao_programacao?: string | null
           origem?: string
+          os_relacionada?: string | null
           ponto_id?: string
+          predio?: string | null
           prevista_para?: string | null
           prioridade?: string
+          programada_em?: string | null
+          quantidade_utilizada?: number | null
+          reaberturas?: number
+          responsavel_2_nome?: string | null
+          responsavel_nome?: string | null
           situacao?: string
           sla_horas?: number | null
+          solicitante_nome?: string | null
+          telefone?: string | null
           tipo?: string
+          validada_em?: string | null
+          veiculo_id?: string | null
           vence_em?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agua_filtro_solic_veiculo_fk"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agua_filtro_solicitacoes_ativo_id_fkey"
             columns: ["ativo_id"]
