@@ -32,7 +32,7 @@ import {
   type Visita,
   type VisitaStatus,
 } from "@/lib/agua/api";
-import { DIA_LABEL, DIAS } from "@/lib/agua/reader";
+import { DIA_LABEL } from "@/lib/agua/reader";
 import { diaSemanaISO } from "@/lib/agua/api";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/")({
@@ -335,4 +335,3 @@ function VisitaCard({
   );
 }
 
-export { DIAS };
