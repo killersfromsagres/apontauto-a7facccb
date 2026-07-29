@@ -5,19 +5,26 @@ import type {
   WorkOrderStatus,
 } from "./types";
 
+/**
+ * Fluxo canônico único (item 26 da Fase 10). Modalidades podem restringir,
+ * nunca inventar transições paralelas.
+ */
 const BASE_TRANSITIONS: Partial<Record<WorkOrderStatus, WorkOrderStatus[]>> = {
-  aberta: ["programada", "em_execucao", "cancelada"],
-  programada: ["em_execucao", "aberta", "cancelada"],
+  aberta: ["triagem", "aguardando_planejamento", "programada", "em_execucao", "cancelada"],
+  triagem: ["aguardando_planejamento", "programada", "aberta", "cancelada"],
+  aguardando_planejamento: ["programada", "aguardando_material", "triagem", "cancelada"],
+  programada: ["liberada", "aguardando_material", "em_execucao", "aberta", "cancelada"],
+  aguardando_material: ["liberada", "programada", "em_execucao", "pausada", "cancelada"],
+  liberada: ["em_execucao", "programada", "pausada", "cancelada"],
   em_execucao: [
     "aguardando_material",
-    "aguardando_aprovacao",
+    "aguardando_validacao",
     "pausada",
     "concluida",
     "cancelada",
   ],
-  aguardando_material: ["em_execucao", "pausada", "cancelada"],
-  aguardando_aprovacao: ["em_execucao", "concluida", "cancelada"],
-  pausada: ["em_execucao", "cancelada"],
+  pausada: ["em_execucao", "aguardando_material", "cancelada"],
+  aguardando_validacao: ["em_execucao", "concluida", "cancelada"],
   concluida: [],
   cancelada: [],
 };
@@ -31,14 +38,18 @@ const BASE_SLA: Record<WorkOrderPriority, number> = {
 
 const BASE_STATUSES: WorkOrderStatus[] = [
   "aberta",
+  "triagem",
+  "aguardando_planejamento",
   "programada",
-  "em_execucao",
   "aguardando_material",
-  "aguardando_aprovacao",
+  "liberada",
+  "em_execucao",
   "pausada",
+  "aguardando_validacao",
   "concluida",
   "cancelada",
 ];
+
 
 function build(
   key: WorkOrderModality,
