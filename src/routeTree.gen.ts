@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiImgbbUploadRouteImport } from './routes/api/imgbb-upload'
+import { Route as ApiBiFeedRouteImport } from './routes/api/bi-feed'
 import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesPtRouteImport } from './routes/_authenticated/taludes-pt'
@@ -43,6 +44,7 @@ import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
+import { Route as AuthenticatedBiStudioRouteImport } from './routes/_authenticated/bi-studio'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
@@ -100,6 +102,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
 const ApiImgbbUploadRoute = ApiImgbbUploadRouteImport.update({
   id: '/api/imgbb-upload',
   path: '/api/imgbb-upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBiFeedRoute = ApiBiFeedRouteImport.update({
+  id: '/api/bi-feed',
+  path: '/api/bi-feed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBackorderReclassificarRoute =
@@ -244,6 +251,11 @@ const AuthenticatedClimaTempoRoute = AuthenticatedClimaTempoRouteImport.update({
   path: '/clima-tempo',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBiStudioRoute = AuthenticatedBiStudioRouteImport.update({
+  id: '/bi-studio',
+  path: '/bi-studio',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBaseAtivosRoute = AuthenticatedBaseAtivosRouteImport.update({
   id: '/base-ativos',
   path: '/base-ativos',
@@ -337,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -362,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -385,6 +399,7 @@ export interface FileRoutesByTo {
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -410,6 +425,7 @@ export interface FileRoutesByTo {
   '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/': typeof AuthenticatedIndexRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -436,6 +452,7 @@ export interface FileRoutesById {
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
+  '/_authenticated/bi-studio': typeof AuthenticatedBiStudioRoute
   '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -461,6 +478,7 @@ export interface FileRoutesById {
   '/_authenticated/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -488,6 +506,7 @@ export interface FileRouteTypes {
     | '/backlog-inteligente'
     | '/backorder'
     | '/base-ativos'
+    | '/bi-studio'
     | '/clima-tempo'
     | '/configuracoes'
     | '/controle-materiais'
@@ -513,6 +532,7 @@ export interface FileRouteTypes {
     | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -536,6 +556,7 @@ export interface FileRouteTypes {
     | '/backlog-inteligente'
     | '/backorder'
     | '/base-ativos'
+    | '/bi-studio'
     | '/clima-tempo'
     | '/configuracoes'
     | '/controle-materiais'
@@ -561,6 +582,7 @@ export interface FileRouteTypes {
     | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/'
     | '/inteligencia-ativos/historico'
@@ -586,6 +608,7 @@ export interface FileRouteTypes {
     | '/_authenticated/backlog-inteligente'
     | '/_authenticated/backorder'
     | '/_authenticated/base-ativos'
+    | '/_authenticated/bi-studio'
     | '/_authenticated/clima-tempo'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
@@ -611,6 +634,7 @@ export interface FileRouteTypes {
     | '/_authenticated/taludes-pt'
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/_authenticated/'
     | '/_authenticated/inteligencia-ativos/historico'
@@ -632,6 +656,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
   ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
+  ApiBiFeedRoute: typeof ApiBiFeedRoute
   ApiImgbbUploadRoute: typeof ApiImgbbUploadRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
@@ -703,6 +728,13 @@ declare module '@tanstack/react-router' {
       path: '/api/imgbb-upload'
       fullPath: '/api/imgbb-upload'
       preLoaderRoute: typeof ApiImgbbUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/bi-feed': {
+      id: '/api/bi-feed'
+      path: '/api/bi-feed'
+      fullPath: '/api/bi-feed'
+      preLoaderRoute: typeof ApiBiFeedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/backorder-reclassificar': {
@@ -880,6 +912,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClimaTempoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bi-studio': {
+      id: '/_authenticated/bi-studio'
+      path: '/bi-studio'
+      fullPath: '/bi-studio'
+      preLoaderRoute: typeof AuthenticatedBiStudioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/base-ativos': {
       id: '/_authenticated/base-ativos'
       path: '/base-ativos'
@@ -988,6 +1027,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
+  AuthenticatedBiStudioRoute: typeof AuthenticatedBiStudioRoute
   AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
@@ -1025,6 +1065,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
+  AuthenticatedBiStudioRoute: AuthenticatedBiStudioRoute,
   AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
@@ -1073,6 +1114,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
   ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
+  ApiBiFeedRoute: ApiBiFeedRoute,
   ApiImgbbUploadRoute: ApiImgbbUploadRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,

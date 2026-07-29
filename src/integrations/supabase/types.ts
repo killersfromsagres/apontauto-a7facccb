@@ -379,6 +379,101 @@ export type Database = {
         }
         Relationships: []
       }
+      bi_dashboards: {
+        Row: {
+          created_at: string
+          default_filters: Json
+          description: string | null
+          id: string
+          layout: Json
+          name: string
+          owner_id: string
+          shared: boolean
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_filters?: Json
+          description?: string | null
+          id?: string
+          layout?: Json
+          name: string
+          owner_id?: string
+          shared?: boolean
+          template_key?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_filters?: Json
+          description?: string | null
+          id?: string
+          layout?: Json
+          name?: string
+          owner_id?: string
+          shared?: boolean
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bi_widgets: {
+        Row: {
+          aggregation: string
+          chart_type: string
+          created_at: string
+          dashboard_id: string
+          dimension_key: string | null
+          filters: Json
+          id: string
+          metric_key: string
+          position: number
+          size: string
+          title: string | null
+          updated_at: string
+          visual: Json
+        }
+        Insert: {
+          aggregation?: string
+          chart_type?: string
+          created_at?: string
+          dashboard_id: string
+          dimension_key?: string | null
+          filters?: Json
+          id?: string
+          metric_key: string
+          position?: number
+          size?: string
+          title?: string | null
+          updated_at?: string
+          visual?: Json
+        }
+        Update: {
+          aggregation?: string
+          chart_type?: string
+          created_at?: string
+          dashboard_id?: string
+          dimension_key?: string | null
+          filters?: Json
+          id?: string
+          metric_key?: string
+          position?: number
+          size?: string
+          title?: string | null
+          updated_at?: string
+          visual?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bi_widgets_dashboard_id_fkey"
+            columns: ["dashboard_id"]
+            isOneToOne: false
+            referencedRelation: "bi_dashboards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       controle_centros_custo: {
         Row: {
           ativo: boolean
@@ -2668,6 +2763,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "talude_pt_events_pt_id_fkey"
+            columns: ["pt_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_taludes_weather_pt"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "talude_pt_events_weather_event_id_fkey"
             columns: ["weather_event_id"]
             isOneToOne: false
@@ -2972,6 +3074,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vehicle_checklist_collaborators_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vehicle_checklist_collaborators_employee_id_fkey"
             columns: ["employee_id"]
             isOneToOne: false
@@ -3020,6 +3129,13 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_vehicle_checklists"
             referencedColumns: ["id"]
           },
         ]
@@ -3076,6 +3192,13 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_checklist_photos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_vehicle_checklists"
             referencedColumns: ["id"]
           },
           {
@@ -3299,6 +3422,13 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_occurrences_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vw_bi_vehicle_checklists"
             referencedColumns: ["id"]
           },
           {
@@ -3543,7 +3673,226 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_bi_assets: {
+        Row: {
+          ativo: string | null
+          codigo_pai: string | null
+          denominacao: string | null
+          descricao_pai: string | null
+          nivel: string | null
+          unidade_negocio: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: string | null
+          codigo_pai?: string | null
+          denominacao?: string | null
+          descricao_pai?: string | null
+          nivel?: string | null
+          unidade_negocio?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: string | null
+          codigo_pai?: string | null
+          denominacao?: string | null
+          descricao_pai?: string | null
+          nivel?: string | null
+          unidade_negocio?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_backlog: {
+        Row: {
+          andar: string | null
+          atividade: string | null
+          ativo: string | null
+          atualizado_em: string | null
+          criado_em: string | null
+          criticidade: string | null
+          data_finalizacao: string | null
+          data_solicitacao: string | null
+          equipe: string | null
+          espaco: string | null
+          finalizado: boolean | null
+          idade_dias: number | null
+          is_prioridade: boolean | null
+          os: string | null
+          predio: string | null
+          prioridade_nivel: number | null
+          sla_vencido: boolean | null
+          termino_sla: string | null
+        }
+        Insert: {
+          andar?: string | null
+          atividade?: string | null
+          ativo?: string | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          criticidade?: string | null
+          data_finalizacao?: string | null
+          data_solicitacao?: string | null
+          equipe?: string | null
+          espaco?: string | null
+          finalizado?: boolean | null
+          idade_dias?: never
+          is_prioridade?: boolean | null
+          os?: string | null
+          predio?: string | null
+          prioridade_nivel?: number | null
+          sla_vencido?: never
+          termino_sla?: string | null
+        }
+        Update: {
+          andar?: string | null
+          atividade?: string | null
+          ativo?: string | null
+          atualizado_em?: string | null
+          criado_em?: string | null
+          criticidade?: string | null
+          data_finalizacao?: string | null
+          data_solicitacao?: string | null
+          equipe?: string | null
+          espaco?: string | null
+          finalizado?: boolean | null
+          idade_dias?: never
+          is_prioridade?: boolean | null
+          os?: string | null
+          predio?: string | null
+          prioridade_nivel?: number | null
+          sla_vencido?: never
+          termino_sla?: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_preventive_compliance: {
+        Row: {
+          andar: string | null
+          colaborador: string | null
+          competencia: string | null
+          created_at: string | null
+          data_manutencao: string | null
+          id: string | null
+          local: string | null
+          predio: string | null
+          status_equipamento: string | null
+          tag: string | null
+          tipo_equipamento: string | null
+          tipo_servico: string | null
+        }
+        Insert: {
+          andar?: string | null
+          colaborador?: string | null
+          competencia?: never
+          created_at?: string | null
+          data_manutencao?: string | null
+          id?: string | null
+          local?: string | null
+          predio?: string | null
+          status_equipamento?: string | null
+          tag?: string | null
+          tipo_equipamento?: string | null
+          tipo_servico?: string | null
+        }
+        Update: {
+          andar?: string | null
+          colaborador?: string | null
+          competencia?: never
+          created_at?: string | null
+          data_manutencao?: string | null
+          id?: string | null
+          local?: string | null
+          predio?: string | null
+          status_equipamento?: string | null
+          tag?: string | null
+          tipo_equipamento?: string | null
+          tipo_servico?: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_taludes_weather_pt: {
+        Row: {
+          accumulated_mm: number | null
+          chuva_fim: string | null
+          chuva_inicio: string | null
+          data_trabalho: string | null
+          encerrada_em: string | null
+          equipe: string | null
+          horas_suspensas: number | null
+          id: string | null
+          liberada_em: string | null
+          max_intensity: string | null
+          numero_pt: string | null
+          retomada_em: string | null
+          revogada_em: string | null
+          servico: string | null
+          solicitada_em: string | null
+          status: string | null
+          suspensa_em: string | null
+          taludes_label: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_vehicle_checklists: {
+        Row: {
+          checklist_type: string | null
+          created_at: string | null
+          critical_block: boolean | null
+          fuel_level_pct: number | null
+          id: string | null
+          integrity_score: number | null
+          location: string | null
+          odometer_km: number | null
+          overall_status: string | null
+          placa: string | null
+          protocol: string | null
+          submitted_at: string | null
+          veiculo: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_vehicle_fuelings: {
+        Row: {
+          created_at: string | null
+          fuel_type: string | null
+          fueled_at: string | null
+          full_tank: boolean | null
+          id: string | null
+          liters: number | null
+          odometer_km: number | null
+          placa: string | null
+          price_per_liter: number | null
+          station: string | null
+          total_value: number | null
+          veiculo: string | null
+        }
+        Relationships: []
+      }
+      vw_bi_work_orders: {
+        Row: {
+          andar: string | null
+          ativo: string | null
+          created_at: string | null
+          data_programada: string | null
+          data_sla: string | null
+          descricao: string | null
+          equipamento: string | null
+          equipe: string | null
+          fim: string | null
+          horas_execucao: number | null
+          id: string | null
+          inicio: string | null
+          local: string | null
+          modalidade: string | null
+          numero_os: string | null
+          predio: string | null
+          sla_vencido: boolean | null
+          status: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       audit_redact: { Args: { payload: Json }; Returns: Json }
