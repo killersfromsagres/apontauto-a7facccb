@@ -140,6 +140,8 @@ function AuthenticatedLayout() {
             {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
           <MobileTabBar />
+          <ForcePasswordChange />
+
         </SidebarInset>
       </div>
     </SidebarProvider>
