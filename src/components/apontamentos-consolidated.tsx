@@ -167,7 +167,7 @@ export function ApontamentosConsolidated() {
       }
     >
       <Tabs value={active} onValueChange={(v) => setActive(v as Categoria)}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="w-full md:grid md:w-full md:grid-cols-3">
           {CATEGORIAS.map((c) => {
             const count = rowsByCat[c.id].length;
             const Icon = c.icon;
