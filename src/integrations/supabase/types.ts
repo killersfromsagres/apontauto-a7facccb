@@ -2909,6 +2909,479 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_checklist_collaborator_pii: {
+        Row: {
+          collaborator_id: string
+          cpf_normalized: string
+          created_at: string
+        }
+        Insert: {
+          collaborator_id: string
+          cpf_normalized: string
+          created_at?: string
+        }
+        Update: {
+          collaborator_id?: string
+          cpf_normalized?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_checklist_collaborator_pii_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: true
+            referencedRelation: "vehicle_checklist_collaborators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_checklist_collaborators: {
+        Row: {
+          checklist_id: string
+          cpf_last4: string | null
+          created_at: string
+          employee_id: string | null
+          full_name_snapshot: string
+          id: string
+          role_in_checklist: string
+        }
+        Insert: {
+          checklist_id: string
+          cpf_last4?: string | null
+          created_at?: string
+          employee_id?: string | null
+          full_name_snapshot: string
+          id?: string
+          role_in_checklist?: string
+        }
+        Update: {
+          checklist_id?: string
+          cpf_last4?: string | null
+          created_at?: string
+          employee_id?: string | null
+          full_name_snapshot?: string
+          id?: string
+          role_in_checklist?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_checklist_collaborators_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_checklist_collaborators_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "sst_colaboradores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_checklist_items: {
+        Row: {
+          category: string
+          checklist_id: string
+          created_at: string
+          id: string
+          item_key: string
+          label: string
+          notes: string | null
+          severity: string | null
+          status: string
+        }
+        Insert: {
+          category: string
+          checklist_id: string
+          created_at?: string
+          id?: string
+          item_key: string
+          label: string
+          notes?: string | null
+          severity?: string | null
+          status: string
+        }
+        Update: {
+          category?: string
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          item_key?: string
+          label?: string
+          notes?: string | null
+          severity?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_checklist_photos: {
+        Row: {
+          captured_at: string
+          checklist_id: string
+          checklist_item_id: string | null
+          created_at: string
+          id: string
+          image_hash: string | null
+          photo_slot: string
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          thumbnail_url: string | null
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          captured_at?: string
+          checklist_id: string
+          checklist_item_id?: string | null
+          created_at?: string
+          id?: string
+          image_hash?: string | null
+          photo_slot: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          thumbnail_url?: string | null
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          captured_at?: string
+          checklist_id?: string
+          checklist_item_id?: string | null
+          created_at?: string
+          id?: string
+          image_hash?: string | null
+          photo_slot?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          thumbnail_url?: string | null
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_checklist_photos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_checklist_photos_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_checklists: {
+        Row: {
+          checklist_type: string
+          created_at: string
+          critical_block: boolean
+          declaration_accepted: boolean
+          device_id_hash: string | null
+          fuel_level_pct: number | null
+          id: string
+          integrity_hash: string | null
+          integrity_score: number
+          location: string | null
+          notes: string | null
+          odometer_km: number
+          overall_status: string
+          protocol: string
+          purpose: string | null
+          signature_url: string | null
+          submitted_at: string
+          submitted_by: string | null
+          synced_from_offline: boolean
+          vehicle_id: string
+          work_order_number: string | null
+        }
+        Insert: {
+          checklist_type?: string
+          created_at?: string
+          critical_block?: boolean
+          declaration_accepted?: boolean
+          device_id_hash?: string | null
+          fuel_level_pct?: number | null
+          id?: string
+          integrity_hash?: string | null
+          integrity_score?: number
+          location?: string | null
+          notes?: string | null
+          odometer_km: number
+          overall_status?: string
+          protocol: string
+          purpose?: string | null
+          signature_url?: string | null
+          submitted_at?: string
+          submitted_by?: string | null
+          synced_from_offline?: boolean
+          vehicle_id: string
+          work_order_number?: string | null
+        }
+        Update: {
+          checklist_type?: string
+          created_at?: string
+          critical_block?: boolean
+          declaration_accepted?: boolean
+          device_id_hash?: string | null
+          fuel_level_pct?: number | null
+          id?: string
+          integrity_hash?: string | null
+          integrity_score?: number
+          location?: string | null
+          notes?: string | null
+          odometer_km?: number
+          overall_status?: string
+          protocol?: string
+          purpose?: string | null
+          signature_url?: string | null
+          submitted_at?: string
+          submitted_by?: string | null
+          synced_from_offline?: boolean
+          vehicle_id?: string
+          work_order_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_checklists_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_fuelings: {
+        Row: {
+          anomalies: Json
+          created_at: string
+          created_by: string | null
+          driver_name: string | null
+          fuel_type: string
+          fueled_at: string
+          full_tank: boolean
+          id: string
+          liters: number
+          notes: string | null
+          odometer_km: number
+          odometer_photo_url: string | null
+          price_per_liter: number | null
+          receipt_number: string | null
+          receipt_photo_url: string | null
+          station: string | null
+          total_value: number | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          anomalies?: Json
+          created_at?: string
+          created_by?: string | null
+          driver_name?: string | null
+          fuel_type?: string
+          fueled_at?: string
+          full_tank?: boolean
+          id?: string
+          liters: number
+          notes?: string | null
+          odometer_km: number
+          odometer_photo_url?: string | null
+          price_per_liter?: number | null
+          receipt_number?: string | null
+          receipt_photo_url?: string | null
+          station?: string | null
+          total_value?: number | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          anomalies?: Json
+          created_at?: string
+          created_by?: string | null
+          driver_name?: string | null
+          fuel_type?: string
+          fueled_at?: string
+          full_tank?: boolean
+          id?: string
+          liters?: number
+          notes?: string | null
+          odometer_km?: number
+          odometer_photo_url?: string | null
+          price_per_liter?: number | null
+          receipt_number?: string | null
+          receipt_photo_url?: string | null
+          station?: string | null
+          total_value?: number | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_fuelings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_occurrences: {
+        Row: {
+          assignee: string | null
+          checklist_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          evidence: Json
+          id: string
+          occurrence_type: string
+          opened_at: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          severity: string
+          state: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          assignee?: string | null
+          checklist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          evidence?: Json
+          id?: string
+          occurrence_type?: string
+          opened_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          assignee?: string | null
+          checklist_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          evidence?: Json
+          id?: string
+          occurrence_type?: string
+          opened_at?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          severity?: string
+          state?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_occurrences_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_occurrences_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          block_reason: string | null
+          brand: string
+          chassis_last6: string | null
+          color: string | null
+          created_at: string
+          current_odometer_km: number
+          fuel_type: string
+          id: string
+          model: string
+          model_glb_url: string | null
+          model_poster_url: string | null
+          notes: string | null
+          plate: string | null
+          prefix: string
+          renavam: string | null
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          version: string | null
+          year_manufacture: number | null
+          year_model: number | null
+        }
+        Insert: {
+          block_reason?: string | null
+          brand: string
+          chassis_last6?: string | null
+          color?: string | null
+          created_at?: string
+          current_odometer_km?: number
+          fuel_type?: string
+          id?: string
+          model: string
+          model_glb_url?: string | null
+          model_poster_url?: string | null
+          notes?: string | null
+          plate?: string | null
+          prefix: string
+          renavam?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          version?: string | null
+          year_manufacture?: number | null
+          year_model?: number | null
+        }
+        Update: {
+          block_reason?: string | null
+          brand?: string
+          chassis_last6?: string | null
+          color?: string | null
+          created_at?: string
+          current_odometer_km?: number
+          fuel_type?: string
+          id?: string
+          model?: string
+          model_glb_url?: string | null
+          model_poster_url?: string | null
+          notes?: string | null
+          plate?: string | null
+          prefix?: string
+          renavam?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          version?: string | null
+          year_manufacture?: number | null
+          year_model?: number | null
+        }
+        Relationships: []
+      }
       weather_events: {
         Row: {
           accumulated_mm: number
@@ -3180,6 +3653,8 @@ export type Database = {
         }
         Returns: string
       }
+      frota_can: { Args: { required_action?: string }; Returns: boolean }
+      frota_is_gestor: { Args: never; Returns: boolean }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
