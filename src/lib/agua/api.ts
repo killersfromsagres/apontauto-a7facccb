@@ -316,3 +316,78 @@ export async function atualizarPonto(id: string, patch: Partial<Ponto>): Promise
   const { error } = await db.from("agua_pontos").update(patch).eq("id", id);
   if (error) throw error;
 }
+
+/* ------------------------------------------------------------------ */
+/* Solicitações de filtro                                              */
+/* ------------------------------------------------------------------ */
+
+export type FiltroSituacao = "aberta" | "em_atendimento" | "concluida" | "cancelada";
+export type FiltroPrioridade = "baixa" | "media" | "alta";
+
+export const FILTRO_SITUACAO_LABEL: Record<FiltroSituacao, string> = {
+  aberta: "Aberta",
+  em_atendimento: "Em atendimento",
+  concluida: "Concluída",
+  cancelada: "Cancelada",
+};
+
+export const FILTRO_PRIORIDADE_LABEL: Record<FiltroPrioridade, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+};
+
+export const FILTRO_TIPOS = ["troca", "limpeza", "reparo", "instalação"];
+
+export interface FiltroSolicitacao {
+  id: string;
+  ponto_id: string;
+  tipo: string;
+  prioridade: FiltroPrioridade;
+  situacao: FiltroSituacao;
+  descricao: string | null;
+  foto_url: string | null;
+  prevista_para: string | null;
+  concluida_em: string | null;
+  atendimento: string | null;
+  criado_em: string;
+}
+
+const FILTRO_FIELDS =
+  "id, ponto_id, tipo, prioridade, situacao, descricao, foto_url, prevista_para, concluida_em, atendimento, criado_em";
+
+export async function listFiltros(): Promise<FiltroSolicitacao[]> {
+  const { data, error } = await db
+    .from("agua_filtro_solicitacoes")
+    .select(FILTRO_FIELDS)
+    .order("criado_em", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return (data ?? []) as FiltroSolicitacao[];
+}
+
+export async function criarFiltro(input: {
+  ponto_id: string;
+  tipo: string;
+  prioridade: FiltroPrioridade;
+  descricao?: string | null;
+  prevista_para?: string | null;
+  foto_url?: string | null;
+}): Promise<void> {
+  const { data: userData } = await supabase.auth.getUser();
+  const { error } = await db.from("agua_filtro_solicitacoes").insert({
+    ...input,
+    criado_por: userData.user?.id ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function atualizarFiltro(
+  id: string,
+  patch: Partial<Pick<FiltroSolicitacao, "situacao" | "prioridade" | "atendimento" | "prevista_para" | "foto_url">>,
+): Promise<void> {
+  const payload: Record<string, unknown> = { ...patch };
+  if (patch.situacao === "concluida") payload.concluida_em = new Date().toISOString();
+  const { error } = await db.from("agua_filtro_solicitacoes").update(payload).eq("id", id);
+  if (error) throw error;
+}
