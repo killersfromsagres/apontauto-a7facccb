@@ -32,6 +32,8 @@ import {
 import { DataTable, EmptyState, KpiCard, type DataTableColumn } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { VehicleCard3D } from "@/components/frota/vehicle-card-3d";
+import { VehicleEditDialog } from "@/components/frota/vehicle-edit-dialog";
+import { formatPlate } from "@/lib/frota/plate";
 import {
   computeConsumption,
   createFueling,
@@ -174,7 +176,7 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="veiculos">
-          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} />
+          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} canWrite={canWrite} />
         </TabsContent>
 
         <TabsContent value="historico">
