@@ -25,7 +25,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SignaturePad } from "@/components/corretiva/signature-pad";
-import { enviarEvidencia, useFilaFotosAgua } from "@/lib/agua/fotos";
+import { enviarEvidencia } from "@/lib/agua/fotos";
+import { FilaFotosAviso } from "@/components/agua/fila-fotos-aviso";
 import { cn } from "@/lib/utils";
 import {
   MOTIVOS_NAO_REALIZADA,
