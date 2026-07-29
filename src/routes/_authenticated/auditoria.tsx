@@ -420,7 +420,7 @@ function AuditoriaPage() {
                 {diffFields(selecionado.old_data, selecionado.new_data).map((d) => (
                   <div key={d.key} className="grid grid-cols-3 gap-2 border-t border-border/40 px-3 py-2 text-[11px]">
                     <span className="font-medium break-words">{d.key}</span>
-                    <span className="break-words text-muted-foreground line-through/0">{d.before}</span>
+                    <span className="break-words text-muted-foreground">{d.before}</span>
                     <span className="break-words">{d.after}</span>
                   </div>
                 ))}
