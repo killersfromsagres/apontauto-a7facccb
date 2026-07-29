@@ -110,8 +110,16 @@ export function PolygonEditor({
 
   const spaceRef = useRef(false);
   const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const downRef = useRef<{ x: number; y: number } | null>(null);
   const dragRef = useRef<
-    | { kind: "vertex"; id: string; index: number; before: Point[] }
+    | {
+        kind: "vertex";
+        id: string;
+        index: number;
+        before: Point[];
+        /** Diferença entre o vértice e o ponteiro no início do arrasto. */
+        grab: Point;
+      }
     | { kind: "move"; id: string; before: Point[]; start: Point }
     | null
   >(null);
@@ -128,7 +136,7 @@ export function PolygonEditor({
 
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
     const rect = stageRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
+    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     return clampPoint({
       x: ((clientX - rect.left) / rect.width) * 100,
       y: ((clientY - rect.top) / rect.height) * 100,
@@ -141,19 +149,23 @@ export function PolygonEditor({
     return { x: rect.width / 100, y: rect.height / 100 };
   }, []);
 
+  /**
+   * Aproximação assistida. Nunca aproxima de vértices do próprio polígono
+   * em edição (isso fazia o ponto "saltar" para o vizinho).
+   */
   const applySnap = useCallback(
-    (p: Point, excludeId?: string, excludeIndex?: number): Point => {
+    (p: Point, excludeId?: string): Point => {
       let out = grid ? snapToGrid(p, 1) : p;
       if (!snap) return clampPoint(out);
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
       for (const poly of polygons) {
         if (!poly.visible) continue;
+        if (poly.id === excludeId) continue;
         const pts = geometryOf(poly);
-        pts.forEach((v, i) => {
-          if (poly.id === excludeId && i === excludeIndex) return;
+        pts.forEach((v) => {
           const d = Math.hypot((v.x - p.x) * per.x, (v.y - p.y) * per.y);
-          if (d < 10 && (!best || d < best.d)) best = { d, pt: v };
+          if (d < 8 && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
@@ -161,6 +173,7 @@ export function PolygonEditor({
     },
     [grid, snap, polygons, geometryOf, pxPerPercent],
   );
+
 
   /* -------------------------------- histórico ------------------------------- */
 
