@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Gauge,
   LayoutDashboard,
@@ -35,7 +35,6 @@ import {
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAllowedMenus } from "@/hooks/use-allowed-menus";
-import { supabase } from "@/integrations/supabase/client";
 
 export type MenuItem = {
   key: string;
