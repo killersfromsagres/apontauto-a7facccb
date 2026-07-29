@@ -3,6 +3,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Divergencia, LeituraAgua } from "@/lib/agua/reader";
+import {
+  caixaTitulo,
+  limparTexto,
+  normalizarCodigo,
+  normalizarTelefone,
+} from "@/lib/agua/normalize";
+
 
 // As tabelas novas ainda não constam nos tipos gerados.
 const db = supabase as unknown as { from: (t: string) => any };
