@@ -10,11 +10,10 @@ import pickup from "@/assets/frota/pickup.png";
 import van from "@/assets/frota/van.png";
 import truck from "@/assets/frota/truck.png";
 import moto from "@/assets/frota/moto.png";
-
-const PHOTO: Record<BodyType, string> = { hatch, sedan, suv, pickup, van, truck, moto };
-
 import saveiroAsset from "@/assets/frota/saveiro.png.asset.json";
 import fiorinoAsset from "@/assets/frota/fiorino.png.asset.json";
+
+const PHOTO: Record<BodyType, string> = { hatch, sedan, suv, pickup, van, truck, moto };
 
 /** Fotos reais da frota — têm prioridade sobre a silhueta genérica. */
 const MODEL_PHOTO: [RegExp, string][] = [
