@@ -8,10 +8,19 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/pcm";
 import { WhatsAppShareDialog } from "@/components/agua/whatsapp-share-dialog";
+import { FilaFotosAviso } from "@/components/agua/fila-fotos-aviso";
 import { hojeISO, listPontos, listVisitas, pontoLabel, VISITA_STATUS_LABEL } from "@/lib/agua/api";
+import { listFotos } from "@/lib/agua/fotos";
 import type { EvidenciaItem } from "@/lib/agua/whatsapp";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/evidencias")({
@@ -25,10 +34,19 @@ function diasAtras(dias: number): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
+const TODOS = "__todos__";
+
 function Evidencias() {
   const [de, setDe] = useState(diasAtras(13));
   const [ate, setAte] = useState(hojeISO());
   const [busca, setBusca] = useState("");
+  const [predio, setPredio] = useState(TODOS);
+  const [andar, setAndar] = useState(TODOS);
+  const [espaco, setEspaco] = useState(TODOS);
+  const [colaborador, setColaborador] = useState(TODOS);
+  const [veiculo, setVeiculo] = useState(TODOS);
+  const [status, setStatus] = useState(TODOS);
+  const [tipo, setTipo] = useState(TODOS);
   const [selecao, setSelecao] = useState<Set<string>>(new Set());
   const [compartilhar, setCompartilhar] = useState(false);
 
@@ -37,52 +55,156 @@ function Evidencias() {
     queryKey: ["agua", "visitas", de, ate],
     queryFn: () => listVisitas(de, ate),
   });
+  const fotosDb = useQuery({
+    queryKey: ["agua", "fotos", de, ate],
+    queryFn: () => listFotos(de, ate),
+  });
 
-  const porId = useMemo(() => new Map((pontos.data ?? []).map((p) => [p.id, p])), [pontos.data]);
+  const porPonto = useMemo(
+    () => new Map((pontos.data ?? []).map((p) => [p.id, p])),
+    [pontos.data],
+  );
+  const porVisita = useMemo(
+    () => new Map((visitas.data ?? []).map((v) => [v.id, v])),
+    [visitas.data],
+  );
+
+  /**
+   * O histórico une duas fontes: `agua_fotos` (metadados completos, item 10.1)
+   * e a foto principal gravada na visita — assim nada some da galeria mesmo
+   * para registros antigos ou já compartilhados no WhatsApp.
+   */
+  const registros = useMemo(() => {
+    type Registro = {
+      chave: string;
+      url: string;
+      thumb: string | null;
+      data: string;
+      predio: string;
+      andar: string;
+      espaco: string;
+      nome: string;
+      colaborador: string;
+      veiculo: string;
+      status: string;
+      tipo: string;
+      rotaId: string | null;
+    };
+    const vistos = new Set<string>();
+    const out: Registro[] = [];
+
+    for (const f of fotosDb.data ?? []) {
+      const v = f.visita_id ? porVisita.get(f.visita_id) : undefined;
+      const p = porPonto.get(f.ponto_id ?? v?.ponto_id ?? "");
+      const meta = (f.metadados ?? {}) as Record<string, string | null>;
+      out.push({
+        chave: f.id,
+        url: f.image_url,
+        thumb: f.thumbnail_url,
+        data: (v?.data ?? meta.data ?? f.enviada_em.slice(0, 10)) as string,
+        predio: p?.predio ?? meta.predio ?? "Sem prédio",
+        andar: p?.andar ?? meta.andar ?? "",
+        espaco: p?.espaco ?? meta.espaco ?? "",
+        nome: p ? pontoLabel(p) : (meta.predio ?? "Evidência"),
+        colaborador: v?.responsavel ?? meta.colaborador ?? "",
+        veiculo: v?.veiculo ?? meta.veiculo ?? "",
+        status: v?.status ?? (f.filtro_solicitacao_id ? "filtro" : "—"),
+        tipo: f.filtro_solicitacao_id ? "filtro" : f.tipo,
+        rotaId: f.rota_id ?? v?.rota_id ?? null,
+      });
+      vistos.add(f.image_url);
+    }
+
+    for (const v of visitas.data ?? []) {
+      const urls = [...(v.fotos ?? []), v.foto_url].filter(Boolean) as string[];
+      for (const url of urls) {
+        if (vistos.has(url)) continue;
+        vistos.add(url);
+        const p = porPonto.get(v.ponto_id);
+        out.push({
+          chave: `${v.id}-${url}`,
+          url,
+          thumb: null,
+          data: v.data,
+          predio: p?.predio ?? "Sem prédio",
+          andar: p?.andar ?? "",
+          espaco: p?.espaco ?? "",
+          nome: p ? pontoLabel(p) : "Ponto removido",
+          colaborador: v.responsavel ?? "",
+          veiculo: v.veiculo ?? "",
+          status: v.status,
+          tipo: "entrega",
+          rotaId: v.rota_id ?? null,
+        });
+      }
+    }
+
+    return out.sort((a, b) => b.data.localeCompare(a.data));
+  }, [fotosDb.data, visitas.data, porPonto, porVisita]);
+
+  const opcoes = useMemo(() => {
+    const uniq = (vals: string[]) => Array.from(new Set(vals.filter(Boolean))).sort();
+    return {
+      predios: uniq(registros.map((r) => r.predio)),
+      andares: uniq(registros.map((r) => r.andar)),
+      espacos: uniq(registros.map((r) => r.espaco)),
+      colaboradores: uniq(registros.map((r) => r.colaborador)),
+      veiculos: uniq(registros.map((r) => r.veiculo)),
+      status: uniq(registros.map((r) => r.status)),
+      tipos: uniq(registros.map((r) => r.tipo)),
+    };
+  }, [registros]);
 
   const fotos = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    return (visitas.data ?? [])
-      .filter((v) => !!v.foto_url)
-      .map((v) => ({
-        v,
-        nome: porId.get(v.ponto_id) ? pontoLabel(porId.get(v.ponto_id)!) : "Ponto removido",
-        predio: porId.get(v.ponto_id)?.predio ?? "Sem prédio",
-      }))
-      .filter((r) => !termo || r.nome.toLowerCase().includes(termo));
-  }, [visitas.data, porId, busca]);
+    return registros.filter(
+      (r) =>
+        (!termo || r.nome.toLowerCase().includes(termo)) &&
+        (predio === TODOS || r.predio === predio) &&
+        (andar === TODOS || r.andar === andar) &&
+        (espaco === TODOS || r.espaco === espaco) &&
+        (colaborador === TODOS || r.colaborador === colaborador) &&
+        (veiculo === TODOS || r.veiculo === veiculo) &&
+        (status === TODOS || r.status === status) &&
+        (tipo === TODOS || r.tipo === tipo),
+    );
+  }, [registros, busca, predio, andar, espaco, colaborador, veiculo, status, tipo]);
 
   const selecionadas = useMemo(
-    () => (selecao.size ? fotos.filter((f) => selecao.has(f.v.id)) : fotos),
+    () => (selecao.size ? fotos.filter((f) => selecao.has(f.chave)) : fotos),
     [fotos, selecao],
   );
 
   const itens: EvidenciaItem[] = useMemo(
-    () =>
-      selecionadas.map((f) => ({
-        predio: f.predio,
-        parada: f.nome,
-        url: f.v.foto_url!,
-      })),
+    () => selecionadas.map((f) => ({ predio: f.predio, parada: f.nome, url: f.url })),
     [selecionadas],
   );
 
   const resumo = useMemo(() => {
-    const alvo = selecionadas.map((f) => f.v);
+    const visitasAlvo = Array.from(
+      new Set(
+        selecionadas
+          .map((f) => porVisita.get(f.chave.split("-")[0]))
+          .filter(Boolean),
+      ),
+    );
+    const base = visitas.data ?? [];
+    const doDia = base.filter((v) => selecionadas.some((f) => f.data === v.data));
+    const alvo = visitasAlvo.length ? visitasAlvo : doDia;
     return {
-      data: alvo[0]?.data ?? ate,
-      colaboradorPrincipal: alvo[0]?.responsavel ?? null,
-      veiculoPrefixo: alvo[0]?.veiculo ?? null,
+      data: selecionadas[0]?.data ?? ate,
+      colaboradorPrincipal: selecionadas[0]?.colaborador || null,
+      veiculoPrefixo: selecionadas[0]?.veiculo || null,
       veiculoPlaca: null,
       podeVerPlaca: false,
-      concluidas: alvo.filter((v) => v.status === "concluida" || v.status === "parcial").length,
-      previstas: alvo.length,
-      bagsEntregues: alvo.reduce((a, v) => a + (v.bags_entregues ?? 0), 0),
+      concluidas: alvo.filter((v) => v!.status === "concluida" || v!.status === "parcial").length,
+      previstas: alvo.length || selecionadas.length,
+      bagsEntregues: alvo.reduce((a, v) => a + (v!.bags_entregues ?? 0), 0),
       ocorrencias: alvo.filter(
-        (v) => v.status !== "concluida" && v.status !== "parcial" && v.status !== "pendente",
+        (v) => v!.status !== "concluida" && v!.status !== "parcial" && v!.status !== "pendente",
       ).length,
     };
-  }, [selecionadas, ate]);
+  }, [selecionadas, visitas.data, porVisita, ate]);
 
   const alternar = (id: string) => {
     setSelecao((prev) => {
@@ -93,10 +215,37 @@ function Evidencias() {
     });
   };
 
+  const filtro = (
+    rotulo: string,
+    valor: string,
+    setValor: (v: string) => void,
+    lista: string[],
+    rotuloTodos: string,
+  ) => (
+    <div className="space-y-1">
+      <Label>{rotulo}</Label>
+      <Select value={valor} onValueChange={setValor}>
+        <SelectTrigger className="min-h-[44px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={TODOS}>{rotuloTodos}</SelectItem>
+          {lista.map((v) => (
+            <SelectItem key={v} value={v}>
+              {rotulo === "Status" ? (VISITA_STATUS_LABEL as any)[v] ?? v : v}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
+      <FilaFotosAviso />
+
       <GlassCard className="p-4">
-        <div className="grid gap-3 sm:grid-cols-[160px_160px_1fr] sm:items-end">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
             <Label htmlFor="ev-de">De</Label>
             <Input id="ev-de" type="date" value={de} onChange={(e) => setDe(e.target.value)} />
@@ -114,6 +263,22 @@ function Evidencias() {
               onChange={(e) => setBusca(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="mt-3 grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {filtro("Prédio", predio, setPredio, opcoes.predios, "Todos os prédios")}
+          {filtro("Andar", andar, setAndar, opcoes.andares, "Todos os andares")}
+          {filtro("Espaço", espaco, setEspaco, opcoes.espacos, "Todos os espaços")}
+          {filtro(
+            "Colaborador",
+            colaborador,
+            setColaborador,
+            opcoes.colaboradores,
+            "Todos os colaboradores",
+          )}
+          {filtro("Veículo", veiculo, setVeiculo, opcoes.veiculos, "Todos os veículos")}
+          {filtro("Status", status, setStatus, opcoes.status, "Todos os status")}
+          {filtro("Origem", tipo, setTipo, opcoes.tipos, "Entregas e filtros")}
         </div>
       </GlassCard>
 
@@ -135,7 +300,7 @@ function Evidencias() {
         </div>
       ) : null}
 
-      {visitas.isLoading ? (
+      {visitas.isLoading || fotosDb.isLoading ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {[0, 1, 2, 3, 4, 5].map((i) => (
             <Skeleton key={i} className="aspect-square rounded-2xl" />
@@ -149,34 +314,38 @@ function Evidencias() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {fotos.map(({ v, nome }) => (
+          {fotos.map((f) => (
             <div
-              key={v.id}
+              key={f.chave}
               className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 transition-colors hover:border-primary/50"
             >
               <div className="absolute left-2 top-2 z-10 rounded-md bg-background/80 p-1 backdrop-blur">
                 <Checkbox
-                  checked={selecao.has(v.id)}
-                  onCheckedChange={() => alternar(v.id)}
-                  aria-label={`Selecionar evidência de ${nome}`}
+                  checked={selecao.has(f.chave)}
+                  onCheckedChange={() => alternar(f.chave)}
+                  aria-label={`Selecionar evidência de ${f.nome}`}
                 />
               </div>
-              <a href={v.foto_url!} target="_blank" rel="noreferrer">
+              <a href={f.url} target="_blank" rel="noreferrer">
                 <div className="aspect-square overflow-hidden bg-muted/30">
                   <img
-                    src={v.foto_url!}
-                    alt={`Evidência de entrega — ${nome}`}
+                    src={f.thumb || f.url}
+                    alt={`Evidência — ${f.nome}`}
                     loading="lazy"
                     decoding="async"
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                 </div>
                 <div className="space-y-0.5 p-2.5">
-                  <p className="truncate text-xs font-medium">{nome}</p>
+                  <p className="truncate text-xs font-medium">{f.nome}</p>
                   <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    {v.data.split("-").reverse().join("/")} · {VISITA_STATUS_LABEL[v.status]}
+                    {f.data.split("-").reverse().join("/")} ·{" "}
+                    {(VISITA_STATUS_LABEL as any)[f.status] ?? f.status}
                     <ExternalLink className="h-3 w-3" />
                   </p>
+                  {f.colaborador ? (
+                    <p className="truncate text-[11px] text-muted-foreground">{f.colaborador}</p>
+                  ) : null}
                 </div>
               </a>
             </div>
