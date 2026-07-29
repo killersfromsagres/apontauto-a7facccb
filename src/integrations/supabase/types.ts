@@ -2498,6 +2498,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      audit_redact: { Args: { payload: Json }; Returns: Json }
       can_access_backorder: {
         Args: { required_action?: string }
         Returns: boolean

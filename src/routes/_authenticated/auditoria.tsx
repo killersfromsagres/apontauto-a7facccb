@@ -99,11 +99,59 @@ const fmt = (v: unknown) => {
   }
 };
 
+const ORIGENS: Record<string, string> = {
+  web: "Web",
+  mobile: "Mobile",
+  offline: "Sincronização offline",
+  cron: "Rotina automática",
+  integracao: "Integração",
+};
+
+const originOf = (r: AuditRow) => {
+  const meta = (r.metadata ?? {}) as Record<string, unknown>;
+  const key = typeof meta.origin === "string" ? meta.origin : "web";
+  return ORIGENS[key] ?? key;
+};
+
+/** Diferenças campo a campo entre o antes e o depois (dados já mascarados no banco). */
+function diffFields(oldData: unknown, newData: unknown) {
+  const a = (oldData ?? {}) as Record<string, unknown>;
+  const b = (newData ?? {}) as Record<string, unknown>;
+  const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)])).sort();
+  const str = (v: unknown) => (v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v));
+  return keys
+    .map((k) => ({ key: k, before: str(a[k]), after: str(b[k]) }))
+    .filter((d) => d.before !== d.after);
+}
+
+function toCsv(rows: AuditRow[]) {
+  const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const head = ["Data", "Ação", "Módulo", "Registro", "ID", "Usuário", "Origem"].join(";");
+  const body = rows.map((r) =>
+    [
+      new Date(r.created_at).toLocaleString("pt-BR"),
+      actionLabel(r.action),
+      r.module_key ?? "",
+      r.entity_type,
+      r.entity_id ?? "",
+      r.user_id ?? "sistema",
+      originOf(r),
+    ]
+      .map(esc)
+      .join(";"),
+  );
+  return `\uFEFF${[head, ...body].join("\n")}`;
+}
+
+
 function AuditoriaPage() {
   const { allowed, isLoading: loadingAccess } = useCanAccessModule("auditoria", "read");
   const [periodo, setPeriodo] = useState<(typeof PERIODOS)[number]["key"]>("7d");
   const [busca, setBusca] = useState("");
+  const [modulo, setModulo] = useState("todos");
+  const [acao, setAcao] = useState("todas");
   const [selecionado, setSelecionado] = useState<AuditRow | null>(null);
+
 
   const eventos = useQuery({
     queryKey: ["audit-events", periodo],
@@ -127,16 +175,35 @@ function AuditoriaPage() {
     },
   });
 
+  const modulos = useMemo(
+    () =>
+      Array.from(new Set((eventos.data ?? []).map((r) => r.module_key ?? r.entity_type))).sort(),
+    [eventos.data],
+  );
+
   const rows = useMemo(() => {
     const termo = busca.trim().toLowerCase();
-    const base = eventos.data ?? [];
+    let base = eventos.data ?? [];
+    if (modulo !== "todos") base = base.filter((r) => (r.module_key ?? r.entity_type) === modulo);
+    if (acao !== "todas") base = base.filter((r) => (r.action ?? "").toLowerCase() === acao);
     if (!termo) return base;
     return base.filter((r) =>
       [r.entity_type, r.module_key, r.action, r.event_type, r.entity_id, r.user_id]
         .filter(Boolean)
         .some((v) => String(v).toLowerCase().includes(termo)),
     );
-  }, [eventos.data, busca]);
+  }, [eventos.data, busca, modulo, acao]);
+
+  function baixarCsv() {
+    const blob = new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `auditoria-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
 
   const kpis = useMemo(() => {
     const total = rows.length;
@@ -264,13 +331,43 @@ function AuditoriaPage() {
               </Button>
             ))}
           </div>
-          <Input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por registro, módulo ou ação"
-            className="h-11 sm:max-w-xs"
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por registro, módulo ou ação"
+              className="h-11 sm:max-w-xs"
+            />
+            <select
+              value={modulo}
+              onChange={(e) => setModulo(e.target.value)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+              aria-label="Filtrar por módulo"
+            >
+              <option value="todos">Todos os módulos</option>
+              {modulos.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+            <select
+              value={acao}
+              onChange={(e) => setAcao(e.target.value)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+              aria-label="Filtrar por ação"
+            >
+              <option value="todas">Todas as ações</option>
+              <option value="create">Criação</option>
+              <option value="update">Alteração</option>
+              <option value="delete">Exclusão</option>
+            </select>
+            <Button variant="outline" className="h-11 shrink-0" onClick={baixarCsv}>
+              Exportar CSV
+            </Button>
+          </div>
         </div>
+
 
         <div className="mt-4">
           {eventos.isError ? (
@@ -311,7 +408,27 @@ function AuditoriaPage() {
             <DetailRow label="Módulo">{selecionado.module_key ?? "—"}</DetailRow>
             <DetailRow label="Registro">{selecionado.entity_id ?? "—"}</DetailRow>
             <DetailRow label="Usuário">{selecionado.user_id ?? "sistema"}</DetailRow>
+            <DetailRow label="Origem">{originOf(selecionado)}</DetailRow>
+
+            {selecionado.action === "update" ? (
+              <div className="overflow-hidden rounded-2xl border border-border/60">
+                <div className="grid grid-cols-3 gap-2 bg-muted/40 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+                  <span>Campo</span>
+                  <span>Antes</span>
+                  <span>Depois</span>
+                </div>
+                {diffFields(selecionado.old_data, selecionado.new_data).map((d) => (
+                  <div key={d.key} className="grid grid-cols-3 gap-2 border-t border-border/40 px-3 py-2 text-[11px]">
+                    <span className="font-medium break-words">{d.key}</span>
+                    <span className="break-words text-muted-foreground line-through/0">{d.before}</span>
+                    <span className="break-words">{d.after}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <div className="grid gap-3 lg:grid-cols-2">
+
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Antes</p>
                 <pre className="max-h-64 overflow-auto rounded-2xl bg-muted/40 p-3 text-[11px] leading-relaxed">
