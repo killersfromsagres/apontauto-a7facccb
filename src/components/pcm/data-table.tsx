@@ -19,7 +19,12 @@ export type DataTableColumn<T> = {
   headClassName?: string;
   /** Valor usado na ordenação; ausente = coluna não ordenável. */
   sortValue?: (row: T) => string | number | null | undefined;
+  /** No mobile: destaca a coluna como título do card (a primeira é o padrão). */
+  mobilePrimary?: boolean;
+  /** No mobile: oculta a coluna do card (ruído/densidade). */
+  mobileHidden?: boolean;
 };
+
 
 export type DataTableProps<T> = {
   data: T[];
@@ -72,11 +77,93 @@ export function DataTable<T>({
   }
 
   const rows = sorted.slice(0, visible);
+  const mobileCols = columns.filter((c) => !c.mobileHidden);
+  const primaryCol = mobileCols.find((c) => c.mobilePrimary) ?? mobileCols[0];
+  const secondaryCols = mobileCols.filter((c) => c.key !== primaryCol?.key);
+  const sortableCols = columns.filter((c) => c.sortValue);
 
   return (
     <div className={cn("space-y-3", className)}>
-      <div className="overflow-x-auto rounded-2xl border border-border/60">
+      {/* Mobile: lista de cards — elimina a rolagem horizontal das tabelas densas. */}
+      <div className="space-y-2 md:hidden">
+        {sortableCols.length > 0 ? (
+          <div className="scroll-fluid -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+            {sortableCols.map((col) => {
+              const active = sort?.key === col.key;
+              return (
+                <button
+                  key={col.key}
+                  type="button"
+                  onClick={() =>
+                    setSort((prev) =>
+                      prev?.key === col.key
+                        ? { key: col.key, dir: prev.dir === "asc" ? "desc" : "asc" }
+                        : { key: col.key, dir: "asc" },
+                    )
+                  }
+                  className={cn(
+                    "glass-tile flex min-h-11 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-medium",
+                    active
+                      ? "border-primary/60 text-primary"
+                      : "border-border/60 text-muted-foreground",
+                  )}
+                >
+                  {col.header}
+                  {active ? (sort!.dir === "asc" ? "▲" : "▼") : null}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {rows.map((row, index) => {
+          const clickable = Boolean(onRowClick);
+          return (
+            <div
+              key={rowKey(row, index)}
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onClick={clickable ? () => onRowClick!(row) : undefined}
+              onKeyDown={
+                clickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onRowClick!(row);
+                      }
+                    }
+                  : undefined
+              }
+              className={cn(
+                "rounded-2xl border border-border/60 bg-card/60 p-3",
+                clickable && "cursor-pointer active:scale-[0.99] transition-transform",
+              )}
+            >
+              {primaryCol ? (
+                <div className="min-w-0 text-sm font-semibold">
+                  {primaryCol.cell(row, index)}
+                </div>
+              ) : null}
+              {secondaryCols.length > 0 ? (
+                <dl className="mt-2 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
+                  {secondaryCols.map((col) => (
+                    <div key={col.key} className="contents">
+                      <dt className="text-muted-foreground">{col.header}</dt>
+                      <dd className="min-w-0 break-words text-right font-medium">
+                        {col.cell(row, index)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-2xl border border-border/60 md:block">
         <Table>
+
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
