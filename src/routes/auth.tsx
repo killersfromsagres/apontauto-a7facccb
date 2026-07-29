@@ -221,81 +221,117 @@ function AuthPage() {
 
 
           <form onSubmit={submit} className="space-y-4" noValidate>
-            <div className="auth-field">
-              <UserRound className="auth-icon" size={18} />
-              <input
-                id="email"
-                type="text"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder=" "
-                className="auth-input"
-                autoComplete="username"
-              />
-              <label htmlFor="email" className="auth-label">
-                Usuário
-              </label>
+            <div>
+              <div className="auth-field">
+                <UserRound className="auth-icon" size={18} />
+                <input
+                  id="email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
+                  }}
+                  placeholder=" "
+                  className="auth-input"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                />
+                <label htmlFor="email" className="auth-label">
+                  Usuário
+                </label>
+              </div>
+              {fieldErrors.email && (
+                <p id="email-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
 
-            <div className="auth-field">
-              <Lock className="auth-icon" size={18} />
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder=" "
-                className="auth-input pr-11"
-                autoComplete="current-password"
-              />
-              <label htmlFor="password" className="auth-label">
-                Senha
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="auth-eye"
-                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-
-
-
-
-            <div className="flex items-start gap-3 text-xs text-white/70">
-              <input
-                id="terms"
-                type="checkbox"
-                className="auth-checkbox mt-0.5"
-                checked={acceptTerms}
-                onChange={(e) => setAcceptTerms(e.target.checked)}
-              />
-              <label htmlFor="terms" className="cursor-pointer leading-relaxed">
-                Li e aceito os{" "}
-                <a href="/termos" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
-                  Termos de Uso
-                </a>{" "}
-                e a{" "}
-                <a href="/privacidade" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
-                  Política de Privacidade
-                </a>
-                .{" "}
+            <div>
+              <div className="auth-field">
+                <Lock className="auth-icon" size={18} />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined }));
+                  }}
+                  placeholder=" "
+                  className="auth-input pr-11"
+                  autoComplete="current-password"
+                  enterKeyHint="go"
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                />
+                <label htmlFor="password" className="auth-label">
+                  Senha
+                </label>
                 <button
                   type="button"
-                  onClick={() => setTermsOpen(true)}
-                  className="text-white/50 underline underline-offset-2 hover:text-white/80"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="auth-eye"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  Ver resumo
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
-              </label>
+              </div>
+              {fieldErrors.password && (
+                <p id="password-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
+            <div>
+              <div className="flex items-start gap-3 text-xs text-white/70">
+                <input
+                  id="terms"
+                  type="checkbox"
+                  className="auth-checkbox mt-0.5"
+                  checked={acceptTerms}
+                  onChange={(e) => {
+                    setAcceptTerms(e.target.checked);
+                    if (e.target.checked) setFieldErrors((p) => ({ ...p, terms: undefined }));
+                  }}
+                  aria-invalid={Boolean(fieldErrors.terms)}
+                  aria-describedby={fieldErrors.terms ? "terms-error" : undefined}
+                />
+                <label htmlFor="terms" className="cursor-pointer leading-relaxed">
+                  Li e aceito os{" "}
+                  <a href="/termos" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                    Termos de Uso
+                  </a>{" "}
+                  e a{" "}
+                  <a href="/privacidade" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                    Política de Privacidade
+                  </a>
+                  .{" "}
+                  <button
+                    type="button"
+                    onClick={() => setTermsOpen(true)}
+                    className="text-white/50 underline underline-offset-2 hover:text-white/80"
+                  >
+                    Ver resumo
+                  </button>
+                </label>
+              </div>
+              {fieldErrors.terms && (
+                <p id="terms-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
+                  {fieldErrors.terms}
+                </p>
+              )}
+            </div>
 
-            <button type="submit" className="auth-btn" disabled={loading || !acceptTerms}>
+            <button type="submit" className="auth-btn" disabled={loading}>
+
               {loading ? (
                 <span className="dots inline-flex items-center justify-center text-white">
                   <span /><span /><span />
