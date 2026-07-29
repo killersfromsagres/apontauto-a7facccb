@@ -396,6 +396,38 @@ const QUICK_KEYS = [
  * Compartilhado entre a sidebar (desktop), a barra inferior (mobile),
  * a pesquisa global e os atalhos da home.
  */
+/** Módulo sensível (negação por padrão, espelha `can_access_module`). */
+export function isRestrictedModule(key: string): boolean {
+  return RESTRICTED_KEYS.includes(key);
+}
+
+/**
+ * Regra pura de visibilidade de um item de menu.
+ * `allowed = null` significa "sem lista explícita" → nega tudo, exceto admin.
+ */
+export function canSeeMenuItem(
+  item: MenuItem,
+  ctx: { isAdmin: boolean; allowed: string[] | null | undefined },
+): boolean {
+  const { isAdmin, allowed } = ctx;
+  const key = item.key;
+  // Módulos restritos: negação por padrão (nunca liberados por
+  // `allowed_menus = null` do sistema legado). Espelha a lista de
+  // `can_access_module` no banco.
+  if (isRestrictedModule(key)) {
+    return isAdmin || (allowed?.includes(key) ?? false);
+  }
+  if (key === "configuracoes") return isAdmin;
+  if (key === "refrigeracao-gestor") return isAdmin;
+  if (key === "corretiva-gestor") return isAdmin;
+  if (key === "assets-catalog") return isAdmin;
+  if (key.startsWith("assets-")) return isAdmin;
+  if (isAdmin) return true;
+  // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
+  if (!allowed) return false;
+  return itemKeys(item).some((k) => allowed.includes(k));
+}
+
 export function useVisibleSections() {
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
   const { allowed, loading: loadingAllowed } = useAllowedMenus();
@@ -404,24 +436,8 @@ export function useVisibleSections() {
 
   const visibleSections = useMemo<MenuSection[]>(() => {
     if (loading) return [];
-    const canSee = (item: MenuItem) => {
-      const key = item.key;
-      // Módulos restritos: negação por padrão (nunca liberados por
-      // `allowed_menus = null` do sistema legado). Espelha a lista de
-      // `can_access_module` no banco.
-      if (RESTRICTED_KEYS.includes(key)) {
-        return isAdmin || (allowed?.includes(key) ?? false);
-      }
-      if (key === "configuracoes") return isAdmin;
-      if (key === "refrigeracao-gestor") return isAdmin;
-      if (key === "corretiva-gestor") return isAdmin;
-      if (key === "assets-catalog") return isAdmin;
-      if (key.startsWith("assets-")) return isAdmin;
-      if (isAdmin) return true;
-      // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
-      if (!allowed) return false;
-      return itemKeys(item).some((k) => allowed.includes(k));
-    };
+    const canSee = (item: MenuItem) => canSeeMenuItem(item, { isAdmin, allowed });
+
     const out: MenuSection[] = [];
     for (const s of sections) {
       if (s.kind === "item") {
