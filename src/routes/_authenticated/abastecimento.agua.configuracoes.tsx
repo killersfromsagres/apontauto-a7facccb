@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CloudOff, Database, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
+import { Clock, CloudOff, Database, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { listPontos, listProgramacao } from "@/lib/agua/api";
 import { lerFila, useAguaSync } from "@/lib/agua/offline";
+import { useSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/configuracoes")({
   component: Configuracoes,
@@ -150,7 +151,8 @@ function Configuracoes() {
 /** Horário (fuso São Paulo) em que o sistema gera as rotas do dia automaticamente. */
 function GeracaoCard() {
   const [settings, save] = useSettings();
-  const atual = Number((settings as Record<string, any>).aguaGeracao?.hora ?? 5);
+  const extras = settings as unknown as Record<string, any>;
+  const atual = Number(extras.aguaGeracao?.hora ?? 5);
   const [hora, setHora] = useState(String(atual));
   const [salvando, setSalvando] = useState(false);
 
@@ -191,10 +193,7 @@ function GeracaoCard() {
           onClick={async () => {
             setSalvando(true);
             try {
-              await save({
-                ...(settings as never),
-                aguaGeracao: { hora: Number(hora) },
-              } as never);
+              await save({ ...extras, aguaGeracao: { hora: Number(hora) } } as never);
               toast.success("Horário salvo.");
             } catch (e) {
               toast.error((e as Error)?.message ?? "Falha ao salvar horário.");
