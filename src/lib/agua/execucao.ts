@@ -383,11 +383,13 @@ export async function finalizarRota(
 async function notificarGestor(rota: RotaExecucao, divergencia: number, justificativa: string) {
   try {
     await db.from("notifications").insert({
-      titulo: "Divergência de bags na rota de água",
-      mensagem: `Rota de ${rota.data} (${rota.turno}) fechou com divergência de ${divergencia} bag(s). Justificativa: ${justificativa}`,
-      tipo: "alerta",
-      modulo: "abastecimento-agua",
-      target_mode: "module",
+      title: "Divergência de bags na rota de água",
+      body: `Rota de ${rota.data} (${rota.turno}) fechou com divergência de ${divergencia} bag(s). Justificativa: ${justificativa}`,
+      category: "atencao",
+      severity: "warning",
+      module_key: "abastecimento-agua",
+      target_mode: "modules",
+      deep_link: "/abastecimento/agua/rotas",
     });
   } catch {
     /* a ocorrência já foi registrada; a notificação é best-effort */

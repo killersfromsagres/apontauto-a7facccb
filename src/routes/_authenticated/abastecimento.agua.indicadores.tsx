@@ -46,6 +46,14 @@ const STATUS_COLOR: Record<VisitaStatus, string> = {
   parcial: "oklch(0.78 0.15 80)",
   nao_realizada: "oklch(0.68 0.19 20)",
   cancelada: "var(--border)",
+  em_deslocamento: "oklch(0.72 0.13 240)",
+  em_atendimento: "oklch(0.76 0.14 210)",
+  sem_necessidade: "oklch(0.7 0.05 250)",
+  acesso_bloqueado: "oklch(0.66 0.18 30)",
+  local_fechado: "oklch(0.64 0.16 350)",
+  falta_bags: "oklch(0.75 0.16 60)",
+  endereco_divergente: "oklch(0.7 0.15 300)",
+  reprogramada: "oklch(0.74 0.12 100)",
 };
 
 function Indicadores() {
