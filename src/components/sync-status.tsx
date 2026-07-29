@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, CloudOff, RefreshCw, TriangleAlert, UploadCloud } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { outboxAll as refrigOutbox } from "@/lib/refrigeracao/db";
 import { outboxAll as corretivaOutbox } from "@/lib/corretiva/db";
@@ -105,7 +105,8 @@ export function SyncStatus() {
   const { icon: Icon, label, hint, classe } = visual[estado];
 
   return (
-    <Tooltip>
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
       <TooltipTrigger asChild>
         <Button
           type="button"
@@ -131,6 +132,7 @@ export function SyncStatus() {
           {hint}
         </span>
       </TooltipContent>
-    </Tooltip>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
 import { GlobalSearch } from "./global-search";
+import { SyncStatus } from "./sync-status";
 import { supabase } from "@/integrations/supabase/client";
 import { clearCredentials } from "@/lib/auth/saved-credentials";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -101,6 +102,7 @@ export function AppHeader() {
           </span>
         )}
         <GlobalSearch />
+        <SyncStatus />
         <SlaBell />
         <ThemeToggle />
         <AlertDialog>
