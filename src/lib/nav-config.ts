@@ -30,6 +30,7 @@ import {
   FileClock,
   SearchX,
   BellRing,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 
