@@ -6,6 +6,7 @@ import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./theme-toggle";
 import { SlaBell } from "./sla-bell";
+import { NotificationsBell } from "./notifications-bell";
 import { GlobalSearch } from "./global-search";
 import { SyncStatus } from "./sync-status";
 import { supabase } from "@/integrations/supabase/client";
@@ -103,6 +104,7 @@ export function AppHeader() {
         )}
         <GlobalSearch />
         <SyncStatus />
+        <NotificationsBell />
         <SlaBell />
         <ThemeToggle />
         <AlertDialog>
