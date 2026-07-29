@@ -1193,42 +1193,136 @@ export type Database = {
           },
         ]
       }
+      notification_receipts: {
+        Row: {
+          acknowledged_at: string | null
+          delivered_at: string
+          id: string
+          notification_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          delivered_at?: string
+          id?: string
+          notification_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          delivered_at?: string
+          id?: string
+          notification_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_receipts_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_targets: {
+        Row: {
+          created_at: string
+          id: string
+          module_key: string | null
+          notification_id: string
+          role_key: string | null
+          team_key: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          module_key?: string | null
+          notification_id: string
+          role_key?: string | null
+          team_key?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          module_key?: string | null
+          notification_id?: string
+          role_key?: string | null
+          team_key?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_targets_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
+          category: string
           created_at: string
           created_by: string | null
+          deep_link: string | null
           expires_at: string | null
           id: string
           link_url: string | null
+          metadata: Json
           module_key: string | null
+          requires_ack: boolean
           severity: string
+          starts_at: string
+          status: string
+          target_mode: string
           target_user_id: string | null
           title: string
           updated_at: string
         }
         Insert: {
           body?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
+          deep_link?: string | null
           expires_at?: string | null
           id?: string
           link_url?: string | null
+          metadata?: Json
           module_key?: string | null
+          requires_ack?: boolean
           severity?: string
+          starts_at?: string
+          status?: string
+          target_mode?: string
           target_user_id?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           body?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
+          deep_link?: string | null
           expires_at?: string | null
           id?: string
           link_url?: string | null
+          metadata?: Json
           module_key?: string | null
+          requires_ack?: boolean
           severity?: string
+          starts_at?: string
+          status?: string
+          target_mode?: string
           target_user_id?: string | null
           title?: string
           updated_at?: string
@@ -2515,6 +2609,7 @@ export type Database = {
         Args: { required_action?: string }
         Returns: boolean
       }
+      can_manage_notifications: { Args: never; Returns: boolean }
       can_write_corretiva: {
         Args: { required_action?: string }
         Returns: boolean
@@ -2610,6 +2705,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      notification_is_for_me: {
+        Args: { _notification_id: string; _target_mode: string }
         Returns: boolean
       }
       pcm_fill_metrics: { Args: never; Returns: Json }

@@ -30,6 +30,7 @@ import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authent
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
+import { Route as AuthenticatedNotificacoesAdminRouteImport } from './routes/_authenticated/notificacoes-admin'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
@@ -166,6 +167,12 @@ const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   path: '/outros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificacoesAdminRoute =
+  AuthenticatedNotificacoesAdminRouteImport.update({
+    id: '/notificacoes-admin',
+    path: '/notificacoes-admin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedNotificacoesRoute =
   AuthenticatedNotificacoesRouteImport.update({
     id: '/notificacoes',
@@ -314,6 +321,7 @@ export interface FileRoutesByFullPath {
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -357,6 +365,7 @@ export interface FileRoutesByTo {
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -403,6 +412,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
+  '/_authenticated/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
@@ -450,6 +460,7 @@ export interface FileRouteTypes {
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/notificacoes'
+    | '/notificacoes-admin'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -493,6 +504,7 @@ export interface FileRouteTypes {
     | '/dashboard-chamados'
     | '/lavanderia'
     | '/notificacoes'
+    | '/notificacoes-admin'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -538,6 +550,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard-chamados'
     | '/_authenticated/lavanderia'
     | '/_authenticated/notificacoes'
+    | '/_authenticated/notificacoes-admin'
     | '/_authenticated/outros'
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
@@ -723,6 +736,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOutrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notificacoes-admin': {
+      id: '/_authenticated/notificacoes-admin'
+      path: '/notificacoes-admin'
+      fullPath: '/notificacoes-admin'
+      preLoaderRoute: typeof AuthenticatedNotificacoesAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/notificacoes': {
       id: '/_authenticated/notificacoes'
       path: '/notificacoes'
@@ -897,6 +917,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
+  AuthenticatedNotificacoesAdminRoute: typeof AuthenticatedNotificacoesAdminRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
@@ -933,6 +954,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
+  AuthenticatedNotificacoesAdminRoute: AuthenticatedNotificacoesAdminRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,
