@@ -53,13 +53,14 @@ export async function hashTelefone(numero: string): Promise<string> {
     .join("");
 }
 
-const MAX_LINKS = 40;
+const MAX_LINKS = 30;
 
 /** Mensagem profissional configurável — nunca inclui CPF nem segredos. */
 export function montarMensagem(
   resumo: ResumoRota,
   itens: EvidenciaItem[],
   template?: string,
+  opts?: { maxLinks?: number; linkUnico?: string | null },
 ): string {
   const equipe = [resumo.colaboradorPrincipal, resumo.acompanhante].filter(Boolean).join(" + ");
   const placa = resumo.podeVerPlaca
@@ -67,25 +68,37 @@ export function montarMensagem(
     : mascararPlaca(resumo.veiculoPlaca);
   const veiculo = [resumo.veiculoPrefixo, placa].filter(Boolean).join(" — ") || "—";
 
-  const porPredio = new Map<string, EvidenciaItem[]>();
-  for (const i of itens) {
-    const lista = porPredio.get(i.predio) ?? [];
-    lista.push(i);
-    porPredio.set(i.predio, lista);
-  }
+  const maxLinks = Math.max(1, opts?.maxLinks ?? MAX_LINKS);
+  let lista: string;
 
-  let restantes = MAX_LINKS;
-  const blocos: string[] = [];
-  for (const [predio, lista] of porPredio) {
-    if (restantes <= 0) break;
-    const visiveis = lista.slice(0, restantes);
-    restantes -= visiveis.length;
-    blocos.push(
-      [`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"),
-    );
+  if (opts?.linkUnico) {
+    // Muitas fotos: um único link para o resumo (item 11.2).
+    lista = [
+      `*${itens.length} evidência(s)* organizadas em resumo único:`,
+      opts.linkUnico,
+    ].join("\n");
+  } else {
+    const porPredio = new Map<string, EvidenciaItem[]>();
+    for (const i of itens) {
+      const l = porPredio.get(i.predio) ?? [];
+      l.push(i);
+      porPredio.set(i.predio, l);
+    }
+
+    let restantes = maxLinks;
+    const blocos: string[] = [];
+    for (const [predio, itensPredio] of porPredio) {
+      if (restantes <= 0) break;
+      const visiveis = itensPredio.slice(0, restantes);
+      restantes -= visiveis.length;
+      blocos.push(
+        [`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"),
+      );
+    }
+    const ocultas = itens.length - (maxLinks - Math.max(0, restantes));
+    if (ocultas > 0) blocos.push(`_+${ocultas} evidência(s) disponíveis no histórico do sistema._`);
+    lista = blocos.join("\n\n") || "_Sem evidências no filtro selecionado._";
   }
-  const ocultas = itens.length - (MAX_LINKS - Math.max(0, restantes));
-  if (ocultas > 0) blocos.push(`_+${ocultas} evidência(s) disponíveis no histórico do sistema._`);
 
   const corpo = template ?? DEFAULT_TEMPLATE;
   return corpo
@@ -95,9 +108,10 @@ export function montarMensagem(
     .replace("{progresso}", `${resumo.concluidas}/${resumo.previstas}`)
     .replace("{bags}", String(resumo.bagsEntregues))
     .replace("{ocorrencias}", String(resumo.ocorrencias))
-    .replace("{lista}", blocos.join("\n\n") || "_Sem evidências no filtro selecionado._")
+    .replace("{lista}", lista)
     .trim();
 }
+
 
 export const DEFAULT_TEMPLATE = `*Abastecimento de Água — Evidências da Rota*
 Data: {data}
