@@ -14,15 +14,37 @@ import {
 // As tabelas novas ainda não constam nos tipos gerados.
 const db = supabase as unknown as { from: (t: string) => any };
 
-export type VisitaStatus = "pendente" | "concluida" | "parcial" | "nao_realizada" | "cancelada";
+export type VisitaStatus =
+  | "pendente"
+  | "em_deslocamento"
+  | "em_atendimento"
+  | "concluida"
+  | "parcial"
+  | "nao_realizada"
+  | "sem_necessidade"
+  | "acesso_bloqueado"
+  | "local_fechado"
+  | "falta_bags"
+  | "endereco_divergente"
+  | "reprogramada"
+  | "cancelada";
 
 export const VISITA_STATUS_LABEL: Record<VisitaStatus, string> = {
   pendente: "Pendente",
+  em_deslocamento: "Em deslocamento",
+  em_atendimento: "Em atendimento",
   concluida: "Concluída",
-  parcial: "Entrega parcial",
+  parcial: "Concluída parcialmente",
   nao_realizada: "Não realizada",
+  sem_necessidade: "Ponto sem necessidade",
+  acesso_bloqueado: "Acesso bloqueado",
+  local_fechado: "Local fechado",
+  falta_bags: "Falta de bags",
+  endereco_divergente: "Endereço divergente",
+  reprogramada: "Reprogramada",
   cancelada: "Cancelada",
 };
+
 
 export const MOTIVOS_NAO_REALIZADA = [
   "Feriado",
@@ -107,12 +129,30 @@ export interface Visita {
   motivo: string | null;
   bags_previstas: number;
   bags_entregues: number | null;
+  bags_recolhidas: number | null;
+  estoque_antes: number | null;
+  estoque_depois: number | null;
+  condicao: string | null;
+  recebido_por: string | null;
+  fotos: string[];
+  assinatura_url: string | null;
+  local_confirmado: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  deslocamento_em: string | null;
+  atendimento_em: string | null;
   foto_url: string | null;
   observacao: string | null;
   responsavel: string | null;
   veiculo: string | null;
+  ordem: number;
+  rota_id: string | null;
   executado_em: string | null;
 }
+
+export const VISITA_FIELDS =
+  "id, ponto_id, data, dia_semana, status, motivo, bags_previstas, bags_entregues, bags_recolhidas, estoque_antes, estoque_depois, condicao, recebido_por, fotos, assinatura_url, local_confirmado, latitude, longitude, deslocamento_em, atendimento_em, foto_url, observacao, responsavel, veiculo, ordem, rota_id, executado_em";
+
 
 export interface Lote {
   id: string;
@@ -170,9 +210,7 @@ export async function listProgramacao(): Promise<ProgramacaoItem[]> {
 export async function listVisitas(inicio: string, fim: string): Promise<Visita[]> {
   const { data, error } = await db
     .from("agua_visitas")
-    .select(
-      "id, ponto_id, data, dia_semana, status, motivo, bags_previstas, bags_entregues, foto_url, observacao, responsavel, veiculo, executado_em",
-    )
+    .select(VISITA_FIELDS)
     .gte("data", inicio)
     .lte("data", fim)
     .order("data", { ascending: false });
@@ -334,12 +372,7 @@ export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
 /** Registra execução gerando sempre um evento de auditoria (nunca sobrescreve o histórico). */
 export async function registrarVisita(
   visitaId: string,
-  patch: Partial<
-    Pick<
-      Visita,
-      "status" | "bags_entregues" | "foto_url" | "observacao" | "motivo" | "responsavel" | "veiculo"
-    >
-  >,
+  patch: Record<string, unknown>,
 ): Promise<void> {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
