@@ -657,7 +657,7 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 }
 .auth-input::placeholder { color: transparent; }
 .auth-input:focus {
-  border-color: rgba(56, 189, 248, 0.7);
+  border-color: rgba(79, 140, 255, 0.75);
   background: rgba(255,255,255,0.06);
   box-shadow: none;
 }
@@ -675,7 +675,7 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   pointer-events: none;
   transition: color 200ms ease;
 }
-.auth-field:focus-within > .auth-icon { color: #38bdf8; }
+.auth-field:focus-within > .auth-icon { color: #52E5FF; }
 
 .auth-label {
   position: absolute;
@@ -716,18 +716,18 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   color: #f8fafc;
   background:
     linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 100%),
-    linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #38bdf8 100%);
+    linear-gradient(135deg, #2B5BD7 0%, #4F8CFF 55%, #52E5FF 100%);
   background-size: 200% 100%, 100% 100%;
   background-position: -150% 0, 0 0;
   border: 1px solid rgba(255,255,255,0.12);
-  box-shadow: 0 10px 30px -12px rgba(37, 99, 235, 0.6);
+  box-shadow: 0 10px 30px -12px rgba(79, 140, 255, 0.55);
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 220ms ease, filter 180ms ease;
 }
 .auth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
   filter: brightness(1.05);
-  box-shadow: 0 16px 40px -12px rgba(56, 189, 248, 0.7);
+  box-shadow: 0 16px 40px -12px rgba(82, 229, 255, 0.5);
   animation: btnSheen 1.6s linear infinite;
 }
 .auth-btn:active:not(:disabled) { transform: translateY(0) scale(0.985); }
@@ -744,9 +744,9 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 .auth-checkbox:checked {
-  background: linear-gradient(135deg, #1e40af, #38bdf8);
+  background: linear-gradient(135deg, #4F8CFF, #52E5FF);
   border-color: transparent;
-  box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+  box-shadow: 0 0 0 3px rgba(79,140,255,0.18);
 }
 .auth-checkbox:checked::after {
   content: "";
