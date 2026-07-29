@@ -88,12 +88,17 @@ export function FiltroDetalheDialog({ solicitacao, titulo, podeEscrever, onOpenC
   async function concluirComFoto(file: File) {
     setEnviando(true);
     try {
-      const { url } = await uploadPhotoWithFallback(file, file.name || "filtro.jpg", "agua-fotos", {
-        module: "abastecimento",
-        entityType: "agua_filtro_solicitacao",
-        entityId: id,
-      });
-      if (!url) throw new Error("Falha ao enviar a foto.");
+      const { url } = await enviarEvidencia(
+        file,
+        { filtroSolicitacaoId: id, tipo: "filtro" },
+        { nome: `filtro-${id}` },
+      );
+      if (!url) {
+        throw new Error(
+          "Foto salva no aparelho aguardando envio. Tente concluir novamente quando houver rede.",
+        );
+      }
+
       await concluirSolicitacao(id, { foto_url: url, observacao: obsConclusao });
       toast.success("Solicitação concluída com evidência.");
       setObsConclusao("");
