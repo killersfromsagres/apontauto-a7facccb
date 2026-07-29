@@ -27,6 +27,7 @@ import {
   ClipboardCheck,
   FileSpreadsheet,
   Fuel,
+  FileClock,
   SearchX,
   type LucideIcon,
 } from "lucide-react";
@@ -221,6 +222,8 @@ export const sections: MenuSection[] = [
     items: [
       { key: "seguranca-trabalho", title: "Segurança do Trabalho", short: "SST", url: "/seguranca-trabalho", icon: HardHat },
       { key: "painel-legal", title: "Painel de Itens Legais", short: "Legal", url: "/painel-legal", icon: Scale },
+      { key: "auditoria", title: "Trilha de Auditoria", short: "Auditoria", url: "/auditoria", icon: FileClock, keywords: ["log", "histórico", "rastreabilidade", "compliance"] },
+
     ],
   },
   {
