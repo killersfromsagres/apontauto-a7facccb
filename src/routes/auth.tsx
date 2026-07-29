@@ -307,17 +307,20 @@ function AuthPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs tracking-wide text-white/50">
-          Dev by:{" "}
-          <span className="shine-text font-semibold">Gabriel Vitor</span>
+      </main>
+
+      <footer className="absolute inset-x-0 bottom-4 z-10 px-4 text-center">
+        <p className="text-xs tracking-wide text-white/45">
+          Dev by: <span className="shine-text font-semibold">Gabriel Vitor</span>
         </p>
-        <nav className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/40">
+        <nav className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/35">
           <a href="/sobre" className="hover:text-white/70">Sobre</a>
           <a href="/contato" className="hover:text-white/70">Contato</a>
           <a href="/privacidade" className="hover:text-white/70">Privacidade</a>
           <a href="/termos" className="hover:text-white/70">Termos</a>
         </nav>
-      </main>
+      </footer>
+
 
       {/* Tela intermediária travada: só fecha ao clicar em Sim ou Não. */}
       <AlertDialog open={askSave}>
