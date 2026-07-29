@@ -129,12 +129,30 @@ export interface Visita {
   motivo: string | null;
   bags_previstas: number;
   bags_entregues: number | null;
+  bags_recolhidas: number | null;
+  estoque_antes: number | null;
+  estoque_depois: number | null;
+  condicao: string | null;
+  recebido_por: string | null;
+  fotos: string[];
+  assinatura_url: string | null;
+  local_confirmado: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  deslocamento_em: string | null;
+  atendimento_em: string | null;
   foto_url: string | null;
   observacao: string | null;
   responsavel: string | null;
   veiculo: string | null;
+  ordem: number;
+  rota_id: string | null;
   executado_em: string | null;
 }
+
+export const VISITA_FIELDS =
+  "id, ponto_id, data, dia_semana, status, motivo, bags_previstas, bags_entregues, bags_recolhidas, estoque_antes, estoque_depois, condicao, recebido_por, fotos, assinatura_url, local_confirmado, latitude, longitude, deslocamento_em, atendimento_em, foto_url, observacao, responsavel, veiculo, ordem, rota_id, executado_em";
+
 
 export interface Lote {
   id: string;
