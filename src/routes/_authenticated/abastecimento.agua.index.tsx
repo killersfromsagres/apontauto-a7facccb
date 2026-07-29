@@ -49,7 +49,7 @@ const STATUS_TONE: Record<VisitaStatus, string> = {
 
 function RotaDoDia() {
   const qc = useQueryClient();
-  const podeEscrever = useCanAccessModule("abastecimento", "update");
+  const podeEscrever = useCanAccessModule("abastecimento", "update").allowed;
   const [data, setData] = useState(hojeISO());
   const [aberto, setAberto] = useState<string | null>(null);
 
@@ -115,10 +115,10 @@ function RotaDoDia() {
       </GlassCard>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard title="Pontos do dia" value={kpis.total} icon={Droplets} />
-        <KpiCard title="Concluídos" value={kpis.concluidas} icon={CheckCircle2} />
-        <KpiCard title="Pendentes" value={kpis.pendentes} icon={CircleSlash} />
-        <KpiCard title="Bags entregues" value={kpis.bags} icon={PackageCheck} />
+        <KpiCard title="Pontos do dia" value={kpis.total} icon={<Droplets className="h-4 w-4" />} />
+        <KpiCard title="Concluídos" value={kpis.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <KpiCard title="Pendentes" value={kpis.pendentes} icon={<CircleSlash className="h-4 w-4" />} />
+        <KpiCard title="Bags entregues" value={kpis.bags} icon={<PackageCheck className="h-4 w-4" />} />
       </div>
 
       {visitas.isLoading ? (
