@@ -41,14 +41,14 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           : "border-border/50 bg-card/40 hover:border-primary/40",
       )}
     >
-      <div className="relative flex h-20 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent">
+      <div className="relative flex h-16 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent p-2">
         {photo ? (
           <img
             src={photo}
             alt={vehicleLabel(vehicle)}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-contain p-1.5"
+            className="max-h-full max-w-[70%] object-contain"
           />
         ) : (
           <VehiclePhoto
@@ -58,7 +58,7 @@ export const VehicleCard3D = memo(function VehicleCard3D({
             color={vehicle.color}
             title={vehicleLabel(vehicle)}
             className={cn(
-              "px-3 py-2 drop-shadow-[0_6px_14px_rgba(0,0,0,.45)] transition-transform duration-300",
+              "mx-auto max-h-full !w-auto max-w-[70%] drop-shadow-[0_4px_10px_rgba(0,0,0,.45)] transition-transform duration-300",
               active ? "scale-105" : "group-hover:scale-105",
             )}
           />
