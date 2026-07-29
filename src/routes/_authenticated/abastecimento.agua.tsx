@@ -40,7 +40,9 @@ export const Route = createFileRoute("/_authenticated/abastecimento/agua")({
 
 const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { to: "/abastecimento/agua", label: "Visão Geral", icon: LayoutDashboard, exact: true },
+  { to: "/abastecimento/agua/pontos", label: "Pontos de Entrega", icon: MapPin },
   { to: "/abastecimento/agua/programacao", label: "Programação", icon: Calendar },
+
   { to: "/abastecimento/agua/rota", label: "Rota do Dia", icon: Droplets },
   { to: "/abastecimento/agua/bags", label: "Controle de Bags", icon: PackageCheck },
   { to: "/abastecimento/agua/evidencias", label: "Evidências", icon: Camera },
