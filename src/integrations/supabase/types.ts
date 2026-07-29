@@ -53,6 +53,86 @@ export type Database = {
         }
         Relationships: []
       }
+      agua_excecoes: {
+        Row: {
+          atualizado_em: string
+          bags: number
+          criado_em: string
+          criado_por: string | null
+          data: string
+          id: string
+          motivo: string | null
+          ponto_id: string
+          tipo: string
+          turno: string
+        }
+        Insert: {
+          atualizado_em?: string
+          bags?: number
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          id?: string
+          motivo?: string | null
+          ponto_id: string
+          tipo: string
+          turno?: string
+        }
+        Update: {
+          atualizado_em?: string
+          bags?: number
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          id?: string
+          motivo?: string | null
+          ponto_id?: string
+          tipo?: string
+          turno?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_excecoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_feriados: {
+        Row: {
+          atualizado_em: string
+          bloqueia_geracao: boolean
+          criado_em: string
+          criado_por: string | null
+          data: string
+          descricao: string
+          id: string
+          tipo: string
+        }
+        Insert: {
+          atualizado_em?: string
+          bloqueia_geracao?: boolean
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          descricao: string
+          id?: string
+          tipo?: string
+        }
+        Update: {
+          atualizado_em?: string
+          bloqueia_geracao?: boolean
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          descricao?: string
+          id?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       agua_filtro_solicitacoes: {
         Row: {
           atendimento: string | null
@@ -108,6 +188,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agua_geracao_jobs: {
+        Row: {
+          criado_em: string
+          data_alvo: string
+          detalhes: Json
+          id: string
+          ignoradas: number
+          mensagem: string | null
+          origem: string
+          rotas_criadas: number
+          status: string
+          usuario_id: string | null
+          visitas_criadas: number
+        }
+        Insert: {
+          criado_em?: string
+          data_alvo: string
+          detalhes?: Json
+          id?: string
+          ignoradas?: number
+          mensagem?: string | null
+          origem?: string
+          rotas_criadas?: number
+          status?: string
+          usuario_id?: string | null
+          visitas_criadas?: number
+        }
+        Update: {
+          criado_em?: string
+          data_alvo?: string
+          detalhes?: Json
+          id?: string
+          ignoradas?: number
+          mensagem?: string | null
+          origem?: string
+          rotas_criadas?: number
+          status?: string
+          usuario_id?: string | null
+          visitas_criadas?: number
+        }
+        Relationships: []
       }
       agua_import_lotes: {
         Row: {
@@ -329,11 +451,14 @@ export type Database = {
           bags: number
           criado_em: string
           dia_semana: number
+          equipe: string | null
           id: string
           lote_id: string | null
           ordem: number
           origem: string
           ponto_id: string
+          template_key: string
+          turno: string
         }
         Insert: {
           ativo?: boolean
@@ -341,11 +466,14 @@ export type Database = {
           bags?: number
           criado_em?: string
           dia_semana: number
+          equipe?: string | null
           id?: string
           lote_id?: string | null
           ordem?: number
           origem?: string
           ponto_id: string
+          template_key?: string
+          turno?: string
         }
         Update: {
           ativo?: boolean
@@ -353,11 +481,14 @@ export type Database = {
           bags?: number
           criado_em?: string
           dia_semana?: number
+          equipe?: string | null
           id?: string
           lote_id?: string | null
           ordem?: number
           origem?: string
           ponto_id?: string
+          template_key?: string
+          turno?: string
         }
         Relationships: [
           {
@@ -375,6 +506,116 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agua_rota_versoes: {
+        Row: {
+          criado_em: string
+          id: string
+          motivo: string | null
+          rota_id: string
+          snapshot: Json
+          usuario_id: string | null
+          versao: number
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          motivo?: string | null
+          rota_id: string
+          snapshot: Json
+          usuario_id?: string | null
+          versao: number
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          motivo?: string | null
+          rota_id?: string
+          snapshot?: Json
+          usuario_id?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_rota_versoes_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rotas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_rotas: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          bags_carregadas: number | null
+          colaborador_principal: string | null
+          colaborador_secundario: string | null
+          criado_em: string
+          criado_por: string | null
+          data: string
+          equipe: string
+          finalizada_em: string | null
+          horario_previsto: string | null
+          id: string
+          iniciada_em: string | null
+          motivo_cancelamento: string | null
+          observacao: string | null
+          status: string
+          supervisor: string | null
+          template_key: string
+          turno: string
+          veiculo: string | null
+          versao: number
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          bags_carregadas?: number | null
+          colaborador_principal?: string | null
+          colaborador_secundario?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data: string
+          equipe?: string
+          finalizada_em?: string | null
+          horario_previsto?: string | null
+          id?: string
+          iniciada_em?: string | null
+          motivo_cancelamento?: string | null
+          observacao?: string | null
+          status?: string
+          supervisor?: string | null
+          template_key?: string
+          turno?: string
+          veiculo?: string | null
+          versao?: number
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          bags_carregadas?: number | null
+          colaborador_principal?: string | null
+          colaborador_secundario?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          data?: string
+          equipe?: string
+          finalizada_em?: string | null
+          horario_previsto?: string | null
+          id?: string
+          iniciada_em?: string | null
+          motivo_cancelamento?: string | null
+          observacao?: string | null
+          status?: string
+          supervisor?: string | null
+          template_key?: string
+          turno?: string
+          veiculo?: string | null
+          versao?: number
+        }
+        Relationships: []
       }
       agua_visita_eventos: {
         Row: {
@@ -419,15 +660,19 @@ export type Database = {
           criado_em: string
           data: string
           dia_semana: number
+          excepcional: boolean
           executado_em: string | null
           executado_por: string | null
           foto_url: string | null
           id: string
           motivo: string | null
           observacao: string | null
+          ordem: number
           ponto_id: string
           responsavel: string | null
+          rota_id: string | null
           status: string
+          turno: string
           veiculo: string | null
         }
         Insert: {
@@ -437,15 +682,19 @@ export type Database = {
           criado_em?: string
           data: string
           dia_semana: number
+          excepcional?: boolean
           executado_em?: string | null
           executado_por?: string | null
           foto_url?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
+          ordem?: number
           ponto_id: string
           responsavel?: string | null
+          rota_id?: string | null
           status?: string
+          turno?: string
           veiculo?: string | null
         }
         Update: {
@@ -455,15 +704,19 @@ export type Database = {
           criado_em?: string
           data?: string
           dia_semana?: number
+          excepcional?: boolean
           executado_em?: string | null
           executado_por?: string | null
           foto_url?: string | null
           id?: string
           motivo?: string | null
           observacao?: string | null
+          ordem?: number
           ponto_id?: string
           responsavel?: string | null
+          rota_id?: string | null
           status?: string
+          turno?: string
           veiculo?: string | null
         }
         Relationships: [
@@ -472,6 +725,13 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_visitas_rota_id_fkey"
+            columns: ["rota_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rotas"
             referencedColumns: ["id"]
           },
         ]
@@ -4827,6 +5087,10 @@ export type Database = {
     }
     Functions: {
       agua_can: { Args: { required_action?: string }; Returns: boolean }
+      agua_gerar_rotas: {
+        Args: { p_data?: string; p_origem?: string }
+        Returns: Json
+      }
       agua_is_gestor: { Args: never; Returns: boolean }
       audit_redact: { Args: { payload: Json }; Returns: Json }
       can_access_backorder: {

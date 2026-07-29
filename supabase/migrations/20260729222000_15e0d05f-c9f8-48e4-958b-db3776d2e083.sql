@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.agua_gerar_rotas(date, text) FROM anon;
