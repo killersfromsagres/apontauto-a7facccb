@@ -69,6 +69,10 @@
 /* Light theme — clean canvas with cool electric-blue accents */
 :root {
   --radius: 0.875rem;
+  --motion-fast: 160ms;
+  --motion-base: 220ms;
+  --motion-slow: 280ms;
+  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Light — "Frosted Aqua": gelo levemente azulado + teal translúcido */
   --background: oklch(0.985 0.008 210);
