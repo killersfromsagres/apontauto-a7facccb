@@ -147,11 +147,14 @@ export const Route = createFileRoute("/api/backorder-reclassificar")({
     handlers: {
       POST: async ({ request }) => {
         try {
-          const { getRequestUser, unauthorized } = await import(
-            "@/lib/api-auth.server"
-          );
+          const { getRequestUser, callerCanAccessModule, unauthorized, forbidden } =
+            await import("@/lib/api-auth.server");
           const caller = await getRequestUser(request);
           if (!caller) return unauthorized();
+          // Custo de IA: exige permissão de escrita no módulo Backorder.
+          if (!(await callerCanAccessModule(request, "backorder", "create"))) {
+            return forbidden();
+          }
 
           const input = InputSchema.parse(await request.json());
           const results = await classifyItems(input.items);
