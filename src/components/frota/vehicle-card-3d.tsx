@@ -3,7 +3,7 @@ import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { VEHICLE_STATUS_LABEL, vehicleLabel, type Vehicle } from "@/lib/frota/api";
-import { VehicleThumb } from "@/components/frota/vehicle-thumb";
+import { VehiclePhoto } from "@/components/frota/vehicle-photo";
 import { formatPlate } from "@/lib/frota/plate";
 
 const STATUS_TONE: Record<string, string> = {
