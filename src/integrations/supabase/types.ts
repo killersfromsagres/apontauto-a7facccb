@@ -2385,8 +2385,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_backorder: {
+        Args: { required_action?: string }
+        Returns: boolean
+      }
+      can_access_corretiva: {
+        Args: { required_action?: string }
+        Returns: boolean
+      }
       can_access_module: {
         Args: { module_key: string; required_action?: string }
+        Returns: boolean
+      }
+      can_access_refrigeracao: {
+        Args: { required_action?: string }
+        Returns: boolean
+      }
+      can_write_corretiva: {
+        Args: { required_action?: string }
+        Returns: boolean
+      }
+      can_write_refrigeracao: {
+        Args: { required_action?: string }
         Returns: boolean
       }
       cancel_queued_pointing_job: {
