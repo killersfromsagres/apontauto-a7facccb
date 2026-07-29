@@ -3,7 +3,7 @@ import { Lock } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { VEHICLE_STATUS_LABEL, vehicleLabel, type Vehicle } from "@/lib/frota/api";
-import { VehicleThumb } from "@/components/frota/vehicle-thumb";
+import { VehiclePhoto } from "@/components/frota/vehicle-photo";
 import { formatPlate } from "@/lib/frota/plate";
 
 const STATUS_TONE: Record<string, string> = {
@@ -41,28 +41,29 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           : "border-border/50 bg-card/40 hover:border-primary/40",
       )}
     >
-      <div className="relative flex h-32 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent">
+      <div className="relative flex h-20 w-full items-center justify-center overflow-hidden bg-gradient-to-br from-primary/15 via-transparent to-transparent">
         {photo ? (
           <img
             src={photo}
             alt={vehicleLabel(vehicle)}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-contain p-2"
+            className="h-full w-full object-contain p-1.5"
           />
         ) : (
-          <VehicleThumb
+          <VehiclePhoto
             brand={vehicle.brand}
             model={vehicle.model}
             version={vehicle.version}
             color={vehicle.color}
             title={vehicleLabel(vehicle)}
             className={cn(
-              "h-full w-full px-4 py-3 drop-shadow-[0_8px_18px_rgba(0,0,0,.45)] transition-transform duration-300",
+              "px-3 py-2 drop-shadow-[0_6px_14px_rgba(0,0,0,.45)] transition-transform duration-300",
               active ? "scale-105" : "group-hover:scale-105",
             )}
           />
         )}
+
 
         {vehicle.status === "bloqueado" && (
           <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/20 px-2 py-1 text-[10px] font-semibold text-rose-200">
