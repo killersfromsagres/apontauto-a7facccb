@@ -58,7 +58,7 @@ export const VehicleCard3D = memo(function VehicleCard3D({
             color={vehicle.color}
             title={vehicleLabel(vehicle)}
             className={cn(
-              "px-3 py-2 drop-shadow-[0_6px_14px_rgba(0,0,0,.45)] transition-transform duration-300",
+              "mx-auto max-h-full !w-auto max-w-[70%] drop-shadow-[0_4px_10px_rgba(0,0,0,.45)] transition-transform duration-300",
               active ? "scale-105" : "group-hover:scale-105",
             )}
           />
