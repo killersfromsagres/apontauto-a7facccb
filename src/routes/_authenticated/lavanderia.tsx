@@ -749,7 +749,50 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
         </Button>
       </div>
 
-      <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+      {/* Mobile: lista de cards (sem rolagem horizontal). */}
+      <div className="max-h-[65vh] space-y-2 overflow-auto md:hidden">
+        {loading ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : filtered.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma peça em aberto.</p>
+        ) : (
+          filtered.map((p) => (
+            <div key={p.codigo} className="rounded-2xl border border-border/60 bg-card/60 p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{p.nome}</div>
+                  <div className="truncate font-mono text-xs text-muted-foreground">
+                    {p.codigo}
+                    {p.matricula ? ` · Mat. ${p.matricula}` : ""}
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[p.status]}`}
+                >
+                  {STATUS_LABEL[p.status]}
+                </span>
+              </div>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                <dt className="text-muted-foreground">Tipo</dt>
+                <dd className="text-right font-medium">{p.tipoPeca}</dd>
+                <dt className="text-muted-foreground">Saída</dt>
+                <dd className="text-right font-medium">{fmtBR(p.ultimaSaida)}</dd>
+                <dt className="text-muted-foreground">Previsto retorno</dt>
+                <dd className="text-right font-medium">{fmtBR(p.previstoRetorno)}</dd>
+                {p.status === "atrasada" ? (
+                  <>
+                    <dt className="text-muted-foreground">Dias em atraso</dt>
+                    <dd className="text-right font-semibold">{p.diasAtraso}d</dd>
+                  </>
+                ) : null}
+              </dl>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="lavanderia-scroll relative hidden max-h-[65vh] overflow-auto rounded-xl border border-border/60 md:block [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
+
 
         <Table>
           <TableHeader>
