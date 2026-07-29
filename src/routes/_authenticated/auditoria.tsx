@@ -163,7 +163,7 @@ function AuditoriaPage() {
       key: "acao",
       header: "Ação",
       sortValue: (r) => r.action ?? "",
-      cell: (r) => <StatusBadge tone={actionTone(r.action)} label={actionLabel(r.action)} />,
+      cell: (r) => <StatusBadge tone={actionTone(r.action)} status={actionLabel(r.action)} />,
       headClassName: "whitespace-nowrap",
     },
     {
@@ -282,15 +282,11 @@ function AuditoriaPage() {
             <DataTable
               data={rows}
               columns={columns}
-              getRowId={(r) => r.id}
-              isLoading={eventos.isLoading}
-              emptyState={
-                <EmptyState
-                  icon={<FileClock className="size-6" />}
-                  title="Nenhum evento no período"
-                  description="Altere o período ou limpe a busca para ver mais registros."
-                />
-              }
+              rowKey={(r) => r.id}
+              loading={eventos.isLoading}
+              emptyTitle="Nenhum evento no período"
+              emptyDescription="Altere o período ou limpe a busca para ver mais registros."
+              onRowClick={(r) => setSelecionado(r)}
             />
           )}
         </div>
@@ -311,10 +307,10 @@ function AuditoriaPage() {
       >
         {selecionado ? (
           <div className="space-y-3">
-            <DetailRow label="Evento" value={selecionado.event_type} />
-            <DetailRow label="Módulo" value={selecionado.module_key ?? "—"} />
-            <DetailRow label="Registro" value={selecionado.entity_id ?? "—"} />
-            <DetailRow label="Usuário" value={selecionado.user_id ?? "sistema"} />
+            <DetailRow label="Evento">{selecionado.event_type}</DetailRow>
+            <DetailRow label="Módulo">{selecionado.module_key ?? "—"}</DetailRow>
+            <DetailRow label="Registro">{selecionado.entity_id ?? "—"}</DetailRow>
+            <DetailRow label="Usuário">{selecionado.user_id ?? "sistema"}</DetailRow>
             <div className="grid gap-3 lg:grid-cols-2">
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Antes</p>
