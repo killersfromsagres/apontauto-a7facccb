@@ -315,17 +315,6 @@ export function useVisibleSections() {
   const { allowed, loading: loadingAllowed } = useAllowedMenus();
   const loading = loadingAdmin || loadingAllowed;
 
-  const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active) setOwnerEmail(data.session?.user?.email ?? null);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-  const isOwner = (ownerEmail ?? "").trim().toLowerCase() === "admin@apontauto.local";
 
   const visibleSections = useMemo<MenuSection[]>(() => {
     if (loading) return [];
@@ -335,15 +324,16 @@ export function useVisibleSections() {
       // `allowed_menus = null` do sistema legado). Espelha a lista de
       // `can_access_module` no banco.
       if (RESTRICTED_KEYS.includes(key)) {
-        return isOwner || isAdmin || (allowed?.includes(key) ?? false);
+        return isAdmin || (allowed?.includes(key) ?? false);
       }
-      if (key === "configuracoes") return isOwner;
-      if (key === "refrigeracao-gestor") return isOwner || isAdmin;
-      if (key === "corretiva-gestor") return isOwner || isAdmin;
-      if (key === "assets-catalog") return isOwner || isAdmin;
-      if (key.startsWith("assets-")) return isOwner || isAdmin;
+      if (key === "configuracoes") return isAdmin;
+      if (key === "refrigeracao-gestor") return isAdmin;
+      if (key === "corretiva-gestor") return isAdmin;
+      if (key === "assets-catalog") return isAdmin;
+      if (key.startsWith("assets-")) return isAdmin;
       if (isAdmin) return true;
-      if (!allowed) return true;
+      // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
+      if (!allowed) return false;
       return itemKeys(item).some((k) => allowed.includes(k));
     };
     const out: MenuSection[] = [];
@@ -356,7 +346,7 @@ export function useVisibleSections() {
       }
     }
     return out;
-  }, [loading, isAdmin, allowed, isOwner]);
+  }, [loading, isAdmin, allowed]);
 
   const visibleItems = useMemo<MenuItem[]>(
     () => visibleSections.flatMap((s) => (s.kind === "item" ? [s.item] : s.items)),

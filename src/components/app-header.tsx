@@ -9,6 +9,7 @@ import { SlaBell } from "./sla-bell";
 import { GlobalSearch } from "./global-search";
 import { supabase } from "@/integrations/supabase/client";
 import { clearCredentials } from "@/lib/auth/saved-credentials";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/alert-dialog";
 const logoAsset = { url: "/apontauto-logo.png" };
 
-const ADMIN_EMAIL = "admin@apontauto.local";
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -44,7 +44,8 @@ export function AppHeader() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const isAdmin = email?.toLowerCase() === ADMIN_EMAIL;
+  // Papel do banco é a fonte de verdade (nunca e-mail fixo no código).
+  const { isAdmin } = useIsAdmin();
   const title = isAdmin ? "Planejador de Manutenção" : "Colaborador";
   const displayName = isAdmin ? "Dev Gabriel Vitor" : (fullName ?? email ?? "");
 
