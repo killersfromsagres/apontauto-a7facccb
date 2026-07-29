@@ -50,13 +50,14 @@ import {
   CORRETIVA_TEMPLATE_HEADERS,
 } from "@/lib/corretiva/paste";
 
-const OWNER_EMAIL = "admin@apontauto.local";
-
 export const Route = createFileRoute("/_authenticated/corretiva-gestor")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getUser();
-    const email = (data.user?.email ?? "").trim().toLowerCase();
-    if (email !== OWNER_EMAIL) {
+    // Autorização real vem do banco (RBAC), não de e-mail fixo no código.
+    const { data, error } = await supabase.rpc("can_access_module", {
+      module_key: "corretiva-gestor",
+      required_action: "admin",
+    });
+    if (error || !data) {
       throw redirect({ to: "/corretiva" });
     }
   },

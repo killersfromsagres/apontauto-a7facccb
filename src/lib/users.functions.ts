@@ -6,7 +6,6 @@ import type { Database } from "@/integrations/supabase/types";
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
 
-const OWNER_ADMIN_EMAIL = "admin@apontauto.local";
 const LOGIN_DOMAIN = "apontauto.local";
 const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
 
@@ -160,14 +159,21 @@ function validateCreate(input: unknown): CreateUserInput {
   };
 }
 
+/** Protege contas administrativas de rebaixamento acidental (papel vem do banco). */
+async function isAdminUserId(supabaseAdmin: any, userId: string) {
+  const { data } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+  return Boolean(data);
+}
+
 async function assertCallerIsAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Apenas administradores podem executar esta ação.");
-}
-
-function isOwnerAdminEmail(email: string | null | undefined) {
-  return (email ?? "").trim().toLowerCase() === OWNER_ADMIN_EMAIL;
 }
 
 /**
@@ -202,13 +208,12 @@ export const getMyAllowedMenus = createServerFn({ method: "GET" })
 export const getMyAccess = createServerFn({ method: "GET" })
   .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
-    const email = typeof context.claims?.email === "string" ? context.claims.email : "";
     const [adminRes, menusRes] = await Promise.all([
       context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
       context.supabase.rpc("get_my_allowed_menus"),
     ]);
     if (adminRes.error) throw new Error(adminRes.error.message);
-    const isAdmin = Boolean(adminRes.data) || isOwnerAdminEmail(email);
+    const isAdmin = Boolean(adminRes.data);
     if (isAdmin) return { isAdmin: true, allowed: null };
 
     // Se a RPC falhar por qualquer motivo, cair para leitura direta do perfil
@@ -276,7 +281,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
           (u.user_metadata as any)?.login ??
           (email.endsWith(`@${LOGIN_DOMAIN}`) ? email.split("@")[0] : email);
         const prof = profMap.get(u.id);
-        const role = isOwnerAdminEmail(email) ? "admin" : (roleMap.get(u.id) ?? ("user" as Role));
+        const role = roleMap.get(u.id) ?? ("user" as Role);
         return {
           id: u.id,
           login,
@@ -346,9 +351,8 @@ export const setUserRole = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     const supabaseAdmin = await createUsersAdminClient();
-    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (isOwnerAdminEmail(target.user?.email)) {
-      throw new Error("O administrador principal não pode perder o perfil admin.");
+    if (data.role !== "admin" && data.userId === context.userId) {
+      throw new Error("Você não pode remover o seu próprio perfil de administrador.");
     }
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     const { error } = await supabaseAdmin
@@ -378,8 +382,8 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     const supabaseAdmin = await createUsersAdminClient();
-    const { data: target } = await supabaseAdmin.auth.admin.getUserById(data.userId);
-    if (isOwnerAdminEmail(target.user?.email)) {
+    if (await isAdminUserId(supabaseAdmin, data.userId)) {
+      // Admins têm acesso total via papel; não restringimos menus para eles.
       return { ok: true };
     }
     // Upsert profile row (in case it doesn't exist yet)
