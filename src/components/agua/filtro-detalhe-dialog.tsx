@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { uploadPhotoWithFallback } from "@/lib/photo-upload";
+import { enviarEvidencia } from "@/lib/agua/fotos";
 import {
   FILTRO_PRIORIDADE_LABEL,
   FILTRO_SITUACAO_LABEL,
