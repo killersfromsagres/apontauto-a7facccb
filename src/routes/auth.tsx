@@ -108,11 +108,18 @@ function AuthPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!acceptTerms) {
+
+    // Validação inline: mensagens por campo, sem depender apenas de toast.
+    const next: { email?: string; password?: string; terms?: string } = {};
+    if (!email.trim()) next.email = "Informe seu usuário.";
+    if (!password) next.password = "Informe sua senha.";
+    if (!acceptTerms) next.terms = "É necessário aceitar os Termos de Uso para continuar.";
+    setFieldErrors(next);
+    if (Object.keys(next).length > 0) {
       triggerShake();
-      toast.error("Você precisa aceitar os Termos de Uso para continuar.");
       return;
     }
+
     setLoading(true);
     try {
       const raw = email.trim().toLowerCase();
@@ -129,11 +136,17 @@ function AuthPage() {
       setAskSave(true);
     } catch (err) {
       triggerShake();
-      toast.error(err instanceof Error ? err.message : "Falha ao autenticar");
+      const msg = err instanceof Error ? err.message : "Falha ao autenticar";
+      const invalid = /invalid login credentials/i.test(msg);
+      setFieldErrors({
+        password: invalid ? "Usuário ou senha inválidos." : msg,
+      });
+      toast.error(invalid ? "Usuário ou senha inválidos." : msg);
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleSaveChoice = (save: boolean) => {
     if (save && pendingCreds.current) {
