@@ -11,12 +11,7 @@ import { registrarVisita, type Visita } from "@/lib/agua/api";
 const CACHE_PREFIX = "agua:rota:";
 const FILA_KEY = "agua:fila";
 
-export type VisitaPatch = Partial<
-  Pick<
-    Visita,
-    "status" | "bags_entregues" | "foto_url" | "observacao" | "motivo" | "responsavel" | "veiculo"
-  >
->;
+export type VisitaPatch = Partial<Visita> & Record<string, unknown>;
 
 export interface PendenteAgua {
   id: string;
