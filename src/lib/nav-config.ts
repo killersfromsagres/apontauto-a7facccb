@@ -382,6 +382,10 @@ const QUICK_KEYS = [
   "taludes",
   "dashboard-chamados",
   "painel-legal",
+  "capacidade",
+  "confiabilidade",
+  "qualidade-dados",
+  "materiais-os",
 ];
 
 /**
