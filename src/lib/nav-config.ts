@@ -28,6 +28,7 @@ import {
   Boxes,
   ClipboardCheck,
   FileSpreadsheet,
+  Droplets,
   Fuel,
   FileClock,
   SearchX,
