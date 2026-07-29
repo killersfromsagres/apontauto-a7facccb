@@ -1959,3 +1959,66 @@ button,
     break-inside: avoid;
   }
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * Auditoria mobile — passe final (toque, menus e densidade)
+ * ──────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Menus/popovers nunca ultrapassam a viewport e rolam internamente */
+  [data-radix-popper-content-wrapper] > * {
+    max-width: calc(100vw - 1rem) !important;
+    max-height: min(70dvh, calc(100dvh - 8rem)) !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Itens de menu/opção com alvo confortável */
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  [role="option"] {
+    min-height: 44px;
+    font-size: 15px;
+  }
+
+  /* Listas de abas em grid ficam roláveis (evita abas espremidas) */
+  [role="tablist"] {
+    display: flex !important;
+    scroll-snap-type: x proximity;
+    padding-right: 0.25rem;
+  }
+
+  /* Containers com rolagem horizontal ganham inércia e contenção */
+  .overflow-x-auto,
+  .scroll-fluid {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  /* Tabelas densas: respiro vertical suficiente para o dedo */
+  td,
+  th {
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+  }
+
+  /* Ações fixas no rodapé não ficam sob a barra de navegação */
+  .fixed.bottom-0:not([data-mobile-tabbar]):not([data-sonner-toaster]) {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Toque responsivo: evita atraso de 300ms e seleção acidental em ações */
+button,
+a,
+[role="button"],
+[role="tab"],
+label {
+  touch-action: manipulation;
+}
+button,
+[role="button"],
+[role="tab"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
