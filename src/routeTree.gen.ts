@@ -17,6 +17,7 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as ApiImgbbUploadRouteImport } from './routes/api/imgbb-upload'
 import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedTaludesPtRouteImport } from './routes/_authenticated/taludes-pt'
@@ -95,6 +96,11 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ApiImgbbUploadRoute = ApiImgbbUploadRouteImport.update({
+  id: '/api/imgbb-upload',
+  path: '/api/imgbb-upload',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBackorderReclassificarRoute =
   ApiBackorderReclassificarRouteImport.update({
@@ -356,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/': typeof AuthenticatedIndexRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -453,6 +461,7 @@ export interface FileRoutesById {
   '/_authenticated/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
+  '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/imgbb-upload'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
@@ -551,6 +561,7 @@ export interface FileRouteTypes {
     | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/imgbb-upload'
     | '/'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -600,6 +611,7 @@ export interface FileRouteTypes {
     | '/_authenticated/taludes-pt'
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
+    | '/api/imgbb-upload'
     | '/_authenticated/'
     | '/_authenticated/inteligencia-ativos/historico'
     | '/_authenticated/inteligencia-ativos/nao-encontrados'
@@ -620,6 +632,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
   ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
+  ApiImgbbUploadRoute: typeof ApiImgbbUploadRoute
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
   ApiPublicImgbbUploadRoute: typeof ApiPublicImgbbUploadRoute
@@ -684,6 +697,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/api/imgbb-upload': {
+      id: '/api/imgbb-upload'
+      path: '/api/imgbb-upload'
+      fullPath: '/api/imgbb-upload'
+      preLoaderRoute: typeof ApiImgbbUploadRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/backorder-reclassificar': {
       id: '/api/backorder-reclassificar'
@@ -1053,6 +1073,7 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
   ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
+  ApiImgbbUploadRoute: ApiImgbbUploadRoute,
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
   ApiPublicImgbbUploadRoute: ApiPublicImgbbUploadRoute,
