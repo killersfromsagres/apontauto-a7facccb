@@ -114,7 +114,7 @@ export function NotificationsBell() {
                     ) : null}
                     {n.deep_link ?? n.link_url ? (
                       <Button asChild size="sm" variant="outline" className="h-8 text-xs">
-                        <Link to={(n.deep_link ?? n.link_url) as string}>Abrir</Link>
+                        <a href={(n.deep_link ?? n.link_url) as string}>Abrir</a>
                       </Button>
                     ) : null}
                   </div>

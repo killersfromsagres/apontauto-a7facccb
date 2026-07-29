@@ -194,7 +194,7 @@ function NotificacoesPage() {
                     <div className="flex shrink-0 flex-wrap items-center gap-1">
                       {link ? (
                         <Button asChild size="sm" variant="outline" className="h-11">
-                          <Link to={link}>Abrir</Link>
+                          <a href={link}>Abrir</a>
                         </Button>
                       ) : null}
                       {!n.isRead ? (
