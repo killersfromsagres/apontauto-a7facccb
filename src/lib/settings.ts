@@ -116,8 +116,18 @@ export async function loadSettings(): Promise<AppSettings> {
     .maybeSingle();
   if (!error && data) {
     rowId = data.id;
-    cache = { ...DEFAULT_SETTINGS, ...(data.data as Partial<AppSettings>) };
+    const parcial = (data.data ?? {}) as Partial<AppSettings>;
+    cache = {
+      ...DEFAULT_SETTINGS,
+      ...parcial,
+      aguaWhatsapp: {
+        ...DEFAULT_AGUA_WHATSAPP,
+        ...(parcial.aguaWhatsapp ?? {}),
+        cloud: { ...DEFAULT_AGUA_WHATSAPP.cloud, ...(parcial.aguaWhatsapp?.cloud ?? {}) },
+      },
+    };
   }
+
   loaded = true;
   listeners.forEach((l) => l(cache));
   return cache;
