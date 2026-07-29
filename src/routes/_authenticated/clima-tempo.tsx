@@ -41,6 +41,7 @@ import {
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
 } from "@/lib/weather/open-meteo";
 import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
+import { HistoricoChuva, RegistroManualChuva } from "@/components/clima/historico-chuva";
 
 export const Route = createFileRoute("/_authenticated/clima-tempo")({
   head: () => ({
@@ -334,6 +335,10 @@ function ClimaTempoPage() {
 
         {/* Próximos dias úteis — rolagem horizontal */}
         <WeatherForecastStrip />
+
+        <RegistroManualChuva />
+
+        <HistoricoChuva />
 
 
 

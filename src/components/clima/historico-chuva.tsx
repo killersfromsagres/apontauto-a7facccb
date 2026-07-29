@@ -11,6 +11,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { toast } from "sonner";
 import { CalendarDays, CloudRain, Download, Gauge, Radio, RefreshCw } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
@@ -20,6 +21,7 @@ import { StatusBadge } from "@/components/pcm";
 import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/download";
 import {
+  registrarChuvaManual,
   listObservations,
   listEvents,
   listSourceHealth,
@@ -373,5 +375,46 @@ export function HistoricoChuva() {
         </div>
       </GlassCard>
     </div>
+  );
+}
+
+/** Registro manual de chuva por colaborador em campo. */
+export function RegistroManualChuva() {
+  const [saving, setSaving] = useState<string | null>(null);
+  const opcoes = ["garoa", "fraca", "moderada", "forte", "tempestade"] as const;
+
+  async function registrar(intensidade: (typeof opcoes)[number]) {
+    setSaving(intensidade);
+    try {
+      await registrarChuvaManual({ intensidade });
+      toast.success("Chuva registrada — evento aberto/atualizado e PTs revisadas.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  return (
+    <GlassCard>
+      <h3 className="text-sm font-semibold sm:text-base">Registrar chuva manualmente</h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Use quando houver chuva no local e as fontes automáticas ainda não tiverem detectado.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {opcoes.map((o) => (
+          <Button
+            key={o}
+            size="sm"
+            variant="outline"
+            disabled={saving !== null}
+            className={cn("min-h-11 rounded-full capitalize", INTENSITY_COLOR[o])}
+            onClick={() => registrar(o)}
+          >
+            {o}
+          </Button>
+        ))}
+      </div>
+    </GlassCard>
   );
 }
