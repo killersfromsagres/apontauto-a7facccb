@@ -122,7 +122,8 @@ export interface Lote {
 }
 
 const PONTO_FIELDS =
-  "id, codigo, predio, andar, espaco, bags_padrao, janela_inicio, janela_fim, ordem, responsavel, veiculo, observacao, ativo";
+  "id, codigo, predio, andar, espaco, descricao, bags_padrao, bag_tipo, bag_capacidade_litros, estoque_minimo, frequencia, prioridade, tempo_estimado_min, janela_inicio, janela_fim, ordem, responsavel, contato_telefone, acesso_observacoes, requer_epi, epi_descricao, veiculo, veiculo_recomendado, latitude, longitude, imagem_url, qr_code, observacao, ativo, criado_em, atualizado_em, atualizado_por";
+
 
 export const pontoLabel = (p: Ponto) =>
   `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}`;
