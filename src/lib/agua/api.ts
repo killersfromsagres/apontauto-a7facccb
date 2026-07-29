@@ -27,21 +27,60 @@ export const MOTIVOS_NAO_REALIZADA = [
   "Outro",
 ];
 
+export type PontoPrioridade = "baixa" | "media" | "alta" | "critica";
+
+export const PONTO_PRIORIDADE_LABEL: Record<PontoPrioridade, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  critica: "Crítica",
+};
+
+export const PONTO_FREQUENCIAS = [
+  "Diária",
+  "Semanal",
+  "2x por semana",
+  "3x por semana",
+  "Quinzenal",
+  "Mensal",
+  "Sob demanda",
+];
+
 export interface Ponto {
   id: string;
   codigo: string;
   predio: string;
   andar: string;
   espaco: string;
+  descricao: string | null;
   bags_padrao: number;
+  bag_tipo: string | null;
+  bag_capacidade_litros: number | null;
+  estoque_minimo: number | null;
+  frequencia: string | null;
+  prioridade: PontoPrioridade;
+  tempo_estimado_min: number | null;
   janela_inicio: string | null;
   janela_fim: string | null;
   ordem: number;
   responsavel: string | null;
+  contato_telefone: string | null;
+  acesso_observacoes: string | null;
+  requer_epi: boolean;
+  epi_descricao: string | null;
   veiculo: string | null;
+  veiculo_recomendado: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  imagem_url: string | null;
+  qr_code: string | null;
   observacao: string | null;
   ativo: boolean;
+  criado_em?: string;
+  atualizado_em?: string;
+  atualizado_por?: string | null;
 }
+
 
 export interface ProgramacaoItem {
   id: string;
