@@ -27,7 +27,7 @@ import {
 } from "@/lib/agua/api";
 import { DIA_LABEL, DIAS, lerPlanilhaAgua, sha256Hex, type LeituraAgua } from "@/lib/agua/reader";
 
-export const Route = createFileRoute("/_authenticated/abastecimento/agua/filtros")({
+export const Route = createFileRoute("/_authenticated/abastecimento/agua/programacao")({
   component: PontosEFiltros,
 });
 
