@@ -8,7 +8,9 @@ import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { WhatsAppConfigCard } from "@/components/agua/whatsapp-config-card";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
+
 import { listPontos, listProgramacao } from "@/lib/agua/api";
 import { lerFila, useAguaSync } from "@/lib/agua/offline";
 import { useSettings } from "@/lib/settings";
@@ -60,7 +62,10 @@ function Configuracoes() {
 
   return (
     <div className="space-y-4">
+      <WhatsAppConfigCard podeEditar={acesso.allowed} />
+
       <GlassCard className="space-y-4 p-4">
+
         <div className="flex items-center gap-2">
           <CloudOff className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">Execução offline</h2>

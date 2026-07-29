@@ -53,13 +53,14 @@ export async function hashTelefone(numero: string): Promise<string> {
     .join("");
 }
 
-const MAX_LINKS = 40;
+const MAX_LINKS = 30;
 
 /** Mensagem profissional configurável — nunca inclui CPF nem segredos. */
 export function montarMensagem(
   resumo: ResumoRota,
   itens: EvidenciaItem[],
   template?: string,
+  opts?: { maxLinks?: number; linkUnico?: string | null },
 ): string {
   const equipe = [resumo.colaboradorPrincipal, resumo.acompanhante].filter(Boolean).join(" + ");
   const placa = resumo.podeVerPlaca
@@ -67,25 +68,37 @@ export function montarMensagem(
     : mascararPlaca(resumo.veiculoPlaca);
   const veiculo = [resumo.veiculoPrefixo, placa].filter(Boolean).join(" — ") || "—";
 
-  const porPredio = new Map<string, EvidenciaItem[]>();
-  for (const i of itens) {
-    const lista = porPredio.get(i.predio) ?? [];
-    lista.push(i);
-    porPredio.set(i.predio, lista);
-  }
+  const maxLinks = Math.max(1, opts?.maxLinks ?? MAX_LINKS);
+  let lista: string;
 
-  let restantes = MAX_LINKS;
-  const blocos: string[] = [];
-  for (const [predio, lista] of porPredio) {
-    if (restantes <= 0) break;
-    const visiveis = lista.slice(0, restantes);
-    restantes -= visiveis.length;
-    blocos.push(
-      [`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"),
-    );
+  if (opts?.linkUnico) {
+    // Muitas fotos: um único link para o resumo (item 11.2).
+    lista = [
+      `*${itens.length} evidência(s)* organizadas em resumo único:`,
+      opts.linkUnico,
+    ].join("\n");
+  } else {
+    const porPredio = new Map<string, EvidenciaItem[]>();
+    for (const i of itens) {
+      const l = porPredio.get(i.predio) ?? [];
+      l.push(i);
+      porPredio.set(i.predio, l);
+    }
+
+    let restantes = maxLinks;
+    const blocos: string[] = [];
+    for (const [predio, itensPredio] of porPredio) {
+      if (restantes <= 0) break;
+      const visiveis = itensPredio.slice(0, restantes);
+      restantes -= visiveis.length;
+      blocos.push(
+        [`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"),
+      );
+    }
+    const ocultas = itens.length - (maxLinks - Math.max(0, restantes));
+    if (ocultas > 0) blocos.push(`_+${ocultas} evidência(s) disponíveis no histórico do sistema._`);
+    lista = blocos.join("\n\n") || "_Sem evidências no filtro selecionado._";
   }
-  const ocultas = itens.length - (MAX_LINKS - Math.max(0, restantes));
-  if (ocultas > 0) blocos.push(`_+${ocultas} evidência(s) disponíveis no histórico do sistema._`);
 
   const corpo = template ?? DEFAULT_TEMPLATE;
   return corpo
@@ -95,9 +108,10 @@ export function montarMensagem(
     .replace("{progresso}", `${resumo.concluidas}/${resumo.previstas}`)
     .replace("{bags}", String(resumo.bagsEntregues))
     .replace("{ocorrencias}", String(resumo.ocorrencias))
-    .replace("{lista}", blocos.join("\n\n") || "_Sem evidências no filtro selecionado._")
+    .replace("{lista}", lista)
     .trim();
 }
+
 
 export const DEFAULT_TEMPLATE = `*Abastecimento de Água — Evidências da Rota*
 Data: {data}
@@ -119,9 +133,31 @@ function formatarData(iso: string): string {
 export type ShareResultado =
   | { modo: "nativo_arquivos"; status: "compartilhamento_iniciado" }
   | { modo: "nativo_texto"; status: "compartilhamento_iniciado" }
+  | { modo: "nativo_pdf"; status: "compartilhamento_iniciado" }
   | { modo: "link"; status: "compartilhamento_iniciado"; url: string }
   | { modo: "copiado"; status: "compartilhamento_iniciado" }
   | { modo: "cancelado"; status: "cancelado" };
+
+/** Escopos possíveis do compartilhamento (item 11.1). */
+export type EscopoTipo = "rota" | "predio" | "parada" | "selecao";
+
+export function agruparPorPredio(itens: EvidenciaItem[]): string[] {
+  return Array.from(new Set(itens.map((i) => i.predio))).sort((a, b) => a.localeCompare(b));
+}
+
+export function agruparPorParada(itens: EvidenciaItem[]): string[] {
+  return Array.from(new Set(itens.map((i) => i.parada))).sort((a, b) => a.localeCompare(b));
+}
+
+export function filtrarEscopo(
+  itens: EvidenciaItem[],
+  escopo: EscopoTipo,
+  valor?: string | null,
+): EvidenciaItem[] {
+  if (escopo === "predio" && valor) return itens.filter((i) => i.predio === valor);
+  if (escopo === "parada" && valor) return itens.filter((i) => i.parada === valor);
+  return itens;
+}
 
 /** Baixa as fotos para compartilhar como arquivos (quando suportado). */
 async function baixarArquivos(itens: EvidenciaItem[], limite = 10): Promise<File[]> {
@@ -142,6 +178,79 @@ async function baixarArquivos(itens: EvidenciaItem[], limite = 10): Promise<File
 }
 
 /**
+ * PDF resumido com os links organizados por prédio/parada — usado quando há
+ * muitas evidências, para não gerar uma mensagem gigante (item 11.2).
+ */
+export async function gerarPdfResumo(
+  resumo: ResumoRota,
+  itens: EvidenciaItem[],
+): Promise<File> {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const margem = 40;
+  let y = margem;
+
+  doc.setFontSize(14);
+  doc.text("Abastecimento de Água — Evidências da Rota", margem, y);
+  y += 20;
+  doc.setFontSize(10);
+  const placa = resumo.podeVerPlaca
+    ? (resumo.veiculoPlaca ?? "—")
+    : mascararPlaca(resumo.veiculoPlaca);
+  const cabecalho = [
+    `Data: ${formatarData(resumo.data)}`,
+    `Equipe: ${[resumo.colaboradorPrincipal, resumo.acompanhante].filter(Boolean).join(" + ") || "—"}`,
+    `Veículo: ${[resumo.veiculoPrefixo, placa].filter(Boolean).join(" — ") || "—"}`,
+    `Progresso: ${resumo.concluidas}/${resumo.previstas}`,
+    `Bags entregues: ${resumo.bagsEntregues}`,
+    `Ocorrências: ${resumo.ocorrencias}`,
+  ];
+  for (const linha of cabecalho) {
+    doc.text(linha, margem, y);
+    y += 14;
+  }
+  y += 8;
+
+  const porPredio = new Map<string, EvidenciaItem[]>();
+  for (const i of itens) {
+    const l = porPredio.get(i.predio) ?? [];
+    l.push(i);
+    porPredio.set(i.predio, l);
+  }
+
+  for (const [predio, lista] of porPredio) {
+    if (y > 780) {
+      doc.addPage();
+      y = margem;
+    }
+    doc.setFont("helvetica", "bold");
+    doc.text(predio || "Sem prédio", margem, y);
+    doc.setFont("helvetica", "normal");
+    y += 14;
+    for (const item of lista) {
+      if (y > 790) {
+        doc.addPage();
+        y = margem;
+      }
+      const texto = doc.splitTextToSize(`• ${item.parada}: ${item.url}`, 515) as string[];
+      doc.text(texto, margem + 10, y);
+      y += 12 * texto.length;
+    }
+    y += 6;
+  }
+
+  if (y > 770) {
+    doc.addPage();
+    y = margem;
+  }
+  doc.setFontSize(8);
+  doc.text("Registro gerado automaticamente pelo Apont Auto.", margem, y + 12);
+
+  const blob = doc.output("blob") as Blob;
+  return new File([blob], `evidencias-${resumo.data}.pdf`, { type: "application/pdf" });
+}
+
+/**
  * Executa o compartilhamento. Retorna o modo efetivamente usado — o chamador
  * NUNCA deve tratar isso como "entregue", apenas como compartilhamento iniciado.
  */
@@ -152,18 +261,37 @@ export async function compartilharEvidencias(params: {
   /** Número administrativo opcional (apenas dígitos com DDI). */
   numero?: string | null;
   preferirArquivos?: boolean;
+  maxLinks?: number;
+  /** Acima deste total de fotos, gera um PDF resumido único. */
+  pdfAcimaDe?: number;
 }): Promise<ShareResultado> {
-  const texto = montarMensagem(params.resumo, params.itens, params.template);
+  const muitas = (params.pdfAcimaDe ?? 12) > 0 && params.itens.length > (params.pdfAcimaDe ?? 12);
+  const texto = montarMensagem(params.resumo, params.itens, params.template, {
+    maxLinks: params.maxLinks,
+  });
   const nav = typeof navigator !== "undefined" ? (navigator as any) : null;
 
   if (params.preferirArquivos !== false && nav?.canShare && nav.share) {
-    const arquivos = await baixarArquivos(params.itens);
-    if (arquivos.length && nav.canShare({ files: arquivos })) {
+    // Muitas evidências: compartilha um PDF resumido único em vez de dezenas de fotos.
+    if (muitas) {
       try {
-        await nav.share({ files: arquivos, text: texto, title: "Evidências da Rota" });
-        return { modo: "nativo_arquivos", status: "compartilhamento_iniciado" };
+        const pdf = await gerarPdfResumo(params.resumo, params.itens);
+        if (nav.canShare({ files: [pdf] })) {
+          await nav.share({ files: [pdf], text: texto, title: "Evidências da Rota" });
+          return { modo: "nativo_pdf", status: "compartilhamento_iniciado" };
+        }
       } catch (e: any) {
         if (e?.name === "AbortError") return { modo: "cancelado", status: "cancelado" };
+      }
+    } else {
+      const arquivos = await baixarArquivos(params.itens);
+      if (arquivos.length && nav.canShare({ files: arquivos })) {
+        try {
+          await nav.share({ files: arquivos, text: texto, title: "Evidências da Rota" });
+          return { modo: "nativo_arquivos", status: "compartilhamento_iniciado" };
+        } catch (e: any) {
+          if (e?.name === "AbortError") return { modo: "cancelado", status: "cancelado" };
+        }
       }
     }
   }
@@ -184,6 +312,7 @@ export async function compartilharEvidencias(params: {
   if (typeof window !== "undefined") window.open(url, "_blank", "noopener,noreferrer");
   return { modo: "link", status: "compartilhamento_iniciado", url };
 }
+
 
 export async function copiarMensagem(texto: string): Promise<boolean> {
   try {
