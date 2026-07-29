@@ -3,6 +3,13 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Divergencia, LeituraAgua } from "@/lib/agua/reader";
+import {
+  caixaTitulo,
+  limparTexto,
+  normalizarCodigo,
+  normalizarTelefone,
+} from "@/lib/agua/normalize";
+
 
 // As tabelas novas ainda não constam nos tipos gerados.
 const db = supabase as unknown as { from: (t: string) => any };
@@ -27,21 +34,60 @@ export const MOTIVOS_NAO_REALIZADA = [
   "Outro",
 ];
 
+export type PontoPrioridade = "baixa" | "media" | "alta" | "critica";
+
+export const PONTO_PRIORIDADE_LABEL: Record<PontoPrioridade, string> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+  critica: "Crítica",
+};
+
+export const PONTO_FREQUENCIAS = [
+  "Diária",
+  "Semanal",
+  "2x por semana",
+  "3x por semana",
+  "Quinzenal",
+  "Mensal",
+  "Sob demanda",
+];
+
 export interface Ponto {
   id: string;
   codigo: string;
   predio: string;
   andar: string;
   espaco: string;
+  descricao: string | null;
   bags_padrao: number;
+  bag_tipo: string | null;
+  bag_capacidade_litros: number | null;
+  estoque_minimo: number | null;
+  frequencia: string | null;
+  prioridade: PontoPrioridade;
+  tempo_estimado_min: number | null;
   janela_inicio: string | null;
   janela_fim: string | null;
   ordem: number;
   responsavel: string | null;
+  contato_telefone: string | null;
+  acesso_observacoes: string | null;
+  requer_epi: boolean;
+  epi_descricao: string | null;
   veiculo: string | null;
+  veiculo_recomendado: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  imagem_url: string | null;
+  qr_code: string | null;
   observacao: string | null;
   ativo: boolean;
+  criado_em?: string;
+  atualizado_em?: string;
+  atualizado_por?: string | null;
 }
+
 
 export interface ProgramacaoItem {
   id: string;
@@ -83,7 +129,8 @@ export interface Lote {
 }
 
 const PONTO_FIELDS =
-  "id, codigo, predio, andar, espaco, bags_padrao, janela_inicio, janela_fim, ordem, responsavel, veiculo, observacao, ativo";
+  "id, codigo, predio, andar, espaco, descricao, bags_padrao, bag_tipo, bag_capacidade_litros, estoque_minimo, frequencia, prioridade, tempo_estimado_min, janela_inicio, janela_fim, ordem, responsavel, contato_telefone, acesso_observacoes, requer_epi, epi_descricao, veiculo, veiculo_recomendado, latitude, longitude, imagem_url, qr_code, observacao, ativo, criado_em, atualizado_em, atualizado_por";
+
 
 export const pontoLabel = (p: Ponto) =>
   `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}`;
@@ -312,10 +359,135 @@ export async function registrarVisita(
   if (evErr) throw evErr;
 }
 
+/** Aplica a normalização textual do item 6.2 a um cadastro de ponto. */
+export function normalizarPonto<T extends Partial<Ponto>>(input: T): T {
+  const out: Record<string, unknown> = { ...input };
+  if (input.codigo !== undefined) out.codigo = normalizarCodigo(input.codigo);
+  if (input.predio !== undefined) out.predio = caixaTitulo(input.predio);
+  if (input.andar !== undefined) out.andar = caixaTitulo(input.andar);
+  if (input.espaco !== undefined) out.espaco = caixaTitulo(input.espaco);
+  if (input.descricao !== undefined) out.descricao = limparTexto(input.descricao) || null;
+  if (input.responsavel !== undefined) out.responsavel = caixaTitulo(input.responsavel) || null;
+  if (input.contato_telefone !== undefined)
+    out.contato_telefone = normalizarTelefone(input.contato_telefone) || null;
+  if (input.acesso_observacoes !== undefined)
+    out.acesso_observacoes = limparTexto(input.acesso_observacoes) || null;
+  if (input.epi_descricao !== undefined)
+    out.epi_descricao = limparTexto(input.epi_descricao) || null;
+  if (input.observacao !== undefined) out.observacao = limparTexto(input.observacao) || null;
+  if (input.bag_tipo !== undefined) out.bag_tipo = limparTexto(input.bag_tipo) || null;
+  if (input.veiculo_recomendado !== undefined)
+    out.veiculo_recomendado = limparTexto(input.veiculo_recomendado) || null;
+  return out as T;
+}
+
+async function uid(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  return data.user?.id ?? null;
+}
+
+export async function criarPonto(input: Partial<Ponto>): Promise<Ponto> {
+  const usuario = await uid();
+  const payload = normalizarPonto(input);
+  const codigo =
+    payload.codigo ||
+    normalizarCodigo(`${payload.predio ?? ""} ${payload.andar ?? ""} ${payload.espaco ?? ""}`);
+  const { data, error } = await db
+    .from("agua_pontos")
+    .insert({
+      ...payload,
+      codigo,
+      qr_code: payload.qr_code || `AGUA:${codigo}`,
+      criado_por: usuario,
+      atualizado_por: usuario,
+    })
+    .select(PONTO_FIELDS)
+    .single();
+  if (error) throw error;
+  return data as Ponto;
+}
+
 export async function atualizarPonto(id: string, patch: Partial<Ponto>): Promise<void> {
-  const { error } = await db.from("agua_pontos").update(patch).eq("id", id);
+  const usuario = await uid();
+  const { error } = await db
+    .from("agua_pontos")
+    .update({
+      ...normalizarPonto(patch),
+      atualizado_por: usuario,
+      atualizado_em: new Date().toISOString(),
+    })
+    .eq("id", id);
   if (error) throw error;
 }
+
+export interface PontoMerge {
+  id: string;
+  origem_id: string;
+  destino_id: string;
+  origem_snapshot: Record<string, unknown>;
+  destino_snapshot: Record<string, unknown>;
+  motivo: string | null;
+  criado_em: string;
+}
+
+export async function listMerges(): Promise<PontoMerge[]> {
+  const { data, error } = await db
+    .from("agua_ponto_merges")
+    .select("id, origem_id, destino_id, origem_snapshot, destino_snapshot, motivo, criado_em")
+    .order("criado_em", { ascending: false })
+    .limit(100);
+  if (error) throw error;
+  return (data ?? []) as PontoMerge[];
+}
+
+/**
+ * Mescla dois cadastros: programação, visitas e solicitações da origem passam
+ * para o destino, a origem é inativada e tudo fica registrado na auditoria.
+ * Só roda com confirmação explícita do administrador.
+ */
+export async function mesclarPontos(args: {
+  origem: Ponto;
+  destino: Ponto;
+  motivo: string;
+}): Promise<void> {
+  const { origem, destino, motivo } = args;
+  if (origem.id === destino.id) throw new Error("Origem e destino são o mesmo ponto.");
+  const usuario = await uid();
+
+  const { error: mergeErr } = await db.from("agua_ponto_merges").insert({
+    origem_id: origem.id,
+    destino_id: destino.id,
+    origem_snapshot: origem,
+    destino_snapshot: destino,
+    motivo: limparTexto(motivo) || null,
+    usuario_id: usuario,
+  });
+  if (mergeErr) throw mergeErr;
+
+  for (const tabela of ["agua_visitas", "agua_filtro_solicitacoes"]) {
+    const { error } = await db.from(tabela).update({ ponto_id: destino.id }).eq("ponto_id", origem.id);
+    if (error) throw error;
+  }
+
+  // A programação da origem é descartada: a do destino é a verdade operacional.
+  const { error: progErr } = await db.from("agua_programacao").delete().eq("ponto_id", origem.id);
+  if (progErr) throw progErr;
+
+  const { error: offErr } = await db
+    .from("agua_pontos")
+    .update({
+      ativo: false,
+      mesclado_em: new Date().toISOString(),
+      mesclado_para: destino.id,
+      atualizado_por: usuario,
+      observacao: limparTexto(
+        `${origem.observacao ?? ""} [mesclado em ${destino.codigo}]`,
+      ),
+    })
+    .eq("id", origem.id);
+  if (offErr) throw offErr;
+}
+
 
 /* ------------------------------------------------------------------ */
 /* Solicitações de filtro                                              */
