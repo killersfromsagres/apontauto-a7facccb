@@ -1,337 +1,197 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Camera, CheckCircle2, CircleSlash, Droplets, Loader2, PackageCheck } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  Droplets,
+  Filter,
+  PackageCheck,
+} from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, KpiCard } from "@/components/pcm";
-import { useCanAccessModule } from "@/hooks/use-can-access-module";
-import { uploadFrotaPhoto } from "@/lib/frota/photo";
 import { cn } from "@/lib/utils";
 import {
-  MOTIVOS_NAO_REALIZADA,
-  VISITA_STATUS_LABEL,
-  garantirVisitasDoDia,
+  diaSemanaISO,
   hojeISO,
+  listFiltros,
   listPontos,
+  listProgramacao,
+  listVisitas,
   pontoLabel,
-  registrarVisita,
-  type Ponto,
-  type Visita,
-  type VisitaStatus,
+  VISITA_STATUS_LABEL,
 } from "@/lib/agua/api";
 import { DIA_LABEL } from "@/lib/agua/reader";
-import { diaSemanaISO } from "@/lib/agua/api";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/")({
-  component: RotaDoDia,
+  component: VisaoGeral,
 });
 
-const STATUS_TONE: Record<VisitaStatus, string> = {
-  pendente: "border-border/60 bg-card/40",
-  concluida: "border-emerald-400/40 bg-emerald-500/10",
-  parcial: "border-amber-400/40 bg-amber-500/10",
-  nao_realizada: "border-rose-400/40 bg-rose-500/10",
-  cancelada: "border-border/60 bg-muted/20",
-};
+function diasAtras(dias: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
-function RotaDoDia() {
-  const qc = useQueryClient();
-  const podeEscrever = useCanAccessModule("abastecimento", "update").allowed;
-  const [data, setData] = useState(hojeISO());
-  const [aberto, setAberto] = useState<string | null>(null);
+function VisaoGeral() {
+  const hoje = hojeISO();
+  const dia = diaSemanaISO(hoje);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
+  const prog = useQuery({ queryKey: ["agua", "programacao"], queryFn: listProgramacao });
   const visitas = useQuery({
-    queryKey: ["agua", "visitas", data],
-    queryFn: () => garantirVisitasDoDia(data),
+    queryKey: ["agua", "visitas", "semana", hoje],
+    queryFn: () => listVisitas(diasAtras(6), hoje),
   });
+  const filtros = useQuery({ queryKey: ["agua", "filtros"], queryFn: listFiltros });
+
+  const carregando = pontos.isLoading || prog.isLoading || visitas.isLoading;
 
   const porId = useMemo(
-    () => new Map<string, Ponto>((pontos.data ?? []).map((p) => [p.id, p])),
+    () => new Map((pontos.data ?? []).map((p) => [p.id, p])),
     [pontos.data],
   );
 
-  const lista = useMemo(() => {
-    const rows = (visitas.data ?? []).map((v) => ({ v, p: porId.get(v.ponto_id) }));
-    return rows
-      .filter((r) => r.p)
-      .sort((a, b) => (a.p!.ordem - b.p!.ordem) || a.p!.predio.localeCompare(b.p!.predio));
-  }, [visitas.data, porId]);
+  const doDia = useMemo(
+    () => (visitas.data ?? []).filter((v) => v.data === hoje),
+    [visitas.data, hoje],
+  );
 
   const kpis = useMemo(() => {
-    const total = lista.length;
-    const concluidas = lista.filter((r) => r.v.status === "concluida").length;
-    const pendentes = lista.filter((r) => r.v.status === "pendente").length;
-    const bags = lista.reduce((a, r) => a + (r.v.bags_entregues ?? 0), 0);
-    return { total, concluidas, pendentes, bags };
-  }, [lista]);
+    const programadosHoje = (prog.data ?? []).filter((p) => p.dia_semana === dia).length;
+    const concluidasHoje = doDia.filter((v) => v.status === "concluida").length;
+    const semana = visitas.data ?? [];
+    const feitas = semana.filter((v) => v.status === "concluida" || v.status === "parcial").length;
+    const aderencia = semana.length ? Math.round((feitas / semana.length) * 100) : 0;
+    const bagsSemana = semana.reduce((a, v) => a + (v.bags_entregues ?? 0), 0);
+    const filtrosAbertos = (filtros.data ?? []).filter(
+      (f) => f.situacao === "aberta" || f.situacao === "em_atendimento",
+    ).length;
+    return { programadosHoje, concluidasHoje, aderencia, bagsSemana, filtrosAbertos };
+  }, [prog.data, doDia, visitas.data, filtros.data, dia]);
 
-  const mut = useMutation({
-    mutationFn: ({ id, patch }: { id: string; patch: Partial<Visita> }) =>
-      registrarVisita(id, patch),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["agua", "visitas", data] });
-      toast.success("Execução registrada.");
-    },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha ao registrar."),
-  });
+  const ocorrencias = useMemo(
+    () =>
+      (visitas.data ?? [])
+        .filter((v) => v.status === "nao_realizada" || v.status === "parcial")
+        .slice(0, 6),
+    [visitas.data],
+  );
 
-  const dia = diaSemanaISO(data);
-  const diaUtil = dia <= 5;
-
-  return (
-    <div className="space-y-4">
-      <GlassCard className="p-4">
-        <div className="grid gap-3 sm:grid-cols-[220px_1fr] sm:items-end">
-          <div className="space-y-1">
-            <Label htmlFor="data-rota">Data da rota</Label>
-            <Input
-              id="data-rota"
-              type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value || hojeISO())}
-            />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {DIA_LABEL[dia]} ·{" "}
-            {diaUtil
-              ? `${kpis.total} ponto(s) programado(s)`
-              : "Fora dos dias úteis programados na planilha."}
-          </p>
-        </div>
-      </GlassCard>
-
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Pontos do dia" value={kpis.total} icon={<Droplets className="h-4 w-4" />} />
-        <KpiCard label="Concluídos" value={kpis.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <KpiCard label="Pendentes" value={kpis.pendentes} icon={<CircleSlash className="h-4 w-4" />} />
-        <KpiCard label="Bags entregues" value={kpis.bags} icon={<PackageCheck className="h-4 w-4" />} />
-      </div>
-
-      {visitas.isLoading ? (
-        <div className="flex items-center gap-2 p-6 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando rota…
-        </div>
-      ) : lista.length === 0 ? (
-        <EmptyState
-          title="Nenhum ponto programado"
-          description={
-            diaUtil
-              ? "Importe a planilha em Pontos e filtros para gerar a programação semanal."
-              : `Não há programação cadastrada para ${DIA_LABEL[dia]}.`
-          }
-        />
-      ) : (
-        <div className="space-y-2">
-          {lista.map(({ v, p }) => (
-            <VisitaCard
-              key={v.id}
-              visita={v}
-              ponto={p!}
-              aberto={aberto === v.id}
-              onToggle={() => setAberto(aberto === v.id ? null : v.id)}
-              podeEscrever={podeEscrever}
-              salvando={mut.isPending}
-              onSalvar={(patch) => mut.mutate({ id: v.id, patch })}
-            />
+  if (carregando) {
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-24 rounded-2xl" />
           ))}
         </div>
-      )}
-    </div>
-  );
-}
-
-function VisitaCard({
-  visita,
-  ponto,
-  aberto,
-  onToggle,
-  podeEscrever,
-  salvando,
-  onSalvar,
-}: {
-  visita: Visita;
-  ponto: Ponto;
-  aberto: boolean;
-  onToggle: () => void;
-  podeEscrever: boolean;
-  salvando: boolean;
-  onSalvar: (patch: Partial<Visita>) => void;
-}) {
-  const [bags, setBags] = useState(String(visita.bags_entregues ?? visita.bags_previstas));
-  const [motivo, setMotivo] = useState(visita.motivo ?? MOTIVOS_NAO_REALIZADA[0]);
-  const [obs, setObs] = useState(visita.observacao ?? "");
-  const [enviando, setEnviando] = useState(false);
-
-  async function enviarFoto(file: File) {
-    setEnviando(true);
-    try {
-      const { url } = await uploadFrotaPhoto(file, `agua-${visita.id}.jpg`, {
-        module: "abastecimento-agua",
-        entityType: "agua_visita",
-        entityId: visita.id,
-      });
-      onSalvar({ foto_url: url });
-    } catch (e) {
-      toast.error((e as Error)?.message ?? "Falha ao enviar a foto.");
-    } finally {
-      setEnviando(false);
-    }
+        <Skeleton className="h-48 rounded-2xl" />
+      </div>
+    );
   }
 
   return (
-    <div className={cn("rounded-2xl border transition-colors", STATUS_TONE[visita.status])}>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex min-h-[44px] w-full items-center justify-between gap-3 p-3 text-left"
-      >
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{pontoLabel(ponto)}</p>
-          <p className="text-xs text-muted-foreground">
-            {visita.bags_previstas} bag(s) previstas
-            {visita.bags_entregues != null ? ` · ${visita.bags_entregues} entregue(s)` : ""}
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[11px] font-medium">
-          {VISITA_STATUS_LABEL[visita.status]}
-        </span>
-      </button>
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard
+          label={`Programados hoje (${DIA_LABEL[dia]})`}
+          value={kpis.programadosHoje}
+          icon={<Droplets className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Concluídos hoje"
+          value={kpis.concluidasHoje}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Aderência 7 dias"
+          value={`${kpis.aderencia}%`}
+          hint="Visitas concluídas ou parciais"
+          icon={<PackageCheck className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Filtros em aberto"
+          value={kpis.filtrosAbertos}
+          icon={<Filter className="h-4 w-4" />}
+        />
+      </div>
 
-      {aberto && (
-        <div className="space-y-3 border-t border-border/50 p-3">
-          {!podeEscrever ? (
-            <p className="text-xs text-muted-foreground">
-              Você tem acesso somente de leitura a este módulo.
-            </p>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <GlassCard className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Rota de hoje</h2>
+            <Link
+              to="/abastecimento/agua/rota"
+              className="inline-flex items-center gap-1 text-xs text-primary"
+            >
+              Executar <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          {doDia.length === 0 ? (
+            <EmptyState
+              title="Rota ainda não iniciada"
+              description="Abra a aba Rota do Dia para gerar as paradas a partir da programação."
+            />
           ) : (
-            <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label>Bags entregues</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    inputMode="numeric"
-                    value={bags}
-                    onChange={(e) => setBags(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Motivo (quando não realizada)</Label>
-                  <Select value={motivo} onValueChange={setMotivo}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MOTIVOS_NAO_REALIZADA.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <Label>Observação</Label>
-                <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} />
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  disabled={salvando}
-                  onClick={() =>
-                    onSalvar({
-                      status: "concluida",
-                      bags_entregues: Number(bags) || 0,
-                      observacao: obs || null,
-                      motivo: null,
-                    })
-                  }
+            <ul className="space-y-2">
+              {doDia.slice(0, 6).map((v) => (
+                <li
+                  key={v.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card/40 p-2.5"
                 >
-                  Concluir
-                </Button>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  disabled={salvando}
-                  onClick={() =>
-                    onSalvar({
-                      status: "parcial",
-                      bags_entregues: Number(bags) || 0,
-                      observacao: obs || null,
-                    })
-                  }
-                >
-                  Entrega parcial
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={salvando}
-                  onClick={() =>
-                    onSalvar({
-                      status: "nao_realizada",
-                      bags_entregues: 0,
-                      motivo,
-                      observacao: obs || null,
-                    })
-                  }
-                >
-                  Não realizada
-                </Button>
-                <label className="inline-flex min-h-[36px] cursor-pointer items-center gap-2 rounded-md border border-border/60 px-3 text-sm">
-                  {enviando ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                  Evidência
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) void enviarFoto(f);
-                      e.target.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-
-              {visita.foto_url && (
-                <a
-                  href={visita.foto_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-block text-xs text-primary underline"
-                >
-                  Ver evidência enviada
-                </a>
-              )}
-            </>
+                  <span className="min-w-0 truncate text-sm">
+                    {porId.get(v.ponto_id) ? pontoLabel(porId.get(v.ponto_id)!) : "Ponto removido"}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full border px-2 py-0.5 text-[11px]",
+                      v.status === "concluida"
+                        ? "border-emerald-400/40 text-emerald-300"
+                        : v.status === "pendente"
+                          ? "border-border/60 text-muted-foreground"
+                          : "border-amber-400/40 text-amber-300",
+                    )}
+                  >
+                    {VISITA_STATUS_LABEL[v.status]}
+                  </span>
+                </li>
+              ))}
+            </ul>
           )}
-        </div>
-      )}
+        </GlassCard>
+
+        <GlassCard className="space-y-3 p-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-300" />
+            <h2 className="text-sm font-semibold">Ocorrências dos últimos 7 dias</h2>
+          </div>
+          {ocorrencias.length === 0 ? (
+            <EmptyState
+              title="Semana sem ocorrências"
+              description="Nenhuma entrega parcial ou não realizada no período."
+            />
+          ) : (
+            <ul className="space-y-2">
+              {ocorrencias.map((v) => (
+                <li key={v.id} className="rounded-xl border border-border/50 bg-card/40 p-2.5">
+                  <p className="truncate text-sm">
+                    {porId.get(v.ponto_id) ? pontoLabel(porId.get(v.ponto_id)!) : "Ponto removido"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {v.data.split("-").reverse().join("/")} · {VISITA_STATUS_LABEL[v.status]}
+                    {v.motivo ? ` — ${v.motivo}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </GlassCard>
+      </div>
     </div>
   );
 }
-
