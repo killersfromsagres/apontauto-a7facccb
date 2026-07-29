@@ -132,6 +132,30 @@ export function PolygonEditor({
     [working],
   );
 
+  /**
+   * Descarta geometria local assim que os dados salvos chegam. Sem isso o
+   * editor podia exibir um contorno antigo enquanto o PNG/PDF usava o
+   * polígono do banco — as duas versões ficavam fora de lugar.
+   */
+  useEffect(() => {
+    setWorking((w) => {
+      const keys = Object.keys(w);
+      if (keys.length === 0) return w;
+      const dragging = dragRef.current?.id;
+      const next: Record<string, Point[]> = {};
+      let changed = false;
+      for (const k of keys) {
+        if (k === dragging) {
+          next[k] = w[k];
+          continue;
+        }
+        changed = true;
+      }
+      return changed ? next : w;
+    });
+  }, [polygons]);
+
+
   /* ------------------------------ coordenadas ------------------------------ */
 
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
