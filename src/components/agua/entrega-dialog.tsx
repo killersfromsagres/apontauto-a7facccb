@@ -150,21 +150,44 @@ export function EntregaDialog({
     setEnviandoFoto(true);
     try {
       const urls: string[] = [];
+      let aguardando = 0;
       for (const file of Array.from(files)) {
-        const { url } = await uploadFrotaPhoto(file, `agua-${visita.id}-${Date.now()}.jpg`, {
-          module: "abastecimento-agua",
-          entityType: "agua_visita",
-          entityId: visita.id,
-        });
-        urls.push(url);
+        const res = await enviarEvidencia(
+          file,
+          {
+            visitaId: visita.id,
+            rotaId: visita.rota_id ?? null,
+            pontoId: visita.ponto_id,
+            tipo: "entrega",
+            colaborador: visita.responsavel ?? null,
+            veiculo: visita.veiculo ?? null,
+            predio: ponto.predio,
+            andar: ponto.andar,
+            espaco: ponto.espaco,
+            data: visita.data,
+          },
+          { nome: `agua-${visita.id}` },
+        );
+        if (res.duplicada && !res.url) {
+          toast.info("Esta foto já foi registrada nesta parada.");
+          continue;
+        }
+        if (res.url) urls.push(res.url);
+        else aguardando += 1;
       }
-      setFotos((prev) => [...prev, ...urls]);
+      if (urls.length) setFotos((prev) => [...prev, ...urls]);
+      if (aguardando) {
+        toast.warning(
+          `${aguardando} foto(s) aguardando envio. Ficam salvas no aparelho e sobem sozinhas quando houver rede.`,
+        );
+      }
     } catch (e) {
-      toast.error((e as Error)?.message ?? "Falha ao enviar a foto.");
+      toast.error((e as Error)?.message ?? "Falha ao preparar a foto.");
     } finally {
       setEnviandoFoto(false);
     }
   }
+
 
   function capturarLocal() {
     if (!navigator.geolocation) {
