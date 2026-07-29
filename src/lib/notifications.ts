@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { StatusTone } from "@/components/pcm";
 
 export type NotificationCategory =
   | "informacao"
