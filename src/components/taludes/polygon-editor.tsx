@@ -346,9 +346,12 @@ export function PolygonEditor({
     movedRef.current = true;
     if (drag.kind === "vertex") {
       const next = [...(working[drag.id] ?? drag.before)];
-      next[drag.index] = applySnap(p, drag.id, drag.index);
+      // Mantém a distância original entre o ponteiro e o vértice: sem "pulo".
+      const raw = clampPoint({ x: p.x + drag.grab.x, y: p.y + drag.grab.y });
+      next[drag.index] = applySnap(raw, drag.id);
       setWorking((w) => ({ ...w, [drag.id]: next }));
       onDraftChange?.(drag.id, next);
+
     } else if (drag.kind === "move") {
       const dx = p.x - drag.start.x;
       const dy = p.y - drag.start.y;
