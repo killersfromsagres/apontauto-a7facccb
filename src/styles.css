@@ -1880,3 +1880,42 @@ button,
   );
   background-size: 200% 100%;
 }
+
+/* ── Mobile UX ─────────────────────────────────────────────────────────── */
+
+/* Dica visual de rolagem horizontal em tabelas densas (só no mobile):
+   um degradê na borda direita indica que há mais colunas a deslizar. */
+@media (max-width: 767px) {
+  .table-scroll {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 12px,
+      #000 calc(100% - 28px),
+      rgb(0 0 0 / 0.25) 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 12px,
+      #000 calc(100% - 28px),
+      rgb(0 0 0 / 0.25) 100%
+    );
+  }
+  /* Rolagem horizontal com "encaixe" suave nas tabelas. */
+  .table-scroll table {
+    scroll-snap-type: x proximity;
+  }
+}
+
+/* Legibilidade no celular: nada abaixo de ~11.5px em badges/rótulos densos. */
+@media (max-width: 767px) {
+  .text-\[10px\] {
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+  .text-\[11px\] {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
