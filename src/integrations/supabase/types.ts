@@ -6501,6 +6501,7 @@ export type Database = {
       agua_is_gestor: { Args: never; Returns: boolean }
       agua_meu_nome: { Args: never; Returns: string }
       agua_perm: { Args: { _perm: string }; Returns: boolean }
+      agua_reordenar_programacao: { Args: { itens: Json }; Returns: number }
       agua_rota_ativa: { Args: { _rota_id: string }; Returns: boolean }
       agua_rota_minha: { Args: { _rota_id: string }; Returns: boolean }
       audit_redact: { Args: { payload: Json }; Returns: Json }
