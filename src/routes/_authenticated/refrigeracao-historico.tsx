@@ -516,7 +516,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         </div>
                       )}
                       {p.observacao && (
-                        <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>
+                        <p className="mt-1 text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
+                          {p.observacao}
+                        </p>
                       )}
                     </li>
                   ))}
