@@ -1,8 +1,8 @@
 import { memo } from "react";
 
 import { cn } from "@/lib/utils";
-import fiatLogo from "@/assets/fiat-logo.png.asset.json";
-import vwLogo from "@/assets/vw-logo.png.asset.json";
+import fiatLogo from "@/assets/fiat-logo.png";
+import vwLogo from "@/assets/vw-logo.png";
 
 export type CarBrand = "fiat" | "vw" | "generic";
 
@@ -26,7 +26,7 @@ export const BrandMark = memo(function BrandMark({
   className?: string;
 }) {
   if (brand === "generic") return null;
-  const src = brand === "fiat" ? fiatLogo.url : vwLogo.url;
+  const src = brand === "fiat" ? fiatLogo : vwLogo;
   const label = brand === "fiat" ? "Fiat" : "Volkswagen";
 
   return (
@@ -35,7 +35,7 @@ export const BrandMark = memo(function BrandMark({
       alt={label}
       title={label}
       loading="lazy"
-      className={cn("h-3.5 w-3.5 shrink-0 object-contain", className)}
+      className={cn("h-3 w-3 shrink-0 object-contain", className)}
     />
   );
 });
