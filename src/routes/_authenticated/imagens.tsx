@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { withValidSession } from "@/lib/session-guard";
 import {
   inventoryStorageImages,
   listImgbbLinks,
@@ -76,9 +77,9 @@ function Page() {
     setPhase("listing");
     setFailures([]);
     try {
-      const data = await inventory({ data: undefined as never });
+      const data = await withValidSession(() => inventory({ data: undefined as never }));
       setInv(data);
-      setRecent(await links({ data: { limit: 30 } }));
+      setRecent(await withValidSession(() => links({ data: { limit: 30 } })));
       setPhase("idle");
       if (!data.imgbbConfigured) toast.warning("IMGBB_API_KEY não configurada no servidor.");
     } catch (err: any) {
@@ -92,7 +93,7 @@ function Page() {
     if (!data) {
       setPhase("listing");
       try {
-        data = await inventory({ data: undefined as never });
+        data = await withValidSession(() => inventory({ data: undefined as never }));
         setInv(data);
       } catch (err: any) {
         setPhase("idle");
@@ -124,7 +125,7 @@ function Page() {
         // Lotes pequenos: cada volta baixa do Storage, republica no ImgBB,
         // grava o link e só então apaga o binário local.
         while (guard++ < 400) {
-          const r = await migrate({ data: { source: src.key, batchSize: 6 } });
+          const r = await withValidSession(() => migrate({ data: { source: src.key, batchSize: 6 } }));
           done += r.migrated;
           freedBytes += r.freedBytes;
           allFailures.push(...r.failures);
@@ -140,14 +141,14 @@ function Page() {
       setCurrent("Removendo objetos órfãos");
       for (const src of data.sources) {
         if (src.orphans === 0) continue;
-        const p = await purge({ data: { source: src.key } });
+        const p = await withValidSession(() => purge({ data: { source: src.key } }));
         freedBytes += p.freedBytes;
         setFreed(freedBytes);
       }
 
-      const fresh = await inventory({ data: undefined as never });
+      const fresh = await withValidSession(() => inventory({ data: undefined as never }));
       setInv(fresh);
-      setRecent(await links({ data: { limit: 30 } }));
+      setRecent(await withValidSession(() => links({ data: { limit: 30 } })));
       setPhase("done");
       toast.success(
         allFailures.length
