@@ -1,20 +1,27 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { ClipboardList, History } from "lucide-react";
+import { ClipboardList, History, ShieldCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { cn } from "@/lib/utils";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useAguaSync } from "@/features/water-delivery/offline/offline";
 
-const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
+type Tab = { to: string; label: string; icon: LucideIcon; exact?: boolean; adminOnly?: boolean };
+
+const TABS: Tab[] = [
   { to: "/abastecimento/agua", label: "Programação do Dia", icon: ClipboardList, exact: true },
   { to: "/abastecimento/agua/historico", label: "Histórico", icon: History },
+  { to: "/abastecimento/agua/gestao", label: "Gestão (Admin)", icon: ShieldCheck, adminOnly: true },
 ];
 
 
 export function WaterDeliveryLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { pendentes, online, sincronizando } = useAguaSync();
+  const { isAdmin } = useIsAdmin();
+  const tabs = TABS.filter((t) => !t.adminOnly || isAdmin);
+
 
   return (
     <PageShell
