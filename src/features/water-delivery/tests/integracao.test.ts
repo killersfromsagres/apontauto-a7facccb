@@ -20,6 +20,9 @@ const memoria = new Map<string, string>();
   clear: () => memoria.clear(),
 };
 (globalThis as any).window ??= globalThis;
+(globalThis as any).window.dispatchEvent ??= () => true;
+(globalThis as any).window.addEventListener ??= () => undefined;
+(globalThis as any).window.removeEventListener ??= () => undefined;
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: fakeSupabase,
