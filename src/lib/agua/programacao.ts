@@ -20,13 +20,16 @@ export const TURNO_LABEL: Record<string, string> = {
   integral: "Integral",
 };
 
-export const ROTA_STATUS_LABEL: Record<string, string> = {
-  planejada: "Planejada",
-  pronta: "Pronta para iniciar",
-  em_andamento: "Em andamento",
-  concluida: "Concluída",
-  cancelada: "Cancelada",
-};
+// Item 14 — estados oficiais da rota (espelho do enum agua_rota_status).
+export {
+  ROTA_STATUS,
+  ROTA_STATUS_LABEL,
+  ROTA_TRANSICOES,
+  ROTA_ENCERRADAS,
+  podeTransicionarRota,
+} from "@/lib/agua/estados";
+export type { RotaStatus } from "@/lib/agua/estados";
+
 
 /** Data de hoje no fuso operacional (YYYY-MM-DD). */
 export function hojeSP(): string {
