@@ -285,7 +285,7 @@ export function WaterScheduleSimple() {
                 {opcoesVeiculos.map((v) => (
                   <SelectItem key={v.valor} value={v.valor}>
                     <span className="flex items-center gap-2">
-                      <BrandMark brand={v.brand} className="h-4 w-auto" />
+                      <BrandMark brand={v.brand} className="h-3.5 w-3.5" />
                       <span className="font-medium">{v.nome}</span>
                       <span className="font-mono text-xs text-muted-foreground">{v.valor}</span>
                     </span>
@@ -731,7 +731,7 @@ function EntregaSheet({
                       </span>
                       <span className="flex w-full items-center gap-2">
                         <PlateBadge plate={v.plate} size="sm" />
-                        <BrandMark brand={v.brand} className="h-4 w-auto" />
+                        <BrandMark brand={v.brand} className="h-3.5 w-3.5" />
                         <span className="truncate text-[11px] text-muted-foreground">
                           {v.nome}
                         </span>
