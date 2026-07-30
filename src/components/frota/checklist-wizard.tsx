@@ -436,25 +436,52 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
       )}
 
       {step === 4 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PHOTO_SLOTS.map((slot) => (
-            <GlassCard key={slot.key} className="space-y-2 p-3">
-              <PhotoField
-                label={slot.label}
-                url={slotPhotos[slot.key] ?? null}
-                busy={uploading === slot.key}
-                onFile={(f) =>
-                  handleUpload(
-                    f,
-                    (url) => setSlotPhotos((prev) => ({ ...prev, [slot.key]: url })),
-                    slot.key,
-                  )
-                }
-              />
-            </GlassCard>
-          ))}
+        <div className="space-y-3">
+          <GlassCard className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <p className="text-sm font-semibold">
+              Categorias com foto: {PHOTO_SLOTS.length - missingSlots.length}/{PHOTO_SLOTS.length}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {totalSlotPhotos} foto(s) capturada(s) no total
+            </p>
+          </GlassCard>
+          {missingSlots.length > 0 && (
+            <p className="flex items-center gap-2 text-sm text-amber-300">
+              <AlertTriangle className="h-4 w-4" /> Faltam fotos em:{" "}
+              {missingSlots.map((s) => s.label).join(", ")}.
+            </p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {PHOTO_SLOTS.map((slot) => (
+              <GlassCard key={slot.key} className="space-y-2 p-3">
+                <PhotoField
+                  label={`${slot.label} (${slotCount(slot.key)})`}
+                  urls={slotPhotos[slot.key] ?? []}
+                  busy={uploading === slot.key}
+                  onRemove={(url) =>
+                    setSlotPhotos((prev) => ({
+                      ...prev,
+                      [slot.key]: (prev[slot.key] ?? []).filter((u) => u !== url),
+                    }))
+                  }
+                  onFile={(f) =>
+                    handleUpload(
+                      f,
+                      (url) =>
+                        setSlotPhotos((prev) => ({
+                          ...prev,
+                          [slot.key]: [...(prev[slot.key] ?? []), url],
+                        })),
+                      slot.key,
+                    )
+                  }
+                />
+              </GlassCard>
+            ))}
+          </div>
         </div>
       )}
+
 
       {step === 5 && (
         <GlassCard className="space-y-4">
