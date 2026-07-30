@@ -238,32 +238,47 @@ export async function retificarVisita(args: {
   visita: Visita;
   campos: Record<string, unknown>;
   motivo: string;
-}): Promise<void> {
+}): Promise<{ pendente: boolean }> {
   const motivo = limparTexto(args.motivo);
   if (!motivo) throw new Error("Informe o motivo da retificação.");
-  const usuario = await uid();
+  const usuario = await uid().catch(() => null);
   const registro = Object.entries(args.campos).filter(
     ([campo, novo]) => (args.visita as unknown as Record<string, unknown>)[campo] !== novo,
   );
-  if (!registro.length) return;
+  if (!registro.length) return { pendente: false };
 
-  const { error: retErr } = await db.from("agua_retificacoes").insert(
-    registro.map(([campo, novo]) => ({
-      visita_id: args.visita.id,
-      campo,
-      valor_anterior: (args.visita as unknown as Record<string, unknown>)[campo] ?? null,
-      valor_novo: novo ?? null,
-      motivo,
-      usuario_id: usuario,
-    })),
-  );
-  if (retErr) throw retErr;
-
+  const linhas = registro.map(([campo, novo]) => ({
+    visita_id: args.visita.id,
+    campo,
+    valor_anterior: (args.visita as unknown as Record<string, unknown>)[campo] ?? null,
+    valor_novo: novo ?? null,
+    motivo,
+  }));
   const patch = Object.fromEntries(registro);
-  const { error } = await db.from("agua_visitas").update(patch).eq("id", args.visita.id);
-  if (error) throw error;
-  await registrarEvento(args.visita.id, "retificacao", { patch, motivo });
+
+  try {
+    const { error: retErr } = await db
+      .from("agua_retificacoes")
+      .insert(linhas.map((l) => ({ ...l, usuario_id: usuario })));
+    if (retErr) throw retErr;
+
+    const { error } = await db.from("agua_visitas").update(patch).eq("id", args.visita.id);
+    if (error) throw error;
+    await registrarEvento(args.visita.id, "retificacao", { patch, motivo });
+    return { pendente: false };
+  } catch (err) {
+    if (!semRede(err)) throw err;
+    await enfileirar("visita.retificacao", {
+      visitaId: args.visita.id,
+      data: args.visita.data,
+      patch,
+      retificacoes: linhas,
+      motivo,
+    });
+    return { pendente: true };
+  }
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Rota: início e finalização (8.1 / 8.5)                              */
