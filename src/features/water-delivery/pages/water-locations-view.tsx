@@ -152,9 +152,12 @@ export function WaterLocationsView() {
 
   const salvar = useMutation({
     mutationFn: async (dados: Form) => {
+      const check = pontoSchema.partial({ bags_padrao: true, ordem: true }).safeParse(dados);
+      if (!check.success) throw new Error(primeiroErro(check.error));
       if (dados.id) return atualizarPonto(dados.id, dados);
       await criarPonto(dados);
     },
+
     onSuccess: () => {
       toast.success("Cadastro salvo.");
       setForm(null);
