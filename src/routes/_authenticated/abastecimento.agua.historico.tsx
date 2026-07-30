@@ -14,7 +14,7 @@ import {
   listPontos,
   listVisitas,
   pontoLabel,
-} from "@/lib/agua/api";
+} from "@/features/water-delivery/queries/api";
 
 function addDaysISO(iso: string, days: number): string {
   const d = new Date(`${iso}T12:00:00`);

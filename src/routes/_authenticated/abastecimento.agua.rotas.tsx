@@ -27,7 +27,7 @@ import {
 import { EmptyState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { cn } from "@/lib/utils";
-import { listVisitas } from "@/lib/agua/api";
+import { listVisitas } from "@/features/water-delivery/queries/api";
 import { listChecklists, listVehicles, vehicleLabel } from "@/lib/frota/api";
 import {
   cancelarRota,
@@ -42,7 +42,7 @@ import {
   salvarRota,
   TURNO_LABEL,
   type Rota,
-} from "@/lib/agua/programacao";
+} from "@/features/water-delivery/queries/programacao";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/rotas")({
   component: RotasPage,

@@ -40,8 +40,8 @@ import {
   type Ponto,
   type Visita,
   type VisitaStatus,
-} from "@/lib/agua/api";
-import { DIA_LABEL } from "@/lib/agua/reader";
+} from "@/features/water-delivery/queries/api";
+import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/")({
   component: DashboardAgua,

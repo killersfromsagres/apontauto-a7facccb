@@ -38,7 +38,7 @@ import {
 import { EmptyState, KpiCard } from "@/components/pcm";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { hojeISO, listPontos, listVisitas, pontoLabel } from "@/lib/agua/api";
+import { hojeISO, listPontos, listVisitas, pontoLabel } from "@/features/water-delivery/queries/api";
 import {
   BAG_MOVIMENTO_LABEL,
   calcularAlertas,
@@ -48,7 +48,7 @@ import {
   salvarBagTipo,
   type BagMovimentoTipo,
   type BagTipo,
-} from "@/lib/agua/bags";
+} from "@/features/water-delivery/queries/bags";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/bags")({
   component: ControleBags,

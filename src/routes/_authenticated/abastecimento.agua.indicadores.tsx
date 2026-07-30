@@ -37,11 +37,11 @@ import {
   listPontos,
   listVisitas,
   type VisitaStatus,
-} from "@/lib/agua/api";
-import { listFiltroAtivos } from "@/lib/agua/filtros";
-import { listOcorrencias } from "@/lib/agua/execucao";
-import { listRotas } from "@/lib/agua/programacao";
-import { calcularEntrega, calcularFiltros } from "@/lib/agua/indicadores";
+} from "@/features/water-delivery/queries/api";
+import { listFiltroAtivos } from "@/features/water-delivery/filters/filtros";
+import { listOcorrencias } from "@/features/water-delivery/mutations/execucao";
+import { listRotas } from "@/features/water-delivery/queries/programacao";
+import { calcularEntrega, calcularFiltros } from "@/features/water-delivery/reports/indicadores";
 import {
   compartilharResumo,
   exportarIndicadoresExcel,
@@ -52,7 +52,7 @@ import {
   exportarRotaPdf,
   imprimirPainel,
   resumoTexto,
-} from "@/lib/agua/relatorios";
+} from "@/features/water-delivery/reports/relatorios";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/indicadores")({
   component: Indicadores,

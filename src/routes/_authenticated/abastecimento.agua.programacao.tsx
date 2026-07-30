@@ -43,7 +43,7 @@ import { EmptyState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { listPontos, pontoLabel, type Ponto } from "@/lib/agua/api";
+import { listPontos, pontoLabel, type Ponto } from "@/features/water-delivery/queries/api";
 import {
   atualizarProgramacao,
   atualizarProgramacaoEmLote,
@@ -66,9 +66,9 @@ import {
   upsertProgramacao,
   addDias,
   type ProgramacaoLinha,
-} from "@/lib/agua/programacao";
-import { DIAS } from "@/lib/agua/reader";
-import { ImportadorWizard } from "@/components/agua/importador-wizard";
+} from "@/features/water-delivery/queries/programacao";
+import { DIAS } from "@/features/water-delivery/importer/reader";
+import { ImportadorWizard } from "@/features/water-delivery/importer/importador-wizard";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/programacao")({
   component: ProgramacaoSemanal,

@@ -50,9 +50,9 @@ import {
   PONTO_PRIORIDADE_LABEL,
   type Ponto,
   type PontoPrioridade,
-} from "@/lib/agua/api";
-import { detectarDuplicidades, normalizarCodigo } from "@/lib/agua/normalize";
-import { DIA_LABEL } from "@/lib/agua/reader";
+} from "@/features/water-delivery/queries/api";
+import { detectarDuplicidades, normalizarCodigo } from "@/features/water-delivery/schemas/normalize";
+import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/pontos")({

@@ -8,12 +8,12 @@ import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { WhatsAppConfigCard } from "@/components/agua/whatsapp-config-card";
-import { FilaSincronizacaoCard } from "@/components/agua/fila-sincronizacao-card";
+import { WhatsAppConfigCard } from "@/features/water-delivery/whatsapp/whatsapp-config-card";
+import { FilaSincronizacaoCard } from "@/features/water-delivery/components/fila-sincronizacao-card";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 
-import { listPontos, listProgramacao } from "@/lib/agua/api";
-import { useAguaSync } from "@/lib/agua/offline";
+import { listPontos, listProgramacao } from "@/features/water-delivery/queries/api";
+import { useAguaSync } from "@/features/water-delivery/offline/offline";
 import { useSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/configuracoes")({

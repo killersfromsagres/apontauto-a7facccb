@@ -17,7 +17,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { cn } from "@/lib/utils";
-import { useAguaSync } from "@/lib/agua/offline";
+import { useAguaSync } from "@/features/water-delivery/offline/offline";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua")({
   head: () => ({

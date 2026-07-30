@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/pcm";
-import { WhatsAppShareDialog } from "@/components/agua/whatsapp-share-dialog";
-import { FilaFotosAviso } from "@/components/agua/fila-fotos-aviso";
-import { hojeISO, listPontos, listVisitas, pontoLabel, VISITA_STATUS_LABEL } from "@/lib/agua/api";
-import { listFotos } from "@/lib/agua/fotos";
-import type { EvidenciaItem } from "@/lib/agua/whatsapp";
+import { WhatsAppShareDialog } from "@/features/water-delivery/whatsapp/whatsapp-share-dialog";
+import { FilaFotosAviso } from "@/features/water-delivery/components/fila-fotos-aviso";
+import { hojeISO, listPontos, listVisitas, pontoLabel, VISITA_STATUS_LABEL } from "@/features/water-delivery/queries/api";
+import { listFotos } from "@/features/water-delivery/offline/fotos";
+import type { EvidenciaItem } from "@/features/water-delivery/whatsapp/whatsapp";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/evidencias")({
   component: Evidencias,

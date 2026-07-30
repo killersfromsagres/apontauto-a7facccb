@@ -4,10 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/pcm";
-import { FiltroAtivosTab } from "@/components/agua/filtro-ativos-tab";
-import { FiltroDetalheDialog } from "@/components/agua/filtro-detalhe-dialog";
-import { FiltroNovaSolicitacao } from "@/components/agua/filtro-nova-solicitacao";
-import { FiltroPreventivaTab } from "@/components/agua/filtro-preventiva-tab";
+import { FiltroAtivosTab } from "@/features/water-delivery/filters/components/filtro-ativos-tab";
+import { FiltroDetalheDialog } from "@/features/water-delivery/filters/components/filtro-detalhe-dialog";
+import { FiltroNovaSolicitacao } from "@/features/water-delivery/filters/components/filtro-nova-solicitacao";
+import { FiltroPreventivaTab } from "@/features/water-delivery/filters/components/filtro-preventiva-tab";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { cn } from "@/lib/utils";
 import {
@@ -19,13 +19,13 @@ import {
   type FiltroPrioridade,
   type FiltroSituacao,
   type FiltroSolicitacao,
-} from "@/lib/agua/api";
+} from "@/features/water-delivery/queries/api";
 import {
   SITUACOES_ABERTAS,
   ativosReincidentes,
   estadoSla,
   listFiltroAtivos,
-} from "@/lib/agua/filtros";
+} from "@/features/water-delivery/filters/filtros";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/filtros")({
   validateSearch: (search: Record<string, unknown>) => ({

@@ -35,17 +35,17 @@ import {
   type Ponto,
   type Visita,
   type VisitaStatus,
-} from "@/lib/agua/api";
-import { DIA_LABEL } from "@/lib/agua/reader";
-import { lerCacheRota, salvarCacheRota, useAguaSync } from "@/lib/agua/offline";
+} from "@/features/water-delivery/queries/api";
+import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
+import { lerCacheRota, salvarCacheRota, useAguaSync } from "@/features/water-delivery/offline/offline";
 import {
   STATUS_FINALIZADO,
   listRetificacoes,
   marcarAndamento,
   rotaDoDia,
-} from "@/lib/agua/execucao";
-import { EntregaDialog } from "@/components/agua/entrega-dialog";
-import { FimRotaCard, InicioRotaCard } from "@/components/agua/rota-execucao-cards";
+} from "@/features/water-delivery/mutations/execucao";
+import { EntregaDialog } from "@/features/water-delivery/components/entrega-dialog";
+import { FimRotaCard, InicioRotaCard } from "@/features/water-delivery/components/rota-execucao-cards";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/rota")({
   component: RotaDoDia,
