@@ -53,6 +53,33 @@ const STEPS = ["Veículo", "Colaboradores", "Contexto", "Checklist", "Fotos", "R
 
 const emptyItem = (): ItemState => ({ status: "conforme", severity: "media", notes: "" });
 
+/** URL remota -> objectURL local, usado enquanto a CDN propaga a imagem. */
+const LOCAL_PREVIEWS = new Map<string, string>();
+
+/** Miniatura tolerante à latência de propagação da CDN de imagens. */
+function ResilientPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [attempt, setAttempt] = useState(0);
+  const [fallback, setFallback] = useState(false);
+  const local = LOCAL_PREVIEWS.get(src);
+  const shown = fallback && local ? local : attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
+  return (
+    <img
+      src={shown}
+      alt={alt}
+      loading="lazy"
+      className={className}
+      onError={() => {
+        if (attempt < 3) {
+          window.setTimeout(() => setAttempt((a) => a + 1), 600 * (attempt + 1));
+        } else if (local) {
+          setFallback(true);
+        }
+      }}
+    />
+  );
+}
+
+
 export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
