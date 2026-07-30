@@ -282,12 +282,17 @@ export function WaterScheduleSimple() {
                 <SelectValue placeholder="Selecione o carro" />
               </SelectTrigger>
               <SelectContent>
-                {(veiculosQ.data ?? []).map((v) => (
-                  <SelectItem key={v.id} value={v.prefix || v.plate || v.id}>
-                    {[v.prefix, v.plate].filter(Boolean).join(" · ")} — {vehicleLabel(v)}
+                {opcoesVeiculos.map((v) => (
+                  <SelectItem key={v.valor} value={v.valor}>
+                    <span className="flex items-center gap-2">
+                      <BrandMark brand={v.brand} className="h-4 w-auto" />
+                      <span className="font-medium">{v.nome}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{v.valor}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
+
             </Select>
           </div>
         </div>
