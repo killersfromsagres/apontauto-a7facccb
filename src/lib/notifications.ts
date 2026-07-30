@@ -95,7 +95,54 @@ export type ReceiptRow = {
   delivered_at: string;
   read_at: string | null;
   acknowledged_at: string | null;
+  archived_at: string | null;
 };
+
+/** Preferências por canal (item 17). */
+export type NotificationPrefs = {
+  user_id: string;
+  inapp: boolean;
+  toast: boolean;
+  som: boolean;
+  email: boolean;
+  whatsapp: boolean;
+  categorias_silenciadas: string[];
+  prioridade_minima: string;
+};
+
+export const DEFAULT_PREFS: Omit<NotificationPrefs, "user_id"> = {
+  inapp: true,
+  toast: true,
+  som: false,
+  email: false,
+  whatsapp: false,
+  categorias_silenciadas: [],
+  prioridade_minima: "info",
+};
+
+export const PRIORIDADES: { key: string; label: string }[] = [
+  { key: "info", label: "Todas" },
+  { key: "warn", label: "Atenção ou maior" },
+  { key: "critical", label: "Somente críticas" },
+];
+
+const PESO: Record<string, number> = { info: 0, warn: 1, critical: 2 };
+
+/** Aplica as preferências do usuário sobre a lista de avisos. */
+export function filtrarPorPreferencias<T extends { category: string; severity: string }>(
+  itens: T[],
+  prefs: Omit<NotificationPrefs, "user_id"> | null,
+): T[] {
+  if (!prefs) return itens;
+  if (!prefs.inapp) return [];
+  const minimo = PESO[prefs.prioridade_minima] ?? 0;
+  return itens.filter(
+    (n) =>
+      !prefs.categorias_silenciadas.includes(n.category) &&
+      (PESO[n.severity] ?? 0) >= minimo,
+  );
+}
+
 
 export type TargetRow = {
   id: string;
