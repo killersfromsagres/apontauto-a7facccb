@@ -337,18 +337,20 @@ export function FleetChecklist() {
                 onClick={() => openPicker(c.key)}
                 aria-label={`Adicionar foto: ${c.label}`}
                 className={cn(
-                  "group relative aspect-square overflow-hidden rounded-2xl border text-left transition active:scale-[0.97]",
+                  "photo-tile group relative aspect-square overflow-hidden rounded-2xl border text-left",
                   shots.length
                     ? "border-primary/50 shadow-elegant"
                     : "border-dashed border-border/70 bg-background/40 hover:bg-muted/40",
                 )}
               >
+
                 {cover ? (
                   <img
                     src={cover.preview}
                     alt={c.label}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
+
                 ) : (
                   <span className="absolute inset-0 flex items-center justify-center">
                     <Camera className="h-6 w-6 text-muted-foreground/70 transition group-hover:text-primary" />
