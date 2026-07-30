@@ -78,7 +78,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const [items, setItems] = useState<Record<string, ItemState>>(() =>
     Object.fromEntries(CHECKLIST_ITEMS.map((i) => [i.key, emptyItem()])),
   );
-  const [slotPhotos, setSlotPhotos] = useState<Record<string, string>>({});
+  const [slotPhotos, setSlotPhotos] = useState<Record<string, string[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
@@ -116,7 +116,9 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
     }
   }
 
-  const missingSlots = PHOTO_SLOTS.filter((s) => !slotPhotos[s.key]);
+  const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
+  const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
+  const totalSlotPhotos = PHOTO_SLOTS.reduce((acc, s) => acc + slotCount(s.key), 0);
   const missingNcPhotos = nonConform.filter((d) => !items[d.key].photoUrl);
 
   const canAdvance = (() => {
@@ -150,10 +152,9 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
           : []),
       ];
       const photos = [
-        ...PHOTO_SLOTS.filter((s) => slotPhotos[s.key]).map((s) => ({
-          slot: s.key,
-          url: slotPhotos[s.key],
-        })),
+        ...PHOTO_SLOTS.flatMap((s) =>
+          (slotPhotos[s.key] ?? []).map((url) => ({ slot: s.key as string, url })),
+        ),
         ...nonConform
           .filter((d) => items[d.key].photoUrl)
           .map((d) => ({
@@ -435,25 +436,52 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
       )}
 
       {step === 4 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {PHOTO_SLOTS.map((slot) => (
-            <GlassCard key={slot.key} className="space-y-2 p-3">
-              <PhotoField
-                label={slot.label}
-                url={slotPhotos[slot.key] ?? null}
-                busy={uploading === slot.key}
-                onFile={(f) =>
-                  handleUpload(
-                    f,
-                    (url) => setSlotPhotos((prev) => ({ ...prev, [slot.key]: url })),
-                    slot.key,
-                  )
-                }
-              />
-            </GlassCard>
-          ))}
+        <div className="space-y-3">
+          <GlassCard className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <p className="text-sm font-semibold">
+              Categorias com foto: {PHOTO_SLOTS.length - missingSlots.length}/{PHOTO_SLOTS.length}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {totalSlotPhotos} foto(s) capturada(s) no total
+            </p>
+          </GlassCard>
+          {missingSlots.length > 0 && (
+            <p className="flex items-center gap-2 text-sm text-amber-300">
+              <AlertTriangle className="h-4 w-4" /> Faltam fotos em:{" "}
+              {missingSlots.map((s) => s.label).join(", ")}.
+            </p>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {PHOTO_SLOTS.map((slot) => (
+              <GlassCard key={slot.key} className="space-y-2 p-3">
+                <PhotoField
+                  label={`${slot.label} (${slotCount(slot.key)})`}
+                  urls={slotPhotos[slot.key] ?? []}
+                  busy={uploading === slot.key}
+                  onRemove={(url) =>
+                    setSlotPhotos((prev) => ({
+                      ...prev,
+                      [slot.key]: (prev[slot.key] ?? []).filter((u) => u !== url),
+                    }))
+                  }
+                  onFile={(f) =>
+                    handleUpload(
+                      f,
+                      (url) =>
+                        setSlotPhotos((prev) => ({
+                          ...prev,
+                          [slot.key]: [...(prev[slot.key] ?? []), url],
+                        })),
+                      slot.key,
+                    )
+                  }
+                />
+              </GlassCard>
+            ))}
+          </div>
         </div>
       )}
+
 
       {step === 5 && (
         <GlassCard className="space-y-4">
@@ -467,7 +495,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
             <Summary label="Não conformidades" value={String(nonConform.length)} />
             <Summary
               label="Fotos obrigatórias"
-              value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length}`}
+              value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length} · ${totalSlotPhotos} foto(s)`}
             />
             <Summary label="Colaborador" value={mainName || "—"} />
           </div>
@@ -540,20 +568,46 @@ function Summary({ label, value }: { label: string; value: string }) {
 function PhotoField({
   label,
   url,
+  urls,
   busy,
   onFile,
+  onRemove,
 }: {
   label: string;
-  url: string | null;
+  url?: string | null;
+  urls?: string[];
   busy: boolean;
   onFile: (file: File) => void;
+  onRemove?: (url: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const list = urls ?? (url ? [url] : []);
+  const multiple = Array.isArray(urls);
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {url ? (
-        <img src={url} alt={label} loading="lazy" className="h-32 w-full rounded-xl object-cover" />
+      {list.length > 0 ? (
+        <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          {list.map((src) => (
+            <div key={src} className="relative">
+              <img
+                src={src}
+                alt={label}
+                loading="lazy"
+                className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
+              />
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(src)}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white"
+                >
+                  remover
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-border/60 text-muted-foreground">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
@@ -579,11 +633,22 @@ function PhotoField({
         disabled={busy}
         onClick={() => ref.current?.click()}
       >
-        {url ? "Substituir foto" : "Capturar / escolher"}
+        {busy ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando…
+          </>
+        ) : multiple ? (
+          "Adicionar foto"
+        ) : list.length > 0 ? (
+          "Substituir foto"
+        ) : (
+          "Capturar / escolher"
+        )}
       </Button>
     </div>
   );
 }
+
 
 function CollaboratorFields({
   title,
