@@ -559,26 +559,18 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
               <GlassCard key={slot.key} className="space-y-2 p-3">
                 <PhotoField
                   label={`${slot.label} (${slotCount(slot.key)})`}
-                  urls={slotPhotos[slot.key] ?? []}
-                  busy={uploading === slot.key}
-                  onRemove={(url) =>
+                  multiple
+                  photos={slotPhotos[slot.key] ?? []}
+                  onFiles={(files) => addSlotFiles(slot.key, files)}
+                  onRetry={(id) => retrySlotPhoto(slot.key, id)}
+                  onRemove={(id) =>
                     setSlotPhotos((prev) => ({
                       ...prev,
-                      [slot.key]: (prev[slot.key] ?? []).filter((u) => u !== url),
+                      [slot.key]: (prev[slot.key] ?? []).filter((p) => p.id !== id),
                     }))
                   }
-                  onFile={(f) =>
-                    handleUpload(
-                      f,
-                      (url) =>
-                        setSlotPhotos((prev) => ({
-                          ...prev,
-                          [slot.key]: [...(prev[slot.key] ?? []), url],
-                        })),
-                      slot.key,
-                    )
-                  }
                 />
+
               </GlassCard>
             ))}
           </div>
