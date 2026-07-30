@@ -251,9 +251,22 @@ export async function sincronizarFila(): Promise<SyncReport> {
     }
   }
 
+  // Item 17 — falha definitiva de envio vira aviso na central.
+  if (report.deadLetters > 0) {
+    const { notificarAgua } = await import("@/lib/agua/notificacoes");
+    await notificarAgua({
+      evento: "falha_upload",
+      corpo: `${report.deadLetters} registro(s) de água não foram sincronizados e aguardam revisão em Configurações → Fila de sincronização.`,
+      deepLink: "/abastecimento/agua/configuracoes",
+      chave: `falha_upload:${new Date().toISOString().slice(0, 13)}`,
+      metadata: { dead_letters: report.deadLetters },
+    });
+  }
+
   notificarFila();
   return report;
 }
+
 
 /** Reabilita os itens da dead-letter (botão “tentar novamente”). */
 export async function tentarNovamenteFalhas(): Promise<number> {
