@@ -109,19 +109,20 @@ export function FleetFuelings() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Gasto no mês" value={brl(kpis.cost)} />
-        <Kpi label="Litros no mês" value={`${kpis.liters.toLocaleString("pt-BR")} L`} />
-        <Kpi label="Preço médio" value={kpis.avg ? `${brl(kpis.avg)}/L` : "—"} />
-        <Kpi label="Abastecimentos" value={String(kpis.count)} />
+        <Kpi index={0} label="Gasto no mês" value={brl(kpis.cost)} />
+        <Kpi index={1} label="Litros no mês" value={`${kpis.liters.toLocaleString("pt-BR")} L`} />
+        <Kpi index={2} label="Preço médio" value={kpis.avg ? `${brl(kpis.avg)}/L` : "—"} />
+        <Kpi index={3} label="Abastecimentos" value={String(kpis.count)} />
       </div>
 
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="h-11 w-full sm:w-auto">
+            <Button className="tap-press h-11 w-full shadow-elegant hover:shadow-glow sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Registrar abastecimento
             </Button>
           </DialogTrigger>
+
           <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo abastecimento</DialogTitle>
@@ -275,8 +276,7 @@ function Kpi({ label, value, index = 0 }: { label: string; value: string; index?
     <GlassCard
       variant="block"
       className="fleet-in space-y-1 p-3.5"
-      // escalona a entrada dos KPIs
-      {...({ style: { ["--i" as string]: index } } as any)}
+      style={{ ["--i" as string]: index } as React.CSSProperties}
     >
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
@@ -285,6 +285,7 @@ function Kpi({ label, value, index = 0 }: { label: string; value: string; index?
     </GlassCard>
   );
 }
+
 
 
 function NumField({
