@@ -4,7 +4,14 @@ import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VEHICLE_STATUS_LABEL, vehicleLabel, type Vehicle } from "@/lib/frota/api";
 import { VehiclePhoto } from "@/components/frota/vehicle-photo";
-import { formatPlate } from "@/lib/frota/plate";
+import { PlateBadge } from "@/components/frota/plate-badge";
+import { BrandMark, inferBrand } from "@/components/frota/brand-mark";
+import {
+  VEHICLE_USE_LABEL,
+  VEHICLE_USE_TONE,
+  inferVehicleUse,
+} from "@/lib/frota/vehicle-use";
+
 
 const STATUS_TONE: Record<string, string> = {
   disponivel: "text-emerald-300 bg-emerald-400/10 border-emerald-400/30",
