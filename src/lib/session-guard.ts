@@ -2,7 +2,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 
-/** Erro lançado quando não há sessão válida para chamar funções do servidor. */
+/** Erro lançado quando o servidor de autenticação confirma que a sessão morreu. */
 export class SessionExpiredError extends Error {
   constructor() {
     super("Sua sessão expirou. Entre novamente para continuar.");
@@ -10,21 +10,52 @@ export class SessionExpiredError extends Error {
   }
 }
 
+/**
+ * Erro para falhas temporárias (rede instável, serviço indisponível).
+ * NUNCA deve provocar logout: a sessão continua válida, só não deu para
+ * confirmar/renovar agora.
+ */
+export class TemporarySessionError extends Error {
+  constructor(message = "Não foi possível renovar a sessão agora. Tente novamente.") {
+    super(message);
+    this.name = "TemporarySessionError";
+  }
+}
+
 function looksLikeJwt(token: string | undefined | null): token is string {
   return typeof token === "string" && token.split(".").length === 3;
 }
 
-function isAuthError(err: unknown): boolean {
-  const msg = err instanceof Error ? err.message : String(err ?? "");
-  return /unauthorized|invalid token|jwt|session|401/i.test(msg);
+/**
+ * Só consideramos a sessão morta quando o serviço de auth diz explicitamente
+ * que o refresh token não existe / foi revogado. Erros de rede, timeout ou
+ * 5xx são temporários.
+ */
+function isRevokedSessionError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const anyErr = err as { code?: string; status?: number; message?: string };
+  const code = anyErr.code ?? "";
+  if (
+    code === "refresh_token_not_found" ||
+    code === "refresh_token_already_used" ||
+    code === "invalid_grant" ||
+    code === "session_not_found" ||
+    code === "bad_jwt"
+  ) {
+    return true;
+  }
+  // Fallback restrito: status 400/401 vindo do endpoint de token.
+  if ((anyErr.status === 400 || anyErr.status === 401) && /refresh token|invalid grant|session/i.test(anyErr.message ?? "")) {
+    return true;
+  }
+  return false;
 }
 
 let recovering = false;
 
 /**
- * Recuperação quando o servidor não reconhece mais a sessão (token revogado,
- * refresh inválido). Limpa o estado local e leva o usuário ao login mantendo
- * a página de origem, evitando ficar "logado" com uma sessão morta.
+ * Recuperação usada apenas quando a sessão foi confirmadamente revogada.
+ * Limpa o estado local e leva o usuário ao login mantendo a página de origem.
  */
 export async function handleSessionExpired(): Promise<void> {
   if (recovering) return;
@@ -51,19 +82,43 @@ export function invalidateSessionCheck(): void {
   lastVerified = 0;
 }
 
-async function refreshOrThrow(): Promise<string> {
-  const refreshed = await supabase.auth.refreshSession();
-  const token = refreshed.data.session?.access_token;
-  if (!looksLikeJwt(token)) throw new SessionExpiredError();
-  lastVerified = 0;
-  return token;
+/**
+ * Renovação compartilhada: vários uploads simultâneos reaproveitam a MESMA
+ * promessa, evitando que a rotação do refresh token feita por um deles
+ * invalide os demais e derrube o usuário.
+ */
+let inflightRefresh: Promise<string> | null = null;
+
+export function refreshSessionShared(): Promise<string> {
+  if (inflightRefresh) return inflightRefresh;
+  inflightRefresh = (async () => {
+    let result: Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
+    try {
+      result = await supabase.auth.refreshSession();
+    } catch (err) {
+      // Falha de rede/fetch — temporária, jamais logout.
+      throw new TemporarySessionError(err instanceof Error ? undefined : undefined);
+    }
+    if (result.error) {
+      if (isRevokedSessionError(result.error)) throw new SessionExpiredError();
+      throw new TemporarySessionError();
+    }
+    const token = result.data.session?.access_token;
+    if (!looksLikeJwt(token)) throw new SessionExpiredError();
+    lastVerified = 0;
+    return token;
+  })();
+  void inflightRefresh.finally(() => {
+    inflightRefresh = null;
+  });
+  return inflightRefresh;
 }
 
 /**
  * Garante um access token realmente aceito pelo servidor antes de chamar um
- * endpoint protegido. Além de checar o formato/expiração, revalida a sessão
- * contra o serviço de autenticação (no máximo a cada 5 minutos), porque um
- * token pode estar "no prazo" e mesmo assim ter sido revogado.
+ * endpoint protegido. Revalida a sessão contra o serviço de autenticação no
+ * máximo a cada 5 minutos, porque um token pode estar "no prazo" e mesmo
+ * assim ter sido revogado.
  */
 export async function ensureValidSession(): Promise<string> {
   const { data } = await supabase.auth.getSession();
@@ -71,14 +126,23 @@ export async function ensureValidSession(): Promise<string> {
   const expiresSoon = !session?.expires_at || session.expires_at * 1000 - Date.now() < 60_000;
 
   let token = looksLikeJwt(session?.access_token) && !expiresSoon ? session!.access_token : null;
-  if (!token) token = await refreshOrThrow();
+  if (!token) {
+    if (!session) throw new SessionExpiredError();
+    token = await refreshSessionShared();
+  }
 
   if (Date.now() - lastVerified > VERIFY_INTERVAL) {
-    const { error } = await supabase.auth.getUser();
-    if (error) {
-      token = await refreshOrThrow();
-      const recheck = await supabase.auth.getUser();
-      if (recheck.error) throw new SessionExpiredError();
+    let checkError: unknown = null;
+    try {
+      const { error } = await supabase.auth.getUser();
+      checkError = error;
+    } catch {
+      // Sem rede para validar: seguimos com o token atual em vez de deslogar.
+      return token;
+    }
+    if (checkError) {
+      if (!isRevokedSessionError(checkError)) return token;
+      token = await refreshSessionShared();
     }
     lastVerified = Date.now();
   }
@@ -86,31 +150,43 @@ export async function ensureValidSession(): Promise<string> {
   return token;
 }
 
+/** Trata o erro final de uma operação protegida sem deslogar por engano. */
+export function reportSessionFailure(err: unknown): void {
+  if (err instanceof SessionExpiredError) {
+    void handleSessionExpired();
+    return;
+  }
+  if (err instanceof TemporarySessionError) {
+    toast.error(err.message);
+  }
+}
+
 /**
  * Executa uma chamada protegida garantindo sessão válida e, em caso de
- * rejeição por token, renova a sessão e tenta uma única vez novamente.
- * Se ainda assim falhar, dispara a recuperação (logout local + login).
+ * rejeição confirmada por token, renova a sessão e tenta uma única vez mais.
+ * Falhas temporárias são propagadas sem logout.
  */
-export async function withValidSession<T>(run: () => Promise<T>): Promise<T> {
+export async function withValidSession<T>(run: (token: string) => Promise<T>): Promise<T> {
+  let token: string;
   try {
-    await ensureValidSession();
+    token = await ensureValidSession();
   } catch (err) {
-    void handleSessionExpired();
-    throw err instanceof SessionExpiredError ? err : new SessionExpiredError();
+    reportSessionFailure(err);
+    throw err;
   }
 
   try {
-    return await run();
+    return await run(token);
   } catch (err) {
-    if (!isAuthError(err)) throw err;
+    const status = (err as { status?: number } | null)?.status;
+    if (status !== 401 && !isRevokedSessionError(err)) throw err;
     invalidateSessionCheck();
     try {
-      await refreshOrThrow();
-      return await run();
+      const next = await refreshSessionShared();
+      return await run(next);
     } catch (retryErr) {
-      if (!isAuthError(retryErr)) throw retryErr;
-      void handleSessionExpired();
-      throw new SessionExpiredError();
+      reportSessionFailure(retryErr);
+      throw retryErr;
     }
   }
 }
