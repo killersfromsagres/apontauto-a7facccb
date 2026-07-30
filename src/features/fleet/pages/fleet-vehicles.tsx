@@ -123,7 +123,7 @@ export function FleetVehicles() {
         />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="h-11 sm:ml-auto" onClick={startNew}>
+            <Button className="tap-press h-11 shadow-elegant hover:shadow-glow sm:ml-auto" onClick={startNew}>
               <Plus className="mr-2 h-4 w-4" /> Novo veículo
             </Button>
           </DialogTrigger>
@@ -234,8 +234,13 @@ export function FleetVehicles() {
         </GlassCard>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((v) => (
-            <GlassCard key={v.id} className="space-y-3">
+          {filtered.map((v, i) => (
+            <GlassCard
+              key={v.id}
+              style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
+              className="fleet-in space-y-3"
+            >
+
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="flex items-center gap-1.5 truncate font-display text-base font-semibold">
