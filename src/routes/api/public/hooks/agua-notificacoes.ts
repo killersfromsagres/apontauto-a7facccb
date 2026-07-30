@@ -151,34 +151,12 @@ async function handle() {
       enviados++;
   }
 
-  // --- Filtros: troca atrasada e próximo do vencimento ---------------
-  const em15 = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
-  const { data: ativos } = await admin
-    .from("agua_filtro_ativos")
-    .select("id, predio, andar_setor, tipo_filtro, proxima_troca")
-    .not("proxima_troca", "is", null)
-    .lte("proxima_troca", em15);
+  // Filtros (troca atrasada / próxima do vencimento) são tratados pelo job
+  // dedicado `water-filter-due-monitor` (item 21), evitando avisos duplicados.
 
-  for (const a of ativos ?? []) {
-    const venc = String(a.proxima_troca).slice(0, 10);
-    const atrasado = venc < hoje;
-    const local = [a.predio, a.andar_setor].filter(Boolean).join(" · ") || "Ponto";
-    if (
-      await publicar(admin, {
-        evento: atrasado ? "filtro_troca_atrasada" : "filtro_proximo_vencimento",
-        titulo: atrasado ? "Troca de filtro atrasada" : "Filtro próximo do vencimento",
-        corpo: `${local} — filtro ${a.tipo_filtro ?? ""} com troca prevista para ${venc}.`,
-        categoria: atrasado ? "critico" : "atencao",
-        severidade: atrasado ? "critical" : "warn",
-        deepLink: "/abastecimento/agua/filtros",
-        chave: `${atrasado ? "filtro_troca_atrasada" : "filtro_proximo_vencimento"}:${a.id}:${venc}`,
-      })
-    )
-      enviados++;
-  }
-
-  return Response.json({ ok: true, enviados, data: hoje });
+  return { enviados, data: hoje };
 }
+
 
 export const Route = createFileRoute("/api/public/hooks/agua-notificacoes")({
   server: {
