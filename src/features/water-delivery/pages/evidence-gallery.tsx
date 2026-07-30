@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, ExternalLink, Share2 } from "lucide-react";
 
@@ -31,6 +31,7 @@ function diasAtras(dias: number): string {
 }
 
 const TODOS = "__todos__";
+const PAGINA = 24;
 
 export function EvidenceGallery() {
   const [de, setDe] = useState(diasAtras(13));
@@ -44,6 +45,8 @@ export function EvidenceGallery() {
   const [status, setStatus] = useState(TODOS);
   const [tipo, setTipo] = useState(TODOS);
   const [selecao, setSelecao] = useState<Set<string>>(new Set());
+  // Item 24: a tela inicial nunca renderiza a galeria completa.
+  const [limite, setLimite] = useState(PAGINA);
   const [compartilhar, setCompartilhar] = useState(false);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
@@ -202,6 +205,12 @@ export function EvidenceGallery() {
     };
   }, [selecionadas, visitas.data, porVisita, ate]);
 
+  useEffect(() => {
+    setLimite(PAGINA);
+  }, [de, ate, busca, predio, andar, espaco, colaborador, veiculo, status, tipo]);
+
+  const visiveis = useMemo(() => fotos.slice(0, limite), [fotos, limite]);
+
   const alternar = (id: string) => {
     setSelecao((prev) => {
       const next = new Set(prev);
@@ -310,7 +319,7 @@ export function EvidenceGallery() {
         />
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {fotos.map((f) => (
+          {visiveis.map((f) => (
             <div
               key={f.chave}
               className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 transition-colors hover:border-primary/50"
@@ -348,6 +357,18 @@ export function EvidenceGallery() {
           ))}
         </div>
       )}
+
+      {fotos.length > visiveis.length ? (
+        <div className="flex justify-center">
+          <Button
+            variant="secondary"
+            className="min-h-[44px]"
+            onClick={() => setLimite((n) => n + PAGINA)}
+          >
+            Carregar mais ({fotos.length - visiveis.length} restantes)
+          </Button>
+        </div>
+      ) : null}
 
       <WhatsAppShareDialog
         aberto={compartilhar}
