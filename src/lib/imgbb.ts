@@ -31,20 +31,8 @@ export async function uploadImageToImgBB(
   if (origin.entityId) form.append("entity_id", origin.entityId);
 
   // O proxy exige sessão válida e permissão de escrita no módulo informado.
-  const { supabase } = await import("@/integrations/supabase/client");
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Sem sessão para enviar a imagem");
+  const { postImgbbForm } = await import("@/lib/imgbb-post");
+  const json = await postImgbbForm(form);
 
-  const res = await fetch("/api/imgbb-upload", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-
-  const json = (await res.json().catch(() => ({}))) as any;
-  if (!res.ok || !json?.url) {
-    throw new Error(json?.error ?? `Upload falhou (${res.status})`);
-  }
   return json as ImgBBUploadResult;
 }
