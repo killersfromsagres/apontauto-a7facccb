@@ -25,10 +25,14 @@ export function FleetView() {
       description="Checklist veicular com fotos, controle financeiro de abastecimentos e cadastro de veículos."
     >
       <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-        <TabsList className="flex w-full overflow-x-auto">
+        <TabsList className="scrollbar-none flex w-full gap-1 overflow-x-auto rounded-2xl p-1">
           {TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value} className="min-w-[7.5rem] flex-1 gap-1.5">
-              <t.icon className="h-4 w-4" />
+            <TabsTrigger
+              key={t.value}
+              value={t.value}
+              className="min-w-[6.5rem] flex-1 gap-1.5 rounded-xl py-2.5 text-xs data-[state=active]:shadow-elegant sm:text-sm"
+            >
+              <t.icon className="h-4 w-4 shrink-0" />
               {t.label}
             </TabsTrigger>
           ))}
