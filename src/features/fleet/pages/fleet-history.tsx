@@ -166,16 +166,18 @@ export function FleetHistory() {
                           return (
                             <div
                               key={p.storage_path}
-                              className="overflow-hidden rounded-xl border border-border/60 bg-muted/30"
+                              className="photo-tile group overflow-hidden rounded-xl border border-border/60 bg-muted/30"
                             >
+
                               {url ? (
                                 <a href={url} target="_blank" rel="noreferrer">
                                   <img
                                     src={url}
                                     alt={label}
                                     loading="lazy"
-                                    className="h-28 w-full object-cover"
+                                    className="h-28 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   />
+
                                 </a>
                               ) : (
                                 <div className="flex h-28 w-full items-center justify-center text-muted-foreground">
@@ -195,7 +197,8 @@ export function FleetHistory() {
 
                     <Button
                       type="button"
-                      className="h-11 w-full"
+                      className="tap-press h-11 w-full shadow-elegant hover:shadow-glow"
+
                       disabled={certifyingId === c.id}
                       onClick={async () => {
                         setCertifyingId(c.id);
