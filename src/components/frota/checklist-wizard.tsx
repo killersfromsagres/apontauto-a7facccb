@@ -152,10 +152,9 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
           : []),
       ];
       const photos = [
-        ...PHOTO_SLOTS.filter((s) => slotPhotos[s.key]).map((s) => ({
-          slot: s.key,
-          url: slotPhotos[s.key],
-        })),
+        ...PHOTO_SLOTS.flatMap((s) =>
+          (slotPhotos[s.key] ?? []).map((url) => ({ slot: s.key as string, url })),
+        ),
         ...nonConform
           .filter((d) => items[d.key].photoUrl)
           .map((d) => ({
