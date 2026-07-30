@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fuel, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -226,11 +226,15 @@ export function FleetFuelings() {
           </p>
         </GlassCard>
       ) : (
-        <div className="space-y-2">
-          {rows.map((r) => {
+        <div className="space-y-2.5">
+          {rows.map((r, i) => {
             const v = vehicleById[r.vehicle_id];
             return (
-              <GlassCard key={r.id} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <GlassCard
+                key={r.id}
+                style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
+                className="fleet-in flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5"
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <PlateBadge plate={v?.plate} size="sm" />
                   <div className="min-w-0">
@@ -244,18 +248,20 @@ export function FleetFuelings() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm sm:ml-auto">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Fuel className="h-4 w-4" />
+                  <span className="flex items-center gap-1 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
+                    <Fuel className="h-3.5 w-3.5" />
                     {r.liters.toLocaleString("pt-BR")} L
                   </span>
-                  <span className="font-semibold">{brl(r.total_cost)}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-display font-semibold tabular-nums">
+                    {brl(r.total_cost)}
+                  </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
                     {r.liters ? `${brl(r.total_cost / r.liters)}/L` : ""}
                   </span>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-9 w-9"
+                    className="tap-press h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Excluir"
                     onClick={() => remove.mutate(r.id)}
                   >
@@ -265,6 +271,7 @@ export function FleetFuelings() {
               </GlassCard>
             );
           })}
+
         </div>
       )}
     </div>
