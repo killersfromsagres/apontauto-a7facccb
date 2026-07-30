@@ -23,7 +23,7 @@ export const PlateBadge = memo(function PlateBadge({
     <span
       className={cn(
         "inline-flex flex-col overflow-hidden rounded-[4px] border border-slate-400/70 bg-white shadow-sm",
-        sm ? "w-[62px]" : "w-[78px]",
+        sm ? "w-[86px]" : "w-[108px]",
         className,
       )}
       title={text}
@@ -31,7 +31,7 @@ export const PlateBadge = memo(function PlateBadge({
       <span
         className={cn(
           "flex items-center justify-between bg-[#0d3b9c] px-1 font-semibold text-white",
-          sm ? "text-[5px] leading-[8px]" : "text-[6px] leading-[10px]",
+          sm ? "text-[6px] leading-[10px]" : "text-[8px] leading-[13px]",
         )}
       >
         <span className="tracking-tight">BR</span>
@@ -40,7 +40,7 @@ export const PlateBadge = memo(function PlateBadge({
       <span
         className={cn(
           "block text-center font-mono font-bold tracking-[0.12em] text-slate-900",
-          sm ? "py-[1px] text-[9px]" : "py-[2px] text-[11px]",
+          sm ? "py-[2px] text-[13px]" : "py-[3px] text-[16px]",
         )}
       >
         {text}
