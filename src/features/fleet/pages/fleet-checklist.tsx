@@ -292,69 +292,128 @@ export function FleetChecklist() {
       </GlassCard>
 
       {/* 4. Fotos */}
-      <GlassCard className="space-y-3">
-        <SectionTitle step={4} title="Fotos" hint={`${photos.filter((p) => p.path).length} enviadas`} />
+      <GlassCard className="space-y-4">
+        <SectionTitle
+          step={4}
+          title="Fotos"
+          hint={`${photos.filter((p) => p.path).length}/${photos.length || 0} enviadas`}
+        />
         <p className="text-xs text-muted-foreground">
-          A foto aparece na hora e é enviada em segundo plano direto para o armazenamento seguro —
-          sem sair da sua conta.
+          Toque no quadrado da área desejada para fotografar. A imagem aparece na hora e sobe em
+          segundo plano, sem sair da sua conta.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {PHOTO_CATEGORIES.map((c) => (
-            <Button
-              key={c.key}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-10"
-              onClick={() => openPicker(c.key)}
-            >
-              <Camera className="mr-1.5 h-4 w-4" />
-              {c.label}
-            </Button>
-          ))}
-        </div>
-        {photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {photos.map((p) => (
-              <div
-                key={p.id}
-                className="relative overflow-hidden rounded-xl border border-border/60 bg-muted/30"
+
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+          {PHOTO_CATEGORIES.map((c) => {
+            const shots = photos.filter((p) => p.category === c.key);
+            const cover = shots[shots.length - 1];
+            const pending = shots.some((p) => p.state === "enviando");
+            const failed = shots.some((p) => p.state === "erro");
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => openPicker(c.key)}
+                aria-label={`Adicionar foto: ${c.label}`}
+                className={cn(
+                  "group relative aspect-square overflow-hidden rounded-2xl border text-left transition active:scale-[0.97]",
+                  shots.length
+                    ? "border-primary/50 shadow-elegant"
+                    : "border-dashed border-border/70 bg-background/40 hover:bg-muted/40",
+                )}
               >
-                <img src={p.preview} alt={p.category} className="h-28 w-full object-cover" />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-1 bg-black/45 px-1.5 py-1 text-[10px] text-white">
-                  <span className="truncate">
-                    {PHOTO_CATEGORIES.find((c) => c.key === p.category)?.label ?? p.category}
+                {cover ? (
+                  <img
+                    src={cover.preview}
+                    alt={c.label}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <Camera className="h-6 w-6 text-muted-foreground/70 transition group-hover:text-primary" />
                   </span>
-                  <button type="button" onClick={() => dropPhoto(p)} aria-label="Remover foto">
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/45 py-1 text-[10px] text-white">
-                  {p.state === "enviando" && (
-                    <>
-                      <Loader2 className="h-3 w-3 animate-spin" /> enviando
-                    </>
+                )}
+                <span
+                  className={cn(
+                    "absolute inset-x-0 bottom-0 px-1.5 py-1 text-[10px] font-medium leading-tight",
+                    cover ? "bg-black/55 text-white" : "text-muted-foreground",
                   )}
-                  {p.state === "pronto" && (
-                    <>
-                      <Check className="h-3 w-3 text-emerald-400" /> pronta
-                    </>
-                  )}
-                  {p.state === "erro" && (
+                >
+                  {c.label}
+                </span>
+                {shots.length > 0 && (
+                  <span className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+                    {shots.length}
+                  </span>
+                )}
+                {pending && (
+                  <span className="absolute left-1 top-1 rounded-full bg-black/55 p-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-white" />
+                  </span>
+                )}
+                {failed && !pending && (
+                  <span className="absolute left-1 top-1 rounded-full bg-rose-500 p-1">
+                    <RefreshCw className="h-3 w-3 text-white" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {photos.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Evidências anexadas
+            </p>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+              {photos.map((p) => (
+                <div
+                  key={p.id}
+                  className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted/30"
+                >
+                  <img src={p.preview} alt={p.category} className="h-full w-full object-cover" />
+                  <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-1 bg-black/45 px-1.5 py-1 text-[10px] text-white">
+                    <span className="truncate">
+                      {PHOTO_CATEGORIES.find((c) => c.key === p.category)?.label ?? p.category}
+                    </span>
                     <button
                       type="button"
-                      className="flex items-center gap-1 text-amber-300"
-                      onClick={() => void startUpload(p)}
+                      onClick={() => dropPhoto(p)}
+                      aria-label="Remover foto"
+                      className="shrink-0"
                     >
-                      <RefreshCw className="h-3 w-3" /> tentar novamente
+                      <X className="h-3.5 w-3.5" />
                     </button>
-                  )}
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-1 bg-black/45 py-1 text-[10px] text-white">
+                    {p.state === "enviando" && (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" /> enviando
+                      </>
+                    )}
+                    {p.state === "pronto" && (
+                      <>
+                        <Check className="h-3 w-3 text-emerald-400" /> pronta
+                      </>
+                    )}
+                    {p.state === "erro" && (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-amber-300"
+                        onClick={() => void startUpload(p)}
+                      >
+                        <RefreshCw className="h-3 w-3" /> tentar novamente
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </GlassCard>
+
 
       {/* 5. Observações e envio */}
       <GlassCard className="space-y-3">
