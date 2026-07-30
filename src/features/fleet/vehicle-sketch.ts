@@ -1,7 +1,7 @@
 /**
- * Desenho técnico do veículo em estilo lápis (traço a mão livre, hachuras).
- * Tudo é vetorial em canvas — nenhum arquivo externo, funciona offline
- * e sai nítido no PDF do certificado.
+ * Desenho técnico vetorial do veículo — traço limpo, estilo "line art" de
+ * manual de inspeção (referência: Saveiro / Fiorino). Gerado em canvas,
+ * sem arquivos externos, e exportado em PNG de alta resolução para o PDF.
  */
 
 export type SketchKind = "van" | "pickup" | "hatch" | "truck";
@@ -16,214 +16,316 @@ export function inferSketchKind(text: string): SketchKind {
   return "hatch";
 }
 
+type Ctx = CanvasRenderingContext2D;
 type Pt = [number, number];
 
-const rand = (seedRef: { s: number }) => {
-  // ruído determinístico para o traço tremido do lápis
-  seedRef.s = (seedRef.s * 16807) % 2147483647;
-  return seedRef.s / 2147483647 - 0.5;
+const INK = "#1b1f27";
+
+function path(ctx: Ctx, pts: (Pt | ["q", number, number, number, number])[], close = false) {
+  ctx.beginPath();
+  let started = false;
+  for (const p of pts) {
+    if (p[0] === "q") {
+      const [, cx, cy, x, y] = p as ["q", number, number, number, number];
+      ctx.quadraticCurveTo(cx, cy, x, y);
+      continue;
+    }
+    const [x, y] = p as Pt;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else ctx.lineTo(x, y);
+  }
+  if (close) ctx.closePath();
+}
+
+function stroke(ctx: Ctx, w = 3) {
+  ctx.lineWidth = w;
+  ctx.strokeStyle = INK;
+  ctx.stroke();
+}
+
+/** Roda com pneu, aro e raios. */
+function wheel(ctx: Ctx, cx: number, cy: number, r: number) {
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  stroke(ctx, 3);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.66, 0, Math.PI * 2);
+  stroke(ctx, 2.2);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.18, 0, Math.PI * 2);
+  stroke(ctx, 2);
+
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = "#5c6371";
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + 0.15;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r * 0.24, cy + Math.sin(a) * r * 0.24);
+    ctx.lineTo(cx + Math.cos(a) * r * 0.6, cy + Math.sin(a) * r * 0.6);
+    ctx.stroke();
+  }
+}
+
+/** Sombra suave no chão. */
+function ground(ctx: Ctx, cx: number, y: number, w: number) {
+  ctx.save();
+  ctx.fillStyle = "rgba(27,31,39,0.10)";
+  ctx.beginPath();
+  ctx.ellipse(cx, y + 10, w / 2, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+type Side = {
+  body: (Pt | ["q", number, number, number, number])[];
+  glass: (Pt | ["q", number, number, number, number])[][];
+  details: Pt[][];
+  wheels: [number, number, number][];
 };
 
-function sketchLine(
-  ctx: CanvasRenderingContext2D,
-  pts: Pt[],
-  seed: { s: number },
-  passes = 2,
-  jitter = 1.6,
-) {
-  for (let p = 0; p < passes; p++) {
-    ctx.beginPath();
-    pts.forEach(([x, y], i) => {
-      const jx = x + rand(seed) * jitter * 2;
-      const jy = y + rand(seed) * jitter * 2;
-      if (i === 0) ctx.moveTo(jx, jy);
-      else ctx.lineTo(jx, jy);
-    });
-    ctx.stroke();
-  }
-}
+/** Perfil lateral em coordenadas de um canvas 1180x440. */
+function sideProfile(kind: SketchKind): Side {
+  const g = 344; // linha inferior da carroceria
 
-function hatch(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  step = 7,
-  alpha = 0.16,
-) {
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(x, y, w, h);
-  ctx.clip();
-  ctx.globalAlpha = alpha;
-  ctx.lineWidth = 1.1;
-  for (let i = -h; i < w + h; i += step) {
-    ctx.beginPath();
-    ctx.moveTo(x + i, y + h);
-    ctx.lineTo(x + i + h, y);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-function wheel(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, seed: { s: number }) {
-  ctx.lineWidth = 2.4;
-  for (let p = 0; p < 2; p++) {
-    ctx.beginPath();
-    for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.18) {
-      const rr = r + rand(seed) * 1.6;
-      const x = cx + Math.cos(a) * rr;
-      const y = cy + Math.sin(a) * rr;
-      a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-  }
-  ctx.lineWidth = 1.6;
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.save();
-  ctx.globalAlpha = 0.25;
-  for (let a = 0; a < Math.PI * 2; a += Math.PI / 5) {
-    ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a) * r * 0.45, cy + Math.sin(a) * r * 0.45);
-    ctx.lineTo(cx + Math.cos(a) * r * 0.92, cy + Math.sin(a) * r * 0.92);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
-/** Perfil lateral do veículo, em coordenadas de um canvas 900x420. */
-function bodyPath(kind: SketchKind): { outline: Pt[]; glass: Pt[][]; wheels: [number, number, number][] } {
-  const ground = 320;
   if (kind === "van") {
+    // Fiorino: bico curto, cabine compacta e furgão alto e reto.
     return {
-      outline: [
-        [90, ground],
-        [90, 180],
-        [140, 132],
-        [300, 120],
-        [320, 108],
-        [770, 108],
-        [800, 140],
-        [810, ground],
-        [90, ground],
+      body: [
+        [64, g],
+        [60, 280],
+        ["q", 58, 262, 82, 254],
+        [126, 246],
+        ["q", 146, 242, 158, 228],
+        [214, 168],
+        ["q", 222, 158, 240, 158],
+        [742, 158],
+        ["q", 762, 158, 766, 176],
+        [772, 236],
+        [774, g],
       ],
       glass: [
         [
-          [150, 176],
-          [178, 142],
-          [280, 136],
-          [280, 176],
-          [150, 176],
+          [228, 178],
+          ["q", 234, 172, 246, 172],
+          [300, 172],
+          [300, 244],
+          [190, 244],
+          ["q", 192, 234, 204, 218],
         ],
         [
-          [296, 136],
-          [420, 132],
-          [420, 176],
-          [296, 176],
+          [316, 172],
+          [412, 172],
+          [412, 244],
+          [316, 244],
         ],
       ],
+      details: [
+        [
+          [428, 164],
+          [428, g],
+        ], // divisão cabine / furgão
+        [
+          [428, 254],
+          [762, 254],
+        ], // friso lateral
+        [
+          [66, 276],
+          [118, 268],
+        ], // capô
+        [
+          [318, 256],
+          [346, 256],
+        ], // maçaneta
+        [
+          [62, 286],
+          [62, 306],
+        ], // farol
+      ],
       wheels: [
-        [210, ground, 46],
-        [700, ground, 46],
+        [152, g, 54],
+        [664, g, 54],
       ],
     };
   }
-  if (kind === "pickup") {
-    return {
-      outline: [
-        [80, ground],
-        [80, 214],
-        [150, 205],
-        [250, 140],
-        [470, 136],
-        [520, 208],
-        [560, 205],
-        [560, 160],
-        [830, 160],
-        [830, ground],
-        [80, ground],
-      ],
-      glass: [
-        [
-          [262, 152],
-          [352, 148],
-          [352, 200],
-          [232, 200],
-        ],
-        [
-          [368, 148],
-          [460, 150],
-          [500, 200],
-          [368, 200],
-        ],
-      ],
-      wheels: [
-        [200, ground, 48],
-        [700, ground, 48],
-      ],
-    };
-  }
+
+
   if (kind === "truck") {
     return {
-      outline: [
-        [80, ground],
-        [80, 200],
-        [130, 130],
-        [250, 120],
-        [270, 100],
-        [280, 100],
-        [280, 70],
-        [840, 70],
-        [840, ground],
-        [80, ground],
+      body: [
+        [64, g],
+        [58, 292],
+        ["q", 56, 268, 84, 258],
+        [176, 244],
+        [232, 150],
+        ["q", 240, 138, 262, 138],
+        [300, 138],
+        [300, 104],
+        [830, 104],
+        [830, g],
       ],
       glass: [
         [
-          [140, 190],
-          [166, 138],
-          [252, 132],
-          [252, 190],
+          [250, 158],
+          ["q", 256, 150, 272, 150],
+          [292, 150],
+          [292, 234],
+          [204, 234],
+        ],
+      ],
+      details: [
+        [
+          [300, 138],
+          [300, g],
+        ],
+        [
+          [312, 130],
+          [820, 130],
+        ],
+        [
+          [312, 300],
+          [820, 300],
         ],
       ],
       wheels: [
-        [190, ground, 50],
-        [660, ground, 50],
-        [760, ground, 50],
+        [178, g, 56],
+        [618, g, 56],
+        [726, g, 56],
       ],
     };
   }
+
+  if (kind === "pickup") {
+    // Saveiro: bico curto, cabine avançada e caçamba longa.
+    return {
+      body: [
+        [64, g],
+        [58, 284],
+        ["q", 56, 268, 78, 260],
+        [150, 250],
+        ["q", 166, 246, 178, 232],
+        [236, 182],
+        ["q", 246, 174, 262, 174],
+        [402, 174],
+        ["q", 418, 174, 426, 186],
+        [452, 230],
+        [458, 230],
+        [458, 222],
+        [802, 222],
+        [810, 244],
+        [812, g],
+      ],
+      glass: [
+        [
+          [252, 192],
+          ["q", 258, 186, 270, 186],
+          [332, 186],
+          [332, 242],
+          [214, 242],
+          ["q", 220, 232, 240, 214],
+        ],
+        [
+          [348, 186],
+          [396, 186],
+          ["q", 406, 186, 412, 196],
+          [438, 242],
+          [348, 242],
+        ],
+      ],
+      details: [
+        [
+          [458, 240],
+          [802, 240],
+        ], // borda da caçamba
+        [
+          [458, 292],
+          [802, 292],
+        ], // friso da caçamba
+        [
+          [352, 252],
+          [382, 252],
+        ], // maçaneta
+        [
+          [66, 280],
+          [130, 270],
+        ], // capô
+        [
+          [60, 288],
+          [60, 310],
+        ], // farol
+        [
+          [56, 318],
+          [112, 318],
+        ], // parachoque
+      ],
+      wheels: [
+        [160, g, 54],
+        [676, g, 54],
+      ],
+    };
+  }
+
+
+  // hatch
   return {
-    outline: [
-      [90, ground],
-      [96, 240],
-      [180, 226],
-      [280, 158],
-      [560, 152],
-      [700, 226],
-      [808, 238],
-      [812, ground],
-      [90, ground],
+    body: [
+      [72, g],
+      [62, 292],
+      ["q", 60, 274, 84, 268],
+      [214, 250],
+      ["q", 232, 246, 244, 232],
+      [316, 176],
+      ["q", 330, 166, 352, 166],
+      [560, 166],
+      ["q", 586, 166, 600, 180],
+      [700, 254],
+      ["q", 726, 260, 762, 266],
+      ["q", 794, 272, 796, 296],
+      [798, g],
     ],
     glass: [
       [
-        [292, 170],
-        [400, 165],
-        [400, 220],
-        [258, 220],
+        [334, 184],
+        ["q", 340, 178, 354, 178],
+        [430, 178],
+        [430, 244],
+        [278, 244],
+        ["q", 288, 230, 310, 208],
       ],
       [
-        [416, 165],
-        [548, 168],
-        [640, 220],
-        [416, 220],
+        [446, 178],
+        [552, 178],
+        ["q", 572, 178, 584, 190],
+        [648, 244],
+        [446, 244],
+      ],
+    ],
+    details: [
+      [
+        [438, 172],
+        [438, 300],
+      ],
+      [
+        [438, 258],
+        [468, 258],
+      ],
+      [
+        [72, 288],
+        [150, 280],
+      ],
+      [
+        [66, 296],
+        [66, 320],
       ],
     ],
     wheels: [
-      [220, ground, 46],
-      [690, ground, 46],
+      [196, g, 54],
+      [672, g, 54],
     ],
   };
 }
@@ -236,91 +338,66 @@ export function renderVehicleSketch(
   kind: SketchKind,
   opts: { label?: string; scale?: number } = {},
 ): string {
-  const scale = opts.scale ?? 2;
-  const W = 900;
-  const H = 420;
+  const scale = opts.scale ?? 3;
+  const W = 1180;
+  const H = 440;
   const canvas = document.createElement("canvas");
   canvas.width = W * scale;
   canvas.height = H * scale;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
   ctx.scale(scale, scale);
-
-  // papel
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, W, H);
-
-  const seed = { s: 987654321 };
-  ctx.strokeStyle = "#3a3a3a";
   ctx.lineJoin = "round";
   ctx.lineCap = "round";
 
-  const { outline, glass, wheels } = bodyPath(kind);
+  const { body, glass, details, wheels } = sideProfile(kind);
 
-  // sombra hachurada sob o veículo
-  ctx.save();
-  ctx.globalAlpha = 0.18;
-  ctx.lineWidth = 1.4;
-  for (let i = 0; i < 26; i++) {
-    const y = 326 + i * 1.6;
-    ctx.beginPath();
-    ctx.moveTo(120 + i * 3, y);
-    ctx.lineTo(800 - i * 3, y);
-    ctx.stroke();
-  }
-  ctx.restore();
+  ground(ctx, 440, 344, 780);
 
-  // corpo
-  ctx.lineWidth = 2.6;
-  sketchLine(ctx, outline, seed, 2, 1.5);
-
-  // hachura de volume na parte inferior
-  ctx.strokeStyle = "#555";
-  hatch(ctx, 100, 250, 700, 70, 8, 0.12);
+  // carroceria
+  ctx.fillStyle = "#ffffff";
+  path(ctx, body, true);
+  ctx.fill();
+  stroke(ctx, 3.2);
 
   // vidros
-  ctx.strokeStyle = "#3a3a3a";
-  ctx.lineWidth = 1.8;
-  glass.forEach((g) => {
-    sketchLine(ctx, [...g, g[0]], seed, 1, 1.1);
-    const xs = g.map((p) => p[0]);
-    const ys = g.map((p) => p[1]);
-    hatch(
-      ctx,
-      Math.min(...xs),
-      Math.min(...ys),
-      Math.max(...xs) - Math.min(...xs),
-      Math.max(...ys) - Math.min(...ys),
-      6,
-      0.2,
-    );
+  glass.forEach((gl) => {
+    path(ctx, gl, true);
+    ctx.fillStyle = "#eef2f7";
+    ctx.fill();
+    stroke(ctx, 2.2);
   });
 
-  // rodas
-  wheels.forEach(([cx, cy, r]) => wheel(ctx, cx, cy, r, seed));
+  // detalhes
+  details.forEach((d) => {
+    path(ctx, d);
+    stroke(ctx, 1.8);
+  });
 
-  // detalhes: faróis e maçanetas
-  ctx.lineWidth = 1.6;
-  sketchLine(
-    ctx,
-    [
-      [92, 236],
-      [126, 232],
-      [126, 252],
-      [92, 254],
-    ],
-    seed,
-    1,
-    1,
-  );
+  // arcos das rodas + rodas
+  wheels.forEach(([cx, cy, r]) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 9, Math.PI, Math.PI * 2);
+    stroke(ctx, 2.4);
+    wheel(ctx, cx, cy, r);
+  });
 
-  // legenda técnica
+  // linha de solo
+  ctx.beginPath();
+  ctx.moveTo(48, 402);
+  ctx.lineTo(W - 48, 402);
+  ctx.strokeStyle = "#c3c9d4";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+
   if (opts.label) {
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = "#3a3a3a";
-    ctx.font = "italic 20px Georgia, serif";
-    ctx.fillText(opts.label, 90, 380);
-    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#5c6371";
+    ctx.font = "500 21px Helvetica, Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(opts.label, W / 2, 428);
+    ctx.textAlign = "left";
   }
 
   return canvas.toDataURL("image/png");
