@@ -1689,11 +1689,30 @@ body {
     scrollbar-width: thin;
   }
 
+  /* Carrosséis horizontais (chips de dia, cards de veículo): rolagem confinada,
+     com encaixe suave e sem "puxar" a página ao lado. */
+  .overflow-x-auto {
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.75rem;
+  }
+  .overflow-x-auto > * {
+    scroll-snap-align: start;
+  }
+
+  /* Evita o flash cinza do toque no Android/iOS em elementos interativos */
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   /* Radix dialogs should never exceed the visual viewport on mobile */
   [data-radix-popper-content-wrapper] > * {
     max-width: calc(100vw - 1rem) !important;
   }
 }
+
 
 /* Respect device safe areas everywhere the app paints edge-to-edge */
 @supports (padding: max(0px)) {
