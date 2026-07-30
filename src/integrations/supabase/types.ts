@@ -2978,6 +2978,51 @@ export type Database = {
         }
         Relationships: []
       }
+      job_runs: {
+        Row: {
+          attempt: number
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string | null
+          job_key: string
+          result: Json | null
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          job_key: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          job_key?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lavanderia_colaboradores: {
         Row: {
           created_at: string
@@ -6575,6 +6620,25 @@ export type Database = {
         }
         Returns: boolean
       }
+      job_begin: {
+        Args: {
+          p_idempotency_key?: string
+          p_job_key: string
+          p_lock_ttl_seconds?: number
+          p_max_concurrent?: number
+        }
+        Returns: Json
+      }
+      job_finish: {
+        Args: {
+          p_error?: string
+          p_result?: Json
+          p_run_id: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      jobs_limpeza_filas: { Args: { p_dias?: number }; Returns: Json }
       notificar_evento: {
         Args: {
           p_alvos?: Json

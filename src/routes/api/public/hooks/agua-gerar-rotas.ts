@@ -1,5 +1,6 @@
-// Geração automática das rotas de água — chamado pelo cron do banco.
-// Idempotente: a rotina no banco não duplica rotas nem paradas.
+// Geração automática das rotas de água (item 21: generate-water-delivery-runs).
+// Idempotente em dois níveis: `job_runs` (chave por data) e a rotina do banco,
+// que não duplica rotas nem paradas. Executa com trava, timeout, retry e log.
 import { createFileRoute } from "@tanstack/react-router";
 
 const TZ = "America/Sao_Paulo";
@@ -17,6 +18,7 @@ function hojeSP(): string {
 }
 
 async function handle(request: Request) {
+  const { runJob, jobResponse, PermanentJobError } = await import("@/lib/jobs/runner.server");
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   let body: { data?: string; forcar?: boolean } = {};
@@ -40,16 +42,32 @@ async function handle(request: Request) {
   }
 
   const alvo = body.data ?? hojeSP();
-  const { data, error } = await (supabaseAdmin as any).rpc("agua_gerar_rotas", {
-    p_data: alvo,
-    p_origem: body.forcar ? "manual-api" : "cron",
-  });
 
-  if (error) {
-    console.error("[agua-gerar-rotas]", error.message);
-    return Response.json({ error: "falha ao gerar rotas" }, { status: 500 });
-  }
-  return Response.json({ ok: true, resultado: data });
+  const outcome = await runJob(
+    {
+      key: "generate-water-delivery-runs",
+      idempotencyKey: body.forcar ? null : `rotas:${alvo}`,
+      timeoutMs: 90_000,
+      maxAttempts: 3,
+      maxConcurrent: 1,
+      moduleKey: "abastecimento-agua",
+    },
+    async () => {
+      const { data, error } = await (supabaseAdmin as any).rpc("agua_gerar_rotas", {
+        p_data: alvo,
+        p_origem: body.forcar ? "manual-api" : "cron",
+      });
+      if (error) {
+        if (/permission|sem permissao|does not exist/i.test(error.message)) {
+          throw new PermanentJobError(error.message);
+        }
+        throw new Error(error.message);
+      }
+      return { data: alvo, resultado: data };
+    },
+  );
+
+  return jobResponse(outcome);
 }
 
 export const Route = createFileRoute("/api/public/hooks/agua-gerar-rotas")({

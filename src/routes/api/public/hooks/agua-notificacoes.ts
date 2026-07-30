@@ -151,40 +151,35 @@ async function handle() {
       enviados++;
   }
 
-  // --- Filtros: troca atrasada e próximo do vencimento ---------------
-  const em15 = new Date(Date.now() + 15 * 86_400_000).toISOString().slice(0, 10);
-  const { data: ativos } = await admin
-    .from("agua_filtro_ativos")
-    .select("id, predio, andar_setor, tipo_filtro, proxima_troca")
-    .not("proxima_troca", "is", null)
-    .lte("proxima_troca", em15);
+  // Filtros (troca atrasada / próxima do vencimento) são tratados pelo job
+  // dedicado `water-filter-due-monitor` (item 21), evitando avisos duplicados.
 
-  for (const a of ativos ?? []) {
-    const venc = String(a.proxima_troca).slice(0, 10);
-    const atrasado = venc < hoje;
-    const local = [a.predio, a.andar_setor].filter(Boolean).join(" · ") || "Ponto";
-    if (
-      await publicar(admin, {
-        evento: atrasado ? "filtro_troca_atrasada" : "filtro_proximo_vencimento",
-        titulo: atrasado ? "Troca de filtro atrasada" : "Filtro próximo do vencimento",
-        corpo: `${local} — filtro ${a.tipo_filtro ?? ""} com troca prevista para ${venc}.`,
-        categoria: atrasado ? "critico" : "atencao",
-        severidade: atrasado ? "critical" : "warn",
-        deepLink: "/abastecimento/agua/filtros",
-        chave: `${atrasado ? "filtro_troca_atrasada" : "filtro_proximo_vencimento"}:${a.id}:${venc}`,
-      })
-    )
-      enviados++;
-  }
+  return { enviados, data: hoje };
+}
 
-  return Response.json({ ok: true, enviados, data: hoje });
+// Item 21: execução controlada (trava, timeout, retry com backoff, log em job_runs
+// e alarme de falha). Sem idempotência por dia — o job roda a cada 30 min e a
+// deduplicação dos avisos é feita por chave dentro de `publicar`.
+async function executar() {
+  const { runJob, jobResponse } = await import("@/lib/jobs/runner.server");
+  const outcome = await runJob(
+    {
+      key: "water-delivery-reminders",
+      timeoutMs: 60_000,
+      maxAttempts: 3,
+      maxConcurrent: 1,
+      moduleKey: MODULO,
+    },
+    () => handle(),
+  );
+  return jobResponse(outcome);
 }
 
 export const Route = createFileRoute("/api/public/hooks/agua-notificacoes")({
   server: {
     handlers: {
-      POST: async () => handle(),
-      GET: async () => handle(),
+      POST: async () => executar(),
+      GET: async () => executar(),
     },
   },
 });
