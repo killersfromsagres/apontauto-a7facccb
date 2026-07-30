@@ -118,7 +118,9 @@ export async function prepararFoto(
     return fallback();
   }
 
+  try {
     const bmp = await createImageBitmap(file);
+
     const alvo = Math.min(1600, Math.max(1280, maxDim));
     const ratio = Math.min(1, alvo / Math.max(bmp.width, bmp.height));
     const w = Math.max(1, Math.round(bmp.width * ratio));
