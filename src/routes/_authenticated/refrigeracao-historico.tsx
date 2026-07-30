@@ -484,9 +484,14 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               {data?.pecas.length ? (
                 <ul className="space-y-2">
                   {data.pecas.map((p) => (
-                    <li key={p.id} className="rounded-md border bg-background/40 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{p.descricao}</span>
+                    <li
+                      key={p.id}
+                      className="min-w-0 overflow-hidden rounded-md border bg-background/40 p-3 text-sm"
+                    >
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="font-medium break-words [overflow-wrap:anywhere]">
+                          {p.descricao}
+                        </span>
                         <Badge variant="outline" className="text-[10px]">
                           Qtd {p.quantidade}
                         </Badge>
