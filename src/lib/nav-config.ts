@@ -337,6 +337,7 @@ export const sections: MenuSection[] = [
         icon: Boxes,
         keywords: ["pedido", "material", "catálogo", "planilha", "colaborador", "suprimentos"],
       },
+      {
         key: "controle-materiais",
         title: "Controle de Materiais",
         short: "Materiais",
