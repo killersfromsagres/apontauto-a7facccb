@@ -134,7 +134,7 @@ export function FleetHistory() {
                 </button>
 
                 {open && (
-                  <div className="space-y-3 border-t border-border/60 pt-3">
+                  <div className="fleet-in space-y-3 border-t border-border/60 pt-3">
                     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       {(c.items ?? []).map((item) => (
                         <div
