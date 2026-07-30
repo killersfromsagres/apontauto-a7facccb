@@ -532,7 +532,7 @@ export type Database = {
           reaberturas: number
           responsavel_2_nome: string | null
           responsavel_nome: string | null
-          situacao: string
+          situacao: Database["public"]["Enums"]["agua_filtro_situacao"]
           sla_horas: number | null
           solicitante_nome: string | null
           telefone: string | null
@@ -590,7 +590,7 @@ export type Database = {
           reaberturas?: number
           responsavel_2_nome?: string | null
           responsavel_nome?: string | null
-          situacao?: string
+          situacao?: Database["public"]["Enums"]["agua_filtro_situacao"]
           sla_horas?: number | null
           solicitante_nome?: string | null
           telefone?: string | null
@@ -648,7 +648,7 @@ export type Database = {
           reaberturas?: number
           responsavel_2_nome?: string | null
           responsavel_nome?: string | null
-          situacao?: string
+          situacao?: Database["public"]["Enums"]["agua_filtro_situacao"]
           sla_horas?: number | null
           solicitante_nome?: string | null
           telefone?: string | null
@@ -1407,7 +1407,7 @@ export type Database = {
           observacao_final: string | null
           observacao_inicial: string | null
           saida_real: string | null
-          status: string
+          status: Database["public"]["Enums"]["agua_rota_status"]
           supervisor: string | null
           template_id: string | null
           template_key: string
@@ -1450,7 +1450,7 @@ export type Database = {
           observacao_final?: string | null
           observacao_inicial?: string | null
           saida_real?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["agua_rota_status"]
           supervisor?: string | null
           template_id?: string | null
           template_key?: string
@@ -1493,7 +1493,7 @@ export type Database = {
           observacao_final?: string | null
           observacao_inicial?: string | null
           saida_real?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["agua_rota_status"]
           supervisor?: string | null
           template_id?: string | null
           template_key?: string
@@ -1594,7 +1594,7 @@ export type Database = {
           recebido_por: string | null
           responsavel: string | null
           rota_id: string | null
-          status: string
+          status: Database["public"]["Enums"]["agua_visita_status"]
           turno: string
           veiculo: string | null
         }
@@ -1629,7 +1629,7 @@ export type Database = {
           recebido_por?: string | null
           responsavel?: string | null
           rota_id?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["agua_visita_status"]
           turno?: string
           veiculo?: string | null
         }
@@ -1664,7 +1664,7 @@ export type Database = {
           recebido_por?: string | null
           responsavel?: string | null
           rota_id?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["agua_visita_status"]
           turno?: string
           veiculo?: string | null
         }
@@ -6266,6 +6266,45 @@ export type Database = {
       sst_can_access: { Args: never; Returns: boolean }
     }
     Enums: {
+      agua_filtro_situacao:
+        | "solicitada"
+        | "em_triagem"
+        | "aprovada"
+        | "rejeitada"
+        | "aguardando_material"
+        | "programada"
+        | "em_deslocamento"
+        | "em_execucao"
+        | "concluida"
+        | "validada"
+        | "reaberta"
+        | "cancelada"
+        | "aberta"
+        | "em_atendimento"
+      agua_rota_status:
+        | "rascunho"
+        | "planejada"
+        | "atribuida"
+        | "pronta"
+        | "em_andamento"
+        | "pausada"
+        | "concluida"
+        | "concluida_com_divergencia"
+        | "cancelada"
+      agua_visita_status:
+        | "pendente"
+        | "em_deslocamento"
+        | "em_atendimento"
+        | "concluida"
+        | "parcial"
+        | "sem_necessidade"
+        | "acesso_bloqueado"
+        | "local_fechado"
+        | "falta_bags"
+        | "endereco_divergente"
+        | "reprogramada"
+        | "nao_realizada"
+        | "cancelada"
       app_role: "admin" | "user"
       corretiva_gravidade: "observacao" | "falha" | "critico"
       corretiva_os_status: "aberta" | "em_andamento" | "concluida" | "cancelada"
@@ -6430,6 +6469,48 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agua_filtro_situacao: [
+        "solicitada",
+        "em_triagem",
+        "aprovada",
+        "rejeitada",
+        "aguardando_material",
+        "programada",
+        "em_deslocamento",
+        "em_execucao",
+        "concluida",
+        "validada",
+        "reaberta",
+        "cancelada",
+        "aberta",
+        "em_atendimento",
+      ],
+      agua_rota_status: [
+        "rascunho",
+        "planejada",
+        "atribuida",
+        "pronta",
+        "em_andamento",
+        "pausada",
+        "concluida",
+        "concluida_com_divergencia",
+        "cancelada",
+      ],
+      agua_visita_status: [
+        "pendente",
+        "em_deslocamento",
+        "em_atendimento",
+        "concluida",
+        "parcial",
+        "sem_necessidade",
+        "acesso_bloqueado",
+        "local_fechado",
+        "falta_bags",
+        "endereco_divergente",
+        "reprogramada",
+        "nao_realizada",
+        "cancelada",
+      ],
       app_role: ["admin", "user"],
       corretiva_gravidade: ["observacao", "falha", "critico"],
       corretiva_os_status: ["aberta", "em_andamento", "concluida", "cancelada"],

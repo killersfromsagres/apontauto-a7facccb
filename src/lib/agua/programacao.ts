@@ -20,13 +20,19 @@ export const TURNO_LABEL: Record<string, string> = {
   integral: "Integral",
 };
 
-export const ROTA_STATUS_LABEL: Record<string, string> = {
-  planejada: "Planejada",
-  pronta: "Pronta para iniciar",
-  em_andamento: "Em andamento",
-  concluida: "Concluída",
-  cancelada: "Cancelada",
-};
+// Item 14 — estados oficiais da rota (espelho do enum agua_rota_status).
+import { podeTransicionarRota, type RotaStatus } from "@/lib/agua/estados";
+
+export {
+  ROTA_STATUS,
+  ROTA_STATUS_LABEL,
+  ROTA_TRANSICOES,
+  ROTA_ENCERRADAS,
+  podeTransicionarRota,
+} from "@/lib/agua/estados";
+export type { RotaStatus } from "@/lib/agua/estados";
+
+
 
 /** Data de hoje no fuso operacional (YYYY-MM-DD). */
 export function hojeSP(): string {
@@ -253,7 +259,8 @@ export interface Rota {
   horario_previsto: string | null;
   bags_carregadas: number | null;
   observacao: string | null;
-  status: string;
+  status: RotaStatus;
+
   motivo_cancelamento: string | null;
   versao: number;
   iniciada_em: string | null;
@@ -284,9 +291,17 @@ export async function salvarRota(
   patch: Partial<Rota>,
   motivo?: string,
 ): Promise<void> {
+  // Item 14 — bloqueia cedo o que a trigger do banco também recusaria.
+  if (patch.status && !podeTransicionarRota(rota.status, patch.status, { gestor: true })) {
+    throw new Error(
+      `Transição de rota inválida: ${rota.status} → ${patch.status}.`,
+    );
+  }
+
   const { data: u } = await supabase.auth.getUser();
   const usuario = u.user?.id ?? null;
   const jaIniciou = Boolean(rota.iniciada_em);
+
 
   const { error: vErr } = await db.from("agua_rota_versoes").insert({
     rota_id: rota.id,
