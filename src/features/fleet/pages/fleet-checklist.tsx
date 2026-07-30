@@ -457,7 +457,12 @@ export function FleetChecklist() {
             )}
             {uploading && <span>Enviando fotos…</span>}
           </div>
-          <Button className="h-12 w-full sm:w-auto" onClick={submit} disabled={save.isPending}>
+          <Button
+            className="tap-press h-12 w-full shadow-elegant hover:shadow-glow sm:w-auto"
+            onClick={submit}
+            disabled={save.isPending}
+          >
+
             {save.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -499,12 +504,13 @@ function VehicleOption({
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition",
+        "tap-press flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left",
         selected
-          ? "border-primary/60 bg-primary/10"
-          : "border-border/60 bg-background/40 hover:bg-muted/40",
+          ? "border-primary/60 bg-primary/10 shadow-elegant"
+          : "border-border/60 bg-background/40 hover:border-primary/30 hover:bg-muted/40",
       )}
     >
+
       <PlateBadge plate={vehicle.plate} size="sm" />
       <div className="min-w-0">
         <p className="flex items-center gap-1 truncate text-sm font-semibold">
