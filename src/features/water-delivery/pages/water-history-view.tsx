@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
@@ -10,10 +9,12 @@ import { EmptyState } from "@/components/pcm";
 import {
   VISITA_STATUS_LABEL,
   hojeISO,
-  listPontos,
   listVisitas,
   pontoLabel,
 } from "@/features/water-delivery/queries/api";
+import { usePontos, useVisitasPagina } from "@/features/water-delivery/hooks/use-agua";
+
+const TAMANHO_PAGINA = 50;
 
 function addDaysISO(iso: string, days: number): string {
   const d = new Date(`${iso}T12:00:00`);
@@ -26,12 +27,17 @@ export function WaterHistoryView() {
   const [de, setDe] = useState(addDaysISO(hojeISO(), -30));
   const [ate, setAte] = useState(hojeISO());
   const [exportando, setExportando] = useState(false);
+  const [pagina, setPagina] = useState(0);
 
-  const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
-  const visitas = useQuery({
-    queryKey: ["agua", "historico", de, ate],
-    queryFn: () => listVisitas(de, ate),
-  });
+  const pontos = usePontos();
+  // Item 24 — paginação no servidor: só a página atual vem do banco.
+  const visitas = useVisitasPagina(de, ate, pagina, TAMANHO_PAGINA);
+  const total = visitas.data?.total ?? 0;
+  const totalPaginas = Math.max(1, Math.ceil(total / TAMANHO_PAGINA));
+
+  useEffect(() => {
+    setPagina(0);
+  }, [de, ate]);
 
   const porId = useMemo(
     () => new Map((pontos.data ?? []).map((p) => [p.id, p])),
@@ -40,7 +46,7 @@ export function WaterHistoryView() {
 
   const rows = useMemo(
     () =>
-      (visitas.data ?? []).map((v) => ({
+      (visitas.data?.itens ?? []).map((v) => ({
         data: v.data,
         ponto: porId.get(v.ponto_id) ? pontoLabel(porId.get(v.ponto_id)!) : v.ponto_id,
         status: VISITA_STATUS_LABEL[v.status],
@@ -50,12 +56,24 @@ export function WaterHistoryView() {
         observacao: v.observacao ?? "",
         foto: v.foto_url ?? "",
       })),
-    [visitas.data, porId],
+    [visitas.data?.itens, porId],
   );
 
   async function exportar() {
     setExportando(true);
     try {
+      // A exportação busca o período inteiro (a tela mostra só a página).
+      const todas = await listVisitas(de, ate);
+      const linhas = todas.map((v) => ({
+        data: v.data,
+        ponto: porId.get(v.ponto_id) ? pontoLabel(porId.get(v.ponto_id)!) : v.ponto_id,
+        status: VISITA_STATUS_LABEL[v.status],
+        previstas: v.bags_previstas,
+        entregues: v.bags_entregues ?? 0,
+        motivo: v.motivo ?? "",
+        observacao: v.observacao ?? "",
+        foto: v.foto_url ?? "",
+      }));
       const ExcelJS = (await import("exceljs")).default;
       const wb = new ExcelJS.Workbook();
       const ws = wb.addWorksheet("Entregas de Água");
@@ -70,7 +88,7 @@ export function WaterHistoryView() {
         { header: "Evidência", key: "foto", width: 40 },
       ];
       ws.getRow(1).font = { bold: true };
-      rows.forEach((r) => ws.addRow(r));
+      linhas.forEach((r) => ws.addRow(r));
       const buf = await wb.xlsx.writeBuffer();
       const url = URL.createObjectURL(
         new Blob([buf], {
@@ -100,7 +118,7 @@ export function WaterHistoryView() {
             <Input id="ate" type="date" value={ate} onChange={(e) => setAte(e.target.value)} />
           </div>
           <div className="sm:justify-self-end">
-            <Button variant="secondary" disabled={exportando || !rows.length} onClick={exportar}>
+            <Button variant="secondary" disabled={exportando || total === 0} onClick={exportar}>
               {exportando ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -161,6 +179,35 @@ export function WaterHistoryView() {
           </table>
         </GlassCard>
       )}
+
+      {total > TAMANHO_PAGINA ? (
+        <nav
+          className="flex items-center justify-between gap-3"
+          aria-label="Paginação do histórico"
+        >
+          <p className="text-xs text-muted-foreground">
+            Página {pagina + 1} de {totalPaginas} · {total} registros
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              className="min-h-[44px]"
+              disabled={pagina === 0 || visitas.isFetching}
+              onClick={() => setPagina((p) => Math.max(0, p - 1))}
+            >
+              Anterior
+            </Button>
+            <Button
+              variant="secondary"
+              className="min-h-[44px]"
+              disabled={pagina + 1 >= totalPaginas || visitas.isFetching}
+              onClick={() => setPagina((p) => p + 1)}
+            >
+              Próxima
+            </Button>
+          </div>
+        </nav>
+      ) : null}
     </div>
   );
 }

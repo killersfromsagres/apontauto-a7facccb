@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -139,6 +139,16 @@ export function WaterLocationsView() {
       );
   }, [pontos.data, busca, somenteAtivos]);
 
+  // Item 24 — renderização incremental: em celulares, montar centenas de
+  // cartões de uma vez trava a rolagem. Mostramos por página e o filtro
+  // sempre reinicia a paginação.
+  const PAGINA_PONTOS = 48;
+  const [visiveis, setVisiveis] = useState(PAGINA_PONTOS);
+  useEffect(() => {
+    setVisiveis(PAGINA_PONTOS);
+  }, [busca, somenteAtivos]);
+  const listaVisivel = useMemo(() => lista.slice(0, visiveis), [lista, visiveis]);
+
   const duplicidades = useMemo(() => {
     if (!form?.predio) return [];
     return detectarDuplicidades(
@@ -241,7 +251,7 @@ export function WaterLocationsView() {
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {lista.map((p) => {
+          {listaVisivel.map((p) => {
             const dias = diasPorPonto.get(p.id) ?? [];
             return (
               <GlassCard key={p.id} className="space-y-3 p-4">
@@ -344,6 +354,21 @@ export function WaterLocationsView() {
               </GlassCard>
             );
           })}
+        </div>
+      )}
+
+      {listaVisivel.length < lista.length && (
+        <div className="flex flex-col items-center gap-2">
+          <p aria-live="polite" className="text-xs text-muted-foreground">
+            Mostrando {listaVisivel.length} de {lista.length} pontos
+          </p>
+          <Button
+            variant="secondary"
+            className="min-h-[44px]"
+            onClick={() => setVisiveis((v) => v + PAGINA_PONTOS)}
+          >
+            Carregar mais pontos
+          </Button>
         </div>
       )}
 

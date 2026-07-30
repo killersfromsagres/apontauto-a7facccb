@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
+
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -67,7 +69,13 @@ import {
   type ProgramacaoLinha,
 } from "@/features/water-delivery/queries/programacao";
 import { DIAS } from "@/features/water-delivery/importer/reader";
-import { ImportadorWizard } from "@/features/water-delivery/importer/importador-wizard";
+// Item 24 — o assistente carrega a biblioteca de planilhas; só é baixado
+// quando um gestor realmente abre a tela de programação.
+const ImportadorWizard = lazy(() =>
+  import("@/features/water-delivery/importer/importador-wizard").then((m) => ({
+    default: m.ImportadorWizard,
+  })),
+);
 
 
 type Visao = "calendario" | "tabela" | "cards";
@@ -513,7 +521,11 @@ export function WeeklyWaterPlanner() {
       {gestor && <FeriadosCard onDone={invalidar} feriados={feriados.data ?? []} />}
 
       {/* Importação (item 19 — assistente em etapas) */}
-      {gestor && <ImportadorWizard onDone={invalidar} />}
+      {gestor && (
+        <Suspense fallback={<Skeleton className="h-24 w-full rounded-2xl" />}>
+          <ImportadorWizard onDone={invalidar} />
+        </Suspense>
+      )}
     </div>
   );
 }

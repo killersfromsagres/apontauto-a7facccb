@@ -3,8 +3,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 
+import { staleTimes } from "@/lib/query/keys";
 import {
   hojeISO,
+  listVisitasPagina,
   listFiltros,
   listLotes,
   listPontos,
@@ -24,6 +26,10 @@ export const aguaKeys = {
   programacao: () => ["agua", "programacao"] as const,
   programacaoCompleta: () => ["agua", "programacao", "completa"] as const,
   visitas: (inicio: string, fim: string) => ["agua", "visitas", inicio, fim] as const,
+  visitasPagina: (inicio: string, fim: string, pagina: number, tamanho: number) =>
+    ["agua", "visitas", "pagina", inicio, fim, pagina, tamanho] as const,
+  fotos: (inicio: string, fim: string, pagina: number, tamanho: number) =>
+    ["agua", "fotos", inicio, fim, pagina, tamanho] as const,
   visitasDoDia: (data: string) => ["agua", "visitas", "dia", data] as const,
   rotas: (inicio: string, fim: string) => ["agua", "rotas", inicio, fim] as const,
   filtros: () => ["agua", "filtros"] as const,
@@ -32,11 +38,38 @@ export const aguaKeys = {
 };
 
 export function usePontos() {
-  return useQuery({ queryKey: aguaKeys.pontos(), queryFn: listPontos });
+  // Catálogo: muda pouco, evita refetch a cada foco de janela.
+  return useQuery({
+    queryKey: aguaKeys.pontos(),
+    queryFn: listPontos,
+    staleTime: staleTimes.long,
+    refetchOnWindowFocus: false,
+  });
+}
+
+/** Histórico paginado — mantém a página anterior visível durante a troca. */
+export function useVisitasPagina(
+  inicio: string,
+  fim: string,
+  pagina: number,
+  tamanho = 50,
+) {
+  return useQuery({
+    queryKey: aguaKeys.visitasPagina(inicio, fim, pagina, tamanho),
+    queryFn: () => listVisitasPagina(inicio, fim, pagina, tamanho),
+    placeholderData: (prev) => prev,
+    staleTime: staleTimes.default,
+    refetchOnWindowFocus: false,
+  });
 }
 
 export function useProgramacao() {
-  return useQuery({ queryKey: aguaKeys.programacao(), queryFn: listProgramacao });
+  return useQuery({
+    queryKey: aguaKeys.programacao(),
+    queryFn: listProgramacao,
+    staleTime: staleTimes.long,
+    refetchOnWindowFocus: false,
+  });
 }
 
 export function useProgramacaoCompleta() {
@@ -69,7 +102,12 @@ export function useFiltrosAgua() {
 }
 
 export function useFeriados() {
-  return useQuery({ queryKey: aguaKeys.feriados(), queryFn: listFeriados });
+  return useQuery({
+    queryKey: aguaKeys.feriados(),
+    queryFn: listFeriados,
+    staleTime: staleTimes.long,
+    refetchOnWindowFocus: false,
+  });
 }
 
 export function useLotesImportacao() {

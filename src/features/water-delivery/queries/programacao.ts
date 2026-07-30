@@ -127,12 +127,17 @@ export async function removerProgramacao(id: string): Promise<void> {
 
 /** Reordenação (drag-and-drop no desktop, subir/descer no mobile). */
 export async function salvarOrdem(itens: Array<{ id: string; ordem: number }>): Promise<void> {
+  if (!itens.length) return;
+  // Item 24 — uma única chamada em vez de um UPDATE por linha (evita N+1).
+  const { error } = await (supabase as any).rpc("agua_reordenar_programacao", { itens });
+  if (!error) return;
+  // Retrocompatibilidade: se a rotina ainda não existir, cai no laço antigo.
   for (const item of itens) {
-    const { error } = await db
+    const { error: err } = await db
       .from("agua_programacao")
       .update({ ordem: item.ordem })
       .eq("id", item.id);
-    if (error) throw error;
+    if (err) throw err;
   }
 }
 
