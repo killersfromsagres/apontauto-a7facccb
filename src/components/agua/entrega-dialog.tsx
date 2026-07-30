@@ -213,7 +213,7 @@ export function EntregaDialog({
     setSalvando(true);
     try {
       if (retificando) {
-        await retificarVisita({
+        const r = await retificarVisita({
           visita,
           motivo: motivoRetificacao,
           campos: {
@@ -230,10 +230,21 @@ export function EntregaDialog({
             assinatura_url: input.assinatura_url,
           },
         });
-        toast.success("Retificação registrada com histórico preservado.");
+        toast[r.pendente ? "info" : "success"](
+          r.pendente
+            ? "Retificação salva no aparelho — aguardando sincronização."
+            : "Retificação registrada com histórico preservado.",
+        );
       } else {
-        await registrarEntrega(visita.id, input);
-        toast.success("Entrega registrada.");
+        const r = await registrarEntrega(visita.id, input, {
+          data: visita.data,
+          atualizadoEm: (visita as { atualizado_em?: string | null }).atualizado_em ?? null,
+        });
+        toast[r.pendente ? "info" : "success"](
+          r.pendente
+            ? "Entrega concluída no aparelho — aguardando sincronização."
+            : "Entrega registrada.",
+        );
       }
       onSalvo();
       onOpenChange(false);
