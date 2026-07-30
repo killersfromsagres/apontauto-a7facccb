@@ -88,8 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
       {
         name: "description",
-        content:
-          "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Sistema de Apontamento by: Gabriel Vitor",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
       { property: "og:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
@@ -101,8 +100,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
       { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587" },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -112,7 +119,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
       { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
       // Reduz latência da primeira chamada auth/DB
-      { rel: "preconnect", href: "https://uthidybbrziwvktknryr.supabase.co", crossOrigin: "anonymous" },
+      {
+        rel: "preconnect",
+        href: "https://uthidybbrziwvktknryr.supabase.co",
+        crossOrigin: "anonymous",
+      },
       { rel: "dns-prefetch", href: "https://uthidybbrziwvktknryr.supabase.co" },
       // APIs de clima chamadas direto do cliente em Programação de Taludes.
       { rel: "preconnect", href: "https://api.open-meteo.com", crossOrigin: "anonymous" },
@@ -134,7 +145,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         as: "style",
         href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap",
       },
-
     ],
     scripts: [
       {
@@ -180,7 +190,6 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
@@ -190,7 +199,6 @@ function RootComponent() {
       m.installErrorTelemetry(),
     );
   }, []);
-
 
   return (
     <QueryClientProvider client={queryClient}>

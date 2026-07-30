@@ -49,7 +49,11 @@ export async function listJobs(limit = 50): Promise<JobRow[]> {
 }
 
 export async function listUnmatched(jobId?: string, limit = 500): Promise<UnmatchedRow[]> {
-  let q = db.from("spreadsheet_unmatched").select("*").order("created_at", { ascending: false }).limit(limit);
+  let q = db
+    .from("spreadsheet_unmatched")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
   if (jobId) q = q.eq("job_id", jobId);
   const { data, error } = await q;
   if (error) throw error;
@@ -103,7 +107,10 @@ export async function saveJob(input: SaveJobInput): Promise<string | null> {
       file_size: safe.fileSize,
       file_type: safe.fileType,
 
-      sheet_name: input.plans.map((p) => p.sheetName).join(", ").slice(0, 200),
+      sheet_name: input.plans
+        .map((p) => p.sheetName)
+        .join(", ")
+        .slice(0, 200),
       status: "completed",
       progress: 100,
       column_mapping: input.columnMapping,

@@ -78,7 +78,10 @@ export async function updateReminder(id: string, patch: Partial<Reminder>): Prom
   if (patch.observacoes !== undefined) payload.observacoes = patch.observacoes;
   if (patch.anexos !== undefined) payload.anexos = patch.anexos;
   if (patch.concluido !== undefined) payload.concluido = patch.concluido;
-  const { error } = await supabase.from("reminders").update(payload as never).eq("id", id);
+  const { error } = await supabase
+    .from("reminders")
+    .update(payload as never)
+    .eq("id", id);
   if (error) throw error;
 }
 

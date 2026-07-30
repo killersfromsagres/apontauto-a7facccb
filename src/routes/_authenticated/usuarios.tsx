@@ -100,7 +100,8 @@ function UsuariosPage() {
       <PageShell title="Usuários" description="Área restrita">
         <GlassCard>
           <p className="text-sm text-muted-foreground">
-            Você não tem permissão para acessar esta página. Apenas administradores podem gerenciar usuários.
+            Você não tem permissão para acessar esta página. Apenas administradores podem gerenciar
+            usuários.
           </p>
         </GlassCard>
       </PageShell>
@@ -134,7 +135,9 @@ function CreateUserCard() {
     setLoading(true);
     try {
       await create({ data: { login, password, fullName: fullName || undefined, role } });
-      toast.success(`Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`);
+      toast.success(
+        `Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`,
+      );
       setLogin("");
       setPassword("");
       setFullName("");
@@ -390,7 +393,10 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold truncate">{user.login}</span>
-            <Badge variant={user.role === "admin" ? "default" : "secondary"} className="uppercase text-[10px]">
+            <Badge
+              variant={user.role === "admin" ? "default" : "secondary"}
+              className="uppercase text-[10px]"
+            >
               {user.role}
             </Badge>
             {user.banned && (
@@ -487,7 +493,11 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             })}
           </div>
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => menusMut.mutate()} disabled={menusMut.isPending || isAdminUser}>
+            <Button
+              size="sm"
+              onClick={() => menusMut.mutate()}
+              disabled={menusMut.isPending || isAdminUser}
+            >
               {menusMut.isPending ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : (
@@ -504,7 +514,8 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir usuário?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação é permanente. O usuário <strong>{user.login}</strong> perderá o acesso imediatamente.
+              Esta ação é permanente. O usuário <strong>{user.login}</strong> perderá o acesso
+              imediatamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

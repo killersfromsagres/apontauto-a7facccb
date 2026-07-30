@@ -52,7 +52,8 @@ export function formatKpi(value: number | null, unit?: string) {
   if (value == null || !Number.isFinite(value)) return "—";
   if (unit === "%") return `${value.toFixed(1)}%`;
   if (unit === "R$") return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  if (unit === "R$/km") return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} R$/km`;
+  if (unit === "R$/km")
+    return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} R$/km`;
   if (unit) return `${value.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${unit}`;
   return value.toLocaleString("pt-BR", { maximumFractionDigits: value < 10 ? 1 : 0 });
 }
@@ -67,7 +68,13 @@ function Gauge({ value, target }: { value: number | null; target: number }) {
   return (
     <div className="flex h-full flex-col items-center justify-center">
       <svg viewBox="0 0 140 84" className="w-full max-w-[190px]">
-        <path d="M 16 74 A 54 54 0 0 1 124 74" fill="none" stroke="hsl(var(--muted))" strokeWidth="12" strokeLinecap="round" />
+        <path
+          d="M 16 74 A 54 54 0 0 1 124 74"
+          fill="none"
+          stroke="hsl(var(--muted))"
+          strokeWidth="12"
+          strokeLinecap="round"
+        />
         <path
           d="M 16 74 A 54 54 0 0 1 124 74"
           fill="none"
@@ -76,7 +83,13 @@ function Gauge({ value, target }: { value: number | null; target: number }) {
           strokeLinecap="round"
           strokeDasharray={`${(pct / 100) * circ} ${circ}`}
         />
-        <text x="70" y="66" textAnchor="middle" className="fill-foreground" style={{ fontSize: 20, fontWeight: 700 }}>
+        <text
+          x="70"
+          y="66"
+          textAnchor="middle"
+          className="fill-foreground"
+          style={{ fontSize: 20, fontWeight: 700 }}
+        >
           {pct.toFixed(0)}%
         </text>
       </svg>
@@ -105,7 +118,9 @@ function Heatmap({ widget, rows }: { widget: WidgetSpec; rows: Row[] }) {
         <tbody>
           {data.map((d) => (
             <tr key={String(d.label)}>
-              <td className="max-w-[130px] truncate pr-2 text-muted-foreground">{String(d.label)}</td>
+              <td className="max-w-[130px] truncate pr-2 text-muted-foreground">
+                {String(d.label)}
+              </td>
               {keys.map((k) => {
                 const v = Number(d[k] ?? 0);
                 return (
@@ -113,7 +128,9 @@ function Heatmap({ widget, rows }: { widget: WidgetSpec; rows: Row[] }) {
                     key={k}
                     className="rounded-md px-2 py-1.5 text-center font-medium tabular-nums"
                     style={{
-                      background: v ? `rgba(34, 211, 238, ${0.12 + (v / max) * 0.7})` : "hsl(var(--muted)/0.35)",
+                      background: v
+                        ? `rgba(34, 211, 238, ${0.12 + (v / max) * 0.7})`
+                        : "hsl(var(--muted)/0.35)",
                       color: v / max > 0.55 ? "#04121a" : undefined,
                     }}
                   >
@@ -136,7 +153,8 @@ function Timeline({ widget, rows }: { widget: WidgetSpec; rows: Row[] }) {
       [...rows]
         .sort(
           (a, b) =>
-            new Date(String(b[def.dateField])).getTime() - new Date(String(a[def.dateField])).getTime(),
+            new Date(String(b[def.dateField])).getTime() -
+            new Date(String(a[def.dateField])).getTime(),
         )
         .slice(0, 12),
     [rows, def.dateField],
@@ -148,7 +166,10 @@ function Timeline({ widget, rows }: { widget: WidgetSpec; rows: Row[] }) {
         <li key={i} className="relative">
           <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" />
           <p className="text-xs text-muted-foreground">
-            {new Date(String(r[def.dateField])).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+            {new Date(String(r[def.dateField])).toLocaleString("pt-BR", {
+              dateStyle: "short",
+              timeStyle: "short",
+            })}
           </p>
           <p className="truncate text-sm font-medium">
             {String(r.numero_os ?? r.numero_pt ?? r.protocol ?? r.os ?? r.id ?? "—")} ·{" "}
@@ -217,7 +238,10 @@ export function WidgetChart({
   height?: number;
 }) {
   const series = useMemo(
-    () => (["line", "area", "bar", "donut", "pareto"].includes(widget.chart) ? buildSeries(widget, rows) : []),
+    () =>
+      ["line", "area", "bar", "donut", "pareto"].includes(widget.chart)
+        ? buildSeries(widget, rows)
+        : [],
     [widget, rows],
   );
   const matrix = useMemo(
@@ -233,7 +257,9 @@ export function WidgetChart({
         <p className="font-display text-3xl font-bold tracking-tight text-gradient sm:text-4xl">
           {formatKpi(value, def?.unit)}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">{def?.hint ?? `${rows.length} registros`}</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {def?.hint ?? `${rows.length} registros`}
+        </p>
       </div>
     );
   }
@@ -241,7 +267,12 @@ export function WidgetChart({
   if (widget.chart === "gauge") {
     const def = widget.kpi ? KPIS[widget.kpi] : null;
     const value = def ? def.compute(datasets) : null;
-    return <Gauge value={def?.unit === "%" ? value : value != null ? Math.min(100, value) : null} target={def?.target ?? 90} />;
+    return (
+      <Gauge
+        value={def?.unit === "%" ? value : value != null ? Math.min(100, value) : null}
+        target={def?.target ?? 90}
+      />
+    );
   }
 
   if (widget.chart === "heatmap") return <Heatmap widget={widget} rows={rows} />;
@@ -258,7 +289,14 @@ export function WidgetChart({
           <XAxis dataKey="label" tick={AXIS} tickFormatter={short} />
           <YAxis tick={AXIS} />
           <Tooltip {...tooltipStyle} />
-          <Line type="monotone" dataKey="value" stroke={PALETTE[0]} strokeWidth={2.5} dot={false} name="Valor" />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={PALETTE[0]}
+            strokeWidth={2.5}
+            dot={false}
+            name="Valor"
+          />
         </LineChart>
       ) : widget.chart === "area" ? (
         <AreaChart data={series} margin={{ left: -18, right: 8, top: 8 }}>
@@ -272,12 +310,27 @@ export function WidgetChart({
           <XAxis dataKey="label" tick={AXIS} tickFormatter={short} />
           <YAxis tick={AXIS} />
           <Tooltip {...tooltipStyle} />
-          <Area type="monotone" dataKey="value" stroke={PALETTE[0]} strokeWidth={2.5} fill={`url(#grad-${widget.id})`} name="Valor" />
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={PALETTE[0]}
+            strokeWidth={2.5}
+            fill={`url(#grad-${widget.id})`}
+            name="Valor"
+          />
         </AreaChart>
       ) : widget.chart === "bar" ? (
         <BarChart data={series} margin={{ left: -18, right: 8, top: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
-          <XAxis dataKey="label" tick={AXIS} tickFormatter={short} interval={0} angle={-18} textAnchor="end" height={54} />
+          <XAxis
+            dataKey="label"
+            tick={AXIS}
+            tickFormatter={short}
+            interval={0}
+            angle={-18}
+            textAnchor="end"
+            height={54}
+          />
           <YAxis tick={AXIS} />
           <Tooltip {...tooltipStyle} />
           <Bar dataKey="value" radius={[8, 8, 0, 0]} name="Valor">
@@ -290,7 +343,14 @@ export function WidgetChart({
         <PieChart>
           <Tooltip {...tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Pie data={series} dataKey="value" nameKey="label" innerRadius="52%" outerRadius="78%" paddingAngle={2}>
+          <Pie
+            data={series}
+            dataKey="value"
+            nameKey="label"
+            innerRadius="52%"
+            outerRadius="78%"
+            paddingAngle={2}
+          >
             {series.map((_, i) => (
               <Cell key={i} fill={PALETTE[i % PALETTE.length]} stroke="transparent" />
             ))}
@@ -299,22 +359,52 @@ export function WidgetChart({
       ) : widget.chart === "pareto" ? (
         <ComposedChart data={series} margin={{ left: -18, right: 4, top: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
-          <XAxis dataKey="label" tick={AXIS} tickFormatter={short} interval={0} angle={-18} textAnchor="end" height={54} />
+          <XAxis
+            dataKey="label"
+            tick={AXIS}
+            tickFormatter={short}
+            interval={0}
+            angle={-18}
+            textAnchor="end"
+            height={54}
+          />
           <YAxis tick={AXIS} />
           <YAxis yAxisId="pct" orientation="right" tick={AXIS} domain={[0, 100]} unit="%" />
           <Tooltip {...tooltipStyle} />
           <Bar dataKey="value" radius={[8, 8, 0, 0]} fill={PALETTE[1]} name="Ocorrências" />
-          <Line yAxisId="pct" type="monotone" dataKey="acumulado" stroke={PALETTE[4]} strokeWidth={2.5} dot={false} name="Acumulado %" />
+          <Line
+            yAxisId="pct"
+            type="monotone"
+            dataKey="acumulado"
+            stroke={PALETTE[4]}
+            strokeWidth={2.5}
+            dot={false}
+            name="Acumulado %"
+          />
         </ComposedChart>
       ) : (
         <BarChart data={matrix.data} margin={{ left: -18, right: 8, top: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.35} />
-          <XAxis dataKey="label" tick={AXIS} tickFormatter={short} interval={0} angle={-18} textAnchor="end" height={54} />
+          <XAxis
+            dataKey="label"
+            tick={AXIS}
+            tickFormatter={short}
+            interval={0}
+            angle={-18}
+            textAnchor="end"
+            height={54}
+          />
           <YAxis tick={AXIS} />
           <Tooltip {...tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           {matrix.keys.map((k, i) => (
-            <Bar key={k} dataKey={k} stackId="a" fill={PALETTE[i % PALETTE.length]} radius={i === matrix.keys.length - 1 ? [8, 8, 0, 0] : undefined} />
+            <Bar
+              key={k}
+              dataKey={k}
+              stackId="a"
+              fill={PALETTE[i % PALETTE.length]}
+              radius={i === matrix.keys.length - 1 ? [8, 8, 0, 0] : undefined}
+            />
           ))}
         </BarChart>
       )}
@@ -323,4 +413,8 @@ export function WidgetChart({
 }
 
 export const widgetSpan = (size: WidgetSpec["size"]) =>
-  cn(size === "lg" && "sm:col-span-2 xl:col-span-4", size === "md" && "sm:col-span-2 xl:col-span-2", size === "sm" && "xl:col-span-1");
+  cn(
+    size === "lg" && "sm:col-span-2 xl:col-span-4",
+    size === "md" && "sm:col-span-2 xl:col-span-2",
+    size === "sm" && "xl:col-span-1",
+  );

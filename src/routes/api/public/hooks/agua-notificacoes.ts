@@ -25,9 +25,7 @@ function paraMinutos(hhmm: string | null): number | null {
   return Number.isFinite(h) ? h * 60 + (m || 0) : null;
 }
 
-type Admin = Awaited<
-  typeof import("@/integrations/supabase/client.server")
->["supabaseAdmin"];
+type Admin = Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"];
 
 interface Aviso {
   evento: string;
@@ -68,9 +66,7 @@ async function publicar(admin: any, a: Aviso): Promise<boolean> {
     .single();
   if (error || !nova) return false;
 
-  await admin
-    .from("notification_targets")
-    .insert({ notification_id: nova.id, module_key: MODULO });
+  await admin.from("notification_targets").insert({ notification_id: nova.id, module_key: MODULO });
   return true;
 }
 

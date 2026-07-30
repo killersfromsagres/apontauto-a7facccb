@@ -3,12 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Camera, ExternalLink, Copy, Loader2, ImageIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -144,7 +139,12 @@ export function OsPhotosButton({
             ) : error ? (
               <div className="flex items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs">
                 <span>Falha ao carregar fotos.</span>
-                <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={() => refetch()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 rounded-full"
+                  onClick={() => refetch()}
+                >
                   Tentar de novo
                 </Button>
               </div>
@@ -181,7 +181,9 @@ export function OsPhotosButton({
                         target="_blank"
                         rel="noreferrer"
                         className="relative block aspect-square overflow-hidden bg-black/20"
-                        onClick={(e) => { if (!f.url) e.preventDefault(); }}
+                        onClick={(e) => {
+                          if (!f.url) e.preventDefault();
+                        }}
                       >
                         {f.url ? (
                           <img

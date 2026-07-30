@@ -6,13 +6,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DATASETS,
-  type DatasetKey,
-  type Datasets,
-  type Row,
-  type WidgetSpec,
-} from "./catalog";
+import { DATASETS, type DatasetKey, type Datasets, type Row, type WidgetSpec } from "./catalog";
 
 export type GlobalFilters = {
   /** Dias do período (0 = tudo). */
@@ -63,10 +57,7 @@ export async function loadDataset(key: DatasetKey, periodDays: number): Promise<
   return (data ?? []) as unknown as Row[];
 }
 
-export async function loadDatasets(
-  keys: DatasetKey[],
-  periodDays: number,
-): Promise<Datasets> {
+export async function loadDatasets(keys: DatasetKey[], periodDays: number): Promise<Datasets> {
   const unique = [...new Set(keys)];
   const results = await Promise.all(
     unique.map(async (key) => {
@@ -83,7 +74,9 @@ export async function loadDatasets(
 /* ----------------------------- Filtragem ----------------------------- */
 
 const eq = (a: unknown, b: string) =>
-  String(a ?? "").trim().toLowerCase() === b.trim().toLowerCase();
+  String(a ?? "")
+    .trim()
+    .toLowerCase() === b.trim().toLowerCase();
 
 export function applyFilters(dataset: DatasetKey, list: Row[], f: GlobalFilters): Row[] {
   const dims = new Set(DATASETS[dataset].dimensions.map((d) => d.key));

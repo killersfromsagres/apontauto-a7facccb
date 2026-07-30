@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarIcon, Download, FileSpreadsheet, History, Trash2, Upload, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarIcon,
+  Download,
+  FileSpreadsheet,
+  History,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -43,7 +52,6 @@ import {
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
 });
-
 
 type SlotId = "CCH" | "REFRIG" | "ELETRICA";
 
@@ -100,7 +108,11 @@ interface GeneratedFile {
 const TITULO_PADRAO = "SHERWIN WILLIAMS / DEMARCHI";
 
 const norm = (v: unknown) =>
-  String(v ?? "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  String(v ?? "")
+    .trim()
+    .toUpperCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
 function predioMatches(predio: string, arr: string[]): boolean {
   const p = norm(predio);
@@ -110,8 +122,8 @@ function predioMatches(predio: string, arr: string[]): boolean {
 function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
   switch (slot) {
     case "CCH":
-      return all.filter((o) =>
-        o.equipe === "CIVIL" || o.equipe === "CHAVEIRO" || o.equipe === "HIDRÁULICA",
+      return all.filter(
+        (o) => o.equipe === "CIVIL" || o.equipe === "CHAVEIRO" || o.equipe === "HIDRÁULICA",
       );
     case "REFRIG": {
       const climat = all.filter((o) => o.equipe.startsWith("CLIMAT"));
@@ -154,7 +166,6 @@ function ProgramacaoPage() {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   });
 
-
   const reloadHistorico = useCallback(async () => {
     try {
       setHistorico(await listHistorico());
@@ -182,10 +193,7 @@ function ProgramacaoPage() {
     setSlotFiles((prev) => ({ ...prev, [slot]: file }));
   }, []);
 
-  const hasAnyFile = useMemo(
-    () => Object.values(slotFiles).some(Boolean),
-    [slotFiles],
-  );
+  const hasAnyFile = useMemo(() => Object.values(slotFiles).some(Boolean), [slotFiles]);
 
   const generate = async () => {
     if (!hasAnyFile) return toast.error("Anexe pelo menos um arquivo");
@@ -312,7 +320,6 @@ function ProgramacaoPage() {
             `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), de ${fmtDate(now)} até ${fmtDate(until)}. Sequenciadas por prédio → andar.`,
           );
         }
-
       }
 
       setAlerts(allAlerts);
@@ -415,8 +422,8 @@ function ProgramacaoPage() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-[11px] text-muted-foreground">
-                  A distribuição começa nesta data e se estende automaticamente
-                  até acomodar todas as OS.
+                  A distribuição começa nesta data e se estende automaticamente até acomodar todas
+                  as OS.
                 </p>
               </div>
 
@@ -430,7 +437,6 @@ function ProgramacaoPage() {
               </Button>
             </div>
 
-
             {alerts.length > 0 && (
               <div className="space-y-2">
                 {alerts.map((a) => (
@@ -440,9 +446,9 @@ function ProgramacaoPage() {
                   >
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                     <div>
-                      <strong>{a.arquivo}</strong> foi enviado como{" "}
-                      <em>{a.esperado}</em> mas contém {Math.round(a.percentual * 100)}% de{" "}
-                      <em>{a.real}</em>. Os dados foram reclassificados automaticamente.
+                      <strong>{a.arquivo}</strong> foi enviado como <em>{a.esperado}</em> mas contém{" "}
+                      {Math.round(a.percentual * 100)}% de <em>{a.real}</em>. Os dados foram
+                      reclassificados automaticamente.
                     </div>
                   </div>
                 ))}
@@ -565,7 +571,9 @@ function ProgramacaoPage() {
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
                       <span className="font-semibold">{label}</span>
                       <span className="h-px flex-1 bg-border/50" />
-                      <span>{items.length} arquivo{items.length === 1 ? "" : "s"}</span>
+                      <span>
+                        {items.length} arquivo{items.length === 1 ? "" : "s"}
+                      </span>
                     </div>
                     <ul className="grid gap-2 sm:grid-cols-2">
                       {items.map((f) => (
@@ -616,7 +624,6 @@ function ProgramacaoPage() {
           </div>
         </GlassCard>
       </div>
-
     </PageShell>
   );
 }
@@ -639,10 +646,7 @@ function SlotUpload({ slot, file, onChange, minutos, onMinutosChange }: SlotUplo
       style={{ boxShadow: `inset 4px 0 0 0 ${slot.color}` }}
     >
       <div className="flex items-center gap-2">
-        <span
-          className="h-2.5 w-2.5 shrink-0 rounded-sm"
-          style={{ background: slot.color }}
-        />
+        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: slot.color }} />
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-semibold">{slot.label}</p>
           <p className="truncate text-[10px] text-muted-foreground">{slot.hint}</p>
@@ -689,7 +693,6 @@ function SlotUpload({ slot, file, onChange, minutos, onMinutosChange }: SlotUplo
           Tempo/OS ajustado (padrão {fmt(slot.minutosPorOS)}).
         </div>
       )}
-
 
       {file ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/60 px-2 py-1.5 text-[11px]">

@@ -16,13 +16,7 @@ const BASE_TRANSITIONS: Partial<Record<WorkOrderStatus, WorkOrderStatus[]>> = {
   programada: ["liberada", "aguardando_material", "em_execucao", "aberta", "cancelada"],
   aguardando_material: ["liberada", "programada", "em_execucao", "pausada", "cancelada"],
   liberada: ["em_execucao", "programada", "pausada", "cancelada"],
-  em_execucao: [
-    "aguardando_material",
-    "aguardando_validacao",
-    "pausada",
-    "concluida",
-    "cancelada",
-  ],
+  em_execucao: ["aguardando_material", "aguardando_validacao", "pausada", "concluida", "cancelada"],
   pausada: ["em_execucao", "aguardando_material", "cancelada"],
   aguardando_validacao: ["em_execucao", "concluida", "cancelada"],
   concluida: [],
@@ -49,7 +43,6 @@ const BASE_STATUSES: WorkOrderStatus[] = [
   "concluida",
   "cancelada",
 ];
-
 
 function build(
   key: WorkOrderModality,
@@ -90,7 +83,12 @@ export const WORK_ORDER_MODALITIES: Record<WorkOrderModality, WorkOrderModalityC
       { key: "ativo", label: "Ativo", kind: "text", required: true },
       { key: "equipamento", label: "Equipamento", kind: "text" },
       { key: "patrimonio", label: "Patrimônio", kind: "text" },
-      { key: "modelo", label: "Modelo", kind: "text", placeholder: "ex.: Split Inverter, Cassete..." },
+      {
+        key: "modelo",
+        label: "Modelo",
+        kind: "text",
+        placeholder: "ex.: Split Inverter, Cassete...",
+      },
       { key: "btus", label: "BTUs", kind: "number" },
     ],
   }),

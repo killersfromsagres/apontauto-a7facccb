@@ -10,12 +10,7 @@ export { FilterBar } from "./filter-bar";
 export { ExportMenu, type ExportOption } from "./export-menu";
 export { SyncIndicator, type SyncStatus } from "./sync-indicator";
 export { ConfirmationDialog } from "./confirmation-dialog";
-export {
-  Timeline,
-  AuditTimeline,
-  type TimelineItem,
-  type AuditEvent,
-} from "./timeline";
+export { Timeline, AuditTimeline, type TimelineItem, type AuditEvent } from "./timeline";
 export { PageHeader, ModuleHeader, type PageHeaderProps } from "./page-header";
 export { DataTable, type DataTableColumn, type DataTableProps } from "./data-table";
 export { DetailDrawer, DetailRow, type DetailDrawerProps } from "./detail-drawer";

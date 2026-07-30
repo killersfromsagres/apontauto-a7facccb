@@ -80,9 +80,24 @@ import {
 } from "@/components/ui/table";
 
 import { supabase } from "@/integrations/supabase/client";
-import { readAssetsFile, readBackorderFile, readBackorderWorkbook, type BackorderRow } from "@/lib/backorder/reader";
-import { assetsIndexFromGraph, describeAtivo, makeAssetsMap, resolveAtivo, resolveAtivoTree, type AssetsMap } from "@/lib/backorder/assets";
-import { invalidateAssetGraphCache, loadActiveAssetGraph } from "@/features/assets/services/asset-graph-loader";
+import {
+  readAssetsFile,
+  readBackorderFile,
+  readBackorderWorkbook,
+  type BackorderRow,
+} from "@/lib/backorder/reader";
+import {
+  assetsIndexFromGraph,
+  describeAtivo,
+  makeAssetsMap,
+  resolveAtivo,
+  resolveAtivoTree,
+  type AssetsMap,
+} from "@/lib/backorder/assets";
+import {
+  invalidateAssetGraphCache,
+  loadActiveAssetGraph,
+} from "@/features/assets/services/asset-graph-loader";
 
 // Motor de ativos único: usa o catálogo ativo (PCM) e cai na base legada
 // `assets_ref` automaticamente quando ainda não há catálogo importado.
@@ -107,7 +122,12 @@ import {
   type Categoria,
   type DynamicRule,
 } from "@/lib/backorder/classify";
-import { classifyTeamByText, EQUIPE_COR, EQUIPES, type Equipe } from "@/lib/backorder/team-classifier";
+import {
+  classifyTeamByText,
+  EQUIPE_COR,
+  EQUIPES,
+  type Equipe,
+} from "@/lib/backorder/team-classifier";
 import { generateBackorderExport } from "@/lib/backorder/export";
 import { downloadBlob } from "@/lib/download";
 import {
@@ -118,7 +138,13 @@ import {
   type PredioSensivel,
 } from "@/lib/backorder/priority";
 import { generatePriorityExport, openPriorityPrintView } from "@/lib/backorder/priority-export";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -156,7 +182,6 @@ interface BOSRow {
   prioridade_nivel?: number;
   revisao_manual?: boolean;
 }
-
 
 const TARGET_PCT_DEFAULT = 5;
 
@@ -246,11 +271,17 @@ function BackorderPage() {
 
   const loadLearnedRules = useCallback(async () => {
     const [loc, tm] = await Promise.all([
-      supabase.from("regras_aprendidas_localizacao").select("*").order("criado_em", { ascending: false }),
-      supabase.from("regras_aprendidas_equipe").select("*").order("criado_em", { ascending: false }),
+      supabase
+        .from("regras_aprendidas_localizacao")
+        .select("*")
+        .order("criado_em", { ascending: false }),
+      supabase
+        .from("regras_aprendidas_equipe")
+        .select("*")
+        .order("criado_em", { ascending: false }),
     ]);
-    setLearnedLoc(((loc.data ?? []) as LearnedLocation[]));
-    setLearnedTeamRules(((tm.data ?? []) as LearnedTeam[]));
+    setLearnedLoc((loc.data ?? []) as LearnedLocation[]);
+    setLearnedTeamRules((tm.data ?? []) as LearnedTeam[]);
   }, []);
 
   const loadClassifierRules = useCallback(async () => {
@@ -287,7 +318,13 @@ function BackorderPage() {
   const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
   const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
 
-  async function saveRule(rule: Partial<RuleRow> & { equipe: string; palavra_chave: string; fonte: "descricao" | "categoria" }) {
+  async function saveRule(
+    rule: Partial<RuleRow> & {
+      equipe: string;
+      palavra_chave: string;
+      fonte: "descricao" | "categoria";
+    },
+  ) {
     const payload = {
       id: rule.id,
       equipe: rule.equipe,
@@ -367,10 +404,14 @@ function BackorderPage() {
         const chunkSize = 500;
         for (let i = 0; i < embeddedAssets.length; i += chunkSize) {
           const chunk = embeddedAssets.slice(i, i + chunkSize);
-          const { error } = await supabase.from("assets_ref").upsert(chunk, { onConflict: "ativo" });
+          const { error } = await supabase
+            .from("assets_ref")
+            .upsert(chunk, { onConflict: "ativo" });
           if (error) throw error;
         }
-        toast.info(`Base de ativos atualizada com ${embeddedAssets.length} registros do próprio arquivo.`);
+        toast.info(
+          `Base de ativos atualizada com ${embeddedAssets.length} registros do próprio arquivo.`,
+        );
       }
 
       // Overrides manuais persistidos (Atividade corrigida à mão)
@@ -383,7 +424,9 @@ function BackorderPage() {
       // Preserva "finalizado" local (nunca reabrir automaticamente por reimport)
       const { data: existing } = await supabase
         .from("backorder_os")
-        .select("os, finalizado, atividade_manual, atividade, equipe, data_finalizacao, nome, ativo, predio, andar, espaco, data_solicitacao, termino_sla, outros, criticidade");
+        .select(
+          "os, finalizado, atividade_manual, atividade, equipe, data_finalizacao, nome, ativo, predio, andar, espaco, data_solicitacao, termino_sla, outros, criticidade",
+        );
       const existMap = new Map<string, any>();
       (existing ?? []).forEach((e: any) => existMap.set(e.os, e));
 
@@ -401,10 +444,12 @@ function BackorderPage() {
         (teamRes.data ?? []) as LearnedTeam[],
       );
 
-      const toUpsert: Array<BackorderRow & {
-        origem_predio_andar_espaco: string;
-        origem_equipe: string;
-      }> = [];
+      const toUpsert: Array<
+        BackorderRow & {
+          origem_predio_andar_espaco: string;
+          origem_equipe: string;
+        }
+      > = [];
       for (const r of parsed) {
         const prev = existMap.get(r.os);
         if (prev?.finalizado) {
@@ -421,8 +466,11 @@ function BackorderPage() {
         // há override manual nem regra aprendida por ativo confiável.
         const textResult = classifyTeamByText(r.nome ?? "");
 
-        const atividadeFinal: Categoria = (override as Categoria | undefined)
-          ?? (prev?.atividade_manual ? (prev.atividade as Categoria) : (textResult.equipe as Categoria));
+        const atividadeFinal: Categoria =
+          (override as Categoria | undefined) ??
+          (prev?.atividade_manual
+            ? (prev.atividade as Categoria)
+            : (textResult.equipe as Categoria));
         const equipeFinal = override
           ? CATEGORIA_TO_EQUIPE[override as Categoria]
           : prev?.atividade_manual
@@ -441,13 +489,29 @@ function BackorderPage() {
           espaco: r.espaco || applied.espaco || prev?.espaco || "",
           atividade: atividadeFinal,
           equipe: equipeFinal,
-          revisao_manual: (applied.revisao_manual && !override && !prev?.atividade_manual && !r.predio && !r.andar && !r.espaco && !(prev?.predio || prev?.andar || prev?.espaco)) || revisaoText,
-          origem_predio_andar_espaco: r.predio || r.andar || r.espaco
-            ? "planilha"
-            : (applied.origem_predio_andar_espaco !== "pendente"
+          revisao_manual:
+            (applied.revisao_manual &&
+              !override &&
+              !prev?.atividade_manual &&
+              !r.predio &&
+              !r.andar &&
+              !r.espaco &&
+              !(prev?.predio || prev?.andar || prev?.espaco)) ||
+            revisaoText,
+          origem_predio_andar_espaco:
+            r.predio || r.andar || r.espaco
+              ? "planilha"
+              : applied.origem_predio_andar_espaco !== "pendente"
                 ? applied.origem_predio_andar_espaco
-                : (prev?.predio || prev?.andar || prev?.espaco) ? "manual_preservado" : "pendente"),
-          origem_equipe: (override || prev?.atividade_manual) ? "regra_aprendida" : (revisaoText ? "pendente" : "regra_local"),
+                : prev?.predio || prev?.andar || prev?.espaco
+                  ? "manual_preservado"
+                  : "pendente",
+          origem_equipe:
+            override || prev?.atividade_manual
+              ? "regra_aprendida"
+              : revisaoText
+                ? "pendente"
+                : "regra_local",
         };
         if (prev) {
           const sameISO = (a?: string | null, b?: string | null) =>
@@ -521,7 +585,9 @@ function BackorderPage() {
       }
 
       // Base existente para calcular quantos são novos vs. atualizados
-      const { data: existingAssets } = await supabase.from("assets_ref").select("ativo, denominacao");
+      const { data: existingAssets } = await supabase
+        .from("assets_ref")
+        .select("ativo, denominacao");
       const existMap = new Map<string, string>();
       (existingAssets ?? []).forEach((a: any) =>
         existMap.set(String(a.ativo).toUpperCase(), String(a.denominacao ?? "")),
@@ -561,10 +627,18 @@ function BackorderPage() {
       ]);
       setAssetsMap(nextMap);
 
-      const { data: allRows } = await supabase.from("backorder_os").select("os, ativo, predio, andar, espaco");
+      const { data: allRows } = await supabase
+        .from("backorder_os")
+        .select("os, ativo, predio, andar, espaco");
       let recalculados = 0;
       const patches: Array<{ os: string; predio: string; andar: string; espaco: string }> = [];
-      for (const r of (allRows ?? []) as Array<{ os: string; ativo: string; predio: string; andar: string; espaco: string }>) {
+      for (const r of (allRows ?? []) as Array<{
+        os: string;
+        ativo: string;
+        predio: string;
+        andar: string;
+        espaco: string;
+      }>) {
         if (!r.ativo) continue;
         const res = resolveAtivo(nextMap, r.ativo);
         if (res.predio !== r.predio || res.andar !== r.andar || res.espaco !== r.espaco) {
@@ -615,23 +689,45 @@ function BackorderPage() {
 
       const { data: allRows } = await supabase
         .from("backorder_os")
-        .select("os, ativo, predio, andar, espaco, atividade, atividade_manual, revisao_manual, origem_predio_andar_espaco, origem_equipe");
+        .select(
+          "os, ativo, predio, andar, espaco, atividade, atividade_manual, revisao_manual, origem_predio_andar_espaco, origem_equipe",
+        );
       type Row = {
-        os: string; ativo: string; predio: string; andar: string; espaco: string;
-        atividade: string; atividade_manual: boolean; revisao_manual: boolean;
-        origem_predio_andar_espaco: string; origem_equipe: string;
+        os: string;
+        ativo: string;
+        predio: string;
+        andar: string;
+        espaco: string;
+        atividade: string;
+        atividade_manual: boolean;
+        revisao_manual: boolean;
+        origem_predio_andar_espaco: string;
+        origem_equipe: string;
       };
-      const patches: Array<{ os: string; predio: string; andar: string; espaco: string; atividade?: string; equipe?: string; revisao_manual: boolean; origem_predio_andar_espaco: string; origem_equipe: string }> = [];
+      const patches: Array<{
+        os: string;
+        predio: string;
+        andar: string;
+        espaco: string;
+        atividade?: string;
+        equipe?: string;
+        revisao_manual: boolean;
+        origem_predio_andar_espaco: string;
+        origem_equipe: string;
+      }> = [];
       for (const r of (allRows ?? []) as Row[]) {
         if (!r.ativo) continue;
         const tree = resolveAtivoTree(map, r.ativo);
-        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, (r.atividade as Categoria) || "Outros");
+        const applied = applyLearnedToResolved(
+          learnedIdx,
+          r.ativo,
+          tree,
+          (r.atividade as Categoria) || "Outros",
+        );
 
         // Não sobrescreve equipe se atividade_manual = true
         const nextAtiv = r.atividade_manual ? (r.atividade as Categoria) : applied.atividade;
-        const nextEquipe = r.atividade_manual
-          ? undefined
-          : CATEGORIA_TO_EQUIPE[applied.atividade];
+        const nextEquipe = r.atividade_manual ? undefined : CATEGORIA_TO_EQUIPE[applied.atividade];
 
         // Preserva prédio/andar/ambiente já salvos. Só sobrescreve quando:
         //  - existe regra aprendida para o ativo (fonte confiável), ou
@@ -649,12 +745,13 @@ function BackorderPage() {
         const finalEspaco = pickLoc(r.espaco, applied.espaco);
         const finalOrigemLoc = hasLearnedLoc
           ? "regra_aprendida"
-          : (r.predio || r.andar || r.espaco)
-            ? (r.origem_predio_andar_espaco || "planilha")
+          : r.predio || r.andar || r.espaco
+            ? r.origem_predio_andar_espaco || "planilha"
             : applied.origem_predio_andar_espaco;
 
-        const revisao = (finalOrigemLoc === "pendente")
-          || (!r.atividade_manual && applied.origem_equipe === "pendente");
+        const revisao =
+          finalOrigemLoc === "pendente" ||
+          (!r.atividade_manual && applied.origem_equipe === "pendente");
 
         if (
           finalPredio !== r.predio ||
@@ -692,7 +789,10 @@ function BackorderPage() {
             };
             if (p.atividade) upd.atividade = p.atividade;
             if (p.equipe) upd.equipe = p.equipe;
-            return supabase.from("backorder_os").update(upd as never).eq("os", p.os);
+            return supabase
+              .from("backorder_os")
+              .update(upd as never)
+              .eq("os", p.os);
           }),
         );
       }
@@ -716,7 +816,9 @@ function BackorderPage() {
       const json = JSON.parse(text);
       const keywords: DynamicRule[] = Array.isArray(json?.keywords) ? json.keywords : [];
       if (keywords.length === 0) {
-        toast.warning("Nenhuma regra encontrada no arquivo (esperado: chave \"keywords\").", { id: t });
+        toast.warning('Nenhuma regra encontrada no arquivo (esperado: chave "keywords").', {
+          id: t,
+        });
         return;
       }
       const rows = keywords.map((k) => ({
@@ -731,7 +833,10 @@ function BackorderPage() {
         .upsert(rows, { onConflict: "equipe,palavra_chave,fonte" });
       if (error) throw error;
       await loadClassifierRules();
-      toast.success(`${rows.length} regra(s) importada(s). Rode "Reprocessar Chamados" para aplicar.`, { id: t });
+      toast.success(
+        `${rows.length} regra(s) importada(s). Rode "Reprocessar Chamados" para aplicar.`,
+        { id: t },
+      );
     } catch (e: any) {
       console.error(e);
       toast.error(e?.message ?? "Falha ao importar instrução", { id: t });
@@ -755,7 +860,10 @@ function BackorderPage() {
       const faltantes = new Set<string>();
       let semAtivo = 0;
       for (const r of (allRows ?? []) as Array<{ os: string; ativo: string }>) {
-        if (!r.ativo) { semAtivo++; continue; }
+        if (!r.ativo) {
+          semAtivo++;
+          continue;
+        }
         const p5 = r.ativo.slice(0, 5).toUpperCase();
         if (!codes.has(p5)) faltantes.add(p5);
       }
@@ -772,9 +880,6 @@ function BackorderPage() {
       toast.error(e?.message ?? "Falha ao validar base", { id: t });
     }
   }
-
-
-
 
   async function toggleFinalizado(r: BOSRow, next: boolean) {
     const { error } = await supabase
@@ -798,7 +903,12 @@ function BackorderPage() {
     const equipe = CATEGORIA_TO_EQUIPE[atividade];
     const { error } = await supabase
       .from("backorder_os")
-      .update({ atividade, atividade_manual: true, equipe, origem_equipe: "regra_aprendida" } as never)
+      .update({
+        atividade,
+        atividade_manual: true,
+        equipe,
+        origem_equipe: "regra_aprendida",
+      } as never)
       .eq("os", r.os);
     if (error) return toast.error("Falha ao atualizar categoria");
     await supabase
@@ -822,21 +932,31 @@ function BackorderPage() {
   }
 
   async function classificarEquipes(opts: { incluirManual: boolean }) {
-    const base = abertas.filter((r) => opts.incluirManual ? true : !r.atividade_manual);
+    const base = abertas.filter((r) => (opts.incluirManual ? true : !r.atividade_manual));
     if (base.length === 0) {
-      toast.info(opts.incluirManual ? "Sem OS abertas." : "Todas as OS abertas já têm equipe definida manualmente.");
+      toast.info(
+        opts.incluirManual
+          ? "Sem OS abertas."
+          : "Todas as OS abertas já têm equipe definida manualmente.",
+      );
       return;
     }
     setAiReclassifying(true);
     const toastId = toast.loading(`Classificando ${base.length} OS…`);
     try {
-      const patches: Array<{ os: string; atividade: Categoria; equipe: string; ambiguo: boolean }> = [];
+      const patches: Array<{ os: string; atividade: Categoria; equipe: string; ambiguo: boolean }> =
+        [];
       for (const row of base) {
         const result = classifyTeamByText(row.nome ?? "");
         const cat = result.equipe as Categoria;
         const nextEquipe = CATEGORIA_TO_EQUIPE[cat];
         // Só grava se mudou algo (atividade OU flag de revisão)
-        if (cat === row.atividade && row.equipe === nextEquipe && (row.revisao_manual ?? false) === result.ambiguo) continue;
+        if (
+          cat === row.atividade &&
+          row.equipe === nextEquipe &&
+          (row.revisao_manual ?? false) === result.ambiguo
+        )
+          continue;
         patches.push({ os: row.os, atividade: cat, equipe: nextEquipe, ambiguo: result.ambiguo });
       }
       // Persiste em batches paralelos de 25
@@ -863,7 +983,13 @@ function BackorderPage() {
         prev.map((x) => {
           const p = patches.find((pp) => pp.os === x.os);
           return p
-            ? { ...x, atividade: p.atividade, equipe: p.equipe, atividade_manual: false, revisao_manual: p.ambiguo }
+            ? {
+                ...x,
+                atividade: p.atividade,
+                equipe: p.equipe,
+                atividade_manual: false,
+                revisao_manual: p.ambiguo,
+              }
             : x;
         }),
       );
@@ -880,8 +1006,6 @@ function BackorderPage() {
       setReclassifyOpen(false);
     }
   }
-
-
 
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
     // Se o "ativo" mudar e nenhum override manual for enviado para
@@ -943,17 +1067,15 @@ function BackorderPage() {
 
     if (ativoKey && locChanged && (willBePredio || willBeAndar || willBeEspaco)) {
       const { data: user } = await supabase.auth.getUser();
-      const { error: lerr } = await supabase
-        .from("regras_aprendidas_localizacao")
-        .insert({
-          codigo_ativo: ativoKey,
-          predio: willBePredio ?? "",
-          andar: willBeAndar ?? "",
-          espaco: willBeEspaco ?? "",
-          origem_chamado_os: r.os,
-          criado_por: user.user?.id ?? null,
-          ativo: true,
-        });
+      const { error: lerr } = await supabase.from("regras_aprendidas_localizacao").insert({
+        codigo_ativo: ativoKey,
+        predio: willBePredio ?? "",
+        andar: willBeAndar ?? "",
+        espaco: willBeEspaco ?? "",
+        origem_chamado_os: r.os,
+        criado_por: user.user?.id ?? null,
+        ativo: true,
+      });
       if (!lerr) {
         // Aplica em cascata a outros chamados com o mesmo ativo
         const { data: siblings } = await supabase
@@ -976,7 +1098,9 @@ function BackorderPage() {
             .in("os", others);
         }
         void loadLearnedRules();
-        toast.success(`Regra aprendida para ativo ${ativoKey}${others.length ? ` (aplicada a +${others.length} chamado(s))` : ""}`);
+        toast.success(
+          `Regra aprendida para ativo ${ativoKey}${others.length ? ` (aplicada a +${others.length} chamado(s))` : ""}`,
+        );
       }
     }
 
@@ -996,7 +1120,10 @@ function BackorderPage() {
     // Marca chamado como resolvido (sai da revisão) quando local + equipe estão preenchidos
     const nowHasLoc = !!(willBePredio || willBeAndar || willBeEspaco);
     if (r.revisao_manual && nowHasLoc) {
-      await supabase.from("backorder_os").update({ revisao_manual: false } as never).eq("os", r.os);
+      await supabase
+        .from("backorder_os")
+        .update({ revisao_manual: false } as never)
+        .eq("os", r.os);
     }
 
     setRows((prev) =>
@@ -1013,7 +1140,6 @@ function BackorderPage() {
     toast.success("Chamado atualizado");
     return true;
   }
-
 
   async function exportar() {
     const rowsExp: BackorderRow[] = filtered.map((r) => ({
@@ -1041,7 +1167,6 @@ function BackorderPage() {
 
     downloadBlob(blob, `PROGRAMACAO_BACKORDER_${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
-
 
   // ----- Motor de priorização -----
 
@@ -1215,7 +1340,7 @@ function BackorderPage() {
   const [selectedBackorder, setSelectedBackorder] = useState<BOSRow | null>(null);
   // Mantém o item aberto sincronizado com o estado global (após salvar/finalizar).
   const selectedBackorderLive = useMemo(
-    () => (selectedBackorder ? rows.find((r) => r.os === selectedBackorder.os) ?? null : null),
+    () => (selectedBackorder ? (rows.find((r) => r.os === selectedBackorder.os) ?? null) : null),
     [selectedBackorder, rows],
   );
 
@@ -1223,10 +1348,7 @@ function BackorderPage() {
     setClearing(true);
     const t = toast.loading("Limpando todos os chamados...");
     try {
-      const { error } = await supabase
-        .from("backorder_os")
-        .delete()
-        .not("os", "is", null);
+      const { error } = await supabase.from("backorder_os").delete().not("os", "is", null);
       if (error) throw error;
       setRows([]);
       setSelectedBackorder(null);
@@ -1272,13 +1394,22 @@ function BackorderPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>Importação</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => assetsInputRef.current?.click()} disabled={importing}>
+              <DropdownMenuItem
+                onClick={() => assetsInputRef.current?.click()}
+                disabled={importing}
+              >
                 <Database className="mr-2 h-4 w-4" /> Atualizar Base de Ativos
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => instrucaoInputRef.current?.click()} disabled={importing}>
+              <DropdownMenuItem
+                onClick={() => instrucaoInputRef.current?.click()}
+                disabled={importing}
+              >
                 <Upload className="mr-2 h-4 w-4" /> Importar Instrução
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => backorderInputRef.current?.click()} disabled={importing}>
+              <DropdownMenuItem
+                onClick={() => backorderInputRef.current?.click()}
+                disabled={importing}
+              >
                 <Upload className="mr-2 h-4 w-4" /> Importar Backorder
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -1347,8 +1478,8 @@ function BackorderPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação remove permanentemente todos os {rows.length} chamado(s) de backorder
-                  e reseta os filtros da tela. Não é possível desfazer.
+                  Esta ação remove permanentemente todos os {rows.length} chamado(s) de backorder e
+                  reseta os filtros da tela. Não é possível desfazer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -1399,21 +1530,27 @@ function BackorderPage() {
                   <span>
                     <span className="font-medium">Reclassificar tudo</span>
                     <span className="block text-xs text-muted-foreground">
-                      Inclui chamados que você já ajustou manualmente. Por padrão, o sistema
-                      só toca em chamados sem equipe definida.
+                      Inclui chamados que você já ajustou manualmente. Por padrão, o sistema só toca
+                      em chamados sem equipe definida.
                     </span>
                   </span>
                 </label>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setReclassifyOpen(false)} disabled={aiReclassifying}>
+                <Button
+                  variant="outline"
+                  onClick={() => setReclassifyOpen(false)}
+                  disabled={aiReclassifying}
+                >
                   Cancelar
                 </Button>
                 <Button
                   onClick={() => void classificarEquipes({ incluirManual: reclassifyAll })}
                   disabled={aiReclassifying}
                 >
-                  <BrainCircuit className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`} />
+                  <BrainCircuit
+                    className={`mr-2 h-4 w-4 ${aiReclassifying ? "animate-pulse" : ""}`}
+                  />
                   {aiReclassifying ? "Classificando..." : "Classificar"}
                 </Button>
               </DialogFooter>
@@ -1426,14 +1563,19 @@ function BackorderPage() {
         <TabsList className="mb-4 flex flex-wrap">
           <TabsTrigger value="tabela">
             <PackageX className="mr-1.5 h-3.5 w-3.5" /> Em aberto
-            <Badge variant="secondary" className="ml-2">{abertas.length}</Badge>
+            <Badge variant="secondary" className="ml-2">
+              {abertas.length}
+            </Badge>
           </TabsTrigger>
           <TabsTrigger value="backorder">
             <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Backorder
             <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="finalizados">
-            Finalizados <Badge variant="secondary" className="ml-2">{finalizadas.length}</Badge>
+            Finalizados{" "}
+            <Badge variant="secondary" className="ml-2">
+              {finalizadas.length}
+            </Badge>
           </TabsTrigger>
           <TabsTrigger value="dashboard">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
@@ -1461,7 +1603,6 @@ function BackorderPage() {
             onSelect={setSelectedBackorder}
             assetsMap={assetsMap}
           />
-
         </TabsContent>
 
         <TabsContent value="backorder">
@@ -1516,16 +1657,21 @@ function BackorderPage() {
               toast.success("Regra aprendida removida");
             }}
             onToggleLearnedLoc={async (id, ativo) => {
-              await supabase.from("regras_aprendidas_localizacao").update({ ativo } as never).eq("id", id);
+              await supabase
+                .from("regras_aprendidas_localizacao")
+                .update({ ativo } as never)
+                .eq("id", id);
               await loadLearnedRules();
             }}
             onToggleLearnedTeam={async (id, ativo) => {
-              await supabase.from("regras_aprendidas_equipe").update({ ativo } as never).eq("id", id);
+              await supabase
+                .from("regras_aprendidas_equipe")
+                .update({ ativo } as never)
+                .eq("id", id);
               await loadLearnedRules();
             }}
           />
         </TabsContent>
-
       </Tabs>
       <PriorityConfigDialog
         open={configOpen}
@@ -1563,7 +1709,12 @@ function LocationCell({
   className?: string;
   title?: string;
 }) {
-  if (value) return <span className={className} title={title ?? value}>{value}</span>;
+  if (value)
+    return (
+      <span className={className} title={title ?? value}>
+        {value}
+      </span>
+    );
   if (!ativo) return <span className="text-muted-foreground">—</span>;
   const info = describeAtivo(assetsMap, ativo);
   if (!info.found) {
@@ -1732,7 +1883,8 @@ function TableView({
                     key={r.os}
                     onClick={(e) => {
                       const target = e.target as HTMLElement;
-                      if (target.closest('button, input, [role="combobox"], [role="checkbox"], a')) return;
+                      if (target.closest('button, input, [role="combobox"], [role="checkbox"], a'))
+                        return;
                       onSelect?.(r);
                     }}
                     className={
@@ -1744,7 +1896,6 @@ function TableView({
                           : "hover:bg-muted/40")
                     }
                   >
-
                     <TableCell>
                       <Checkbox
                         checked={r.finalizado}
@@ -1756,13 +1907,31 @@ function TableView({
                       {r.nome}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs">
-                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.predio} field="predio" />
+                      <LocationCell
+                        assetsMap={assetsMap}
+                        ativo={r.ativo}
+                        value={r.predio}
+                        field="predio"
+                      />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs">
-                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.andar} field="andar" />
+                      <LocationCell
+                        assetsMap={assetsMap}
+                        ativo={r.ativo}
+                        value={r.andar}
+                        field="andar"
+                      />
                     </TableCell>
-                    <TableCell className="max-w-[240px] truncate text-xs" title={r.espaco || r.ativo}>
-                      <LocationCell assetsMap={assetsMap} ativo={r.ativo} value={r.espaco} field="espaco" />
+                    <TableCell
+                      className="max-w-[240px] truncate text-xs"
+                      title={r.espaco || r.ativo}
+                    >
+                      <LocationCell
+                        assetsMap={assetsMap}
+                        ativo={r.ativo}
+                        value={r.espaco}
+                        field="espaco"
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
@@ -1825,7 +1994,10 @@ function TableView({
                       >
                         <span
                           className="h-1.5 w-1.5 shrink-0 rounded-full"
-                          style={{ background: (EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8" }}
+                          style={{
+                            background:
+                              (EQUIPE_COR as Record<string, string>)[r.atividade] ?? "#94a3b8",
+                          }}
                         />
                         {r.equipe || "—"}
                       </span>
@@ -1856,7 +2028,6 @@ function TableView({
           </TableBody>
         </Table>
       </div>
-
     </GlassCard>
   );
 }
@@ -1924,13 +2095,7 @@ function TeamSummaryStrip({
   );
 }
 
-function FinalizadosView({
-  rows,
-  onReabrir,
-}: {
-  rows: BOSRow[];
-  onReabrir: (r: BOSRow) => void;
-}) {
+function FinalizadosView({ rows, onReabrir }: { rows: BOSRow[]; onReabrir: (r: BOSRow) => void }) {
   return (
     <GlassCard>
       <div className="overflow-x-auto rounded-xl border border-border/60">
@@ -2012,11 +2177,7 @@ function Dashboard({
   const pct = totalCorretivas === 0 ? 0 : (backorder.length / totalCorretivas) * 100;
   const dentroMeta = pct <= targetPct;
   const proximoLimite = pct > targetPct - 1 && pct <= targetPct;
-  const statusColor = dentroMeta
-    ? proximoLimite
-      ? "#F59E0B"
-      : "#10B981"
-    : "#EF4444";
+  const statusColor = dentroMeta ? (proximoLimite ? "#F59E0B" : "#10B981") : "#EF4444";
 
   // Comparativo período anterior (últimos 30 dias vs 30 anteriores) — baseia-se
   // em backorders "criadas" (data_solicitacao > 30d atrás quando aberta).
@@ -2142,7 +2303,11 @@ function Dashboard({
           </div>
           <div className="mt-2 flex justify-center">
             <Badge style={{ backgroundColor: `${statusColor}22`, color: statusColor }}>
-              {dentroMeta ? (proximoLimite ? "Próximo do limite" : "Dentro da meta") : "Acima da meta"}
+              {dentroMeta
+                ? proximoLimite
+                  ? "Próximo do limite"
+                  : "Dentro da meta"
+                : "Acima da meta"}
             </Badge>
           </div>
         </GlassCard>
@@ -2223,9 +2388,7 @@ function Dashboard({
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-5 w-5 text-red-500" />
-            <h3 className="text-sm font-bold uppercase tracking-wider">
-              Chamados Prioritários
-            </h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider">Chamados Prioritários</h3>
             <Badge className="bg-red-500 text-white">{priorityOrdered.length}</Badge>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -2240,9 +2403,7 @@ function Dashboard({
         {priorityOrdered.length === 0 ? (
           <div className="rounded-xl border border-dashed border-emerald-500/40 bg-emerald-500/5 p-8 text-center">
             <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-emerald-500" />
-            <p className="text-sm text-muted-foreground">
-              Nenhum chamado prioritário no momento.
-            </p>
+            <p className="text-sm text-muted-foreground">Nenhum chamado prioritário no momento.</p>
           </div>
         ) : (
           <PriorityScroller total={priorityOrdered.length}>
@@ -2256,8 +2417,7 @@ function Dashboard({
                     : nivel === 2
                       ? "bg-orange-500 text-white"
                       : "bg-amber-500 text-white";
-                const alertaClass =
-                  nivel >= 2 ? "alerta-alto" : nivel === 1 ? "alerta-medio" : "";
+                const alertaClass = nivel >= 2 ? "alerta-alto" : nivel === 1 ? "alerta-medio" : "";
                 return (
                   <div
                     key={r.os}
@@ -2298,9 +2458,7 @@ function Dashboard({
                         </div>
                         <div className="mt-1 flex items-start gap-1 text-xs text-red-600">
                           <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-                          <span className="line-clamp-2 break-words">
-                            {r.motivo_prioridade}
-                          </span>
+                          <span className="line-clamp-2 break-words">{r.motivo_prioridade}</span>
                         </div>
                         <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
                           Clique para ver detalhes
@@ -2327,7 +2485,6 @@ function Dashboard({
         )}
       </GlassCard>
 
-
       <PriorityDetailDialog
         row={selectedPriority}
         onClose={() => setSelectedPriority(null)}
@@ -2336,8 +2493,6 @@ function Dashboard({
           setSelectedPriority(null);
         }}
       />
-
-
 
       {/* 2.3 Gráficos analíticos */}
       <div className="grid gap-4 lg:grid-cols-3">
@@ -2369,7 +2524,14 @@ function Dashboard({
           <div className="h-[240px]">
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={propPrio} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} label>
+                <Pie
+                  data={propPrio}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={50}
+                  outerRadius={90}
+                  label
+                >
                   <Cell fill="#EF4444" />
                   <Cell fill="#3B82F6" />
                 </Pie>
@@ -2584,7 +2746,10 @@ function PriorityConfigDialog({
                   <p className="text-xs text-muted-foreground">Nenhum prédio cadastrado.</p>
                 )}
                 {draft.predios_sensiveis.map((p, i) => (
-                  <div key={i} className="grid grid-cols-12 items-center gap-2 rounded-lg border border-border/60 p-2">
+                  <div
+                    key={i}
+                    className="grid grid-cols-12 items-center gap-2 rounded-lg border border-border/60 p-2"
+                  >
                     <Input
                       className="col-span-3"
                       placeholder="Prédio (ex.: C70)"
@@ -2710,7 +2875,6 @@ function PriorityConfigDialog({
   );
 }
 
-
 // ---------- Modal de detalhes de chamado prioritário ----------
 
 function PriorityDetailDialog({
@@ -2731,7 +2895,9 @@ function PriorityDetailDialog({
       : nivel === 2
         ? "from-orange-500 via-amber-500 to-yellow-500"
         : "from-amber-400 via-yellow-400 to-amber-300";
-  const dias = row ? Math.max(0, Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000)) : 0;
+  const dias = row
+    ? Math.max(0, Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000))
+    : 0;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -2753,7 +2919,9 @@ function PriorityDetailDialog({
                   <div className="mt-1 text-sm opacity-95">{row.equipe || "Sem equipe"}</div>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <Badge className="bg-white/20 text-white backdrop-blur">{dias} dias em aberto</Badge>
+                  <Badge className="bg-white/20 text-white backdrop-blur">
+                    {dias} dias em aberto
+                  </Badge>
                   {row.termino_sla && (
                     <Badge className="bg-white/15 text-white backdrop-blur">
                       SLA: {new Date(row.termino_sla).toLocaleDateString("pt-BR")}
@@ -2851,7 +3019,16 @@ function PriorityScroller({ total, children }: { total: number; children: ReactN
     const p = max <= 0 ? 0 : Math.min(1, Math.max(0, el.scrollTop / max));
     setProgress(p);
     setShowTop(el.scrollTop > 160);
-    const approx = Math.min(total, Math.max(1, Math.ceil((el.scrollTop + el.clientHeight * 0.5) / (el.clientHeight || 1) * (total / Math.max(1, el.scrollHeight / (el.clientHeight || 1))))));
+    const approx = Math.min(
+      total,
+      Math.max(
+        1,
+        Math.ceil(
+          ((el.scrollTop + el.clientHeight * 0.5) / (el.clientHeight || 1)) *
+            (total / Math.max(1, el.scrollHeight / (el.clientHeight || 1))),
+        ),
+      ),
+    );
     setVisibleIndex(Number.isFinite(approx) ? approx : 1);
   }, [total]);
 
@@ -2905,9 +3082,7 @@ function PriorityScroller({ total, children }: { total: number; children: ReactN
 
       <button
         type="button"
-        onClick={() =>
-          scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })
-        }
+        onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
         className="priority-scroll-top"
         data-visible={showTop ? "true" : "false"}
         aria-label="Voltar ao topo da lista"
@@ -3091,7 +3266,10 @@ function BackorderDetailDialog({
   }
 
   const merged: BOSRow = { ...row, ...draft } as BOSRow;
-  const dias = Math.max(0, Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000));
+  const dias = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(row.data_solicitacao).getTime()) / 86400000),
+  );
   const dirty = Object.keys(draft).length > 0;
 
   const bg =
@@ -3255,9 +3433,15 @@ function FieldBlock({
   );
 }
 
-
-
-const EQUIPES_OPCOES: Categoria[] = ["Civil", "Chaveiro", "Refrigeração", "Elétrica", "Hidráulica", "Pintura", "Outros"];
+const EQUIPES_OPCOES: Categoria[] = [
+  "Civil",
+  "Chaveiro",
+  "Refrigeração",
+  "Elétrica",
+  "Hidráulica",
+  "Pintura",
+  "Outros",
+];
 
 function RevisaoPanel({
   rows,
@@ -3278,7 +3462,13 @@ function RevisaoPanel({
   rows: BOSRow[];
   rules: RuleRow[];
   onSelectRow: (r: BOSRow) => void;
-  onSaveRule: (r: Partial<RuleRow> & { equipe: string; palavra_chave: string; fonte: "descricao" | "categoria" }) => Promise<void>;
+  onSaveRule: (
+    r: Partial<RuleRow> & {
+      equipe: string;
+      palavra_chave: string;
+      fonte: "descricao" | "categoria";
+    },
+  ) => Promise<void>;
   onDeleteRule: (id: string) => Promise<void>;
   onReprocessar: () => Promise<void>;
   importing: boolean;
@@ -3300,7 +3490,12 @@ function RevisaoPanel({
     }
     return m;
   }, [allRows]);
-  const [novo, setNovo] = useState<{ equipe: Categoria; palavra_chave: string; fonte: "descricao" | "categoria"; prioridade: number }>({
+  const [novo, setNovo] = useState<{
+    equipe: Categoria;
+    palavra_chave: string;
+    fonte: "descricao" | "categoria";
+    prioridade: number;
+  }>({
     equipe: "Civil",
     palavra_chave: "",
     fonte: "descricao",
@@ -3343,8 +3538,12 @@ function RevisaoPanel({
                   <TableRow key={r.os}>
                     <TableCell className="font-mono text-xs">{r.os}</TableCell>
                     <TableCell className="font-mono text-xs">{r.ativo}</TableCell>
-                    <TableCell className="max-w-[420px] truncate text-sm" title={r.nome}>{r.nome}</TableCell>
-                    <TableCell><Badge variant="secondary">{r.atividade}</Badge></TableCell>
+                    <TableCell className="max-w-[420px] truncate text-sm" title={r.nome}>
+                      {r.nome}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{r.atividade}</Badge>
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
                       {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") || "—"}
                     </TableCell>
@@ -3365,16 +3564,25 @@ function RevisaoPanel({
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Regras de classificação de equipe</h3>
           <p className="text-sm text-muted-foreground">
-            Palavras-chave avaliadas em ordem de prioridade (menor número = maior prioridade).
-            A primeira regra que casar define a equipe do chamado.
+            Palavras-chave avaliadas em ordem de prioridade (menor número = maior prioridade). A
+            primeira regra que casar define a equipe do chamado.
           </p>
         </div>
 
         <div className="mb-4 grid grid-cols-1 gap-2 rounded border bg-muted/30 p-3 md:grid-cols-[1fr_1.5fr_1fr_100px_auto]">
-          <Select value={novo.equipe} onValueChange={(v) => setNovo({ ...novo, equipe: v as Categoria })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={novo.equipe}
+            onValueChange={(v) => setNovo({ ...novo, equipe: v as Categoria })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {EQUIPES_OPCOES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+              {EQUIPES_OPCOES.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {e}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Input
@@ -3382,8 +3590,13 @@ function RevisaoPanel({
             value={novo.palavra_chave}
             onChange={(e) => setNovo({ ...novo, palavra_chave: e.target.value })}
           />
-          <Select value={novo.fonte} onValueChange={(v) => setNovo({ ...novo, fonte: v as "descricao" | "categoria" })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={novo.fonte}
+            onValueChange={(v) => setNovo({ ...novo, fonte: v as "descricao" | "categoria" })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="descricao">Descrição</SelectItem>
               <SelectItem value="categoria">Categoria</SelectItem>
@@ -3428,7 +3641,9 @@ function RevisaoPanel({
               {rules.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-mono text-xs">{r.prioridade}</TableCell>
-                  <TableCell><Badge variant="outline">{r.equipe}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{r.equipe}</Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-sm">{r.palavra_chave}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{r.fonte}</TableCell>
                   <TableCell>
@@ -3453,8 +3668,8 @@ function RevisaoPanel({
         <div className="mb-4">
           <h3 className="text-lg font-semibold">Regras aprendidas por Ativo</h3>
           <p className="text-sm text-muted-foreground">
-            Correções manuais de Prédio/Andar/Espaço e Equipe viram regras permanentes,
-            aplicadas automaticamente aos próximos chamados do mesmo ativo.
+            Correções manuais de Prédio/Andar/Espaço e Equipe viram regras permanentes, aplicadas
+            automaticamente aos próximos chamados do mesmo ativo.
           </p>
         </div>
 
@@ -3541,7 +3756,9 @@ function RevisaoPanel({
               {learnedTeam.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell className="font-mono text-xs">{r.codigo_ativo ?? "—"}</TableCell>
-                  <TableCell><Badge variant="outline">{r.equipe}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{r.equipe}</Badge>
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {r.origem_chamado_os ?? "—"}
                   </TableCell>
@@ -3549,7 +3766,9 @@ function RevisaoPanel({
                     {new Date(r.criado_em).toLocaleString("pt-BR")}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Badge variant="outline">{r.codigo_ativo ? (countByAtivo.get(r.codigo_ativo) ?? 0) : 0}</Badge>
+                    <Badge variant="outline">
+                      {r.codigo_ativo ? (countByAtivo.get(r.codigo_ativo) ?? 0) : 0}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Checkbox
@@ -3571,4 +3790,3 @@ function RevisaoPanel({
     </div>
   );
 }
-

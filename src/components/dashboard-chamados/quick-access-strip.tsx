@@ -14,14 +14,62 @@ import { GlassCard } from "@/components/glass-card";
 import { useMyAccess } from "@/hooks/use-my-access";
 
 const quickModules = [
-  { key: "preventiva", title: "Preventiva", to: "/preventiva", icon: CalendarClock, tint: "text-sky-600 dark:text-sky-400" },
-  { key: "corretiva", title: "Corretiva", to: "/corretiva", icon: Wrench, tint: "text-red-600 dark:text-red-400" },
-  { key: "backorder", title: "Backorder", to: "/backorder", icon: AlertTriangle, tint: "text-amber-600 dark:text-amber-400" },
-  { key: "apontamentos", title: "Apontamentos", to: "/apontamentos", icon: Droplets, tint: "text-cyan-600 dark:text-cyan-400" },
-  { key: "apontamentos", title: "Limpeza", to: "/apontamentos", icon: SprayCan, tint: "text-emerald-600 dark:text-emerald-400" },
-  { key: "apontamentos", title: "Jardinagem", to: "/apontamentos", icon: Trees, tint: "text-green-600 dark:text-green-400" },
-  { key: "painel-legal", title: "Itens Legais", to: "/painel-legal", icon: ShieldCheck, tint: "text-purple-600 dark:text-purple-400" },
-  { key: "seguranca-trabalho", title: "Segurança", to: "/seguranca-trabalho", icon: HardHat, tint: "text-orange-600 dark:text-orange-400" },
+  {
+    key: "preventiva",
+    title: "Preventiva",
+    to: "/preventiva",
+    icon: CalendarClock,
+    tint: "text-sky-600 dark:text-sky-400",
+  },
+  {
+    key: "corretiva",
+    title: "Corretiva",
+    to: "/corretiva",
+    icon: Wrench,
+    tint: "text-red-600 dark:text-red-400",
+  },
+  {
+    key: "backorder",
+    title: "Backorder",
+    to: "/backorder",
+    icon: AlertTriangle,
+    tint: "text-amber-600 dark:text-amber-400",
+  },
+  {
+    key: "apontamentos",
+    title: "Apontamentos",
+    to: "/apontamentos",
+    icon: Droplets,
+    tint: "text-cyan-600 dark:text-cyan-400",
+  },
+  {
+    key: "apontamentos",
+    title: "Limpeza",
+    to: "/apontamentos",
+    icon: SprayCan,
+    tint: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    key: "apontamentos",
+    title: "Jardinagem",
+    to: "/apontamentos",
+    icon: Trees,
+    tint: "text-green-600 dark:text-green-400",
+  },
+  {
+    key: "painel-legal",
+    title: "Itens Legais",
+    to: "/painel-legal",
+    icon: ShieldCheck,
+    tint: "text-purple-600 dark:text-purple-400",
+  },
+  {
+    key: "seguranca-trabalho",
+    title: "Segurança",
+    to: "/seguranca-trabalho",
+    icon: HardHat,
+    tint: "text-orange-600 dark:text-orange-400",
+  },
 ] as const;
 
 export function QuickAccessStrip() {

@@ -82,10 +82,7 @@ export async function fetchLegacyAssets(): Promise<AssetRecord[]> {
 }
 
 export async function setActiveCatalog(catalogId: string) {
-  const { error } = await db
-    .from("asset_catalogs")
-    .update({ is_active: true })
-    .eq("id", catalogId);
+  const { error } = await db.from("asset_catalogs").update({ is_active: true }).eq("id", catalogId);
   if (error) throw error;
 }
 

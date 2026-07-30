@@ -119,9 +119,7 @@ export function VehicleEditDialog({ vehicle }: { vehicle: Vehicle }) {
               autoComplete="off"
             />
             {!plateOk && (
-              <p className="mt-1 text-xs text-rose-400">
-                Placa inválida. Use ABC-1234 ou ABC1D23.
-              </p>
+              <p className="mt-1 text-xs text-rose-400">Placa inválida. Use ABC-1234 ou ABC1D23.</p>
             )}
           </div>
 
@@ -185,7 +183,10 @@ export function VehicleEditDialog({ vehicle }: { vehicle: Vehicle }) {
               inputMode="numeric"
               value={form.year_manufacture}
               onChange={(e) =>
-                setForm((f) => ({ ...f, year_manufacture: e.target.value.replace(/\D/g, "").slice(0, 4) }))
+                setForm((f) => ({
+                  ...f,
+                  year_manufacture: e.target.value.replace(/\D/g, "").slice(0, 4),
+                }))
               }
             />
           </div>
@@ -196,7 +197,10 @@ export function VehicleEditDialog({ vehicle }: { vehicle: Vehicle }) {
               inputMode="numeric"
               value={form.year_model}
               onChange={(e) =>
-                setForm((f) => ({ ...f, year_model: e.target.value.replace(/\D/g, "").slice(0, 4) }))
+                setForm((f) => ({
+                  ...f,
+                  year_model: e.target.value.replace(/\D/g, "").slice(0, 4),
+                }))
               }
             />
           </div>

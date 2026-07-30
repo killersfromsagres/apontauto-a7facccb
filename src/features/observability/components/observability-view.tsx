@@ -37,7 +37,6 @@ const jobTone: Record<string, string> = {
   failed: statusTone.falha,
 };
 
-
 function fmt(dt: string | null | undefined) {
   if (!dt) return "—";
   const d = new Date(dt);
@@ -72,7 +71,6 @@ export function ObservabilityView() {
     refetchInterval: 60_000,
     enabled: canSee,
   });
-
 
   const data = snapshot.data;
   const falhando = useMemo(
@@ -215,9 +213,7 @@ export function ObservabilityView() {
               <Badge variant="outline">{(jobRuns.data ?? []).length}</Badge>
             </div>
             {(jobRuns.data ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma execução registrada ainda.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma execução registrada ainda.</p>
             )}
             <div className="space-y-1">
               {(jobRuns.data ?? []).map((r) => (
@@ -234,16 +230,17 @@ export function ObservabilityView() {
                       {r.error_message ? ` · ${r.error_message}` : ""}
                     </div>
                   </div>
-                  <Badge className={jobTone[r.status] ?? statusTone.desconhecido}>
-                    {r.status}
-                  </Badge>
+                  <Badge className={jobTone[r.status] ?? statusTone.desconhecido}>{r.status}</Badge>
                 </div>
               ))}
             </div>
           </GlassCard>
 
           {(data?.jobFailures ?? []).map((j) => (
-            <GlassCard key={`${j.source}-${j.id}`} className="flex flex-wrap items-center justify-between gap-2">
+            <GlassCard
+              key={`${j.source}-${j.id}`}
+              className="flex flex-wrap items-center justify-between gap-2"
+            >
               <div className="min-w-0">
                 <div className="font-medium">
                   {j.source} — {j.reference}
@@ -254,7 +251,6 @@ export function ObservabilityView() {
             </GlassCard>
           ))}
         </TabsContent>
-
 
         <TabsContent value="integracoes" className="grid gap-3 pt-3 sm:grid-cols-2">
           {(data?.integrations ?? []).map((i) => (

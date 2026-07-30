@@ -195,7 +195,7 @@ export async function exportControleMateriais(params: {
   resumo.mergeCells(r, 1, r, 5);
   const note = resumo.getCell(r, 1);
   note.value =
-    "IMPORTANTE: preencha a aba \"Centro de Custo\" antes de encaminhar a solicitação de compra à área de Facilities.";
+    'IMPORTANTE: preencha a aba "Centro de Custo" antes de encaminhar a solicitação de compra à área de Facilities.';
   note.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnFg } };
   note.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.warnBg } };
   note.alignment = { vertical: "middle", indent: 1 };
@@ -228,12 +228,34 @@ export async function exportControleMateriais(params: {
 
   const wsPecas = wb.addWorksheet("Peças", { pageSetup: { orientation: "landscape" } });
   wsPecas.columns = [
-    { width: 14 }, { width: 12 }, { width: 34 }, { width: 14 }, { width: 10 }, { width: 18 },
-    { width: 16 }, { width: 34 }, { width: 18 }, { width: 7 }, { width: 12 }, { width: 14 },
-    { width: 20 }, { width: 18 }, { width: 16 }, { width: 18 }, { width: 14 }, { width: 22 },
-    { width: 18 }, { width: 30 }, { width: 18 },
+    { width: 14 },
+    { width: 12 },
+    { width: 34 },
+    { width: 14 },
+    { width: 10 },
+    { width: 18 },
+    { width: 16 },
+    { width: 34 },
+    { width: 18 },
+    { width: 7 },
+    { width: 12 },
+    { width: 14 },
+    { width: 20 },
+    { width: 18 },
+    { width: 16 },
+    { width: 18 },
+    { width: 14 },
+    { width: 22 },
+    { width: 18 },
+    { width: 30 },
+    { width: 18 },
   ];
-  titleBlock(wsPecas, "Pedidos de Peças", `Refrigeração + Corretiva · ${pecas.length} registros`, pecaHeaders.length);
+  titleBlock(
+    wsPecas,
+    "Pedidos de Peças",
+    `Refrigeração + Corretiva · ${pecas.length} registros`,
+    pecaHeaders.length,
+  );
   headerRow(wsPecas, 4, pecaHeaders);
 
   pecas.forEach((i, idx) => {
@@ -290,11 +312,28 @@ export async function exportControleMateriais(params: {
   ];
   const wsDef = wb.addWorksheet("Defeitos", { pageSetup: { orientation: "landscape" } });
   wsDef.columns = [
-    { width: 14 }, { width: 12 }, { width: 34 }, { width: 14 }, { width: 10 }, { width: 18 },
-    { width: 16 }, { width: 42 }, { width: 14 }, { width: 14 }, { width: 20 }, { width: 18 },
-    { width: 22 }, { width: 30 }, { width: 18 },
+    { width: 14 },
+    { width: 12 },
+    { width: 34 },
+    { width: 14 },
+    { width: 10 },
+    { width: 18 },
+    { width: 16 },
+    { width: 42 },
+    { width: 14 },
+    { width: 14 },
+    { width: 20 },
+    { width: 18 },
+    { width: 22 },
+    { width: 30 },
+    { width: 18 },
   ];
-  titleBlock(wsDef, "Defeitos Apontados", `Refrigeração + Corretiva · ${defeitos.length} registros`, defHeaders.length);
+  titleBlock(
+    wsDef,
+    "Defeitos Apontados",
+    `Refrigeração + Corretiva · ${defeitos.length} registros`,
+    defHeaders.length,
+  );
   headerRow(wsDef, 4, defHeaders);
   defeitos.forEach((i, idx) => {
     wsDef.getRow(5 + idx).values = [
@@ -336,8 +375,14 @@ export async function exportControleMateriais(params: {
     pageSetup: { orientation: "landscape" },
   });
   wsCC.columns = [
-    { width: 28 }, { width: 30 }, { width: 22 }, { width: 14 }, { width: 44 },
-    { width: 16 }, { width: 16 }, { width: 34 },
+    { width: 28 },
+    { width: 30 },
+    { width: 22 },
+    { width: 14 },
+    { width: 44 },
+    { width: 16 },
+    { width: 16 },
+    { width: 34 },
   ];
   titleBlock(
     wsCC,
@@ -404,7 +449,12 @@ export async function exportControleMateriais(params: {
   ];
   const wsEnv = wb.addWorksheet("Envios Facilities", { pageSetup: { orientation: "landscape" } });
   wsEnv.columns = [
-    { width: 22 }, { width: 20 }, { width: 26 }, { width: 16 }, { width: 14 }, { width: 34 },
+    { width: 22 },
+    { width: 20 },
+    { width: 26 },
+    { width: 16 },
+    { width: 14 },
+    { width: 34 },
     { width: 60 },
   ];
   titleBlock(

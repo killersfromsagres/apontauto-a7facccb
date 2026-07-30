@@ -55,8 +55,7 @@ export const Route = createFileRoute("/_authenticated/base-ativos")({
       { title: "Base de Ativos | Apontauto" },
       {
         name: "description",
-        content:
-          "Importe, versione e ative o catálogo de ativos usado por todos os módulos PCM.",
+        content: "Importe, versione e ative o catálogo de ativos usado por todos os módulos PCM.",
       },
       { property: "og:title", content: "Base de Ativos | Apontauto" },
       {
@@ -70,14 +69,7 @@ export const Route = createFileRoute("/_authenticated/base-ativos")({
   component: BaseAtivosPage,
 });
 
-const FIELDS: AssetField[] = [
-  "code",
-  "name",
-  "level",
-  "parentCode",
-  "parentName",
-  "businessUnit",
-];
+const FIELDS: AssetField[] = ["code", "name", "level", "parentCode", "parentName", "businessUnit"];
 
 const ISSUE_LABEL: Record<CatalogValidationIssue["type"], string> = {
   "empty-code": "Código vazio",
@@ -197,8 +189,7 @@ function BaseAtivosPage() {
     const header = "Tipo;Linha;Codigo;Detalhe\n";
     const body = validation.issues
       .map(
-        (i) =>
-          `${ISSUE_LABEL[i.type]};${i.row};${i.code};${(i.detail ?? "").replace(/;/g, ",")}`,
+        (i) => `${ISSUE_LABEL[i.type]};${i.row};${i.code};${(i.detail ?? "").replace(/;/g, ",")}`,
       )
       .join("\n");
     downloadBlob(
@@ -217,8 +208,8 @@ function BaseAtivosPage() {
         {!isAdmin && (
           <GlassCard className="flex items-center gap-3 p-4 text-sm text-muted-foreground">
             <TriangleAlert className="h-4 w-4 shrink-0 text-amber-400" />
-            Somente administradores podem importar ou ativar catálogos. Você pode
-            visualizar as versões existentes.
+            Somente administradores podem importar ou ativar catálogos. Você pode visualizar as
+            versões existentes.
           </GlassCard>
         )}
 
@@ -265,9 +256,7 @@ function BaseAtivosPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4 text-primary" />
-                  <h3 className="font-display text-lg font-semibold">
-                    Mapeamento de colunas
-                  </h3>
+                  <h3 className="font-display text-lg font-semibold">Mapeamento de colunas</h3>
                 </div>
                 {preview.sheetNames.length > 1 && (
                   <div className="flex items-center gap-2">
@@ -330,9 +319,7 @@ function BaseAtivosPage() {
             {/* ---------- Relatório ---------- */}
             <GlassCard className="space-y-4 p-4 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="font-display text-lg font-semibold">
-                  Relatório de validação
-                </h3>
+                <h3 className="font-display text-lg font-semibold">Relatório de validação</h3>
                 {validation.issues.length > 0 && (
                   <Button size="sm" variant="outline" onClick={downloadIssues}>
                     <Download className="mr-2 h-4 w-4" /> Baixar inconsistências
@@ -415,9 +402,7 @@ function BaseAtivosPage() {
         {/* ---------- Versões ---------- */}
         <GlassCard className="space-y-3 p-4 sm:p-6">
           <h3 className="font-display text-lg font-semibold">Catálogos</h3>
-          {catalogs.isLoading && (
-            <p className="text-sm text-muted-foreground">Carregando…</p>
-          )}
+          {catalogs.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
           <div className="space-y-2">
             {(catalogs.data ?? []).map((c) => (
               <div
@@ -461,9 +446,7 @@ function BaseAtivosPage() {
               </div>
             ))}
             {!catalogs.isLoading && (catalogs.data ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Nenhum catálogo importado ainda.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhum catálogo importado ainda.</p>
             )}
           </div>
         </GlassCard>

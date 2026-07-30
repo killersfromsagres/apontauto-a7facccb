@@ -6,7 +6,12 @@
  * Sem acesso a rede — assim tudo é testável e reaproveitável nas exportações.
  */
 
-import type { FiltroSolicitacao, Ponto, Visita, VisitaStatus } from "@/features/water-delivery/queries/api";
+import type {
+  FiltroSolicitacao,
+  Ponto,
+  Visita,
+  VisitaStatus,
+} from "@/features/water-delivery/queries/api";
 import type { FiltroAtivo } from "@/features/water-delivery/filters/filtros";
 import type { RotaOcorrencia } from "@/features/water-delivery/mutations/execucao";
 import type { Rota } from "@/features/water-delivery/queries/programacao";
@@ -21,7 +26,9 @@ export const pct = (parte: number, total: number) =>
   total > 0 ? Math.round((parte / total) * 1000) / 10 : 0;
 
 export const media = (valores: number[]) =>
-  valores.length ? Math.round((valores.reduce((a, b) => a + b, 0) / valores.length) * 100) / 100 : 0;
+  valores.length
+    ? Math.round((valores.reduce((a, b) => a + b, 0) / valores.length) * 100) / 100
+    : 0;
 
 /** Diferença em minutos entre dois instantes ISO (null quando faltar dado). */
 export function minutosEntre(inicio?: string | null, fim?: string | null): number | null {
@@ -99,7 +106,12 @@ export interface EntregaIndicadores {
   motivos: Array<{ motivo: string; qtd: number }>;
   reincidenciaAcesso: Array<{ pontoId: string; ponto: string; qtd: number }>;
   consumoPorLocal: Array<{ predio: string; pontos: number; bags: number; mediaPorPonto: number }>;
-  evidenciasPendentes: Array<{ visitaId: string; data: string; ponto: string; status: VisitaStatus }>;
+  evidenciasPendentes: Array<{
+    visitaId: string;
+    data: string;
+    ponto: string;
+    status: VisitaStatus;
+  }>;
 }
 
 export function calcularEntrega(params: {
@@ -113,7 +125,9 @@ export function calcularEntrega(params: {
   const porId = new Map(pontos.map((p) => [p.id, p]));
   const labelPonto = (id: string) => {
     const p = porId.get(id);
-    return p ? `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}` : "Ponto removido";
+    return p
+      ? `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}`
+      : "Ponto removido";
   };
   const predioDe = (v: Visita) => porId.get(v.ponto_id)?.predio || "Sem prédio";
 
@@ -121,7 +135,13 @@ export function calcularEntrega(params: {
   const concluidas = visitas.filter((v) => v.status === "concluida").length;
   const parciais = visitas.filter((v) => v.status === "parcial").length;
   const naoRealizadas = visitas.filter((v) =>
-    ["nao_realizada", "acesso_bloqueado", "local_fechado", "falta_bags", "endereco_divergente"].includes(v.status),
+    [
+      "nao_realizada",
+      "acesso_bloqueado",
+      "local_fechado",
+      "falta_bags",
+      "endereco_divergente",
+    ].includes(v.status),
   ).length;
 
   const bagsPrevistas = visitas.reduce((a, v) => a + (v.bags_previstas ?? 0), 0);
@@ -135,7 +155,12 @@ export function calcularEntrega(params: {
   const finalizadas = visitas.filter((v) => FINALIZADAS_OK.includes(v.status));
   const evidenciasPendentes = finalizadas
     .filter((v) => (v.fotos?.length ?? 0) === 0 && !v.foto_url)
-    .map((v) => ({ visitaId: v.id, data: v.data, ponto: labelPonto(v.ponto_id), status: v.status }));
+    .map((v) => ({
+      visitaId: v.id,
+      data: v.data,
+      ponto: labelPonto(v.ponto_id),
+      status: v.status,
+    }));
 
   const divergenciasBags = visitas.filter(
     (v) => FINALIZADAS_OK.includes(v.status) && (v.bags_entregues ?? 0) !== (v.bags_previstas ?? 0),
@@ -150,7 +175,14 @@ export function calcularEntrega(params: {
     const mapa = new Map<string, LinhaGrupo>();
     for (const v of visitas) {
       const chave = chaveDe(v);
-      const linha = mapa.get(chave) ?? { chave, total: 0, concluidas: 0, naoRealizadas: 0, bags: 0, taxa: 0 };
+      const linha = mapa.get(chave) ?? {
+        chave,
+        total: 0,
+        concluidas: 0,
+        naoRealizadas: 0,
+        bags: 0,
+        taxa: 0,
+      };
       linha.total += 1;
       if (FINALIZADAS_OK.includes(v.status)) linha.concluidas += 1;
       if (v.status === "nao_realizada") linha.naoRealizadas += 1;
@@ -176,7 +208,8 @@ export function calcularEntrega(params: {
     return {
       ...l,
       tempoMedioParadaMin: tempoMedio,
-      produtividadeBagsHora: tempoMedio > 0 ? Math.round((l.bags / (tempoMedio * l.total)) * 60 * 100) / 100 : 0,
+      produtividadeBagsHora:
+        tempoMedio > 0 ? Math.round((l.bags / (tempoMedio * l.total)) * 60 * 100) / 100 : 0,
     };
   });
 
@@ -230,9 +263,18 @@ export function calcularEntrega(params: {
     };
   });
 
-  const veiculoMapa = new Map<string, { veiculo: string; rotas: number; km: number; paradas: number; bags: number }>();
+  const veiculoMapa = new Map<
+    string,
+    { veiculo: string; rotas: number; km: number; paradas: number; bags: number }
+  >();
   for (const l of linhasRota) {
-    const atual = veiculoMapa.get(l.veiculo) ?? { veiculo: l.veiculo, rotas: 0, km: 0, paradas: 0, bags: 0 };
+    const atual = veiculoMapa.get(l.veiculo) ?? {
+      veiculo: l.veiculo,
+      rotas: 0,
+      km: 0,
+      paradas: 0,
+      bags: 0,
+    };
     atual.rotas += 1;
     atual.km += l.km ?? 0;
     atual.paradas += l.paradas;
@@ -248,7 +290,9 @@ export function calcularEntrega(params: {
       predio: l.chave,
       pontos: pontosDoPredio.size,
       bags: l.bags,
-      mediaPorPonto: pontosDoPredio.size ? Math.round((l.bags / pontosDoPredio.size) * 100) / 100 : 0,
+      mediaPorPonto: pontosDoPredio.size
+        ? Math.round((l.bags / pontosDoPredio.size) * 100) / 100
+        : 0,
     };
   });
 
@@ -263,7 +307,9 @@ export function calcularEntrega(params: {
     bagsPrevistas,
     bagsEntregues,
     bagsRecolhidas,
-    mediaPorPonto: pontosAtendidos.size ? Math.round((bagsEntregues / pontosAtendidos.size) * 100) / 100 : 0,
+    mediaPorPonto: pontosAtendidos.size
+      ? Math.round((bagsEntregues / pontosAtendidos.size) * 100) / 100
+      : 0,
     evidenciasFaltantes: evidenciasPendentes.length,
     divergenciasBags,
     tempoMedioParadaMin: media(temposParada),
@@ -328,7 +374,9 @@ export function calcularFiltros(params: {
   const hoje = params.hoje ? new Date(params.hoje) : new Date();
 
   const abertas = solicitacoes.filter((s) => ABERTAS.includes(s.situacao));
-  const concluidas = solicitacoes.filter((s) => s.situacao === "concluida" || s.situacao === "validada");
+  const concluidas = solicitacoes.filter(
+    (s) => s.situacao === "concluida" || s.situacao === "validada",
+  );
   const vencidas = abertas.filter((s) => s.vence_em && new Date(s.vence_em) < hoje);
 
   const prioridadeMapa = new Map<string, number>();
@@ -364,9 +412,12 @@ export function calcularFiltros(params: {
     .filter((a) => a.situacao === "ativo" && a.proxima_troca)
     .map((a) => ({
       id: a.id,
-      ponto: [a.predio, a.andar_setor, a.espaco].filter(Boolean).join(" · ") || a.codigo || "Filtro",
+      ponto:
+        [a.predio, a.andar_setor, a.espaco].filter(Boolean).join(" · ") || a.codigo || "Filtro",
       proximaTroca: a.proxima_troca as string,
-      diasRestantes: Math.ceil((new Date(a.proxima_troca as string).getTime() - hoje.getTime()) / 86_400_000),
+      diasRestantes: Math.ceil(
+        (new Date(a.proxima_troca as string).getTime() - hoje.getTime()) / 86_400_000,
+      ),
     }))
     .filter((a) => a.diasRestantes <= 30)
     .sort((a, b) => a.diasRestantes - b.diasRestantes);

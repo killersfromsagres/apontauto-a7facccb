@@ -9,7 +9,6 @@ import type { Rota } from "@/features/water-delivery/queries/programacao";
 import { enfileirar } from "@/features/water-delivery/offline/offline";
 import { notificarAgua } from "@/features/water-delivery/mutations/notificacoes";
 
-
 const db = supabase as unknown as { from: (t: string) => any };
 
 async function uid(): Promise<string | null> {
@@ -80,7 +79,12 @@ export function validarEntrega(
   ctx: { saldoDisponivel: number | null; ajusteAutorizado?: boolean },
 ): string[] {
   const erros: string[] = [];
-  const negativos = [input.bags_entregues, input.bags_recolhidas, input.estoque_antes, input.estoque_depois];
+  const negativos = [
+    input.bags_entregues,
+    input.bags_recolhidas,
+    input.estoque_antes,
+    input.estoque_depois,
+  ];
   if (negativos.some((n) => typeof n === "number" && n < 0)) {
     erros.push("Quantidades não podem ser negativas.");
   }
@@ -88,7 +92,8 @@ export function validarEntrega(
     erros.push("Confirme que prédio, andar e espaço estão corretos.");
   }
   if (input.status === "concluida") {
-    if (input.fotos.length === 0) erros.push("A conclusão exige ao menos uma foto do ponto abastecido.");
+    if (input.fotos.length === 0)
+      erros.push("A conclusão exige ao menos uma foto do ponto abastecido.");
     if (input.bags_entregues <= 0) erros.push("Informe a quantidade entregue.");
   }
   if (input.status === "parcial") {
@@ -215,7 +220,6 @@ export async function registrarEntrega(
   }
 }
 
-
 /* ------------------------------------------------------------------ */
 /* Retificação (8.4)                                                   */
 /* ------------------------------------------------------------------ */
@@ -288,7 +292,6 @@ export async function retificarVisita(args: {
     return { pendente: true };
   }
 }
-
 
 /* ------------------------------------------------------------------ */
 /* Rota: início e finalização (8.1 / 8.5)                              */
@@ -473,7 +476,9 @@ export interface RotaOcorrencia {
 export async function listOcorrencias(inicio: string, fim: string): Promise<RotaOcorrencia[]> {
   const { data, error } = await db
     .from("agua_rota_ocorrencias")
-    .select("id, rota_id, tipo, descricao, divergencia, situacao, tratativa, criado_em, agua_rotas!inner(data)")
+    .select(
+      "id, rota_id, tipo, descricao, divergencia, situacao, tratativa, criado_em, agua_rotas!inner(data)",
+    )
     .gte("agua_rotas.data", inicio)
     .lte("agua_rotas.data", fim)
     .order("criado_em", { ascending: false });

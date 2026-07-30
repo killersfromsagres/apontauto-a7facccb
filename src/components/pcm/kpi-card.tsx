@@ -39,10 +39,7 @@ function KpiCardImpl({
       <Wrapper
         type={onClick ? "button" : undefined}
         onClick={onClick}
-        className={cn(
-          "flex w-full min-w-0 flex-col gap-2 text-left",
-          onClick && "cursor-pointer",
-        )}
+        className={cn("flex w-full min-w-0 flex-col gap-2 text-left", onClick && "cursor-pointer")}
       >
         <div className="flex items-start justify-between gap-3">
           <span className="text-eyebrow truncate">{label}</span>
@@ -66,9 +63,7 @@ function KpiCardImpl({
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
-                good
-                  ? "bg-success/12 text-success"
-                  : "bg-destructive/12 text-destructive",
+                good ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
               )}
             >
               {trend.value >= 0 ? (

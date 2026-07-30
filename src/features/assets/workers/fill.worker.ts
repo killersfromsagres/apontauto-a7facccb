@@ -2,7 +2,12 @@
 // Web Worker: executa a resolução em lotes sem travar a UI.
 
 import { buildAssetGraph } from "../services/asset-resolver";
-import { processRows, type FillOptions, type RowResult, type TargetColumns } from "../services/sheet-fill";
+import {
+  processRows,
+  type FillOptions,
+  type RowResult,
+  type TargetColumns,
+} from "../services/sheet-fill";
 import type { AssetRecord } from "../types";
 
 export interface WorkerSheetInput {
@@ -22,7 +27,14 @@ export interface WorkerRunMessage {
 }
 
 export type WorkerOutMessage =
-  | { type: "progress"; sheet: string; sheetIndex: number; done: number; total: number; overall: number }
+  | {
+      type: "progress";
+      sheet: string;
+      sheetIndex: number;
+      done: number;
+      total: number;
+      overall: number;
+    }
   | { type: "sheet-done"; sheet: string; results: RowResult[] }
   | { type: "sheet-error"; sheet: string; message: string }
   | { type: "done" }
@@ -67,7 +79,11 @@ ctx.onmessage = (ev: MessageEvent<WorkerRunMessage>) => {
             overall: processedOverall / grandTotal,
           } satisfies WorkerOutMessage);
         }
-        ctx.postMessage({ type: "sheet-done", sheet: sheet.name, results } satisfies WorkerOutMessage);
+        ctx.postMessage({
+          type: "sheet-done",
+          sheet: sheet.name,
+          results,
+        } satisfies WorkerOutMessage);
       } catch (e) {
         ctx.postMessage({
           type: "sheet-error",

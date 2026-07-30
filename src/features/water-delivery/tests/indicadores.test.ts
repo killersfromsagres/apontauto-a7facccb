@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { calcularEntrega, calcularFiltros, minutosEntre, pct } from "@/features/water-delivery/reports/indicadores";
+import {
+  calcularEntrega,
+  calcularFiltros,
+  minutosEntre,
+  pct,
+} from "@/features/water-delivery/reports/indicadores";
 
 const visita = (over: Record<string, unknown> = {}) =>
   ({
@@ -39,7 +44,10 @@ const ponto = { id: "p1", predio: "Bloco A", andar: "1", espaco: "Copa" } as any
 describe("indicadores de entrega", () => {
   it("calcula taxa de conclusão, bags e média por ponto", () => {
     const r = calcularEntrega({
-      visitas: [visita(), visita({ status: "nao_realizada", motivo: "Local fechado", bags_entregues: 0 })],
+      visitas: [
+        visita(),
+        visita({ status: "nao_realizada", motivo: "Local fechado", bags_entregues: 0 }),
+      ],
       pontos: [ponto],
     });
     expect(r.totalParadas).toBe(2);

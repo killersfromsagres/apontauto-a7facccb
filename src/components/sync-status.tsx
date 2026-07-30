@@ -81,7 +81,10 @@ export function SyncStatus() {
   // Sem nada na fila e online: não polui a barra superior.
   if (estado === "sincronizado") return null;
 
-  const visual: Record<Exclude<Estado, "sincronizado">, { icon: typeof CloudOff; label: string; hint: string; classe: string }> = {
+  const visual: Record<
+    Exclude<Estado, "sincronizado">,
+    { icon: typeof CloudOff; label: string; hint: string; classe: string }
+  > = {
     offline: {
       icon: CloudOff,
       label: pendentes > 0 ? `Offline · ${pendentes}` : "Offline",
@@ -107,31 +110,31 @@ export function SyncStatus() {
   return (
     <TooltipProvider delayDuration={200}>
       <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={sincronizarAgora}
-          disabled={offline || sincronizando}
-          aria-label={hint}
-          className={cn("h-9 min-w-11 gap-1.5 rounded-full px-2.5 text-xs font-medium", classe)}
-        >
-          {sincronizando ? (
-            <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Icon className="h-4 w-4" aria-hidden />
-          )}
-          <span className="hidden sm:inline">{label}</span>
-          <span className="sm:hidden">{pendentes || comErro || ""}</span>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-56 text-xs">
-        <span className="flex items-start gap-1.5">
-          <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
-          {hint}
-        </span>
-      </TooltipContent>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={sincronizarAgora}
+            disabled={offline || sincronizando}
+            aria-label={hint}
+            className={cn("h-9 min-w-11 gap-1.5 rounded-full px-2.5 text-xs font-medium", classe)}
+          >
+            {sincronizando ? (
+              <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Icon className="h-4 w-4" aria-hidden />
+            )}
+            <span className="hidden sm:inline">{label}</span>
+            <span className="sm:hidden">{pendentes || comErro || ""}</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-56 text-xs">
+          <span className="flex items-start gap-1.5">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+            {hint}
+          </span>
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );

@@ -6,9 +6,18 @@ const KEYWORDS: [BodyType, RegExp][] = [
   ["moto", /\b(moto|cg |factor|biz|xre|titan|scooter)\b/i],
   ["truck", /\b(caminh|truck|vuc|3\/4|toco|hr\b|accelo|atego|delivery)\b/i],
   ["van", /\b(van|kombi|ducato|sprinter|master|daily|jumper|boxer|transit|doblo)\b/i],
-  ["pickup", /\b(pick[- ]?up|saveiro|strada|montana|toro|hilux|s10|ranger|amarok|frontier|oroch|courier)\b/i],
-  ["suv", /\b(suv|duster|ecosport|tracker|kicks|creta|renegade|compass|hr[- ]?v|tcross|t[- ]cross|pulse|territory)\b/i],
-  ["sedan", /\b(sedan|voyage|siena|prisma|virtus|versa|logan|cronos|grand siena|corolla|civic|onix plus)\b/i],
+  [
+    "pickup",
+    /\b(pick[- ]?up|saveiro|strada|montana|toro|hilux|s10|ranger|amarok|frontier|oroch|courier)\b/i,
+  ],
+  [
+    "suv",
+    /\b(suv|duster|ecosport|tracker|kicks|creta|renegade|compass|hr[- ]?v|tcross|t[- ]cross|pulse|territory)\b/i,
+  ],
+  [
+    "sedan",
+    /\b(sedan|voyage|siena|prisma|virtus|versa|logan|cronos|grand siena|corolla|civic|onix plus)\b/i,
+  ],
   ["hatch", /\b(hatch|gol|uno|palio|onix|hb20|argo|mobi|ka\b|sandero|march|fox|up!?)\b/i],
 ];
 
@@ -138,16 +147,15 @@ export const VehicleThumb = memo(function VehicleThumb({
       <ellipse cx="100" cy="80" rx="86" ry="7" fill={`url(#shadow-${uid})`} />
 
       <g>
-        <path d={shape.body} fill={`url(#paint-${uid})`} stroke="rgba(0,0,0,.35)" strokeWidth="1.5" />
-        <path d={shape.glass} fill={`url(#glass-${uid})`} opacity="0.92" />
-        {/* brilho superior */}
         <path
           d={shape.body}
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity="0.35"
-          strokeWidth="1"
+          fill={`url(#paint-${uid})`}
+          stroke="rgba(0,0,0,.35)"
+          strokeWidth="1.5"
         />
+        <path d={shape.glass} fill={`url(#glass-${uid})`} opacity="0.92" />
+        {/* brilho superior */}
+        <path d={shape.body} fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="1" />
         {/* faróis */}
         <rect x="186" y="46" width="9" height="7" rx="3" fill="#ffeeb0" opacity="0.9" />
         <rect x="6" y="46" width="8" height="6" rx="3" fill="#ff8a7a" opacity="0.85" />

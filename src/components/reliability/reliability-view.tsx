@@ -233,7 +233,10 @@ export function ReliabilityView() {
                       {p.value} · {p.acumulado}%
                     </span>
                   </div>
-                  <Progress value={(p.value / (paretoAtivos[0]?.value || 1)) * 100} className="h-1.5" />
+                  <Progress
+                    value={(p.value / (paretoAtivos[0]?.value || 1)) * 100}
+                    className="h-1.5"
+                  />
                 </div>
               ))}
               {paretoAtivos.length === 0 && (
@@ -253,7 +256,10 @@ export function ReliabilityView() {
                       {p.value} · {p.acumulado}%
                     </span>
                   </div>
-                  <Progress value={(p.value / (paretoModos[0]?.value || 1)) * 100} className="h-1.5" />
+                  <Progress
+                    value={(p.value / (paretoModos[0]?.value || 1)) * 100}
+                    className="h-1.5"
+                  />
                 </div>
               ))}
               {paretoModos.length === 0 && (
@@ -312,7 +318,9 @@ export function ReliabilityView() {
                           <TrendingDown className="h-3.5 w-3.5" /> piorando
                         </span>
                       )}
-                      {a.tendencia === "estavel" && <span className="text-muted-foreground">estável</span>}
+                      {a.tendencia === "estavel" && (
+                        <span className="text-muted-foreground">estável</span>
+                      )}
                       {a.tendencia === "sem_dados" && (
                         <span className="text-muted-foreground">dados insuficientes</span>
                       )}
@@ -366,7 +374,10 @@ export function ReliabilityView() {
                     <TableCell>{c.redundancia ? "Sim" : "Não"}</TableCell>
                     <TableCell className="text-right">
                       {c.custo_parada_hora != null
-                        ? c.custo_parada_hora.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                        ? c.custo_parada_hora.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                          })
                         : "—"}
                     </TableCell>
                     <TableCell>{c.proxima_preventiva ?? "—"}</TableCell>
@@ -426,7 +437,10 @@ export function ReliabilityView() {
                     <ClipboardList className="h-4 w-4" /> Plano de ação
                   </div>
                   {acoes.map((ac) => (
-                    <div key={ac.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 p-2 text-sm">
+                    <div
+                      key={ac.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 p-2 text-sm"
+                    >
                       <span>{ac.acao}</span>
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         {ac.responsavel ?? "sem responsável"} · {ac.prazo ?? "sem prazo"}
@@ -492,7 +506,9 @@ export function ReliabilityView() {
               <Label>Classe ABC</Label>
               <Select
                 value={critEdit?.classe_abc ?? "C"}
-                onValueChange={(v) => setCritEdit({ ...critEdit, classe_abc: v as "A" | "B" | "C" })}
+                onValueChange={(v) =>
+                  setCritEdit({ ...critEdit, classe_abc: v as "A" | "B" | "C" })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -618,7 +634,10 @@ export function ReliabilityView() {
                   <Input
                     value={rca?.ishikawa?.[k] ?? ""}
                     onChange={(e) =>
-                      setRca({ ...rca, ishikawa: { ...(rca?.ishikawa ?? {}), [k]: e.target.value } })
+                      setRca({
+                        ...rca,
+                        ishikawa: { ...(rca?.ishikawa ?? {}), [k]: e.target.value },
+                      })
                     }
                   />
                 </div>

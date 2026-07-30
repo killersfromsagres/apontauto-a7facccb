@@ -52,7 +52,9 @@ describe("normalização de local", () => {
   });
 
   it("gera a mesma chave canônica para grafias diferentes do mesmo local", () => {
-    expect(chaveLocal("Bloco D55", "Térreo", "Copa")).toBe(chaveLocal("bloco d55", "terreo", "COPA"));
+    expect(chaveLocal("Bloco D55", "Térreo", "Copa")).toBe(
+      chaveLocal("bloco d55", "terreo", "COPA"),
+    );
     expect(chaveLocal("Bloco D55", "1º", "Copa")).not.toBe(chaveLocal("Bloco D55", "2º", "Copa"));
   });
 });
@@ -95,7 +97,10 @@ describe("detecção de duplicidade", () => {
 
   it("nunca acusa o próprio registro em edição", () => {
     expect(
-      detectarDuplicidades({ id: "1", predio: "Bloco D55", andar: "Térreo", espaco: "Copa" }, lista),
+      detectarDuplicidades(
+        { id: "1", predio: "Bloco D55", andar: "Térreo", espaco: "Copa" },
+        lista,
+      ),
     ).toEqual([]);
   });
 
@@ -106,7 +111,10 @@ describe("detecção de duplicidade", () => {
       andar: "Térreo",
       espaco: "Copa",
     }));
-    const achados = detectarDuplicidades({ predio: "Bloco D55", andar: "Térreo", espaco: "Copa" }, muitos);
+    const achados = detectarDuplicidades(
+      { predio: "Bloco D55", andar: "Térreo", espaco: "Copa" },
+      muitos,
+    );
     expect(achados).toHaveLength(5);
     expect(achados[0].score).toBeGreaterThanOrEqual(achados[4].score);
   });

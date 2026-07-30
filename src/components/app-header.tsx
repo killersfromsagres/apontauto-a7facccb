@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/alert-dialog";
 const logoAsset = { url: "/apontauto-logo.png" };
 
-
 export function AppHeader() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();

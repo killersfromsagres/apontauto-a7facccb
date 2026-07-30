@@ -22,7 +22,6 @@ function addDaysISO(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-
 export function WaterHistoryView() {
   const [de, setDe] = useState(addDaysISO(hojeISO(), -30));
   const [ate, setAte] = useState(hojeISO());
@@ -39,10 +38,7 @@ export function WaterHistoryView() {
     setPagina(0);
   }, [de, ate]);
 
-  const porId = useMemo(
-    () => new Map((pontos.data ?? []).map((p) => [p.id, p])),
-    [pontos.data],
-  );
+  const porId = useMemo(() => new Map((pontos.data ?? []).map((p) => [p.id, p])), [pontos.data]);
 
   const rows = useMemo(
     () =>

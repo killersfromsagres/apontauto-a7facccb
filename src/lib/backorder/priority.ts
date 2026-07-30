@@ -156,7 +156,12 @@ export function scanRow(row: ScanInputRow, cfg: PriorityConfig): ScanResult {
     .slice(0, 3)
     .map((h) => h.label)
     .join(" · ");
-  return { os: row.os, is_prioridade: true, motivo_prioridade: motivo, prioridade_nivel: top.nivel };
+  return {
+    os: row.os,
+    is_prioridade: true,
+    motivo_prioridade: motivo,
+    prioridade_nivel: top.nivel,
+  };
 }
 
 export function scanAll(rows: ScanInputRow[], cfg: PriorityConfig): ScanResult[] {

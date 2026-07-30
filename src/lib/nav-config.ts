@@ -64,9 +64,15 @@ export const sections: MenuSection[] = [
     title: "Visão Geral",
     icon: LayoutDashboard,
     items: [
-      { key: "dashboard", title: "Home Operacional", short: "Início", url: "/", icon: Gauge, keywords: ["home", "início", "kpi"] },
+      {
+        key: "dashboard",
+        title: "Home Operacional",
+        short: "Início",
+        url: "/",
+        icon: Gauge,
+        keywords: ["home", "início", "kpi"],
+      },
     ],
-
   },
   {
     kind: "group",
@@ -74,7 +80,13 @@ export const sections: MenuSection[] = [
     title: "Planejamento PCM",
     icon: CalendarRange,
     items: [
-      { key: "programacao", title: "Programação Semanal", short: "Programação", url: "/programacao", icon: CalendarDays },
+      {
+        key: "programacao",
+        title: "Programação Semanal",
+        short: "Programação",
+        url: "/programacao",
+        icon: CalendarDays,
+      },
       {
         key: "backlog-inteligente",
         title: "Backlog Inteligente",
@@ -91,7 +103,13 @@ export const sections: MenuSection[] = [
         icon: CalendarRange,
         keywords: ["jornada", "ausência", "carga", "gargalo", "hh"],
       },
-      { key: "preventiva", title: "Preventiva (legado)", short: "Preventiva", url: "/preventiva", icon: CalendarClock },
+      {
+        key: "preventiva",
+        title: "Preventiva (legado)",
+        short: "Preventiva",
+        url: "/preventiva",
+        icon: CalendarClock,
+      },
       {
         key: "apontamentos",
         title: "Apontamentos de OS",
@@ -108,16 +126,76 @@ export const sections: MenuSection[] = [
     title: "Ordens de Serviço",
     icon: Wrench,
     items: [
-      { key: "backorder", title: "Backorder de Corretivas", short: "Backorder", url: "/backorder", icon: PackageOpen },
-      { key: "corretiva", title: "Corretiva — Campo", short: "Corretiva", url: "/corretiva", icon: Wrench },
-      { key: "corretiva-pecas-status", title: "Corretiva — Status de Peças", short: "Peças", url: "/corretiva-pecas-status", icon: PackageOpen },
-      { key: "corretiva-historico", title: "Corretiva — Histórico", short: "Histórico", url: "/corretiva-historico", icon: ScrollText },
-      { key: "corretiva-gestor", title: "Corretiva — Gestão", short: "Gestão", url: "/corretiva-gestor", icon: Users },
-      { key: "refrigeracao", title: "Refrigeração — Campo", short: "Refrig.", url: "/refrigeracao", icon: Thermometer },
-      { key: "refrigeracao-pecas-status", title: "Refrigeração — Status de Peças", short: "Peças", url: "/refrigeracao-pecas-status", icon: PackageOpen },
-      { key: "refrigeracao-historico", title: "Refrigeração — Histórico", short: "Histórico", url: "/refrigeracao-historico", icon: ScrollText },
-      { key: "refrigeracao-gestor", title: "Refrigeração — Gestão", short: "Gestão", url: "/refrigeracao-gestor", icon: Users },
-      { key: "preventiva-ac", title: "Preventiva AC (PMOC)", short: "PMOC", url: "/preventiva-ac", icon: AirVent },
+      {
+        key: "backorder",
+        title: "Backorder de Corretivas",
+        short: "Backorder",
+        url: "/backorder",
+        icon: PackageOpen,
+      },
+      {
+        key: "corretiva",
+        title: "Corretiva — Campo",
+        short: "Corretiva",
+        url: "/corretiva",
+        icon: Wrench,
+      },
+      {
+        key: "corretiva-pecas-status",
+        title: "Corretiva — Status de Peças",
+        short: "Peças",
+        url: "/corretiva-pecas-status",
+        icon: PackageOpen,
+      },
+      {
+        key: "corretiva-historico",
+        title: "Corretiva — Histórico",
+        short: "Histórico",
+        url: "/corretiva-historico",
+        icon: ScrollText,
+      },
+      {
+        key: "corretiva-gestor",
+        title: "Corretiva — Gestão",
+        short: "Gestão",
+        url: "/corretiva-gestor",
+        icon: Users,
+      },
+      {
+        key: "refrigeracao",
+        title: "Refrigeração — Campo",
+        short: "Refrig.",
+        url: "/refrigeracao",
+        icon: Thermometer,
+      },
+      {
+        key: "refrigeracao-pecas-status",
+        title: "Refrigeração — Status de Peças",
+        short: "Peças",
+        url: "/refrigeracao-pecas-status",
+        icon: PackageOpen,
+      },
+      {
+        key: "refrigeracao-historico",
+        title: "Refrigeração — Histórico",
+        short: "Histórico",
+        url: "/refrigeracao-historico",
+        icon: ScrollText,
+      },
+      {
+        key: "refrigeracao-gestor",
+        title: "Refrigeração — Gestão",
+        short: "Gestão",
+        url: "/refrigeracao-gestor",
+        icon: Users,
+      },
+      {
+        key: "preventiva-ac",
+        title: "Preventiva AC (PMOC)",
+        short: "PMOC",
+        url: "/preventiva-ac",
+        icon: AirVent,
+      },
       {
         key: "materiais-os",
         title: "Materiais por OS",
@@ -233,7 +311,6 @@ export const sections: MenuSection[] = [
           "ocorrência",
           "consumo",
         ],
-
       },
       {
         key: "abastecimento",
@@ -259,7 +336,13 @@ export const sections: MenuSection[] = [
         icon: ClipboardList,
         keywords: ["peças", "compras", "centro de custo", "facilities"],
       },
-      { key: "lavanderia", title: "Controle de Lavanderia", short: "Lavanderia", url: "/lavanderia", icon: WashingMachine },
+      {
+        key: "lavanderia",
+        title: "Controle de Lavanderia",
+        short: "Lavanderia",
+        url: "/lavanderia",
+        icon: WashingMachine,
+      },
     ],
   },
   {
@@ -268,12 +351,36 @@ export const sections: MenuSection[] = [
     title: "Segurança e Conformidade",
     icon: ShieldCheck,
     items: [
-      { key: "seguranca-trabalho", title: "Segurança do Trabalho", short: "SST", url: "/seguranca-trabalho", icon: HardHat },
-      { key: "painel-legal", title: "Painel de Itens Legais", short: "Legal", url: "/painel-legal", icon: Scale },
-      { key: "auditoria", title: "Trilha de Auditoria", short: "Auditoria", url: "/auditoria", icon: FileClock, keywords: ["log", "histórico", "rastreabilidade", "compliance"] },
-      { key: "observabilidade", title: "Painel Técnico", short: "Técnico", url: "/observabilidade", icon: Activity, keywords: ["erros", "logs", "integrações", "saúde", "monitoramento", "offline"] },
-
-
+      {
+        key: "seguranca-trabalho",
+        title: "Segurança do Trabalho",
+        short: "SST",
+        url: "/seguranca-trabalho",
+        icon: HardHat,
+      },
+      {
+        key: "painel-legal",
+        title: "Painel de Itens Legais",
+        short: "Legal",
+        url: "/painel-legal",
+        icon: Scale,
+      },
+      {
+        key: "auditoria",
+        title: "Trilha de Auditoria",
+        short: "Auditoria",
+        url: "/auditoria",
+        icon: FileClock,
+        keywords: ["log", "histórico", "rastreabilidade", "compliance"],
+      },
+      {
+        key: "observabilidade",
+        title: "Painel Técnico",
+        short: "Técnico",
+        url: "/observabilidade",
+        icon: Activity,
+        keywords: ["erros", "logs", "integrações", "saúde", "monitoramento", "offline"],
+      },
     ],
   },
   {
@@ -331,11 +438,16 @@ export const sections: MenuSection[] = [
         icon: ClipboardList,
         keywords: ["inconsistência", "cadastro", "correção", "cpf", "hodômetro"],
       },
-      { key: "configuracoes", title: "Configurações", short: "Config.", url: "/configuracoes", icon: ClipboardCheck },
+      {
+        key: "configuracoes",
+        title: "Configurações",
+        short: "Config.",
+        url: "/configuracoes",
+        icon: ClipboardCheck,
+      },
     ],
   },
 ];
-
 
 /** Lista achatada de todos os itens de menu conhecidos. */
 export const allMenuItems: MenuItem[] = sections.flatMap((s) =>
@@ -441,7 +553,6 @@ export function useVisibleSections() {
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
   const { allowed, loading: loadingAllowed } = useAllowedMenus();
   const loading = loadingAdmin || loadingAllowed;
-
 
   const visibleSections = useMemo<MenuSection[]>(() => {
     if (loading) return [];

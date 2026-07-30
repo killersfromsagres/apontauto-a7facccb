@@ -4,9 +4,30 @@ import type { Row, WidgetSpec } from "@/features/bi/catalog";
 import { applyFilters, buildSeries, distinctValues, DEFAULT_FILTERS } from "@/features/bi/data";
 
 const rows: Row[] = [
-  { id: "1", equipe: "Elétrica", status: "aberta", predio: "A", horas_execucao: 4, created_at: "2026-07-01T10:00:00Z" },
-  { id: "2", equipe: "Elétrica", status: "concluida", predio: "A", horas_execucao: 2, created_at: "2026-07-01T12:00:00Z" },
-  { id: "3", equipe: "Civil", status: "aberta", predio: "B", horas_execucao: 6, created_at: "2026-07-02T09:00:00Z" },
+  {
+    id: "1",
+    equipe: "Elétrica",
+    status: "aberta",
+    predio: "A",
+    horas_execucao: 4,
+    created_at: "2026-07-01T10:00:00Z",
+  },
+  {
+    id: "2",
+    equipe: "Elétrica",
+    status: "concluida",
+    predio: "A",
+    horas_execucao: 2,
+    created_at: "2026-07-01T12:00:00Z",
+  },
+  {
+    id: "3",
+    equipe: "Civil",
+    status: "aberta",
+    predio: "B",
+    horas_execucao: 6,
+    created_at: "2026-07-02T09:00:00Z",
+  },
 ] as unknown as Row[];
 
 const widget = (over: Partial<WidgetSpec>): WidgetSpec =>

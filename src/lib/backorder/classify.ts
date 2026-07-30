@@ -53,7 +53,16 @@ const CATEGORIA_ORIGEM: Array<[RegExp, Categoria]> = [
 export const KEYWORD_RULES: Array<{ categoria: Categoria; keywords: string[] }> = [
   {
     categoria: "Chaveiro",
-    keywords: ["chave", "fechadura", "cadeado", "trinco", "cilindro", "macaneta", "segredo", "abrir porta"],
+    keywords: [
+      "chave",
+      "fechadura",
+      "cadeado",
+      "trinco",
+      "cilindro",
+      "macaneta",
+      "segredo",
+      "abrir porta",
+    ],
   },
   {
     categoria: "Refrigeração",
@@ -182,7 +191,8 @@ export interface DynamicRule {
 let DYNAMIC_RULES: DynamicRule[] | null = null;
 
 export function setDynamicRules(rules: DynamicRule[] | null): void {
-  DYNAMIC_RULES = rules && rules.length > 0 ? [...rules].sort((a, b) => a.prioridade - b.prioridade) : null;
+  DYNAMIC_RULES =
+    rules && rules.length > 0 ? [...rules].sort((a, b) => a.prioridade - b.prioridade) : null;
 }
 
 export function classifyBackorder(input: {

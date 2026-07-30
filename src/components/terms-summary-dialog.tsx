@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Drawer,
   DrawerContent,
@@ -59,7 +65,12 @@ function Rodape({ onClose }: { onClose: () => void }) {
         <a href="/termos" target="_blank" rel="noreferrer" className="text-primary hover:underline">
           Termos completos
         </a>
-        <a href="/privacidade" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+        <a
+          href="/privacidade"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary hover:underline"
+        >
           Política completa
         </a>
       </div>

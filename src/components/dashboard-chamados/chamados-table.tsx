@@ -84,11 +84,7 @@ export function ChamadosTable({
                         <StatusBadge
                           status={done ? "Concluído" : r.status || "Aberto"}
                           tone={
-                            done
-                              ? "success"
-                              : r.statusNorm === "andamento"
-                                ? "warning"
-                                : "info"
+                            done ? "success" : r.statusNorm === "andamento" ? "warning" : "info"
                           }
                         />
                       </td>
@@ -121,11 +117,7 @@ export function ChamadosTable({
               <span className="text-[11px] text-muted-foreground">
                 Mostrando {visible.length} de {rows.length}
               </span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setLimit((l) => l + PAGE_SIZE)}
-              >
+              <Button size="sm" variant="outline" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
                 Carregar mais
               </Button>
             </div>

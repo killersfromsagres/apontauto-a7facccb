@@ -76,7 +76,9 @@ export function EntregaDialog({
   onSalvo: () => void;
 }) {
   const [status, setStatus] = useState<VisitaStatus>(
-    visita.status === "pendente" || visita.status === "em_deslocamento" || visita.status === "em_atendimento"
+    visita.status === "pendente" ||
+      visita.status === "em_deslocamento" ||
+      visita.status === "em_atendimento"
       ? "concluida"
       : visita.status,
   );
@@ -188,7 +190,6 @@ export function EntregaDialog({
       setEnviandoFoto(false);
     }
   }
-
 
   function capturarLocal() {
     if (!navigator.geolocation) {
@@ -422,14 +423,18 @@ export function EntregaDialog({
             <FilaFotosAviso />
           </div>
 
-
           <div className="space-y-2">
             <Label>Assinatura simples (opcional)</Label>
             <SignaturePad value={assinatura} onChange={setAssinatura} height={140} />
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="secondary" className="min-h-[44px]" onClick={capturarLocal}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-[44px]"
+              onClick={capturarLocal}
+            >
               <MapPin className="mr-2 h-4 w-4" />
               {coords ? "Local registrado" : "Registrar localização"}
             </Button>

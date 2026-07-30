@@ -73,9 +73,7 @@ export const SOURCE_TYPE_LABEL: Record<WeatherDataType, string> = {
 };
 
 /** Códigos WMO que caracterizam garoa, chuva, pancada ou tempestade. */
-export const RAIN_CODES = new Set([
-  51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99,
-]);
+export const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99]);
 
 export type RainIntensityKey = "garoa" | "fraca" | "moderada" | "forte" | "tempestade";
 
@@ -115,12 +113,7 @@ export function isRaining(input: {
 }
 
 /** Distância aproximada (km) entre dois pontos — Haversine. */
-export function distanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
+export function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const toRad = (v: number) => (v * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);

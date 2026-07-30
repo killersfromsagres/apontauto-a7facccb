@@ -17,13 +17,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  EmptyState,
-  ErrorState,
-  KpiCard,
-  SkeletonState,
-  StatusBadge,
-} from "@/components/pcm";
+import { EmptyState, ErrorState, KpiCard, SkeletonState, StatusBadge } from "@/components/pcm";
 import { useVisibleSections, allMenuItems, type MenuItem } from "@/lib/nav-config";
 import { fetchFillMetrics } from "@/features/assets/services/fill-metrics";
 import { getActiveCatalog } from "@/features/assets/services/asset-catalog";
@@ -112,7 +106,11 @@ export function PcmHome({ userName }: { userName?: string | null }) {
           <p className="mt-1.5 truncate text-[13px] text-muted-foreground sm:text-sm">{UNIT}</p>
         </div>
         {canFill && fillItem && (
-          <Button asChild size="lg" className="shrink-0 gap-2 rounded-xl shadow-lg shadow-primary/20">
+          <Button
+            asChild
+            size="lg"
+            className="shrink-0 gap-2 rounded-xl shadow-lg shadow-primary/20"
+          >
             <Link to={fillItem.url}>
               <Sparkles className="h-4 w-4" />
               <span className="hidden sm:inline">Preencher localização de ativos</span>
@@ -225,9 +223,13 @@ export function PcmHome({ userName }: { userName?: string | null }) {
             ) : (
               <ul className="divide-y divide-border/40">
                 {jobs.data!.map((j) => {
-                  const rate = j.total_rows > 0 ? Math.round((j.matched_rows / j.total_rows) * 100) : 0;
+                  const rate =
+                    j.total_rows > 0 ? Math.round((j.matched_rows / j.total_rows) * 100) : 0;
                   return (
-                    <li key={j.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
+                    <li
+                      key={j.id}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{j.file_name}</p>
                         <p className="truncate text-[11px] text-muted-foreground">

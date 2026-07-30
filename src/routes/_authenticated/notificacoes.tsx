@@ -106,7 +106,11 @@ function NotificacoesPage() {
     >
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <KpiCard icon={<Inbox className="size-4" />} label="Ativos" value={String(items.length)} />
-        <KpiCard icon={<BellRing className="size-4" />} label="Não lidos" value={String(unread.length)} />
+        <KpiCard
+          icon={<BellRing className="size-4" />}
+          label="Não lidos"
+          value={String(unread.length)}
+        />
         <KpiCard
           icon={<ShieldAlert className="size-4" />}
           label="Ciência pendente"

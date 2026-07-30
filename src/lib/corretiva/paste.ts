@@ -15,7 +15,6 @@ export const CORRETIVA_TEMPLATE_HEADERS = [
   "Nome do Solicitante",
 ] as const;
 
-
 function parseDateBR(v: string): string | null {
   const s = v.trim();
   if (!s) return null;
@@ -131,4 +130,3 @@ export async function baixarModeloCorretiva() {
     "modelo-os-corretiva.xlsx",
   );
 }
-

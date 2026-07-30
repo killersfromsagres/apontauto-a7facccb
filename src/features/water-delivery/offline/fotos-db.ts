@@ -69,7 +69,10 @@ function openDb(): Promise<IDBDatabase> {
   return dbPromise;
 }
 
-async function tx<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
+async function tx<T>(
+  mode: IDBTransactionMode,
+  fn: (store: IDBObjectStore) => IDBRequest<T>,
+): Promise<T> {
   const db = await openDb();
   return new Promise<T>((resolve, reject) => {
     const t = db.transaction(STORE, mode);
@@ -89,12 +92,18 @@ export async function salvarItem(item: FotoFilaItem): Promise<void> {
 }
 
 export async function listarFila(): Promise<FotoFilaItem[]> {
-  const itens = await tx<FotoFilaItem[]>("readonly", (s) => s.getAll() as IDBRequest<FotoFilaItem[]>);
+  const itens = await tx<FotoFilaItem[]>(
+    "readonly",
+    (s) => s.getAll() as IDBRequest<FotoFilaItem[]>,
+  );
   return (itens ?? []).sort((a, b) => a.criadoEm - b.criadoEm);
 }
 
 export async function obterItem(id: string): Promise<FotoFilaItem | undefined> {
-  return tx<FotoFilaItem | undefined>("readonly", (s) => s.get(id) as IDBRequest<FotoFilaItem | undefined>);
+  return tx<FotoFilaItem | undefined>(
+    "readonly",
+    (s) => s.get(id) as IDBRequest<FotoFilaItem | undefined>,
+  );
 }
 
 /** Remoção só acontece após confirmação de envio (política de retenção 10.3). */

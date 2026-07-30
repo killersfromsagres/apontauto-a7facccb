@@ -226,12 +226,7 @@ export function resolveAsset(
       usedLegacy = true;
     }
   }
-  if (
-    !ambiente &&
-    self.level !== "PLANTA" &&
-    self.level !== "PREDIO" &&
-    self.level !== "ANDAR"
-  ) {
+  if (!ambiente && self.level !== "PLANTA" && self.level !== "PREDIO" && self.level !== "ANDAR") {
     // VLOOKUP direto: o próprio ativo responde pelo Ambiente.
     if (self.name) {
       ambiente = self.name;
@@ -249,20 +244,14 @@ export function resolveAsset(
     notApplicable: {
       predio: self.level === "PLANTA",
       andar: self.level === "PLANTA" || self.level === "PREDIO",
-      ambiente:
-        self.level === "PLANTA" || self.level === "PREDIO" || self.level === "ANDAR",
+      ambiente: self.level === "PLANTA" || self.level === "PREDIO" || self.level === "ANDAR",
     },
     issues,
   };
 }
 
 export interface CatalogValidationIssue {
-  type:
-    | "empty-code"
-    | "duplicate-code"
-    | "missing-parent"
-    | "cycle"
-    | "unknown-level";
+  type: "empty-code" | "duplicate-code" | "missing-parent" | "cycle" | "unknown-level";
   code: string;
   row: number;
   detail?: string;

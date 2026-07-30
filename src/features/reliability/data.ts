@@ -80,11 +80,18 @@ export const ISHIKAWA_LABEL: Record<string, string> = {
 };
 
 export async function fetchFailures(): Promise<FailureRecord[]> {
-  const cols =
-    "id,numero_os,nome_os,ativo,equipamento,equipe,predio,status,created_at,inicio,fim";
+  const cols = "id,numero_os,nome_os,ativo,equipamento,equipe,predio,status,created_at,inicio,fim";
   const [cor, ref] = await Promise.all([
-    supabase.from("corretiva_os").select(cols).order("created_at", { ascending: false }).limit(4000),
-    supabase.from("refrigeracao_os").select(cols).order("created_at", { ascending: false }).limit(4000),
+    supabase
+      .from("corretiva_os")
+      .select(cols)
+      .order("created_at", { ascending: false })
+      .limit(4000),
+    supabase
+      .from("refrigeracao_os")
+      .select(cols)
+      .order("created_at", { ascending: false })
+      .limit(4000),
   ]);
   if (cor.error) throw cor.error;
   if (ref.error) throw ref.error;
@@ -172,8 +179,7 @@ export function aggregateByAsset(
         if (mtbfDias != null) score -= Math.max(0, Math.min(25, (60 - mtbfDias) / 2));
         if (mttrHoras != null) score -= Math.min(15, mttrHoras);
         if (crit) {
-          score -=
-            (crit.impacto_seguranca + crit.impacto_operacional + crit.impacto_ambiental) * 2;
+          score -= (crit.impacto_seguranca + crit.impacto_operacional + crit.impacto_ambiental) * 2;
           if (crit.redundancia) score += 6;
           if (crit.classe_abc === "A") score -= 5;
         }
@@ -186,9 +192,7 @@ export function aggregateByAsset(
       if (times.length >= 4) {
         const meio = Math.floor(times.length / 2);
         const gap = (arr: number[]) =>
-          arr.length < 2
-            ? Infinity
-            : (arr[arr.length - 1] - arr[0]) / (arr.length - 1);
+          arr.length < 2 ? Infinity : (arr[arr.length - 1] - arr[0]) / (arr.length - 1);
         const antes = gap(times.slice(0, meio));
         const depois = gap(times.slice(meio));
         const delta = (depois - antes) / Math.max(antes, 1);

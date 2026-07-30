@@ -51,9 +51,7 @@ export function FilterBar({
         </div>
       )}
 
-      {filters && (
-        <div className="flex min-w-0 flex-wrap items-center gap-2">{filters}</div>
-      )}
+      {filters && <div className="flex min-w-0 flex-wrap items-center gap-2">{filters}</div>}
 
       <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
         {onClear && activeCount > 0 && (

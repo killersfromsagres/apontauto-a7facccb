@@ -133,8 +133,7 @@ export async function parseChamadosFile(file: File): Promise<ParseResult> {
   const wb = XLSX.read(buf, { type: "array" });
   // Prefere aba com "preventiv" ou "backorder" ou "chamado", senão a primeira.
   const preferred =
-    wb.SheetNames.find((n) => /PREVENTIV|BACKORDER|CHAMADO|OS/.test(norm(n))) ??
-    wb.SheetNames[0];
+    wb.SheetNames.find((n) => /PREVENTIV|BACKORDER|CHAMADO|OS/.test(norm(n))) ?? wb.SheetNames[0];
   const sheet = wb.Sheets[preferred];
   const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 

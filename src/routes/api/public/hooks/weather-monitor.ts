@@ -75,7 +75,8 @@ async function readOpenMeteo(): Promise<Reading> {
     distance_km: 0,
     precipitation_mm: mm,
     rain_rate_mm_h: mm,
-    precipitation_probability: j.hourly?.precipitation_probability?.[new Date().getUTCHours()] ?? null,
+    precipitation_probability:
+      j.hourly?.precipitation_probability?.[new Date().getUTCHours()] ?? null,
     weather_code: Number(c.weather_code ?? 0),
     temperature_c: Number(c.temperature_2m ?? 0),
     humidity_pct: Number(c.relative_humidity_2m ?? 0),
@@ -157,8 +158,14 @@ async function readObservational(): Promise<Reading | null> {
   const mm = Number(
     (j.precipitation ?? j.chuva ?? j.valorMedida ?? (j as { CHUVA?: number }).CHUVA ?? 0) as number,
   );
-  const lat = Number((j.latitude ?? (j as { VL_LATITUDE?: number }).VL_LATITUDE ?? TALUDE_SITE.latitude) as number);
-  const lon = Number((j.longitude ?? (j as { VL_LONGITUDE?: number }).VL_LONGITUDE ?? TALUDE_SITE.longitude) as number);
+  const lat = Number(
+    (j.latitude ?? (j as { VL_LATITUDE?: number }).VL_LATITUDE ?? TALUDE_SITE.latitude) as number,
+  );
+  const lon = Number(
+    (j.longitude ??
+      (j as { VL_LONGITUDE?: number }).VL_LONGITUDE ??
+      TALUDE_SITE.longitude) as number,
+  );
   const meta = SOURCE_META[source];
   return {
     source,
@@ -216,12 +223,14 @@ export const Route = createFileRoute("/api/public/hooks/weather-monitor")({
         });
 
         if (readings.length) {
-          await supabaseAdmin.from("weather_observations").insert(
-            readings.map((r) => ({ ...r, raw_payload: r.raw_payload as never })),
-          );
+          await supabaseAdmin
+            .from("weather_observations")
+            .insert(readings.map((r) => ({ ...r, raw_payload: r.raw_payload as never })));
         }
         for (const row of healthRows) {
-          await supabaseAdmin.from("weather_source_health").upsert(row as never, { onConflict: "source" });
+          await supabaseAdmin
+            .from("weather_source_health")
+            .upsert(row as never, { onConflict: "source" });
         }
 
         // ── Regra mínima de chuva ────────────────────────────────
@@ -270,7 +279,9 @@ export const Route = createFileRoute("/api/public/hooks/weather-monitor")({
                 accumulated_mm: maxMm,
                 sources: bestSources,
                 confidence: bestConfidence,
-                confirmation_type: bestSources.includes("pluviometro") ? "pluviometro" : "automatica",
+                confirmation_type: bestSources.includes("pluviometro")
+                  ? "pluviometro"
+                  : "automatica",
                 wait_minutes: DEFAULT_WAIT_MINUTES,
                 affected_scope: {
                   local: `${TALUDE_SITE.bairro}, ${TALUDE_SITE.cidade}-${TALUDE_SITE.estado}`,
@@ -362,7 +373,10 @@ export const Route = createFileRoute("/api/public/hooks/weather-monitor")({
             .order("observed_at", { ascending: false })
             .limit(20);
           const lastWet = (lastRain ?? []).find((o) =>
-            isRaining({ precipitation_mm: o.precipitation_mm as number, weather_code: o.weather_code }),
+            isRaining({
+              precipitation_mm: o.precipitation_mm as number,
+              weather_code: o.weather_code,
+            }),
           );
           const lastWetAt = new Date(lastWet?.observed_at ?? openEvent.started_at).getTime();
           if (now.getTime() - lastWetAt > EVENT_GROUP_MINUTES * 60_000) {

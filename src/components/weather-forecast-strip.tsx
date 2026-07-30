@@ -1,5 +1,13 @@
 import { memo, useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { ChevronLeft, ChevronRight, CloudRain, Droplets, Wind, HardHat, AlertTriangle } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  CloudRain,
+  Droplets,
+  Wind,
+  HardHat,
+  AlertTriangle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWeather } from "@/hooks/use-weather";
 import {
@@ -28,7 +36,6 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
   subtitle = "Previsão para planejamento de atividades externas",
   className,
 }: WeatherForecastStripProps) {
-
   const q = useWeather();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -93,9 +100,7 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
       <div className="mb-3 flex items-end justify-between gap-2">
         <div>
           <h3 className="font-display text-base font-semibold tracking-tight">{title}</h3>
-          {subtitle && (
-            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
         </div>
         <div className="hidden gap-1 sm:flex">
           <ArrowBtn dir="left" disabled={!canLeft} onClick={() => scrollBy(-1)} />
@@ -156,9 +161,7 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
             ))}
 
           {!q.isLoading && days.length === 0 && (
-            <div className="p-3 text-sm text-muted-foreground">
-              Sem previsão disponível.
-            </div>
+            <div className="p-3 text-sm text-muted-foreground">Sem previsão disponível.</div>
           )}
 
           {days.map((d) => {
@@ -253,17 +256,16 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                   </div>
                 </div>
 
-                <div className="mt-1 line-clamp-1 text-[10px] text-muted-foreground" title={info.label}>
+                <div
+                  className="mt-1 line-clamp-1 text-[10px] text-muted-foreground"
+                  title={info.label}
+                >
                   {info.label}
                 </div>
 
                 <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="text-lg font-bold text-foreground">
-                    {Math.round(d.tmax)}°
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {Math.round(d.tmin)}°
-                  </span>
+                  <span className="text-lg font-bold text-foreground">{Math.round(d.tmax)}°</span>
+                  <span className="text-xs text-muted-foreground">{Math.round(d.tmin)}°</span>
                 </div>
 
                 {/* Rain gauge — sempre visível, fundo escuro para contraste */}
@@ -288,7 +290,6 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
                     />
                   </div>
                 </div>
-
 
                 <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
@@ -322,7 +323,9 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
 
                 <div className="sr-only">
                   {WEEK_LONG[d.dow]} — {info.label} — máx {Math.round(d.tmax)}° / mín{" "}
-                  {Math.round(d.tmin)}° — {probPct}% de chuva. Limite crítico: {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%. Limite de alerta leve: {ANY_RAIN_RISK_THRESHOLD}%.
+                  {Math.round(d.tmin)}° — {probPct}% de chuva. Limite crítico:{" "}
+                  {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%. Limite de alerta leve:{" "}
+                  {ANY_RAIN_RISK_THRESHOLD}%.
                 </div>
               </div>
             );
@@ -332,7 +335,6 @@ export const WeatherForecastStrip = memo(function WeatherForecastStrip({
     </div>
   );
 });
-
 
 function ArrowBtn({
   dir,
@@ -360,4 +362,3 @@ function ArrowBtn({
     </button>
   );
 }
-

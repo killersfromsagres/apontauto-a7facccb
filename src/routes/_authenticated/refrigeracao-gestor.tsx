@@ -15,7 +15,6 @@ import {
   Snowflake,
   Filter,
   FileSpreadsheet,
-  
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -41,13 +40,9 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { readRefrigOsFile, type RefrigOsImport } from "@/lib/refrigeracao/reader";
-import {
-  readRefrigOsUpdateFile,
-  type RefrigOsUpdate,
-} from "@/lib/refrigeracao/bulk-update-reader";
+import { readRefrigOsUpdateFile, type RefrigOsUpdate } from "@/lib/refrigeracao/bulk-update-reader";
 import { generateRefrigeracaoExport } from "@/lib/refrigeracao/export";
 import { downloadBlob } from "@/lib/download";
-
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-gestor")({
   component: RefrigeracaoGestor,
@@ -140,9 +135,7 @@ function RefrigeracaoGestor() {
     queryFn: async (): Promise<Peca[]> => {
       const { data, error } = await supabase
         .from("refrigeracao_pecas")
-        .select(
-          "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at",
-        )
+        .select("id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Peca[];
@@ -210,12 +203,8 @@ function RefrigeracaoGestor() {
             problemas={filterByOs(problQuery.data)}
             fotos={filterByOs(fotosQuery.data)}
           />
-          <ImportOsDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
-          />
-          <BulkUpdateDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
-          />
+          <ImportOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })} />
+          <BulkUpdateDialog onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })} />
           <BulkEquipUpdateDialog
             onDone={() => qc.invalidateQueries({ queryKey: ["refrig", "os"] })}
           />
@@ -224,7 +213,6 @@ function RefrigeracaoGestor() {
         </>
       }
     >
-
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex w-full flex-1 items-center gap-2 sm:w-auto sm:min-w-[220px]">
@@ -719,12 +707,10 @@ function FotosGrid({
       }
       if (Object.keys(direct).length) setUrls((u) => ({ ...u, ...direct }));
       if (needSigned.length === 0) return;
-      const { data, error } = await supabase.storage
-        .from("refrigeracao-fotos")
-        .createSignedUrls(
-          needSigned.map((m) => m.storage_path as string),
-          60 * 60,
-        );
+      const { data, error } = await supabase.storage.from("refrigeracao-fotos").createSignedUrls(
+        needSigned.map((m) => m.storage_path as string),
+        60 * 60,
+      );
       if (error || cancelled) return;
       const next: Record<string, string> = {};
       needSigned.forEach((m, i) => {
@@ -864,9 +850,7 @@ function PecasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">
-                  {osById.get(p.os_id)?.numero_os ?? "?"}
-                </Td>
+                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
                 <Td>{p.descricao}</Td>
                 <Td>{p.quantidade}</Td>
                 <Td>
@@ -971,9 +955,7 @@ function ProblemasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">
-                  {osById.get(p.os_id)?.numero_os ?? "?"}
-                </Td>
+                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
                 <Td>{p.descricao}</Td>
                 <Td>
                   <Badge variant={gravityVariant(p.gravidade)}>{gravityLabel(p.gravidade)}</Badge>
@@ -1547,5 +1529,3 @@ function BulkEquipUpdateDialog({ onDone }: { onDone: () => void }) {
     </Dialog>
   );
 }
-
-

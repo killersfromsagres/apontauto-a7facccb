@@ -54,11 +54,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 import {
@@ -90,10 +86,33 @@ export const Route = createFileRoute("/_authenticated/painel-legal")({
   component: PainelLegalPage,
 });
 
-const MONTHS_SHORT = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+const MONTHS_SHORT = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
 const MONTHS_FULL = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 const PERIODICIDADES: Periodicidade[] = ["bimestral", "trimestral", "semestral", "anual"];
@@ -123,13 +142,19 @@ function fmt(d: string | null | undefined) {
 function TaskTypeIcon({ titulo, className }: { titulo: string; className?: string }) {
   const t = titulo.toLowerCase();
   const cls = cn("h-4 w-4", className);
-  if (/(caixa[s]?\s*d['’`\s]?\s*[áa]gua|caixa[s]?\s*de\s*[áa]gua|reservat[óo]rio|potabilidade|pot[áa]vel|cisterna|hidrossanit)/.test(t))
+  if (
+    /(caixa[s]?\s*d['’`\s]?\s*[áa]gua|caixa[s]?\s*de\s*[áa]gua|reservat[óo]rio|potabilidade|pot[áa]vel|cisterna|hidrossanit)/.test(
+      t,
+    )
+  )
     return <Droplets className={cn(cls, "text-sky-400")} strokeWidth={1.8} />;
   if (/(caixa\s*de\s*gordura|gordura|esgoto|efluente)/.test(t))
     return <Waves className={cn(cls, "text-amber-500")} strokeWidth={1.8} />;
   if (/(coifa|exaust[ãa]o|chamin[ée])/.test(t))
     return <ChefHat className={cn(cls, "text-orange-400")} strokeWidth={1.8} />;
-  if (/(an[áa]lise\s*de\s*ar|qualidade\s*do\s*ar|ar\s*condicionado|climatiza[çc][ãa]o|pmoc)/.test(t))
+  if (
+    /(an[áa]lise\s*de\s*ar|qualidade\s*do\s*ar|ar\s*condicionado|climatiza[çc][ãa]o|pmoc)/.test(t)
+  )
     return <Wind className={cn(cls, "text-cyan-400")} strokeWidth={1.8} />;
   return <FileText className={cn(cls, "text-slate-400")} strokeWidth={1.8} />;
 }
@@ -139,10 +164,7 @@ function CompanyName({ name, className }: { name: string; className?: string }) 
   if (!name) return <span className="text-muted-foreground">—</span>;
   return (
     <span
-      className={cn(
-        "inline-block bg-clip-text font-bold text-transparent",
-        className,
-      )}
+      className={cn("inline-block bg-clip-text font-bold text-transparent", className)}
       style={{
         backgroundImage:
           "linear-gradient(110deg, #ffffff 0%, #ffffff 40%, rgba(191,219,254,0.95) 50%, #ffffff 60%, #ffffff 100%)",
@@ -191,22 +213,29 @@ function useMarkedLegal() {
     try {
       const raw = window.localStorage.getItem("legal-calendar-marked");
       return raw ? new Set<string>(JSON.parse(raw)) : new Set();
-    } catch { return new Set(); }
+    } catch {
+      return new Set();
+    }
   });
   const persist = (s: Set<string>) => {
-    try { window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s))); } catch {}
+    try {
+      window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s)));
+    } catch {}
   };
   const toggleMark = (id: string) =>
     setMarked((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       persist(next);
       return next;
     });
-  const clearMarks = () => { setMarked(new Set()); persist(new Set()); };
+  const clearMarks = () => {
+    setMarked(new Set());
+    persist(new Set());
+  };
   return { marked, toggleMark, clearMarks };
 }
-
 
 /* -------------------------------------------------------------------------- */
 /*  Página                                                                    */
@@ -227,7 +256,6 @@ function PainelLegalPage() {
   const { isAdmin } = useIsAdmin();
   const { marked, toggleMark, clearMarks } = useMarkedLegal();
   const [onlyMarked, setOnlyMarked] = useState(false);
-
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["legal-items"],
@@ -336,7 +364,14 @@ function PainelLegalPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <AlertsBell alerts={alerts} onFocus={(id) => document.getElementById(`legal-row-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" })} />
+          <AlertsBell
+            alerts={alerts}
+            onFocus={(id) =>
+              document
+                .getElementById(`legal-row-${id}`)
+                ?.scrollIntoView({ behavior: "smooth", block: "center" })
+            }
+          />
           <Button
             variant={onlyMarked ? "default" : "outline"}
             size="sm"
@@ -344,7 +379,9 @@ function PainelLegalPage() {
             className="h-8 px-2 sm:px-3"
             title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
           >
-            <Star className={cn("h-3.5 w-3.5 sm:mr-1.5", onlyMarked && "fill-amber-400 text-amber-400")} />
+            <Star
+              className={cn("h-3.5 w-3.5 sm:mr-1.5", onlyMarked && "fill-amber-400 text-amber-400")}
+            />
             <span className="hidden sm:inline">{onlyMarked ? "Só marcadas" : "Todas"}</span>
             {marked.size > 0 && (
               <span className="ml-1 rounded-md bg-amber-400/20 px-1 text-[10px] font-bold text-amber-400">
@@ -357,36 +394,56 @@ function PainelLegalPage() {
               onClick={() => setView("lista")}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
-                view === "lista" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
+                view === "lista"
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:bg-muted/40",
               )}
               aria-label="Lista"
             >
-              <ListIcon className="h-3.5 w-3.5" /> <span className="hidden xs:inline sm:inline">Lista</span>
+              <ListIcon className="h-3.5 w-3.5" />{" "}
+              <span className="hidden xs:inline sm:inline">Lista</span>
             </button>
             <button
               onClick={() => setView("calendario")}
               className={cn(
                 "flex items-center gap-1.5 px-2.5 py-1 text-xs transition",
-                view === "calendario" ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted/40",
+                view === "calendario"
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:bg-muted/40",
               )}
               aria-label="Calendário"
             >
-              <CalendarDays className="h-3.5 w-3.5" /> <span className="hidden xs:inline sm:inline">Calendário</span>
+              <CalendarDays className="h-3.5 w-3.5" />{" "}
+              <span className="hidden xs:inline sm:inline">Calendário</span>
             </button>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} className="h-8 px-2 sm:px-3" aria-label="Exportar Excel">
-            <Download className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">Excel</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            className="h-8 px-2 sm:px-3"
+            aria-label="Exportar Excel"
+          >
+            <Download className="h-3.5 w-3.5 sm:mr-1.5" />{" "}
+            <span className="hidden sm:inline">Excel</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportPDF} className="h-8 px-2 sm:px-3" aria-label="Exportar PDF">
-            <FileDown className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">PDF</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className="h-8 px-2 sm:px-3"
+            aria-label="Exportar PDF"
+          >
+            <FileDown className="h-3.5 w-3.5 sm:mr-1.5" />{" "}
+            <span className="hidden sm:inline">PDF</span>
           </Button>
           <Button size="sm" onClick={openCreate} className="h-8 px-2 sm:px-3">
-            <Plus className="h-3.5 w-3.5 sm:mr-1.5" /> <span className="hidden sm:inline">Novo item</span><span className="sm:hidden">Novo</span>
+            <Plus className="h-3.5 w-3.5 sm:mr-1.5" />{" "}
+            <span className="hidden sm:inline">Novo item</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </div>
-
-
 
       {/* Filtros */}
       <GlassCard className="mb-4">
@@ -429,28 +486,29 @@ function PainelLegalPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as LegalStatus | "todos")}>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => setStatusFilter(v as LegalStatus | "todos")}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              {(["todos", "em_dia", "proximo", "vencido", "concluido", "sem_agenda"] as const).map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </SelectItem>
-              ))}
+              {(["todos", "em_dia", "proximo", "vencido", "concluido", "sem_agenda"] as const).map(
+                (s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </SelectItem>
+                ),
+              )}
             </SelectContent>
           </Select>
         </div>
 
         {suggestGroup && (
-          <div
-            className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200 animate-in fade-in slide-in-from-top-1 duration-200"
-          >
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200 animate-in fade-in slide-in-from-top-1 duration-200">
             <FilterIcon className="h-4 w-4" />
-            <span>
-              A lista está grande ({filtered.length} itens). Que tal agrupar?
-            </span>
+            <span>A lista está grande ({filtered.length} itens). Que tal agrupar?</span>
             <Button size="sm" variant="secondary" onClick={() => setGroup("empresa")}>
               Por empresa
             </Button>
@@ -459,7 +517,6 @@ function PainelLegalPage() {
             </Button>
           </div>
         )}
-
 
         {group !== "nenhum" && (
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
@@ -473,7 +530,9 @@ function PainelLegalPage() {
 
       {/* Corpo */}
       {isLoading ? (
-        <GlassCard><p className="text-sm text-muted-foreground">Carregando…</p></GlassCard>
+        <GlassCard>
+          <p className="text-sm text-muted-foreground">Carregando…</p>
+        </GlassCard>
       ) : view === "lista" ? (
         <ListView
           items={filtered}
@@ -568,9 +627,13 @@ function AlertsBell({ alerts, onFocus }: { alerts: LegalAlert[]; onFocus: (id: s
                   <span
                     className={cn(
                       "h-2 w-2 shrink-0 rounded-full",
-                      a.level === "overdue" ? "bg-red-500" :
-                      a.level === "danger" ? "bg-red-400" :
-                      a.level === "warn" ? "bg-amber-500" : "bg-sky-400",
+                      a.level === "overdue"
+                        ? "bg-red-500"
+                        : a.level === "danger"
+                          ? "bg-red-400"
+                          : a.level === "warn"
+                            ? "bg-amber-500"
+                            : "bg-sky-400",
                     )}
                   />
                   <p className="min-w-0 flex-1 truncate text-sm font-medium">{a.titulo}</p>
@@ -607,7 +670,11 @@ function ListView({
   onAttach,
 }: {
   items: LegalItem[];
-  execs: ReturnType<typeof useQuery<Awaited<ReturnType<typeof listExecutions>>>>["data"] extends infer T ? NonNullable<T> : never;
+  execs: ReturnType<
+    typeof useQuery<Awaited<ReturnType<typeof listExecutions>>>
+  >["data"] extends infer T
+    ? NonNullable<T>
+    : never;
   attCounts: Record<string, number>;
   year: number;
   setYear: (y: number) => void;
@@ -624,7 +691,8 @@ function ListView({
     if (group === "nenhum") return [{ key: "", items }];
     const map = new Map<string, LegalItem[]>();
     for (const it of items) {
-      const key = group === "empresa" ? it.empresa || "Sem empresa" : PERIODICIDADE_LABEL[it.periodicidade];
+      const key =
+        group === "empresa" ? it.empresa || "Sem empresa" : PERIODICIDADE_LABEL[it.periodicidade];
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(it);
     }
@@ -645,9 +713,7 @@ function ListView({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {items.length} tarefa(s)
-        </p>
+        <p className="text-xs text-muted-foreground">{items.length} tarefa(s)</p>
       </div>
 
       {groups.map((g) => (
@@ -671,7 +737,9 @@ function ListView({
                   <Th>Agendamento</Th>
                   <Th>Period.</Th>
                   {MONTHS_SHORT.map((m) => (
-                    <Th key={m} className="text-center">{m}</Th>
+                    <Th key={m} className="text-center">
+                      {m}
+                    </Th>
                   ))}
                   <Th className="text-right">Ações</Th>
                 </tr>
@@ -681,9 +749,13 @@ function ListView({
                   const st = statusOf(it);
                   const cells = buildMonthMap(it, execs as never, year);
                   const rowHl =
-                    st === "vencido" ? "bg-red-500/5" :
-                    st === "proximo" ? "bg-amber-500/5" :
-                    st === "sem_agenda" ? "bg-yellow-500/5" : "";
+                    st === "vencido"
+                      ? "bg-red-500/5"
+                      : st === "proximo"
+                        ? "bg-amber-500/5"
+                        : st === "sem_agenda"
+                          ? "bg-yellow-500/5"
+                          : "";
                   return (
                     <tr
                       key={it.id}
@@ -695,17 +767,23 @@ function ListView({
                     >
                       <Td>
                         <div className="flex items-start gap-2">
-                          <span className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)} />
+                          <span
+                            className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)}
+                          />
                           <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} />
                         </div>
                       </Td>
-                      <Td><CompanyName name={it.empresa} /></Td>
+                      <Td>
+                        <CompanyName name={it.empresa} />
+                      </Td>
                       <Td className="text-muted-foreground">
                         {it.predio ? (
                           <span className="inline-flex items-center gap-1">
                             <Building2 className="h-3.5 w-3.5 opacity-70" /> {it.predio}
                           </span>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </Td>
                       <Td>{fmt(it.ultimaExecucao)}</Td>
                       <Td>{fmt(it.proximaExecucao)}</Td>
@@ -753,67 +831,71 @@ function ListView({
               const cells = buildMonthMap(it, execs as never, year);
               return (
                 <div key={it.id} id={`legal-row-${it.id}`}>
-                <GlassCard
-                  className={cn(
-                    "relative overflow-hidden",
-                    st === "vencido" && "ring-1 ring-red-500/30",
-                    st === "proximo" && "ring-1 ring-amber-500/30",
-                    st === "sem_agenda" && "ring-1 ring-yellow-500/30",
-                  )}
-                >
-                  <div
+                  <GlassCard
                     className={cn(
-                      "absolute inset-y-0 left-0 w-1",
-                      statusMeta[st].dot,
+                      "relative overflow-hidden",
+                      st === "vencido" && "ring-1 ring-red-500/30",
+                      st === "proximo" && "ring-1 ring-amber-500/30",
+                      st === "sem_agenda" && "ring-1 ring-yellow-500/30",
                     )}
-                  />
-                  <div className="pl-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} className="w-full" />
-                        <p className="mt-0.5 truncate text-xs">
-                          <CompanyName name={it.empresa} className="text-xs" />
-                          <span className="text-muted-foreground"> · {PERIODICIDADE_LABEL[it.periodicidade]}</span>
-                          {it.predio && (
-                            <span className="text-muted-foreground"> · {it.predio}</span>
-                          )}
-                        </p>
-                      </div>
-                      <StatusBadge status={st} />
-                    </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                      <MiniInfo label="Última" value={fmt(it.ultimaExecucao)} />
-                      <MiniInfo label="Próxima" value={fmt(it.proximaExecucao)} />
-                      <MiniInfo label="Agenda" value={fmt(it.agendamento)} />
-                    </div>
-                    {it.observacoes && (
-                      <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-muted/20 p-2 text-xs leading-relaxed text-muted-foreground">
-                        {it.observacoes}
-                      </p>
-                    )}
-                    <div className="mt-3 grid grid-cols-12 gap-1">
-                      {cells.map((c, i) => (
-                        <div key={i} className="flex flex-col items-center gap-0.5">
-                          <span className="text-[9px] text-muted-foreground">{MONTHS_SHORT[i][0]}</span>
-                          <MonthCellIcon cell={c} />
+                  >
+                    <div className={cn("absolute inset-y-0 left-0 w-1", statusMeta[st].dot)} />
+                    <div className="pl-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <TaskNameButton
+                            titulo={it.titulo}
+                            onClick={() => onAttach(it)}
+                            className="w-full"
+                          />
+                          <p className="mt-0.5 truncate text-xs">
+                            <CompanyName name={it.empresa} className="text-xs" />
+                            <span className="text-muted-foreground">
+                              {" "}
+                              · {PERIODICIDADE_LABEL[it.periodicidade]}
+                            </span>
+                            {it.predio && (
+                              <span className="text-muted-foreground"> · {it.predio}</span>
+                            )}
+                          </p>
                         </div>
-                      ))}
+                        <StatusBadge status={st} />
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                        <MiniInfo label="Última" value={fmt(it.ultimaExecucao)} />
+                        <MiniInfo label="Próxima" value={fmt(it.proximaExecucao)} />
+                        <MiniInfo label="Agenda" value={fmt(it.agendamento)} />
+                      </div>
+                      {it.observacoes && (
+                        <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-muted/20 p-2 text-xs leading-relaxed text-muted-foreground">
+                          {it.observacoes}
+                        </p>
+                      )}
+                      <div className="mt-3 grid grid-cols-12 gap-1">
+                        {cells.map((c, i) => (
+                          <div key={i} className="flex flex-col items-center gap-0.5">
+                            <span className="text-[9px] text-muted-foreground">
+                              {MONTHS_SHORT[i][0]}
+                            </span>
+                            <MonthCellIcon cell={c} />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex flex-wrap justify-end gap-1">
+                        <RowActions
+                          item={it}
+                          attachCount={attCounts[it.id] ?? 0}
+                          isAdmin={isAdmin}
+                          isMarked={marked.has(it.id)}
+                          onToggleMark={onToggleMark}
+                          onComplete={onComplete}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onAttach={onAttach}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap justify-end gap-1">
-                      <RowActions
-                        item={it}
-                        attachCount={attCounts[it.id] ?? 0}
-                        isAdmin={isAdmin}
-                        isMarked={marked.has(it.id)}
-                        onToggleMark={onToggleMark}
-                        onComplete={onComplete}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                        onAttach={onAttach}
-                      />
-                    </div>
-                  </div>
-                </GlassCard>
+                  </GlassCard>
                 </div>
               );
             })}
@@ -831,7 +913,12 @@ function ListView({
 
 function Th({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <th className={cn("sticky top-0 z-10 bg-card/60 px-3 py-2 font-semibold backdrop-blur", className)}>
+    <th
+      className={cn(
+        "sticky top-0 z-10 bg-card/60 px-3 py-2 font-semibold backdrop-blur",
+        className,
+      )}
+    >
       {children}
     </th>
   );
@@ -924,7 +1011,12 @@ function RowActions({
       >
         <Star className={cn("h-4 w-4", isMarked && "fill-amber-400")} />
       </button>
-      <Button size="sm" variant="ghost" onClick={() => onComplete(item)} title="Marcar como concluído">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => onComplete(item)}
+        title="Marcar como concluído"
+      >
         <CheckCircle2 className="h-4 w-4 text-emerald-400" />
       </Button>
       <Button size="sm" variant="ghost" onClick={() => onAttach(item)} title="Certificados">
@@ -983,7 +1075,6 @@ function CalendarView({
 
   const visibleItems = items;
 
-
   const eventsByDay = useMemo(() => {
     const m = new Map<string, LegalItem[]>();
     for (const it of visibleItems) {
@@ -1013,12 +1104,16 @@ function CalendarView({
 
   const change = (delta: number) => {
     const m = month + delta;
-    if (m < 0) { setMonth(11); setYear(year - 1); }
-    else if (m > 11) { setMonth(0); setYear(year + 1); }
-    else setMonth(m);
+    if (m < 0) {
+      setMonth(11);
+      setYear(year - 1);
+    } else if (m > 11) {
+      setMonth(0);
+      setYear(year + 1);
+    } else setMonth(m);
   };
 
-  const daySelected = selected ? eventsByDay.get(selected) ?? [] : [];
+  const daySelected = selected ? (eventsByDay.get(selected) ?? []) : [];
   const markedCount = marked.size;
 
   return (
@@ -1036,13 +1131,23 @@ function CalendarView({
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setYear(today.getFullYear()); setMonth(today.getMonth()); }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              setYear(today.getFullYear());
+              setMonth(today.getMonth());
+            }}
+          >
             Hoje
           </Button>
         </div>
         <div className="grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((d) => (
-            <div key={d} className="py-0.5">{d}</div>
+            <div key={d} className="py-0.5">
+              {d}
+            </div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-0.5">
@@ -1053,9 +1158,7 @@ function CalendarView({
             const isSel = c.date === selected;
             const hasMarked = evs.some((e) => marked.has(e.id));
             const worstStatus: LegalStatus | null = evs.length
-              ? (evs.map((e) => statusOf(e)).sort((a, b) =>
-                  order(b) - order(a),
-                )[0])
+              ? evs.map((e) => statusOf(e)).sort((a, b) => order(b) - order(a))[0]
               : null;
             return (
               <button
@@ -1068,7 +1171,9 @@ function CalendarView({
                   isSel && "border-primary/70 bg-primary/10",
                 )}
               >
-                <span className={cn("font-medium leading-none", isToday && "text-primary")}>{c.day}</span>
+                <span className={cn("font-medium leading-none", isToday && "text-primary")}>
+                  {c.day}
+                </span>
                 {hasMarked && (
                   <Star className="absolute right-0.5 top-0.5 h-2.5 w-2.5 fill-amber-400 text-amber-400" />
                 )}
@@ -1076,7 +1181,9 @@ function CalendarView({
                   <div className="flex flex-wrap items-center justify-center gap-0.5">
                     <span className={cn("h-1.5 w-1.5 rounded-full", statusMeta[worstStatus].dot)} />
                     {evs.length > 1 && (
-                      <span className="text-[8px] leading-none text-muted-foreground">{evs.length}</span>
+                      <span className="text-[8px] leading-none text-muted-foreground">
+                        {evs.length}
+                      </span>
                     )}
                   </div>
                 )}
@@ -1085,7 +1192,6 @@ function CalendarView({
           })}
         </div>
       </GlassCard>
-
 
       <GlassCard>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -1107,11 +1213,21 @@ function CalendarView({
               className="h-8"
               title={onlyMarked ? "Mostrar todas" : "Retrair — só marcadas"}
             >
-              {onlyMarked ? <EyeOff className="mr-1.5 h-3.5 w-3.5" /> : <Eye className="mr-1.5 h-3.5 w-3.5" />}
+              {onlyMarked ? (
+                <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+              ) : (
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+              )}
               {onlyMarked ? "Só marcadas" : "Todas"}
             </Button>
             {markedCount > 0 && (
-              <Button size="sm" variant="ghost" onClick={onClearMarks} className="h-8" title="Limpar marcações">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onClearMarks}
+                className="h-8"
+                title="Limpar marcações"
+              >
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
@@ -1181,7 +1297,15 @@ function CalendarView({
 }
 
 function order(s: LegalStatus): number {
-  return s === "vencido" ? 4 : s === "proximo" ? 3 : s === "sem_agenda" ? 2 : s === "em_dia" ? 1 : 0;
+  return s === "vencido"
+    ? 4
+    : s === "proximo"
+      ? 3
+      : s === "sem_agenda"
+        ? 2
+        : s === "em_dia"
+          ? 1
+          : 0;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -1292,52 +1416,92 @@ function LegalItemForm({
         <form onSubmit={submit} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="titulo">Tarefa</Label>
-            <Input id="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Caixa d'água A160" required />
+            <Input
+              id="titulo"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              placeholder="Ex.: Caixa d'água A160"
+              required
+            />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="empresa">Empresa</Label>
-              <Input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: Real Hidrojato" />
+              <Input
+                id="empresa"
+                value={empresa}
+                onChange={(e) => setEmpresa(e.target.value)}
+                placeholder="Ex.: Real Hidrojato"
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="predio">Prédio</Label>
-              <Input id="predio" value={predio} onChange={(e) => setPredio(e.target.value)} placeholder="Ex.: Torre A / Bloco 2" />
+              <Input
+                id="predio"
+                value={predio}
+                onChange={(e) => setPredio(e.target.value)}
+                placeholder="Ex.: Torre A / Bloco 2"
+              />
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Periodicidade</Label>
-              <Select value={periodicidade} onValueChange={(v) => setPeriodicidade(v as Periodicidade)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={periodicidade}
+                onValueChange={(v) => setPeriodicidade(v as Periodicidade)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {PERIODICIDADES.map((p) => (
-                    <SelectItem key={p} value={p}>{PERIODICIDADE_LABEL[p]}</SelectItem>
+                    <SelectItem key={p} value={p}>
+                      {PERIODICIDADE_LABEL[p]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ult">Última execução</Label>
-              <Input id="ult" type="date" value={ultimaExecucao} onChange={(e) => setUltimaExecucao(e.target.value)} />
+              <Input
+                id="ult"
+                type="date"
+                value={ultimaExecucao}
+                onChange={(e) => setUltimaExecucao(e.target.value)}
+              />
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="ini">Próxima execução</Label>
-              <Input id="ini" type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required />
+              <Input
+                id="ini"
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                required
+              />
               {autoNext && autoNext !== dataInicio && (
                 <button
                   type="button"
                   className="text-[11px] text-primary underline underline-offset-2"
                   onClick={() => setDataInicio(autoNext)}
                 >
-                  Sugerir {new Date(autoNext + "T00:00:00").toLocaleDateString("pt-BR")} (base última + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()})
+                  Sugerir {new Date(autoNext + "T00:00:00").toLocaleDateString("pt-BR")} (base
+                  última + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()})
                 </button>
               )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="agenda">Agendamento (opcional)</Label>
-              <Input id="agenda" type="date" value={agendamento} onChange={(e) => setAgendamento(e.target.value)} />
+              <Input
+                id="agenda"
+                type="date"
+                value={agendamento}
+                onChange={(e) => setAgendamento(e.target.value)}
+              />
             </div>
           </div>
           <div className="space-y-1.5">
@@ -1352,7 +1516,9 @@ function LegalItemForm({
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={saving}>
               {saving ? "Salvando…" : editing ? "Salvar" : "Criar"}
             </Button>

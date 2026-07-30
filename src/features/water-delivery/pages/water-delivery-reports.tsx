@@ -13,14 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  FileSpreadsheet,
-  FileText,
-  Images,
-  Printer,
-  Share2,
-  TriangleAlert,
-} from "lucide-react";
+import { FileSpreadsheet, FileText, Images, Printer, Share2, TriangleAlert } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -52,7 +45,6 @@ import {
   imprimirPainel,
   resumoTexto,
 } from "@/features/water-delivery/reports/relatorios";
-
 
 function diasAtras(dias: number): string {
   const d = new Date();
@@ -221,7 +213,10 @@ export function WaterDeliveryReports() {
             <KpiCard label="Não realizadas" value={entrega.naoRealizadas} />
             <KpiCard label="Evidências faltantes" value={entrega.evidenciasFaltantes} />
             <KpiCard label="Divergências de bags" value={entrega.divergenciasBags} />
-            <KpiCard label="Previsto x realizado" value={`${entrega.aderenciaPrevistoRealizado}%`} />
+            <KpiCard
+              label="Previsto x realizado"
+              value={`${entrega.aderenciaPrevistoRealizado}%`}
+            />
             <KpiCard label="Tempo médio/parada" value={`${entrega.tempoMedioParadaMin} min`} />
             <KpiCard label="Duração média/rota" value={`${entrega.duracaoMediaRotaMin} min`} />
             <KpiCard label="Quilometragem" value={`${entrega.kmTotal} km`} />
@@ -239,7 +234,9 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Cumprimento por dia da semana</h2>
                 <div className="h-56">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={entrega.porDia.map((l) => ({ dia: l.chave.slice(0, 3), taxa: l.taxa }))}>
+                    <BarChart
+                      data={entrega.porDia.map((l) => ({ dia: l.chave.slice(0, 3), taxa: l.taxa }))}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.4} />
                       <XAxis dataKey="dia" tick={{ fontSize: 11 }} />
                       <YAxis unit="%" tick={{ fontSize: 11 }} domain={[0, 100]} />
@@ -278,7 +275,13 @@ export function WaterDeliveryReports() {
                       <XAxis dataKey="data" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip />
-                      <Line type="monotone" dataKey="bags" stroke="var(--primary)" strokeWidth={2} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="bags"
+                        stroke="var(--primary)"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -288,7 +291,9 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Cumprimento por prédio</h2>
                 <Tabela
                   head={["Prédio", "Paradas", "Taxa", "Bags"]}
-                  rows={entrega.porPredio.slice(0, 12).map((l) => [l.chave, l.total, `${l.taxa}%`, l.bags])}
+                  rows={entrega.porPredio
+                    .slice(0, 12)
+                    .map((l) => [l.chave, l.total, `${l.taxa}%`, l.bags])}
                 />
               </GlassCard>
 
@@ -296,13 +301,15 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Produtividade por colaborador</h2>
                 <Tabela
                   head={["Colaborador", "Paradas", "Bags", "Tempo médio", "Bags/h"]}
-                  rows={entrega.porColaborador.slice(0, 12).map((l) => [
-                    l.chave,
-                    l.total,
-                    l.bags,
-                    `${l.tempoMedioParadaMin} min`,
-                    l.produtividadeBagsHora,
-                  ])}
+                  rows={entrega.porColaborador
+                    .slice(0, 12)
+                    .map((l) => [
+                      l.chave,
+                      l.total,
+                      l.bags,
+                      `${l.tempoMedioParadaMin} min`,
+                      l.produtividadeBagsHora,
+                    ])}
                 />
               </GlassCard>
 
@@ -310,14 +317,16 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Rotas — duração e quilometragem</h2>
                 <Tabela
                   head={["Data", "Equipe", "Paradas", "Duração", "Km", "Diverg."]}
-                  rows={entrega.rotas.slice(0, 12).map((r) => [
-                    r.data.slice(8) + "/" + r.data.slice(5, 7),
-                    r.equipe || "—",
-                    r.paradas,
-                    r.duracaoMin != null ? `${r.duracaoMin} min` : "—",
-                    r.km ?? "—",
-                    r.divergencia,
-                  ])}
+                  rows={entrega.rotas
+                    .slice(0, 12)
+                    .map((r) => [
+                      r.data.slice(8) + "/" + r.data.slice(5, 7),
+                      r.equipe || "—",
+                      r.paradas,
+                      r.duracaoMin != null ? `${r.duracaoMin} min` : "—",
+                      r.km ?? "—",
+                      r.divergencia,
+                    ])}
                 />
               </GlassCard>
 
@@ -341,12 +350,9 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Utilização de veículos</h2>
                 <Tabela
                   head={["Veículo", "Rotas", "Km", "Paradas"]}
-                  rows={entrega.porVeiculo.slice(0, 10).map((v) => [
-                    v.veiculo,
-                    v.rotas,
-                    Math.round(v.km * 10) / 10,
-                    v.paradas,
-                  ])}
+                  rows={entrega.porVeiculo
+                    .slice(0, 10)
+                    .map((v) => [v.veiculo, v.rotas, Math.round(v.km * 10) / 10, v.paradas])}
                 />
               </GlassCard>
 
@@ -354,12 +360,9 @@ export function WaterDeliveryReports() {
                 <h2 className="text-sm font-semibold">Consumo estimado por local</h2>
                 <Tabela
                   head={["Prédio", "Pontos", "Bags", "Média/ponto"]}
-                  rows={entrega.consumoPorLocal.slice(0, 12).map((c) => [
-                    c.predio,
-                    c.pontos,
-                    c.bags,
-                    c.mediaPorPonto,
-                  ])}
+                  rows={entrega.consumoPorLocal
+                    .slice(0, 12)
+                    .map((c) => [c.predio, c.pontos, c.bags, c.mediaPorPonto])}
                 />
               </GlassCard>
             </div>
@@ -375,15 +378,25 @@ export function WaterDeliveryReports() {
             <KpiCard label="Reincidências" value={filtros.reincidencia} />
             <KpiCard label="Tempo médio de triagem" value={`${filtros.tempoTriagemMedioH} h`} />
             <KpiCard label="Tempo médio de conclusão" value={`${filtros.tempoConclusaoMedioH} h`} />
-            <KpiCard label="Preventiva x corretiva" value={`${filtros.preventivas} x ${filtros.corretivas}`} />
+            <KpiCard
+              label="Preventiva x corretiva"
+              value={`${filtros.preventivas} x ${filtros.corretivas}`}
+            />
             <KpiCard
               label="Avaliação pós-serviço"
-              value={filtros.avaliacaoMedia != null ? `${filtros.avaliacaoMedia} (${filtros.avaliacoes})` : "—"}
+              value={
+                filtros.avaliacaoMedia != null
+                  ? `${filtros.avaliacaoMedia} (${filtros.avaliacoes})`
+                  : "—"
+              }
             />
           </div>
 
           {filtros.total === 0 ? (
-            <EmptyState title="Sem solicitações" description="Nenhum pedido de filtro registrado até agora." />
+            <EmptyState
+              title="Sem solicitações"
+              description="Nenhum pedido de filtro registrado até agora."
+            />
           ) : (
             <div className="grid gap-3 lg:grid-cols-2">
               <GlassCard className="space-y-3 p-4">
@@ -423,7 +436,8 @@ export function WaterDeliveryReports() {
                 <GlassCard className="p-4">
                   <p className="text-sm text-muted-foreground">
                     Material consumido informado no período:{" "}
-                    <span className="font-semibold text-foreground">{filtros.custoTotal}</span> unidade(s).
+                    <span className="font-semibold text-foreground">{filtros.custoTotal}</span>{" "}
+                    unidade(s).
                   </p>
                 </GlassCard>
               )}
@@ -454,7 +468,11 @@ export function WaterDeliveryReports() {
                 variant="outline"
                 disabled={ocupado !== null}
                 onClick={() =>
-                  acao("predio", () => exportarRelatorioPredio(entrega, periodo), "Relatório por prédio gerado.")
+                  acao(
+                    "predio",
+                    () => exportarRelatorioPredio(entrega, periodo),
+                    "Relatório por prédio gerado.",
+                  )
                 }
               >
                 <FileSpreadsheet className="size-4" /> Relatório por prédio
@@ -557,7 +575,8 @@ export function WaterDeliveryReports() {
                     className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/50 bg-card/40 p-2.5"
                   >
                     <span className="min-w-0 text-sm">
-                      {r.data.split("-").reverse().join("/")} · {r.turno} · {r.equipe || "sem equipe"}
+                      {r.data.split("-").reverse().join("/")} · {r.turno} ·{" "}
+                      {r.equipe || "sem equipe"}
                       <span className="block text-xs text-muted-foreground">
                         {r.veiculo ?? "sem veículo"} · {r.status}
                       </span>

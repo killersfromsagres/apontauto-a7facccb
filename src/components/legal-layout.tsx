@@ -18,7 +18,15 @@ export function LegalLayout({
       <header className="border-b border-border/60 bg-card/40 backdrop-blur">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={logo.url} alt="Apont Auto" className="h-8 w-auto" width={32} height={32} decoding="async" loading="eager" />
+            <img
+              src={logo.url}
+              alt="Apont Auto"
+              className="h-8 w-auto"
+              width={32}
+              height={32}
+              decoding="async"
+              loading="eager"
+            />
             <span className="font-display text-base font-semibold">Apont Auto</span>
           </Link>
           <Link
@@ -61,7 +69,10 @@ export function LegalLayout({
               </Link>
             ))}
           </nav>
-          <p className="mt-5 tracking-wide">© {new Date().getFullYear()} Apont Auto — Sistema de Apontamento de Manutenção Industrial</p>
+          <p className="mt-5 tracking-wide">
+            © {new Date().getFullYear()} Apont Auto — Sistema de Apontamento de Manutenção
+            Industrial
+          </p>
         </div>
       </footer>
     </div>

@@ -57,8 +57,7 @@ export function DashboardFilters({
   activeFilterCount: number;
   onReset: () => void;
 }) {
-  const set = (patch: Partial<Filters>) =>
-    setFilters((f) => ({ ...f, ...patch }));
+  const set = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }));
 
   return (
     <GlassCard delay={0.15}>

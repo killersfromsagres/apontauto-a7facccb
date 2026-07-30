@@ -21,7 +21,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { STATUS_LABEL } from "@/modules/work-orders";
 import {
@@ -49,7 +55,13 @@ export function CapacityView() {
   const [sim, setSim] = useState<Record<string, string> | null>(null);
   const [editEquipe, setEditEquipe] = useState<string | null>(null);
   const [form, setForm] = useState({ ...DEFAULT_SETTING });
-  const [absence, setAbsence] = useState({ equipe: "", tecnico: "", inicio: "", fim: "", motivo: "ferias" });
+  const [absence, setAbsence] = useState({
+    equipe: "",
+    tecnico: "",
+    inicio: "",
+    fim: "",
+    motivo: "ferias",
+  });
 
   const sunday = useMemo(() => {
     const d = new Date(anchor);
@@ -74,8 +86,7 @@ export function CapacityView() {
   });
 
   const teams = useMemo(
-    () =>
-      buildWeek(anchor, osQ.data ?? [], settingsQ.data ?? [], absencesQ.data ?? []),
+    () => buildWeek(anchor, osQ.data ?? [], settingsQ.data ?? [], absencesQ.data ?? []),
     [anchor, osQ.data, settingsQ.data, absencesQ.data],
   );
   const conflicts = useMemo(() => detectConflicts(teams), [teams]);
@@ -94,7 +105,9 @@ export function CapacityView() {
   async function move(os: PlannedOS, day: string | null) {
     try {
       await applySchedule([{ id: os.id, modalidade: os.modalidade, data: day }]);
-      toast.success(day ? `OS ${os.numeroOs} programada para ${day}` : `OS ${os.numeroOs} desprogramada`);
+      toast.success(
+        day ? `OS ${os.numeroOs} programada para ${day}` : `OS ${os.numeroOs} desprogramada`,
+      );
       qc.invalidateQueries({ queryKey: ["capacity-os"] });
     } catch (e) {
       toast.error((e as Error).message);
@@ -136,7 +149,9 @@ export function CapacityView() {
       return toast.error("Preencha equipe, técnico e o período.");
     }
     const { data: u } = await supabase.auth.getUser();
-    const { error } = await supabase.from("team_absences").insert({ ...absence, created_by: u.user?.id });
+    const { error } = await supabase
+      .from("team_absences")
+      .insert({ ...absence, created_by: u.user?.id });
     if (error) return toast.error(error.message);
     toast.success("Ausência registrada.");
     setAbsence({ equipe: "", tecnico: "", inicio: "", fim: "", motivo: "ferias" });
@@ -150,14 +165,24 @@ export function CapacityView() {
       description="Capacidade por equipe e técnico, jornada configurável, feriados, ausências, carga planejada x executada, gargalos, simulação e sugestão automática."
       actions={
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => shift(-1)} aria-label="Semana anterior">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => shift(-1)}
+            aria-label="Semana anterior"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Badge variant="outline" className="whitespace-nowrap px-3 py-2">
             <CalendarRange className="mr-2 h-3.5 w-3.5" />
             {anchor.toLocaleDateString("pt-BR")} — {sunday.toLocaleDateString("pt-BR")}
           </Badge>
-          <Button variant="outline" size="icon" onClick={() => shift(1)} aria-label="Próxima semana">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => shift(1)}
+            aria-label="Próxima semana"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -167,7 +192,10 @@ export function CapacityView() {
         <TabsList className="flex w-full flex-wrap">
           <TabsTrigger value="semana">Semana</TabsTrigger>
           <TabsTrigger value="conflitos">
-            Conflitos {conflicts.length > 0 && <span className="ml-1 text-destructive">({conflicts.length})</span>}
+            Conflitos{" "}
+            {conflicts.length > 0 && (
+              <span className="ml-1 text-destructive">({conflicts.length})</span>
+            )}
           </TabsTrigger>
           <TabsTrigger value="jornada">Jornada e ausências</TabsTrigger>
         </TabsList>
@@ -181,7 +209,10 @@ export function CapacityView() {
             <GlassCard variant="block">
               <div className="text-eyebrow">Carga planejada</div>
               <div className="mt-1 text-2xl font-bold">{fmtHours(totalPlan)}</div>
-              <Progress value={totalCap ? Math.min(100, (totalPlan / totalCap) * 100) : 0} className="mt-2 h-1.5" />
+              <Progress
+                value={totalCap ? Math.min(100, (totalPlan / totalCap) * 100) : 0}
+                className="mt-2 h-1.5"
+              />
             </GlassCard>
             <GlassCard variant="block">
               <div className="text-eyebrow">Carga executada</div>
@@ -214,11 +245,7 @@ export function CapacityView() {
                   <span className="text-xs text-muted-foreground">
                     {fmtHours(t.planejadoMin)} / {fmtHours(t.capacidadeMin)}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setSim(suggestSchedule(t))}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => setSim(suggestSchedule(t))}>
                     <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Sugerir
                   </Button>
                   <Button
@@ -243,7 +270,11 @@ export function CapacityView() {
 
               <div className="grid gap-2 md:grid-cols-7">
                 {t.dias.map((d, i) => {
-                  const uso = d.capacidadeMin ? (d.planejadoMin / d.capacidadeMin) * 100 : d.planejadoMin ? 999 : 0;
+                  const uso = d.capacidadeMin
+                    ? (d.planejadoMin / d.capacidadeMin) * 100
+                    : d.planejadoMin
+                      ? 999
+                      : 0;
                   return (
                     <div
                       key={d.key}
@@ -322,10 +353,13 @@ export function CapacityView() {
           ))}
 
           {sim && Object.keys(sim).length > 0 && (
-            <GlassCard variant="block" className="flex flex-wrap items-center justify-between gap-3">
+            <GlassCard
+              variant="block"
+              className="flex flex-wrap items-center justify-between gap-3"
+            >
               <div className="text-sm">
-                Simulação com <strong>{Object.keys(sim).length}</strong> OS sugeridas por SLA,
-                local e capacidade disponível.
+                Simulação com <strong>{Object.keys(sim).length}</strong> OS sugeridas por SLA, local
+                e capacidade disponível.
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={() => setSim(null)}>
@@ -345,7 +379,10 @@ export function CapacityView() {
               <p className="text-sm text-muted-foreground">Nenhum conflito nesta semana.</p>
             ) : (
               conflicts.map((c) => (
-                <div key={c.key} className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                <div
+                  key={c.key}
+                  className="rounded-lg border border-destructive/30 bg-destructive/10 p-3"
+                >
                   <div className="text-sm font-medium">{c.label}</div>
                   <div className="text-xs text-muted-foreground">{c.detail}</div>
                 </div>
@@ -362,23 +399,40 @@ export function CapacityView() {
             <div className="grid gap-3 sm:grid-cols-5">
               <div>
                 <Label>Equipe</Label>
-                <Input value={absence.equipe} onChange={(e) => setAbsence({ ...absence, equipe: e.target.value })} />
+                <Input
+                  value={absence.equipe}
+                  onChange={(e) => setAbsence({ ...absence, equipe: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Técnico</Label>
-                <Input value={absence.tecnico} onChange={(e) => setAbsence({ ...absence, tecnico: e.target.value })} />
+                <Input
+                  value={absence.tecnico}
+                  onChange={(e) => setAbsence({ ...absence, tecnico: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Início</Label>
-                <Input type="date" value={absence.inicio} onChange={(e) => setAbsence({ ...absence, inicio: e.target.value })} />
+                <Input
+                  type="date"
+                  value={absence.inicio}
+                  onChange={(e) => setAbsence({ ...absence, inicio: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Fim</Label>
-                <Input type="date" value={absence.fim} onChange={(e) => setAbsence({ ...absence, fim: e.target.value })} />
+                <Input
+                  type="date"
+                  value={absence.fim}
+                  onChange={(e) => setAbsence({ ...absence, fim: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Motivo</Label>
-                <Input value={absence.motivo} onChange={(e) => setAbsence({ ...absence, motivo: e.target.value })} />
+                <Input
+                  value={absence.motivo}
+                  onChange={(e) => setAbsence({ ...absence, motivo: e.target.value })}
+                />
               </div>
             </div>
             <Button onClick={saveAbsence}>
@@ -392,12 +446,16 @@ export function CapacityView() {
               <p className="text-sm text-muted-foreground">Nenhuma ausência registrada.</p>
             ) : (
               (absencesQ.data ?? []).map((a) => (
-                <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 p-2 text-sm">
+                <div
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 p-2 text-sm"
+                >
                   <span>
                     <strong>{a.tecnico}</strong> — {a.equipe}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {parseYmd(a.inicio).toLocaleDateString("pt-BR")} a {parseYmd(a.fim).toLocaleDateString("pt-BR")} · {a.motivo}
+                    {parseYmd(a.inicio).toLocaleDateString("pt-BR")} a{" "}
+                    {parseYmd(a.fim).toLocaleDateString("pt-BR")} · {a.motivo}
                   </span>
                 </div>
               ))
@@ -414,19 +472,41 @@ export function CapacityView() {
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label>Técnicos</Label>
-              <Input type="number" min={0} value={form.tecnicos} onChange={(e) => setForm({ ...form, tecnicos: Number(e.target.value) })} />
+              <Input
+                type="number"
+                min={0}
+                value={form.tecnicos}
+                onChange={(e) => setForm({ ...form, tecnicos: Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label>Minutos por dia</Label>
-              <Input type="number" min={60} value={form.minutos_dia} onChange={(e) => setForm({ ...form, minutos_dia: Number(e.target.value) })} />
+              <Input
+                type="number"
+                min={60}
+                value={form.minutos_dia}
+                onChange={(e) => setForm({ ...form, minutos_dia: Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label>Eficiência (0-1)</Label>
-              <Input type="number" step="0.05" min={0.1} max={1} value={form.eficiencia} onChange={(e) => setForm({ ...form, eficiencia: Number(e.target.value) })} />
+              <Input
+                type="number"
+                step="0.05"
+                min={0.1}
+                max={1}
+                value={form.eficiencia}
+                onChange={(e) => setForm({ ...form, eficiencia: Number(e.target.value) })}
+              />
             </div>
             <div>
               <Label>Minutos por OS</Label>
-              <Input type="number" min={10} value={form.minutos_por_os} onChange={(e) => setForm({ ...form, minutos_por_os: Number(e.target.value) })} />
+              <Input
+                type="number"
+                min={10}
+                value={form.minutos_por_os}
+                onChange={(e) => setForm({ ...form, minutos_por_os: Number(e.target.value) })}
+              />
             </div>
           </div>
           <div>

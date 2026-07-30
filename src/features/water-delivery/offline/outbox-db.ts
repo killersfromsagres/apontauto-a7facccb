@@ -67,7 +67,11 @@ export function notificarFila(): void {
 /* ------------------------------------------------------------------ */
 
 export async function outboxAll<T = unknown>(): Promise<OutboxRecord<T>[]> {
-  const itens = await tx<OutboxRecord<T>[]>(OUTBOX, "readonly", (s) => s.getAll() as IDBRequest<OutboxRecord<T>[]>);
+  const itens = await tx<OutboxRecord<T>[]>(
+    OUTBOX,
+    "readonly",
+    (s) => s.getAll() as IDBRequest<OutboxRecord<T>[]>,
+  );
   return (itens ?? []).sort((a, b) => a.createdAt - b.createdAt);
 }
 
@@ -137,7 +141,9 @@ export function deviceId(): string {
   if (typeof window === "undefined") return "ssr";
   let id = localStorage.getItem(DEVICE_KEY);
   if (!id) {
-    id = globalThis.crypto?.randomUUID?.() ?? `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    id =
+      globalThis.crypto?.randomUUID?.() ??
+      `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     localStorage.setItem(DEVICE_KEY, id);
   }
   return id;

@@ -150,7 +150,9 @@ function ClimaTempoPage() {
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
                 <div className="font-semibold">Falha ao consultar o Open-Meteo</div>
-                <div className="text-xs opacity-90">{(q.error as Error)?.message ?? "Erro desconhecido"}</div>
+                <div className="text-xs opacity-90">
+                  {(q.error as Error)?.message ?? "Erro desconhecido"}
+                </div>
               </div>
             </div>
             <Button size="sm" variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
@@ -193,12 +195,36 @@ function ClimaTempoPage() {
               Sensação {current ? `${Math.round(current.apparent_temperature)}°` : "—"}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <Metric icon={<Thermometer className="h-3.5 w-3.5" />} label="Sensação" value={current ? `${Math.round(current.apparent_temperature)}°` : "—"} />
-              <Metric icon={<Droplets className="h-3.5 w-3.5" />} label="Umidade" value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"} />
-              <Metric icon={<Wind className="h-3.5 w-3.5" />} label="Vento" value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"} />
-              <Metric icon={<Wind className="h-3.5 w-3.5" />} label="Rajadas" value={current ? `${current.wind_gusts_10m.toFixed(1)} km/h` : "—"} />
-              <Metric icon={<Cloud className="h-3.5 w-3.5" />} label="Nuvens" value={current ? `${Math.round(current.cloud_cover)}%` : "—"} />
-              <Metric icon={<CloudRain className="h-3.5 w-3.5" />} label="Chuva atual" value={current ? `${current.rain.toFixed(1)} mm` : "—"} />
+              <Metric
+                icon={<Thermometer className="h-3.5 w-3.5" />}
+                label="Sensação"
+                value={current ? `${Math.round(current.apparent_temperature)}°` : "—"}
+              />
+              <Metric
+                icon={<Droplets className="h-3.5 w-3.5" />}
+                label="Umidade"
+                value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}
+              />
+              <Metric
+                icon={<Wind className="h-3.5 w-3.5" />}
+                label="Vento"
+                value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"}
+              />
+              <Metric
+                icon={<Wind className="h-3.5 w-3.5" />}
+                label="Rajadas"
+                value={current ? `${current.wind_gusts_10m.toFixed(1)} km/h` : "—"}
+              />
+              <Metric
+                icon={<Cloud className="h-3.5 w-3.5" />}
+                label="Nuvens"
+                value={current ? `${Math.round(current.cloud_cover)}%` : "—"}
+              />
+              <Metric
+                icon={<CloudRain className="h-3.5 w-3.5" />}
+                label="Chuva atual"
+                value={current ? `${current.rain.toFixed(1)} mm` : "—"}
+              />
             </div>
           </GlassCard>
 
@@ -214,7 +240,9 @@ function ClimaTempoPage() {
                   <Thermometer className="h-3.5 w-3.5" /> Temperatura
                 </span>
                 <span className="font-semibold">
-                  {daySummary ? `${Math.round(daySummary.min)}° / ${Math.round(daySummary.max)}°` : "—"}
+                  {daySummary
+                    ? `${Math.round(daySummary.min)}° / ${Math.round(daySummary.max)}°`
+                    : "—"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -227,7 +255,9 @@ function ClimaTempoPage() {
                 <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                   <Droplets className="h-3.5 w-3.5" /> Precipitação prevista
                 </span>
-                <span className="font-semibold">{daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}</span>
+                <span className="font-semibold">
+                  {daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}
+                </span>
               </div>
               <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 text-xs">
                 <span className="text-muted-foreground">Condição predominante: </span>
@@ -252,18 +282,25 @@ function ClimaTempoPage() {
             <div className="flex items-center gap-4">
               <div className="text-5xl leading-none">{status.emoji}</div>
               <div>
-                <div className={cn("font-display text-2xl font-bold", statusStyle.text)}>{status.titulo}</div>
+                <div className={cn("font-display text-2xl font-bold", statusStyle.text)}>
+                  {status.titulo}
+                </div>
                 <div className="text-sm text-muted-foreground">{status.descricao}</div>
               </div>
             </div>
             {alertExternal && (
               <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
                 <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300">
-                  <HardHat className="h-3.5 w-3.5" /> Atividades externas potencialmente impactadas (≥ {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
+                  <HardHat className="h-3.5 w-3.5" /> Atividades externas potencialmente impactadas
+                  (≥ {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {EXTERNAL_ACTIVITIES.map((a) => (
-                    <Badge key={a} variant="outline" className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200">
+                    <Badge
+                      key={a}
+                      variant="outline"
+                      className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
+                    >
                       {a}
                     </Badge>
                   ))}
@@ -277,8 +314,12 @@ function ClimaTempoPage() {
         <GlassCard>
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-lg font-semibold">Probabilidade de chuva por hora</h3>
-              <p className="text-xs text-muted-foreground">Próximas 24 horas — probabilidade (%) e volume (mm)</p>
+              <h3 className="font-display text-lg font-semibold">
+                Probabilidade de chuva por hora
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Próximas 24 horas — probabilidade (%) e volume (mm)
+              </p>
             </div>
             <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
@@ -289,7 +330,11 @@ function ClimaTempoPage() {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={hourlySeries} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
-                <XAxis dataKey="hora" fontSize={11} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                <XAxis
+                  dataKey="hora"
+                  fontSize={11}
+                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                />
                 <YAxis
                   yAxisId="prob"
                   orientation="left"
@@ -318,7 +363,12 @@ function ClimaTempoPage() {
                     return [String(value), name];
                   }}
                 />
-                <Bar yAxisId="mm" dataKey="chuva" fill="hsl(210 90% 55% / 0.45)" radius={[4, 4, 0, 0]} />
+                <Bar
+                  yAxisId="mm"
+                  dataKey="chuva"
+                  fill="hsl(210 90% 55% / 0.45)"
+                  radius={[4, 4, 0, 0]}
+                />
                 <Line
                   yAxisId="prob"
                   type="monotone"
@@ -340,11 +390,9 @@ function ClimaTempoPage() {
 
         <HistoricoChuva />
 
-
-
         <div className="text-right text-[11px] text-muted-foreground">
-          Última atualização:{" "}
-          {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} · Fonte: Open-Meteo
+          Última atualização: {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} ·
+          Fonte: Open-Meteo
         </div>
       </div>
     </PageShell>

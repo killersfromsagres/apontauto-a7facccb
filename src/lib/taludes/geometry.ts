@@ -60,16 +60,12 @@ export function areaPx(pts: Point[], w: number, h: number): number {
 }
 
 function segIntersects(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
-  const d = (a: Point, b: Point, c: Point) =>
-    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+  const d = (a: Point, b: Point, c: Point) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
   const d1 = d(p3, p4, p1);
   const d2 = d(p3, p4, p2);
   const d3 = d(p1, p2, p3);
   const d4 = d(p1, p2, p4);
-  return (
-    ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) &&
-    ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0))
-  );
+  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
 }
 
 /** Detecta auto-interseção (polígono "amarrado"). */
@@ -93,7 +89,8 @@ export function pointInPolygon(pt: Point, pts: Point[]): boolean {
     const yi = pts[i].y;
     const xj = pts[j].x;
     const yj = pts[j].y;
-    const hit = yi > pt.y !== yj > pt.y && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi + 1e-12) + xi;
+    const hit =
+      yi > pt.y !== yj > pt.y && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi + 1e-12) + xi;
     if (hit) inside = !inside;
   }
   return inside;
@@ -153,7 +150,8 @@ export function metersPerPixel(cal: Calibration, w: number, h: number): number {
 }
 
 export function formatArea(m2: number): string {
-  if (m2 >= 10000) return `${(m2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha`;
+  if (m2 >= 10000)
+    return `${(m2 / 10000).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ha`;
   return `${m2.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} m²`;
 }
 

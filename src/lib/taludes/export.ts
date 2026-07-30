@@ -1,4 +1,3 @@
-
 import type { CalibrationData, TaludeMap, TaludeMarcacao } from "./api";
 import { areaPx, formatArea, formatLength, metersPerPixel, perimeterPx } from "./geometry";
 import { renderMapToBlob } from "./render";
@@ -33,7 +32,10 @@ function fmtBr(iso?: string | null) {
 /* -------------------------------- PNG HD -------------------------------- */
 
 export async function exportPng(map: TaludeMap, marcacoes: TaludeMarcacao[]): Promise<Blob> {
-  return renderMapToBlob(map.image_url, marcacoes.filter((m) => m.visivel !== false));
+  return renderMapToBlob(
+    map.image_url,
+    marcacoes.filter((m) => m.visivel !== false),
+  );
 }
 
 /* ---------------------------------- PDF ---------------------------------- */
@@ -104,20 +106,22 @@ export async function exportPdf(
     startY: 24,
     styles: { fontSize: 8, cellPadding: 2 },
     headStyles: { fillColor: [15, 42, 56], textColor: 255 },
-    head: [[
-      "Nº",
-      "Código",
-      "Nome",
-      "Setor",
-      "Risco",
-      "Serviço",
-      "Equipe",
-      "Prevista",
-      "Executada",
-      "Estado",
-      "Área",
-      "Perímetro",
-    ]],
+    head: [
+      [
+        "Nº",
+        "Código",
+        "Nome",
+        "Setor",
+        "Risco",
+        "Serviço",
+        "Equipe",
+        "Prevista",
+        "Executada",
+        "Estado",
+        "Área",
+        "Perímetro",
+      ],
+    ],
     body: marcacoes.map((m) => {
       const med = medidas(map, m);
       return [

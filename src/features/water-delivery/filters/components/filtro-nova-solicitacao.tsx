@@ -190,7 +190,11 @@ export function FiltroNovaSolicitacao({ ativoInicial, onCriada }: Props) {
         </div>
         <div className="space-y-1">
           <Label htmlFor="sol-espaco">Espaço</Label>
-          <Input id="sol-espaco" value={form.espaco} onChange={(e) => set("espaco", e.target.value)} />
+          <Input
+            id="sol-espaco"
+            value={form.espaco}
+            onChange={(e) => set("espaco", e.target.value)}
+          />
         </div>
 
         {ativosDoPonto.length > 0 && (

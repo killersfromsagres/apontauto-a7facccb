@@ -64,7 +64,6 @@ export const VehicleCard3D = memo(function VehicleCard3D({
           />
         )}
 
-
         {vehicle.status === "bloqueado" && (
           <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full border border-rose-400/40 bg-rose-500/20 px-2 py-1 text-[10px] font-semibold text-rose-200">
             <Lock className="h-3 w-3" /> Bloqueado

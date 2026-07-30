@@ -90,8 +90,7 @@ export async function fetchAbsences(from: Date, to: Date): Promise<TeamAbsence[]
 
 /** Ordens de corretiva + refrigeração dentro da janela (por programação/SLA). */
 export async function fetchPlannedOS(from: Date, to: Date): Promise<PlannedOS[]> {
-  const cols =
-    "id,numero_os,nome_os,equipe,predio,andar,status,data_programada,data_sla,fim";
+  const cols = "id,numero_os,nome_os,equipe,predio,andar,status,data_programada,data_sla,fim";
   const [cor, ref] = await Promise.all([
     supabase.from("corretiva_os").select(cols).limit(3000),
     supabase.from("refrigeracao_os").select(cols).limit(3000),
@@ -179,9 +178,7 @@ export function buildWeek(
         (a) => a.equipe === equipe && a.inicio <= key && a.fim >= key,
       ).length;
       const efetivos = Math.max(0, cfg.tecnicos - ausentes);
-      const capacidadeMin = trabalha
-        ? Math.round(efetivos * cfg.minutos_dia * cfg.eficiencia)
-        : 0;
+      const capacidadeMin = trabalha ? Math.round(efetivos * cfg.minutos_dia * cfg.eficiencia) : 0;
       const doDia = doTime.filter((o) => (o.dataProgramada ?? "") === key);
       return {
         date,
@@ -280,10 +277,7 @@ export async function applySchedule(
 ) {
   for (const c of changes) {
     const table = c.modalidade === "refrigeracao" ? "refrigeracao_os" : "corretiva_os";
-    const { error } = await supabase
-      .from(table)
-      .update({ data_programada: c.data })
-      .eq("id", c.id);
+    const { error } = await supabase.from(table).update({ data_programada: c.data }).eq("id", c.id);
     if (error) throw error;
   }
 }

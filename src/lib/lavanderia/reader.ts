@@ -29,7 +29,9 @@ const normHeader = (v: unknown) =>
     .replace(/[\u0300-\u036f]/g, "");
 
 function slugKey(prefix: string, raw: string): string {
-  const s = normHeader(raw).replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const s = normHeader(raw)
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
   return `${prefix}__${s}`.slice(0, 60);
 }
 

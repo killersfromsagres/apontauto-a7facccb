@@ -23,7 +23,10 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       new Headers(init.headers).forEach((value, key) => headers.set(key, value));
     }
 
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get("Authorization") === `Bearer ${supabaseKey}`) {
+    if (
+      isNewSupabaseApiKey(supabaseKey) &&
+      headers.get("Authorization") === `Bearer ${supabaseKey}`
+    ) {
       headers.delete("Authorization");
     }
 
@@ -38,7 +41,9 @@ function getAuthEnv() {
     process.env.SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   if (!url || !publishableKey) {
-    throw new Error("Configuração do backend indisponível. Recarregue o sistema e tente novamente.");
+    throw new Error(
+      "Configuração do backend indisponível. Recarregue o sistema e tente novamente.",
+    );
   }
 
   return { url, publishableKey };
@@ -55,7 +60,6 @@ async function createUsersAdminClient() {
     throw new Error("Configuração administrativa do backend indisponível.");
   }
 }
-
 
 const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const { url, publishableKey } = getAuthEnv();
@@ -241,7 +245,7 @@ export const createAppUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
     throw new Error("Criação de novos usuários está desativada neste sistema.");
-    // eslint-disable-next-line no-unreachable
+
     return { id: "", login: data.login, role: data.role };
   });
 
@@ -279,7 +283,6 @@ export const listAppUsers = createServerFn({ method: "GET" })
       accessMap.set(r.user_id, list);
     });
 
-
     return {
       users: authList.users.map((u) => {
         const email = u.email ?? "";
@@ -292,7 +295,7 @@ export const listAppUsers = createServerFn({ method: "GET" })
           id: u.id,
           login,
           email,
-          fullName: prof?.full_name ?? ((u.user_metadata as any)?.full_name ?? null),
+          fullName: prof?.full_name ?? (u.user_metadata as any)?.full_name ?? null,
           role,
           banned: Boolean((u as any).banned_until),
           allowedMenus: role === "admin" ? null : (accessMap.get(u.id) ?? []),
@@ -335,7 +338,8 @@ export const setUserBanned = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    if (data.userId === context.userId) throw new Error("Você não pode desativar sua própria conta.");
+    if (data.userId === context.userId)
+      throw new Error("Você não pode desativar sua própria conta.");
     const supabaseAdmin = await createUsersAdminClient();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
       ban_duration: data.banned ? "876000h" : "none",
@@ -426,7 +430,6 @@ async function syncModuleAccess(
   if (error) throw new Error(error.message);
 }
 
-
 /** Gera uma senha temporária forte no servidor (nunca fixa, nunca em código). */
 function generateTempPassword(length = 16): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
@@ -491,10 +494,9 @@ export const provisionControleUser = createServerFn({ method: "POST" })
 
     const { error: profErr } = await supabaseAdmin
       .from("profiles")
-      .upsert(
-        { id: user.id, full_name: "Controle de Materiais", allowed_menus: allowed } as any,
-        { onConflict: "id" },
-      );
+      .upsert({ id: user.id, full_name: "Controle de Materiais", allowed_menus: allowed } as any, {
+        onConflict: "id",
+      });
     if (profErr) throw new Error(profErr.message);
 
     await syncModuleAccess(supabaseAdmin, user.id, allowed as string[], context.userId);
@@ -502,8 +504,6 @@ export const provisionControleUser = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
     await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
 
-
     // A senha temporária é exibida uma única vez para o administrador.
     return { ok: true, created, login, email, tempPassword: password };
   });
-

@@ -7,7 +7,6 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { migrateRefrigLegacyPhotosToImgBB } from "@/lib/refrigeracao/migrate-to-imgbb.functions";
 import { provisionControleUser } from "@/lib/users.functions";
 
-
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -89,14 +88,26 @@ function Page() {
             Horário de trabalho
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <TimeField label="Manhã — início" value={draft.workingHours.morningStart}
-              onChange={(v) => patchHours({ morningStart: v })} />
-            <TimeField label="Manhã — fim" value={draft.workingHours.morningEnd}
-              onChange={(v) => patchHours({ morningEnd: v })} />
-            <TimeField label="Tarde — início" value={draft.workingHours.afternoonStart}
-              onChange={(v) => patchHours({ afternoonStart: v })} />
-            <TimeField label="Tarde — fim" value={draft.workingHours.afternoonEnd}
-              onChange={(v) => patchHours({ afternoonEnd: v })} />
+            <TimeField
+              label="Manhã — início"
+              value={draft.workingHours.morningStart}
+              onChange={(v) => patchHours({ morningStart: v })}
+            />
+            <TimeField
+              label="Manhã — fim"
+              value={draft.workingHours.morningEnd}
+              onChange={(v) => patchHours({ morningEnd: v })}
+            />
+            <TimeField
+              label="Tarde — início"
+              value={draft.workingHours.afternoonStart}
+              onChange={(v) => patchHours({ afternoonStart: v })}
+            />
+            <TimeField
+              label="Tarde — fim"
+              value={draft.workingHours.afternoonEnd}
+              onChange={(v) => patchHours({ afternoonEnd: v })}
+            />
           </div>
           <Separator className="my-4" />
           <div className="space-y-2">
@@ -194,9 +205,9 @@ function StorageMigrationCard() {
             Otimização de armazenamento — Refrigeração
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            Fotos antigas ainda armazenadas no bucket privado são reenviadas ao ImgBB
-            (link público hospedado) e removidas do Storage. Novos uploads já vão direto
-            para o ImgBB — este processo só migra o histórico.
+            Fotos antigas ainda armazenadas no bucket privado são reenviadas ao ImgBB (link público
+            hospedado) e removidas do Storage. Novos uploads já vão direto para o ImgBB — este
+            processo só migra o histórico.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button size="sm" onClick={() => run("all")} disabled={running}>
@@ -227,7 +238,6 @@ function StorageMigrationCard() {
   );
 }
 
-
 function ControleAccessCard() {
   const { isAdmin } = useIsAdmin();
   const provision = useServerFn(provisionControleUser);
@@ -244,8 +254,8 @@ function ControleAccessCard() {
       setTempPassword(r?.tempPassword ?? null);
       toast.success(
         r?.created
-          ? "Login \"controle\" criado com senha temporária."
-          : "Login \"controle\" atualizado com nova senha temporária.",
+          ? 'Login "controle" criado com senha temporária.'
+          : 'Login "controle" atualizado com nova senha temporária.',
       );
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao provisionar o acesso.");
@@ -264,8 +274,8 @@ function ControleAccessCard() {
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">
             Cria (ou reaplica) o login <strong>controle</strong>, com acesso exclusivo ao módulo
-            Controle de Materiais. A senha é temporária, gerada no servidor e exibida uma única
-            vez — o usuário precisa trocá-la no primeiro acesso.
+            Controle de Materiais. A senha é temporária, gerada no servidor e exibida uma única vez
+            — o usuário precisa trocá-la no primeiro acesso.
           </p>
           <Button size="sm" className="mt-3" onClick={() => run()} disabled={running}>
             {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -300,10 +310,15 @@ function ControleAccessCard() {
   );
 }
 
-
 function TimeField({
-  label, value, onChange,
-}: { label: string; value: string; onChange: (v: string) => void }) {
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -313,10 +328,17 @@ function TimeField({
 }
 
 function ListEditor({
-  title, color, items, onChange, placeholder = "Adicionar item…",
+  title,
+  color,
+  items,
+  onChange,
+  placeholder = "Adicionar item…",
 }: {
-  title: string; color: string; items: string[];
-  onChange: (v: string[]) => void; placeholder?: string;
+  title: string;
+  color: string;
+  items: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
 }) {
   const [input, setInput] = useState("");
   const add = () => {
@@ -348,11 +370,7 @@ function ListEditor({
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {items.map((it) => (
-          <Badge
-            key={it}
-            variant="secondary"
-            className="gap-1 rounded-md py-1 pr-1 pl-2 text-xs"
-          >
+          <Badge key={it} variant="secondary" className="gap-1 rounded-md py-1 pr-1 pl-2 text-xs">
             {it}
             <button
               onClick={() => onChange(items.filter((x) => x !== it))}
@@ -363,9 +381,7 @@ function ListEditor({
             </button>
           </Badge>
         ))}
-        {items.length === 0 && (
-          <span className="text-xs text-muted-foreground">Nenhum item.</span>
-        )}
+        {items.length === 0 && <span className="text-xs text-muted-foreground">Nenhum item.</span>}
       </div>
     </GlassCard>
   );

@@ -5,7 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { limparTexto } from "@/features/water-delivery/schemas/normalize";
 import { notificarAgua } from "@/features/water-delivery/mutations/notificacoes";
 
-const db = supabase as unknown as { from: (t: string) => any; rpc: (fn: string, args?: any) => any };
+const db = supabase as unknown as {
+  from: (t: string) => any;
+  rpc: (fn: string, args?: any) => any;
+};
 
 export const TZ = "America/Sao_Paulo";
 
@@ -22,7 +25,10 @@ export const TURNO_LABEL: Record<string, string> = {
 };
 
 // Item 14 — estados oficiais da rota (espelho do enum agua_rota_status).
-import { podeTransicionarRota, type RotaStatus } from "@/features/water-delivery/state-machines/estados";
+import {
+  podeTransicionarRota,
+  type RotaStatus,
+} from "@/features/water-delivery/state-machines/estados";
 
 export {
   ROTA_STATUS,
@@ -32,8 +38,6 @@ export {
   podeTransicionarRota,
 } from "@/features/water-delivery/state-machines/estados";
 export type { RotaStatus } from "@/features/water-delivery/state-machines/estados";
-
-
 
 /** Data de hoje no fuso operacional (YYYY-MM-DD). */
 export function hojeSP(): string {
@@ -80,8 +84,7 @@ export interface ProgramacaoLinha {
   ativo: boolean;
 }
 
-const PROG_FIELDS =
-  "id, ponto_id, dia_semana, ordem, bags, turno, equipe, template_key, ativo";
+const PROG_FIELDS = "id, ponto_id, dia_semana, ordem, bags, turno, equipe, template_key, ativo";
 
 export async function listProgramacaoCompleta(): Promise<ProgramacaoLinha[]> {
   const { data, error } = await db
@@ -287,7 +290,6 @@ export interface Rota {
 const ROTA_FIELDS =
   "id, data, turno, equipe, template_key, colaborador_principal, colaborador_secundario, veiculo, supervisor, horario_previsto, bags_carregadas, observacao, status, motivo_cancelamento, versao, iniciada_em, finalizada_em, hodometro_inicial, hodometro_final, bags_recolhidas, bags_restantes, bags_danificadas, divergencia_bags, divergencia_justificativa, foto_carga_url, confirmado_principal, confirmado_secundario";
 
-
 export async function listRotas(inicio: string, fim: string): Promise<Rota[]> {
   const { data, error } = await db
     .from("agua_rotas")
@@ -304,22 +306,15 @@ export async function listRotas(inicio: string, fim: string): Promise<Rota[]> {
  * Salva a atribuição. Depois da primeira execução toda mudança vira versão:
  * o histórico nunca é apagado.
  */
-export async function salvarRota(
-  rota: Rota,
-  patch: Partial<Rota>,
-  motivo?: string,
-): Promise<void> {
+export async function salvarRota(rota: Rota, patch: Partial<Rota>, motivo?: string): Promise<void> {
   // Item 14 — bloqueia cedo o que a trigger do banco também recusaria.
   if (patch.status && !podeTransicionarRota(rota.status, patch.status, { gestor: true })) {
-    throw new Error(
-      `Transição de rota inválida: ${rota.status} → ${patch.status}.`,
-    );
+    throw new Error(`Transição de rota inválida: ${rota.status} → ${patch.status}.`);
   }
 
   const { data: u } = await supabase.auth.getUser();
   const usuario = u.user?.id ?? null;
   const jaIniciou = Boolean(rota.iniciada_em);
-
 
   const { error: vErr } = await db.from("agua_rota_versoes").insert({
     rota_id: rota.id,
@@ -404,7 +399,8 @@ export function checklistPartida(args: {
   bloqueioCritico: boolean;
   offlinePronto: boolean;
 }): ChecklistPartidaItem[] {
-  const { rota, paradas, veiculoDisponivel, checklistValido, bloqueioCritico, offlinePronto } = args;
+  const { rota, paradas, veiculoDisponivel, checklistValido, bloqueioCritico, offlinePronto } =
+    args;
   return [
     {
       chave: "veiculo",

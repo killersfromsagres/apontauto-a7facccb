@@ -38,15 +38,7 @@ const ATIVO_EXACT = [
 ];
 
 /** Cabeçalhos que contêm "ATIVO" mas NÃO são o código. */
-const ATIVO_NEGATIVE = [
-  "DENOMINACAO",
-  "DESCRICAO",
-  "NOME",
-  "PAI",
-  "SUPERIOR",
-  "STATUS",
-  "TIPO",
-];
+const ATIVO_NEGATIVE = ["DENOMINACAO", "DESCRICAO", "NOME", "PAI", "SUPERIOR", "STATUS", "TIPO"];
 
 const PREDIO_ALIASES = ["PREDIO", "EDIFICIO", "BLOCO", "PREDIO EDIFICIO"];
 const ANDAR_ALIASES = ["ANDAR", "PAVIMENTO", "PISO", "ANDAR PAVIMENTO", "NIVEL ANDAR"];
@@ -66,7 +58,9 @@ export const METHOD_HEADER = "Método de Resolução";
 /** Abas ignoradas por padrão (base de ativos). */
 export function isAssetSheetName(name: string) {
   const n = normHeader(name);
-  return n === "ATIVOS" || n === "BASE DE ATIVOS" || n === "BASE ATIVOS" || n === "CADASTRO DE ATIVOS";
+  return (
+    n === "ATIVOS" || n === "BASE DE ATIVOS" || n === "BASE ATIVOS" || n === "CADASTRO DE ATIVOS"
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -183,7 +177,8 @@ export function detectAtivoColumn(
   const second = sorted[1];
   let confidence: AtivoDetection["confidence"] = "low";
   if (top && top.score >= 90 && (!second || top.score - second.score >= 25)) confidence = "high";
-  else if (top && top.score >= 45 && (!second || top.score - second.score >= 10)) confidence = "medium";
+  else if (top && top.score >= 45 && (!second || top.score - second.score >= 10))
+    confidence = "medium";
 
   return { index: top && top.score > 0 ? top.index : -1, confidence, candidates: sorted };
 }
@@ -205,7 +200,8 @@ const findAlias = (headers: string[], aliases: string[], taken: Set<number>) => 
   let idx = norm.findIndex((h, i) => !taken.has(i) && aliases.includes(h));
   if (idx < 0)
     idx = norm.findIndex(
-      (h, i) => !taken.has(i) && h.length > 0 && aliases.some((a) => h === a || h.startsWith(a + " ")),
+      (h, i) =>
+        !taken.has(i) && h.length > 0 && aliases.some((a) => h === a || h.startsWith(a + " ")),
     );
   if (idx >= 0) taken.add(idx);
   return idx;
@@ -334,7 +330,9 @@ export function processRows(graph: AssetGraph, input: ProcessInput): RowResult[]
     const hadAll = current.every(Boolean);
     const conflict =
       hasAnyCalc &&
-      [0, 1, 2].some((k) => current[k] && computed[k] && normHeader(current[k]) !== normHeader(computed[k]));
+      [0, 1, 2].some(
+        (k) => current[k] && computed[k] && normHeader(current[k]) !== normHeader(computed[k]),
+      );
 
     let status: MatchStatus;
     if (!r.found && !hasAnyCalc) status = "unmatched";

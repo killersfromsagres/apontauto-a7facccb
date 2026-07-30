@@ -12,8 +12,7 @@ export const WEATHER_LOCATION = {
 
 // Fonte primária: MET Norway (via server route) com fallback automático para Open-Meteo.
 // O server route proxy identifica-se corretamente com User-Agent, exigido pelo MET Norway.
-const PRIMARY_ENDPOINT =
-  `/api/public/clima-forecast?lat=${WEATHER_LOCATION.latitude}&lon=${WEATHER_LOCATION.longitude}`;
+const PRIMARY_ENDPOINT = `/api/public/clima-forecast?lat=${WEATHER_LOCATION.latitude}&lon=${WEATHER_LOCATION.longitude}`;
 
 // Fallback direto do navegador (caso o servidor Lovable esteja fora).
 const FALLBACK_ENDPOINT =
@@ -73,7 +72,9 @@ async function fetchFrom(endpoint: string, signal?: AbortSignal): Promise<Weathe
   const res = await fetch(endpoint, { signal, cache: "no-store" });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`);
+    throw new Error(
+      `${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`,
+    );
   }
   const json = (await res.json()) as Omit<WeatherResponse, "fetched_at"> & { fetched_at?: string };
   if (!json?.current || !json?.hourly?.temperature_2m) {
@@ -156,10 +157,37 @@ export type OperationalStatus = {
 
 export function situationStatus(probability: number | null | undefined): OperationalStatus {
   const p = Math.max(0, Math.min(100, Math.round(probability ?? 0)));
-  if (p < 20) return { nivel: "normal", cor: "emerald", emoji: "🟢", titulo: "Operação Normal", descricao: "Condições favoráveis para atividades externas." };
-  if (p < 60) return { nivel: "atencao", cor: "amber", emoji: "🟡", titulo: "Atenção", descricao: "Possibilidade moderada de chuva — monitore." };
-  if (p <= 80) return { nivel: "alto", cor: "orange", emoji: "🟠", titulo: "Alto risco de chuva", descricao: "Considere antecipar tarefas críticas e proteger áreas expostas." };
-  return { nivel: "reprogramar", cor: "red", emoji: "🔴", titulo: "Recomenda-se reprogramação", descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados." };
+  if (p < 20)
+    return {
+      nivel: "normal",
+      cor: "emerald",
+      emoji: "🟢",
+      titulo: "Operação Normal",
+      descricao: "Condições favoráveis para atividades externas.",
+    };
+  if (p < 60)
+    return {
+      nivel: "atencao",
+      cor: "amber",
+      emoji: "🟡",
+      titulo: "Atenção",
+      descricao: "Possibilidade moderada de chuva — monitore.",
+    };
+  if (p <= 80)
+    return {
+      nivel: "alto",
+      cor: "orange",
+      emoji: "🟠",
+      titulo: "Alto risco de chuva",
+      descricao: "Considere antecipar tarefas críticas e proteger áreas expostas.",
+    };
+  return {
+    nivel: "reprogramar",
+    cor: "red",
+    emoji: "🔴",
+    titulo: "Recomenda-se reprogramação",
+    descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados.",
+  };
 }
 
 /**
@@ -231,8 +259,8 @@ export type RainDetection = {
   intensity: RainIntensity | null;
   label: string;
   emoji: string;
-  mm_atual: number;      // mm na última hora
-  mm_dia: number;        // acumulado do dia
+  mm_atual: number; // mm na última hora
+  mm_dia: number; // acumulado do dia
   weather_code: number | null;
 };
 
@@ -308,8 +336,7 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
   }
 
   const intensity =
-    intensityFromCode(code) ??
-    (mmReferencia > 0 ? intensityFromMm(mmReferencia) : "garoa");
+    intensityFromCode(code) ?? (mmReferencia > 0 ? intensityFromMm(mmReferencia) : "garoa");
   const meta = INTENSITY_LABEL[intensity];
 
   return {
@@ -322,4 +349,3 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
     weather_code: code,
   };
 }
-

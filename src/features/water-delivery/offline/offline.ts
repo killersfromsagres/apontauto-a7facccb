@@ -106,7 +106,9 @@ export function lerCacheRota(data: string): Visita[] | null {
 
 /** Leitura de contingência: o localStorage pode ter sido limpo pelo sistema. */
 export async function lerCacheRotaAsync(data: string): Promise<Visita[] | null> {
-  return lerCacheRota(data) ?? (await cacheGet<Visita[]>(`${CACHE_PREFIX}${data}`).catch(() => null));
+  return (
+    lerCacheRota(data) ?? (await cacheGet<Visita[]>(`${CACHE_PREFIX}${data}`).catch(() => null))
+  );
 }
 
 function aplicarNoCache(data: string, visitaId: string, patch: Record<string, unknown>): void {
@@ -123,7 +125,9 @@ function aplicarNoCache(data: string, visitaId: string, patch: Record<string, un
 /* ------------------------------------------------------------------ */
 
 function novoId(): string {
-  return globalThis.crypto?.randomUUID?.() ?? `acao-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ?? `acao-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 }
 
 export async function lerFila(): Promise<AguaPendente[]> {
@@ -266,7 +270,6 @@ export async function sincronizarFila(): Promise<SyncReport> {
   notificarFila();
   return report;
 }
-
 
 /** Reabilita os itens da dead-letter (botão “tentar novamente”). */
 export async function tentarNovamenteFalhas(): Promise<number> {

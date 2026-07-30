@@ -46,7 +46,6 @@ import {
 } from "@/features/water-delivery/queries/api";
 import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
 
-
 /** Minutos considerados por parada quando não há histórico suficiente. */
 const MINUTOS_PADRAO_PARADA = 12;
 const TODOS = "__todos__";
@@ -203,10 +202,7 @@ export function WaterDeliveryDashboard() {
     const uniq = (xs: (string | null | undefined)[]) =>
       [...new Set(xs.filter((x): x is string => Boolean(x && x.trim())))].sort();
     return {
-      colaboradores: uniq([
-        ...base.map(resp),
-        ...(pontos.data ?? []).map((p) => p.responsavel),
-      ]),
+      colaboradores: uniq([...base.map(resp), ...(pontos.data ?? []).map((p) => p.responsavel)]),
       veiculos: uniq([...base.map(veic), ...(pontos.data ?? []).map((p) => p.veiculo)]),
       predios: uniq((pontos.data ?? []).map((p) => p.predio)),
     };
@@ -227,10 +223,7 @@ export function WaterDeliveryDashboard() {
   );
 
   const doDia = useMemo(() => (doDiaQ.data ?? []).filter(filtrar), [doDiaQ.data, filtrar]);
-  const periodo = useMemo(
-    () => (periodoQ.data ?? []).filter(filtrar),
-    [periodoQ.data, filtrar],
-  );
+  const periodo = useMemo(() => (periodoQ.data ?? []).filter(filtrar), [periodoQ.data, filtrar]);
 
   const filtrosAtivos =
     (colaborador !== TODOS ? 1 : 0) +
@@ -475,7 +468,9 @@ export function WaterDeliveryDashboard() {
         <GlassCard className="flex items-center gap-4 p-4">
           <Anel pct={k.pct} />
           <div className="min-w-0 space-y-1.5 text-sm">
-            <p className="text-eyebrow">{brDate(data)} · {DIA_LABEL[diaSemanaISO(data)]}</p>
+            <p className="text-eyebrow">
+              {brDate(data)} · {DIA_LABEL[diaSemanaISO(data)]}
+            </p>
             <p className="tabular-nums">
               <span className="font-semibold">{k.concluidas + k.parciais}</span> de{" "}
               <span className="font-semibold">{k.previstos}</span> paradas atendidas
@@ -557,31 +552,71 @@ export function WaterDeliveryDashboard() {
 
       {/* KPIs ------------------------------------------------------------ */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label="Previstos hoje" value={k.previstos} icon={<Droplets className="h-4 w-4" />} />
-        <KpiCard label="Concluídos" value={k.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
+        <KpiCard
+          label="Previstos hoje"
+          value={k.previstos}
+          icon={<Droplets className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Concluídos"
+          value={k.concluidas}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+        />
         <KpiCard label="Pendentes" value={k.pendentes} icon={<Clock className="h-4 w-4" />} />
         <KpiCard label="Parciais" value={k.parciais} icon={<PackageMinus className="h-4 w-4" />} />
-        <KpiCard label="Não realizados" value={k.naoRealizadas} icon={<XCircle className="h-4 w-4" />} />
-        <KpiCard label="Reprogramados" value={k.reprogramadas} icon={<RotateCcw className="h-4 w-4" />} />
+        <KpiCard
+          label="Não realizados"
+          value={k.naoRealizadas}
+          icon={<XCircle className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Reprogramados"
+          value={k.reprogramadas}
+          icon={<RotateCcw className="h-4 w-4" />}
+        />
         <KpiCard label="Conclusão" value={`${k.pct}%`} icon={<Gauge className="h-4 w-4" />} />
-        <KpiCard label="Bags carregadas" value={k.carregadas} icon={<Scale className="h-4 w-4" />} />
-        <KpiCard label="Bags entregues" value={k.entregues} icon={<PackageCheck className="h-4 w-4" />} />
-        <KpiCard label="Bags vazias recolhidas" value={k.vazias} icon={<PackageMinus className="h-4 w-4" />} />
-        <KpiCard label="Bags restantes" value={k.restantes} icon={<Droplets className="h-4 w-4" />} />
+        <KpiCard
+          label="Bags carregadas"
+          value={k.carregadas}
+          icon={<Scale className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Bags entregues"
+          value={k.entregues}
+          icon={<PackageCheck className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Bags vazias recolhidas"
+          value={k.vazias}
+          icon={<PackageMinus className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Bags restantes"
+          value={k.restantes}
+          icon={<Droplets className="h-4 w-4" />}
+        />
         <KpiCard
           label="Divergência inventário"
           value={`${k.divergencia > 0 ? "+" : ""}${k.divergencia}`}
           icon={<Scale className="h-4 w-4" />}
         />
         <KpiCard label="Fotos pendentes" value={k.semFoto} icon={<Camera className="h-4 w-4" />} />
-        <KpiCard label="Tempo médio/parada" value={duracao(k.medioMin)} icon={<Clock className="h-4 w-4" />} />
+        <KpiCard
+          label="Tempo médio/parada"
+          value={duracao(k.medioMin)}
+          icon={<Clock className="h-4 w-4" />}
+        />
         <KpiCard
           label="Duração da rota"
           value={duracao(k.realMin)}
           hint={`Estimada ${duracao(k.estimadaMin)}`}
           icon={<Clock className="h-4 w-4" />}
         />
-        <KpiCard label="Filtros abertos" value={k.filtrosAbertos} icon={<Filter className="h-4 w-4" />} />
+        <KpiCard
+          label="Filtros abertos"
+          value={k.filtrosAbertos}
+          icon={<Filter className="h-4 w-4" />}
+        />
         <KpiCard
           label="Filtros vencendo"
           value={k.filtrosVencendo}
@@ -633,8 +668,8 @@ export function WaterDeliveryDashboard() {
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {VISITA_STATUS_LABEL[v.status]} · {v.bags_entregues ?? 0}/
-                        {v.bags_previstas} bags
+                        {VISITA_STATUS_LABEL[v.status]} · {v.bags_entregues ?? 0}/{v.bags_previstas}{" "}
+                        bags
                         {v.foto_url ? "" : " · sem foto"}
                       </p>
                     </div>

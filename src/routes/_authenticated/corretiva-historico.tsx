@@ -26,12 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import {
   loadEquipe,
@@ -64,7 +59,13 @@ type OsRow = {
   fim: string | null;
   updated_at: string;
 };
-type Foto = { id: string; storage_path: string | null; image_url: string | null; created_at: string; legenda: string | null };
+type Foto = {
+  id: string;
+  storage_path: string | null;
+  image_url: string | null;
+  created_at: string;
+  legenda: string | null;
+};
 type Peca = {
   id: string;
   descricao: string;
@@ -134,10 +135,7 @@ function HistoricoPage() {
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Minha equipe
             </span>
-            <Select
-              value={equipe}
-              onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
-            >
+            <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
               <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
                 <SelectValue />
               </SelectTrigger>
@@ -196,7 +194,9 @@ function HistoricoPage() {
                 : "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20";
               return (
                 <li key={o.id}>
-                  <div className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
+                  <div
+                    className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
+                  >
                     <button
                       type="button"
                       onClick={() => setOpen(o)}
@@ -209,7 +209,9 @@ function HistoricoPage() {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className={`font-mono text-sm font-semibold ${cancelada ? "" : "text-emerald-800 dark:text-emerald-300"}`}>
+                          <span
+                            className={`font-mono text-sm font-semibold ${cancelada ? "" : "text-emerald-800 dark:text-emerald-300"}`}
+                          >
                             OS {o.numero_os}
                           </span>
                           {cancelada ? (
@@ -223,7 +225,9 @@ function HistoricoPage() {
                           )}
                           {o.equipe && (
                             <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                              <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
+                              <span
+                                className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                              />
                               {o.equipe}
                             </Badge>
                           )}
@@ -243,7 +247,9 @@ function HistoricoPage() {
                             {o.nome_os}
                           </div>
                         ) : (
-                          <div className="mt-1 text-sm text-muted-foreground">Sem descrição da atividade</div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            Sem descrição da atividade
+                          </div>
                         )}
                         <div className="mt-1 break-words text-xs text-muted-foreground/80">
                           {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
@@ -368,19 +374,31 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         href={urls[f.id] ?? "#"}
                         target="_blank"
                         rel="noreferrer"
-                        onClick={(e) => { if (!urls[f.id]) e.preventDefault(); }}
+                        onClick={(e) => {
+                          if (!urls[f.id]) e.preventDefault();
+                        }}
                         className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
                       >
                         {urls[f.id] ? (
-                          <img src={urls[f.id]} className="h-full w-full object-cover" alt="" loading="lazy" />
+                          <img
+                            src={urls[f.id]}
+                            className="h-full w-full object-cover"
+                            alt=""
+                            loading="lazy"
+                          />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">…</div>
+                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                            …
+                          </div>
                         )}
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                           <ExternalLink className="h-3.5 w-3.5 text-white" />
                           <button
                             type="button"
-                            onClick={(e) => { e.preventDefault(); downloadPhoto(f, idx); }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              downloadPhoto(f, idx);
+                            }}
                             className="pointer-events-auto rounded-full bg-white/20 p-1 text-white backdrop-blur-md transition hover:bg-white/30"
                             aria-label="Baixar foto"
                           >

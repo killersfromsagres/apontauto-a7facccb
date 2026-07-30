@@ -26,7 +26,10 @@ export const Route = createFileRoute("/_authenticated/inteligencia-ativos/histor
 });
 
 function Historico() {
-  const { data = [], isLoading } = useQuery({ queryKey: ["spreadsheet-jobs"], queryFn: () => listJobs() });
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["spreadsheet-jobs"],
+    queryFn: () => listJobs(),
+  });
 
   return (
     <PageShell
@@ -47,7 +50,9 @@ function Historico() {
         </div>
       ) : data.length === 0 ? (
         <GlassCard>
-          <p className="py-10 text-center text-sm text-muted-foreground">Nenhum processamento registrado ainda.</p>
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Nenhum processamento registrado ainda.
+          </p>
         </GlassCard>
       ) : (
         <div className="space-y-3">

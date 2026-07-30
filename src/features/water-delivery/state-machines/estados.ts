@@ -119,9 +119,7 @@ const VISITA_ABERTAS: VisitaStatus[] = ["pendente", "em_deslocamento", "em_atend
 export const VISITA_TRANSICOES: Record<VisitaStatus, VisitaStatus[]> = Object.fromEntries(
   VISITA_STATUS.map((s) => [
     s,
-    VISITA_FINAIS.includes(s)
-      ? []
-      : [...VISITA_ABERTAS.filter((a) => a !== s), ...VISITA_FINAIS],
+    VISITA_FINAIS.includes(s) ? [] : [...VISITA_ABERTAS.filter((a) => a !== s), ...VISITA_FINAIS],
   ]),
 ) as Record<VisitaStatus, VisitaStatus[]>;
 

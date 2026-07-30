@@ -51,8 +51,7 @@ export function useDashboardChamados() {
       setError(null);
       setLastUpdate(Date.now());
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Falha ao carregar backorders";
+      const message = err instanceof Error ? err.message : "Falha ao carregar backorders";
       console.error("[dashboard] fetchBackorderRows", err);
       setError(message);
       if (!silent) toast.error(message);
@@ -107,17 +106,13 @@ export function useDashboardChamados() {
 
   const filtered = useMemo(() => {
     const now = Date.now();
-    const periodoMs =
-      filters.periodo === "todos" ? 0 : Number(filters.periodo) * 86_400_000;
+    const periodoMs = filters.periodo === "todos" ? 0 : Number(filters.periodo) * 86_400_000;
     return rows.filter((r) => {
       if (filters.equipe !== "todas" && r.equipe !== filters.equipe) return false;
-      if (filters.categoria !== "todas" && r.categoria !== filters.categoria)
-        return false;
-      if (filters.criticidade !== "todas" && r.criticidade !== filters.criticidade)
-        return false;
+      if (filters.categoria !== "todas" && r.categoria !== filters.categoria) return false;
+      if (filters.criticidade !== "todas" && r.criticidade !== filters.criticidade) return false;
       if (filters.status !== "todos" && r.status !== filters.status) return false;
-      if (filters.solicitante !== "todos" && r.solicitante !== filters.solicitante)
-        return false;
+      if (filters.solicitante !== "todos" && r.solicitante !== filters.solicitante) return false;
       if (filters.predio !== "todos" && r.predio !== filters.predio) return false;
       if (periodoMs > 0) {
         if (!r.dataAberturaTs) return false;
@@ -163,9 +158,7 @@ export function useDashboardChamados() {
         else await setBackorderReaberto(row.os);
         toast.success(next ? `OS ${row.os} concluída` : `OS ${row.os} reaberta`);
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : "Falha ao sincronizar com backorder",
-        );
+        toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com backorder");
         void loadRows(true);
       } finally {
         setPendingOs((prev) => {

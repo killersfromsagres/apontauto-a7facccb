@@ -58,10 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { downloadBlob } from "@/lib/download";
 import { PolygonEditor, type EditorPolygon } from "@/components/taludes/polygon-editor";
-import {
-  CORES_TALUDE,
-  TaludePropertiesPanel,
-} from "@/components/taludes/talude-properties-panel";
+import { CORES_TALUDE, TaludePropertiesPanel } from "@/components/taludes/talude-properties-panel";
 import {
   createMap,
   createMarcacaoFull,
@@ -81,13 +78,7 @@ import {
   type TaludeMapVersion,
   type TaludeMarcacao,
 } from "@/lib/taludes/api";
-import {
-  exportGeoJson,
-  exportJson,
-  exportPdf,
-  exportPng,
-  scaleOf,
-} from "@/lib/taludes/export";
+import { exportGeoJson, exportJson, exportPdf, exportPng, scaleOf } from "@/lib/taludes/export";
 import { metersPerPixel } from "@/lib/taludes/geometry";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
@@ -160,7 +151,11 @@ function TaludesPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {mapsQuery.data.map((m) => (
             <GlassCard key={m.id} className="group overflow-hidden p-0">
-              <button type="button" onClick={() => setOpenMap(m)} className="block w-full text-left">
+              <button
+                type="button"
+                onClick={() => setOpenMap(m)}
+                className="block w-full text-left"
+              >
                 <div className="relative aspect-video overflow-hidden bg-muted">
                   <img
                     src={m.image_url}
@@ -174,15 +169,24 @@ function TaludesPage() {
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     Criado em {fmtBr(m.created_at)}
                     {scaleOf(m) ? (
-                      <Badge variant="secondary" className="h-5">Calibrado</Badge>
+                      <Badge variant="secondary" className="h-5">
+                        Calibrado
+                      </Badge>
                     ) : (
-                      <Badge variant="outline" className="h-5 text-amber-500">Sem escala</Badge>
+                      <Badge variant="outline" className="h-5 text-amber-500">
+                        Sem escala
+                      </Badge>
                     )}
                   </div>
                 </div>
               </button>
               <div className="flex gap-2 px-4 pb-4">
-                <Button size="sm" variant="secondary" className="flex-1 gap-1" onClick={() => setOpenMap(m)}>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="flex-1 gap-1"
+                  onClick={() => setOpenMap(m)}
+                >
                   <Pencil className="h-3.5 w-3.5" /> Abrir
                 </Button>
                 <Button
@@ -228,7 +232,8 @@ function TaludesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir mapa</AlertDialogTitle>
             <AlertDialogDescription>
-              Isso remove o mapa <b>{deleteTarget?.nome}</b> e todas as suas demarcações. Ação irreversível.
+              Isso remove o mapa <b>{deleteTarget?.nome}</b> e todas as suas demarcações. Ação
+              irreversível.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -318,7 +323,11 @@ function UploadMapDialog({
           </div>
           {preview && (
             <div className="overflow-hidden rounded-xl border bg-muted">
-              <img src={preview} alt="Pré-visualização" className="max-h-64 w-full object-contain" />
+              <img
+                src={preview}
+                alt="Pré-visualização"
+                className="max-h-64 w-full object-contain"
+              />
             </div>
           )}
           <div>
@@ -340,7 +349,11 @@ function UploadMapDialog({
             Cancelar
           </Button>
           <Button onClick={handleSubmit} disabled={uploading} className="gap-2">
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Criar mapa
           </Button>
         </DialogFooter>
@@ -369,7 +382,10 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
     queryFn: () => listMarcacoes(map.id),
   });
   const marcacoes = useMemo(
-    () => [...(marcQuery.data ?? [])].sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || a.numero - b.numero),
+    () =>
+      [...(marcQuery.data ?? [])].sort(
+        (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0) || a.numero - b.numero,
+      ),
     [marcQuery.data],
   );
 
@@ -478,10 +494,7 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
   const handleDraft = useCallback(
     (id: string, points: Point[]) => {
       try {
-        localStorage.setItem(
-          DRAFT_KEY(map.id),
-          JSON.stringify({ id, points, at: Date.now() }),
-        );
+        localStorage.setItem(DRAFT_KEY(map.id), JSON.stringify({ id, points, at: Date.now() }));
       } catch {
         /* storage cheio — ignorar */
       }
@@ -579,13 +592,21 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
             disabled={snapshot.isPending}
             className="gap-2"
           >
-            {snapshot.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {snapshot.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Salvar versão
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button className="gap-2" disabled={exporting || marcacoes.length === 0}>
-                {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                {exporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
                 Exportar
               </Button>
             </DropdownMenuTrigger>
@@ -600,7 +621,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
                 <FileJson className="mr-2 h-4 w-4" /> JSON de backup
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => runExport("geojson")} disabled={!calibrado}>
-                <FileJson className="mr-2 h-4 w-4" /> GeoJSON {calibrado ? "" : "(requer calibração)"}
+                <FileJson className="mr-2 h-4 w-4" /> GeoJSON{" "}
+                {calibrado ? "" : "(requer calibração)"}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => window.print()}>
                 <Printer className="mr-2 h-4 w-4" /> Imprimir
@@ -615,7 +637,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
           {!calibrado && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
               <Ruler className="h-4 w-4 text-amber-500" />
-              Mapa <b>não calibrado</b>: use a ferramenta “Calibrar escala” para habilitar área e perímetro em metros.
+              Mapa <b>não calibrado</b>: use a ferramenta “Calibrar escala” para habilitar área e
+              perímetro em metros.
             </div>
           )}
           <PolygonEditor
@@ -664,15 +687,27 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
                     </span>
                     <IconBtn
                       label={m.visivel === false ? "Mostrar" : "Ocultar"}
-                      onClick={() => patchMarc.mutate({ id: m.id, patch: { visivel: m.visivel === false } })}
+                      onClick={() =>
+                        patchMarc.mutate({ id: m.id, patch: { visivel: m.visivel === false } })
+                      }
                     >
-                      {m.visivel === false ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      {m.visivel === false ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
                     </IconBtn>
                     <IconBtn
                       label={m.bloqueado ? "Desbloquear" : "Bloquear"}
-                      onClick={() => patchMarc.mutate({ id: m.id, patch: { bloqueado: !m.bloqueado } })}
+                      onClick={() =>
+                        patchMarc.mutate({ id: m.id, patch: { bloqueado: !m.bloqueado } })
+                      }
                     >
-                      {m.bloqueado ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
+                      {m.bloqueado ? (
+                        <Lock className="h-3.5 w-3.5" />
+                      ) : (
+                        <Unlock className="h-3.5 w-3.5" />
+                      )}
                     </IconBtn>
                     <IconBtn
                       label="Subir camada"
@@ -752,7 +787,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir demarcação</AlertDialogTitle>
             <AlertDialogDescription>
-              O talude {deleteTarget?.numero} será removido do mapa. O histórico de geometria é preservado.
+              O talude {deleteTarget?.numero} será removido do mapa. O histórico de geometria é
+              preservado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

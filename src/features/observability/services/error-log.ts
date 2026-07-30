@@ -12,7 +12,8 @@ type LogInput = {
 
 function serialize(detail: unknown): string | null {
   if (detail == null) return null;
-  if (detail instanceof Error) return `${detail.name}: ${detail.message}\n${detail.stack ?? ""}`.slice(0, 4000);
+  if (detail instanceof Error)
+    return `${detail.name}: ${detail.message}\n${detail.stack ?? ""}`.slice(0, 4000);
   if (typeof detail === "string") return detail.slice(0, 4000);
   try {
     return JSON.stringify(detail).slice(0, 4000);
@@ -69,7 +70,11 @@ export function installErrorTelemetry(): void {
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason;
     const message =
-      reason instanceof Error ? reason.message : typeof reason === "string" ? reason : "Promessa rejeitada";
+      reason instanceof Error
+        ? reason.message
+        : typeof reason === "string"
+          ? reason
+          : "Promessa rejeitada";
     void logClientError({ message, detail: reason, origin: "unhandledrejection" });
   });
 }

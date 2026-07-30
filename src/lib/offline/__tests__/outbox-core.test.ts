@@ -48,9 +48,13 @@ describe("outbox core", () => {
 
   it("agenda nova tentativa após falha", async () => {
     const store = makeStore([rec("1")]);
-    const report = await drainOutbox(store, async () => {
-      throw new Error("rede indisponível");
-    }, { now: () => 1000 });
+    const report = await drainOutbox(
+      store,
+      async () => {
+        throw new Error("rede indisponível");
+      },
+      { now: () => 1000 },
+    );
     expect(report.failed).toBe(1);
     expect(store.items[0].attempts).toBe(1);
     expect(store.items[0].nextAttemptAt).toBe(2000);
@@ -60,18 +64,26 @@ describe("outbox core", () => {
   it("respeita a janela de espera", async () => {
     const store = makeStore([rec("1", { nextAttemptAt: 10_000 })]);
     let calls = 0;
-    const report = await drainOutbox(store, async () => {
-      calls += 1;
-    }, { now: () => 1000 });
+    const report = await drainOutbox(
+      store,
+      async () => {
+        calls += 1;
+      },
+      { now: () => 1000 },
+    );
     expect(calls).toBe(0);
     expect(report.skipped).toBe(1);
   });
 
   it("move para dead-letter após o limite e permite retry manual", async () => {
     const store = makeStore([rec("1", { attempts: 2 })]);
-    await drainOutbox(store, async () => {
-      throw new Error("falha");
-    }, { maxAttempts: 3, now: () => 0 });
+    await drainOutbox(
+      store,
+      async () => {
+        throw new Error("falha");
+      },
+      { maxAttempts: 3, now: () => 0 },
+    );
     expect(store.items[0].dead).toBe(true);
 
     const restored = await retryDeadLetters(store);

@@ -1,4 +1,10 @@
-import { createFileRoute, Outlet, redirect, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -58,8 +64,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target =
-        fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
+      const target = fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
@@ -68,7 +73,11 @@ function AccessGuard() {
   return null;
 }
 
-function canRenderPath(pathname: string, access: ReturnType<typeof useMyAccess>["access"], loading: boolean) {
+function canRenderPath(
+  pathname: string,
+  access: ReturnType<typeof useMyAccess>["access"],
+  loading: boolean,
+) {
   if (loading) return false;
   if (access.isAdmin) return true;
   const keys = pathKeys(pathname);
@@ -129,7 +138,8 @@ function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { access, loading } = useMyAccess();
   const canRender = canRenderPath(pathname, access, loading);
-  const noMenus = !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
+  const noMenus =
+    !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
 
   return (
     <SidebarProvider>
@@ -143,10 +153,8 @@ function AuthenticatedLayout() {
           </main>
           <MobileTabBar />
           <ForcePasswordChange />
-
         </SidebarInset>
       </div>
     </SidebarProvider>
   );
 }
-

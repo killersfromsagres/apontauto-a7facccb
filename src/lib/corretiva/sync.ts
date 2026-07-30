@@ -1,13 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadPhotoWithFallback } from "@/lib/photo-upload";
-import {
-  outboxAll,
-  outboxRemove,
-  outboxUpdate,
-  blobGet,
-  blobDelete,
-  type OutboxItem,
-} from "./db";
+import { outboxAll, outboxRemove, outboxUpdate, blobGet, blobDelete, type OutboxItem } from "./db";
 
 let running: Promise<SyncResultDetailed> | null = null;
 
@@ -109,7 +102,10 @@ async function sendOne(item: OutboxItem): Promise<void> {
   if (item.kind === "status") {
     const { error } = await supabase
       .from("corretiva_os")
-      .update({ status: item.payload.status ?? "concluida", fim: item.payload.fim ?? new Date().toISOString() })
+      .update({
+        status: item.payload.status ?? "concluida",
+        fim: item.payload.fim ?? new Date().toISOString(),
+      })
       .eq("id", item.osId);
     if (error) throw error;
     return;

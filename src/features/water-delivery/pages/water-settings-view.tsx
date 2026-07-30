@@ -17,7 +17,6 @@ import { useAguaSync } from "@/features/water-delivery/offline/offline";
 import { AdminSettingsCard } from "@/features/water-delivery/components/admin-settings-card";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
-
 const PREF_KEY = "agua:prefs";
 
 type Prefs = { autoFoto: boolean; cacheRota: boolean };
@@ -42,9 +41,7 @@ export function WaterSettingsView() {
     } catch {
       /* preferências inválidas: mantém padrão */
     }
-    setCacheados(
-      Object.keys(localStorage).filter((k) => k.startsWith("agua:rota:")).length,
-    );
+    setCacheados(Object.keys(localStorage).filter((k) => k.startsWith("agua:rota:")).length);
   }, []);
 
   function salvar(patch: Partial<Prefs>) {
@@ -67,7 +64,6 @@ export function WaterSettingsView() {
       <WhatsAppConfigCard podeEditar={acesso.allowed} />
 
       <GlassCard className="space-y-4 p-4">
-
         <div className="flex items-center gap-2">
           <CloudOff className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-semibold">Execução offline</h2>
@@ -124,11 +120,9 @@ export function WaterSettingsView() {
       <FilaSincronizacaoCard />
       <MetricasUploadCard />
 
-
       <AdminSettingsCard podeEditar={podeConfigurar} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-
         <GlassCard className="space-y-2 p-4">
           <div className="flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />

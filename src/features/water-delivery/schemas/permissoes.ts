@@ -67,11 +67,7 @@ export const AGUA_PAPEIS: Record<string, AguaPermissao[]> = {
   administrador: GESTAO_COMPLETA,
   proprietario: GESTAO_COMPLETA,
   solicitante_filtro: ["water_filters.request", "water_filters.view"],
-  tecnico_filtro: [
-    "water_filters.execute",
-    "water_filters.view",
-    "water_delivery.photos.upload",
-  ],
+  tecnico_filtro: ["water_filters.execute", "water_filters.view", "water_delivery.photos.upload"],
 };
 
 /**

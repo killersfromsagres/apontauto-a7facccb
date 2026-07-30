@@ -325,7 +325,10 @@ export function WhatsAppShareDialog({
           <Button variant="outline" disabled={enviando} onClick={() => compartilhar(false)}>
             <MessageCircle className="mr-1.5 h-4 w-4" /> Enviar por links
           </Button>
-          <Button disabled={enviando || selecionados.length === 0} onClick={() => compartilhar(true)}>
+          <Button
+            disabled={enviando || selecionados.length === 0}
+            onClick={() => compartilhar(true)}
+          >
             {enviando ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (

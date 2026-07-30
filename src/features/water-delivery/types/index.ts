@@ -15,7 +15,11 @@ export type {
 } from "@/features/water-delivery/queries/api";
 
 export type { VisitaStatus } from "@/features/water-delivery/state-machines/estados";
-export type { LeituraAgua, PontoLido, Divergencia } from "@/features/water-delivery/importer/reader";
+export type {
+  LeituraAgua,
+  PontoLido,
+  Divergencia,
+} from "@/features/water-delivery/importer/reader";
 
 export type {
   PontoInput,

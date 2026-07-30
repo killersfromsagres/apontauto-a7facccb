@@ -77,7 +77,14 @@ const cellText = (value: unknown): string => {
 function buildSheet(name: string, rows: string[][], hidden: boolean): SheetData {
   const headerRow = detectHeaderRow(rows);
   const headers = (rows[headerRow] ?? []).map((h) => String(h ?? "").trim());
-  return { name, rows, headerRow, headers, totalRows: Math.max(rows.length - headerRow - 1, 0), hidden };
+  return {
+    name,
+    rows,
+    headerRow,
+    headers,
+    totalRows: Math.max(rows.length - headerRow - 1, 0),
+    hidden,
+  };
 }
 
 /** Lê o arquivo e devolve todas as abas com as matrizes de texto. */
@@ -91,7 +98,9 @@ export async function loadWorkbook(file: File): Promise<LoadedWorkbook> {
     try {
       await wb.xlsx.load(buffer);
     } catch (e) {
-      throw new Error("Não foi possível abrir o arquivo .xlsx (pode estar corrompido ou protegido).");
+      throw new Error(
+        "Não foi possível abrir o arquivo .xlsx (pode estar corrompido ou protegido).",
+      );
     }
     const sheets: SheetData[] = wb.worksheets.map((ws: any) => {
       const rows: string[][] = [];
@@ -218,7 +227,7 @@ export async function writeProcessed(
       const rows = sheet.rows.map((r) => r.slice());
       if (plan) applyToMatrix(rows, plan);
       const ws = wb.addWorksheet(safeSheetName(sheet.name));
-      rows.forEach((r, i) => ws.getRow(i + 1).values = [undefined, ...r]);
+      rows.forEach((r, i) => (ws.getRow(i + 1).values = [undefined, ...r]));
       styleImportedSheet(ws, plan?.headerRow ?? sheet.headerRow, rows);
     }
   }
@@ -446,9 +455,11 @@ async function validateOutput(buffer: ArrayBuffer): Promise<ValidationReport> {
         row.eachCell?.({ includeEmpty: false }, (cell: any, col: number) => {
           const v = cell.value;
           const text =
-            typeof v === "string" ? v : v && typeof v === "object" && (v as any).error
-              ? String((v as any).error)
-              : "";
+            typeof v === "string"
+              ? v
+              : v && typeof v === "object" && (v as any).error
+                ? String((v as any).error)
+                : "";
           if (text.includes("#REF!")) refErrors.push(`${name}!${col}:${rowNumber}`);
         });
       });
@@ -619,7 +630,6 @@ function applyToExcelJsSheet(ws: any, plan: SheetPlan) {
   }
 }
 
-
 function applyToMatrix(rows: string[][], plan: SheetPlan) {
   const { targets, inserts } = resolveWriteColumns(plan, rows[plan.headerRow]?.length ?? 0);
   if (inserts) {
@@ -660,7 +670,9 @@ export async function buildUnmatchedReport(
   plans: SheetPlan[],
 ): Promise<{ blob: Blob; fileName: string }> {
   const XLSX = await import("xlsx");
-  const rows = [["Aba", "Linha", "Ativo", "Motivo", "Prédio atual", "Andar atual", "Ambiente atual"]];
+  const rows = [
+    ["Aba", "Linha", "Ativo", "Motivo", "Prédio atual", "Andar atual", "Ambiente atual"],
+  ];
   for (const plan of plans) {
     for (const r of plan.results) {
       if (r.status !== "unmatched" && r.status !== "conflict") continue;
@@ -668,7 +680,9 @@ export async function buildUnmatchedReport(
         plan.sheetName,
         String(r.row),
         r.code,
-        r.status === "conflict" ? "Conflito com valor existente" : r.issues.join("; ") || "Código não encontrado",
+        r.status === "conflict"
+          ? "Conflito com valor existente"
+          : r.issues.join("; ") || "Código não encontrado",
         r.current[0],
         r.current[1],
         r.current[2],

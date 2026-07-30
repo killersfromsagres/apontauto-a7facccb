@@ -76,9 +76,7 @@ function uuid() {
 }
 
 function useOnlineStatus() {
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   useEffect(() => {
     const on = () => setOnline(true);
     const off = () => setOnline(false);
@@ -132,7 +130,6 @@ function CorretivaPage() {
     void reloadEquipes();
   }, []);
 
-
   const reloadEquipes = async () => {
     const { data } = await supabase
       .from("corretiva_equipes")
@@ -141,7 +138,6 @@ function CorretivaPage() {
       .order("nome", { ascending: true });
     setEquipes((data ?? []) as EquipeRow[]);
   };
-
 
   const setEquipeAndPersist = (v: EquipeFiltro) => {
     setEquipe(v);
@@ -202,9 +198,13 @@ function CorretivaPage() {
     })();
     const on = () => doSync(true);
     window.addEventListener("online", on);
-    const focus = () => { if (navigator.onLine) doSync(true); };
+    const focus = () => {
+      if (navigator.onLine) doSync(true);
+    };
     window.addEventListener("focus", focus);
-    const iv = window.setInterval(() => { if (navigator.onLine) doSync(true); }, 30_000);
+    const iv = window.setInterval(() => {
+      if (navigator.onLine) doSync(true);
+    }, 30_000);
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("focus", focus);
@@ -261,13 +261,19 @@ function CorretivaPage() {
           <div className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Equipe</div>
-              <div className="text-base font-semibold">{currentEquipe?.nome ?? (equipe === "todas" ? "Todas" : equipe)}</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Equipe
+              </div>
+              <div className="text-base font-semibold">
+                {currentEquipe?.nome ?? (equipe === "todas" ? "Todas" : equipe)}
+              </div>
             </div>
           </div>
           {currentEquipe && (
             <div>
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Colaboradores</div>
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Colaboradores
+              </div>
               <div className="text-sm">{currentEquipe.colaboradores || "—"}</div>
             </div>
           )}
@@ -285,9 +291,7 @@ function CorretivaPage() {
         </div>
       </GlassCard>
 
-      {isAdmin && managingTeams && (
-        <EquipesEditor equipes={equipes} onChange={reloadEquipes} />
-      )}
+      {isAdmin && managingTeams && <EquipesEditor equipes={equipes} onChange={reloadEquipes} />}
 
       {!selected ? (
         <GlassCard className="p-4">
@@ -327,7 +331,9 @@ function CorretivaPage() {
           </div>
           {!lockedEquipe && equipe !== "todas" && (
             <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
+              <Badge variant="secondary" className="text-[10px]">
+                {equipe}
+              </Badge>
               <span>Mostrando apenas OS desta equipe.</span>
               <button
                 type="button"
@@ -358,57 +364,64 @@ function CorretivaPage() {
                   ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
                   : st.row;
                 return (
-                <li key={o.id}>
-                  <div className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(o.id)}
-                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                  <li key={o.id}>
+                    <div
+                      className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
                     >
-                      {isDone ? (
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                      ) : (
-                        <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(o.id)}
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                      >
+                        {isDone ? (
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                        )}
 
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}>
-                            OS {o.numero_os}
-                          </span>
-                          {isDone ? (
-                            <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-                              <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px]">
-                              {o.status}
-                            </Badge>
-                          )}
-                          {o.equipe && (
-                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                              <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
-                              {o.equipe}
-                            </Badge>
-                          )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
+                            >
+                              OS {o.numero_os}
+                            </span>
+                            {isDone ? (
+                              <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+                                <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px]">
+                                {o.status}
+                              </Badge>
+                            )}
+                            {o.equipe && (
+                              <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                                <span
+                                  className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                                />
+                                {o.equipe}
+                              </Badge>
+                            )}
+                          </div>
+                          <div
+                            className={`mt-1 text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
+                          >
+                            {o.nome_os?.trim() || "Sem descrição da atividade"}
+                          </div>
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground/80">
+                            {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                          </div>
                         </div>
-                        <div className={`mt-1 text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>
-                          {o.nome_os?.trim() || "Sem descrição da atividade"}
-                        </div>
-                        <div className="mt-0.5 truncate text-xs text-muted-foreground/80">
-                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                        </div>
+                      </button>
+                      <div className="shrink-0 self-center">
+                        <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
                       </div>
-                    </button>
-                    <div className="shrink-0 self-center">
-                      <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
                     </div>
-                  </div>
-                </li>
+                  </li>
                 );
               })}
             </ul>
-
           )}
         </GlassCard>
       ) : (
@@ -511,7 +524,6 @@ function OsDetail({
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
-
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
     let cancelled = false;
@@ -553,8 +565,7 @@ function OsDetail({
   // Auto-save do rascunho (debounced)
   useEffect(() => {
     if (!draftLoaded) return;
-    const hasAny =
-      previews.length > 0 || pecas.length > 0 || problemas.length > 0 || !!assinatura;
+    const hasAny = previews.length > 0 || pecas.length > 0 || problemas.length > 0 || !!assinatura;
     const t = setTimeout(() => {
       if (!hasAny) {
         draftDelete(os.id).catch(() => {});
@@ -576,7 +587,6 @@ function OsDetail({
     }, 400);
     return () => clearTimeout(t);
   }, [previews, pecas, problemas, assinatura, assinaturaNome, draftLoaded, os.id]);
-
 
   const onPickFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -714,7 +724,6 @@ function OsDetail({
     onBack();
   };
 
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -735,7 +744,6 @@ function OsDetail({
         )}
       </div>
 
-
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -744,7 +752,9 @@ function OsDetail({
             </div>
             <div className="truncate font-mono text-lg font-bold">#{os.numero_os}</div>
           </div>
-          <Badge variant="outline" className="text-[10px]">{os.status}</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {os.status}
+          </Badge>
         </div>
         <div className="mb-3 rounded-2xl border border-border/60 bg-muted/30 p-3">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -886,9 +896,7 @@ function OsDetail({
                       value={p.quantidade}
                       onChange={(e) =>
                         setPecas((l) =>
-                          l.map((x) =>
-                            x.id === p.id ? { ...x, quantidade: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === p.id ? { ...x, quantidade: e.target.value } : x)),
                         )
                       }
                       className="h-11"
@@ -899,9 +907,7 @@ function OsDetail({
                     <Select
                       value={p.urgencia}
                       onValueChange={(v) =>
-                        setPecas((l) =>
-                          l.map((x) => (x.id === p.id ? { ...x, urgencia: v } : x)),
-                        )
+                        setPecas((l) => l.map((x) => (x.id === p.id ? { ...x, urgencia: v } : x)))
                       }
                     >
                       <SelectTrigger className="h-11">
@@ -920,9 +926,7 @@ function OsDetail({
                       value={p.observacao}
                       onChange={(e) =>
                         setPecas((l) =>
-                          l.map((x) =>
-                            x.id === p.id ? { ...x, observacao: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === p.id ? { ...x, observacao: e.target.value } : x)),
                         )
                       }
                       rows={2}
@@ -975,9 +979,7 @@ function OsDetail({
                       value={pr.descricao}
                       onChange={(e) =>
                         setProblemas((l) =>
-                          l.map((x) =>
-                            x.id === pr.id ? { ...x, descricao: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === pr.id ? { ...x, descricao: e.target.value } : x)),
                         )
                       }
                       rows={3}
@@ -1009,7 +1011,6 @@ function OsDetail({
           </div>
         )}
       </GlassCard>
-
 
       <GlassCard className="p-4">
         <SectionTitle icon={PenLine} label="Rubrica do solicitante" />
@@ -1183,12 +1184,12 @@ function EquipesEditor({
                 />
               </div>
               <div className="flex items-end gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => save(e)}
-                  disabled={!dirty || saving === e.id}
-                >
-                  {saving === e.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <Button size="sm" onClick={() => save(e)} disabled={!dirty || saving === e.id}>
+                  {saving === e.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => remove(e)}>
                   <X className="h-4 w-4" />
@@ -1201,7 +1202,12 @@ function EquipesEditor({
         <div className="grid grid-cols-1 gap-2 rounded-md border border-dashed border-border p-3 sm:grid-cols-[1fr_2fr_auto]">
           <div>
             <Label className="text-[10px] uppercase text-muted-foreground">Nova equipe</Label>
-            <Input value={newNome} onChange={(e) => setNewNome(e.target.value)} className="h-9" placeholder="Ex: Elétrica" />
+            <Input
+              value={newNome}
+              onChange={(e) => setNewNome(e.target.value)}
+              className="h-9"
+              placeholder="Ex: Elétrica"
+            />
           </div>
           <div>
             <Label className="text-[10px] uppercase text-muted-foreground">Colaboradores</Label>
@@ -1222,4 +1228,3 @@ function EquipesEditor({
     </GlassCard>
   );
 }
-

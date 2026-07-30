@@ -58,7 +58,6 @@ function pick(row: Record<string, unknown>, ...keys: string[]): string {
   return "";
 }
 
-
 function parseDateISO(v: string): string | null {
   if (!v) return null;
   const asNum = Number(v);
@@ -96,7 +95,8 @@ function pickBackorderSheet(wb: any): string {
     let score = 0;
     if (flat.includes("ATIVO")) score += 2;
     if (flat.includes("DESCRICAO OS") || flat.includes("DESCRICAO DA OS")) score += 3;
-    if (flat.includes("NUMERO OS") || flat.includes("NUMERO DA OS") || flat.includes('"OS"')) score += 2;
+    if (flat.includes("NUMERO OS") || flat.includes("NUMERO DA OS") || flat.includes('"OS"'))
+      score += 2;
     if (flat.includes("SOLICITANTE")) score += 1;
     if (flat.includes("CRITICIDADE")) score += 1;
     if (flat.includes("STATUS")) score += 1;
@@ -113,7 +113,12 @@ function pickBackorderSheet(wb: any): string {
 function extractEmbeddedAssets(XLSX: typeof import("xlsx"), wb: any): AssetImportRow[] {
   const name = (wb.SheetNames as string[]).find((n) => {
     const s = norm(n);
-    return s === "ATIVOS" || s === "ATIVO" || s.includes("CADASTRO DE ATIVO") || s.includes("ARVORE DE ATIVO");
+    return (
+      s === "ATIVOS" ||
+      s === "ATIVO" ||
+      s.includes("CADASTRO DE ATIVO") ||
+      s.includes("ARVORE DE ATIVO")
+    );
   });
   if (!name) return [];
   const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[name], { defval: "" });
@@ -124,11 +129,37 @@ function extractEmbeddedAssets(XLSX: typeof import("xlsx"), wb: any): AssetImpor
     const p = pick(r, "ATIVO PAI", "CODIGO PAI", "CÓDIGO PAI", "PAI");
     out.push({
       ativo: ativo.toUpperCase(),
-      denominacao: pick(r, "DENOMINAÇÃO ATIVO", "DENOMINACAO ATIVO", "DENOMINAÇÃO", "DENOMINACAO", "NOME"),
-      nivel: pick(r, "DENOMINAÇÃO NÍVEL DE EMPRESA", "DENOMINACAO NIVEL DE EMPRESA", "NIVEL", "NÍVEL", "NIVEL DE EMPRESA"),
+      denominacao: pick(
+        r,
+        "DENOMINAÇÃO ATIVO",
+        "DENOMINACAO ATIVO",
+        "DENOMINAÇÃO",
+        "DENOMINACAO",
+        "NOME",
+      ),
+      nivel: pick(
+        r,
+        "DENOMINAÇÃO NÍVEL DE EMPRESA",
+        "DENOMINACAO NIVEL DE EMPRESA",
+        "NIVEL",
+        "NÍVEL",
+        "NIVEL DE EMPRESA",
+      ),
       codigo_pai: p ? p.toUpperCase() : null,
-      descricao_pai: pick(r, "DESCRIÇÃO ATIVO PAI", "DESCRICAO ATIVO PAI", "DESCRIÇÃO PAI", "DESCRICAO PAI"),
-      unidade_negocio: pick(r, "DENOMINAÇÃO UNIDADE NEGÓCIO", "DENOMINACAO UNIDADE NEGOCIO", "UNIDADE NEGOCIO", "UNIDADE"),
+      descricao_pai: pick(
+        r,
+        "DESCRIÇÃO ATIVO PAI",
+        "DESCRICAO ATIVO PAI",
+        "DESCRIÇÃO PAI",
+        "DESCRICAO PAI",
+      ),
+      unidade_negocio: pick(
+        r,
+        "DENOMINAÇÃO UNIDADE NEGÓCIO",
+        "DENOMINACAO UNIDADE NEGOCIO",
+        "UNIDADE NEGOCIO",
+        "UNIDADE",
+      ),
     });
   }
   return out;
@@ -143,10 +174,7 @@ export interface BackorderReadResult {
   sheetName: string;
 }
 
-export async function readBackorderFile(
-  file: File,
-  assets: AssetsMap,
-): Promise<BackorderRow[]> {
+export async function readBackorderFile(file: File, assets: AssetsMap): Promise<BackorderRow[]> {
   const r = await readBackorderWorkbook(file, assets);
   return r.rows;
 }
@@ -182,15 +210,61 @@ export async function readBackorderWorkbook(
 
   const out: BackorderRow[] = [];
   for (const r of raw) {
-    const os = pick(r, "OS", "NUMERO OS", "NUMERO DA OS", "N OS", "NRO OS", "CHAMADO", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO");
+    const os = pick(
+      r,
+      "OS",
+      "NUMERO OS",
+      "NUMERO DA OS",
+      "N OS",
+      "NRO OS",
+      "CHAMADO",
+      "ORDEM DE SERVIÇO",
+      "ORDEM DE SERVICO",
+    );
     if (!os) continue;
-    const descricao = pick(r, "DESCRIÇÃO OS", "DESCRICAO OS", "DESCRICAO DA OS", "DESCRIÇÃO DA OS", "DESCRIÇÃO", "DESCRICAO", "NOME");
+    const descricao = pick(
+      r,
+      "DESCRIÇÃO OS",
+      "DESCRICAO OS",
+      "DESCRICAO DA OS",
+      "DESCRIÇÃO DA OS",
+      "DESCRIÇÃO",
+      "DESCRICAO",
+      "NOME",
+    );
     const categoriaOrig = pick(r, "CATEGORIA");
     const servico = pick(r, "SERVIÇO", "SERVICO", "TAREFA EXECUTADA");
-    const ativo = pick(r, "ATIVO", "CODIGO DO ATIVO", "CÓDIGO DO ATIVO", "COD ATIVO", "COD. ATIVO", "TAG", "LOCAL DA INSTALAÇÃO", "LOCAL DA INSTALACAO");
+    const ativo = pick(
+      r,
+      "ATIVO",
+      "CODIGO DO ATIVO",
+      "CÓDIGO DO ATIVO",
+      "COD ATIVO",
+      "COD. ATIVO",
+      "TAG",
+      "LOCAL DA INSTALAÇÃO",
+      "LOCAL DA INSTALACAO",
+    );
     const status = pick(r, "STATUS RESUMIDO", "STATUS");
-    const abertura = pick(r, "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "DATA ABERTURA", "DATA DE ABERTURA", "ABERTURA", "DATA/HORA SOLICITAÇÃO", "DATA HORA SOLICITACAO");
-    const sla = pick(r, "PRAZO SLA", "TERMINO SLA", "TÉRMINO SLA", "DATA LIMITE", "DATA PREVISTA MAXIMA", "DATA PREVISTA MÁXIMA");
+    const abertura = pick(
+      r,
+      "DATA/HORA ABERTURA",
+      "DATA HORA ABERTURA",
+      "DATA ABERTURA",
+      "DATA DE ABERTURA",
+      "ABERTURA",
+      "DATA/HORA SOLICITAÇÃO",
+      "DATA HORA SOLICITACAO",
+    );
+    const sla = pick(
+      r,
+      "PRAZO SLA",
+      "TERMINO SLA",
+      "TÉRMINO SLA",
+      "DATA LIMITE",
+      "DATA PREVISTA MAXIMA",
+      "DATA PREVISTA MÁXIMA",
+    );
 
     const solicitante = pick(
       r,
@@ -199,11 +273,25 @@ export async function readBackorderWorkbook(
       "SOLICITANTE",
       "NOME DO SOLICITANTE",
     );
-    const criticidade = pick(r, "CRITICIDADE", "PRIORIDADE", "NÍVEL DE CRITICIDADE", "NIVEL DE CRITICIDADE");
+    const criticidade = pick(
+      r,
+      "CRITICIDADE",
+      "PRIORIDADE",
+      "NÍVEL DE CRITICIDADE",
+      "NIVEL DE CRITICIDADE",
+    );
 
     // Preserva Prédio / Andar / Ambiente vindos da planilha ("as-is").
     // Só recorre à árvore de ativos quando a coluna estiver vazia.
-    const sheetPredio = pick(r, "PREDIO", "PRÉDIO", "PREDIO / AREA", "PRÉDIO / ÁREA", "AREA", "ÁREA");
+    const sheetPredio = pick(
+      r,
+      "PREDIO",
+      "PRÉDIO",
+      "PREDIO / AREA",
+      "PRÉDIO / ÁREA",
+      "AREA",
+      "ÁREA",
+    );
     const sheetAndar = pick(r, "ANDAR", "PAVIMENTO");
     const sheetEspaco = pick(r, "AMBIENTE", "ESPAÇO", "ESPACO", "LOCAL");
 
@@ -280,8 +368,20 @@ export async function readAssetsFile(file: File): Promise<AssetImportRow[]> {
       "NIVEL DE EMPRESA",
     );
     const pai = pick(r, "ATIVO PAI", "CODIGO PAI", "CÓDIGO PAI", "PAI");
-    const descPai = pick(r, "DESCRIÇÃO ATIVO PAI", "DESCRICAO ATIVO PAI", "DESCRIÇÃO PAI", "DESCRICAO PAI");
-    const unidade = pick(r, "DENOMINAÇÃO UNIDADE NEGÓCIO", "DENOMINACAO UNIDADE NEGOCIO", "UNIDADE NEGOCIO", "UNIDADE");
+    const descPai = pick(
+      r,
+      "DESCRIÇÃO ATIVO PAI",
+      "DESCRICAO ATIVO PAI",
+      "DESCRIÇÃO PAI",
+      "DESCRICAO PAI",
+    );
+    const unidade = pick(
+      r,
+      "DENOMINAÇÃO UNIDADE NEGÓCIO",
+      "DENOMINACAO UNIDADE NEGOCIO",
+      "UNIDADE NEGOCIO",
+      "UNIDADE",
+    );
     if (!ativo) continue;
     out.push({
       ativo: ativo.toUpperCase(),

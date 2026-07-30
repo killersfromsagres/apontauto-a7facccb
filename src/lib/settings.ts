@@ -78,20 +78,54 @@ _Registro gerado automaticamente pelo Apont Auto._`,
   },
 };
 
-
 export const DEFAULT_SETTINGS: AppSettings = {
   siteAllowed: "DEMARCHI",
   refrig1: ["A160", "A170", "ADC", "Ambulatório", "B203"],
   refrig2: [
-    "A220","B115","B290","C110","C120","C340","C380","C45","C46","C49","C65","C70","D240","D246",
+    "A220",
+    "B115",
+    "B290",
+    "C110",
+    "C120",
+    "C340",
+    "C380",
+    "C45",
+    "C46",
+    "C49",
+    "C65",
+    "C70",
+    "D240",
+    "D246",
   ],
   refrig3: [
-    "D270","D295","D345","D55","E105","E125","E130","E171","E200","E310","E35","E70","E80",
-    "F30","Fundação ECO+","Z210","Z310","Z500",
+    "D270",
+    "D295",
+    "D345",
+    "D55",
+    "E105",
+    "E125",
+    "E130",
+    "E171",
+    "E200",
+    "E310",
+    "E35",
+    "E70",
+    "E80",
+    "F30",
+    "Fundação ECO+",
+    "Z210",
+    "Z310",
+    "Z500",
   ],
   hidraulicaKeywords: [
-    "Caixas Pluviais","Fluentes","Canaletas","Tubulações","Limpeza de Calhas",
-    "Grelhas","Ralos","Bocas de Lobo",
+    "Caixas Pluviais",
+    "Fluentes",
+    "Canaletas",
+    "Tubulações",
+    "Limpeza de Calhas",
+    "Grelhas",
+    "Ralos",
+    "Bocas de Lobo",
   ],
   workingHours: {
     morningStart: "08:00",
@@ -104,7 +138,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aguaWhatsapp: DEFAULT_AGUA_WHATSAPP,
   aguaAdmin: DEFAULT_AGUA_ADMIN,
 };
-
 
 let cache: AppSettings = DEFAULT_SETTINGS;
 let rowId: string | null = null;

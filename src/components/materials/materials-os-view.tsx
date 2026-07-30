@@ -119,7 +119,12 @@ export function MaterialsOsView() {
     };
     const previous = edit.id ? (q.data ?? []).find((r) => r.id === edit.id) : null;
     const res = edit.id
-      ? await supabase.from("material_reservations").update(payload).eq("id", edit.id).select("id").single()
+      ? await supabase
+          .from("material_reservations")
+          .update(payload)
+          .eq("id", edit.id)
+          .select("id")
+          .single()
       : await supabase
           .from("material_reservations")
           .insert({ ...payload, created_by: u.user?.id })
@@ -197,7 +202,9 @@ export function MaterialsOsView() {
                     <Badge variant="outline">OS {r.numero_os}</Badge>
                     <Badge variant="outline">{r.modalidade}</Badge>
                     {r.critico && (
-                      <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">crítico</Badge>
+                      <Badge className="border-amber-500/40 bg-amber-500/10 text-amber-300">
+                        crítico
+                      </Badge>
                     )}
                     {r.afeta_sla && (
                       <Badge className="border-destructive/40 bg-destructive/10 text-destructive">
@@ -206,7 +213,8 @@ export function MaterialsOsView() {
                     )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
-                    Solicitado {r.qtd_solicitada} · Separado {r.qtd_separada} · Entregue {r.qtd_entregue} · Consumido {r.qtd_consumida} {r.unidade}
+                    Solicitado {r.qtd_solicitada} · Separado {r.qtd_separada} · Entregue{" "}
+                    {r.qtd_entregue} · Consumido {r.qtd_consumida} {r.unidade}
                     {r.lead_time_dias != null && (
                       <span className="ml-2 inline-flex items-center gap-1">
                         <Clock className="h-3 w-3" /> lead time {r.lead_time_dias}d

@@ -198,7 +198,10 @@ export function estadoSla(
 }
 
 /** Dias até a próxima troca preventiva (negativo = vencida). */
-export function diasParaTroca(ativo: Pick<FiltroAtivo, "proxima_troca">, hoje = new Date()): number | null {
+export function diasParaTroca(
+  ativo: Pick<FiltroAtivo, "proxima_troca">,
+  hoje = new Date(),
+): number | null {
   if (!ativo.proxima_troca) return null;
   const alvo = new Date(`${ativo.proxima_troca}T00:00:00`);
   const base = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
@@ -318,7 +321,9 @@ export async function listFiltroAtivos(): Promise<FiltroAtivo[]> {
   return (data ?? []) as FiltroAtivo[];
 }
 
-export async function salvarFiltroAtivo(input: Partial<FiltroAtivo> & { id?: string }): Promise<void> {
+export async function salvarFiltroAtivo(
+  input: Partial<FiltroAtivo> & { id?: string },
+): Promise<void> {
   const erro = validarAtivo(input);
   if (erro) throw new Error(erro);
 
@@ -367,14 +372,19 @@ export async function salvarFiltroAtivo(input: Partial<FiltroAtivo> & { id?: str
 export async function listFiltroEventos(solicitacaoId: string): Promise<FiltroEvento[]> {
   const { data, error } = await db
     .from("agua_filtro_eventos")
-    .select("id, solicitacao_id, tipo, situacao_anterior, situacao_nova, comentario, foto_url, criado_em")
+    .select(
+      "id, solicitacao_id, tipo, situacao_anterior, situacao_nova, comentario, foto_url, criado_em",
+    )
     .eq("solicitacao_id", solicitacaoId)
     .order("criado_em", { ascending: false });
   if (error) throw error;
   return (data ?? []) as FiltroEvento[];
 }
 
-export async function comentarSolicitacao(solicitacaoId: string, comentario: string): Promise<void> {
+export async function comentarSolicitacao(
+  solicitacaoId: string,
+  comentario: string,
+): Promise<void> {
   const texto = comentario.trim();
   if (!texto) throw new Error("Escreva um comentário.");
   const { data: userData } = await supabase.auth.getUser();

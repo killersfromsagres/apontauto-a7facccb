@@ -79,9 +79,9 @@ export const Route = createFileRoute("/_authenticated/abastecimento/")({
   component: FrotaPage,
 });
 
-const money = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const dt = (s: string) => new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+const money = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dt = (s: string) =>
+  new Date(s).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 
 function FrotaPage() {
   const { allowed, isLoading } = useCanAccessModule("abastecimento", "read");
@@ -89,10 +89,26 @@ function FrotaPage() {
   const { allowed: canEditVehicle } = useCanAccessModule("abastecimento", "update");
   const [tab, setTab] = useState("visao");
 
-  const vehicles = useQuery({ queryKey: ["frota", "vehicles"], queryFn: listVehicles, enabled: allowed });
-  const fuelings = useQuery({ queryKey: ["frota", "fuelings"], queryFn: () => listFuelings(), enabled: allowed });
-  const checklists = useQuery({ queryKey: ["frota", "checklists"], queryFn: () => listChecklists(), enabled: allowed });
-  const occurrences = useQuery({ queryKey: ["frota", "occurrences"], queryFn: listOccurrences, enabled: allowed });
+  const vehicles = useQuery({
+    queryKey: ["frota", "vehicles"],
+    queryFn: listVehicles,
+    enabled: allowed,
+  });
+  const fuelings = useQuery({
+    queryKey: ["frota", "fuelings"],
+    queryFn: () => listFuelings(),
+    enabled: allowed,
+  });
+  const checklists = useQuery({
+    queryKey: ["frota", "checklists"],
+    queryFn: () => listChecklists(),
+    enabled: allowed,
+  });
+  const occurrences = useQuery({
+    queryKey: ["frota", "occurrences"],
+    queryFn: listOccurrences,
+    enabled: allowed,
+  });
 
   if (isLoading) {
     return (
@@ -119,9 +135,7 @@ function FrotaPage() {
   const chks = checklists.data ?? [];
   const occ = (occurrences.data ?? []).filter((o) => o.state !== "encerrada");
 
-  const monthFuel = fuel.filter(
-    (f) => new Date(f.fueled_at).getMonth() === new Date().getMonth(),
-  );
+  const monthFuel = fuel.filter((f) => new Date(f.fueled_at).getMonth() === new Date().getMonth());
   const monthCost = monthFuel.reduce((a, f) => a + Number(f.total_value ?? 0), 0);
   const blocked = list.filter((v) => v.status === "bloqueado").length;
   const avgScore = chks.length
@@ -137,27 +151,67 @@ function FrotaPage() {
       <Tabs value={tab} onValueChange={setTab} className="space-y-5">
         <div className="-mx-1 overflow-x-auto px-1">
           <TabsList className="inline-flex w-max">
-            <TabsTrigger value="visao" className="min-h-[40px]">Visão geral</TabsTrigger>
-            <TabsTrigger value="checklist" className="min-h-[40px]">Novo checklist</TabsTrigger>
-            <TabsTrigger value="abastecer" className="min-h-[40px]">Abastecimento</TabsTrigger>
-            <TabsTrigger value="veiculos" className="min-h-[40px]">Veículos</TabsTrigger>
-            <TabsTrigger value="historico" className="min-h-[40px]">Histórico</TabsTrigger>
-            <TabsTrigger value="ocorrencias" className="min-h-[40px]">Ocorrências</TabsTrigger>
-            <TabsTrigger value="indicadores" className="min-h-[40px]">Indicadores</TabsTrigger>
+            <TabsTrigger value="visao" className="min-h-[40px]">
+              Visão geral
+            </TabsTrigger>
+            <TabsTrigger value="checklist" className="min-h-[40px]">
+              Novo checklist
+            </TabsTrigger>
+            <TabsTrigger value="abastecer" className="min-h-[40px]">
+              Abastecimento
+            </TabsTrigger>
+            <TabsTrigger value="veiculos" className="min-h-[40px]">
+              Veículos
+            </TabsTrigger>
+            <TabsTrigger value="historico" className="min-h-[40px]">
+              Histórico
+            </TabsTrigger>
+            <TabsTrigger value="ocorrencias" className="min-h-[40px]">
+              Ocorrências
+            </TabsTrigger>
+            <TabsTrigger value="indicadores" className="min-h-[40px]">
+              Indicadores
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <TabsContent value="visao" className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard label="Veículos ativos" value={list.filter((v) => v.status !== "inativo").length} icon={<Truck className="size-4" />} loading={vehicles.isLoading} />
-            <KpiCard label="Custo no mês" value={money(monthCost)} hint={`${monthFuel.length} abastecimentos`} icon={<Wallet className="size-4" />} loading={fuelings.isLoading} />
-            <KpiCard label="Score médio de checklist" value={`${avgScore}/100`} icon={<ClipboardCheck className="size-4" />} loading={checklists.isLoading} />
-            <KpiCard label="Bloqueios / ocorrências" value={`${blocked} / ${occ.length}`} icon={<AlertTriangle className="size-4" />} loading={occurrences.isLoading} />
+            <KpiCard
+              label="Veículos ativos"
+              value={list.filter((v) => v.status !== "inativo").length}
+              icon={<Truck className="size-4" />}
+              loading={vehicles.isLoading}
+            />
+            <KpiCard
+              label="Custo no mês"
+              value={money(monthCost)}
+              hint={`${monthFuel.length} abastecimentos`}
+              icon={<Wallet className="size-4" />}
+              loading={fuelings.isLoading}
+            />
+            <KpiCard
+              label="Score médio de checklist"
+              value={`${avgScore}/100`}
+              icon={<ClipboardCheck className="size-4" />}
+              loading={checklists.isLoading}
+            />
+            <KpiCard
+              label="Bloqueios / ocorrências"
+              value={`${blocked} / ${occ.length}`}
+              icon={<AlertTriangle className="size-4" />}
+              loading={occurrences.isLoading}
+            />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {list.map((v) => (
-              <VehicleCard3D key={v.id} vehicle={v} active={false} onSelect={() => setTab("veiculos")} />
+              <VehicleCard3D
+                key={v.id}
+                vehicle={v}
+                active={false}
+                onSelect={() => setTab("veiculos")}
+              />
             ))}
           </div>
         </TabsContent>
@@ -168,7 +222,10 @@ function FrotaPage() {
               <ChecklistWizard vehicles={list.filter((v) => v.status !== "inativo")} />
             </Suspense>
           ) : (
-            <EmptyState title="Sem permissão para registrar checklist" description="Seu perfil é somente leitura neste módulo." />
+            <EmptyState
+              title="Sem permissão para registrar checklist"
+              description="Seu perfil é somente leitura neste módulo."
+            />
           )}
         </TabsContent>
 
@@ -177,7 +234,12 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="veiculos">
-          <VehiclesTab vehicles={list} fuelings={fuel} checklists={chks} canWrite={canEditVehicle} />
+          <VehiclesTab
+            vehicles={list}
+            fuelings={fuel}
+            checklists={chks}
+            canWrite={canEditVehicle}
+          />
         </TabsContent>
 
         <TabsContent value="historico">
@@ -185,7 +247,11 @@ function FrotaPage() {
         </TabsContent>
 
         <TabsContent value="ocorrencias">
-          <OccurrencesTab occurrences={occurrences.data ?? []} vehicles={list} loading={occurrences.isLoading} />
+          <OccurrencesTab
+            occurrences={occurrences.data ?? []}
+            vehicles={list}
+            loading={occurrences.isLoading}
+          />
         </TabsContent>
 
         <TabsContent value="indicadores">
@@ -262,9 +328,23 @@ function FuelingTab({
       header: "Veículo",
       cell: (r) => vehicles.find((v) => v.id === r.vehicle_id)?.prefix ?? "—",
     },
-    { key: "litros", header: "Litros", cell: (r) => Number(r.liters).toFixed(2), sortValue: (r) => Number(r.liters) },
-    { key: "km", header: "Hodômetro", cell: (r) => `${Number(r.odometer_km).toLocaleString("pt-BR")} km` },
-    { key: "total", header: "Total", cell: (r) => money(Number(r.total_value ?? 0)), sortValue: (r) => Number(r.total_value ?? 0) },
+    {
+      key: "litros",
+      header: "Litros",
+      cell: (r) => Number(r.liters).toFixed(2),
+      sortValue: (r) => Number(r.liters),
+    },
+    {
+      key: "km",
+      header: "Hodômetro",
+      cell: (r) => `${Number(r.odometer_km).toLocaleString("pt-BR")} km`,
+    },
+    {
+      key: "total",
+      header: "Total",
+      cell: (r) => money(Number(r.total_value ?? 0)),
+      sortValue: (r) => Number(r.total_value ?? 0),
+    },
     {
       key: "anomalias",
       header: "Divergências",
@@ -285,7 +365,9 @@ function FuelingTab({
           <div className="space-y-1.5">
             <Label>Veículo</Label>
             <Select value={vehicleId} onValueChange={setVehicleId}>
-              <SelectTrigger className="min-h-[44px]"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectTrigger className="min-h-[44px]">
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
               <SelectContent>
                 {vehicles.map((v) => (
                   <SelectItem key={v.id} value={v.id}>
@@ -297,31 +379,63 @@ function FuelingTab({
           </div>
           <div className="space-y-1.5">
             <Label>Data e hora</Label>
-            <Input type="datetime-local" className="min-h-[44px] text-base" value={fueledAt} onChange={(e) => setFueledAt(e.target.value)} />
+            <Input
+              type="datetime-local"
+              className="min-h-[44px] text-base"
+              value={fueledAt}
+              onChange={(e) => setFueledAt(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Motorista</Label>
-            <Input className="min-h-[44px] text-base" value={driverName} onChange={(e) => setDriverName(e.target.value)} />
+            <Input
+              className="min-h-[44px] text-base"
+              value={driverName}
+              onChange={(e) => setDriverName(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Hodômetro (km)</Label>
-            <Input inputMode="numeric" className="min-h-[44px] text-base" value={odometerKm} onChange={(e) => setOdometerKm(e.target.value.replace(/\D/g, ""))} />
+            <Input
+              inputMode="numeric"
+              className="min-h-[44px] text-base"
+              value={odometerKm}
+              onChange={(e) => setOdometerKm(e.target.value.replace(/\D/g, ""))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Litros</Label>
-            <Input inputMode="decimal" className="min-h-[44px] text-base" value={liters} onChange={(e) => setLiters(e.target.value)} />
+            <Input
+              inputMode="decimal"
+              className="min-h-[44px] text-base"
+              value={liters}
+              onChange={(e) => setLiters(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Preço por litro</Label>
-            <Input inputMode="decimal" className="min-h-[44px] text-base" value={price} onChange={(e) => setPrice(e.target.value)} />
+            <Input
+              inputMode="decimal"
+              className="min-h-[44px] text-base"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Posto</Label>
-            <Input className="min-h-[44px] text-base" value={station} onChange={(e) => setStation(e.target.value)} />
+            <Input
+              className="min-h-[44px] text-base"
+              value={station}
+              onChange={(e) => setStation(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Cupom / nota</Label>
-            <Input className="min-h-[44px] text-base" value={receipt} onChange={(e) => setReceipt(e.target.value)} />
+            <Input
+              className="min-h-[44px] text-base"
+              value={receipt}
+              onChange={(e) => setReceipt(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Observação</Label>
@@ -334,14 +448,17 @@ function FuelingTab({
           </label>
 
           <div className="flex items-center rounded-2xl border border-border/50 px-3 py-2 text-sm">
-            Total estimado:&nbsp;<strong className="text-primary">{money(Number.isFinite(total) ? total : 0)}</strong>
+            Total estimado:&nbsp;
+            <strong className="text-primary">{money(Number.isFinite(total) ? total : 0)}</strong>
           </div>
 
           <div className="sm:col-span-2 lg:col-span-3 space-y-2">
             {anomalies.length > 0 && (
               <div className="flex items-start gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 p-3 text-sm text-amber-200">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{anomalies.join(" · ")} — o registro será salvo sinalizado para auditoria.</span>
+                <span>
+                  {anomalies.join(" · ")} — o registro será salvo sinalizado para auditoria.
+                </span>
               </div>
             )}
             <Button
@@ -349,7 +466,11 @@ function FuelingTab({
               disabled={!vehicleId || input.liters <= 0 || input.odometerKm <= 0 || save.isPending}
               onClick={() => save.mutate()}
             >
-              {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Fuel className="mr-2 h-4 w-4" />}
+              {save.isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Fuel className="mr-2 h-4 w-4" />
+              )}
               Registrar abastecimento
             </Button>
           </div>
@@ -392,14 +513,21 @@ function VehiclesTab({
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
         {vehicles.map((v) => (
-          <VehicleCard3D key={v.id} vehicle={v} active={v.id === vehicle.id} onSelect={(s) => setSelected(s.id)} />
+          <VehicleCard3D
+            key={v.id}
+            vehicle={v}
+            active={v.id === vehicle.id}
+            onSelect={(s) => setSelected(s.id)}
+          />
         ))}
       </div>
 
       <GlassCard className="space-y-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-primary">{vehicle.prefix}</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-primary">
+              {vehicle.prefix}
+            </p>
             <h3 className="font-display text-xl font-bold">{vehicleLabel(vehicle)}</h3>
             <p className="text-sm text-muted-foreground">
               {formatPlate(vehicle.plate) || "sem placa"} · {vehicle.color ?? "cor não informada"} ·{" "}
@@ -415,16 +543,28 @@ function VehiclesTab({
           </div>
         )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Hodômetro" value={`${Number(vehicle.current_odometer_km).toLocaleString("pt-BR")} km`} />
-          <Metric label="Consumo médio" value={row?.kmPerLiter ? `${row.kmPerLiter.toFixed(2)} km/L` : "—"} />
+          <Metric
+            label="Hodômetro"
+            value={`${Number(vehicle.current_odometer_km).toLocaleString("pt-BR")} km`}
+          />
+          <Metric
+            label="Consumo médio"
+            value={row?.kmPerLiter ? `${row.kmPerLiter.toFixed(2)} km/L` : "—"}
+          />
           <Metric label="Custo por km" value={row?.costPerKm ? money(row.costPerKm) : "—"} />
           <Metric label="Último checklist" value={last ? `${last.integrity_score}/100` : "—"} />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Combustível" value={vehicle.fuel_type} />
-          <Metric label="Ano fab./mod." value={`${vehicle.year_manufacture ?? "—"}/${vehicle.year_model ?? "—"}`} />
+          <Metric
+            label="Ano fab./mod."
+            value={`${vehicle.year_manufacture ?? "—"}/${vehicle.year_model ?? "—"}`}
+          />
           <Metric label="Chassi (final)" value={vehicle.chassis_last6 ?? "—"} />
-          <Metric label="Checklists" value={String(checklists.filter((c) => c.vehicle_id === vehicle.id).length)} />
+          <Metric
+            label="Checklists"
+            value={String(checklists.filter((c) => c.vehicle_id === vehicle.id).length)}
+          />
         </div>
       </GlassCard>
     </div>
@@ -459,10 +599,25 @@ function HistoryTab({
   });
 
   const columns: DataTableColumn<Checklist>[] = [
-    { key: "protocolo", header: "Protocolo", mobilePrimary: true, cell: (r) => <span className="font-mono text-xs">{r.protocol}</span> },
-    { key: "data", header: "Data", cell: (r) => <span className="whitespace-nowrap">{dt(r.submitted_at)}</span>, sortValue: (r) => r.submitted_at },
+    {
+      key: "protocolo",
+      header: "Protocolo",
+      mobilePrimary: true,
+      cell: (r) => <span className="font-mono text-xs">{r.protocol}</span>,
+    },
+    {
+      key: "data",
+      header: "Data",
+      cell: (r) => <span className="whitespace-nowrap">{dt(r.submitted_at)}</span>,
+      sortValue: (r) => r.submitted_at,
+    },
     { key: "tipo", header: "Tipo", cell: (r) => r.checklist_type },
-    { key: "score", header: "Score", cell: (r) => `${r.integrity_score}/100`, sortValue: (r) => r.integrity_score },
+    {
+      key: "score",
+      header: "Score",
+      cell: (r) => `${r.integrity_score}/100`,
+      sortValue: (r) => r.integrity_score,
+    },
     {
       key: "status",
       header: "Situação",
@@ -513,7 +668,12 @@ function HistoryTab({
               >
                 <Download className="mr-1 h-4 w-4" /> PDF
               </Button>
-              <Button variant="ghost" size="sm" className="min-h-[40px]" onClick={() => setOpen(null)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="min-h-[40px]"
+                onClick={() => setOpen(null)}
+              >
                 Fechar
               </Button>
             </div>
@@ -529,7 +689,9 @@ function HistoryTab({
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">Colaboradores</p>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Colaboradores
+                </p>
                 {detail.data.collaborators.map((c: any) => (
                   <p key={c.id} className="text-sm">
                     {c.full_name_snapshot} · CPF {maskCpf(c.cpf_last4)} · {c.role_in_checklist}
@@ -541,7 +703,10 @@ function HistoryTab({
                 {detail.data.items
                   .filter((i: any) => i.status === "nao_conforme")
                   .map((i: any) => (
-                    <div key={i.id} className="rounded-2xl border border-rose-400/30 bg-rose-500/5 p-3 text-sm">
+                    <div
+                      key={i.id}
+                      className="rounded-2xl border border-rose-400/30 bg-rose-500/5 p-3 text-sm"
+                    >
                       <p className="font-semibold">{i.label}</p>
                       <p className="text-xs text-muted-foreground">
                         {SEVERITY_LABEL[(i.severity ?? "media") as keyof typeof SEVERITY_LABEL]}
@@ -554,7 +719,12 @@ function HistoryTab({
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {detail.data.photos.map((p: any) => (
                   <a key={p.id} href={p.url} target="_blank" rel="noreferrer noopener">
-                    <img src={p.url} alt={p.photo_slot} loading="lazy" className="h-28 w-full rounded-xl object-cover" />
+                    <img
+                      src={p.url}
+                      alt={p.photo_slot}
+                      loading="lazy"
+                      className="h-28 w-full rounded-xl object-cover"
+                    />
                     <span className="text-[11px] text-muted-foreground">{p.photo_slot}</span>
                   </a>
                 ))}
@@ -580,10 +750,23 @@ function OccurrencesTab({
 }) {
   const columns: DataTableColumn<Occurrence>[] = [
     { key: "desc", header: "Ocorrência", mobilePrimary: true, cell: (r) => r.description },
-    { key: "veiculo", header: "Veículo", cell: (r) => vehicles.find((v) => v.id === r.vehicle_id)?.prefix ?? "—" },
-    { key: "sev", header: "Severidade", cell: (r) => SEVERITY_LABEL[(r.severity ?? "media") as keyof typeof SEVERITY_LABEL] },
+    {
+      key: "veiculo",
+      header: "Veículo",
+      cell: (r) => vehicles.find((v) => v.id === r.vehicle_id)?.prefix ?? "—",
+    },
+    {
+      key: "sev",
+      header: "Severidade",
+      cell: (r) => SEVERITY_LABEL[(r.severity ?? "media") as keyof typeof SEVERITY_LABEL],
+    },
     { key: "estado", header: "Estado", cell: (r) => r.state },
-    { key: "data", header: "Aberta em", cell: (r) => <span className="whitespace-nowrap">{dt(r.opened_at)}</span>, sortValue: (r) => r.opened_at },
+    {
+      key: "data",
+      header: "Aberta em",
+      cell: (r) => <span className="whitespace-nowrap">{dt(r.opened_at)}</span>,
+      sortValue: (r) => r.opened_at,
+    },
   ];
   return (
     <DataTable

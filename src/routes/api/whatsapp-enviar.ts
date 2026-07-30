@@ -17,9 +17,8 @@ export const Route = createFileRoute("/api/whatsapp-enviar")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { getRequestUser, getRequestClient, unauthorized, forbidden } = await import(
-          "@/lib/api-auth.server"
-        );
+        const { getRequestUser, getRequestClient, unauthorized, forbidden } =
+          await import("@/lib/api-auth.server");
 
         const caller = await getRequestUser(request);
         if (!caller) return unauthorized();
@@ -157,7 +156,12 @@ export const Route = createFileRoute("/api/whatsapp-enviar")({
 
         const endpoint = `https://graph.facebook.com/v21.0/${phoneId}/messages`;
         const payloads: Record<string, unknown>[] = [
-          { messaging_product: "whatsapp", to: destinatario, type: "text", text: { body: mensagem } },
+          {
+            messaging_product: "whatsapp",
+            to: destinatario,
+            type: "text",
+            text: { body: mensagem },
+          },
           ...imagens.map((link) => ({
             messaging_product: "whatsapp",
             to: destinatario,
@@ -215,7 +219,10 @@ export const Route = createFileRoute("/api/whatsapp-enviar")({
                 .update({ status: "falha", tentativas, ultimo_erro: "temporaria" })
                 .eq("id", filaId);
             }
-            return Response.json({ error: "Serviço indisponível, tente novamente." }, { status: 503 });
+            return Response.json(
+              { error: "Serviço indisponível, tente novamente." },
+              { status: 503 },
+            );
           }
         }
 

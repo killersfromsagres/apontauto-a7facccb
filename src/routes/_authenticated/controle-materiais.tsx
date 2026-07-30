@@ -266,12 +266,37 @@ function ControlePage() {
       }
     >
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6">
-        <Kpi icon={ClipboardList} label="Registros" value={kpis.total} tone="bg-primary/15 text-primary" />
+        <Kpi
+          icon={ClipboardList}
+          label="Registros"
+          value={kpis.total}
+          tone="bg-primary/15 text-primary"
+        />
         <Kpi icon={Package} label="Peças" value={kpis.pecas} tone="bg-sky-500/15 text-sky-500" />
-        <Kpi icon={AlertTriangle} label="Defeitos" value={kpis.defeitos} tone="bg-amber-500/15 text-amber-500" />
-        <Kpi icon={Wallet} label="Sem centro de custo" value={kpis.semCC} tone="bg-rose-500/15 text-rose-500" />
-        <Kpi icon={Send} label="Enviados p/ Facilities" value={kpis.solicitados} tone="bg-emerald-500/15 text-emerald-500" />
-        <Kpi icon={CalendarClock} label="A solicitar" value={kpis.pendentes} tone="bg-violet-500/15 text-violet-500" />
+        <Kpi
+          icon={AlertTriangle}
+          label="Defeitos"
+          value={kpis.defeitos}
+          tone="bg-amber-500/15 text-amber-500"
+        />
+        <Kpi
+          icon={Wallet}
+          label="Sem centro de custo"
+          value={kpis.semCC}
+          tone="bg-rose-500/15 text-rose-500"
+        />
+        <Kpi
+          icon={Send}
+          label="Enviados p/ Facilities"
+          value={kpis.solicitados}
+          tone="bg-emerald-500/15 text-emerald-500"
+        />
+        <Kpi
+          icon={CalendarClock}
+          label="A solicitar"
+          value={kpis.pendentes}
+          tone="bg-violet-500/15 text-violet-500"
+        />
       </div>
 
       <Tabs defaultValue="pedidos" className="mt-5">
@@ -295,7 +320,9 @@ function ControlePage() {
                 />
               </div>
               <Select value={fOrigem} onValueChange={setFOrigem}>
-                <SelectTrigger><SelectValue placeholder="Origem" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Origem" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as origens</SelectItem>
                   <SelectItem value="refrigeracao">Refrigeração</SelectItem>
@@ -303,7 +330,9 @@ function ControlePage() {
                 </SelectContent>
               </Select>
               <Select value={fTipo} onValueChange={setFTipo}>
-                <SelectTrigger><SelectValue placeholder="Tipo" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Peças e defeitos</SelectItem>
                   <SelectItem value="peca">Somente peças</SelectItem>
@@ -311,25 +340,37 @@ function ControlePage() {
                 </SelectContent>
               </Select>
               <Select value={fStatus} onValueChange={setFStatus}>
-                <SelectTrigger><SelectValue placeholder="Situação" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Situação" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todas as situações</SelectItem>
                   {STATUS_COMPRA_ORDER.map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_COMPRA_LABEL[s]}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {STATUS_COMPRA_LABEL[s]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-                <Checkbox checked={somenteSemCC} onCheckedChange={(v) => setSomenteSemCC(Boolean(v))} />
+                <Checkbox
+                  checked={somenteSemCC}
+                  onCheckedChange={(v) => setSomenteSemCC(Boolean(v))}
+                />
                 Somente sem centro de custo
               </label>
               <span className="text-sm text-muted-foreground">
                 {filtered.length} de {items.length} registros
               </span>
               <div className="ml-auto flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={toggleAll} disabled={filtered.length === 0}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleAll}
+                  disabled={filtered.length === 0}
+                >
                   {selected.size === filtered.length && filtered.length > 0
                     ? "Limpar seleção"
                     : "Selecionar todos"}
@@ -377,15 +418,18 @@ function ControlePage() {
                           <Badge variant="outline" className={origemBadge[i.origem]}>
                             {i.origem === "refrigeracao" ? "Refrigeração" : "Corretiva"}
                           </Badge>
-                          <Badge variant="outline">
-                            {i.tipo === "peca" ? "Peça" : "Defeito"}
+                          <Badge variant="outline">{i.tipo === "peca" ? "Peça" : "Defeito"}</Badge>
+                          <Badge variant="outline" className="font-mono">
+                            OS {i.numeroOs}
                           </Badge>
-                          <Badge variant="outline" className="font-mono">OS {i.numeroOs}</Badge>
                           <Badge variant="outline" className={statusBadge[st]}>
                             {STATUS_COMPRA_LABEL[st]}
                           </Badge>
                           {semCC && (
-                            <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/30 dark:text-rose-300">
+                            <Badge
+                              variant="outline"
+                              className="bg-rose-500/10 text-rose-600 border-rose-500/30 dark:text-rose-300"
+                            >
                               Sem centro de custo
                             </Badge>
                           )}
@@ -402,12 +446,23 @@ function ControlePage() {
                           </p>
                         )}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                          <span>{[i.predio, i.andar, i.local].filter(Boolean).join(" · ") || "Local não informado"}</span>
+                          <span>
+                            {[i.predio, i.andar, i.local].filter(Boolean).join(" · ") ||
+                              "Local não informado"}
+                          </span>
                           {i.equipe && <span>Equipe: {i.equipe}</span>}
                           <span>Apontado em {fmt(i.criadoEm)}</span>
                           {i.meta?.centro_custo && <span>CC: {i.meta.centro_custo}</span>}
-                          {i.meta?.numero_requisicao && <span>Req.: {i.meta.numero_requisicao}</span>}
-                          <span className={i.meta?.data_solicitacao_facilities ? "text-emerald-600 dark:text-emerald-400" : ""}>
+                          {i.meta?.numero_requisicao && (
+                            <span>Req.: {i.meta.numero_requisicao}</span>
+                          )}
+                          <span
+                            className={
+                              i.meta?.data_solicitacao_facilities
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : ""
+                            }
+                          >
                             Facilities: {fmt(i.meta?.data_solicitacao_facilities)}
                           </span>
                         </div>
@@ -440,7 +495,10 @@ function ControlePage() {
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                   <div className="min-w-0 space-y-1.5">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300">
+                      <Badge
+                        variant="outline"
+                        className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300"
+                      >
                         <History className="mr-1 h-3 w-3" /> {fmt(e.enviado_em)}
                       </Badge>
                       {e.centro_custo && <Badge variant="outline">CC {e.centro_custo}</Badge>}
@@ -569,7 +627,9 @@ function ItemDialog({
             />
             <datalist id="centros-custo-list">
               {centros.map((c) => (
-                <option key={c.id} value={c.codigo}>{c.descricao ?? ""}</option>
+                <option key={c.id} value={c.codigo}>
+                  {c.descricao ?? ""}
+                </option>
               ))}
             </datalist>
           </div>
@@ -589,10 +649,14 @@ function ItemDialog({
             <div className="grid gap-1.5">
               <Label>Situação da compra</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as StatusCompra)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {STATUS_COMPRA_ORDER.map((s) => (
-                    <SelectItem key={s} value={s}>{STATUS_COMPRA_LABEL[s]}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {STATUS_COMPRA_LABEL[s]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -623,9 +687,15 @@ function ItemDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button onClick={() => void save()} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+            )}
             Salvar
           </Button>
         </DialogFooter>
@@ -697,22 +767,34 @@ function EnvioDialog({
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <Label>Data e hora do envio</Label>
-            <Input type="datetime-local" value={quando} onChange={(e) => setQuando(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={quando}
+              onChange={(e) => setQuando(e.target.value)}
+            />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>Centro de custo</Label>
-              <Input value={cc} onChange={(e) => setCc(e.target.value)} list="centros-custo-list-envio" />
+              <Input
+                value={cc}
+                onChange={(e) => setCc(e.target.value)}
+                list="centros-custo-list-envio"
+              />
               <datalist id="centros-custo-list-envio">
                 {centros.map((c) => (
-                  <option key={c.id} value={c.codigo}>{c.descricao ?? ""}</option>
+                  <option key={c.id} value={c.codigo}>
+                    {c.descricao ?? ""}
+                  </option>
                 ))}
               </datalist>
             </div>
             <div className="grid gap-1.5">
               <Label>Canal</Label>
               <Select value={canal} onValueChange={setCanal}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="E-mail">E-mail</SelectItem>
                   <SelectItem value="Sistema">Sistema</SelectItem>
@@ -736,15 +818,23 @@ function EnvioDialog({
           </div>
           <div className="max-h-40 overflow-y-auto rounded-xl bg-muted/40 p-2 text-xs">
             {itens.map((i) => (
-              <div key={i.key} className="truncate">OS {i.numeroOs} — {i.descricao}</div>
+              <div key={i.key} className="truncate">
+                OS {i.numeroOs} — {i.descricao}
+              </div>
             ))}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={() => void submit()} disabled={saving || itens.length === 0}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="mr-2 h-4 w-4" />
+            )}
             Registrar envio
           </Button>
         </DialogFooter>
@@ -798,11 +888,27 @@ function CentrosCustoPanel({
           <Building2 className="h-4 w-4 text-primary" /> Cadastrar centro de custo
         </div>
         <div className="grid gap-2 sm:grid-cols-4">
-          <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Código (ex.: 4102-MANUT)" />
-          <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição / área" />
-          <Input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} placeholder="Responsável" />
+          <Input
+            value={codigo}
+            onChange={(e) => setCodigo(e.target.value)}
+            placeholder="Código (ex.: 4102-MANUT)"
+          />
+          <Input
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            placeholder="Descrição / área"
+          />
+          <Input
+            value={responsavel}
+            onChange={(e) => setResponsavel(e.target.value)}
+            placeholder="Responsável"
+          />
           <Button onClick={() => void add()} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
             Adicionar
           </Button>
         </div>
@@ -821,7 +927,9 @@ function CentrosCustoPanel({
                   <div className="truncate font-mono text-sm font-bold">{c.codigo}</div>
                   <div className="truncate text-xs text-muted-foreground">{c.descricao ?? "—"}</div>
                   {c.responsavel && (
-                    <div className="truncate text-xs text-muted-foreground">Resp.: {c.responsavel}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      Resp.: {c.responsavel}
+                    </div>
                   )}
                 </div>
                 <Button

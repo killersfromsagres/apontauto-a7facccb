@@ -84,7 +84,9 @@ export const Route = createFileRoute("/api/public/clima")({
               umidade: j.current.relative_humidity_2m ?? null,
               vento_kmh: j.current.wind_speed_10m ?? null,
               prob_chuva_hoje: probHoje,
-              chovendo: j.current.precipitation > 0 || [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(j.current.weather_code),
+              chovendo:
+                j.current.precipitation > 0 ||
+                [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99].includes(j.current.weather_code),
             },
             previsao: j.daily.time.map((data, i) => ({
               data,

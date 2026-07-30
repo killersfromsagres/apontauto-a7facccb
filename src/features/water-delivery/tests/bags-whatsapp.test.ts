@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { calcularAlertas, validarMovimento, type BagTipo } from "@/features/water-delivery/queries/bags";
-import { mascararPlaca, mascararTelefone, montarMensagem } from "@/features/water-delivery/whatsapp/whatsapp";
+import {
+  calcularAlertas,
+  validarMovimento,
+  type BagTipo,
+} from "@/features/water-delivery/queries/bags";
+import {
+  mascararPlaca,
+  mascararTelefone,
+  montarMensagem,
+} from "@/features/water-delivery/whatsapp/whatsapp";
 
 const tipo = (over: Partial<BagTipo> = {}): BagTipo => ({
   id: "t1",

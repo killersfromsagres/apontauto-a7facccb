@@ -4,14 +4,7 @@
 const DB_NAME = "corretiva-offline";
 const DB_VERSION = 3;
 
-
-export type OutboxKind =
-  | "foto"
-  | "peca"
-  | "problema"
-  | "patrimonio"
-  | "status"
-  | "assinatura";
+export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio" | "status" | "assinatura";
 
 export type OutboxItem = {
   id: string;

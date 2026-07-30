@@ -68,12 +68,18 @@ export function computeDataSugerida(dataVencimento: string | null | undefined): 
 }
 
 /** Dias até vencer (negativo = já venceu). */
-export function computeDiasAVencer(dataVencimento: string | null | undefined, ref = todayIso()): number | null {
+export function computeDiasAVencer(
+  dataVencimento: string | null | undefined,
+  ref = todayIso(),
+): number | null {
   if (!dataVencimento) return null;
   return diffDays(ref, dataVencimento);
 }
 
-export function computeStatus(dataVencimento: string | null | undefined, ref = todayIso()): AsoStatus {
+export function computeStatus(
+  dataVencimento: string | null | undefined,
+  ref = todayIso(),
+): AsoStatus {
   if (!dataVencimento) return "sem_registro";
   const dias = computeDiasAVencer(dataVencimento, ref)!;
   if (dias < 0) return "vencido";

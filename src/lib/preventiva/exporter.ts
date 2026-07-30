@@ -20,9 +20,7 @@ const HEADERS = [
   "Equipamento",
 ];
 
-export async function generateProgramacaoWorkbook(
-  ordered: ProcessedOS[],
-): Promise<Blob> {
+export async function generateProgramacaoWorkbook(ordered: ProcessedOS[]): Promise<Blob> {
   const scheduled = scheduleOS(ordered);
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();

@@ -2,8 +2,12 @@
 // Traz todos os campos cadastrais + ASO + extras livres.
 import { downloadBlob } from "@/lib/download";
 import {
-  computeStatus, computeDiasAVencer, fmtBr,
-  STATUS_COLOR, STATUS_LABEL, type AsoStatus,
+  computeStatus,
+  computeDiasAVencer,
+  fmtBr,
+  STATUS_COLOR,
+  STATUS_LABEL,
+  type AsoStatus,
 } from "./aso";
 
 export type SstExportRow = {
@@ -194,7 +198,13 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
   const stamp = new Date().toLocaleString("pt-BR");
 
   // Painel
-  const totals: Record<AsoStatus, number> = { vencido: 0, critico: 0, atencao: 0, em_dia: 0, sem_registro: 0 };
+  const totals: Record<AsoStatus, number> = {
+    vencido: 0,
+    critico: 0,
+    atencao: 0,
+    em_dia: 0,
+    sem_registro: 0,
+  };
   rows.forEach((r) => totals[computeStatus(r.data_vencimento)]++);
   const painel = wb.addWorksheet("Painel");
   painel.mergeCells(1, 1, 1, 3);
@@ -209,7 +219,9 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
   painel.addRow([]);
   const h = painel.addRow(["Indicador", "Quantidade", "% do Total"]);
   h.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  h.eachCell((c) => (c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#E86A1C") } }));
+  h.eachCell(
+    (c) => (c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#E86A1C") } }),
+  );
   painel.addRow(["Total de colaboradores", rows.length, "100%"]);
   (Object.keys(STATUS_LABEL) as AsoStatus[]).forEach((k) => {
     const q = totals[k];
@@ -221,23 +233,31 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
   });
   [30, 14, 12].forEach((w, i) => (painel.getColumn(i + 1).width = w));
 
-  await buildSheet(
-    wb, "Controle de ASO",
-    `Sistema automatizado — ${stamp}`,
-    COLS_ASO,
-    rows,
-  );
+  await buildSheet(wb, "Controle de ASO", `Sistema automatizado — ${stamp}`, COLS_ASO, rows);
 
   const pendencias = rows.filter((r) => computeStatus(r.data_vencimento) === "sem_registro");
   await buildSheet(
-    wb, "Pendências (Sem ASO)",
+    wb,
+    "Pendências (Sem ASO)",
     `Colaboradores ativos sem registro — ${stamp}`,
-    COLS_ASO.filter((c) => !["data_exame_realizado", "data_vencimento", "dias", "status", "data_sugerida_agendamento", "agendamento_confirmado", "tipo_exame"].includes(c.key)),
+    COLS_ASO.filter(
+      (c) =>
+        ![
+          "data_exame_realizado",
+          "data_vencimento",
+          "dias",
+          "status",
+          "data_sugerida_agendamento",
+          "agendamento_confirmado",
+          "tipo_exame",
+        ].includes(c.key),
+    ),
     pendencias,
   );
 
   await buildSheet(
-    wb, "Cadastro Completo",
+    wb,
+    "Cadastro Completo",
     `Base unificada com todas as informações — ${stamp}`,
     COLS_CADASTRO,
     rows,
@@ -256,7 +276,11 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
     ws.mergeCells(1, 1, 1, cols.length);
     ws.getCell(1, 1).value = "Campos adicionais capturados das planilhas";
     ws.getCell(1, 1).font = { size: 13, bold: true, color: { argb: "FFFFFFFF" } };
-    ws.getCell(1, 1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#1F2A44") } };
+    ws.getCell(1, 1).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: argb("#1F2A44") },
+    };
     ws.getCell(1, 1).alignment = { horizontal: "center" };
     ws.getRow(1).height = 22;
     ws.mergeCells(2, 1, 2, cols.length);
@@ -271,12 +295,14 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
       ws.getColumn(i + 1).width = c.width;
     });
     rows.forEach((r) => {
-      ws.addRow(cols.map((c) => {
-        if (c.key === "nome") return r.nome;
-        if (c.key === "cpf") return r.cpf ?? "";
-        const k = c.key.replace("__extra:", "");
-        return r.dados_extras?.[k] ?? "";
-      }));
+      ws.addRow(
+        cols.map((c) => {
+          if (c.key === "nome") return r.nome;
+          if (c.key === "cpf") return r.cpf ?? "";
+          const k = c.key.replace("__extra:", "");
+          return r.dados_extras?.[k] ?? "";
+        }),
+      );
     });
     ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3, column: cols.length } };
   }
@@ -291,9 +317,11 @@ export async function exportSstXlsx(rows: SstExportRow[], filename = "controle-a
 // ================= PDF =================
 export async function exportSstPdf(rows: SstExportRow[], filename = "controle-aso.pdf") {
   const [{ default: jsPDF }, autoTableMod] = await Promise.all([
-    import("jspdf"), import("jspdf-autotable"),
+    import("jspdf"),
+    import("jspdf-autotable"),
   ]);
-  const autoTable = (autoTableMod as unknown as { default: (doc: unknown, opts: unknown) => void }).default;
+  const autoTable = (autoTableMod as unknown as { default: (doc: unknown, opts: unknown) => void })
+    .default;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -305,12 +333,22 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
     doc.setFontSize(14);
     doc.text(title, 24, 28);
     doc.setFontSize(9);
-    doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")} — ${rows.length} colaborador(es)`, 24, 40);
+    doc.text(
+      `Gerado em ${new Date().toLocaleString("pt-BR")} — ${rows.length} colaborador(es)`,
+      24,
+      40,
+    );
   };
 
   header("Segurança do Trabalho — Controle de ASO");
 
-  const totals: Record<AsoStatus, number> = { vencido: 0, critico: 0, atencao: 0, em_dia: 0, sem_registro: 0 };
+  const totals: Record<AsoStatus, number> = {
+    vencido: 0,
+    critico: 0,
+    atencao: 0,
+    em_dia: 0,
+    sem_registro: 0,
+  };
   rows.forEach((r) => totals[computeStatus(r.data_vencimento)]++);
 
   // Painel resumido
@@ -335,9 +373,14 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
     const st = computeStatus(r.data_vencimento);
     const dias = computeDiasAVencer(r.data_vencimento);
     return [
-      r.nome, r.matricula ?? "—", r.funcao ?? "—", r.filial ?? "—",
-      r.supervisor ?? "—", fmtBr(r.data_exame_realizado),
-      fmtBr(r.data_vencimento), dias == null ? "—" : String(dias),
+      r.nome,
+      r.matricula ?? "—",
+      r.funcao ?? "—",
+      r.filial ?? "—",
+      r.supervisor ?? "—",
+      fmtBr(r.data_exame_realizado),
+      fmtBr(r.data_vencimento),
+      dias == null ? "—" : String(dias),
       STATUS_LABEL[st],
     ];
   });
@@ -345,19 +388,37 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
   header("Controle de ASO — Detalhado");
   autoTable(doc, {
     startY: 56,
-    head: [["Nome", "Matr.", "Função", "Filial", "Supervisor", "Últ. Exame", "Vencimento", "Dias", "Status"]],
+    head: [
+      [
+        "Nome",
+        "Matr.",
+        "Função",
+        "Filial",
+        "Supervisor",
+        "Últ. Exame",
+        "Vencimento",
+        "Dias",
+        "Status",
+      ],
+    ],
     body: asoBody,
     styles: { fontSize: 8, cellPadding: 3 },
     headStyles: { fillColor: [232, 106, 28], textColor: 255 },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     didParseCell: (data: {
-      section: string; row: { index: number }; column: { index: number };
+      section: string;
+      row: { index: number };
+      column: { index: number };
       cell: { styles: { fillColor?: number[]; textColor?: number[]; fontStyle?: string } };
     }) => {
       if (data.section === "body" && data.column.index === 8) {
         const st = computeStatus(rows[data.row.index].data_vencimento);
         const hex = STATUS_COLOR[st].hex.replace("#", "");
-        data.cell.styles.fillColor = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+        data.cell.styles.fillColor = [
+          parseInt(hex.slice(0, 2), 16),
+          parseInt(hex.slice(2, 4), 16),
+          parseInt(hex.slice(4, 6), 16),
+        ];
         data.cell.styles.textColor = [255, 255, 255];
         data.cell.styles.fontStyle = "bold";
       }
@@ -369,11 +430,36 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
   header("Cadastro Completo de Colaboradores");
   autoTable(doc, {
     startY: 56,
-    head: [["Nome", "CPF", "Matr.", "Empresa", "Filial", "Regional", "CC", "CR", "Função", "Situação", "Supervisor", "Gerente", "Admissão"]],
+    head: [
+      [
+        "Nome",
+        "CPF",
+        "Matr.",
+        "Empresa",
+        "Filial",
+        "Regional",
+        "CC",
+        "CR",
+        "Função",
+        "Situação",
+        "Supervisor",
+        "Gerente",
+        "Admissão",
+      ],
+    ],
     body: rows.map((r) => [
-      r.nome, r.cpf ?? "—", r.matricula ?? "—", r.empresa ?? "—",
-      r.filial ?? "—", r.regional ?? "—", r.cc ?? "—", r.cr ?? "—",
-      r.funcao ?? "—", r.situacao ?? "—", r.supervisor ?? "—", r.gerente ?? "—",
+      r.nome,
+      r.cpf ?? "—",
+      r.matricula ?? "—",
+      r.empresa ?? "—",
+      r.filial ?? "—",
+      r.regional ?? "—",
+      r.cc ?? "—",
+      r.cr ?? "—",
+      r.funcao ?? "—",
+      r.situacao ?? "—",
+      r.supervisor ?? "—",
+      r.gerente ?? "—",
       fmtBr(r.data_admissao),
     ]),
     styles: { fontSize: 7, cellPadding: 3 },
@@ -386,12 +472,37 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
   header("Dados Pessoais e Documentos");
   autoTable(doc, {
     startY: 56,
-    head: [["Nome", "CPF", "RG", "Nascimento", "Sexo", "PIS", "CTPS", "Série", "Município", "UF", "Contrato", "Escala", "Horário"]],
+    head: [
+      [
+        "Nome",
+        "CPF",
+        "RG",
+        "Nascimento",
+        "Sexo",
+        "PIS",
+        "CTPS",
+        "Série",
+        "Município",
+        "UF",
+        "Contrato",
+        "Escala",
+        "Horário",
+      ],
+    ],
     body: rows.map((r) => [
-      r.nome, r.cpf ?? "—", r.rg ?? "—", fmtBr(r.data_nascimento),
-      r.sexo ?? "—", r.pis ?? "—", r.ctps ?? "—", r.serie_ctps ?? "—",
-      r.municipio ?? "—", r.estado ?? "—", r.tipo_contrato ?? "—",
-      r.escala ?? "—", r.horario_trabalho ?? "—",
+      r.nome,
+      r.cpf ?? "—",
+      r.rg ?? "—",
+      fmtBr(r.data_nascimento),
+      r.sexo ?? "—",
+      r.pis ?? "—",
+      r.ctps ?? "—",
+      r.serie_ctps ?? "—",
+      r.municipio ?? "—",
+      r.estado ?? "—",
+      r.tipo_contrato ?? "—",
+      r.escala ?? "—",
+      r.horario_trabalho ?? "—",
     ]),
     styles: { fontSize: 7, cellPadding: 3 },
     headStyles: { fillColor: [31, 42, 68], textColor: 255 },
@@ -406,7 +517,14 @@ export async function exportSstPdf(rows: SstExportRow[], filename = "controle-as
     autoTable(doc, {
       startY: 56,
       head: [["Nome", "Matr.", "Função", "Filial", "Supervisor", "Admissão"]],
-      body: pend.map((r) => [r.nome, r.matricula ?? "—", r.funcao ?? "—", r.filial ?? "—", r.supervisor ?? "—", fmtBr(r.data_admissao)]),
+      body: pend.map((r) => [
+        r.nome,
+        r.matricula ?? "—",
+        r.funcao ?? "—",
+        r.filial ?? "—",
+        r.supervisor ?? "—",
+        fmtBr(r.data_admissao),
+      ]),
       styles: { fontSize: 8, cellPadding: 3 },
       headStyles: { fillColor: [220, 38, 38], textColor: 255 },
     });

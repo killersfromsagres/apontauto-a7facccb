@@ -34,10 +34,7 @@ const MORNING_END = 12 * 60;
 const AFTERNOON_START = 13 * 60;
 const AFTERNOON_END = 17 * 60;
 
-export function scheduleOS(
-  list: ProcessedOS[],
-  opts: ScheduleOptions = {},
-): ScheduledOS[] {
+export function scheduleOS(list: ProcessedOS[], opts: ScheduleOptions = {}): ScheduledOS[] {
   const duration = opts.defaultTaskMinutes ?? 60;
   const dailyCap = opts.dailyMinutesPerTeam ?? 480;
   const start = opts.startDate ?? nextWorkday(new Date());

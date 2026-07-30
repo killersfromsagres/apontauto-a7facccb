@@ -6,7 +6,13 @@ import { PageShell } from "@/components/page-shell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DataTable,
   DetailDrawer,
@@ -156,8 +162,7 @@ export function BacklogInteligenteView() {
       header: "Local",
       sortValue: (r) => `${r.row.predio} ${r.row.local}`,
       className: "whitespace-nowrap",
-      cell: ({ row }) =>
-        [row.predio, row.andar, row.local].filter(Boolean).join(" · ") || "—",
+      cell: ({ row }) => [row.predio, row.andar, row.local].filter(Boolean).join(" · ") || "—",
     },
   ];
 

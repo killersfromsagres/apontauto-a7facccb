@@ -126,10 +126,7 @@ function NotificacoesAdminPage() {
     enabled: allowed && form.targetMode === "roles",
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pcm_roles")
-        .select("key, label")
-        .order("rank");
+      const { data, error } = await supabase.from("pcm_roles").select("key, label").order("rank");
       if (error) throw error;
       return data ?? [];
     },
@@ -335,18 +332,28 @@ function NotificacoesAdminPage() {
       description="Componha, agende e acompanhe os avisos enviados aos colaboradores, com métricas de entrega, leitura e ciência."
     >
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <KpiCard icon={<Send className="size-4" />} label="Publicados" value={String(publicados.length)} />
-        <KpiCard icon={<Play className="size-4" />} label="Agendados" value={String(agendados.length)} />
+        <KpiCard
+          icon={<Send className="size-4" />}
+          label="Publicados"
+          value={String(publicados.length)}
+        />
+        <KpiCard
+          icon={<Play className="size-4" />}
+          label="Agendados"
+          value={String(agendados.length)}
+        />
         <KpiCard icon={<Eye className="size-4" />} label="Leituras" value={String(totalRead)} />
-        <KpiCard icon={<CheckCheck className="size-4" />} label="Ciências" value={String(totalAck)} />
+        <KpiCard
+          icon={<CheckCheck className="size-4" />}
+          label="Ciências"
+          value={String(totalAck)}
+        />
       </div>
 
       <GlassCard variant="block" className="mt-4 p-4 sm:p-5">
         <div className="flex items-center gap-2">
           <Megaphone className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold">
-            {form.id ? "Editar aviso" : "Novo aviso"}
-          </h2>
+          <h2 className="text-sm font-semibold">{form.id ? "Editar aviso" : "Novo aviso"}</h2>
           {form.id ? (
             <Button
               size="sm"
@@ -392,10 +399,14 @@ function NotificacoesAdminPage() {
                     setForm((f) => ({ ...f, category: v as NotificationCategory }))
                   }
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((c) => (
-                      <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                      <SelectItem key={c.key} value={c.key}>
+                        {c.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -408,10 +419,14 @@ function NotificacoesAdminPage() {
                     setForm((f) => ({ ...f, targetMode: v as TargetMode, targets: [] }))
                   }
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {TARGET_MODES.map((t) => (
-                      <SelectItem key={t.key} value={t.key}>{t.label}</SelectItem>
+                      <SelectItem key={t.key} value={t.key}>
+                        {t.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -564,9 +579,7 @@ function NotificacoesAdminPage() {
                   </span>
                 ) : null}
               </div>
-              <p className="mt-2 font-semibold leading-snug">
-                {form.title || "Título do aviso"}
-              </p>
+              <p className="mt-2 font-semibold leading-snug">{form.title || "Título do aviso"}</p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
                 {form.body || "A mensagem enviada aparece assim para o colaborador."}
               </p>
@@ -602,10 +615,7 @@ function NotificacoesAdminPage() {
               const m = metrics.get(n.id) ?? { delivered: 0, read: 0, acked: 0 };
               const st = (n.status as NotificationStatus) ?? "published";
               return (
-                <article
-                  key={n.id}
-                  className="rounded-2xl border border-border/60 bg-card/40 p-4"
-                >
+                <article key={n.id} className="rounded-2xl border border-border/60 bg-card/40 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -615,7 +625,8 @@ function NotificacoesAdminPage() {
                         />
                         <StatusBadge tone={STATUS_TONE[st]} status={STATUS_LABEL[st]} />
                         <span className="text-xs text-muted-foreground">
-                          {TARGET_MODES.find((t) => t.key === n.target_mode)?.label ?? n.target_mode}
+                          {TARGET_MODES.find((t) => t.key === n.target_mode)?.label ??
+                            n.target_mode}
                         </span>
                       </div>
                       <h3 className="mt-2 font-semibold leading-snug">{n.title}</h3>

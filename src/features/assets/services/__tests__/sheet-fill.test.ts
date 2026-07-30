@@ -123,11 +123,7 @@ describe("processamento", () => {
 
   it("resolve DEMPZTEACM22 para E171 / TÉRREO / AREA COMUM - POOL ELÉTRICA E INSTRUMENTAÇÃO", () => {
     const [r] = run([["DEMPZTEACM22", "", "", ""]]);
-    expect(r.final).toEqual([
-      "E171",
-      "TÉRREO",
-      "AREA COMUM - POOL ELÉTRICA E INSTRUMENTAÇÃO",
-    ]);
+    expect(r.final).toEqual(["E171", "TÉRREO", "AREA COMUM - POOL ELÉTRICA E INSTRUMENTAÇÃO"]);
   });
 
   it("usa o Ambiente pai para equipamentos", () => {
@@ -196,17 +192,22 @@ describe("processamento", () => {
 describe("múltiplas abas", () => {
   it("aplica a mesma resolução em abas com layouts diferentes", () => {
     const sheets = [
-      { headers: ["Ativo", "Prédio", "Andar", "Ambiente"], rows: [["DEMPZTEACM22", "", "", ""]], idx: 0 },
+      {
+        headers: ["Ativo", "Prédio", "Andar", "Ambiente"],
+        rows: [["DEMPZTEACM22", "", "", ""]],
+        idx: 0,
+      },
       { headers: ["OS", "TAG"], rows: [["123", "DEMPA01COP01"]], idx: 1 },
     ];
-    const finals = sheets.map((s) =>
-      processRows(graph, {
-        rows: s.rows,
-        ativoIndex: s.idx,
-        targets: targetsFor(s.headers, s.idx),
-        headerRow: 0,
-        options: DEFAULT_FILL_OPTIONS,
-      })[0].final,
+    const finals = sheets.map(
+      (s) =>
+        processRows(graph, {
+          rows: s.rows,
+          ativoIndex: s.idx,
+          targets: targetsFor(s.headers, s.idx),
+          headerRow: 0,
+          options: DEFAULT_FILL_OPTIONS,
+        })[0].final,
     );
     expect(finals[0][0]).toBe("E171");
     expect(finals[1]).toEqual(["E100", "1º ANDAR", "COPA 01"]);
@@ -219,15 +220,13 @@ describe("validação de arquivos importados", () => {
   });
 
   it("aceita planilhas suportadas", () => {
-    expect(
-      assertImportFileIsAllowed({ name: "base.xlsx", size: 1000, type: "" }).name,
-    ).toBe("base.xlsx");
+    expect(assertImportFileIsAllowed({ name: "base.xlsx", size: 1000, type: "" }).name).toBe(
+      "base.xlsx",
+    );
   });
 
   it("rejeita extensões não suportadas", () => {
-    expect(() =>
-      assertImportFileIsAllowed({ name: "malware.exe", size: 10, type: "" }),
-    ).toThrow();
+    expect(() => assertImportFileIsAllowed({ name: "malware.exe", size: 10, type: "" })).toThrow();
   });
 
   it("rejeita arquivos acima do limite", () => {

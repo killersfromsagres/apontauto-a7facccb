@@ -43,10 +43,27 @@ export async function generatePmocWorkbook(registros: PmocRegistro[]): Promise<B
   // ===== Resumo =====
   const ws = wb.addWorksheet("RESUMO PMOC", { views: [{ state: "frozen", ySplit: 1 }] });
   const headers = [
-    "TAG", "Tipo", "Marca", "Modelo", "N° Série", "Capacidade (BTU/h)", "Fluido",
-    "Ano Fabr.", "Data Instalação", "Prédio", "Andar", "Local", "Ambiente",
-    "Área (m²)", "Ocupação máx.", "Fabricante", "Resp. Técnico",
-    "Data Manut.", "Tipo Serviço", "Colaborador", "Observações",
+    "TAG",
+    "Tipo",
+    "Marca",
+    "Modelo",
+    "N° Série",
+    "Capacidade (BTU/h)",
+    "Fluido",
+    "Ano Fabr.",
+    "Data Instalação",
+    "Prédio",
+    "Andar",
+    "Local",
+    "Ambiente",
+    "Área (m²)",
+    "Ocupação máx.",
+    "Fabricante",
+    "Resp. Técnico",
+    "Data Manut.",
+    "Tipo Serviço",
+    "Colaborador",
+    "Observações",
   ];
   ws.columns = headers.map((h) => ({ header: h, width: Math.max(12, Math.min(28, h.length + 6)) }));
   const head = ws.getRow(1);
@@ -55,20 +72,42 @@ export async function generatePmocWorkbook(registros: PmocRegistro[]): Promise<B
   head.height = 32;
   head.eachCell((c) => {
     c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_FILL } };
-    c.border = { top: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" }, right: { style: "thin" } };
+    c.border = {
+      top: { style: "thin" },
+      bottom: { style: "thin" },
+      left: { style: "thin" },
+      right: { style: "thin" },
+    };
   });
 
   registros.forEach((r, i) => {
     const row = ws.addRow([
-      r.tag, r.tipo_equipamento, r.marca, r.modelo, r.numero_serie, r.capacidade_btu, r.fluido_refrigerante,
-      r.ano_fabricacao, r.data_instalacao ? new Date(r.data_instalacao) : null,
-      r.predio, r.andar, r.local, r.ambiente, r.area_climatizada, r.ocupacao_max,
-      r.fabricante, r.responsavel_tecnico,
+      r.tag,
+      r.tipo_equipamento,
+      r.marca,
+      r.modelo,
+      r.numero_serie,
+      r.capacidade_btu,
+      r.fluido_refrigerante,
+      r.ano_fabricacao,
+      r.data_instalacao ? new Date(r.data_instalacao) : null,
+      r.predio,
+      r.andar,
+      r.local,
+      r.ambiente,
+      r.area_climatizada,
+      r.ocupacao_max,
+      r.fabricante,
+      r.responsavel_tecnico,
       r.data_manutencao ? new Date(r.data_manutencao) : null,
-      r.tipo_servico, r.colaborador, r.observacoes,
+      r.tipo_servico,
+      r.colaborador,
+      r.observacoes,
     ]);
     if (i % 2 === 1) {
-      row.eachCell((c) => (c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA } }));
+      row.eachCell(
+        (c) => (c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: ZEBRA } }),
+      );
     }
     const dInst = row.getCell(9);
     if (dInst.value instanceof Date) dInst.numFmt = "dd/mm/yyyy";

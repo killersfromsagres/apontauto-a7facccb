@@ -36,7 +36,10 @@ async function handle(request: Request) {
       const admin = supabaseAdmin as any;
 
       const [{ data: rotas, error: e1 }, { data: visitas, error: e2 }] = await Promise.all([
-        admin.from("agua_rotas").select("id, status, turno, equipe, divergencia_bags").eq("data", alvo),
+        admin
+          .from("agua_rotas")
+          .select("id, status, turno, equipe, divergencia_bags")
+          .eq("data", alvo),
         admin
           .from("agua_visitas")
           .select("id, status, bags_previstas, bags_entregues, fotos, foto_url")
@@ -59,9 +62,8 @@ async function handle(request: Request) {
       const resumo = {
         data: alvo,
         rotas: listaRotas.length,
-        rotas_concluidas: listaRotas.filter((r: any) =>
-          String(r.status).startsWith("concluida"),
-        ).length,
+        rotas_concluidas: listaRotas.filter((r: any) => String(r.status).startsWith("concluida"))
+          .length,
         rotas_com_divergencia: listaRotas.filter((r: any) => r.divergencia_bags).length,
         paradas: listaVisitas.length,
         paradas_concluidas: concluidas.length,

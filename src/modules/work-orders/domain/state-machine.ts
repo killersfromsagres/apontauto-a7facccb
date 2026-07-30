@@ -1,9 +1,7 @@
 import { getModalityConfig } from "./modalities";
 import type { WorkOrderModality, WorkOrderPriority, WorkOrderStatus } from "./types";
 
-export type TransitionResult =
-  | { ok: true }
-  | { ok: false; reason: string };
+export type TransitionResult = { ok: true } | { ok: false; reason: string };
 
 /** Valida uma transição de status conforme a máquina de estados da modalidade. */
 export function canTransition(

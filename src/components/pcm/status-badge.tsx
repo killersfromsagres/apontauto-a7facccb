@@ -1,13 +1,7 @@
 import { memo } from "react";
 import { cn } from "@/lib/utils";
 
-export type StatusTone =
-  | "neutral"
-  | "info"
-  | "success"
-  | "warning"
-  | "danger"
-  | "primary";
+export type StatusTone = "neutral" | "info" | "success" | "warning" | "danger" | "primary";
 
 const TONE_CLASS: Record<StatusTone, string> = {
   neutral: "border-border/60 bg-muted/40 text-muted-foreground",

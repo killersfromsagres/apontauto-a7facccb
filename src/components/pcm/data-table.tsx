@@ -26,7 +26,6 @@ export type DataTableColumn<T> = {
   mobileHidden?: boolean;
 };
 
-
 export type DataTableProps<T> = {
   data: T[];
   columns: DataTableColumn<T>[];
@@ -79,9 +78,7 @@ export function DataTable<T>({
 
   if (loading) return <SkeletonState rows={6} />;
   if (!data.length) {
-    return (
-      <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
-    );
+    return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
   }
 
   const rows = sorted.slice(0, visible);
@@ -149,9 +146,7 @@ export function DataTable<T>({
               )}
             >
               {primaryCol ? (
-                <div className="min-w-0 text-sm font-semibold">
-                  {primaryCol.cell(row, index)}
-                </div>
+                <div className="min-w-0 text-sm font-semibold">{primaryCol.cell(row, index)}</div>
               ) : null}
               {secondaryCols.length > 0 ? (
                 <dl className="mt-2 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
@@ -176,7 +171,6 @@ export function DataTable<T>({
         style={virtualize ? { maxHeight: virtualHeight, overflowY: "auto" } : undefined}
       >
         <Table>
-
           <TableHeader>
             <TableRow>
               {columns.map((col) => (
@@ -225,15 +219,15 @@ export function DataTable<T>({
               />
             ) : (
               rows.map((row, index) => (
-              <TableRow
-                key={rowKey(row, index)}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                className={cn(onRowClick && "cursor-pointer")}
-              >
-                {columns.map((col) => (
-                  <TableCell key={col.key} className={col.className}>
-                    {col.cell(row, index)}
-                  </TableCell>
+                <TableRow
+                  key={rowKey(row, index)}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
+                  className={cn(onRowClick && "cursor-pointer")}
+                >
+                  {columns.map((col) => (
+                    <TableCell key={col.key} className={col.className}>
+                      {col.cell(row, index)}
+                    </TableCell>
                   ))}
                 </TableRow>
               ))
@@ -280,9 +274,7 @@ function VirtualRows<T>({
 
   const items = virtualizer.getVirtualItems();
   const paddingTop = items.length ? items[0].start : 0;
-  const paddingBottom = items.length
-    ? virtualizer.getTotalSize() - items[items.length - 1].end
-    : 0;
+  const paddingBottom = items.length ? virtualizer.getTotalSize() - items[items.length - 1].end : 0;
 
   return (
     <>

@@ -12,10 +12,11 @@ export const assetFieldSchema = z.enum([
   "businessUnit",
 ]);
 
-export const columnMappingSchema = z.record(assetFieldSchema, z.string().min(1)).refine(
-  (m) => Boolean(m.code),
-  { message: "O mapeamento precisa indicar a coluna do código do Ativo." },
-);
+export const columnMappingSchema = z
+  .record(assetFieldSchema, z.string().min(1))
+  .refine((m) => Boolean(m.code), {
+    message: "O mapeamento precisa indicar a coluna do código do Ativo.",
+  });
 
 export const fillOptionsSchema = z.object({
   overwrite: z.boolean(),
@@ -40,21 +41,13 @@ const ALLOWED_IMPORT_EXT = [".xlsx", ".xlsm", ".xls", ".csv"];
 
 export const importFileSchema = z.object({
   name: z.string().min(1).max(255),
-  size: z
-    .number()
-    .int()
-    .positive("Arquivo vazio.")
-    .max(MAX_IMPORT_BYTES, "Arquivo excede 30MB."),
+  size: z.number().int().positive("Arquivo vazio.").max(MAX_IMPORT_BYTES, "Arquivo excede 30MB."),
   type: z.string().max(255),
 });
 
 /** Nome de arquivo seguro para exibir, registrar e reutilizar no download. */
 export function sanitizeFileName(name: string): string {
-  return (
-    name
-      .split(/[\\/]/)
-      .pop() ?? ""
-  )
+  return (name.split(/[\\/]/).pop() ?? "")
     .replace(/[\u0000-\u001F\u007F]/g, "")
     .replace(/[^a-zA-Z0-9._\- ]/g, "-")
     .replace(/\s{2,}/g, " ")

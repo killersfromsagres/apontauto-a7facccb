@@ -60,7 +60,9 @@ export interface TaludeMarcacao {
   rascunho: boolean;
 }
 
-export type MarcacaoPatch = Partial<Omit<TaludeMarcacao, "id" | "map_id" | "owner_id" | "created_at" | "updated_at">>;
+export type MarcacaoPatch = Partial<
+  Omit<TaludeMarcacao, "id" | "map_id" | "owner_id" | "created_at" | "updated_at">
+>;
 
 export interface TaludeMapVersion {
   id: string;
@@ -135,7 +137,6 @@ function readImageDimensions(file: File): Promise<{ width: number; height: numbe
   });
 }
 
-
 export async function listMaps(): Promise<TaludeMap[]> {
   const { data, error } = await supabase
     .from("talude_maps")
@@ -164,7 +165,12 @@ export async function createMap(input: {
 
 export async function updateMap(
   id: string,
-  patch: Partial<Pick<TaludeMap, "nome" | "observacao" | "calibration" | "meters_per_unit" | "calibrated_at" | "calibrated_by">>,
+  patch: Partial<
+    Pick<
+      TaludeMap,
+      "nome" | "observacao" | "calibration" | "meters_per_unit" | "calibrated_at" | "calibrated_by"
+    >
+  >,
 ): Promise<void> {
   const { error } = await supabase
     .from("talude_maps")
@@ -227,7 +233,6 @@ export async function deleteMarcacao(id: string): Promise<void> {
   const { error } = await supabase.from("talude_marcacoes").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
-
 
 /* ======================= Criação com campos completos ======================= */
 
@@ -325,7 +330,10 @@ export async function logGeometryEvent(
   } as never);
 }
 
-export async function listGeometryEvents(map_id: string, limit = 100): Promise<TaludeGeometryEvent[]> {
+export async function listGeometryEvents(
+  map_id: string,
+  limit = 100,
+): Promise<TaludeGeometryEvent[]> {
   const { data, error } = await supabase
     .from("talude_geometry_events")
     .select("*")

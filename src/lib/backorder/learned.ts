@@ -30,7 +30,10 @@ export interface LearnedIndex {
   team: Map<string, LearnedTeam>;
 }
 
-const up = (v: unknown) => String(v ?? "").trim().toUpperCase();
+const up = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toUpperCase();
 
 /** Constrói o índice de regras aprendidas, mantendo a mais recente por ativo. */
 export function buildLearnedIndex(

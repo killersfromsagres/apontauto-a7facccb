@@ -49,14 +49,7 @@ type ItemState = {
   photoHash?: string | null;
 };
 
-const STEPS = [
-  "Veículo",
-  "Colaboradores",
-  "Contexto",
-  "Checklist",
-  "Fotos",
-  "Revisão",
-] as const;
+const STEPS = ["Veículo", "Colaboradores", "Contexto", "Checklist", "Fotos", "Revisão"] as const;
 
 const emptyItem = (): ItemState => ({ status: "conforme", severity: "media", notes: "" });
 
@@ -103,7 +96,11 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const critical = hasCriticalBlock(filled);
   const nonConform = CHECKLIST_ITEMS.filter((d) => items[d.key].status === "nao_conforme");
 
-  async function handleUpload(file: File, apply: (url: string, hash: string | null) => void, tag: string) {
+  async function handleUpload(
+    file: File,
+    apply: (url: string, hash: string | null) => void,
+    tag: string,
+  ) {
     setUploading(tag);
     try {
       const { url, hash } = await uploadFrotaPhoto(file, file.name || "checklist.jpg", {
@@ -416,7 +413,11 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
                       url={st.photoUrl ?? null}
                       busy={uploading === def.key}
                       onFile={(f) =>
-                        handleUpload(f, (url, hash) => set({ photoUrl: url, photoHash: hash }), def.key)
+                        handleUpload(
+                          f,
+                          (url, hash) => set({ photoUrl: url, photoHash: hash }),
+                          def.key,
+                        )
                       }
                     />
                   </div>
@@ -426,8 +427,8 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
           })}
           {missingNcPhotos.length > 0 && (
             <p className="flex items-center gap-2 text-sm text-rose-300">
-              <AlertTriangle className="h-4 w-4" /> Faltam fotos em{" "}
-              {missingNcPhotos.length} não conformidade(s).
+              <AlertTriangle className="h-4 w-4" /> Faltam fotos em {missingNcPhotos.length} não
+              conformidade(s).
             </p>
           )}
         </div>
@@ -457,19 +458,25 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
       {step === 5 && (
         <GlassCard className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-3">
-            <Summary label="Veículo" value={vehicle ? `${vehicle.prefix} · ${vehicleLabel(vehicle)}` : "—"} />
+            <Summary
+              label="Veículo"
+              value={vehicle ? `${vehicle.prefix} · ${vehicleLabel(vehicle)}` : "—"}
+            />
             <Summary label="Quilometragem" value={`${odometer || 0} km`} />
             <Summary label="Score de integridade" value={`${score}/100`} />
             <Summary label="Não conformidades" value={String(nonConform.length)} />
-            <Summary label="Fotos obrigatórias" value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length}`} />
+            <Summary
+              label="Fotos obrigatórias"
+              value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length}`}
+            />
             <Summary label="Colaborador" value={mainName || "—"} />
           </div>
 
           {critical && (
             <div className="flex items-start gap-2 rounded-2xl border border-rose-400/40 bg-rose-500/10 p-3 text-sm text-rose-200">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-              Há não conformidade crítica: ao enviar, o veículo será bloqueado como
-              “aguardando avaliação” até liberação do gestor de frota.
+              Há não conformidade crítica: ao enviar, o veículo será bloqueado como “aguardando
+              avaliação” até liberação do gestor de frota.
             </div>
           )}
 
@@ -480,8 +487,8 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
               className="mt-0.5"
             />
             <span className="text-sm text-muted-foreground">
-              Declaro que as informações e evidências deste checklist são verdadeiras e
-              foram coletadas no momento da inspeção.
+              Declaro que as informações e evidências deste checklist são verdadeiras e foram
+              coletadas no momento da inspeção.
             </span>
           </label>
 
@@ -546,12 +553,7 @@ function PhotoField({
     <div className="space-y-2">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {url ? (
-        <img
-          src={url}
-          alt={label}
-          loading="lazy"
-          className="h-32 w-full rounded-xl object-cover"
-        />
+        <img src={url} alt={label} loading="lazy" className="h-32 w-full rounded-xl object-cover" />
       ) : (
         <div className="flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-border/60 text-muted-foreground">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}

@@ -14,7 +14,6 @@ export const workOrderStatusSchema = z.enum([
   "cancelada",
 ]);
 
-
 export const workOrderPrioritySchema = z.enum(["critica", "alta", "media", "baixa"]);
 
 export const workOrderModalitySchema = z.enum([

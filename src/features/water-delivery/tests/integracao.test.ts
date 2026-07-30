@@ -42,9 +42,8 @@ const {
 } = await import("@/features/water-delivery/queries/api");
 const { lerPlanilhaAgua } = await import("@/features/water-delivery/importer/reader");
 const { validarEntrega } = await import("@/features/water-delivery/mutations/execucao");
-const { enfileirar, sincronizarFila, lerFila } = await import(
-  "@/features/water-delivery/offline/offline"
-);
+const { enfileirar, sincronizarFila, lerFila } =
+  await import("@/features/water-delivery/offline/offline");
 
 /* ------------------------------------------------------------------ */
 /* Planilha de apoio: 54 pontos distribuídos de segunda a sexta         */
@@ -75,7 +74,9 @@ function planilha54(): ArrayBuffer {
     [3, "Quarta-feira"],
     [5, "Sexta-feira"],
   ] as const) {
-    const linhas = pontos.filter((p) => p.dias.includes(dia)).map((p) => [p.predio, p.andar, p.espaco]);
+    const linhas = pontos
+      .filter((p) => p.dias.includes(dia))
+      .map((p) => [p.predio, p.andar, p.espaco]);
     XLSX.utils.book_append_sheet(
       wb,
       XLSX.utils.aoa_to_sheet([["Prédio", "Andar", "Espaço"], ...linhas]),
@@ -306,9 +307,7 @@ describe("E2E — gestor importa, operador executa offline e sincroniza", () => 
     const segundo = await sincronizarFila();
     expect(segundo.sent).toBe(0);
     expect(fakeSupabase.linhas("agua_visita_eventos")).toHaveLength(eventosAntes);
-    expect(
-      fakeSupabase.linhas("agua_visitas").filter((v) => v.id === parada.id),
-    ).toHaveLength(1);
+    expect(fakeSupabase.linhas("agua_visitas").filter((v) => v.id === parada.id)).toHaveLength(1);
   });
 
   it("manda para revisão quando o servidor mudou a parada depois do registro local", async () => {

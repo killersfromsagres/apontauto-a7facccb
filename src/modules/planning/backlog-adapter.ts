@@ -3,7 +3,7 @@ import { scoreBacklog, type BacklogInput, type BacklogScore } from "./backlog-sc
 
 const CRITICIDADE_MAP: Record<string, number> = {
   ALTA: 5,
-  "MÉDIA": 3,
+  MÉDIA: 3,
   MEDIA: 3,
   BAIXA: 2,
 };
@@ -37,9 +37,7 @@ export function chamadoToBacklogInput(
   const idadeDias = row.dataAberturaTs
     ? Math.max(0, Math.floor((now - row.dataAberturaTs) / DIA))
     : 0;
-  const slaHorasRestantes = row.dataLimiteTs
-    ? (row.dataLimiteTs - now) / 3_600_000
-    : undefined;
+  const slaHorasRestantes = row.dataLimiteTs ? (row.dataLimiteTs - now) / 3_600_000 : undefined;
 
   return {
     criticidadeAtivo: CRITICIDADE_MAP[row.criticidade] ?? 3,

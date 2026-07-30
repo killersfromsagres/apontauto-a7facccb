@@ -88,10 +88,7 @@ export async function getOpenEvent() {
 }
 
 export async function listSourceHealth() {
-  const { data, error } = await supabase
-    .from("weather_source_health")
-    .select("*")
-    .order("source");
+  const { data, error } = await supabase.from("weather_source_health").select("*").order("source");
   if (error) throw error;
   return (data ?? []) as unknown as SourceHealth[];
 }
@@ -105,7 +102,8 @@ export async function registrarChuvaManual(input: {
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
   const meta = SOURCE_META.manual;
-  const mm = input.mm ?? { garoa: 0.2, fraca: 1, moderada: 4, forte: 10, tempestade: 20 }[input.intensidade];
+  const mm =
+    input.mm ?? { garoa: 0.2, fraca: 1, moderada: 4, forte: 10, tempestade: 20 }[input.intensidade];
 
   const { error } = await supabase.from("weather_observations").insert({
     source: "manual",
@@ -182,15 +180,21 @@ export function aggregateByDay(obs: WeatherObservation[]): DayAggregate[] {
   const map = new Map<string, DayAggregate>();
   for (const o of obs) {
     const date = new Date(o.observed_at).toLocaleDateString("sv-SE"); // YYYY-MM-DD local
-    const cur =
-      map.get(date) ??
-      { date, mm: 0, rainy: false, maxIntensity: null, sources: [], bestConfidence: 0 };
+    const cur = map.get(date) ?? {
+      date,
+      mm: 0,
+      rainy: false,
+      maxIntensity: null,
+      sources: [],
+      bestConfidence: 0,
+    };
     const wet = isRaining(o);
     if (wet) {
       cur.rainy = true;
       const i = intensityFromReading(Number(o.precipitation_mm ?? 0), o.weather_code);
       const order: RainIntensityKey[] = ["garoa", "fraca", "moderada", "forte", "tempestade"];
-      if (!cur.maxIntensity || order.indexOf(i) > order.indexOf(cur.maxIntensity)) cur.maxIntensity = i;
+      if (!cur.maxIntensity || order.indexOf(i) > order.indexOf(cur.maxIntensity))
+        cur.maxIntensity = i;
     }
     cur.mm += Number(o.precipitation_mm ?? 0);
     if (!cur.sources.includes(o.source)) cur.sources.push(o.source);
