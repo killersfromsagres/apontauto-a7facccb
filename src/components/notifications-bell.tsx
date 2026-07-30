@@ -1,4 +1,4 @@
-import { Bell, BellRing, CheckCheck, ShieldAlert } from "lucide-react";
+import { Archive, Bell, BellRing, CheckCheck, ShieldAlert } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 import {
@@ -13,7 +13,8 @@ import { categoryMeta, fmtDateTime } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 export function NotificationsBell() {
-  const { items, unreadCount, pendingAck, markRead, acknowledge } = useNotifications();
+  const { items, unreadCount, pendingAck, markRead, acknowledge, archiveItems } =
+    useNotifications();
   const criticos = pendingAck.length;
 
   return (
@@ -112,6 +113,15 @@ export function NotificationsBell() {
                         Confirmar ciência
                       </Button>
                     ) : null}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-xs"
+                      onClick={() => archiveItems([n.id])}
+                    >
+                      <Archive className="mr-1.5 size-3.5" />
+                      Arquivar
+                    </Button>
                     {n.deep_link ?? n.link_url ? (
                       <Button asChild size="sm" variant="outline" className="h-8 text-xs">
                         <a href={(n.deep_link ?? n.link_url) as string}>Abrir</a>
