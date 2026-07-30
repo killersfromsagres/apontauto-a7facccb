@@ -6,6 +6,8 @@ import { limparTexto } from "@/lib/agua/normalize";
 import type { Visita, VisitaStatus } from "@/lib/agua/api";
 import { VISITA_FIELDS } from "@/lib/agua/api";
 import type { Rota } from "@/lib/agua/programacao";
+import { enfileirar } from "@/lib/agua/offline";
+
 
 const db = supabase as unknown as { from: (t: string) => any };
 
