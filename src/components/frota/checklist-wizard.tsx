@@ -41,43 +41,66 @@ import {
 } from "@/lib/frota/checklist-catalog";
 import { submitChecklist, vehicleLabel, type Vehicle } from "@/lib/frota/api";
 
+/** Uma evidência fotográfica: preview local imediato + envio resiliente. */
+type Photo = {
+  id: string;
+  file: File;
+  preview: string;
+  url: string | null;
+  hash: string | null;
+  status: "uploading" | "ok" | "error";
+  error?: string;
+};
+
 type ItemState = {
   status: ItemStatus;
   severity: Severity;
   notes: string;
-  photoUrl?: string | null;
-  photoHash?: string | null;
+  photo: Photo | null;
 };
 
 const STEPS = ["Veículo", "Colaboradores", "Contexto", "Checklist", "Fotos", "Revisão"] as const;
 
-const emptyItem = (): ItemState => ({ status: "conforme", severity: "media", notes: "" });
+const emptyItem = (): ItemState => ({
+  status: "conforme",
+  severity: "media",
+  notes: "",
+  photo: null,
+});
 
-/** URL remota -> objectURL local, usado enquanto a CDN propaga a imagem. */
-const LOCAL_PREVIEWS = new Map<string, string>();
+const newId = () => Math.random().toString(36).slice(2);
 
-/** Miniatura tolerante à latência de propagação da CDN de imagens. */
-function ResilientPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+/**
+ * Miniatura tolerante à latência da CDN: mostra o arquivo local até a imagem
+ * remota responder e volta para o local caso a remota falhe.
+ */
+function ResilientPhoto({ photo, className }: { photo: Photo; className?: string }) {
   const [attempt, setAttempt] = useState(0);
-  const [fallback, setFallback] = useState(false);
-  const local = LOCAL_PREVIEWS.get(src);
-  const shown = fallback && local ? local : attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
+  const [broken, setBroken] = useState(false);
+  const remote = photo.status === "ok" ? photo.url : null;
+  const shown =
+    !remote || broken
+      ? photo.preview
+      : attempt === 0
+        ? remote
+        : `${remote}${remote.includes("?") ? "&" : "?"}r=${attempt}`;
   return (
     <img
       src={shown}
-      alt={alt}
+      alt="Evidência do checklist"
       loading="lazy"
       className={className}
       onError={() => {
-        if (attempt < 3) {
+        if (remote && attempt < 3) {
           window.setTimeout(() => setAttempt((a) => a + 1), 600 * (attempt + 1));
-        } else if (local) {
-          setFallback(true);
+        } else {
+          setBroken(true);
         }
       }}
     />
   );
 }
+
 
 
 export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
