@@ -109,6 +109,23 @@ export function WaterScheduleSimple() {
   });
   const veiculosQ = useQuery({ queryKey: ["frota", "veiculos"], queryFn: listVehicles });
 
+  const opcoesVeiculos = useMemo<VeiculoOpcao[]>(
+    () =>
+      (veiculosQ.data ?? []).map((v) => {
+        const nome = vehicleLabel(v);
+        return {
+          valor: [v.prefix, v.plate].filter(Boolean).join(" · ") || nome,
+          prefix: v.prefix ?? null,
+          plate: v.plate ?? null,
+          nome,
+          brand: inferBrand(`${v.brand ?? ""} ${v.model ?? ""}`),
+          use: inferVehicleUse(`${nome} ${v.version ?? ""} ${v.prefix ?? ""}`),
+        };
+      }),
+    [veiculosQ.data],
+  );
+
+
   const entregaPorPonto = useMemo(() => {
     const map = new Map<string, Entrega>();
     (entregasQ.data ?? []).forEach((e) => map.set(e.ponto_id, e));
