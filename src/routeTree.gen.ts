@@ -59,6 +59,7 @@ import { Route as AuthenticatedBackorderRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
+import { Route as AuthenticatedAgenteIaRouteImport } from './routes/_authenticated/agente-ia'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -362,6 +363,11 @@ const AuthenticatedApontamentosRoute =
     path: '/apontamentos',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAgenteIaRoute = AuthenticatedAgenteIaRouteImport.update({
+  id: '/agente-ia',
+  path: '/agente-ia',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAbastecimentoRoute =
   AuthenticatedAbastecimentoRouteImport.update({
     id: '/abastecimento',
@@ -537,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
+  '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -615,6 +622,7 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
+  '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -695,6 +703,7 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
   '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
+  '/_authenticated/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -777,6 +786,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/abastecimento'
+    | '/agente-ia'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -855,6 +865,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/abastecimento'
+    | '/agente-ia'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -934,6 +945,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/termos'
     | '/_authenticated/abastecimento'
+    | '/_authenticated/agente-ia'
     | '/_authenticated/apontamentos'
     | '/_authenticated/auditoria'
     | '/_authenticated/backlog-inteligente'
@@ -1382,6 +1394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApontamentosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/agente-ia': {
+      id: '/_authenticated/agente-ia'
+      path: '/agente-ia'
+      fullPath: '/agente-ia'
+      preLoaderRoute: typeof AuthenticatedAgenteIaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/abastecimento': {
       id: '/_authenticated/abastecimento'
       path: '/abastecimento'
@@ -1646,6 +1665,7 @@ const AuthenticatedAbastecimentoRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRouteWithChildren
+  AuthenticatedAgenteIaRoute: typeof AuthenticatedAgenteIaRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
@@ -1693,6 +1713,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAbastecimentoRoute: AuthenticatedAbastecimentoRouteWithChildren,
+  AuthenticatedAgenteIaRoute: AuthenticatedAgenteIaRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
@@ -1776,13 +1797,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
