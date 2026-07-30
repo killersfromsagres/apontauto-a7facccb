@@ -6,10 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   acknowledge,
   categoryMeta,
+  DEFAULT_PREFS,
   ensureDelivered,
   fetchInbox,
   fetchMyReceipts,
+  fetchPrefs,
+  filtrarPorPreferencias,
   markRead,
+  savePrefs,
+  setArchived,
+  type NotificationPrefs,
   type NotificationRow,
   type ReceiptRow,
 } from "@/lib/notifications";
@@ -37,6 +43,7 @@ export type InboxItem = NotificationRow & {
   receipt: ReceiptRow | null;
   isRead: boolean;
   isAcked: boolean;
+  isArchived: boolean;
 };
 
 export function useNotifications() {
@@ -70,6 +77,14 @@ export function useNotifications() {
     queryFn: fetchMyReceipts,
   });
 
+  const prefsQuery = useQuery({
+    queryKey: ["notification-prefs", userId],
+    enabled: Boolean(userId),
+    staleTime: 5 * 60 * 1000,
+    queryFn: () => fetchPrefs(userId as string),
+  });
+  const prefs = prefsQuery.data ?? ({ user_id: userId ?? "", ...DEFAULT_PREFS } as NotificationPrefs);
+
   // Realtime em canal privado do usuário autenticado.
   useEffect(() => {
     if (!userId) return;
@@ -89,18 +104,23 @@ export function useNotifications() {
     };
   }, [qc, userId]);
 
-  const items: InboxItem[] = useMemo(() => {
+  const todos: InboxItem[] = useMemo(() => {
     const byId = new Map((receipts.data ?? []).map((r) => [r.notification_id, r]));
-    return (inbox.data ?? []).map((n) => {
+    const base = (inbox.data ?? []).map((n) => {
       const receipt = byId.get(n.id) ?? null;
       return {
         ...n,
         receipt,
         isRead: Boolean(receipt?.read_at),
         isAcked: Boolean(receipt?.acknowledged_at),
+        isArchived: Boolean(receipt?.archived_at),
       };
     });
-  }, [inbox.data, receipts.data]);
+    return filtrarPorPreferencias(base, prefsQuery.data ?? null);
+  }, [inbox.data, receipts.data, prefsQuery.data]);
+
+  const items = useMemo(() => todos.filter((i) => !i.isArchived), [todos]);
+  const archived = useMemo(() => todos.filter((i) => i.isArchived), [todos]);
 
   // Registra entrega e dispara toast só para itens realmente novos.
   useEffect(() => {
@@ -112,6 +132,7 @@ export function useNotifications() {
         .then(() => qc.invalidateQueries({ queryKey: ["notification-receipts", userId] }))
         .catch(() => undefined);
     }
+    if (!prefs.toast) return;
     const fresh = items.filter((i) => !i.isRead && !toasted.current.has(i.id));
     if (fresh.length === 0) return;
     for (const n of fresh.slice(0, 3)) {
@@ -128,7 +149,7 @@ export function useNotifications() {
       toasted.current.add(n.id);
     }
     saveToasted(toasted.current);
-  }, [items, receipts.data, userId, qc]);
+  }, [items, receipts.data, userId, qc, prefs.toast]);
 
   const invalidate = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["notification-receipts", userId] });
@@ -155,15 +176,38 @@ export function useNotifications() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const archive = useMutation({
+    mutationFn: async (args: { ids: string[]; archived?: boolean }) => {
+      if (!userId) return;
+      await setArchived(userId, args.ids, args.archived ?? true);
+    },
+    onSuccess: invalidate,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updatePrefs = useMutation({
+    mutationFn: async (patch: Partial<NotificationPrefs>) => {
+      if (!userId) return;
+      await savePrefs(userId, { ...prefs, ...patch });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notification-prefs", userId] });
+      toast.success("Preferências salvas.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const unread = items.filter((i) => !i.isRead);
   const pendingAck = items.filter((i) => i.requires_ack && !i.isAcked);
 
   return {
     userId,
     items,
+    archived,
     unread,
     pendingAck,
     unreadCount: unread.length,
+    prefs,
     isLoading: inbox.isLoading || receipts.isLoading,
     error: (inbox.error ?? null) as Error | null,
     refetch: () => {
@@ -172,6 +216,9 @@ export function useNotifications() {
     },
     markRead: read.mutate,
     acknowledge: ack.mutate,
-    isMutating: read.isPending || ack.isPending,
+    archiveItems: (ids: string[]) => archive.mutate({ ids, archived: true }),
+    unarchiveItems: (ids: string[]) => archive.mutate({ ids, archived: false }),
+    savePreferences: updatePrefs.mutate,
+    isMutating: read.isPending || ack.isPending || archive.isPending,
   };
 }
