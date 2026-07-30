@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import {
   Activity,
+  BrainCircuit,
+
   Gauge,
   LayoutDashboard,
   CalendarRange,
