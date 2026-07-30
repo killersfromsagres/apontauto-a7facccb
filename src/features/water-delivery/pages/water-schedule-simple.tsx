@@ -430,7 +430,7 @@ function EntregaSheet({
   entrega: Entrega | null;
   defaultColaboradores: string[];
   defaultVeiculo: string | null;
-  veiculos: string[];
+  veiculos: VeiculoOpcao[];
   onCommitEquipe: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
