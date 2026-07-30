@@ -184,6 +184,39 @@ export function FleetHistory() {
                     ) : (
                       <p className="text-xs text-muted-foreground">Sem fotos neste checklist.</p>
                     )}
+
+                    <Button
+                      type="button"
+                      className="h-11 w-full"
+                      disabled={certifyingId === c.id}
+                      onClick={async () => {
+                        setCertifyingId(c.id);
+                        try {
+                          await generateChecklistCertificate({
+                            checklist: c,
+                            vehicle: v,
+                            photos: photos
+                              .map((p) => ({ category: p.category, url: urls[p.storage_path] }))
+                              .filter((p) => p.url),
+                          });
+                          toast.success("Certificado gerado.");
+                        } catch (err) {
+                          toast.error(
+                            `Não foi possível gerar o certificado. ${(err as Error)?.message ?? ""}`.trim(),
+                          );
+                        } finally {
+                          setCertifyingId(null);
+                        }
+                      }}
+                    >
+                      {certifyingId === c.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Award className="mr-2 h-4 w-4" />
+                      )}
+                      Gerar certificado em PDF
+                    </Button>
+
                   </div>
                 )}
               </GlassCard>
