@@ -53,6 +53,33 @@ const STEPS = ["Veículo", "Colaboradores", "Contexto", "Checklist", "Fotos", "R
 
 const emptyItem = (): ItemState => ({ status: "conforme", severity: "media", notes: "" });
 
+/** URL remota -> objectURL local, usado enquanto a CDN propaga a imagem. */
+const LOCAL_PREVIEWS = new Map<string, string>();
+
+/** Miniatura tolerante à latência de propagação da CDN de imagens. */
+function ResilientPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+  const [attempt, setAttempt] = useState(0);
+  const [fallback, setFallback] = useState(false);
+  const local = LOCAL_PREVIEWS.get(src);
+  const shown = fallback && local ? local : attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
+  return (
+    <img
+      src={shown}
+      alt={alt}
+      loading="lazy"
+      className={className}
+      onError={() => {
+        if (attempt < 3) {
+          window.setTimeout(() => setAttempt((a) => a + 1), 600 * (attempt + 1));
+        } else if (local) {
+          setFallback(true);
+        }
+      }}
+    />
+  );
+}
+
+
 export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
@@ -102,19 +129,24 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
     tag: string,
   ) {
     setUploading(tag);
+    const localPreview = URL.createObjectURL(file);
     try {
       const { url, hash } = await uploadFrotaPhoto(file, file.name || "checklist.jpg", {
         module: "frota-checklist",
         entityType: "vehicle_checklist",
         entityId: vehicleId ?? undefined,
       });
+      // Mantém o preview local enquanto a CDN propaga a imagem remota.
+      LOCAL_PREVIEWS.set(url, localPreview);
       apply(url, hash);
     } catch (e: any) {
+      URL.revokeObjectURL(localPreview);
       toast.error(e?.message ?? "Falha ao enviar a foto");
     } finally {
       setUploading(null);
     }
   }
+
 
   const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
   const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
@@ -590,12 +622,12 @@ function PhotoField({
         <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
           {list.map((src) => (
             <div key={src} className="relative">
-              <img
+              <ResilientPhoto
                 src={src}
                 alt={label}
-                loading="lazy"
                 className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
               />
+
               {onRemove && (
                 <button
                   type="button"
