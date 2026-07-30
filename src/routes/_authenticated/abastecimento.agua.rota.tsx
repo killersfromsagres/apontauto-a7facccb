@@ -249,7 +249,11 @@ function RotaDoDia() {
                   onRegistrar={(retificando) => setDialogo({ visita: v, retificando })}
                   onAndamento={async (status) => {
                     try {
-                      await marcarAndamento(v.id, status);
+                      const r = await marcarAndamento(v.id, status, {
+                        data,
+                        atualizadoEm: (v as { atualizado_em?: string | null }).atualizado_em ?? null,
+                      });
+                      if (r.pendente) toast.info("Salvo no aparelho — aguardando sincronização.");
                       recarregar();
                     } catch (e) {
                       toast.error((e as Error)?.message ?? "Falha ao atualizar o status.");
