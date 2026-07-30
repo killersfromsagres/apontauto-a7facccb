@@ -69,6 +69,7 @@ import { Route as AuthenticatedAbastecimentoAguaIndexRouteImport } from './route
 import { Route as ApiPublicHooksWhatsappStatusRouteImport } from './routes/api/public/hooks/whatsapp-status'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
+import { Route as ApiPublicHooksAguaNotificacoesRouteImport } from './routes/api/public/hooks/agua-notificacoes'
 import { Route as ApiPublicHooksAguaGerarRotasRouteImport } from './routes/api/public/hooks/agua-gerar-rotas'
 import { Route as AuthenticatedAbastecimentoAguaRotasRouteImport } from './routes/_authenticated/abastecimento.agua.rotas'
 import { Route as AuthenticatedAbastecimentoAguaRotaRouteImport } from './routes/_authenticated/abastecimento.agua.rota'
@@ -414,6 +415,12 @@ const ApiPublicHooksPluviometroRoute =
     path: '/api/public/hooks/pluviometro',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksAguaNotificacoesRoute =
+  ApiPublicHooksAguaNotificacoesRouteImport.update({
+    id: '/api/public/hooks/agua-notificacoes',
+    path: '/api/public/hooks/agua-notificacoes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAguaGerarRotasRoute =
   ApiPublicHooksAguaGerarRotasRouteImport.update({
     id: '/api/public/hooks/agua-gerar-rotas',
@@ -548,6 +555,7 @@ export interface FileRoutesByFullPath {
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
   '/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
+  '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
@@ -618,6 +626,7 @@ export interface FileRoutesByTo {
   '/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
   '/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
+  '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
@@ -692,6 +701,7 @@ export interface FileRoutesById {
   '/_authenticated/abastecimento/agua/rota': typeof AuthenticatedAbastecimentoAguaRotaRoute
   '/_authenticated/abastecimento/agua/rotas': typeof AuthenticatedAbastecimentoAguaRotasRoute
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
+  '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
@@ -766,6 +776,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/rota'
     | '/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
+    | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
@@ -836,6 +847,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/rota'
     | '/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
+    | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
@@ -909,6 +921,7 @@ export interface FileRouteTypes {
     | '/_authenticated/abastecimento/agua/rota'
     | '/_authenticated/abastecimento/agua/rotas'
     | '/api/public/hooks/agua-gerar-rotas'
+    | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
@@ -930,6 +943,7 @@ export interface RootRouteChildren {
   ApiPublicClimaRoute: typeof ApiPublicClimaRoute
   ApiPublicClimaForecastRoute: typeof ApiPublicClimaForecastRoute
   ApiPublicHooksAguaGerarRotasRoute: typeof ApiPublicHooksAguaGerarRotasRoute
+  ApiPublicHooksAguaNotificacoesRoute: typeof ApiPublicHooksAguaNotificacoesRoute
   ApiPublicHooksPluviometroRoute: typeof ApiPublicHooksPluviometroRoute
   ApiPublicHooksWeatherMonitorRoute: typeof ApiPublicHooksWeatherMonitorRoute
   ApiPublicHooksWhatsappStatusRoute: typeof ApiPublicHooksWhatsappStatusRoute
@@ -1357,6 +1371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksPluviometroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/agua-notificacoes': {
+      id: '/api/public/hooks/agua-notificacoes'
+      path: '/api/public/hooks/agua-notificacoes'
+      fullPath: '/api/public/hooks/agua-notificacoes'
+      preLoaderRoute: typeof ApiPublicHooksAguaNotificacoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/agua-gerar-rotas': {
       id: '/api/public/hooks/agua-gerar-rotas'
       path: '/api/public/hooks/agua-gerar-rotas'
@@ -1612,6 +1633,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicClimaRoute: ApiPublicClimaRoute,
   ApiPublicClimaForecastRoute: ApiPublicClimaForecastRoute,
   ApiPublicHooksAguaGerarRotasRoute: ApiPublicHooksAguaGerarRotasRoute,
+  ApiPublicHooksAguaNotificacoesRoute: ApiPublicHooksAguaNotificacoesRoute,
   ApiPublicHooksPluviometroRoute: ApiPublicHooksPluviometroRoute,
   ApiPublicHooksWeatherMonitorRoute: ApiPublicHooksWeatherMonitorRoute,
   ApiPublicHooksWhatsappStatusRoute: ApiPublicHooksWhatsappStatusRoute,
