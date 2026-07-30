@@ -69,6 +69,7 @@ export type Database = {
           rota_id: string | null
           tipo: string
           veiculo: string | null
+          veiculo_id: string | null
           visita_id: string | null
         }
         Insert: {
@@ -86,6 +87,7 @@ export type Database = {
           rota_id?: string | null
           tipo: string
           veiculo?: string | null
+          veiculo_id?: string | null
           visita_id?: string | null
         }
         Update: {
@@ -103,6 +105,7 @@ export type Database = {
           rota_id?: string | null
           tipo?: string
           veiculo?: string | null
+          veiculo_id?: string | null
           visita_id?: string | null
         }
         Relationships: [
@@ -125,6 +128,13 @@ export type Database = {
             columns: ["rota_id"]
             isOneToOne: false
             referencedRelation: "agua_rotas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_bag_movimentos_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
           {
@@ -818,7 +828,11 @@ export type Database = {
           desfeito_por: string | null
           divergencias: Json
           id: string
+          pontos_atualizados: number
+          pontos_novos: number
+          relatorio: Json
           resumo: Json
+          rollback_permitido: boolean
           status: string
           total_linhas: number
           total_pontos: number
@@ -833,7 +847,11 @@ export type Database = {
           desfeito_por?: string | null
           divergencias?: Json
           id?: string
+          pontos_atualizados?: number
+          pontos_novos?: number
+          relatorio?: Json
           resumo?: Json
+          rollback_permitido?: boolean
           status?: string
           total_linhas?: number
           total_pontos?: number
@@ -848,7 +866,11 @@ export type Database = {
           desfeito_por?: string | null
           divergencias?: Json
           id?: string
+          pontos_atualizados?: number
+          pontos_novos?: number
+          relatorio?: Json
           resumo?: Json
+          rollback_permitido?: boolean
           status?: string
           total_linhas?: number
           total_pontos?: number
@@ -893,13 +915,16 @@ export type Database = {
         Row: {
           acesso_observacoes: string | null
           andar: string
+          arquivado_em: string | null
           ativo: boolean
           atualizado_em: string
           atualizado_por: string | null
           bag_capacidade_litros: number | null
           bag_tipo: string | null
+          bag_tipo_id: string | null
           bags_padrao: number
           codigo: string
+          contato_nome: string | null
           contato_telefone: string | null
           criado_em: string
           criado_por: string | null
@@ -922,6 +947,7 @@ export type Database = {
           predio: string
           prioridade: string
           qr_code: string | null
+          qr_token_hash: string | null
           requer_epi: boolean
           responsavel: string | null
           tempo_estimado_min: number | null
@@ -931,13 +957,16 @@ export type Database = {
         Insert: {
           acesso_observacoes?: string | null
           andar?: string
+          arquivado_em?: string | null
           ativo?: boolean
           atualizado_em?: string
           atualizado_por?: string | null
           bag_capacidade_litros?: number | null
           bag_tipo?: string | null
+          bag_tipo_id?: string | null
           bags_padrao?: number
           codigo: string
+          contato_nome?: string | null
           contato_telefone?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -960,6 +989,7 @@ export type Database = {
           predio: string
           prioridade?: string
           qr_code?: string | null
+          qr_token_hash?: string | null
           requer_epi?: boolean
           responsavel?: string | null
           tempo_estimado_min?: number | null
@@ -969,13 +999,16 @@ export type Database = {
         Update: {
           acesso_observacoes?: string | null
           andar?: string
+          arquivado_em?: string | null
           ativo?: boolean
           atualizado_em?: string
           atualizado_por?: string | null
           bag_capacidade_litros?: number | null
           bag_tipo?: string | null
+          bag_tipo_id?: string | null
           bags_padrao?: number
           codigo?: string
+          contato_nome?: string | null
           contato_telefone?: string | null
           criado_em?: string
           criado_por?: string | null
@@ -998,6 +1031,7 @@ export type Database = {
           predio?: string
           prioridade?: string
           qr_code?: string | null
+          qr_token_hash?: string | null
           requer_epi?: boolean
           responsavel?: string | null
           tempo_estimado_min?: number | null
@@ -1005,6 +1039,13 @@ export type Database = {
           veiculo_recomendado?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agua_pontos_bag_tipo_id_fkey"
+            columns: ["bag_tipo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_bag_tipos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agua_pontos_lote_id_fkey"
             columns: ["lote_id"]
@@ -1027,45 +1068,60 @@ export type Database = {
           atualizado_em: string
           bags: number
           criado_em: string
+          criado_por: string | null
           dia_semana: number
           equipe: string | null
           id: string
+          janela_fim: string | null
+          janela_inicio: string | null
           lote_id: string | null
           ordem: number
           origem: string
           ponto_id: string
           template_key: string
           turno: string
+          vigencia_fim: string | null
+          vigencia_inicio: string | null
         }
         Insert: {
           ativo?: boolean
           atualizado_em?: string
           bags?: number
           criado_em?: string
+          criado_por?: string | null
           dia_semana: number
           equipe?: string | null
           id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
           lote_id?: string | null
           ordem?: number
           origem?: string
           ponto_id: string
           template_key?: string
           turno?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
         }
         Update: {
           ativo?: boolean
           atualizado_em?: string
           bags?: number
           criado_em?: string
+          criado_por?: string | null
           dia_semana?: number
           equipe?: string | null
           id?: string
+          janela_fim?: string | null
+          janela_inicio?: string | null
           lote_id?: string | null
           ordem?: number
           origem?: string
           ponto_id?: string
           template_key?: string
           turno?: string
+          vigencia_fim?: string | null
+          vigencia_inicio?: string | null
         }
         Relationships: [
           {
@@ -1172,6 +1228,113 @@ export type Database = {
           },
         ]
       }
+      agua_rota_template_paradas: {
+        Row: {
+          atualizado_em: string
+          bags_previstas: number
+          criado_em: string
+          dia_semana: number
+          id: string
+          observacao: string | null
+          ordem: number
+          ponto_id: string
+          template_id: string
+          tempo_estimado_min: number
+        }
+        Insert: {
+          atualizado_em?: string
+          bags_previstas?: number
+          criado_em?: string
+          dia_semana: number
+          id?: string
+          observacao?: string | null
+          ordem?: number
+          ponto_id: string
+          template_id: string
+          tempo_estimado_min?: number
+        }
+        Update: {
+          atualizado_em?: string
+          bags_previstas?: number
+          criado_em?: string
+          dia_semana?: number
+          id?: string
+          observacao?: string | null
+          ordem?: number
+          ponto_id?: string
+          template_id?: string
+          tempo_estimado_min?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_rota_template_paradas_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_rota_template_paradas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rota_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_rota_templates: {
+        Row: {
+          ativo: boolean
+          atualizado_em: string
+          chave: string
+          criado_em: string
+          criado_por: string | null
+          equipe: string | null
+          id: string
+          nome: string
+          observacao: string | null
+          turno: string
+          veiculo_id: string | null
+          versao: number
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_em?: string
+          chave: string
+          criado_em?: string
+          criado_por?: string | null
+          equipe?: string | null
+          id?: string
+          nome: string
+          observacao?: string | null
+          turno?: string
+          veiculo_id?: string | null
+          versao?: number
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_em?: string
+          chave?: string
+          criado_em?: string
+          criado_por?: string | null
+          equipe?: string | null
+          id?: string
+          nome?: string
+          observacao?: string | null
+          turno?: string
+          veiculo_id?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_rota_templates_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agua_rota_versoes: {
         Row: {
           criado_em: string
@@ -1233,6 +1396,7 @@ export type Database = {
           finalizada_em: string | null
           foto_carga_final_url: string | null
           foto_carga_url: string | null
+          geracao_job_id: string | null
           hodometro_final: number | null
           hodometro_inicial: number | null
           horario_previsto: string | null
@@ -1245,9 +1409,12 @@ export type Database = {
           saida_real: string | null
           status: string
           supervisor: string | null
+          template_id: string | null
           template_key: string
+          template_versao: number | null
           turno: string
           veiculo: string | null
+          veiculo_id: string | null
           versao: number
         }
         Insert: {
@@ -1272,6 +1439,7 @@ export type Database = {
           finalizada_em?: string | null
           foto_carga_final_url?: string | null
           foto_carga_url?: string | null
+          geracao_job_id?: string | null
           hodometro_final?: number | null
           hodometro_inicial?: number | null
           horario_previsto?: string | null
@@ -1284,9 +1452,12 @@ export type Database = {
           saida_real?: string | null
           status?: string
           supervisor?: string | null
+          template_id?: string | null
           template_key?: string
+          template_versao?: number | null
           turno?: string
           veiculo?: string | null
+          veiculo_id?: string | null
           versao?: number
         }
         Update: {
@@ -1311,6 +1482,7 @@ export type Database = {
           finalizada_em?: string | null
           foto_carga_final_url?: string | null
           foto_carga_url?: string | null
+          geracao_job_id?: string | null
           hodometro_final?: number | null
           hodometro_inicial?: number | null
           horario_previsto?: string | null
@@ -1323,12 +1495,37 @@ export type Database = {
           saida_real?: string | null
           status?: string
           supervisor?: string | null
+          template_id?: string | null
           template_key?: string
+          template_versao?: number | null
           turno?: string
           veiculo?: string | null
+          veiculo_id?: string | null
           versao?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agua_rotas_geracao_job_id_fkey"
+            columns: ["geracao_job_id"]
+            isOneToOne: false
+            referencedRelation: "agua_geracao_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_rotas_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "agua_rota_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_rotas_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agua_visita_eventos: {
         Row: {
@@ -1391,6 +1588,7 @@ export type Database = {
           longitude: number | null
           motivo: string | null
           observacao: string | null
+          offline_idempotency_key: string | null
           ordem: number
           ponto_id: string
           recebido_por: string | null
@@ -1425,6 +1623,7 @@ export type Database = {
           longitude?: number | null
           motivo?: string | null
           observacao?: string | null
+          offline_idempotency_key?: string | null
           ordem?: number
           ponto_id: string
           recebido_por?: string | null
@@ -1459,6 +1658,7 @@ export type Database = {
           longitude?: number | null
           motivo?: string | null
           observacao?: string | null
+          offline_idempotency_key?: string | null
           ordem?: number
           ponto_id?: string
           recebido_por?: string | null
