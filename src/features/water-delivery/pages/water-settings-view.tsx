@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { WhatsAppConfigCard } from "@/features/water-delivery/whatsapp/whatsapp-config-card";
 import { FilaSincronizacaoCard } from "@/features/water-delivery/components/fila-sincronizacao-card";
+import { MetricasUploadCard } from "@/features/water-delivery/components/metricas-upload-card";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 
 import { listPontos, listProgramacao } from "@/features/water-delivery/queries/api";
@@ -121,6 +122,7 @@ export function WaterSettingsView() {
       </GlassCard>
 
       <FilaSincronizacaoCard />
+      <MetricasUploadCard />
 
 
       <AdminSettingsCard podeEditar={podeConfigurar} />
