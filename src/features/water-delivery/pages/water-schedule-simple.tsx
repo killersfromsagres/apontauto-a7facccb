@@ -501,7 +501,10 @@ function EntregaSheet({
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
+      <SheetContent
+        side="bottom"
+        className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-3xl pb-0"
+      >
         <SheetHeader className="text-left">
           <SheetTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-sky-500" />
