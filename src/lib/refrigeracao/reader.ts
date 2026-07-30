@@ -59,7 +59,7 @@ function parseDate(v: unknown): Date | null {
     if (d) return d;
   }
   const br = s.match(
-    /^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
   );
   if (br) {
     const [, d, m, y, hh, mm, ss] = br;

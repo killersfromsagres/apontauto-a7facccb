@@ -109,7 +109,7 @@ function parseDate(v: string): { iso: string; ts: number } {
     const d = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12, 0, 0);
     return { iso: d.toISOString(), ts: d.getTime() };
   }
-  const br = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);

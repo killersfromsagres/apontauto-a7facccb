@@ -212,7 +212,9 @@ function RefrigeracaoPage() {
       try {
         const cached = await getCachedOsList();
         if (cached.length) setOsList(cached);
-      } catch {}
+      } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
       if (navigator.onLine) {
         try {
           await refreshOsFromServer();
@@ -676,7 +678,9 @@ function OsDetail({
         if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
           setDraftSavedAt(d.updatedAt);
         }
-      } catch {}
+      } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
       setDraftLoaded(true);
     })();
     return () => {
@@ -847,7 +851,9 @@ function OsDetail({
           onQueued();
           if (r.sent > 0) toast.success(`${r.sent} enviado(s) ao servidor.`);
           if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
-        } catch {}
+        } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
       }
     } finally {
       setSaving(false);

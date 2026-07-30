@@ -8,6 +8,7 @@ function sanitizeName(name: string): string {
     .split(/[\\/]/)
     .pop()!
     .replace(/\.[^.]+$/, "")
+    // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
     .replace(/[\u0000-\u001F\u007F]/g, "")
     .replace(/[^a-zA-Z0-9._-]/g, "-")
     .replace(/-{2,}/g, "-")

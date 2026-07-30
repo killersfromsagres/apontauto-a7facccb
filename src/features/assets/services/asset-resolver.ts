@@ -22,6 +22,7 @@ import type {
 } from "../types";
 
 /** Caracteres invisíveis: zero-width, BOM, NBSP e controles. */
+// eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
 const INVISIBLE_RE = /[\u0000-\u001F\u007F\u00A0\u200B-\u200F\u2028\u2029\uFEFF]/g;
 
 /** Normaliza o código do ativo sem descartar caracteres válidos. */

@@ -100,7 +100,7 @@ function parseAnyDate(v: unknown): Date | null {
     const d = excelSerialToDate(asNum);
     if (d) return d;
   }
-  const br = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})/);
+  const br = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);

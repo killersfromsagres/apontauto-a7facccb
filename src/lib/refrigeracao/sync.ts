@@ -31,7 +31,9 @@ function getErrorMessage(err: unknown): string {
     if (typeof message === "string" && message.trim()) return message;
     try {
       return JSON.stringify(record);
-    } catch {}
+    } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
   }
   return "Erro desconhecido ao sincronizar";
 }

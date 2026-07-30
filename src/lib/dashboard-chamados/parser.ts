@@ -69,7 +69,7 @@ function parseDate(v: string): { iso: string | null; ts: number | null } {
     const d = new Date(utcMs);
     return { iso: d.toISOString(), ts: d.getTime() };
   }
-  const br = v.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
   if (br) {
     const [, d, m, y, hh, mm] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);

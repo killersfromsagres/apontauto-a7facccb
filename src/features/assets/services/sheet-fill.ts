@@ -12,6 +12,7 @@ import type { AssetGraph, ResolutionMethod } from "../types";
 
 export const normHeader = (v: unknown) =>
   String(v ?? "")
+    // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
     .replace(/[\u0000-\u001F\u00A0\u200B-\u200F\uFEFF]/g, " ")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")

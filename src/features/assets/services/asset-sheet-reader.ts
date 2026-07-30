@@ -17,6 +17,7 @@ export type ColumnMapping = Partial<Record<AssetField, string>>;
 
 const norm = (v: unknown) =>
   String(v ?? "")
+    // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
     .replace(/[\u0000-\u001F\u00A0\u200B-\u200F\uFEFF]/g, " ")
     .trim()
     .toUpperCase()

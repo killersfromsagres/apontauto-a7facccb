@@ -541,7 +541,7 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
 
   /* ------------------------------- exportações ------------------------------ */
 
-  const slug = map.nome.replace(/[^\w\-]+/g, "_");
+  const slug = map.nome.replace(/[^\w-]+/g, "_");
 
   const runExport = async (kind: "png" | "pdf" | "json" | "geojson") => {
     setExporting(true);

@@ -65,7 +65,7 @@ function parseDateISO(v: string): string | null {
     const utcMs = Math.round((asNum - 25569) * 86400 * 1000);
     return new Date(utcMs).toISOString();
   }
-  const br = v.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
   if (br) {
     const [, d, m, y, hh, mm] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
