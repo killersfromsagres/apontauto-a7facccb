@@ -535,13 +535,16 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               {data?.problemas.length ? (
                 <ul className="space-y-2">
                   {data.problemas.map((pr) => (
-                    <li key={pr.id} className="rounded-md border bg-background/40 p-3 text-sm">
+                    <li
+                      key={pr.id}
+                      className="min-w-0 overflow-hidden rounded-md border bg-background/40 p-3 text-sm"
+                    >
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="text-[10px]">
                           {pr.gravidade}
                         </Badge>
                       </div>
-                      <p className="mt-1">{pr.descricao}</p>
+                      <p className="mt-1 break-words [overflow-wrap:anywhere]">{pr.descricao}</p>
                     </li>
                   ))}
                 </ul>
