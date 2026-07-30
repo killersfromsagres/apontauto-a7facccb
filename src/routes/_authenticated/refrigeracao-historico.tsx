@@ -565,7 +565,7 @@ function InfoField({
         {label}
       </div>
       <div
-        className={`truncate text-sm ${mono ? "font-mono" : ""} ${
+        className={`text-sm break-words [overflow-wrap:anywhere] ${mono ? "font-mono" : ""} ${
           highlight ? "font-semibold text-emerald-700 dark:text-emerald-300" : ""
         }`}
       >
