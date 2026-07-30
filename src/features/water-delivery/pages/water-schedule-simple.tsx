@@ -187,8 +187,11 @@ export function WaterScheduleSimple() {
         </div>
       </GlassCard>
 
-      {/* Quem está entregando + carro */}
+      {/* Equipe padrão do dia — apenas pré-preenche cada entrega */}
       <GlassCard className="p-4 sm:p-5">
+        <p className="mb-3 text-xs text-muted-foreground">
+          Padrão do dia — cada prédio ainda confirma quem entregou e qual carro foi usado.
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
@@ -349,12 +352,12 @@ export function WaterScheduleSimple() {
           ponto={pontoAberto}
           data={data}
           entrega={entregaPorPonto.get(pontoAberto.id) ?? null}
-          colaboradores={colaboradores}
-          veiculo={veiculo}
+          defaultColaboradores={colaboradores}
+          defaultVeiculo={veiculo}
           veiculos={(veiculosQ.data ?? []).map((v) =>
             [v.prefix, v.plate].filter(Boolean).join(" · ") || vehicleLabel(v),
           )}
-          onEquipeChange={atualizarEquipe}
+          onCommitEquipe={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["agua-prog"] });
@@ -376,20 +379,20 @@ function EntregaSheet({
   ponto,
   data,
   entrega,
-  colaboradores,
-  veiculo,
+  defaultColaboradores,
+  defaultVeiculo,
   veiculos,
-  onEquipeChange,
+  onCommitEquipe,
   onClose,
   onSaved,
 }: {
   ponto: PontoProg;
   data: string;
   entrega: Entrega | null;
-  colaboradores: string[];
-  veiculo: string | null;
+  defaultColaboradores: string[];
+  defaultVeiculo: string | null;
   veiculos: string[];
-  onEquipeChange: (cols: string[], veiculo: string | null) => void;
+  onCommitEquipe: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -400,7 +403,13 @@ function EntregaSheet({
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
-
+  // Seleção local: só é aplicada a esta entrega e só vira padrão ao confirmar.
+  const [colaboradores, setColaboradores] = useState<string[]>(
+    () => entrega?.colaboradores ?? defaultColaboradores,
+  );
+  const [veiculo, setVeiculo] = useState<string | null>(
+    () => entrega?.veiculo ?? defaultVeiculo,
+  );
 
   useEffect(() => () => novas.forEach((n) => URL.revokeObjectURL(n.url)), [novas]);
 
@@ -420,6 +429,7 @@ function EntregaSheet({
         fotos: novas.map((n) => n.blob),
       }),
     onSuccess: () => {
+      onCommitEquipe(colaboradores, veiculo);
       toast.success("Entrega registrada.");
       onSaved();
     },
@@ -427,7 +437,7 @@ function EntregaSheet({
   });
 
   const podeSalvar =
-    colaboradores.length > 0 && (!exigeFoto || jaTemFoto) && !salvar.isPending;
+    colaboradores.length > 0 && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
@@ -591,15 +601,20 @@ function EntregaSheet({
             />
           </div>
 
-          <div className="space-y-4 rounded-xl border border-border/60 bg-card/40 p-3">
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-card/50 p-3.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Confirme para <span className="text-foreground">{ponto.predio}</span> — vale só
+              para esta entrega.
+            </p>
+
             <div>
               <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                 <Users className="h-3.5 w-3.5" /> Quem entregou
-                {colaboradores.length > 0 && (
-                  <span className="ml-auto normal-case tracking-normal">
-                    {colaboradores.length} colaborador{colaboradores.length > 1 ? "es" : ""}
-                  </span>
-                )}
+                <span className="ml-auto normal-case tracking-normal">
+                  {colaboradores.length === 0
+                    ? "nenhum selecionado"
+                    : `${colaboradores.length} colaborador${colaboradores.length > 1 ? "es" : ""}`}
+                </span>
               </Label>
               <div className="grid gap-2">
                 {COLABORADORES.map((nome) => {
@@ -608,31 +623,31 @@ function EntregaSheet({
                     <button
                       key={nome}
                       type="button"
+                      aria-pressed={ativo}
                       onClick={() =>
-                        onEquipeChange(
-                          ativo
-                            ? colaboradores.filter((c) => c !== nome)
-                            : [...colaboradores, nome],
-                          veiculo,
+                        setColaboradores((atual) =>
+                          atual.includes(nome)
+                            ? atual.filter((c) => c !== nome)
+                            : [...atual, nome],
                         )
                       }
                       className={cn(
-                        "flex min-h-[48px] w-full items-center gap-2 rounded-xl border px-3 text-left text-sm font-medium transition-all active:scale-[0.99]",
+                        "flex min-h-[52px] w-full items-center gap-3 rounded-xl border px-3 text-left text-sm font-medium transition-all active:scale-[0.99]",
                         ativo
-                          ? "border-sky-400/60 bg-sky-500/15 text-sky-600 dark:text-sky-300"
-                          : "border-border/60 bg-card/40 text-muted-foreground",
+                          ? "border-sky-400/70 bg-sky-500/15 text-sky-700 shadow-sm dark:text-sky-300"
+                          : "border-border/60 bg-background/40 text-muted-foreground",
                       )}
                     >
                       <span
                         className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
                           ativo ? "bg-sky-500 text-white" : "bg-muted text-muted-foreground",
                         )}
                       >
                         {iniciais(nome)}
                       </span>
                       <span className="min-w-0 flex-1 truncate">{nome}</span>
-                      {ativo && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                      {ativo && <CheckCircle2 className="h-5 w-5 shrink-0" />}
                     </button>
                   );
                 })}
@@ -643,23 +658,40 @@ function EntregaSheet({
               <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                 <Car className="h-3.5 w-3.5" /> Carro utilizado
               </Label>
-              <Select
-                value={veiculo ?? ""}
-                onValueChange={(v) => onEquipeChange(colaboradores, v || null)}
-              >
-                <SelectTrigger className="h-12 rounded-xl text-base">
-                  <SelectValue placeholder="Selecione o carro" />
-                </SelectTrigger>
-                <SelectContent>
-                  {veiculos.map((v) => (
-                    <SelectItem key={v} value={v}>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {veiculos.length === 0 && (
+                  <p className="text-sm text-muted-foreground">Nenhum veículo cadastrado.</p>
+                )}
+                {veiculos.map((v) => {
+                  const ativo = veiculo === v;
+                  return (
+                    <button
+                      key={v}
+                      type="button"
+                      aria-pressed={ativo}
+                      onClick={() => setVeiculo(ativo ? null : v)}
+                      className={cn(
+                        "flex min-h-[48px] shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-all active:scale-[0.98]",
+                        ativo
+                          ? "border-primary/70 bg-primary/15 text-primary shadow-sm"
+                          : "border-border/60 bg-background/40 text-muted-foreground",
+                      )}
+                    >
+                      <Car className="h-4 w-4 shrink-0" />
                       {v}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      {ativo && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+              {!veiculo && (
+                <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                  Selecione o carro utilizado nesta entrega.
+                </p>
+              )}
             </div>
           </div>
+
 
         </div>
 
