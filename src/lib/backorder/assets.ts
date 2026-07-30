@@ -111,7 +111,11 @@ export function describeAtivo(
 } {
   const node = index.graph.byCode.get(normalizeCode(ativo));
   if (!node) {
-    return { found: false, nivelSelf: "", naFields: { predio: false, andar: false, espaco: false } };
+    return {
+      found: false,
+      nivelSelf: "",
+      naFields: { predio: false, andar: false, espaco: false },
+    };
   }
   const r = resolveAsset(index.graph, ativo);
   return {

@@ -37,7 +37,12 @@ import {
 import { EmptyState, KpiCard } from "@/components/pcm";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { hojeISO, listPontos, listVisitas, pontoLabel } from "@/features/water-delivery/queries/api";
+import {
+  hojeISO,
+  listPontos,
+  listVisitas,
+  pontoLabel,
+} from "@/features/water-delivery/queries/api";
 import {
   BAG_MOVIMENTO_LABEL,
   calcularAlertas,
@@ -48,7 +53,6 @@ import {
   type BagMovimentoTipo,
   type BagTipo,
 } from "@/features/water-delivery/queries/bags";
-
 
 function diasAtras(dias: number): string {
   const d = new Date();
@@ -152,9 +156,7 @@ export function BagReconciliation() {
     [tipos.data, movimentos.data, visitas.data, rotas.data, porId],
   );
 
-  const cobertura = totais.previstas
-    ? Math.round((totais.entregues / totais.previstas) * 100)
-    : 0;
+  const cobertura = totais.previstas ? Math.round((totais.entregues / totais.previstas) * 100) : 0;
 
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: ["agua", "bag-tipos"] });
@@ -583,7 +585,16 @@ function MovimentosTab({
   onSaved,
 }: {
   tipos: BagTipo[];
-  movimentos: { id: string; tipo: BagMovimentoTipo; quantidade: number; ocorrido_em: string; motivo: string | null; bag_tipo_id: string; responsavel: string | null; veiculo: string | null }[];
+  movimentos: {
+    id: string;
+    tipo: BagMovimentoTipo;
+    quantidade: number;
+    ocorrido_em: string;
+    motivo: string | null;
+    bag_tipo_id: string;
+    responsavel: string | null;
+    veiculo: string | null;
+  }[];
   loading: boolean;
   onSaved: () => void;
 }) {

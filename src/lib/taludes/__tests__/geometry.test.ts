@@ -26,11 +26,7 @@ describe("cálculos de área calibrada", () => {
 
   it("converte a escala com metros por pixel", () => {
     // Régua horizontal de 0% a 50% em imagem de 1000px = 500px para 100 m.
-    const mpp = metersPerPixel(
-      { a: { x: 0, y: 0 }, b: { x: 50, y: 0 }, meters: 100 },
-      1000,
-      1000,
-    );
+    const mpp = metersPerPixel({ a: { x: 0, y: 0 }, b: { x: 50, y: 0 }, meters: 100 }, 1000, 1000);
     expect(mpp).toBeCloseTo(0.2, 6);
   });
 
@@ -46,7 +42,9 @@ describe("cálculos de área calibrada", () => {
   });
 
   it("calibração degenerada não divide por zero", () => {
-    expect(metersPerPixel({ a: { x: 5, y: 5 }, b: { x: 5, y: 5 }, meters: 10 }, 1000, 1000)).toBe(0);
+    expect(metersPerPixel({ a: { x: 5, y: 5 }, b: { x: 5, y: 5 }, meters: 10 }, 1000, 1000)).toBe(
+      0,
+    );
   });
 
   it("formata área e comprimento em pt-BR", () => {
@@ -63,7 +61,12 @@ describe("validação do polígono", () => {
   });
 
   it("recusa polígono com menos de 3 vértices", () => {
-    expect(validatePolygon([{ x: 0, y: 0 }, { x: 1, y: 1 }]).ok).toBe(false);
+    expect(
+      validatePolygon([
+        { x: 0, y: 0 },
+        { x: 1, y: 1 },
+      ]).ok,
+    ).toBe(false);
   });
 
   it("detecta auto-interseção (gravata)", () => {

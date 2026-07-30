@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { toast } from "sonner";
-import { CalendarIcon, Download, Plus, Trash2, UserCog, X, Droplets, SprayCan, Trees } from "lucide-react";
+import {
+  CalendarIcon,
+  Download,
+  Plus,
+  Trash2,
+  UserCog,
+  X,
+  Droplets,
+  SprayCan,
+  Trees,
+} from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -70,7 +80,6 @@ const CATEGORIAS: {
     options: { workBlocks: [[8 * 60, 17 * 60]] },
     hint: "Jornada 08:00–17:00 — todos os colaboradores encerram às 17:00.",
   },
-
 ];
 
 const emptyState = (): CategoriaState => ({
@@ -244,10 +253,12 @@ function CategoriaEditor({
     onChange({ tecnicos: state.tecnicos.filter((t) => t !== id) });
 
   const isPair = options.mode === "pair";
-  const totalMin = (options.workBlocks ?? [[8 * 60, 12 * 60], [13 * 60, 17 * 60]]).reduce(
-    (s, [a, b]) => s + (b - a),
-    0,
-  );
+  const totalMin = (
+    options.workBlocks ?? [
+      [8 * 60, 12 * 60],
+      [13 * 60, 17 * 60],
+    ]
+  ).reduce((s, [a, b]) => s + (b - a), 0);
   const osPorTecnico = state.tecnicos.length
     ? isPair
       ? osList.length
@@ -255,8 +266,7 @@ function CategoriaEditor({
     : 0;
   const minPorOs = osPorTecnico ? Math.floor(totalMin / osPorTecnico) : 0;
 
-  const clear = () =>
-    onChange({ tecnicos: [], tecInput: "", osText: "" });
+  const clear = () => onChange({ tecnicos: [], tecInput: "", osText: "" });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[400px_1fr]">
@@ -304,7 +314,11 @@ function CategoriaEditor({
             </div>
             <div className="flex flex-wrap gap-1.5 pt-1">
               {state.tecnicos.map((id) => (
-                <Badge key={id} variant="secondary" className="gap-1 rounded-md py-1 pl-2 pr-1 font-mono text-xs">
+                <Badge
+                  key={id}
+                  variant="secondary"
+                  className="gap-1 rounded-md py-1 pl-2 pr-1 font-mono text-xs"
+                >
                   {id}
                   <button
                     type="button"
@@ -403,7 +417,6 @@ function CategoriaEditor({
               </TableBody>
             </Table>
           </div>
-
         )}
       </GlassCard>
     </div>

@@ -45,9 +45,7 @@ export const migrateRefrigLegacyPhotosToImgBB = createServerFn({ method: "POST" 
     for (const row of rows) {
       try {
         const path = row.storage_path as string;
-        const dl = await supabaseAdmin.storage
-          .from("refrigeracao-fotos")
-          .download(path);
+        const dl = await supabaseAdmin.storage.from("refrigeracao-fotos").download(path);
         if (dl.error || !dl.data) throw new Error(dl.error?.message ?? "download falhou");
 
         const buf = await dl.data.arrayBuffer();
@@ -74,9 +72,7 @@ export const migrateRefrigLegacyPhotosToImgBB = createServerFn({ method: "POST" 
           .eq("id", row.id);
         if (updErr) throw new Error(updErr.message);
 
-        const del = await supabaseAdmin.storage
-          .from("refrigeracao-fotos")
-          .remove([path]);
+        const del = await supabaseAdmin.storage.from("refrigeracao-fotos").remove([path]);
         if (del.error) {
           // Não falha a migração — só loga; o registro já aponta pro ImgBB.
           console.warn("[migrate] falha ao remover objeto", path, del.error.message);
@@ -107,10 +103,7 @@ function bufToBase64(buf: ArrayBuffer): string {
   let bin = "";
   const chunk = 0x8000;
   for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode.apply(
-      null,
-      Array.from(bytes.subarray(i, i + chunk)),
-    );
+    bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
   }
   return btoa(bin);
 }

@@ -200,20 +200,21 @@ export async function updateLegalItem(id: string, patch: Partial<LegalItem>): Pr
 }
 
 export async function deleteLegalItem(id: string): Promise<void> {
-  const { error } = await supabase.from("legal_items" as never).delete().eq("id", id);
+  const { error } = await supabase
+    .from("legal_items" as never)
+    .delete()
+    .eq("id", id);
   if (error) throw error;
 }
 
 /** Marca como concluído: grava execução, atualiza última e recalcula próxima. */
 export async function completeLegalItem(item: LegalItem, date = todayISO()): Promise<void> {
   const { data: userRes } = await supabase.auth.getUser();
-  const { error: execErr } = await supabase
-    .from("legal_item_executions" as never)
-    .insert({
-      item_id: item.id,
-      data_execucao: date,
-      executado_por: userRes.user?.id ?? null,
-    } as never);
+  const { error: execErr } = await supabase.from("legal_item_executions" as never).insert({
+    item_id: item.id,
+    data_execucao: date,
+    executado_por: userRes.user?.id ?? null,
+  } as never);
   if (execErr) throw execErr;
 
   const next = addMonths(date, monthsFor(item.periodicidade));
@@ -231,12 +232,14 @@ export async function listExecutions(): Promise<LegalExecution[]> {
     .from("legal_item_executions" as never)
     .select("id, item_id, data_execucao, observacao");
   if (error) throw error;
-  return (data as unknown as Array<{
-    id: string;
-    item_id: string;
-    data_execucao: string;
-    observacao: string | null;
-  }>).map((r) => ({
+  return (
+    data as unknown as Array<{
+      id: string;
+      item_id: string;
+      data_execucao: string;
+      observacao: string | null;
+    }>
+  ).map((r) => ({
     id: r.id,
     itemId: r.item_id,
     data: r.data_execucao,
@@ -252,15 +255,17 @@ export async function listAttachments(itemId: string): Promise<LegalAttachment[]
     .eq("item_id", itemId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data as unknown as Array<{
-    id: string;
-    item_id: string;
-    storage_path: string;
-    file_name: string;
-    mime_type: string | null;
-    size_bytes: number | null;
-    created_at: string;
-  }>).map((r) => ({
+  return (
+    data as unknown as Array<{
+      id: string;
+      item_id: string;
+      storage_path: string;
+      file_name: string;
+      mime_type: string | null;
+      size_bytes: number | null;
+      created_at: string;
+    }>
+  ).map((r) => ({
     id: r.id,
     itemId: r.item_id,
     storagePath: r.storage_path,
@@ -272,9 +277,7 @@ export async function listAttachments(itemId: string): Promise<LegalAttachment[]
 }
 
 export async function countAttachments(): Promise<Record<string, number>> {
-  const { data, error } = await supabase
-    .from("legal_item_attachments" as never)
-    .select("item_id");
+  const { data, error } = await supabase.from("legal_item_attachments" as never).select("item_id");
   if (error) throw error;
   const map: Record<string, number> = {};
   for (const row of (data as unknown as Array<{ item_id: string }>) ?? []) {
@@ -284,12 +287,14 @@ export async function countAttachments(): Promise<Record<string, number>> {
 }
 
 function safeSegment(s: string): string {
-  return s
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .toLowerCase() || "sem-nome";
+  return (
+    s
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "sem-nome"
+  );
 }
 
 export async function uploadAttachment(item: LegalItem, file: File): Promise<LegalAttachment> {
@@ -365,11 +370,7 @@ export async function deleteAttachment(att: LegalAttachment): Promise<void> {
  */
 export type MonthCell = "done" | "scheduled" | "overdue" | "none";
 
-export function buildMonthMap(
-  item: LegalItem,
-  execs: LegalExecution[],
-  year: number,
-): MonthCell[] {
+export function buildMonthMap(item: LegalItem, execs: LegalExecution[], year: number): MonthCell[] {
   const cells: MonthCell[] = Array(12).fill("none");
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -385,8 +386,7 @@ export function buildMonthMap(
   if (next && next.getFullYear() === year) {
     const m = next.getMonth();
     if (cells[m] !== "done") {
-      const isPast =
-        year < currentYear || (year === currentYear && m < currentMonth);
+      const isPast = year < currentYear || (year === currentYear && m < currentMonth);
       cells[m] = isPast ? "overdue" : "scheduled";
     }
   }

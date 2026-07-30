@@ -30,9 +30,7 @@ export function EmptyState({
       <div className="space-y-1">
         <p className="font-semibold">{title}</p>
         {description && (
-          <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {action}
@@ -65,9 +63,7 @@ export function ErrorState({
       <div className="space-y-1">
         <p className="font-semibold">{title}</p>
         {description && (
-          <p className="mx-auto max-w-md text-sm text-muted-foreground">
-            {description}
-          </p>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {onRetry && (
@@ -80,13 +76,7 @@ export function ErrorState({
   );
 }
 
-export function SkeletonState({
-  rows = 4,
-  className,
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function SkeletonState({ rows = 4, className }: { rows?: number; className?: string }) {
   return (
     <div className={cn("space-y-3", className)} aria-busy="true">
       {Array.from({ length: rows }).map((_, index) => (

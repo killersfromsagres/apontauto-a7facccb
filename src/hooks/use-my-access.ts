@@ -22,8 +22,6 @@ async function readAccessDirect(uid: string): Promise<MyAccess> {
   return { isAdmin: false, allowed };
 }
 
-
-
 // Inscrição única global no auth: em vez de cada componente que usa
 // `useMyAccess` (sidebar, header, dashboards…) registrar seu próprio
 // `onAuthStateChange`, mantemos apenas um listener e propagamos a
@@ -86,8 +84,6 @@ export function useMyAccess() {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-
-
   });
 
   useEffect(() => {

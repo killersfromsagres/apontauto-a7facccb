@@ -86,7 +86,12 @@ export default function DashboardCharts({
               <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
-              <Bar dataKey="concluidos" name="Concluídos" fill="url(#gConc)" radius={[6, 6, 0, 0]} />
+              <Bar
+                dataKey="concluidos"
+                name="Concluídos"
+                fill="url(#gConc)"
+                radius={[6, 6, 0, 0]}
+              />
               <Bar dataKey="abertos" name="Em aberto" fill="url(#gAb)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -120,7 +125,13 @@ export default function DashboardCharts({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} hide />
+                <XAxis
+                  type="number"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  allowDecimals={false}
+                  hide
+                />
                 <YAxis
                   type="category"
                   dataKey="name"
@@ -135,7 +146,13 @@ export default function DashboardCharts({
                   cursor={{ fill: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
                   contentStyle={TOOLTIP_STYLE}
                 />
-                <Bar dataKey="total" name="Total" fill="url(#gSol)" radius={[0, 6, 6, 0]} barSize={20}>
+                <Bar
+                  dataKey="total"
+                  name="Total"
+                  fill="url(#gSol)"
+                  radius={[0, 6, 6, 0]}
+                  barSize={20}
+                >
                   <LabelList
                     dataKey="total"
                     position="right"
@@ -224,7 +241,11 @@ export default function DashboardCharts({
               </div>
             ) : (
               <ResponsiveContainer>
-                <BarChart data={topPredios} layout="vertical" margin={{ top: 4, right: 40, bottom: 4, left: 8 }}>
+                <BarChart
+                  data={topPredios}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, bottom: 4, left: 8 }}
+                >
                   <defs>
                     <linearGradient id="gPredio" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stopColor={CHART_COLORS[2]} stopOpacity={0.95} />
@@ -232,7 +253,13 @@ export default function DashboardCharts({
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} hide />
+                  <XAxis
+                    type="number"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    allowDecimals={false}
+                    hide
+                  />
                   <YAxis
                     type="category"
                     dataKey="name"

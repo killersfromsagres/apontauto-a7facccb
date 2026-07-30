@@ -41,10 +41,7 @@ export function EntityPicker({
   className,
 }: EntityPickerProps) {
   const [open, setOpen] = useState(false);
-  const selected = useMemo(
-    () => options.find((o) => o.value === value) ?? null,
-    [options, value],
-  );
+  const selected = useMemo(() => options.find((o) => o.value === value) ?? null, [options, value]);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

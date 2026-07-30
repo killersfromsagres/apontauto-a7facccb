@@ -3,10 +3,7 @@ import { cn } from "@/lib/utils";
 
 export type AgentStatus = "online" | "busy" | "paused" | "offline";
 
-const CONFIG: Record<
-  AgentStatus,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
+const CONFIG: Record<AgentStatus, { label: string; className: string; icon: React.ReactNode }> = {
   online: {
     label: "Agente online",
     className: "border-success/40 bg-success/10 text-success",

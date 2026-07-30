@@ -39,9 +39,7 @@ export function PageHeader({
             </p>
           ) : null}
           <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-          {description ? (
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-          ) : null}
+          {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -65,9 +63,7 @@ export function ModuleHeader({
     <div className={cn("flex flex-wrap items-center justify-between gap-2", className)}>
       <div className="min-w-0">
         <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-        {description ? (
-          <p className="text-xs text-muted-foreground">{description}</p>
-        ) : null}
+        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>

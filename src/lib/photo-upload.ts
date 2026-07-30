@@ -41,13 +41,9 @@ export async function uploadPhotoWithFallback(
       upsert: true,
     });
     if (error) {
-      throw new Error(
-        `Falha ao enviar imagem (ImgBB e armazenamento): ${error.message}`,
-      );
+      throw new Error(`Falha ao enviar imagem (ImgBB e armazenamento): ${error.message}`);
     }
-    const { data } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(path, TEN_YEARS);
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, TEN_YEARS);
     return { url: data?.signedUrl ?? "", storagePath: path };
   }
 }

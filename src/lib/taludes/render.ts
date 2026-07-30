@@ -143,7 +143,10 @@ function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace("#", "");
   const bigint = parseInt(
     h.length === 3
-      ? h.split("").map((c) => c + c).join("")
+      ? h
+          .split("")
+          .map((c) => c + c)
+          .join("")
       : h,
     16,
   );

@@ -128,8 +128,7 @@ export function scoreBacklog(input: BacklogInput): BacklogScore {
 
   const raw = factors.reduce((acc, f) => acc + f.points, 0);
   const score = clamp(Math.round(raw), 0, 100);
-  const level =
-    score >= 70 ? "critico" : score >= 45 ? "alto" : score >= 25 ? "medio" : "baixo";
+  const level = score >= 70 ? "critico" : score >= 45 ? "alto" : score >= 25 ? "medio" : "baixo";
 
   const recommendation =
     level === "critico"

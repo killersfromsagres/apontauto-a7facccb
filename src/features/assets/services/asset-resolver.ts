@@ -22,6 +22,7 @@ import type {
 } from "../types";
 
 /** Caracteres invisíveis: zero-width, BOM, NBSP e controles. */
+// eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
 const INVISIBLE_RE = /[\u0000-\u001F\u007F\u00A0\u200B-\u200F\u2028\u2029\uFEFF]/g;
 
 /** Normaliza o código do ativo sem descartar caracteres válidos. */
@@ -226,12 +227,7 @@ export function resolveAsset(
       usedLegacy = true;
     }
   }
-  if (
-    !ambiente &&
-    self.level !== "PLANTA" &&
-    self.level !== "PREDIO" &&
-    self.level !== "ANDAR"
-  ) {
+  if (!ambiente && self.level !== "PLANTA" && self.level !== "PREDIO" && self.level !== "ANDAR") {
     // VLOOKUP direto: o próprio ativo responde pelo Ambiente.
     if (self.name) {
       ambiente = self.name;
@@ -249,20 +245,14 @@ export function resolveAsset(
     notApplicable: {
       predio: self.level === "PLANTA",
       andar: self.level === "PLANTA" || self.level === "PREDIO",
-      ambiente:
-        self.level === "PLANTA" || self.level === "PREDIO" || self.level === "ANDAR",
+      ambiente: self.level === "PLANTA" || self.level === "PREDIO" || self.level === "ANDAR",
     },
     issues,
   };
 }
 
 export interface CatalogValidationIssue {
-  type:
-    | "empty-code"
-    | "duplicate-code"
-    | "missing-parent"
-    | "cycle"
-    | "unknown-level";
+  type: "empty-code" | "duplicate-code" | "missing-parent" | "cycle" | "unknown-level";
   code: string;
   row: number;
   detail?: string;

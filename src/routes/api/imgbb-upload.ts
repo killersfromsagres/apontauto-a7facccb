@@ -4,15 +4,18 @@ const MAX_BYTES = 12 * 1024 * 1024;
 const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
 
 function sanitizeName(name: string): string {
-  return name
-    .split(/[\\/]/)
-    .pop()!
-    .replace(/\.[^.]+$/, "")
-    .replace(/[\u0000-\u001F\u007F]/g, "")
-    .replace(/[^a-zA-Z0-9._-]/g, "-")
-    .replace(/-{2,}/g, "-")
-    .replace(/^[-.]+/, "")
-    .slice(0, 100);
+  return (
+    name
+      .split(/[\\/]/)
+      .pop()!
+      .replace(/\.[^.]+$/, "")
+      // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
+      .replace(/[\u0000-\u001F\u007F]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-{2,}/g, "-")
+      .replace(/^[-.]+/, "")
+      .slice(0, 100)
+  );
 }
 
 function looksLikeImage(head: Uint8Array): boolean {

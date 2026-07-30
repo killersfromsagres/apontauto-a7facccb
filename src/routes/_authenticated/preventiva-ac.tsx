@@ -2,9 +2,7 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Wind, Save, FileSpreadsheet, RefreshCw, Trash2, Search, Plus,
-} from "lucide-react";
+import { Wind, Save, FileSpreadsheet, RefreshCw, Trash2, Search, Plus } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -13,18 +11,34 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { downloadBlob } from "@/lib/download";
 import {
-  CHECKLIST_PMOC, MEDICOES, TIPOS_EQUIPAMENTO, TIPOS_SERVICO, FLUIDOS, STATUS_EQUIPAMENTO,
-  type ChecklistState, type MedicoesState,
+  CHECKLIST_PMOC,
+  MEDICOES,
+  TIPOS_EQUIPAMENTO,
+  TIPOS_SERVICO,
+  FLUIDOS,
+  STATUS_EQUIPAMENTO,
+  type ChecklistState,
+  type MedicoesState,
 } from "@/lib/preventiva-ac/pmoc";
 import { generatePmocWorkbook, type PmocRegistro } from "@/lib/preventiva-ac/export";
 
@@ -33,7 +47,10 @@ export const Route = createFileRoute("/_authenticated/preventiva-ac")({
   head: () => ({
     meta: [
       { title: "Preventiva AC (PMOC) — Apont Auto" },
-      { name: "description", content: "Cadastro e execução de manutenção preventiva de ar-condicionado conforme PMOC." },
+      {
+        name: "description",
+        content: "Cadastro e execução de manutenção preventiva de ar-condicionado conforme PMOC.",
+      },
     ],
   }),
 });
@@ -65,15 +82,29 @@ type Form = {
 };
 
 const EMPTY_FORM: Form = {
-  tag: "", tipo_equipamento: "", marca: "", modelo: "", numero_serie: "",
-  capacidade_btu: "", fluido_refrigerante: "", quantidade_fluido: "",
+  tag: "",
+  tipo_equipamento: "",
+  marca: "",
+  modelo: "",
+  numero_serie: "",
+  capacidade_btu: "",
+  fluido_refrigerante: "",
+  quantidade_fluido: "",
   status_equipamento: "Operando normal",
-  ano_fabricacao: "", data_instalacao: "",
-  predio: "", andar: "", local: "", ambiente: "", area_climatizada: "", ocupacao_max: "",
-  fabricante: "", responsavel_tecnico: "",
+  ano_fabricacao: "",
+  data_instalacao: "",
+  predio: "",
+  andar: "",
+  local: "",
+  ambiente: "",
+  area_climatizada: "",
+  ocupacao_max: "",
+  fabricante: "",
+  responsavel_tecnico: "",
   data_manutencao: new Date().toISOString().slice(0, 10),
   tipo_servico: "Inspeção Inicial (Cadastro)",
-  colaborador: "", observacoes: "",
+  colaborador: "",
+  observacoes: "",
 };
 
 function toNumOrNull(v: string): number | null {
@@ -90,7 +121,11 @@ function PreventivaAcPage() {
 
   const update = <K extends keyof Form>(k: K, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const { data: registros = [], isLoading, refetch } = useQuery({
+  const {
+    data: registros = [],
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["preventiva-ac"],
     queryFn: async () => {
       const { data, error } = await (supabase as any)
@@ -159,7 +194,10 @@ function PreventivaAcPage() {
 
   const removeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("preventiva_ac_registros").delete().eq("id", id);
+      const { error } = await (supabase as any)
+        .from("preventiva_ac_registros")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -219,33 +257,64 @@ function PreventivaAcPage() {
 
           <Section title="Essenciais de campo">
             <p className="mb-3 text-xs text-muted-foreground">
-              Preencha primeiro o que o técnico precisa em campo. Os demais dados podem ser complementados depois.
+              Preencha primeiro o que o técnico precisa em campo. Os demais dados podem ser
+              complementados depois.
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <FieldText label="TAG *" value={form.tag} onChange={(v) => update("tag", v)} placeholder="Ex.: AC-B203-01" />
-              <FieldText label="Modelo do equipamento" value={form.modelo} onChange={(v) => update("modelo", v)} placeholder="Ex.: LG S4-Q12JA3AC" />
+              <FieldText
+                label="TAG *"
+                value={form.tag}
+                onChange={(v) => update("tag", v)}
+                placeholder="Ex.: AC-B203-01"
+              />
+              <FieldText
+                label="Modelo do equipamento"
+                value={form.modelo}
+                onChange={(v) => update("modelo", v)}
+                placeholder="Ex.: LG S4-Q12JA3AC"
+              />
               <FieldSelect
                 label="Fluido refrigerante"
                 value={form.fluido_refrigerante}
                 onChange={(v) => update("fluido_refrigerante", v)}
                 options={FLUIDOS as unknown as string[]}
               />
-              <FieldText label="Quantidade / carga de fluido" value={form.quantidade_fluido} onChange={(v) => update("quantidade_fluido", v)} placeholder="Ex.: 1,2 kg" />
+              <FieldText
+                label="Quantidade / carga de fluido"
+                value={form.quantidade_fluido}
+                onChange={(v) => update("quantidade_fluido", v)}
+                placeholder="Ex.: 1,2 kg"
+              />
               <FieldSelect
                 label="Status do equipamento"
                 value={form.status_equipamento}
                 onChange={(v) => update("status_equipamento", v)}
                 options={STATUS_EQUIPAMENTO as unknown as string[]}
               />
-              <FieldText label="Local / Ambiente" value={form.ambiente} onChange={(v) => update("ambiente", v)} placeholder="Onde o equipamento está" />
-              <FieldText label="Data manutenção" type="date" value={form.data_manutencao} onChange={(v) => update("data_manutencao", v)} />
+              <FieldText
+                label="Local / Ambiente"
+                value={form.ambiente}
+                onChange={(v) => update("ambiente", v)}
+                placeholder="Onde o equipamento está"
+              />
+              <FieldText
+                label="Data manutenção"
+                type="date"
+                value={form.data_manutencao}
+                onChange={(v) => update("data_manutencao", v)}
+              />
               <FieldSelect
                 label="Tipo de serviço"
                 value={form.tipo_servico}
                 onChange={(v) => update("tipo_servico", v)}
                 options={TIPOS_SERVICO as unknown as string[]}
               />
-              <FieldText label="Técnico responsável" value={form.responsavel_tecnico} onChange={(v) => update("responsavel_tecnico", v)} placeholder="Nome + CREA" />
+              <FieldText
+                label="Técnico responsável"
+                value={form.responsavel_tecnico}
+                onChange={(v) => update("responsavel_tecnico", v)}
+                placeholder="Nome + CREA"
+              />
             </div>
           </Section>
 
@@ -257,12 +326,40 @@ function PreventivaAcPage() {
                 onChange={(v) => update("tipo_equipamento", v)}
                 options={TIPOS_EQUIPAMENTO as unknown as string[]}
               />
-              <FieldText label="Marca" value={form.marca} onChange={(v) => update("marca", v)} placeholder="Ex.: LG, Daikin, Carrier" />
-              <FieldText label="Nº Série" value={form.numero_serie} onChange={(v) => update("numero_serie", v)} />
-              <FieldText label="Capacidade (BTU/h)" value={form.capacidade_btu} onChange={(v) => update("capacidade_btu", v)} placeholder="Ex.: 12000" />
-              <FieldText label="Ano fabricação" value={form.ano_fabricacao} onChange={(v) => update("ano_fabricacao", v)} placeholder="Ex.: 2022" />
-              <FieldText label="Data instalação" type="date" value={form.data_instalacao} onChange={(v) => update("data_instalacao", v)} />
-              <FieldText label="Fabricante" value={form.fabricante} onChange={(v) => update("fabricante", v)} />
+              <FieldText
+                label="Marca"
+                value={form.marca}
+                onChange={(v) => update("marca", v)}
+                placeholder="Ex.: LG, Daikin, Carrier"
+              />
+              <FieldText
+                label="Nº Série"
+                value={form.numero_serie}
+                onChange={(v) => update("numero_serie", v)}
+              />
+              <FieldText
+                label="Capacidade (BTU/h)"
+                value={form.capacidade_btu}
+                onChange={(v) => update("capacidade_btu", v)}
+                placeholder="Ex.: 12000"
+              />
+              <FieldText
+                label="Ano fabricação"
+                value={form.ano_fabricacao}
+                onChange={(v) => update("ano_fabricacao", v)}
+                placeholder="Ex.: 2022"
+              />
+              <FieldText
+                label="Data instalação"
+                type="date"
+                value={form.data_instalacao}
+                onChange={(v) => update("data_instalacao", v)}
+              />
+              <FieldText
+                label="Fabricante"
+                value={form.fabricante}
+                onChange={(v) => update("fabricante", v)}
+              />
             </div>
           </Section>
 
@@ -271,15 +368,32 @@ function PreventivaAcPage() {
               <FieldText label="Prédio" value={form.predio} onChange={(v) => update("predio", v)} />
               <FieldText label="Andar" value={form.andar} onChange={(v) => update("andar", v)} />
               <FieldText label="Local" value={form.local} onChange={(v) => update("local", v)} />
-              <FieldText label="Ambiente" value={form.ambiente} onChange={(v) => update("ambiente", v)} />
-              <FieldText label="Área climatizada (m²)" value={form.area_climatizada} onChange={(v) => update("area_climatizada", v)} />
-              <FieldText label="Ocupação máxima" value={form.ocupacao_max} onChange={(v) => update("ocupacao_max", v)} />
+              <FieldText
+                label="Ambiente"
+                value={form.ambiente}
+                onChange={(v) => update("ambiente", v)}
+              />
+              <FieldText
+                label="Área climatizada (m²)"
+                value={form.area_climatizada}
+                onChange={(v) => update("area_climatizada", v)}
+              />
+              <FieldText
+                label="Ocupação máxima"
+                value={form.ocupacao_max}
+                onChange={(v) => update("ocupacao_max", v)}
+              />
             </div>
           </Section>
 
           <Section title="Execução">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <FieldText label="Colaborador / equipe" value={form.colaborador} onChange={(v) => update("colaborador", v)} placeholder="Ex.: Refrigeração 2" />
+              <FieldText
+                label="Colaborador / equipe"
+                value={form.colaborador}
+                onChange={(v) => update("colaborador", v)}
+                placeholder="Ex.: Refrigeração 2"
+              />
             </div>
           </Section>
 
@@ -287,10 +401,15 @@ function PreventivaAcPage() {
             <div className="space-y-4">
               {grupos.map(([grupo, itens]) => (
                 <div key={grupo}>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">{grupo}</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {grupo}
+                  </p>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {itens.map((it) => (
-                      <div key={it.key} className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2">
+                      <div
+                        key={it.key}
+                        className="flex items-center justify-between rounded-md border border-border/60 bg-background/40 px-3 py-2"
+                      >
                         <span className="text-sm">{it.label}</span>
                         <Select
                           value={checklist[it.key] ?? ""}
@@ -317,7 +436,9 @@ function PreventivaAcPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {MEDICOES.map((m) => (
                 <div key={m.key}>
-                  <Label>{m.label} ({m.unidade})</Label>
+                  <Label>
+                    {m.label} ({m.unidade})
+                  </Label>
                   <Input
                     className="h-11"
                     value={medicoes[m.key] ?? ""}
@@ -329,18 +450,30 @@ function PreventivaAcPage() {
           </Section>
 
           <Section title="Observações">
-            <Textarea rows={4} value={form.observacoes} onChange={(e) => update("observacoes", e.target.value)} />
+            <Textarea
+              rows={4}
+              value={form.observacoes}
+              onChange={(e) => update("observacoes", e.target.value)}
+            />
           </Section>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <Button size="lg" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button
+              size="lg"
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
+            >
               <Save className="mr-2 h-4 w-4" />
               {saveMutation.isPending ? "Salvando..." : "Salvar e gerar planilha"}
             </Button>
             <Button
               size="lg"
               variant="outline"
-              onClick={() => { setForm(EMPTY_FORM); setChecklist({}); setMedicoes({}); }}
+              onClick={() => {
+                setForm(EMPTY_FORM);
+                setChecklist({});
+                setMedicoes({});
+              }}
             >
               Limpar
             </Button>
@@ -351,7 +484,9 @@ function PreventivaAcPage() {
         <GlassCard className="p-4">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             <Wind className="h-4 w-4" /> Equipamentos cadastrados
-            <Badge variant="secondary" className="ml-auto">{registros.length}</Badge>
+            <Badge variant="secondary" className="ml-auto">
+              {registros.length}
+            </Badge>
           </h3>
           <div className="relative mb-3">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -373,10 +508,12 @@ function PreventivaAcPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold">{r.tag}</p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {[r.marca, r.modelo].filter(Boolean).join(" ") || "—"} · {r.tipo_equipamento || "—"}
+                      {[r.marca, r.modelo].filter(Boolean).join(" ") || "—"} ·{" "}
+                      {r.tipo_equipamento || "—"}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {[r.predio, r.andar, r.local, r.ambiente].filter(Boolean).join(" / ") || "Sem localização"}
+                      {[r.predio, r.andar, r.local, r.ambiente].filter(Boolean).join(" / ") ||
+                        "Sem localização"}
                     </p>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                       {r.tipo_servico ?? "—"} · {r.data_manutencao ?? "s/ data"}
@@ -429,17 +566,26 @@ function PreventivaAcPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-4">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary/80">{title}</p>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary/80">
+        {title}
+      </p>
       {children}
     </div>
   );
 }
 
 function FieldText({
-  label, value, onChange, placeholder, type = "text",
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
 }: {
-  label: string; value: string; onChange: (v: string) => void;
-  placeholder?: string; type?: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
 }) {
   return (
     <div>
@@ -456,9 +602,15 @@ function FieldText({
 }
 
 function FieldSelect({
-  label, value, onChange, options,
+  label,
+  value,
+  onChange,
+  options,
 }: {
-  label: string; value: string; onChange: (v: string) => void; options: string[];
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
 }) {
   return (
     <div>
@@ -469,7 +621,9 @@ function FieldSelect({
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
-            <SelectItem key={o} value={o}>{o}</SelectItem>
+            <SelectItem key={o} value={o}>
+              {o}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>

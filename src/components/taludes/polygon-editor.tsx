@@ -1,10 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Crosshair,
   Grid3X3,
@@ -37,7 +31,6 @@ import {
   validatePolygon,
 } from "@/lib/taludes/geometry";
 import { pushEntry } from "@/lib/taludes/history";
-
 
 export interface EditorPolygon {
   id: string;
@@ -127,10 +120,7 @@ export function PolygonEditor({
   const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
   const movedRef = useRef(false);
 
-  const geometryOf = useCallback(
-    (p: EditorPolygon) => working[p.id] ?? p.points,
-    [working],
-  );
+  const geometryOf = useCallback((p: EditorPolygon) => working[p.id] ?? p.points, [working]);
 
   /**
    * Descarta geometria local assim que os dados salvos chegam. Sem isso o
@@ -154,7 +144,6 @@ export function PolygonEditor({
       return changed ? next : w;
     });
   }, [polygons]);
-
 
   /* ------------------------------ coordenadas ------------------------------ */
 
@@ -198,14 +187,12 @@ export function PolygonEditor({
     [grid, snap, polygons, geometryOf, pxPerPercent],
   );
 
-
   /* -------------------------------- histórico ------------------------------- */
 
   const pushHistory = useCallback((id: string, before: Point[]) => {
     setUndoStack((s) => pushEntry(s, { id, points: before }));
     setRedoStack([]);
   }, []);
-
 
   const undo = useCallback(() => {
     setUndoStack((stack) => {
@@ -273,25 +260,22 @@ export function PolygonEditor({
 
   /* ---------------------------------- zoom ---------------------------------- */
 
-  const zoomAt = useCallback(
-    (factor: number, clientX?: number, clientY?: number) => {
-      const vp = viewportRef.current;
-      if (!vp) return;
-      const rect = vp.getBoundingClientRect();
-      const cx = (clientX ?? rect.left + rect.width / 2) - rect.left;
-      const cy = (clientY ?? rect.top + rect.height / 2) - rect.top;
-      setZoom((z) => {
-        const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor));
-        const ratio = nz / z;
-        setOffset((o) => ({
-          x: cx - (cx - o.x) * ratio,
-          y: cy - (cy - o.y) * ratio,
-        }));
-        return nz;
-      });
-    },
-    [],
-  );
+  const zoomAt = useCallback((factor: number, clientX?: number, clientY?: number) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const rect = vp.getBoundingClientRect();
+    const cx = (clientX ?? rect.left + rect.width / 2) - rect.left;
+    const cy = (clientY ?? rect.top + rect.height / 2) - rect.top;
+    setZoom((z) => {
+      const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor));
+      const ratio = nz / z;
+      setOffset((o) => ({
+        x: cx - (cx - o.x) * ratio,
+        y: cy - (cy - o.y) * ratio,
+      }));
+      return nz;
+    });
+  }, []);
 
   const fitToScreen = useCallback(() => {
     setZoom(1);
@@ -318,7 +302,6 @@ export function PolygonEditor({
     downRef.current = { x: e.clientX, y: e.clientY };
     movedRef.current = false;
 
-
     if (pointersRef.current.size === 2) {
       const [a, b] = [...pointersRef.current.values()];
       pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
@@ -342,7 +325,10 @@ export function PolygonEditor({
     if (pointersRef.current.size === 2 && pinchRef.current) {
       const [a, b] = [...pointersRef.current.values()];
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, (pinchRef.current.zoom * dist) / pinchRef.current.dist));
+      const nz = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, (pinchRef.current.zoom * dist) / pinchRef.current.dist),
+      );
       setZoom(nz);
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       if (panRef.current) {
@@ -377,7 +363,6 @@ export function PolygonEditor({
       next[drag.index] = applySnap(raw, drag.id);
       setWorking((w) => ({ ...w, [drag.id]: next }));
       onDraftChange?.(drag.id, next);
-
     } else if (drag.kind === "move") {
       const dx = p.x - drag.start.x;
       const dy = p.y - drag.start.y;
@@ -411,8 +396,6 @@ export function PolygonEditor({
     // Tolerância de toque: pequenos tremores não invalidam o clique.
     const slipped = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 : false;
     if (wasPanning || hadDrag || (movedRef.current && slipped)) return;
-
-
 
     // clique simples no palco
     const p = toPercent(e.clientX, e.clientY);
@@ -519,33 +502,69 @@ export function PolygonEditor({
   /* --------------------------------- render --------------------------------- */
 
   const selected = polygons.find((p) => p.id === selectedId) ?? null;
-  const draftInvalid = useMemo(
-    () => draft.length >= 3 && !validatePolygon(draft).ok,
-    [draft],
-  );
+  const draftInvalid = useMemo(() => draft.length >= 3 && !validatePolygon(draft).ok, [draft]);
 
-  const cursor =
-    isPanning() ? "grab" : tool === "draw" || tool === "calibrate" ? "crosshair" : "default";
+  const cursor = isPanning()
+    ? "grab"
+    : tool === "draw" || tool === "calibrate"
+      ? "crosshair"
+      : "default";
 
   return (
     <div className={cn("space-y-2", className)}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1.5">
-        <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Selecionar" />
-        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Desenhar" />
-        <ToolButton active={tool === "edit"} onClick={() => setTool("edit")} icon={Spline} label="Editar" />
-        <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Mover mapa" />
+        <ToolButton
+          active={tool === "select"}
+          onClick={() => setTool("select")}
+          icon={MousePointer2}
+          label="Selecionar"
+        />
+        <ToolButton
+          active={tool === "draw"}
+          onClick={() => {
+            setTool("draw");
+            setDraft([]);
+          }}
+          icon={Pentagon}
+          label="Desenhar"
+        />
+        <ToolButton
+          active={tool === "edit"}
+          onClick={() => setTool("edit")}
+          icon={Spline}
+          label="Editar"
+        />
+        <ToolButton
+          active={tool === "pan"}
+          onClick={() => setTool("pan")}
+          icon={Hand}
+          label="Mover mapa"
+        />
         <ToolButton
           active={tool === "calibrate"}
-          onClick={() => { setTool("calibrate"); setCalDraft([]); }}
+          onClick={() => {
+            setTool("calibrate");
+            setCalDraft([]);
+          }}
           icon={Ruler}
           label="Calibrar escala"
         />
         <span className="mx-1 h-6 w-px bg-border" />
         <ToolButton active={grid} onClick={() => setGrid((g) => !g)} icon={Grid3X3} label="Grade" />
-        <ToolButton active={snap} onClick={() => setSnap((s) => !s)} icon={Magnet} label="Snap em vértices" />
+        <ToolButton
+          active={snap}
+          onClick={() => setSnap((s) => !s)}
+          icon={Magnet}
+          label="Snap em vértices"
+        />
         <span className="mx-1 h-6 w-px bg-border" />
-        <ToolButton onClick={undo} disabled={undoStack.length === 0} icon={Undo2} label="Desfazer" />
+        <ToolButton
+          onClick={undo}
+          disabled={undoStack.length === 0}
+          icon={Undo2}
+          label="Desfazer"
+        />
         <ToolButton onClick={redo} disabled={redoStack.length === 0} icon={Redo2} label="Refazer" />
         <span className="mx-1 h-6 w-px bg-border" />
         <ToolButton onClick={() => zoomAt(1.2)} icon={ZoomIn} label="Aproximar" />
@@ -560,18 +579,38 @@ export function PolygonEditor({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
           <Crosshair className="h-3.5 w-3.5 text-primary" />
           <span>
-            Clique para adicionar pontos. Clique no <b>primeiro ponto</b> para fechar. {draft.length} ponto
+            Clique para adicionar pontos. Clique no <b>primeiro ponto</b> para fechar.{" "}
+            {draft.length} ponto
             {draft.length === 1 ? "" : "s"}.
           </span>
           {draftInvalid && <span className="text-destructive font-medium">Contorno cruzado!</span>}
           <div className="ml-auto flex gap-1.5">
-            <Button size="sm" variant="secondary" onClick={() => setDraft((d) => d.slice(0, -1))} disabled={!draft.length} className="h-8 gap-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setDraft((d) => d.slice(0, -1))}
+              disabled={!draft.length}
+              className="h-8 gap-1"
+            >
               <Undo2 className="h-3.5 w-3.5" /> Ponto
             </Button>
-            <Button size="sm" onClick={() => commitDraft(draft)} disabled={draft.length < 3} className="h-8 gap-1">
+            <Button
+              size="sm"
+              onClick={() => commitDraft(draft)}
+              disabled={draft.length < 3}
+              className="h-8 gap-1"
+            >
               <Save className="h-3.5 w-3.5" /> Concluir
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setDraft([]); setTool("select"); }} className="h-8 gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setDraft([]);
+                setTool("select");
+              }}
+              className="h-8 gap-1"
+            >
               <X className="h-3.5 w-3.5" /> Cancelar
             </Button>
           </div>
@@ -638,7 +677,9 @@ export function PolygonEditor({
                       stroke={poly.color}
                       strokeWidth={(isSel ? 0.45 : 0.3) / zoom}
                       strokeLinejoin="round"
-                      style={{ cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer" }}
+                      style={{
+                        cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
+                      }}
                       onPointerDown={(e) => startPolyDrag(e, poly)}
                       onDoubleClick={(e) => {
                         if (tool !== "edit" || poly.locked) return;
@@ -660,7 +701,9 @@ export function PolygonEditor({
                     >
                       {poly.label}
                     </text>
-                    {isSel && tool === "edit" && !poly.locked &&
+                    {isSel &&
+                      tool === "edit" &&
+                      !poly.locked &&
                       pts.map((p, i) => (
                         <circle
                           key={i}
@@ -686,7 +729,9 @@ export function PolygonEditor({
             {draft.length > 0 && (
               <g>
                 <polyline
-                  points={[...draft, ...(hoverPoint ? [hoverPoint] : [])].map((p) => `${p.x},${p.y}`).join(" ")}
+                  points={[...draft, ...(hoverPoint ? [hoverPoint] : [])]
+                    .map((p) => `${p.x},${p.y}`)
+                    .join(" ")}
                   fill={draft.length > 2 ? "#0ea5e9" : "none"}
                   fillOpacity={0.2}
                   stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}

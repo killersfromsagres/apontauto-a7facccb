@@ -118,7 +118,11 @@ export const GlobalSearch = memo(function GlobalSearch() {
           {entityGroups.map(([group, items]) => (
             <CommandGroup key={group} heading={group}>
               {items.map((item) => (
-                <CommandItem key={item.id} value={`${item.title} ${item.subtitle ?? ""}`} onSelect={() => go(item.url)}>
+                <CommandItem
+                  key={item.id}
+                  value={`${item.title} ${item.subtitle ?? ""}`}
+                  onSelect={() => go(item.url)}
+                >
                   <div className="min-w-0">
                     <p className="truncate text-sm">{item.title}</p>
                     {item.subtitle && (
@@ -134,7 +138,10 @@ export const GlobalSearch = memo(function GlobalSearch() {
             const items = section.kind === "item" ? [section.item] : section.items;
             const heading = section.kind === "item" ? "Atalhos" : section.title;
             return (
-              <CommandGroup key={section.kind === "item" ? section.item.key : section.key} heading={heading}>
+              <CommandGroup
+                key={section.kind === "item" ? section.item.key : section.key}
+                heading={heading}
+              >
                 {items.map((item) => (
                   <CommandItem
                     key={item.key}
@@ -153,4 +160,3 @@ export const GlobalSearch = memo(function GlobalSearch() {
     </>
   );
 });
-

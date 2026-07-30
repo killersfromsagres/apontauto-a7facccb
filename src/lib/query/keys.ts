@@ -5,7 +5,8 @@
 export const qk = {
   observability: () => ["observability"] as const,
   offlineQueue: () => ["observability", "offline-queue"] as const,
-  canAccess: (moduleKey: string, action: string) => ["can-access-module", moduleKey, action] as const,
+  canAccess: (moduleKey: string, action: string) =>
+    ["can-access-module", moduleKey, action] as const,
   quality: () => ["quality-checks"] as const,
   materials: () => ["material-reservations"] as const,
   assetSheet: (code: string) => ["asset-sheet", code] as const,

@@ -81,7 +81,11 @@ function uuid() {
  * Cores por equipe para destaque visual na lista de atuações.
  * Refrigeração 1: azul claro · Refrigeração 2: verde água · Refrigeração 3: rosa claro
  */
-function equipeStyles(equipe: string | null | undefined): { row: string; dot: string; badge: string } {
+function equipeStyles(equipe: string | null | undefined): {
+  row: string;
+  dot: string;
+  badge: string;
+} {
   const n = (equipe ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -91,19 +95,22 @@ function equipeStyles(equipe: string | null | undefined): { row: string; dot: st
     return {
       row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
       dot: "bg-sky-400",
-      badge: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+      badge:
+        "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
     };
   if (n === "refrigeracao 2")
     return {
       row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
       dot: "bg-teal-400",
-      badge: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
+      badge:
+        "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
     };
   if (n === "refrigeracao 3")
     return {
       row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
       dot: "bg-pink-300",
-      badge: "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+      badge:
+        "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
     };
   return {
     row: "border-l-4 border-transparent hover:bg-accent/60",
@@ -113,9 +120,7 @@ function equipeStyles(equipe: string | null | undefined): { row: string; dot: st
 }
 
 function useOnlineStatus() {
-  const [online, setOnline] = useState(
-    typeof navigator === "undefined" ? true : navigator.onLine,
-  );
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
   useEffect(() => {
     const on = () => setOnline(true);
     const off = () => setOnline(false);
@@ -207,7 +212,9 @@ function RefrigeracaoPage() {
       try {
         const cached = await getCachedOsList();
         if (cached.length) setOsList(cached);
-      } catch {}
+      } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
       if (navigator.onLine) {
         try {
           await refreshOsFromServer();
@@ -222,9 +229,13 @@ function RefrigeracaoPage() {
     })();
     const on = () => doSync(true);
     window.addEventListener("online", on);
-    const focus = () => { if (navigator.onLine) doSync(true); };
+    const focus = () => {
+      if (navigator.onLine) doSync(true);
+    };
     window.addEventListener("focus", focus);
-    const iv = window.setInterval(() => { if (navigator.onLine) doSync(true); }, 30_000);
+    const iv = window.setInterval(() => {
+      if (navigator.onLine) doSync(true);
+    }, 30_000);
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("focus", focus);
@@ -254,8 +265,8 @@ function RefrigeracaoPage() {
       );
     });
     return [...base].sort((a, b) => {
-      const pa = (a.predio ?? "\uffff");
-      const pb = (b.predio ?? "\uffff");
+      const pa = a.predio ?? "\uffff";
+      const pb = b.predio ?? "\uffff";
       const pc = pa.localeCompare(pb, "pt-BR", { sensitivity: "base", numeric: true });
       if (pc !== 0) return pc;
       const aa = (a.andar ?? "").toString();
@@ -299,10 +310,7 @@ function RefrigeracaoPage() {
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Minha equipe
               </span>
-              <Select
-                value={equipe}
-                onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
-              >
+              <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
                 <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -329,11 +337,13 @@ function RefrigeracaoPage() {
 
           {/* Pílulas de tipo (iOS 17-like) */}
           <div className="mb-3 flex flex-wrap gap-2">
-            {([
-              { v: "todas", label: "Todas" },
-              { v: "preventiva", label: "Preventivas" },
-              { v: "corretiva", label: "Corretivas" },
-            ] as const).map((opt) => {
+            {(
+              [
+                { v: "todas", label: "Todas" },
+                { v: "preventiva", label: "Preventivas" },
+                { v: "corretiva", label: "Corretivas" },
+              ] as const
+            ).map((opt) => {
               const active = tipoFiltro === opt.v;
               return (
                 <button
@@ -354,7 +364,9 @@ function RefrigeracaoPage() {
 
           {equipe !== "todas" && (
             <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
+              <Badge variant="secondary" className="text-[10px]">
+                {equipe}
+              </Badge>
               <span>Mostrando apenas OS desta equipe.</span>
               <button
                 type="button"
@@ -385,66 +397,78 @@ function RefrigeracaoPage() {
                   ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
                   : st.row;
                 return (
-                <li key={o.id}>
-                  <div className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(o.id)}
-                      className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                  <li key={o.id}>
+                    <div
+                      className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
                     >
-                    {isDone ? (
-                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    ) : (
-                      <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}>OS {o.numero_os}</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(o.id)}
+                        className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                      >
                         {isDone ? (
-                          <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-                            <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
-                          </Badge>
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                         ) : (
-                          <Badge variant="outline" className="text-[10px]">
-                            {o.status}
-                          </Badge>
+                          <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                         )}
-                        {o.equipe && (
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${st.badge}`}
-                          >
-                            <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
-                            {o.equipe}
-                          </Badge>
-                        )}
-                        {o.tipo && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {o.tipo}
-                          </Badge>
-                        )}
-                        {!o.patrimonio && !isDone && (
-                          <Badge variant="outline" className="border-amber-500/40 text-[10px] text-amber-600">
-                            sem patrimônio
-                          </Badge>
-                        )}
-                      </div>
-                      {o.nome_os && (
-                        <div className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}>{o.nome_os}</div>
-                      )}
-                      <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                        {o.equipamento} · Ativo {o.ativo}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground/80">
-                        {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
+                            >
+                              OS {o.numero_os}
+                            </span>
+                            {isDone ? (
+                              <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+                                <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px]">
+                                {o.status}
+                              </Badge>
+                            )}
+                            {o.equipe && (
+                              <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                                <span
+                                  className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                                />
+                                {o.equipe}
+                              </Badge>
+                            )}
+                            {o.tipo && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                {o.tipo}
+                              </Badge>
+                            )}
+                            {!o.patrimonio && !isDone && (
+                              <Badge
+                                variant="outline"
+                                className="border-amber-500/40 text-[10px] text-amber-600"
+                              >
+                                sem patrimônio
+                              </Badge>
+                            )}
+                          </div>
+                          {o.nome_os && (
+                            <div
+                              className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
+                            >
+                              {o.nome_os}
+                            </div>
+                          )}
+                          <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                            {o.equipamento} · Ativo {o.ativo}
+                          </div>
+                          <div className="truncate text-xs text-muted-foreground/80">
+                            {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                          </div>
+                        </div>
+                      </button>
+                      <div className="shrink-0 self-center">
+                        <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
                       </div>
                     </div>
-                    </button>
-                    <div className="shrink-0 self-center">
-                      <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
-                    </div>
-                  </div>
-                </li>
+                  </li>
                 );
               })}
             </ul>
@@ -575,7 +599,9 @@ function OsDetail({
           .limit(20),
         supabase
           .from("refrigeracao_pecas")
-          .select("id, descricao, quantidade, urgencia, status_gestor, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .select(
+            "id, descricao, quantidade, urgencia, status_gestor, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)",
+          )
           .eq("refrigeracao_os.ativo", os.ativo)
           .eq("refrigeracao_os.equipamento", os.equipamento)
           .neq("os_id", os.id)
@@ -583,16 +609,19 @@ function OsDetail({
           .limit(10),
         supabase
           .from("refrigeracao_problemas")
-          .select("id, descricao, gravidade, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)")
+          .select(
+            "id, descricao, gravidade, created_at, os_id, refrigeracao_os!inner(ativo, equipamento)",
+          )
           .eq("refrigeracao_os.ativo", os.ativo)
           .eq("refrigeracao_os.equipamento", os.equipamento)
           .neq("os_id", os.id)
           .order("created_at", { ascending: false })
           .limit(10),
       ]);
-      const suggested = (osRes.data ?? [])
-        .map((r: any) => (r.patrimonio ?? "").trim())
-        .find((v: string) => v.length > 0) ?? "";
+      const suggested =
+        (osRes.data ?? [])
+          .map((r: any) => (r.patrimonio ?? "").trim())
+          .find((v: string) => v.length > 0) ?? "";
       return {
         suggested,
         priorOs: (osRes.data ?? []) as any[],
@@ -610,9 +639,6 @@ function OsDetail({
     if (patrim.trim()) return;
     setPatrim(s);
   }, [priorInfo?.suggested, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-
-
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
@@ -652,7 +678,9 @@ function OsDetail({
         if (d.fotos.length + (d.pecas?.length ?? 0) + (d.problemas?.length ?? 0) > 0) {
           setDraftSavedAt(d.updatedAt);
         }
-      } catch {}
+      } catch {
+        /* falha silenciosa: cache local é um extra */
+      }
       setDraftLoaded(true);
     })();
     return () => {
@@ -663,8 +691,7 @@ function OsDetail({
   // Auto-save do rascunho (debounced)
   useEffect(() => {
     if (!draftLoaded) return;
-    const hasAny =
-      previews.length > 0 || pecas.length > 0 || problemas.length > 0;
+    const hasAny = previews.length > 0 || pecas.length > 0 || problemas.length > 0;
     const t = setTimeout(() => {
       if (!hasAny) {
         draftDelete(os.id).catch(() => {});
@@ -684,7 +711,6 @@ function OsDetail({
     }, 400);
     return () => clearTimeout(t);
   }, [previews, pecas, problemas, draftLoaded, os.id]);
-
 
   const savePatrimonio = async () => {
     const v = patrim.trim();
@@ -825,7 +851,9 @@ function OsDetail({
           onQueued();
           if (r.sent > 0) toast.success(`${r.sent} enviado(s) ao servidor.`);
           if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
-        } catch {}
+        } catch {
+          /* falha silenciosa: cache local é um extra */
+        }
       }
     } finally {
       setSaving(false);
@@ -837,7 +865,6 @@ function OsDetail({
     previews.forEach((p) => URL.revokeObjectURL(p.url));
     onBack();
   };
-
 
   return (
     <div className="space-y-4">
@@ -859,7 +886,6 @@ function OsDetail({
         )}
       </div>
 
-
       <GlassCard className="p-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -871,7 +897,9 @@ function OsDetail({
               <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
             )}
           </div>
-          <Badge variant="outline" className="text-[10px]">{os.status}</Badge>
+          <Badge variant="outline" className="text-[10px]">
+            {os.status}
+          </Badge>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
           <ReadOnly label="Ativo" value={os.ativo} />
@@ -886,60 +914,70 @@ function OsDetail({
         </div>
       </GlassCard>
 
-      {priorInfo && (priorInfo.pecas.length > 0 || priorInfo.problemas.length > 0 || priorInfo.suggested) && (
-        <GlassCard className="border-amber-500/30 bg-amber-50/60 p-4 dark:bg-amber-500/5">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                Histórico deste equipamento
-              </h3>
-              <p className="text-xs text-amber-700/90 dark:text-amber-200/80">
-                Encontramos registros anteriores para <span className="font-mono">{os.ativo}</span> · {os.equipamento}.
-              </p>
-              {priorInfo.suggested && !(os.patrimonio ?? "").trim() && (
-                <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-800 dark:text-emerald-300">
-                  Patrimônio sugerido de OS anteriores: <span className="font-mono font-semibold">{priorInfo.suggested}</span> — já preenchido abaixo, revise e salve.
-                </div>
-              )}
-              {priorInfo.pecas.length > 0 && (
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
-                    Peças já solicitadas ({priorInfo.pecas.length})
+      {priorInfo &&
+        (priorInfo.pecas.length > 0 || priorInfo.problemas.length > 0 || priorInfo.suggested) && (
+          <GlassCard className="border-amber-500/30 bg-amber-50/60 p-4 dark:bg-amber-500/5">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  Histórico deste equipamento
+                </h3>
+                <p className="text-xs text-amber-700/90 dark:text-amber-200/80">
+                  Encontramos registros anteriores para{" "}
+                  <span className="font-mono">{os.ativo}</span> · {os.equipamento}.
+                </p>
+                {priorInfo.suggested && !(os.patrimonio ?? "").trim() && (
+                  <div className="rounded-md border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1.5 text-xs text-emerald-800 dark:text-emerald-300">
+                    Patrimônio sugerido de OS anteriores:{" "}
+                    <span className="font-mono font-semibold">{priorInfo.suggested}</span> — já
+                    preenchido abaixo, revise e salve.
                   </div>
-                  <ul className="mt-1 space-y-1">
-                    {priorInfo.pecas.slice(0, 5).map((p: any) => (
-                      <li key={p.id} className="flex flex-wrap items-center gap-1.5 text-xs">
-                        <Badge variant="outline" className="text-[10px]">Qtd {p.quantidade}</Badge>
-                        <span className="font-medium">{p.descricao}</span>
-                        <Badge variant="secondary" className="text-[10px]">{p.urgencia}</Badge>
-                        <Badge variant="outline" className="text-[10px]">{p.status_gestor}</Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {priorInfo.problemas.length > 0 && (
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
-                    Problemas já sinalizados ({priorInfo.problemas.length})
+                )}
+                {priorInfo.pecas.length > 0 && (
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                      Peças já solicitadas ({priorInfo.pecas.length})
+                    </div>
+                    <ul className="mt-1 space-y-1">
+                      {priorInfo.pecas.slice(0, 5).map((p: any) => (
+                        <li key={p.id} className="flex flex-wrap items-center gap-1.5 text-xs">
+                          <Badge variant="outline" className="text-[10px]">
+                            Qtd {p.quantidade}
+                          </Badge>
+                          <span className="font-medium">{p.descricao}</span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {p.urgencia}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {p.status_gestor}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="mt-1 space-y-1">
-                    {priorInfo.problemas.slice(0, 5).map((pr: any) => (
-                      <li key={pr.id} className="flex flex-wrap items-start gap-1.5 text-xs">
-                        <Badge variant="outline" className="text-[10px]">{pr.gravidade}</Badge>
-                        <span className="line-clamp-2">{pr.descricao}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                )}
+                {priorInfo.problemas.length > 0 && (
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-amber-800/80 dark:text-amber-200/80">
+                      Problemas já sinalizados ({priorInfo.problemas.length})
+                    </div>
+                    <ul className="mt-1 space-y-1">
+                      {priorInfo.problemas.slice(0, 5).map((pr: any) => (
+                        <li key={pr.id} className="flex flex-wrap items-start gap-1.5 text-xs">
+                          <Badge variant="outline" className="text-[10px]">
+                            {pr.gravidade}
+                          </Badge>
+                          <span className="line-clamp-2">{pr.descricao}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </GlassCard>
-      )}
-
-
+          </GlassCard>
+        )}
 
       <GlassCard className="p-4">
         <SectionTitle icon={Package} label="Patrimônio (opcional)" />
@@ -1023,7 +1061,6 @@ function OsDetail({
 
       <HostedPhotoLinksCard osId={os.id} tipo={os.tipo} pendingCount={previews.length} />
 
-
       <GlassCard className="p-4">
         <div className="flex items-center justify-between gap-2">
           <SectionTitle icon={Package} label={`Solicitar peças (${pecas.length})`} />
@@ -1037,7 +1074,8 @@ function OsDetail({
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima se quiser registrar imagens.
+          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima
+          se quiser registrar imagens.
         </p>
         {pecas.length === 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -1081,9 +1119,7 @@ function OsDetail({
                       value={p.quantidade}
                       onChange={(e) =>
                         setPecas((l) =>
-                          l.map((x) =>
-                            x.id === p.id ? { ...x, quantidade: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === p.id ? { ...x, quantidade: e.target.value } : x)),
                         )
                       }
                       className="h-11"
@@ -1094,9 +1130,7 @@ function OsDetail({
                     <Select
                       value={p.urgencia}
                       onValueChange={(v) =>
-                        setPecas((l) =>
-                          l.map((x) => (x.id === p.id ? { ...x, urgencia: v } : x)),
-                        )
+                        setPecas((l) => l.map((x) => (x.id === p.id ? { ...x, urgencia: v } : x)))
                       }
                     >
                       <SelectTrigger className="h-11">
@@ -1115,9 +1149,7 @@ function OsDetail({
                       value={p.patrimonio}
                       onChange={(e) =>
                         setPecas((l) =>
-                          l.map((x) =>
-                            x.id === p.id ? { ...x, patrimonio: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === p.id ? { ...x, patrimonio: e.target.value } : x)),
                         )
                       }
                       placeholder={patrim || os.patrimonio || "—"}
@@ -1159,16 +1191,13 @@ function OsDetail({
                       value={p.observacao}
                       onChange={(e) =>
                         setPecas((l) =>
-                          l.map((x) =>
-                            x.id === p.id ? { ...x, observacao: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === p.id ? { ...x, observacao: e.target.value } : x)),
                         )
                       }
                       rows={2}
                       placeholder="Detalhes adicionais (opcional)"
                     />
                   </div>
-
                 </div>
               </div>
             ))}
@@ -1189,7 +1218,8 @@ function OsDetail({
           </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
-          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima se quiser registrar imagens.
+          Anexo de foto é <span className="font-medium">opcional</span> — use a seção "Fotos" acima
+          se quiser registrar imagens.
         </p>
         {problemas.length === 0 ? (
           <p className="mt-3 text-xs text-muted-foreground">
@@ -1219,9 +1249,7 @@ function OsDetail({
                       value={pr.descricao}
                       onChange={(e) =>
                         setProblemas((l) =>
-                          l.map((x) =>
-                            x.id === pr.id ? { ...x, descricao: e.target.value } : x,
-                          ),
+                          l.map((x) => (x.id === pr.id ? { ...x, descricao: e.target.value } : x)),
                         )
                       }
                       rows={3}
@@ -1253,7 +1281,6 @@ function OsDetail({
           </div>
         )}
       </GlassCard>
-
 
       <div className="sticky bottom-2 z-10">
         <Button
@@ -1299,13 +1326,16 @@ function HostedPhotoLinksCard({
         .not("image_url", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string; image_url: string; created_at: string; legenda: string | null }>;
+      return (data ?? []) as Array<{
+        id: string;
+        image_url: string;
+        created_at: string;
+        legenda: string | null;
+      }>;
     },
   });
 
   void tipo;
-
-
 
   const copy = async (url: string) => {
     try {
@@ -1323,8 +1353,8 @@ function HostedPhotoLinksCard({
         {isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Fotos anexadas são hospedadas automaticamente e o link fica salvo aqui.
-        Clique em <span className="font-medium">Abrir</span> para visualizar ou salvar no dispositivo.
+        Fotos anexadas são hospedadas automaticamente e o link fica salvo aqui. Clique em{" "}
+        <span className="font-medium">Abrir</span> para visualizar ou salvar no dispositivo.
       </p>
 
       {pendingCount > 0 && (
@@ -1341,7 +1371,12 @@ function HostedPhotoLinksCard({
       ) : error ? (
         <div className="mt-3 flex items-center justify-between gap-2 rounded-2xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs">
           <span>Falha ao carregar links.</span>
-          <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={() => refetch()}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 rounded-full"
+            onClick={() => refetch()}
+          >
             Tentar novamente
           </Button>
         </div>
@@ -1405,7 +1440,6 @@ function HostedPhotoLinksCard({
     </GlassCard>
   );
 }
-
 
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (

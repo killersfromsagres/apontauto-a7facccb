@@ -132,7 +132,12 @@ export async function retryDeadLetters<TPayload>(store: OutboxStore<TPayload>): 
   const items = await store.all();
   const dead = items.filter((i) => i.dead);
   for (const item of dead) {
-    await store.update(item.id, { dead: false, attempts: 0, nextAttemptAt: undefined, lastError: undefined });
+    await store.update(item.id, {
+      dead: false,
+      attempts: 0,
+      nextAttemptAt: undefined,
+      lastError: undefined,
+    });
   }
   return dead.length;
 }

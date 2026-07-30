@@ -208,7 +208,12 @@ function LavanderiaPage() {
         setReport({
           origem: "Matriz",
           resumo: ["A planilha não continha linhas com colaborador e código de barras válidos."],
-          issues: [{ level: "error", message: "Verifique se a aba correta contém as colunas COLABORADOR e CODIGO BARRAS." }],
+          issues: [
+            {
+              level: "error",
+              message: "Verifique se a aba correta contém as colunas COLABORADOR e CODIGO BARRAS.",
+            },
+          ],
         });
         return;
       }
@@ -218,16 +223,27 @@ function LavanderiaPage() {
       const nomeParaMats = new Map<string, Set<string>>();
       const pecaRows: Array<{ codigo: string; matricula: string; setor: string | null }> = [];
       const duplicados: string[] = [];
-      const contagemCat: Record<string, number> = { colaborador: 0, reserva: 0, visitante: 0, avulso: 0 };
+      const contagemCat: Record<string, number> = {
+        colaborador: 0,
+        reserva: 0,
+        visitante: 0,
+        avulso: 0,
+      };
 
       for (const r of rows) {
         // integridade básica
         if (!r.nome?.trim() || !r.codigo?.trim() || !r.matricula?.trim()) {
-          issues.push({ level: "warning", message: `Linha ignorada por dados incompletos (codigo="${r.codigo}", nome="${r.nome}").` });
+          issues.push({
+            level: "warning",
+            message: `Linha ignorada por dados incompletos (codigo="${r.codigo}", nome="${r.nome}").`,
+          });
           continue;
         }
         if (!/^[A-Za-z0-9\-_.]+$/.test(r.codigo)) {
-          issues.push({ level: "warning", message: `Código com caracteres suspeitos: "${r.codigo}".` });
+          issues.push({
+            level: "warning",
+            message: `Código com caracteres suspeitos: "${r.codigo}".`,
+          });
         }
         const nomeK = r.nome.trim().toUpperCase();
         const set = nomeParaMats.get(nomeK) ?? new Set<string>();
@@ -241,7 +257,10 @@ function LavanderiaPage() {
         const prev = codigoSeen.get(r.codigo);
         if (prev && prev !== r.matricula) {
           duplicados.push(r.codigo);
-          issues.push({ level: "warning", message: `Código "${r.codigo}" aparece para matrículas diferentes (${prev} e ${r.matricula}). Mantido o primeiro.` });
+          issues.push({
+            level: "warning",
+            message: `Código "${r.codigo}" aparece para matrículas diferentes (${prev} e ${r.matricula}). Mantido o primeiro.`,
+          });
           continue;
         }
         codigoSeen.set(r.codigo, r.matricula);
@@ -250,7 +269,10 @@ function LavanderiaPage() {
 
       for (const [nome, mats] of nomeParaMats) {
         if (mats.size > 1) {
-          issues.push({ level: "info", message: `"${nome}" aparece com ${mats.size} matrículas: ${Array.from(mats).join(", ")}.` });
+          issues.push({
+            level: "info",
+            message: `"${nome}" aparece com ${mats.size} matrículas: ${Array.from(mats).join(", ")}.`,
+          });
         }
       }
 
@@ -271,7 +293,9 @@ function LavanderiaPage() {
       const resumo = [
         `${contagemCat.colaborador} colaborador(es), ${contagemCat.reserva} reserva(s), ${contagemCat.visitante} visitante(s), ${contagemCat.avulso} avulso(s).`,
         `${pecaRows.length} código(s) de barras cadastrado(s).`,
-        duplicados.length ? `${duplicados.length} código(s) duplicado(s) ignorado(s).` : "Sem códigos duplicados.",
+        duplicados.length
+          ? `${duplicados.length} código(s) duplicado(s) ignorado(s).`
+          : "Sem códigos duplicados.",
       ];
       toast.success(`Matriz importada · ${resumo[0]}`, { duration: 6000 });
       setReport({ origem: "Matriz", resumo, issues });
@@ -298,7 +322,12 @@ function LavanderiaPage() {
         setReport({
           origem: "Movimentação",
           resumo: ["Nenhum evento reconhecido."],
-          issues: [{ level: "error", message: "Confira se as colunas estão em pares Saída/Entrada com data na linha 2." }],
+          issues: [
+            {
+              level: "error",
+              message: "Confira se as colunas estão em pares Saída/Entrada com data na linha 2.",
+            },
+          ],
         });
         return;
       }
@@ -309,7 +338,11 @@ function LavanderiaPage() {
       for (const e of all) {
         if (e.data > hoje) futuros++;
       }
-      if (futuros) issues.push({ level: "warning", message: `${futuros} evento(s) com data futura em relação a hoje.` });
+      if (futuros)
+        issues.push({
+          level: "warning",
+          message: `${futuros} evento(s) com data futura em relação a hoje.`,
+        });
 
       const seen = new Set<string>();
       const dedup = all.filter((e) => {
@@ -319,7 +352,11 @@ function LavanderiaPage() {
         return true;
       });
       const duplicadosArq = all.length - dedup.length;
-      if (duplicadosArq) issues.push({ level: "info", message: `${duplicadosArq} evento(s) duplicado(s) dentro dos arquivos foram unificados.` });
+      if (duplicadosArq)
+        issues.push({
+          level: "info",
+          message: `${duplicadosArq} evento(s) duplicado(s) dentro dos arquivos foram unificados.`,
+        });
 
       // Sequência lógica por código (2 saídas seguidas sem entrada)
       const porCodigo = new Map<string, EventoRow[]>();
@@ -337,10 +374,16 @@ function LavanderiaPage() {
           last = e.tipo;
         }
       }
-      if (seqQuebrada) issues.push({ level: "info", message: `${seqQuebrada} movimento(s) sem par correspondente (duas saídas ou duas entradas seguidas).` });
+      if (seqQuebrada)
+        issues.push({
+          level: "info",
+          message: `${seqQuebrada} movimento(s) sem par correspondente (duas saídas ou duas entradas seguidas).`,
+        });
 
       const pecasSet = new Set(pecas.map((p) => p.codigo));
-      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter((c) => !pecasSet.has(c));
+      const novasPecas = Array.from(new Set(dedup.map((e) => e.codigo))).filter(
+        (c) => !pecasSet.has(c),
+      );
       if (novasPecas.length) {
         issues.push({
           level: "warning",
@@ -348,7 +391,9 @@ function LavanderiaPage() {
         });
         for (let i = 0; i < novasPecas.length; i += 500) {
           const chunk = novasPecas.slice(i, i + 500).map((codigo) => ({ codigo }));
-          const { error } = await supabase.from("lavanderia_pecas").upsert(chunk, { onConflict: "codigo" });
+          const { error } = await supabase
+            .from("lavanderia_pecas")
+            .upsert(chunk, { onConflict: "codigo" });
           if (error) throw error;
         }
       }
@@ -357,9 +402,11 @@ function LavanderiaPage() {
       let ignorados = 0;
       for (let i = 0; i < dedup.length; i += 500) {
         const chunk = dedup.slice(i, i + 500);
-        const { error, count } = await supabase
-          .from("lavanderia_eventos")
-          .upsert(chunk, { onConflict: "codigo,tipo,data", ignoreDuplicates: true, count: "exact" });
+        const { error, count } = await supabase.from("lavanderia_eventos").upsert(chunk, {
+          onConflict: "codigo,tipo,data",
+          ignoreDuplicates: true,
+          count: "exact",
+        });
         if (error) throw error;
         const ins = count ?? 0;
         inseridos += ins;
@@ -369,7 +416,9 @@ function LavanderiaPage() {
       const resumo = [
         `${inseridos} evento(s) novo(s) inserido(s).`,
         `${ignorados} evento(s) já existiam e foram ignorados.`,
-        novasPecas.length ? `${novasPecas.length} código(s) novo(s) cadastrado(s).` : "Todos os códigos já constam na Matriz.",
+        novasPecas.length
+          ? `${novasPecas.length} código(s) novo(s) cadastrado(s).`
+          : "Todos os códigos já constam na Matriz.",
       ];
       toast.success(`Movimentação importada · ${resumo[0]}`, { duration: 6000 });
       setReport({ origem: "Movimentação", resumo, issues });
@@ -406,7 +455,10 @@ function LavanderiaPage() {
       if (del1.error) throw del1.error;
       const del2 = await supabase.from("lavanderia_pecas").delete().not("codigo", "is", null);
       if (del2.error) throw del2.error;
-      const del3 = await supabase.from("lavanderia_colaboradores").delete().not("matricula", "is", null);
+      const del3 = await supabase
+        .from("lavanderia_colaboradores")
+        .delete()
+        .not("matricula", "is", null);
       if (del3.error) throw del3.error;
       toast.success("Conteúdo da lavanderia apagado com sucesso.");
       await refresh();
@@ -424,10 +476,18 @@ function LavanderiaPage() {
       description="Importe os relatórios de coleta (Elis Jaboatão) e acompanhe o giro de peças, atrasos e histórico por colaborador."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => matrizInputRef.current?.click()} disabled={importing}>
+          <Button
+            variant="outline"
+            onClick={() => matrizInputRef.current?.click()}
+            disabled={importing}
+          >
             <Upload className="mr-2 h-4 w-4" /> Importar Matriz
           </Button>
-          <Button variant="outline" onClick={() => movInputRef.current?.click()} disabled={importing}>
+          <Button
+            variant="outline"
+            onClick={() => movInputRef.current?.click()}
+            disabled={importing}
+          >
             <Upload className="mr-2 h-4 w-4" /> Importar Movimentação
           </Button>
           <Button onClick={downloadExcel} disabled={pecasFull.length === 0}>
@@ -448,8 +508,8 @@ function LavanderiaPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Limpar todo o conteúdo da lavanderia?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação remove permanentemente a matriz de colaboradores, as peças cadastradas
-                  e todo o histórico de movimentação. Não é possível desfazer.
+                  Esta ação remove permanentemente a matriz de colaboradores, as peças cadastradas e
+                  todo o histórico de movimentação. Não é possível desfazer.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -534,13 +594,8 @@ function LavanderiaPage() {
         </TabsContent>
 
         <TabsContent value="dashboard">
-          <DashboardView
-            eventos={eventos}
-            pecaByCodigo={pecaByCodigo}
-            colabByMat={colabByMat}
-          />
+          <DashboardView eventos={eventos} pecaByCodigo={pecaByCodigo} colabByMat={colabByMat} />
         </TabsContent>
-
       </Tabs>
 
       <Dialog open={!!report} onOpenChange={(o) => !o && setReport(null)}>
@@ -555,7 +610,8 @@ function LavanderiaPage() {
               Verificação de {report?.origem}
             </DialogTitle>
             <DialogDescription>
-              Relatório inteligente da última importação — revise antes de tomar decisões operacionais.
+              Relatório inteligente da última importação — revise antes de tomar decisões
+              operacionais.
             </DialogDescription>
           </DialogHeader>
           {report && (
@@ -687,13 +743,13 @@ function LavanderiaScrollHelpers() {
   );
 }
 
-
-
 // ---------------- Abertas ----------------
 
 function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPeca[] }) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"todas" | "atrasada" | "em_higienizacao">("todas");
+  const [statusFilter, setStatusFilter] = useState<"todas" | "atrasada" | "em_higienizacao">(
+    "todas",
+  );
   const [foraDoGiro, setForaDoGiro] = useState(false);
 
   const colabsAtrasados = useMemo(() => {
@@ -730,7 +786,10 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
             className="pl-8"
           />
         </div>
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue />
           </SelectTrigger>
@@ -792,8 +851,6 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
       </div>
 
       <div className="lavanderia-scroll relative hidden max-h-[65vh] overflow-auto rounded-xl border border-border/60 md:block [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
-
-
         <Table>
           <TableHeader>
             <TableRow>
@@ -836,7 +893,9 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
                     {p.status === "atrasada" ? `${p.diasAtraso}d` : "—"}
                   </TableCell>
                   <TableCell>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[p.status]}`}>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[p.status]}`}
+                    >
                       {STATUS_LABEL[p.status]}
                     </span>
                   </TableCell>
@@ -965,7 +1024,6 @@ function HistoricoView({
         </Select>
       </div>
       <div className="lavanderia-scroll relative max-h-[65vh] overflow-auto rounded-xl border border-border/60 [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-background/95 [&_thead_th]:backdrop-blur">
-
         <Table>
           <TableHeader>
             <TableRow>
@@ -1074,14 +1132,19 @@ function GiroView({ pecas }: { pecas: LavExportPeca[] }) {
           <TableBody>
             {rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={modo === "peca" ? 3 : 2} className="py-8 text-center text-sm text-muted-foreground">
+                <TableCell
+                  colSpan={modo === "peca" ? 3 : 2}
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
                   Sem dados.
                 </TableCell>
               </TableRow>
             ) : (
               rows.map((r) => (
                 <TableRow key={r.chave}>
-                  <TableCell className={modo === "peca" ? "font-mono text-xs" : ""}>{r.chave}</TableCell>
+                  <TableCell className={modo === "peca" ? "font-mono text-xs" : ""}>
+                    {r.chave}
+                  </TableCell>
                   {modo === "peca" && <TableCell className="text-sm">{r.extra}</TableCell>}
                   <TableCell className="font-semibold">{r.giro}</TableCell>
                 </TableRow>
@@ -1171,7 +1234,6 @@ function DashboardView({
     [pecas],
   );
 
-
   const giroColaborador = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of pecas) m.set(p.nome, (m.get(p.nome) ?? 0) + p.giro);
@@ -1222,8 +1284,14 @@ function DashboardView({
       "avulso",
     ];
     const base = Object.fromEntries(
-      cats.map((k) => [k, { categoria: CAT_LABEL[k], giro: 0, emAberto: 0, saidas: 0, entradas: 0 }]),
-    ) as Record<Exclude<CategoriaFiltro, "todas">, { categoria: string; giro: number; emAberto: number; saidas: number; entradas: number }>;
+      cats.map((k) => [
+        k,
+        { categoria: CAT_LABEL[k], giro: 0, emAberto: 0, saidas: 0, entradas: 0 },
+      ]),
+    ) as Record<
+      Exclude<CategoriaFiltro, "todas">,
+      { categoria: string; giro: number; emAberto: number; saidas: number; entradas: number }
+    >;
     for (const p of pecas) {
       const cat = p.matricula ? classifyMatricula(p.matricula, p.setor) : "avulso";
       base[cat].giro += p.giro;
@@ -1237,7 +1305,6 @@ function DashboardView({
     }
     return cats.map((k) => base[k]);
   }, [pecas, eventosFiltrados, pecaByCodigo]);
-
 
   async function downloadPNG() {
     if (!dashRef.current) return;
@@ -1299,8 +1366,6 @@ function DashboardView({
           <ImageIcon className="mr-2 h-4 w-4" /> Baixar PNG
         </Button>
       </div>
-
-
 
       <div ref={dashRef} className="space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -1428,14 +1493,15 @@ function DashboardView({
           </div>
         </GlassCard>
 
-
-
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <GlassCard>
             <h3 className="mb-2 text-sm font-semibold">Giro por colaborador (top 10)</h3>
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={giroColaborador} margin={{ top: 8, right: 16, left: 0, bottom: 32 }}>
+                <BarChart
+                  data={giroColaborador}
+                  margin={{ top: 8, right: 16, left: 0, bottom: 32 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                   <XAxis
                     dataKey="nome"

@@ -9,7 +9,10 @@ import type { FiltroSolicitacao, Ponto, Visita } from "@/features/water-delivery
 import { VISITA_STATUS_LABEL } from "@/features/water-delivery/queries/api";
 import type { RotaOcorrencia } from "@/features/water-delivery/mutations/execucao";
 import type { Rota } from "@/features/water-delivery/queries/programacao";
-import type { EntregaIndicadores, FiltroIndicadores } from "@/features/water-delivery/reports/indicadores";
+import type {
+  EntregaIndicadores,
+  FiltroIndicadores,
+} from "@/features/water-delivery/reports/indicadores";
 
 type Row = Record<string, unknown>;
 
@@ -18,11 +21,14 @@ const MARCA = "Apont Auto — Abastecimento de Água";
 const dataBR = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
 
-const soData = (iso?: string | null) => (iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—");
+const soData = (iso?: string | null) =>
+  iso ? iso.slice(0, 10).split("-").reverse().join("/") : "—";
 
 export const pontoTexto = (pontos: Ponto[], id: string) => {
   const p = pontos.find((x) => x.id === id);
-  return p ? `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}` : "Ponto removido";
+  return p
+    ? `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}`
+    : "Ponto removido";
 };
 
 /** Identificador estável do documento (hash SHA-256 curto do conteúdo). */
@@ -30,7 +36,11 @@ export async function hashDocumento(payload: unknown): Promise<string> {
   const texto = JSON.stringify(payload);
   try {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
-    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16).toUpperCase();
+    return [...new Uint8Array(buf)]
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 16)
+      .toUpperCase();
   } catch {
     let h = 0;
     for (let i = 0; i < texto.length; i++) h = (h * 31 + texto.charCodeAt(i)) | 0;
@@ -75,28 +85,47 @@ export async function exportarIndicadoresExcel(args: {
       {
         name: "Por dia",
         rows: entrega.porDia.map((l) => ({
-          Dia: l.chave, Paradas: l.total, Concluídas: l.concluidas, "Taxa (%)": l.taxa, Bags: l.bags,
+          Dia: l.chave,
+          Paradas: l.total,
+          Concluídas: l.concluidas,
+          "Taxa (%)": l.taxa,
+          Bags: l.bags,
         })) as Row[],
       },
       {
         name: "Por prédio",
         rows: entrega.porPredio.map((l) => ({
-          Prédio: l.chave, Paradas: l.total, Concluídas: l.concluidas, "Taxa (%)": l.taxa, Bags: l.bags,
+          Prédio: l.chave,
+          Paradas: l.total,
+          Concluídas: l.concluidas,
+          "Taxa (%)": l.taxa,
+          Bags: l.bags,
         })) as Row[],
       },
       {
         name: "Produtividade",
         rows: entrega.porColaborador.map((l) => ({
-          Colaborador: l.chave, Paradas: l.total, Concluídas: l.concluidas, Bags: l.bags,
-          "Tempo médio (min)": l.tempoMedioParadaMin, "Bags/hora": l.produtividadeBagsHora,
+          Colaborador: l.chave,
+          Paradas: l.total,
+          Concluídas: l.concluidas,
+          Bags: l.bags,
+          "Tempo médio (min)": l.tempoMedioParadaMin,
+          "Bags/hora": l.produtividadeBagsHora,
         })) as Row[],
       },
       {
         name: "Rotas",
         rows: entrega.rotas.map((r) => ({
-          Data: soData(r.data), Turno: r.turno, Equipe: r.equipe, Veículo: r.veiculo,
-          Paradas: r.paradas, Concluídas: r.concluidas, "Duração (min)": r.duracaoMin ?? "—",
-          "Km": r.km ?? "—", "Bags carregadas": r.bagsCarregadas, "Bags entregues": r.bagsEntregues,
+          Data: soData(r.data),
+          Turno: r.turno,
+          Equipe: r.equipe,
+          Veículo: r.veiculo,
+          Paradas: r.paradas,
+          Concluídas: r.concluidas,
+          "Duração (min)": r.duracaoMin ?? "—",
+          Km: r.km ?? "—",
+          "Bags carregadas": r.bagsCarregadas,
+          "Bags entregues": r.bagsEntregues,
           Divergência: r.divergencia,
         })) as Row[],
       },
@@ -107,13 +136,20 @@ export async function exportarIndicadoresExcel(args: {
       {
         name: "Veículos",
         rows: entrega.porVeiculo.map((v) => ({
-          Veículo: v.veiculo, Rotas: v.rotas, Km: Math.round(v.km * 10) / 10, Paradas: v.paradas, Bags: v.bags,
+          Veículo: v.veiculo,
+          Rotas: v.rotas,
+          Km: Math.round(v.km * 10) / 10,
+          Paradas: v.paradas,
+          Bags: v.bags,
         })) as Row[],
       },
       {
         name: "Consumo por local",
         rows: entrega.consumoPorLocal.map((c) => ({
-          Prédio: c.predio, Pontos: c.pontos, Bags: c.bags, "Média por ponto": c.mediaPorPonto,
+          Prédio: c.predio,
+          Pontos: c.pontos,
+          Bags: c.bags,
+          "Média por ponto": c.mediaPorPonto,
         })) as Row[],
       },
       {
@@ -148,9 +184,13 @@ export async function exportarRelatorioPredio(entrega: EntregaIndicadores, perio
         rows: entrega.porPredio.map((l) => {
           const consumo = entrega.consumoPorLocal.find((c) => c.predio === l.chave);
           return {
-            Prédio: l.chave, Paradas: l.total, Concluídas: l.concluidas,
-            "Não realizadas": l.naoRealizadas, "Taxa (%)": l.taxa,
-            "Bags entregues": l.bags, Pontos: consumo?.pontos ?? 0,
+            Prédio: l.chave,
+            Paradas: l.total,
+            Concluídas: l.concluidas,
+            "Não realizadas": l.naoRealizadas,
+            "Taxa (%)": l.taxa,
+            "Bags entregues": l.bags,
+            Pontos: consumo?.pontos ?? 0,
             "Média por ponto": consumo?.mediaPorPonto ?? 0,
           };
         }) as Row[],
@@ -175,22 +215,32 @@ export async function exportarRelatorioDivergencia(args: {
         rows: entrega.rotas
           .filter((r) => r.divergencia !== 0 || r.bagsCarregadas !== r.bagsEntregues)
           .map((r) => ({
-            Data: soData(r.data), Turno: r.turno, Equipe: r.equipe, Veículo: r.veiculo,
-            "Bags carregadas": r.bagsCarregadas, "Bags entregues": r.bagsEntregues,
+            Data: soData(r.data),
+            Turno: r.turno,
+            Equipe: r.equipe,
+            Veículo: r.veiculo,
+            "Bags carregadas": r.bagsCarregadas,
+            "Bags entregues": r.bagsEntregues,
             Divergência: r.divergencia,
           })) as Row[],
       },
       {
         name: "Evidências faltantes",
         rows: entrega.evidenciasPendentes.map((e) => ({
-          Data: soData(e.data), Ponto: e.ponto, Status: VISITA_STATUS_LABEL[e.status] ?? e.status,
+          Data: soData(e.data),
+          Ponto: e.ponto,
+          Status: VISITA_STATUS_LABEL[e.status] ?? e.status,
         })) as Row[],
       },
       {
         name: "Ocorrências",
         rows: ocorrencias.map((o) => ({
-          Registrada: dataBR(o.criado_em), Tipo: o.tipo, Situação: o.situacao,
-          Divergência: o.divergencia ?? "—", Descrição: o.descricao ?? "—", Tratativa: o.tratativa ?? "—",
+          Registrada: dataBR(o.criado_em),
+          Tipo: o.tipo,
+          Situação: o.situacao,
+          Divergência: o.divergencia ?? "—",
+          Descrição: o.descricao ?? "—",
+          Tratativa: o.tratativa ?? "—",
         })) as Row[],
       },
     ],
@@ -211,12 +261,21 @@ export async function exportarRelatorioFiltros(args: {
       {
         name: "Solicitações",
         rows: solicitacoes.map((s) => ({
-          Número: s.numero ?? "—", Aberta: dataBR(s.criado_em), Situação: s.situacao,
-          Prioridade: s.prioridade, Tipo: s.tipo, Origem: s.origem,
-          Prédio: s.predio ?? "—", "Andar/Setor": s.andar_setor ?? "—", Espaço: s.espaco ?? "—",
-          "Vence em": dataBR(s.vence_em), Concluída: dataBR(s.concluida_em),
-          Reaberturas: s.reaberturas ?? 0, Avaliação: s.avaliacao_nota ?? "—",
-          Responsável: s.responsavel_nome ?? "—", Material: s.material_descricao ?? "—",
+          Número: s.numero ?? "—",
+          Aberta: dataBR(s.criado_em),
+          Situação: s.situacao,
+          Prioridade: s.prioridade,
+          Tipo: s.tipo,
+          Origem: s.origem,
+          Prédio: s.predio ?? "—",
+          "Andar/Setor": s.andar_setor ?? "—",
+          Espaço: s.espaco ?? "—",
+          "Vence em": dataBR(s.vence_em),
+          Concluída: dataBR(s.concluida_em),
+          Reaberturas: s.reaberturas ?? 0,
+          Avaliação: s.avaliacao_nota ?? "—",
+          Responsável: s.responsavel_nome ?? "—",
+          Material: s.material_descricao ?? "—",
         })) as Row[],
       },
       {
@@ -228,19 +287,26 @@ export async function exportarRelatorioFiltros(args: {
           { Indicador: "Triagem média (h)", Valor: indicadores.tempoTriagemMedioH },
           { Indicador: "Conclusão média (h)", Valor: indicadores.tempoConclusaoMedioH },
           { Indicador: "Reincidência", Valor: indicadores.reincidencia },
-          { Indicador: "Preventiva x corretiva", Valor: `${indicadores.preventivas} x ${indicadores.corretivas}` },
+          {
+            Indicador: "Preventiva x corretiva",
+            Valor: `${indicadores.preventivas} x ${indicadores.corretivas}`,
+          },
         ] as Row[],
       },
       {
         name: "Filtros vencendo",
         rows: indicadores.vencendo.map((v) => ({
-          Filtro: v.ponto, "Próxima troca": soData(v.proximaTroca), "Dias restantes": v.diasRestantes,
+          Filtro: v.ponto,
+          "Próxima troca": soData(v.proximaTroca),
+          "Dias restantes": v.diasRestantes,
         })) as Row[],
       },
       {
         name: "Por prédio",
         rows: indicadores.porPredio.map((p) => ({
-          Prédio: p.predio, Solicitações: p.qtd, Concluídas: p.concluidas,
+          Prédio: p.predio,
+          Solicitações: p.qtd,
+          Concluídas: p.concluidas,
         })) as Row[],
       },
     ],
@@ -254,7 +320,11 @@ export async function exportarRelatorioFiltros(args: {
 /* ------------------------------------------------------------------ */
 
 /** CSV com o índice das evidências (links do ImgBB) do período. */
-export function exportarPacoteEvidencias(args: { visitas: Visita[]; pontos: Ponto[]; periodo: string }) {
+export function exportarPacoteEvidencias(args: {
+  visitas: Visita[];
+  pontos: Ponto[];
+  periodo: string;
+}) {
   const linhas: string[][] = [["Data", "Ponto", "Status", "Recebido por", "Foto", "Assinatura"]];
   for (const v of args.visitas) {
     const fotos = v.fotos?.length ? v.fotos : v.foto_url ? [v.foto_url] : [];
@@ -341,7 +411,11 @@ export async function exportarRotaPdf(args: {
     body: [
       ["Data / turno", `${soData(rota.data)} · ${rota.turno}`],
       ["Equipe", rota.equipe || "—"],
-      ["Colaboradores", [rota.colaborador_principal, rota.colaborador_secundario].filter(Boolean).join(" / ") || "—"],
+      [
+        "Colaboradores",
+        [rota.colaborador_principal, rota.colaborador_secundario].filter(Boolean).join(" / ") ||
+          "—",
+      ],
       ["Supervisor", rota.supervisor ?? "—"],
       ["Veículo", rota.veiculo ?? "—"],
       ["Hodômetro inicial", rota.hodometro_inicial != null ? `${rota.hodometro_inicial} km` : "—"],
@@ -362,7 +436,10 @@ export async function exportarRotaPdf(args: {
     body: [
       ["Carregadas", String(rota.bags_carregadas ?? 0)],
       ["Entregues", String(entregues)],
-      ["Recolhidas", String(rota.bags_recolhidas ?? visitas.reduce((a, v) => a + (v.bags_recolhidas ?? 0), 0))],
+      [
+        "Recolhidas",
+        String(rota.bags_recolhidas ?? visitas.reduce((a, v) => a + (v.bags_recolhidas ?? 0), 0)),
+      ],
       ["Restantes", String(rota.bags_restantes ?? 0)],
       ["Divergência", String(rota.divergencia_bags ?? 0)],
       ["Justificativa", rota.divergencia_justificativa ?? "—"],
@@ -382,7 +459,9 @@ export async function exportarRotaPdf(args: {
       String(v.bags_previstas ?? 0),
       String(v.bags_entregues ?? 0),
       String(v.bags_recolhidas ?? 0),
-      v.executado_em ? new Date(v.executado_em).toLocaleTimeString("pt-BR", { timeStyle: "short" }) : "—",
+      v.executado_em
+        ? new Date(v.executado_em).toLocaleTimeString("pt-BR", { timeStyle: "short" })
+        : "—",
     ]),
     theme: "striped",
     headStyles: { fillColor: [51, 65, 85], fontSize: 8 },
@@ -393,7 +472,12 @@ export async function exportarRotaPdf(args: {
   if (ocorrenciasRota.length) {
     autoTable(doc, {
       head: [["Ocorrência", "Situação", "Descrição", "Tratativa"]],
-      body: ocorrenciasRota.map((o) => [o.tipo, o.situacao, o.descricao ?? "—", o.tratativa ?? "—"]),
+      body: ocorrenciasRota.map((o) => [
+        o.tipo,
+        o.situacao,
+        o.descricao ?? "—",
+        o.tratativa ?? "—",
+      ]),
       theme: "grid",
       headStyles: { fillColor: [180, 83, 9], fontSize: 8 },
       bodyStyles: { fontSize: 8 },
@@ -402,9 +486,13 @@ export async function exportarRotaPdf(args: {
 
   /* Miniaturas das evidências */
   if (args.incluirFotos !== false) {
-    const urls = visitas.flatMap((v) => (v.fotos?.length ? v.fotos : v.foto_url ? [v.foto_url] : [])).slice(0, 12);
+    const urls = visitas
+      .flatMap((v) => (v.fotos?.length ? v.fotos : v.foto_url ? [v.foto_url] : []))
+      .slice(0, 12);
     if (urls.length) {
-      let y = ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 60) + 10;
+      let y =
+        ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 60) +
+        10;
       if (y > H - 60) {
         doc.addPage();
         y = 20;
@@ -487,7 +575,10 @@ export function imprimirPainel() {
   window.print();
 }
 
-export async function compartilharResumo(texto: string, titulo = "Indicadores — Água"): Promise<boolean> {
+export async function compartilharResumo(
+  texto: string,
+  titulo = "Indicadores — Água",
+): Promise<boolean> {
   const nav = navigator as Navigator & { share?: (data: ShareData) => Promise<void> };
   if (nav.share) {
     try {
@@ -505,7 +596,11 @@ export async function compartilharResumo(texto: string, titulo = "Indicadores �
   }
 }
 
-export function resumoTexto(entrega: EntregaIndicadores, filtros: FiltroIndicadores, periodo: string) {
+export function resumoTexto(
+  entrega: EntregaIndicadores,
+  filtros: FiltroIndicadores,
+  periodo: string,
+) {
   return [
     `${MARCA} · ${periodo}`,
     `Paradas: ${entrega.totalParadas} · Conclusão: ${entrega.taxaConclusao}%`,

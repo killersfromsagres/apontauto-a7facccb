@@ -77,7 +77,6 @@ const PADROES: Record<string, Row> = {
   agua_filtro_solicitacoes: { situacao: "solicitada", reaberturas: 0 },
 };
 
-
 let seq = 0;
 function novoId(prefixo: string): string {
   seq += 1;
@@ -159,7 +158,6 @@ export class FakeSupabase {
             atualizado_em: new Date().toISOString(),
             ...(PADROES[tabela] ?? {}),
             ...bruta,
-
           };
           store.push(nova);
           inseridas.push(nova);

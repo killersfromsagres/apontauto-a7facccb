@@ -52,9 +52,7 @@ function StateShell({
         </div>
       )}
       {title && (
-        <h3 className="font-display text-base font-semibold tracking-tight sm:text-lg">
-          {title}
-        </h3>
+        <h3 className="font-display text-base font-semibold tracking-tight sm:text-lg">{title}</h3>
       )}
       {description && (
         <p className="max-w-md text-xs leading-relaxed text-muted-foreground sm:text-sm">
@@ -136,13 +134,7 @@ export function LoadingState({
 }
 
 /** Skeleton pronto para linhas de tabela / cards */
-export function SkeletonRows({
-  rows = 5,
-  className,
-}: {
-  rows?: number;
-  className?: string;
-}) {
+export function SkeletonRows({ rows = 5, className }: { rows?: number; className?: string }) {
   return (
     <div className={cn("space-y-2", className)} aria-hidden>
       {Array.from({ length: rows }).map((_, i) => (
@@ -163,26 +155,14 @@ export function SkeletonRows({
 }
 
 /** Skeleton pronto para grid de cards */
-export function SkeletonCards({
-  cards = 4,
-  className,
-}: {
-  cards?: number;
-  className?: string;
-}) {
+export function SkeletonCards({ cards = 4, className }: { cards?: number; className?: string }) {
   return (
     <div
-      className={cn(
-        "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-        className,
-      )}
+      className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4", className)}
       aria-hidden
     >
       {Array.from({ length: cards }).map((_, i) => (
-        <div
-          key={i}
-          className="space-y-3 rounded-2xl border border-border/40 bg-card/30 p-4"
-        >
+        <div key={i} className="space-y-3 rounded-2xl border border-border/40 bg-card/30 p-4">
           <Skeleton className="h-4 w-2/3" />
           <Skeleton className="h-8 w-1/2" />
           <Skeleton className="h-3 w-full" />

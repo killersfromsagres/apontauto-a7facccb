@@ -142,10 +142,7 @@ function Page() {
       }
     >
       {!result ? (
-        <div
-          key="upload"
-          className="animate-in fade-in slide-in-from-bottom-1 duration-200"
-        >
+        <div key="upload" className="animate-in fade-in slide-in-from-bottom-1 duration-200">
           <GlassCard>
             <div
               onDragOver={(e) => {
@@ -172,9 +169,7 @@ function Page() {
                   Formato aceito: .xlsx — o processamento é feito no navegador.
                 </p>
               </div>
-              {loading && (
-                <p className="text-sm text-primary animate-pulse">Processando…</p>
-              )}
+              {loading && <p className="text-sm text-primary animate-pulse">Processando…</p>}
               <input
                 ref={inputRef}
                 type="file"
@@ -193,162 +188,163 @@ function Page() {
           key="result"
           className="space-y-6 animate-in fade-in slide-in-from-bottom-1 duration-200"
         >
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <SummaryCard
-                icon={<FileSpreadsheet className="h-5 w-5" />}
-                label="Arquivo"
-                value={fileName ?? "—"}
-                hint="Origem"
-              />
-              <SummaryCard
-                icon={<ClipboardCheck className="h-5 w-5" />}
-                label="OS Válidas"
-                value={String(result.total)}
-                hint="após filtro DEMARCHI"
-              />
-              <SummaryCard
-                icon={<Filter className="h-5 w-5" />}
-                label="Descartadas"
-                value={String(result.discardedBySite)}
-                hint="outros sites"
-              />
-              <SummaryCard
-                icon={<Users className="h-5 w-5" />}
-                label="Equipes"
-                value={String(teamCounts.length)}
-                hint="com carga atribuída"
-              />
-            </div>
-
-            <GlassCard>
-              <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
-                Distribuição por equipe
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                <TeamChip
-                  team={"Todas" as Team}
-                  count={result.total}
-                  active={teamFilter === "Todas"}
-                  onClick={() => setTeamFilter("Todas")}
-                />
-                {teamCounts.map((t) => (
-                  <TeamChip
-                    key={t.team}
-                    team={t.team}
-                    count={t.count}
-                    active={teamFilter === t.team}
-                    onClick={() => setTeamFilter(t.team)}
-                  />
-                ))}
-              </div>
-            </GlassCard>
-
-            <GlassCard>
-              <Tabs defaultValue="table">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                  <TabsList className="w-full sm:w-auto">
-                    <TabsTrigger value="table" className="flex-1 sm:flex-none">Tabela</TabsTrigger>
-                    <TabsTrigger value="category" className="flex-1 sm:flex-none">Por Categoria</TabsTrigger>
-                  </TabsList>
-                  <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar OS, prédio, ativo…"
-                      className="pl-8"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <TabsContent value="table">
-                  <div className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60">
-                    <Table>
-                      <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-                        <TableRow>
-                          <TableHead className="whitespace-nowrap">OS</TableHead>
-                          <TableHead className="whitespace-nowrap">Nome OS</TableHead>
-                          <TableHead className="whitespace-nowrap">Prédio</TableHead>
-                          <TableHead className="whitespace-nowrap">Andar</TableHead>
-                          <TableHead className="whitespace-nowrap">Local</TableHead>
-                          <TableHead className="whitespace-nowrap">Tipo</TableHead>
-                          <TableHead className="whitespace-nowrap">Equipe</TableHead>
-                          <TableHead className="whitespace-nowrap">SLA</TableHead>
-                          <TableHead className="whitespace-nowrap">Ativo</TableHead>
-                          <TableHead className="whitespace-nowrap">Equipamento</TableHead>
-                        </TableRow>
-                      </TableHeader>
-
-                      <TableBody>
-                        {filtered.slice(0, 500).map((o, i) => (
-                          <TableRow key={`${o.ordemServico}-${i}`}>
-                            <TableCell className="font-mono text-xs">{o.ordemServico}</TableCell>
-                            <TableCell className="max-w-[240px] truncate">{o.nomeOS}</TableCell>
-                            <TableCell>{o.predio}</TableCell>
-                            <TableCell>{o.andar}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">{o.local}</TableCell>
-                            <TableCell>{o.tipo}</TableCell>
-                            <TableCell>
-                              <span
-                                className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-white"
-                                style={{ backgroundColor: TEAM_COLORS[o.equipe] }}
-                              >
-                                {o.equipe}
-                              </span>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-xs">
-                              {o.dataSLA ? new Date(o.dataSLA).toLocaleDateString("pt-BR") : "—"}
-                            </TableCell>
-                            <TableCell className="text-xs">{o.ativo || "—"}</TableCell>
-                            <TableCell className="text-xs">{o.equipamento || "—"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {filtered.length > 500 && (
-                      <p className="p-3 text-center text-xs text-muted-foreground">
-                        Exibindo 500 de {filtered.length} linhas — refine a busca para ver o
-                        restante.
-                      </p>
-                    )}
-                    {filtered.length === 0 && (
-                      <p className="p-8 text-center text-sm text-muted-foreground">
-                        Nenhuma OS corresponde ao filtro.
-                      </p>
-                    )}
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="category">
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                    {(Object.keys(result.byCategory) as Array<keyof typeof result.byCategory>).map(
-                      (cat) => (
-                        <div
-                          key={cat}
-                          className="rounded-xl border border-border/60 bg-background/40 p-4"
-                        >
-                          <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                            {cat}
-                          </p>
-                          <p className="mt-1 text-2xl font-semibold">
-                            {result.byCategory[cat].length}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            ordens de serviço identificadas
-                          </p>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </GlassCard>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <SummaryCard
+              icon={<FileSpreadsheet className="h-5 w-5" />}
+              label="Arquivo"
+              value={fileName ?? "—"}
+              hint="Origem"
+            />
+            <SummaryCard
+              icon={<ClipboardCheck className="h-5 w-5" />}
+              label="OS Válidas"
+              value={String(result.total)}
+              hint="após filtro DEMARCHI"
+            />
+            <SummaryCard
+              icon={<Filter className="h-5 w-5" />}
+              label="Descartadas"
+              value={String(result.discardedBySite)}
+              hint="outros sites"
+            />
+            <SummaryCard
+              icon={<Users className="h-5 w-5" />}
+              label="Equipes"
+              value={String(teamCounts.length)}
+              hint="com carga atribuída"
+            />
           </div>
-        )}
+
+          <GlassCard>
+            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+              Distribuição por equipe
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              <TeamChip
+                team={"Todas" as Team}
+                count={result.total}
+                active={teamFilter === "Todas"}
+                onClick={() => setTeamFilter("Todas")}
+              />
+              {teamCounts.map((t) => (
+                <TeamChip
+                  key={t.team}
+                  team={t.team}
+                  count={t.count}
+                  active={teamFilter === t.team}
+                  onClick={() => setTeamFilter(t.team)}
+                />
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard>
+            <Tabs defaultValue="table">
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <TabsList className="w-full sm:w-auto">
+                  <TabsTrigger value="table" className="flex-1 sm:flex-none">
+                    Tabela
+                  </TabsTrigger>
+                  <TabsTrigger value="category" className="flex-1 sm:flex-none">
+                    Por Categoria
+                  </TabsTrigger>
+                </TabsList>
+                <div className="relative w-full sm:max-w-xs">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar OS, prédio, ativo…"
+                    className="pl-8"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <TabsContent value="table">
+                <div className="scroll-fluid max-h-[65vh] overflow-auto rounded-lg border border-border/60">
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
+                      <TableRow>
+                        <TableHead className="whitespace-nowrap">OS</TableHead>
+                        <TableHead className="whitespace-nowrap">Nome OS</TableHead>
+                        <TableHead className="whitespace-nowrap">Prédio</TableHead>
+                        <TableHead className="whitespace-nowrap">Andar</TableHead>
+                        <TableHead className="whitespace-nowrap">Local</TableHead>
+                        <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                        <TableHead className="whitespace-nowrap">Equipe</TableHead>
+                        <TableHead className="whitespace-nowrap">SLA</TableHead>
+                        <TableHead className="whitespace-nowrap">Ativo</TableHead>
+                        <TableHead className="whitespace-nowrap">Equipamento</TableHead>
+                      </TableRow>
+                    </TableHeader>
+
+                    <TableBody>
+                      {filtered.slice(0, 500).map((o, i) => (
+                        <TableRow key={`${o.ordemServico}-${i}`}>
+                          <TableCell className="font-mono text-xs">{o.ordemServico}</TableCell>
+                          <TableCell className="max-w-[240px] truncate">{o.nomeOS}</TableCell>
+                          <TableCell>{o.predio}</TableCell>
+                          <TableCell>{o.andar}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{o.local}</TableCell>
+                          <TableCell>{o.tipo}</TableCell>
+                          <TableCell>
+                            <span
+                              className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium text-white"
+                              style={{ backgroundColor: TEAM_COLORS[o.equipe] }}
+                            >
+                              {o.equipe}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-xs">
+                            {o.dataSLA ? new Date(o.dataSLA).toLocaleDateString("pt-BR") : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs">{o.ativo || "—"}</TableCell>
+                          <TableCell className="text-xs">{o.equipamento || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filtered.length > 500 && (
+                    <p className="p-3 text-center text-xs text-muted-foreground">
+                      Exibindo 500 de {filtered.length} linhas — refine a busca para ver o restante.
+                    </p>
+                  )}
+                  {filtered.length === 0 && (
+                    <p className="p-8 text-center text-sm text-muted-foreground">
+                      Nenhuma OS corresponde ao filtro.
+                    </p>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="category">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {(Object.keys(result.byCategory) as Array<keyof typeof result.byCategory>).map(
+                    (cat) => (
+                      <div
+                        key={cat}
+                        className="rounded-xl border border-border/60 bg-background/40 p-4"
+                      >
+                        <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                          {cat}
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold">
+                          {result.byCategory[cat].length}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          ordens de serviço identificadas
+                        </p>
+                      </div>
+                    ),
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </GlassCard>
+        </div>
+      )}
     </PageShell>
   );
-
 }
 
 function SummaryCard({

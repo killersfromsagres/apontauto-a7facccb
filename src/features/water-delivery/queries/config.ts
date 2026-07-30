@@ -26,7 +26,9 @@ export interface Feriado {
 export async function listBagTipos(): Promise<BagTipo[]> {
   const { data, error } = await db
     .from("agua_bag_tipos")
-    .select("id, codigo, nome, capacidade_label, capacidade_litros, estoque_atual, estoque_minimo, ativo")
+    .select(
+      "id, codigo, nome, capacidade_label, capacidade_litros, estoque_atual, estoque_minimo, ativo",
+    )
     .order("nome");
   if (error) throw error;
   return (data ?? []) as BagTipo[];

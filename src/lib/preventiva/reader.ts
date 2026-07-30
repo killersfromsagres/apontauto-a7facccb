@@ -66,8 +66,6 @@ const norm = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-
-
 function pick(row: Record<string, unknown>, ...keys: string[]): string {
   const map = new Map<string, unknown>();
   for (const k of Object.keys(row)) map.set(norm(k), row[k]);
@@ -111,7 +109,7 @@ function parseDate(v: string): { iso: string; ts: number } {
     const d = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12, 0, 0);
     return { iso: d.toISOString(), ts: d.getTime() };
   }
-  const br = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
@@ -214,8 +212,8 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
     rows.push(...fileRows);
 
     // Aba "Ativos e Equipamentos"
-    const ativosSheetName = wb.SheetNames.find((n) =>
-      norm(n).includes("ATIVOS") && norm(n).includes("EQUIP"),
+    const ativosSheetName = wb.SheetNames.find(
+      (n) => norm(n).includes("ATIVOS") && norm(n).includes("EQUIP"),
     );
     if (ativosSheetName) {
       const ativosRaw = XLSX.utils.sheet_to_json<Record<string, unknown>>(

@@ -48,12 +48,7 @@ export function usePontos() {
 }
 
 /** Histórico paginado — mantém a página anterior visível durante a troca. */
-export function useVisitasPagina(
-  inicio: string,
-  fim: string,
-  pagina: number,
-  tamanho = 50,
-) {
+export function useVisitasPagina(inicio: string, fim: string, pagina: number, tamanho = 50) {
   return useQuery({
     queryKey: aguaKeys.visitasPagina(inicio, fim, pagina, tamanho),
     queryFn: () => listVisitasPagina(inicio, fim, pagina, tamanho),

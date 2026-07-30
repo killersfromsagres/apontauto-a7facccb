@@ -100,7 +100,6 @@ function AuthPage() {
     toast.info("Reconexão automática cancelada.");
   };
 
-
   const triggerShake = () => {
     setShake(true);
     window.setTimeout(() => setShake(false), 500);
@@ -124,7 +123,10 @@ function AuthPage() {
     try {
       const raw = email.trim().toLowerCase();
       const loginEmail = raw.includes("@") ? raw : `${raw}@apontauto.local`;
-      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password,
+      });
       if (error) throw error;
       // Evidência oficial do aceite fica no banco, não no navegador.
       if (data.user) await recordTermsAcceptance(data.user.id);
@@ -147,12 +149,10 @@ function AuthPage() {
     }
   };
 
-
   const handleSaveChoice = (save: boolean) => {
     if (save && pendingCreds.current) {
       saveLogin(pendingCreds.current.email);
       toast.success("Usuário lembrado neste dispositivo.");
-
     } else if (!save) {
       clearCredentials();
     }
@@ -188,8 +188,8 @@ function AuthPage() {
             Planejamento e Controle de Manutenção, do campo à gestão.
           </h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-white/60">
-            Ordens de serviço, ativos, taludes, clima, frota e materiais em uma única
-            plataforma operacional.
+            Ordens de serviço, ativos, taludes, clima, frota e materiais em uma única plataforma
+            operacional.
           </p>
           <dl className="mt-8 flex flex-wrap gap-3">
             {[
@@ -238,7 +238,6 @@ function AuthPage() {
             </p>
           </div>
 
-
           <form onSubmit={submit} className="space-y-4" noValidate>
             <div>
               <div className="auth-field">
@@ -281,7 +280,8 @@ function AuthPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (fieldErrors.password) setFieldErrors((p) => ({ ...p, password: undefined }));
+                    if (fieldErrors.password)
+                      setFieldErrors((p) => ({ ...p, password: undefined }));
                   }}
                   placeholder=" "
                   className="auth-input pr-11"
@@ -325,11 +325,21 @@ function AuthPage() {
                 />
                 <label htmlFor="terms" className="cursor-pointer leading-relaxed">
                   Li e aceito os{" "}
-                  <a href="/termos" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                  <a
+                    href="/termos"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-sky-300 hover:underline"
+                  >
                     Termos de Uso
                   </a>{" "}
                   e a{" "}
-                  <a href="/privacidade" target="_blank" rel="noreferrer" className="font-medium text-sky-300 hover:underline">
+                  <a
+                    href="/privacidade"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-sky-300 hover:underline"
+                  >
                     Política de Privacidade
                   </a>
                   .{" "}
@@ -350,10 +360,11 @@ function AuthPage() {
             </div>
 
             <button type="submit" className="auth-btn" disabled={loading}>
-
               {loading ? (
                 <span className="dots inline-flex items-center justify-center text-white">
-                  <span /><span /><span />
+                  <span />
+                  <span />
+                  <span />
                 </span>
               ) : (
                 "Entrar"
@@ -361,7 +372,6 @@ function AuthPage() {
             </button>
           </form>
         </div>
-
       </main>
 
       <footer className="absolute inset-x-0 bottom-4 z-10 px-4 text-center">
@@ -369,31 +379,34 @@ function AuthPage() {
           Dev by: <span className="shine-text font-semibold">Gabriel Vitor</span>
         </p>
         <nav className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/35">
-          <a href="/sobre" className="hover:text-white/70">Sobre</a>
-          <a href="/contato" className="hover:text-white/70">Contato</a>
-          <a href="/privacidade" className="hover:text-white/70">Privacidade</a>
-          <a href="/termos" className="hover:text-white/70">Termos</a>
+          <a href="/sobre" className="hover:text-white/70">
+            Sobre
+          </a>
+          <a href="/contato" className="hover:text-white/70">
+            Contato
+          </a>
+          <a href="/privacidade" className="hover:text-white/70">
+            Privacidade
+          </a>
+          <a href="/termos" className="hover:text-white/70">
+            Termos
+          </a>
         </nav>
       </footer>
 
-
       {/* Tela intermediária travada: só fecha ao clicar em Sim ou Não. */}
       <AlertDialog open={askSave}>
-        <AlertDialogContent
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
+        <AlertDialogContent onEscapeKeyDown={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
               Lembrar este usuário?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Podemos lembrar apenas o seu nome de usuário neste navegador para
-              agilizar o próximo acesso. Sua senha nunca é armazenada: a
-              reconexão automática usa somente a sessão segura do sistema, que
-              expira em 30 dias.
+              Podemos lembrar apenas o seu nome de usuário neste navegador para agilizar o próximo
+              acesso. Sua senha nunca é armazenada: a reconexão automática usa somente a sessão
+              segura do sistema, que expira em 30 dias.
             </AlertDialogDescription>
-
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => handleSaveChoice(false)}>Não</AlertDialogCancel>
@@ -420,9 +433,7 @@ function AuthPage() {
                 <Loader2 className="relative h-10 w-10 animate-spin text-primary" />
               </div>
               <h2 className="text-lg font-semibold text-white">Entrando automaticamente…</h2>
-              <p className="mt-1 text-sm text-white/60">
-                Restaurando sua sessão de forma segura.
-              </p>
+              <p className="mt-1 text-sm text-white/60">Restaurando sua sessão de forma segura.</p>
               {email && (
                 <p className="mt-3 rounded-full bg-white/5 px-3 py-1 text-xs text-white/70">
                   {email}

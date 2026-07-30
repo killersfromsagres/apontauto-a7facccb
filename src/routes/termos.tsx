@@ -34,7 +34,9 @@ function TermosPage() {
 
       <h2>2. Acesso</h2>
       <ul>
-        <li>O acesso é <strong>restrito</strong> — não há cadastro aberto ao público.</li>
+        <li>
+          O acesso é <strong>restrito</strong> — não há cadastro aberto ao público.
+        </li>
         <li>As credenciais são pessoais e intransferíveis.</li>
         <li>O usuário é responsável por manter a confidencialidade de sua senha.</li>
       </ul>

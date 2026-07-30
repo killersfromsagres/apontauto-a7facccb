@@ -40,7 +40,10 @@ import {
   removerFeriado,
   upsertBagTipo,
 } from "@/features/water-delivery/queries/config";
-import { AGUA_PERMISSAO_LABEL, AGUA_PERMISSOES } from "@/features/water-delivery/schemas/permissoes";
+import {
+  AGUA_PERMISSAO_LABEL,
+  AGUA_PERMISSOES,
+} from "@/features/water-delivery/schemas/permissoes";
 
 function Campo({
   id,
@@ -503,7 +506,11 @@ export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
 
       {podeEditar && (
         <div className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2">
-          <Button className="min-h-[44px]" disabled={!sujo || salvando} onClick={() => void salvar()}>
+          <Button
+            className="min-h-[44px]"
+            disabled={!sujo || salvando}
+            onClick={() => void salvar()}
+          >
             {salvando ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -589,8 +596,8 @@ function BagTiposCard({ podeEditar }: { podeEditar: boolean }) {
                 {t.nome} <span className="text-muted-foreground">({t.codigo})</span>
               </span>
               <p className="text-xs text-muted-foreground">
-                {t.capacidade_label ?? "sem capacidade definida"} · estoque {t.estoque_atual} · mínimo{" "}
-                {t.estoque_minimo}
+                {t.capacidade_label ?? "sem capacidade definida"} · estoque {t.estoque_atual} ·
+                mínimo {t.estoque_minimo}
               </p>
             </div>
             <div className="flex items-center gap-2">

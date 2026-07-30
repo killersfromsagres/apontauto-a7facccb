@@ -134,7 +134,13 @@ function uniqueSorted(items: (string | null | undefined)[]): string[] {
 function StatusBadge({ status }: { status: AsoStatus }) {
   const c = STATUS_COLOR[status];
   return (
-    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold", c.bg, c.fg)}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        c.bg,
+        c.fg,
+      )}
+    >
       {STATUS_LABEL[status]}
     </span>
   );
@@ -223,7 +229,9 @@ function SegurancaTrabalhoPage() {
         case "funcao":
           return (a.row.funcao ?? "").localeCompare(b.row.funcao ?? "") * dir;
         case "data_vencimento":
-          return ((a.row.data_vencimento ?? "9999") > (b.row.data_vencimento ?? "9999") ? 1 : -1) * dir;
+          return (
+            ((a.row.data_vencimento ?? "9999") > (b.row.data_vencimento ?? "9999") ? 1 : -1) * dir
+          );
         case "status":
           return STATUS_LABEL[a.status].localeCompare(STATUS_LABEL[b.status]) * dir;
         case "dias":
@@ -238,7 +246,13 @@ function SegurancaTrabalhoPage() {
   }, [enriched, search, fStatus, fFilial, fCliente, fFuncao, fSupervisor, sortKey, sortDir]);
 
   const totals: Record<AsoStatus, number> = useMemo(() => {
-    const t: Record<AsoStatus, number> = { vencido: 0, critico: 0, atencao: 0, em_dia: 0, sem_registro: 0 };
+    const t: Record<AsoStatus, number> = {
+      vencido: 0,
+      critico: 0,
+      atencao: 0,
+      em_dia: 0,
+      sem_registro: 0,
+    };
     enriched.forEach((e) => t[e.status]++);
     return t;
   }, [enriched]);
@@ -385,10 +399,13 @@ function SegurancaTrabalhoPage() {
                 <div className="space-y-2 text-sm">
                   {enriched
                     .filter((e) => e.dias != null && e.dias >= 0 && e.dias <= 30)
-                    .sort((a, b) => (a.dias! - b.dias!))
+                    .sort((a, b) => a.dias! - b.dias!)
                     .slice(0, 10)
                     .map(({ row: r, status, dias }) => (
-                      <div key={r.id} className="flex items-center justify-between border-b border-border/40 py-1.5">
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between border-b border-border/40 py-1.5"
+                      >
                         <div className="min-w-0">
                           <p className="truncate font-medium">{r.nome}</p>
                           <p className="text-xs text-muted-foreground">
@@ -396,13 +413,18 @@ function SegurancaTrabalhoPage() {
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs tabular-nums text-muted-foreground">{dias}d</span>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {dias}d
+                          </span>
                           <StatusBadge status={status} />
                         </div>
                       </div>
                     ))}
-                  {enriched.filter((e) => e.dias != null && e.dias >= 0 && e.dias <= 30).length === 0 && (
-                    <p className="text-xs text-muted-foreground">Nenhum vencimento nos próximos 30 dias.</p>
+                  {enriched.filter((e) => e.dias != null && e.dias >= 0 && e.dias <= 30).length ===
+                    0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum vencimento nos próximos 30 dias.
+                    </p>
                   )}
                 </div>
               </GlassCard>
@@ -411,17 +433,22 @@ function SegurancaTrabalhoPage() {
                 <div className="space-y-2 text-sm">
                   {enriched
                     .filter((e) => e.status === "vencido")
-                    .sort((a, b) => (a.dias! - b.dias!))
+                    .sort((a, b) => a.dias! - b.dias!)
                     .slice(0, 10)
                     .map(({ row: r, dias }) => (
-                      <div key={r.id} className="flex items-center justify-between border-b border-border/40 py-1.5">
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between border-b border-border/40 py-1.5"
+                      >
                         <div className="min-w-0">
                           <p className="truncate font-medium">{r.nome}</p>
                           <p className="text-xs text-muted-foreground">
                             {r.funcao ?? "—"} · Venc. {fmtBr(r.data_vencimento)}
                           </p>
                         </div>
-                        <span className="shrink-0 text-xs font-semibold text-red-600 tabular-nums">{dias}d</span>
+                        <span className="shrink-0 text-xs font-semibold text-red-600 tabular-nums">
+                          {dias}d
+                        </span>
                       </div>
                     ))}
                   {totals.vencido === 0 && (
@@ -443,18 +470,42 @@ function SegurancaTrabalhoPage() {
                   className="h-9 max-w-xs"
                 />
                 <Select value={fStatus} onValueChange={(v) => setFStatus(v as typeof fStatus)}>
-                  <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder="Status" /></SelectTrigger>
+                  <SelectTrigger className="h-9 w-[180px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os status</SelectItem>
                     {(Object.keys(STATUS_LABEL) as AsoStatus[]).map((k) => (
-                      <SelectItem key={k} value={k}>{STATUS_LABEL[k]}</SelectItem>
+                      <SelectItem key={k} value={k}>
+                        {STATUS_LABEL[k]}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FilterSelect value={fFilial} onChange={setFFilial} options={filiais} label="Filial" />
-                <FilterSelect value={fCliente} onChange={setFCliente} options={clientes} label="Cliente" />
-                <FilterSelect value={fFuncao} onChange={setFFuncao} options={funcoes} label="Função" />
-                <FilterSelect value={fSupervisor} onChange={setFSupervisor} options={supervisores} label="Supervisor" />
+                <FilterSelect
+                  value={fFilial}
+                  onChange={setFFilial}
+                  options={filiais}
+                  label="Filial"
+                />
+                <FilterSelect
+                  value={fCliente}
+                  onChange={setFCliente}
+                  options={clientes}
+                  label="Cliente"
+                />
+                <FilterSelect
+                  value={fFuncao}
+                  onChange={setFFuncao}
+                  options={funcoes}
+                  label="Função"
+                />
+                <FilterSelect
+                  value={fSupervisor}
+                  onChange={setFSupervisor}
+                  options={supervisores}
+                  label="Supervisor"
+                />
                 <Button variant="ghost" size="sm" onClick={clearFilters}>
                   <X className="mr-1 h-3.5 w-3.5" /> Limpar
                 </Button>
@@ -464,32 +515,71 @@ function SegurancaTrabalhoPage() {
                 </div>
               </div>
 
-              <div className="max-h-[65vh] overflow-auto rounded-lg border border-border/40" style={{ overscrollBehavior: "auto" }}>
+              <div
+                className="max-h-[65vh] overflow-auto rounded-lg border border-border/40"
+                style={{ overscrollBehavior: "auto" }}
+              >
                 <Table>
                   <TableHeader className="sticky top-0 bg-background/95 backdrop-blur">
                     <TableRow>
-                      <ThSort label="Nome" k="nome" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                      <ThSort
+                        label="Nome"
+                        k="nome"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
                       <TableHead>Função</TableHead>
-                      <ThSort label="Filial" k="filial" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                      <ThSort
+                        label="Filial"
+                        k="filial"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
                       <TableHead>Supervisor</TableHead>
                       <TableHead>Último Exame</TableHead>
-                      <ThSort label="Vencimento" k="data_vencimento" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                      <ThSort label="Dias" k="dias" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
-                      <ThSort label="Status" k="status" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} />
+                      <ThSort
+                        label="Vencimento"
+                        k="data_vencimento"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
+                      <ThSort
+                        label="Dias"
+                        k="dias"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
+                      <ThSort
+                        label="Status"
+                        k="status"
+                        sortKey={sortKey}
+                        sortDir={sortDir}
+                        onClick={toggleSort}
+                      />
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {loading && (
                       <TableRow>
-                        <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                        <TableCell
+                          colSpan={9}
+                          className="py-8 text-center text-sm text-muted-foreground"
+                        >
                           Carregando…
                         </TableCell>
                       </TableRow>
                     )}
                     {!loading && filtered.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={9} className="py-8 text-center text-sm text-muted-foreground">
+                        <TableCell
+                          colSpan={9}
+                          className="py-8 text-center text-sm text-muted-foreground"
+                        >
                           Nenhum colaborador para os filtros atuais.
                         </TableCell>
                       </TableRow>
@@ -505,19 +595,41 @@ function SegurancaTrabalhoPage() {
                         <TableCell className="text-sm">{r.funcao ?? "—"}</TableCell>
                         <TableCell className="text-sm">{r.filial ?? "—"}</TableCell>
                         <TableCell className="text-sm">{r.supervisor ?? "—"}</TableCell>
-                        <TableCell className="text-sm tabular-nums">{fmtBr(r.data_exame_realizado)}</TableCell>
-                        <TableCell className="text-sm tabular-nums">{fmtBr(r.data_vencimento)}</TableCell>
                         <TableCell className="text-sm tabular-nums">
-                          {dias == null ? "—" : dias < 0 ? <span className="text-red-600 font-semibold">{dias}</span> : dias}
+                          {fmtBr(r.data_exame_realizado)}
                         </TableCell>
-                        <TableCell><StatusBadge status={status} /></TableCell>
+                        <TableCell className="text-sm tabular-nums">
+                          {fmtBr(r.data_vencimento)}
+                        </TableCell>
+                        <TableCell className="text-sm tabular-nums">
+                          {dias == null ? (
+                            "—"
+                          ) : dias < 0 ? (
+                            <span className="text-red-600 font-semibold">{dias}</span>
+                          ) : (
+                            dias
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={status} />
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <IconBtn title="Agendar" onClick={() => setAgendar(r)}><CalendarClock className="h-4 w-4" /></IconBtn>
-                            <IconBtn title="Marcar Realizado" onClick={() => setRealizar(r)}><CheckCircle2 className="h-4 w-4" /></IconBtn>
-                            <IconBtn title="Histórico" onClick={() => setHistorico(r)}><History className="h-4 w-4" /></IconBtn>
-                            <IconBtn title="Editar" onClick={() => setEditing(r)}><Pencil className="h-4 w-4" /></IconBtn>
-                            <IconBtn title="Excluir" onClick={() => setExcluir(r)}><Trash2 className="h-4 w-4" /></IconBtn>
+                            <IconBtn title="Agendar" onClick={() => setAgendar(r)}>
+                              <CalendarClock className="h-4 w-4" />
+                            </IconBtn>
+                            <IconBtn title="Marcar Realizado" onClick={() => setRealizar(r)}>
+                              <CheckCircle2 className="h-4 w-4" />
+                            </IconBtn>
+                            <IconBtn title="Histórico" onClick={() => setHistorico(r)}>
+                              <History className="h-4 w-4" />
+                            </IconBtn>
+                            <IconBtn title="Editar" onClick={() => setEditing(r)}>
+                              <Pencil className="h-4 w-4" />
+                            </IconBtn>
+                            <IconBtn title="Excluir" onClick={() => setExcluir(r)}>
+                              <Trash2 className="h-4 w-4" />
+                            </IconBtn>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -534,7 +646,10 @@ function SegurancaTrabalhoPage() {
               <h3 className="mb-3 text-base font-semibold">
                 Colaboradores sem registro de ASO ({pendencias.length})
               </h3>
-              <div className="max-h-[65vh] overflow-auto rounded-lg border border-border/40" style={{ overscrollBehavior: "auto" }}>
+              <div
+                className="max-h-[65vh] overflow-auto rounded-lg border border-border/40"
+                style={{ overscrollBehavior: "auto" }}
+              >
                 <Table>
                   <TableHeader className="sticky top-0 bg-background/95 backdrop-blur">
                     <TableRow>
@@ -549,7 +664,10 @@ function SegurancaTrabalhoPage() {
                   <TableBody>
                     {pendencias.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
+                        <TableCell
+                          colSpan={6}
+                          className="py-8 text-center text-sm text-muted-foreground"
+                        >
                           Todos os colaboradores possuem ASO registrado.
                         </TableCell>
                       </TableRow>
@@ -599,7 +717,9 @@ function SegurancaTrabalhoPage() {
         />
       )}
       {agendar && <AgendarDialog row={agendar} onClose={() => setAgendar(null)} onDone={reload} />}
-      {realizar && <RealizarDialog row={realizar} onClose={() => setRealizar(null)} onDone={reload} />}
+      {realizar && (
+        <RealizarDialog row={realizar} onClose={() => setRealizar(null)} onDone={reload} />
+      )}
       {excluir && <ExcluirDialog row={excluir} onClose={() => setExcluir(null)} onDone={reload} />}
       {historico && <HistoricoDialog row={historico} onClose={() => setHistorico(null)} />}
     </div>
@@ -607,7 +727,15 @@ function SegurancaTrabalhoPage() {
 }
 
 // ---------- Sub-componentes ----------
-function IconBtn({ children, title, onClick }: { children: React.ReactNode; title: string; onClick: () => void }) {
+function IconBtn({
+  children,
+  title,
+  onClick,
+}: {
+  children: React.ReactNode;
+  title: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -636,7 +764,10 @@ function ThSort({
   const active = sortKey === k;
   return (
     <TableHead>
-      <button className="inline-flex items-center gap-1 hover:text-foreground" onClick={() => onClick(k)}>
+      <button
+        className="inline-flex items-center gap-1 hover:text-foreground"
+        onClick={() => onClick(k)}
+      >
         {label}
         {active && <span className="text-xs">{sortDir === "asc" ? "▲" : "▼"}</span>}
       </button>
@@ -657,11 +788,15 @@ function FilterSelect({
 }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder={label} /></SelectTrigger>
+      <SelectTrigger className="h-9 w-[160px]">
+        <SelectValue placeholder={label} />
+      </SelectTrigger>
       <SelectContent>
         <SelectItem value="todos">Todos — {label}</SelectItem>
         {options.map((o) => (
-          <SelectItem key={o} value={o}>{o}</SelectItem>
+          <SelectItem key={o} value={o}>
+            {o}
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>
@@ -709,8 +844,13 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         const CHUNK_LOOKUP = 500;
         for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
           const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
-          const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
-          (data ?? []).forEach((r) => { if (r.cpf) idByCpfPre.set(r.cpf, r.id); });
+          const { data } = await supabase
+            .from("sst_colaboradores")
+            .select("id,cpf")
+            .in("cpf", slice);
+          (data ?? []).forEach((r) => {
+            if (r.cpf) idByCpfPre.set(r.cpf, r.id);
+          });
         }
       }
 
@@ -729,14 +869,19 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
               .upsert(row, { onConflict: "cpf" })
               .select("id,cpf")
               .single();
-            if (e2) { falhas.push(`${row.nome} (${row.cpf}): ${e2.message}`); continue; }
+            if (e2) {
+              falhas.push(`${row.nome} (${row.cpf}): ${e2.message}`);
+              continue;
+            }
             if (one?.id) importedIds.add(one.id);
-            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++;
+            else inseridos++;
           }
         } else {
           (data ?? []).forEach((r) => r.id && importedIds.add(r.id));
           for (const row of batch) {
-            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++; else inseridos++;
+            if (row.cpf && idByCpfPre.has(row.cpf)) atualizados++;
+            else inseridos++;
           }
         }
       }
@@ -746,20 +891,35 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         const mats = semCpf.map((r) => r.matricula).filter((m): m is string => !!m);
         const idByMat = new Map<string, string>();
         if (mats.length) {
-          const { data } = await supabase.from("sst_colaboradores").select("id,matricula").in("matricula", mats);
-          (data ?? []).forEach((r) => { if (r.matricula) idByMat.set(r.matricula, r.id); });
+          const { data } = await supabase
+            .from("sst_colaboradores")
+            .select("id,matricula")
+            .in("matricula", mats);
+          (data ?? []).forEach((r) => {
+            if (r.matricula) idByMat.set(r.matricula, r.id);
+          });
         }
         for (const r of semCpf) {
           const id = r.matricula ? idByMat.get(r.matricula) : undefined;
           const payload = { ...r, ativo: true };
           if (id) {
             const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", id);
-            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            if (error) {
+              falhas.push(`${r.nome}: ${error.message}`);
+              continue;
+            }
             atualizados++;
             importedIds.add(id);
           } else {
-            const { data, error } = await supabase.from("sst_colaboradores").insert(payload).select("id").single();
-            if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+            const { data, error } = await supabase
+              .from("sst_colaboradores")
+              .insert(payload)
+              .select("id")
+              .single();
+            if (error) {
+              falhas.push(`${r.nome}: ${error.message}`);
+              continue;
+            }
             inseridos++;
             if (data?.id) importedIds.add(data.id);
           }
@@ -768,10 +928,16 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
 
       let inativados = 0;
       if (subst) {
-        const { data: allActive } = await supabase.from("sst_colaboradores").select("id").eq("ativo", true);
+        const { data: allActive } = await supabase
+          .from("sst_colaboradores")
+          .select("id")
+          .eq("ativo", true);
         const toInactive = (allActive ?? []).filter((r) => !importedIds.has(r.id)).map((r) => r.id);
         if (toInactive.length) {
-          const { error } = await supabase.from("sst_colaboradores").update({ ativo: false }).in("id", toInactive);
+          const { error } = await supabase
+            .from("sst_colaboradores")
+            .update({ ativo: false })
+            .in("id", toInactive);
           if (!error) inativados = toInactive.length;
         }
       }
@@ -782,7 +948,9 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         (preview.errors.length ? ` · ${preview.errors.length} aviso(s) da planilha` : "") +
         (falhas.length ? ` · ${falhas.length} linha(s) com erro` : "");
       if (falhas.length) {
-        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+        toast.warning(msg, {
+          description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : ""),
+        });
       } else {
         toast.success(msg);
       }
@@ -801,7 +969,8 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         <DialogHeader>
           <DialogTitle>Importar planilha de ASO</DialogTitle>
           <DialogDescription>
-            Aceita <code>.xlsx</code>. Merge incremental por CPF (fallback matrícula). Datas em DD/MM/AAAA ou ISO.
+            Aceita <code>.xlsx</code>. Merge incremental por CPF (fallback matrícula). Datas em
+            DD/MM/AAAA ou ISO.
           </DialogDescription>
         </DialogHeader>
 
@@ -832,22 +1001,27 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
               <p className="text-sm">
                 <strong>{preview.rows.length}</strong> linha(s) válida(s).{" "}
                 {preview.errors.length > 0 && (
-                  <span className="text-amber-600">
-                    {preview.errors.length} aviso(s).
-                  </span>
+                  <span className="text-amber-600">{preview.errors.length} aviso(s).</span>
                 )}
               </p>
               {preview.errors.length > 0 && (
                 <div className="max-h-32 overflow-auto rounded bg-muted/50 p-2 text-xs">
                   {preview.errors.slice(0, 30).map((e, i) => (
                     <div key={i}>
-                      <span className="text-muted-foreground">[{e.sheet} L{e.row}]</span> {e.message}
+                      <span className="text-muted-foreground">
+                        [{e.sheet} L{e.row}]
+                      </span>{" "}
+                      {e.message}
                     </div>
                   ))}
                 </div>
               )}
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={subst} onChange={(e) => setSubst(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={subst}
+                  onChange={(e) => setSubst(e.target.checked)}
+                />
                 <span>Substituição completa (inativar colaboradores fora da planilha)</span>
               </label>
             </div>
@@ -855,7 +1029,9 @@ function ImportDialog({ onClose, onDone }: { onClose: () => void; onDone: () => 
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button onClick={handleSave} disabled={!preview || saving}>
             {saving ? "Salvando…" : "Confirmar importação"}
           </Button>
@@ -891,13 +1067,38 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
     try {
       // NUNCA sobrescreve datas de exame/vencimento/tipo/observação.
       const CADASTRAL_KEYS = [
-        "empresa", "filial", "descricao_filial", "cliente", "matricula", "nome",
-        "funcao", "cod_funcao", "descricao_funcao", "situacao",
-        "supervisor", "gerente", "gerente_regional", "diretor", "diretor_executivo",
-        "regional", "negocio", "tipo_contrato", "escala", "horario_trabalho",
-        "sexo", "rg", "data_nascimento", "municipio", "estado",
-        "pis", "ctps", "serie_ctps", "cc", "cr",
-        "data_admissao", "data_demissao",
+        "empresa",
+        "filial",
+        "descricao_filial",
+        "cliente",
+        "matricula",
+        "nome",
+        "funcao",
+        "cod_funcao",
+        "descricao_funcao",
+        "situacao",
+        "supervisor",
+        "gerente",
+        "gerente_regional",
+        "diretor",
+        "diretor_executivo",
+        "regional",
+        "negocio",
+        "tipo_contrato",
+        "escala",
+        "horario_trabalho",
+        "sexo",
+        "rg",
+        "data_nascimento",
+        "municipio",
+        "estado",
+        "pis",
+        "ctps",
+        "serie_ctps",
+        "cc",
+        "cr",
+        "data_admissao",
+        "data_demissao",
       ] as const;
 
       const pickCadastral = (r: SstImportRow) => {
@@ -910,7 +1111,9 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
         return out;
       };
 
-      let unificados = 0, novos = 0, semCpf = 0;
+      let unificados = 0,
+        novos = 0,
+        semCpf = 0;
       const falhas: string[] = [];
 
       const comCpf = preview.rows.filter((r) => !!r.cpf);
@@ -922,21 +1125,32 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
       for (let i = 0; i < cpfs.length; i += CHUNK_LOOKUP) {
         const slice = cpfs.slice(i, i + CHUNK_LOOKUP);
         const { data } = await supabase.from("sst_colaboradores").select("id,cpf").in("cpf", slice);
-        (data ?? []).forEach((r) => { if (r.cpf) idByCpf.set(r.cpf, r.id); });
+        (data ?? []).forEach((r) => {
+          if (r.cpf) idByCpf.set(r.cpf, r.id);
+        });
       }
 
       for (const r of comCpf) {
         const id = idByCpf.get(r.cpf!);
         const cadastral = pickCadastral(r);
         if (id) {
-          const { error } = await supabase.from("sst_colaboradores").update(cadastral as never).eq("id", id);
-          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+          const { error } = await supabase
+            .from("sst_colaboradores")
+            .update(cadastral as never)
+            .eq("id", id);
+          if (error) {
+            falhas.push(`${r.nome}: ${error.message}`);
+            continue;
+          }
           unificados++;
         } else if (insertMissing) {
           const { error } = await supabase
             .from("sst_colaboradores")
             .insert({ ...cadastral, cpf: r.cpf, nome: r.nome, ativo: true } as never);
-          if (error) { falhas.push(`${r.nome}: ${error.message}`); continue; }
+          if (error) {
+            falhas.push(`${r.nome}: ${error.message}`);
+            continue;
+          }
           novos++;
         }
       }
@@ -947,7 +1161,9 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
         (preview.errors.length ? ` · ${preview.errors.length} aviso(s)` : "") +
         (falhas.length ? ` · ${falhas.length} com erro` : "");
       if (falhas.length) {
-        toast.warning(msg, { description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : "") });
+        toast.warning(msg, {
+          description: falhas.slice(0, 5).join(" | ") + (falhas.length > 5 ? " …" : ""),
+        });
       } else {
         toast.success(msg);
       }
@@ -966,8 +1182,9 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
         <DialogHeader>
           <DialogTitle>Importar Cadastro de Funcionários</DialogTitle>
           <DialogDescription>
-            Atualiza <strong>somente dados cadastrais</strong> (empresa, filial, função, supervisor, matrícula, admissão)
-            usando o <strong>CPF</strong> como chave. Datas e histórico de ASO permanecem intactos.
+            Atualiza <strong>somente dados cadastrais</strong> (empresa, filial, função, supervisor,
+            matrícula, admissão) usando o <strong>CPF</strong> como chave. Datas e histórico de ASO
+            permanecem intactos.
           </DialogDescription>
         </DialogHeader>
 
@@ -979,7 +1196,10 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) { setFile(f); handleParse(f); }
+              if (f) {
+                setFile(f);
+                handleParse(f);
+              }
             }}
           />
           <div className="flex items-center gap-2">
@@ -1002,21 +1222,33 @@ function ImportCadastroDialog({ onClose, onDone }: { onClose: () => void; onDone
                 <div className="max-h-32 overflow-auto rounded bg-muted/50 p-2 text-xs">
                   {preview.errors.slice(0, 30).map((e, i) => (
                     <div key={i}>
-                      <span className="text-muted-foreground">[{e.sheet} L{e.row}]</span> {e.message}
+                      <span className="text-muted-foreground">
+                        [{e.sheet} L{e.row}]
+                      </span>{" "}
+                      {e.message}
                     </div>
                   ))}
                 </div>
               )}
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={insertMissing} onChange={(e) => setInsertMissing(e.target.checked)} />
-                <span>Inserir novos funcionários (sem ASO ainda) quando não houver correspondência por CPF</span>
+                <input
+                  type="checkbox"
+                  checked={insertMissing}
+                  onChange={(e) => setInsertMissing(e.target.checked)}
+                />
+                <span>
+                  Inserir novos funcionários (sem ASO ainda) quando não houver correspondência por
+                  CPF
+                </span>
               </label>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button onClick={handleSave} disabled={!preview || saving}>
             {saving ? "Salvando…" : "Confirmar unificação"}
           </Button>
@@ -1034,7 +1266,9 @@ function ExportDialog({
   totalAll,
 }: {
   onClose: () => void;
-  rows: ReturnType<typeof exportSstXlsx> extends Promise<void> ? Parameters<typeof exportSstXlsx>[0] : never;
+  rows: ReturnType<typeof exportSstXlsx> extends Promise<void>
+    ? Parameters<typeof exportSstXlsx>[0]
+    : never;
   allRows: () => Parameters<typeof exportSstXlsx>[0];
   totalAll: number;
 }) {
@@ -1065,7 +1299,9 @@ function ExportDialog({
         </DialogHeader>
         <div className="space-y-3">
           <Select value={scope} onValueChange={(v) => setScope(v as typeof scope)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="filtered">Somente filtrados ({rows.length})</SelectItem>
               <SelectItem value="all">Todos ({totalAll})</SelectItem>
@@ -1148,7 +1384,10 @@ function EditDialog({
         if (error) throw error;
         toast.success("Colaborador cadastrado.");
       } else {
-        const { error } = await supabase.from("sst_colaboradores").update(payload).eq("id", initial!.id);
+        const { error } = await supabase
+          .from("sst_colaboradores")
+          .update(payload)
+          .eq("id", initial!.id);
         if (error) throw error;
         toast.success("Colaborador atualizado.");
       }
@@ -1167,35 +1406,116 @@ function EditDialog({
         <DialogHeader>
           <DialogTitle>{isNew ? "Novo colaborador" : `Editar — ${initial!.nome}`}</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 sm:grid-cols-2 max-h-[70vh] overflow-auto pr-1" style={{ overscrollBehavior: "auto" }}>
-          <Field label="Nome*"><Input value={f.nome ?? ""} onChange={(e) => set("nome", e.target.value)} /></Field>
-          <Field label="CPF"><Input value={f.cpf ?? ""} onChange={(e) => set("cpf", e.target.value || null)} /></Field>
-          <Field label="Matrícula"><Input value={f.matricula ?? ""} onChange={(e) => set("matricula", e.target.value || null)} /></Field>
-          <Field label="Função"><Input value={f.funcao ?? ""} onChange={(e) => set("funcao", e.target.value || null)} /></Field>
-          <Field label="Empresa"><Input value={f.empresa ?? ""} onChange={(e) => set("empresa", e.target.value || null)} /></Field>
-          <Field label="Filial"><Input value={f.filial ?? ""} onChange={(e) => set("filial", e.target.value || null)} /></Field>
-          <Field label="Cliente"><Input value={f.cliente ?? ""} onChange={(e) => set("cliente", e.target.value || null)} /></Field>
-          <Field label="Supervisor"><Input value={f.supervisor ?? ""} onChange={(e) => set("supervisor", e.target.value || null)} /></Field>
-          <Field label="Situação"><Input value={f.situacao ?? ""} onChange={(e) => set("situacao", e.target.value || null)} /></Field>
-          <Field label="Data de admissão"><Input type="date" value={f.data_admissao ?? ""} onChange={(e) => set("data_admissao", e.target.value || null)} /></Field>
-          <Field label="Último exame"><Input type="date" value={f.data_exame_realizado ?? ""} onChange={(e) => set("data_exame_realizado", e.target.value || null)} /></Field>
-          <Field label="Tipo de exame"><Input value={f.tipo_exame ?? ""} onChange={(e) => set("tipo_exame", e.target.value || null)} /></Field>
-          <Field label="Vencimento"><Input type="date" value={f.data_vencimento ?? ""} onChange={(e) => set("data_vencimento", e.target.value || null)} /></Field>
-          <Field label="Sugestão de agendamento"><Input type="date" value={f.data_sugerida_agendamento ?? ""} onChange={(e) => set("data_sugerida_agendamento", e.target.value || null)} /></Field>
+        <div
+          className="grid gap-3 sm:grid-cols-2 max-h-[70vh] overflow-auto pr-1"
+          style={{ overscrollBehavior: "auto" }}
+        >
+          <Field label="Nome*">
+            <Input value={f.nome ?? ""} onChange={(e) => set("nome", e.target.value)} />
+          </Field>
+          <Field label="CPF">
+            <Input value={f.cpf ?? ""} onChange={(e) => set("cpf", e.target.value || null)} />
+          </Field>
+          <Field label="Matrícula">
+            <Input
+              value={f.matricula ?? ""}
+              onChange={(e) => set("matricula", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Função">
+            <Input value={f.funcao ?? ""} onChange={(e) => set("funcao", e.target.value || null)} />
+          </Field>
+          <Field label="Empresa">
+            <Input
+              value={f.empresa ?? ""}
+              onChange={(e) => set("empresa", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Filial">
+            <Input value={f.filial ?? ""} onChange={(e) => set("filial", e.target.value || null)} />
+          </Field>
+          <Field label="Cliente">
+            <Input
+              value={f.cliente ?? ""}
+              onChange={(e) => set("cliente", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Supervisor">
+            <Input
+              value={f.supervisor ?? ""}
+              onChange={(e) => set("supervisor", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Situação">
+            <Input
+              value={f.situacao ?? ""}
+              onChange={(e) => set("situacao", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Data de admissão">
+            <Input
+              type="date"
+              value={f.data_admissao ?? ""}
+              onChange={(e) => set("data_admissao", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Último exame">
+            <Input
+              type="date"
+              value={f.data_exame_realizado ?? ""}
+              onChange={(e) => set("data_exame_realizado", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Tipo de exame">
+            <Input
+              value={f.tipo_exame ?? ""}
+              onChange={(e) => set("tipo_exame", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Vencimento">
+            <Input
+              type="date"
+              value={f.data_vencimento ?? ""}
+              onChange={(e) => set("data_vencimento", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Sugestão de agendamento">
+            <Input
+              type="date"
+              value={f.data_sugerida_agendamento ?? ""}
+              onChange={(e) => set("data_sugerida_agendamento", e.target.value || null)}
+            />
+          </Field>
           <Field label="Observação" className="sm:col-span-2">
-            <Textarea rows={3} value={f.observacao ?? ""} onChange={(e) => set("observacao", e.target.value || null)} />
+            <Textarea
+              rows={3}
+              value={f.observacao ?? ""}
+              onChange={(e) => set("observacao", e.target.value || null)}
+            />
           </Field>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : "Salvar"}</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : "Salvar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div className={cn("space-y-1", className)}>
       <Label className="text-xs">{label}</Label>
@@ -1205,7 +1525,15 @@ function Field({ label, children, className }: { label: string; children: React.
 }
 
 // ---------- Agendar ----------
-function AgendarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: () => void; onDone: () => void }) {
+function AgendarDialog({
+  row,
+  onClose,
+  onDone,
+}: {
+  row: Colaborador;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [date, setDate] = useState(row.data_sugerida_agendamento ?? todayIso());
   const [saving, setSaving] = useState(false);
 
@@ -1232,11 +1560,17 @@ function AgendarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: ()
         <div className="space-y-2">
           <Label>Data do agendamento</Label>
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Vencimento atual: {fmtBr(row.data_vencimento)}</p>
+          <p className="text-xs text-muted-foreground">
+            Vencimento atual: {fmtBr(row.data_vencimento)}
+          </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : "Confirmar"}</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : "Confirmar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1244,7 +1578,15 @@ function AgendarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: ()
 }
 
 // ---------- Marcar realizado ----------
-function RealizarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: () => void; onDone: () => void }) {
+function RealizarDialog({
+  row,
+  onClose,
+  onDone,
+}: {
+  row: Colaborador;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [date, setDate] = useState(todayIso());
   const [tipo, setTipo] = useState(row.tipo_exame ?? "Periódico");
   const [obs, setObs] = useState("");
@@ -1295,8 +1637,12 @@ function RealizarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: (
           <DialogTitle>Marcar ASO como realizado — {row.nome}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Data do exame"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} /></Field>
-          <Field label="Tipo"><Input value={tipo} onChange={(e) => setTipo(e.target.value)} /></Field>
+          <Field label="Data do exame">
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </Field>
+          <Field label="Tipo">
+            <Input value={tipo} onChange={(e) => setTipo(e.target.value)} />
+          </Field>
           <Field label="Novo vencimento (auto)" className="sm:col-span-2">
             <Input readOnly value={fmtBr(venc)} />
           </Field>
@@ -1305,8 +1651,12 @@ function RealizarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: (
           </Field>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : "Registrar"}</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? "Salvando…" : "Registrar"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1314,11 +1664,22 @@ function RealizarDialog({ row, onClose, onDone }: { row: Colaborador; onClose: (
 }
 
 // ---------- Excluir ----------
-function ExcluirDialog({ row, onClose, onDone }: { row: Colaborador; onClose: () => void; onDone: () => void }) {
+function ExcluirDialog({
+  row,
+  onClose,
+  onDone,
+}: {
+  row: Colaborador;
+  onClose: () => void;
+  onDone: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   async function inactivate() {
     setBusy(true);
-    const { error } = await supabase.from("sst_colaboradores").update({ ativo: false }).eq("id", row.id);
+    const { error } = await supabase
+      .from("sst_colaboradores")
+      .update({ ativo: false })
+      .eq("id", row.id);
     setBusy(false);
     if (error) return toast.error(error.message);
     toast.success("Colaborador inativado.");
@@ -1331,7 +1692,8 @@ function ExcluirDialog({ row, onClose, onDone }: { row: Colaborador; onClose: ()
         <AlertDialogHeader>
           <AlertDialogTitle>Inativar {row.nome}?</AlertDialogTitle>
           <AlertDialogDescription>
-            O colaborador deixará de aparecer nas listas. O histórico de exames e auditoria é preservado.
+            O colaborador deixará de aparecer nas listas. O histórico de exames e auditoria é
+            preservado.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -1389,9 +1751,19 @@ function HistoricoDialog({ row, onClose }: { row: Colaborador; onClose: () => vo
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">Carregando…</TableCell></TableRow>}
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                    Carregando…
+                  </TableCell>
+                </TableRow>
+              )}
               {!loading && items.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">Nenhum exame registrado ainda.</TableCell></TableRow>
+                <TableRow>
+                  <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+                    Nenhum exame registrado ainda.
+                  </TableCell>
+                </TableRow>
               )}
               {items.map((h) => (
                 <TableRow key={h.id}>
@@ -1405,7 +1777,9 @@ function HistoricoDialog({ row, onClose }: { row: Colaborador; onClose: () => vo
           </Table>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

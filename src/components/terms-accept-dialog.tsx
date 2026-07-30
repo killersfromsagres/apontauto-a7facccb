@@ -60,7 +60,9 @@ const SECTIONS: Section[] = [
           O acesso é feito por credenciais corporativas fornecidas internamente aos colaboradores
           autorizados.
         </li>
-        <li>As credenciais são pessoais, intransferíveis e de uso restrito ao ambiente de trabalho.</li>
+        <li>
+          As credenciais são pessoais, intransferíveis e de uso restrito ao ambiente de trabalho.
+        </li>
         <li>Você é responsável por manter a confidencialidade da sua senha.</li>
       </ul>
     ),
@@ -78,8 +80,8 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         Utilize o sistema apenas para as finalidades operacionais autorizadas. É proibido tentar
-        acessar áreas sem autorização, realizar engenharia reversa ou usar o sistema para
-        atividades ilícitas.
+        acessar áreas sem autorização, realizar engenharia reversa ou usar o sistema para atividades
+        ilícitas.
       </p>
     ),
   },
@@ -96,9 +98,9 @@ const SECTIONS: Section[] = [
     body: (
       <div className="space-y-2">
         <p>
-          Como <strong>não existe cadastro público</strong>, o sistema <strong>não coleta dados
-          pessoais de visitantes</strong>. Apenas as informações operacionais necessárias ao
-          apontamento e planejamento de manutenção são armazenadas.
+          Como <strong>não existe cadastro público</strong>, o sistema{" "}
+          <strong>não coleta dados pessoais de visitantes</strong>. Apenas as informações
+          operacionais necessárias ao apontamento e planejamento de manutenção são armazenadas.
         </p>
         <p>
           O tratamento de dados segue a <strong>LGPD (Lei nº 13.709/2018)</strong>. Nenhum dado é
@@ -143,7 +145,6 @@ const SECTIONS: Section[] = [
       </p>
     ),
   },
-
 ];
 
 export function TermsAcceptDialog({
@@ -219,7 +220,11 @@ export function TermsAcceptDialog({
       setReadIds((prev) => {
         let changed = false;
         const next = new Set(prev);
-        for (const id of newlyRead) if (!next.has(id)) { next.add(id); changed = true; }
+        for (const id of newlyRead)
+          if (!next.has(id)) {
+            next.add(id);
+            changed = true;
+          }
         return changed ? next : prev;
       });
     }
@@ -250,10 +255,7 @@ export function TermsAcceptDialog({
     }, 350);
   };
 
-  const readCountLabel = useMemo(
-    () => `${totalRead}/${SECTIONS.length} seções lidas`,
-    [totalRead],
-  );
+  const readCountLabel = useMemo(() => `${totalRead}/${SECTIONS.length} seções lidas`, [totalRead]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,8 +269,14 @@ export function TermsAcceptDialog({
         }}
       >
         {/* iOS-style ambient light blobs */}
-        <div aria-hidden className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl"
+        />
 
         <style>{`
           @keyframes terms-shimmer { 0%{background-position:-200% 0}100%{background-position:200% 0} }
@@ -285,7 +293,10 @@ export function TermsAcceptDialog({
         `}</style>
 
         {/* Header — iOS 17 style */}
-        <div className="relative border-b border-white/10 px-6 py-5" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div
+          className="relative border-b border-white/10 px-6 py-5"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
           <DialogTitle className="flex items-center gap-2.5 text-[17px] font-semibold tracking-[-0.02em]">
             <span className="grid h-8 w-8 place-items-center rounded-[10px] bg-gradient-to-br from-cyan-400/25 to-blue-500/25 ring-1 ring-white/15 backdrop-blur-xl">
               <ShieldCheck className="h-4 w-4 text-cyan-200" />
@@ -311,7 +322,10 @@ export function TermsAcceptDialog({
 
         <div className="relative grid grid-cols-1 md:grid-cols-[210px_1fr]">
           {/* Section rail */}
-          <nav className="hidden border-r border-white/10 p-3 md:block" style={{ background: "rgba(255,255,255,0.02)" }}>
+          <nav
+            className="hidden border-r border-white/10 p-3 md:block"
+            style={{ background: "rgba(255,255,255,0.02)" }}
+          >
             <ul className="space-y-1">
               {SECTIONS.map((s, idx) => {
                 const active = activeId === s.id;
@@ -334,7 +348,11 @@ export function TermsAcceptDialog({
                             ? `${s.accent.bg} ${s.accent.text} ${s.accent.glow} ring-1 ${s.accent.ring}`
                             : "bg-white/[0.06] text-white/40 ring-1 ring-white/10"
                         }`}
-                        style={read ? { animation: "terms-icon-pop .45s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
+                        style={
+                          read
+                            ? { animation: "terms-icon-pop .45s cubic-bezier(.34,1.56,.64,1) both" }
+                            : undefined
+                        }
                       >
                         <Icon className="h-3.5 w-3.5" />
                         {read && (
@@ -398,7 +416,13 @@ export function TermsAcceptDialog({
                                 ? "bg-white/[0.09] text-white/85 ring-1 ring-white/15"
                                 : "bg-white/[0.05] text-white/50 ring-1 ring-white/10"
                           }`}
-                          style={read ? { animation: "terms-icon-pop .5s cubic-bezier(.34,1.56,.64,1) both" } : undefined}
+                          style={
+                            read
+                              ? {
+                                  animation: "terms-icon-pop .5s cubic-bezier(.34,1.56,.64,1) both",
+                                }
+                              : undefined
+                          }
                         >
                           <Icon className="h-4 w-4" />
                         </span>
@@ -410,7 +434,9 @@ export function TermsAcceptDialog({
                           </span>
                         )}
                       </h3>
-                      <div className="text-[13.5px] leading-[1.65] tracking-[-0.005em] text-white/75">{s.body}</div>
+                      <div className="text-[13.5px] leading-[1.65] tracking-[-0.005em] text-white/75">
+                        {s.body}
+                      </div>
                     </section>
                   );
                 })}
@@ -436,7 +462,10 @@ export function TermsAcceptDialog({
         </div>
 
         {/* Footer */}
-        <div className="relative border-t border-white/10 px-6 py-4" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div
+          className="relative border-t border-white/10 px-6 py-4"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
           {/* Explicit acceptance checkbox */}
           <label
             className={`mb-3 flex cursor-pointer items-start gap-3 rounded-2xl border p-3 backdrop-blur-xl transition-all duration-400 ${
@@ -478,10 +507,16 @@ export function TermsAcceptDialog({
             <div className="flex items-center gap-3 text-[11px] tracking-[-0.01em] text-white/50">
               <span>
                 Leitura:{" "}
-                <span className={`tabular-nums ${reachedBottom ? "text-cyan-300" : "text-white/70"}`}>{progress}%</span>
+                <span
+                  className={`tabular-nums ${reachedBottom ? "text-cyan-300" : "text-white/70"}`}
+                >
+                  {progress}%
+                </span>
               </span>
               <span className="text-white/20">•</span>
-              <span className={allRead ? "text-emerald-300" : "text-white/70"}>{readCountLabel}</span>
+              <span className={allRead ? "text-emerald-300" : "text-white/70"}>
+                {readCountLabel}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -552,7 +587,15 @@ export function TermsAcceptDialog({
               style={{ animation: "terms-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}
             >
               <div className="relative grid h-20 w-20 place-items-center rounded-full bg-emerald-500 shadow-[0_0_48px_rgba(16,185,129,0.7)]">
-                <svg viewBox="0 0 24 24" className="h-10 w-10" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-10 w-10"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path
                     d="M5 12l5 5L20 7"
                     style={{
@@ -563,7 +606,9 @@ export function TermsAcceptDialog({
                   />
                 </svg>
               </div>
-              <p className="text-[14px] font-semibold tracking-[-0.015em] text-white">Termos aceitos com sucesso</p>
+              <p className="text-[14px] font-semibold tracking-[-0.015em] text-white">
+                Termos aceitos com sucesso
+              </p>
             </div>
           </div>
         )}

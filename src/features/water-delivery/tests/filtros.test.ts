@@ -39,18 +39,17 @@ const ativo = (over: Partial<FiltroAtivo> = {}): FiltroAtivo =>
     ...over,
   }) as FiltroAtivo;
 
-
 const HOJE = new Date("2026-01-20T12:00:00");
 
 describe("validarAtivo", () => {
   it("exige ponto, periodicidade válida e uma data-base", () => {
     expect(validarAtivo({})).toBe("Selecione o ponto de entrega.");
-    expect(
-      validarAtivo({ ponto_id: "p1", tipo_filtro: "refil", periodicidade_dias: 0 }),
-    ).toMatch(/Periodicidade/);
-    expect(
-      validarAtivo({ ponto_id: "p1", tipo_filtro: "refil", periodicidade_dias: 180 }),
-    ).toMatch(/data de instalação/);
+    expect(validarAtivo({ ponto_id: "p1", tipo_filtro: "refil", periodicidade_dias: 0 })).toMatch(
+      /Periodicidade/,
+    );
+    expect(validarAtivo({ ponto_id: "p1", tipo_filtro: "refil", periodicidade_dias: 180 })).toMatch(
+      /data de instalação/,
+    );
     expect(
       validarAtivo({
         ponto_id: "p1",

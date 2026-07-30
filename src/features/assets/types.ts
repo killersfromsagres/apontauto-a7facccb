@@ -1,20 +1,9 @@
 // Tipos compartilhados do catálogo de ativos (PCM).
 
-export type AssetLevel =
-  | "PLANTA"
-  | "PREDIO"
-  | "ANDAR"
-  | "AMBIENTE"
-  | "EQUIPAMENTO"
-  | "";
+export type AssetLevel = "PLANTA" | "PREDIO" | "ANDAR" | "AMBIENTE" | "EQUIPAMENTO" | "";
 
 /** Como o valor de localização foi obtido. */
-export type ResolutionMethod =
-  | "tree"
-  | "legacy"
-  | "existing-value"
-  | "manual"
-  | "unmatched";
+export type ResolutionMethod = "tree" | "legacy" | "existing-value" | "manual" | "unmatched";
 
 /** Registro cru de um ativo (linha da planilha ou da tabela `assets`). */
 export interface AssetRecord {

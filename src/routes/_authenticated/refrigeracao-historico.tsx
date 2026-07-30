@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Camera, Package, AlertTriangle, Loader2, CheckCircle2, Download, ExternalLink, Link as LinkIcon } from "lucide-react";
+import {
+  Search,
+  Camera,
+  Package,
+  AlertTriangle,
+  Loader2,
+  CheckCircle2,
+  Download,
+  ExternalLink,
+  Link as LinkIcon,
+} from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
@@ -15,12 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   EQUIPES_REFRIGERACAO,
   loadEquipe,
@@ -50,8 +55,25 @@ type OsRow = {
   updated_at: string;
 };
 
-type Foto = { id: string; storage_path: string | null; image_url: string | null; created_at: string; legenda: string | null };
-type Peca = { id: string; descricao: string; quantidade: number; urgencia: string; observacao: string | null; patrimonio: string | null; modelo: string | null; btus: string | null; status_gestor: string | null; created_at: string };
+type Foto = {
+  id: string;
+  storage_path: string | null;
+  image_url: string | null;
+  created_at: string;
+  legenda: string | null;
+};
+type Peca = {
+  id: string;
+  descricao: string;
+  quantidade: number;
+  urgencia: string;
+  observacao: string | null;
+  patrimonio: string | null;
+  modelo: string | null;
+  btus: string | null;
+  status_gestor: string | null;
+  created_at: string;
+};
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
 function equipeStyles(equipe: string | null | undefined): { row: string; badge: string } {
@@ -63,17 +85,20 @@ function equipeStyles(equipe: string | null | undefined): { row: string; badge: 
   if (n === "refrigeracao 1")
     return {
       row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
-      badge: "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+      badge:
+        "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
     };
   if (n === "refrigeracao 2")
     return {
       row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
-      badge: "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
+      badge:
+        "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
     };
   if (n === "refrigeracao 3")
     return {
       row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
-      badge: "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+      badge:
+        "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
     };
   return { row: "border-l-4 border-transparent hover:bg-accent/60", badge: "" };
 }
@@ -97,7 +122,9 @@ function HistoricoPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("refrigeracao_os")
-        .select("id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, status, fim, updated_at")
+        .select(
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, status, fim, updated_at",
+        )
         .eq("status", "concluida")
         .order("fim", { ascending: false, nullsFirst: false })
         .limit(500);
@@ -128,10 +155,7 @@ function HistoricoPage() {
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Minha equipe
             </span>
-            <Select
-              value={equipe}
-              onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}
-            >
+            <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
               <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
                 <SelectValue />
               </SelectTrigger>
@@ -157,7 +181,9 @@ function HistoricoPage() {
         </div>
         {equipe !== "todas" && (
           <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary" className="text-[10px]">{equipe}</Badge>
+            <Badge variant="secondary" className="text-[10px]">
+              {equipe}
+            </Badge>
             <span>Mostrando apenas OS desta equipe.</span>
             <button
               type="button"
@@ -183,41 +209,43 @@ function HistoricoPage() {
               const st = equipeStyles(o.equipe);
               return (
                 <li key={o.id}>
-                  <div className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}>
+                  <div
+                    className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}
+                  >
                     <button
                       type="button"
                       onClick={() => setOpen(o)}
                       className="flex flex-1 items-start gap-3 text-left"
                     >
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {o.status}
-                        </Badge>
-                        {o.equipe && (
-                          <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                            {o.equipe}
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-sm font-semibold">OS {o.numero_os}</span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {o.status}
                           </Badge>
+                          {o.equipe && (
+                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                              {o.equipe}
+                            </Badge>
+                          )}
+                          {o.fim && (
+                            <span className="text-xs text-muted-foreground">
+                              concluída em {new Date(o.fim).toLocaleString("pt-BR")}
+                            </span>
+                          )}
+                        </div>
+                        {o.nome_os && (
+                          <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
                         )}
-                        {o.fim && (
-                          <span className="text-xs text-muted-foreground">
-                            concluída em {new Date(o.fim).toLocaleString("pt-BR")}
-                          </span>
-                        )}
+                        <div className="truncate text-sm text-muted-foreground">
+                          {o.equipamento} · Ativo {o.ativo}
+                          {o.patrimonio ? ` · PAT ${o.patrimonio}` : ""}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground/80">
+                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                        </div>
                       </div>
-                      {o.nome_os && (
-                        <div className="mt-0.5 truncate text-sm font-medium">{o.nome_os}</div>
-                      )}
-                      <div className="truncate text-sm text-muted-foreground">
-                        {o.equipamento} · Ativo {o.ativo}
-                        {o.patrimonio ? ` · PAT ${o.patrimonio}` : ""}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground/80">
-                        {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                      </div>
-                    </div>
                     </button>
                     <div className="shrink-0 self-center">
                       <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
@@ -242,10 +270,24 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     queryFn: async () => {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
       const [f, p, pr] = await Promise.all([
-        supabase.from("refrigeracao_fotos").select("id, storage_path, image_url, created_at, legenda").eq("os_id", os.id).order("created_at"),
-        supabase.from("refrigeracao_pecas").select("id, descricao, quantidade, urgencia, observacao, patrimonio, modelo, btus, status_gestor, created_at").eq("os_id", os.id).order("created_at"),
+        supabase
+          .from("refrigeracao_fotos")
+          .select("id, storage_path, image_url, created_at, legenda")
+          .eq("os_id", os.id)
+          .order("created_at"),
+        supabase
+          .from("refrigeracao_pecas")
+          .select(
+            "id, descricao, quantidade, urgencia, observacao, patrimonio, modelo, btus, status_gestor, created_at",
+          )
+          .eq("os_id", os.id)
+          .order("created_at"),
 
-        supabase.from("refrigeracao_problemas").select("id, descricao, gravidade, created_at").eq("os_id", os.id).order("created_at"),
+        supabase
+          .from("refrigeracao_problemas")
+          .select("id, descricao, gravidade, created_at")
+          .eq("os_id", os.id)
+          .order("created_at"),
       ]);
       return {
         fotos: (f.data ?? []) as Foto[],
@@ -296,7 +338,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto sm:w-full">
         <DialogHeader>
-          <DialogTitle>OS {os?.numero_os} — {os?.nome_os ?? "sem título"}</DialogTitle>
+          <DialogTitle>
+            OS {os?.numero_os} — {os?.nome_os ?? "sem título"}
+          </DialogTitle>
         </DialogHeader>
         {isLoading ? (
           <div className="p-6 text-center text-sm text-muted-foreground">
@@ -306,9 +350,13 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           <div className="space-y-4">
             <section className="rounded-lg border bg-muted/30 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="text-[10px]">{os?.status}</Badge>
+                <Badge variant="secondary" className="text-[10px]">
+                  {os?.status}
+                </Badge>
                 {os?.equipe && (
-                  <Badge variant="outline" className="text-[10px]">{os.equipe}</Badge>
+                  <Badge variant="outline" className="text-[10px]">
+                    {os.equipe}
+                  </Badge>
                 )}
                 {os?.fim && (
                   <span className="text-[11px] text-muted-foreground">
@@ -367,18 +415,30 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         target="_blank"
                         rel="noreferrer"
                         className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
-                        onClick={(e) => { if (!urls[f.id]) e.preventDefault(); }}
+                        onClick={(e) => {
+                          if (!urls[f.id]) e.preventDefault();
+                        }}
                       >
                         {urls[f.id] ? (
-                          <img src={urls[f.id]} className="h-full w-full object-cover" alt="" loading="lazy" />
+                          <img
+                            src={urls[f.id]}
+                            className="h-full w-full object-cover"
+                            alt=""
+                            loading="lazy"
+                          />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">…</div>
+                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+                            …
+                          </div>
                         )}
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
                           <ExternalLink className="h-3.5 w-3.5 text-white" />
                           <button
                             type="button"
-                            onClick={(e) => { e.preventDefault(); downloadPhoto(f, idx); }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              downloadPhoto(f, idx);
+                            }}
                             className="pointer-events-auto rounded-full bg-white/20 p-1 text-white backdrop-blur-md transition hover:bg-white/30"
                             aria-label="Baixar foto"
                           >
@@ -426,20 +486,32 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                     <li key={p.id} className="rounded-md border bg-background/40 p-3 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{p.descricao}</span>
-                        <Badge variant="outline" className="text-[10px]">Qtd {p.quantidade}</Badge>
-                        <Badge variant="secondary" className="text-[10px]">{p.urgencia}</Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          Qtd {p.quantidade}
+                        </Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          {p.urgencia}
+                        </Badge>
                         {p.status_gestor && (
-                          <Badge variant="outline" className="text-[10px]">{p.status_gestor}</Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            {p.status_gestor}
+                          </Badge>
                         )}
                       </div>
                       {(p.patrimonio || p.modelo || p.btus) && (
                         <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-                          {p.patrimonio && <span>PAT <span className="font-mono">{p.patrimonio}</span></span>}
+                          {p.patrimonio && (
+                            <span>
+                              PAT <span className="font-mono">{p.patrimonio}</span>
+                            </span>
+                          )}
                           {p.modelo && <span>Modelo: {p.modelo}</span>}
                           {p.btus && <span>{p.btus} BTUs</span>}
                         </div>
                       )}
-                      {p.observacao && <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>}
+                      {p.observacao && (
+                        <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -447,7 +519,6 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 <p className="text-xs text-muted-foreground">Sem pedidos.</p>
               )}
             </section>
-
 
             <section>
               <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -458,7 +529,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                   {data.problemas.map((pr) => (
                     <li key={pr.id} className="rounded-md border bg-background/40 p-3 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">{pr.gravidade}</Badge>
+                        <Badge variant="outline" className="text-[10px]">
+                          {pr.gravidade}
+                        </Badge>
                       </div>
                       <p className="mt-1">{pr.descricao}</p>
                     </li>
@@ -475,7 +548,17 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   );
 }
 
-function InfoField({ label, value, mono, highlight }: { label: string; value: string; mono?: boolean; highlight?: boolean }) {
+function InfoField({
+  label,
+  value,
+  mono,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+  highlight?: boolean;
+}) {
   return (
     <div className="min-w-0">
       <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

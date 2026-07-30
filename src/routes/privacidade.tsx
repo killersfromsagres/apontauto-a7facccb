@@ -23,22 +23,30 @@ function PrivacidadePage() {
     <LegalLayout title="Política de Privacidade" updatedAt="15/07/2026">
       <p>
         Esta política descreve como o <strong>Apont Auto</strong> trata dados pessoais dos usuários
-        autorizados a acessar o sistema, em conformidade com a <strong>Lei Geral de Proteção de
-        Dados (LGPD — Lei nº 13.709/2018)</strong>.
+        autorizados a acessar o sistema, em conformidade com a{" "}
+        <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>.
       </p>
 
       <h2>1. Dados coletados</h2>
       <ul>
-        <li><strong>Cadastro:</strong> nome, e-mail e credenciais de acesso.</li>
-        <li><strong>Uso:</strong> apontamentos, ordens de serviço e registros de manutenção inseridos pelo próprio usuário.</li>
-        <li><strong>Técnicos:</strong> logs de acesso, endereço IP e informações de sessão para segurança.</li>
+        <li>
+          <strong>Cadastro:</strong> nome, e-mail e credenciais de acesso.
+        </li>
+        <li>
+          <strong>Uso:</strong> apontamentos, ordens de serviço e registros de manutenção inseridos
+          pelo próprio usuário.
+        </li>
+        <li>
+          <strong>Técnicos:</strong> logs de acesso, endereço IP e informações de sessão para
+          segurança.
+        </li>
       </ul>
 
       <h2>2. Finalidade</h2>
       <p>
-        Os dados são usados exclusivamente para operar o sistema de apontamento, autenticar usuários,
-        gerar relatórios internos e cumprir obrigações legais. Não vendemos dados a terceiros e não
-        realizamos publicidade.
+        Os dados são usados exclusivamente para operar o sistema de apontamento, autenticar
+        usuários, gerar relatórios internos e cumprir obrigações legais. Não vendemos dados a
+        terceiros e não realizamos publicidade.
       </p>
 
       <h2>3. Armazenamento</h2>

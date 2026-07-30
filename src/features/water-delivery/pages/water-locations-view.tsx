@@ -39,7 +39,6 @@ import { EmptyState, SkeletonState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { pontoSchema, primeiroErro } from "@/features/water-delivery/schemas/water";
 import {
-
   criarPonto,
   atualizarPonto,
   listMerges,
@@ -52,10 +51,12 @@ import {
   type Ponto,
   type PontoPrioridade,
 } from "@/features/water-delivery/queries/api";
-import { detectarDuplicidades, normalizarCodigo } from "@/features/water-delivery/schemas/normalize";
+import {
+  detectarDuplicidades,
+  normalizarCodigo,
+} from "@/features/water-delivery/schemas/normalize";
 import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
 import { cn } from "@/lib/utils";
-
 
 type Form = Partial<Ponto>;
 
@@ -412,13 +413,22 @@ export function WaterLocationsView() {
                 />
               </Campo>
               <Campo label="Prédio *">
-                <Input value={form.predio ?? ""} onChange={(e) => campo({ predio: e.target.value })} />
+                <Input
+                  value={form.predio ?? ""}
+                  onChange={(e) => campo({ predio: e.target.value })}
+                />
               </Campo>
               <Campo label="Andar / pavimento / setor">
-                <Input value={form.andar ?? ""} onChange={(e) => campo({ andar: e.target.value })} />
+                <Input
+                  value={form.andar ?? ""}
+                  onChange={(e) => campo({ andar: e.target.value })}
+                />
               </Campo>
               <Campo label="Espaço / ambiente">
-                <Input value={form.espaco ?? ""} onChange={(e) => campo({ espaco: e.target.value })} />
+                <Input
+                  value={form.espaco ?? ""}
+                  onChange={(e) => campo({ espaco: e.target.value })}
+                />
               </Campo>
               <Campo label="Descrição curta" full>
                 <Input
@@ -619,8 +629,7 @@ export function WaterLocationsView() {
                   <ul className="space-y-1">
                     {duplicidades.map((d) => (
                       <li key={d.registro.id}>
-                        {pontoLabel(d.registro as Ponto)} — {d.tipo} (
-                        {Math.round(d.score * 100)}%)
+                        {pontoLabel(d.registro as Ponto)} — {d.tipo} ({Math.round(d.score * 100)}%)
                       </li>
                     ))}
                   </ul>

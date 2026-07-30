@@ -3,7 +3,11 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { calcularBalanco, validarEntrega, agruparPorPredio } from "@/features/water-delivery/mutations/execucao";
+import {
+  calcularBalanco,
+  validarEntrega,
+  agruparPorPredio,
+} from "@/features/water-delivery/mutations/execucao";
 import { calcularEntrega } from "@/features/water-delivery/reports/indicadores";
 
 const entrega = (over: Partial<Parameters<typeof validarEntrega>[0]> = {}) =>
@@ -51,10 +55,9 @@ describe("validação da entrega em campo", () => {
   });
 
   it("exige foto e motivo na entrega parcial", () => {
-    const erros = validarEntrega(
-      entrega({ status: "parcial", fotos: [], motivo: "   " }),
-      { saldoDisponivel: 10 },
-    );
+    const erros = validarEntrega(entrega({ status: "parcial", fotos: [], motivo: "   " }), {
+      saldoDisponivel: 10,
+    });
     expect(erros).toContain("A entrega parcial exige ao menos uma foto.");
     expect(erros).toContain("A entrega parcial exige motivo.");
   });
@@ -87,21 +90,35 @@ describe("validação da entrega em campo", () => {
 
 describe("reconciliação de bags no fechamento da rota", () => {
   it("fecha sem divergência quando tudo é contabilizado", () => {
-    const b = calcularBalanco({ carregadas: 20, ajustes: 0, entregues: 16, restantes: 3, danificadas: 1 });
+    const b = calcularBalanco({
+      carregadas: 20,
+      ajustes: 0,
+      entregues: 16,
+      restantes: 3,
+      danificadas: 1,
+    });
     expect(b).toEqual({ esperado: 20, contabilizado: 20, divergencia: 0 });
   });
 
   it("aponta sobra e falta de bags", () => {
     expect(
-      calcularBalanco({ carregadas: 20, ajustes: 0, entregues: 16, restantes: 2, danificadas: 0 }).divergencia,
+      calcularBalanco({ carregadas: 20, ajustes: 0, entregues: 16, restantes: 2, danificadas: 0 })
+        .divergencia,
     ).toBe(-2);
     expect(
-      calcularBalanco({ carregadas: 20, ajustes: 0, entregues: 18, restantes: 4, danificadas: 0 }).divergencia,
+      calcularBalanco({ carregadas: 20, ajustes: 0, entregues: 18, restantes: 4, danificadas: 0 })
+        .divergencia,
     ).toBe(2);
   });
 
   it("considera os ajustes autorizados no esperado", () => {
-    const b = calcularBalanco({ carregadas: 20, ajustes: 5, entregues: 22, restantes: 3, danificadas: 0 });
+    const b = calcularBalanco({
+      carregadas: 20,
+      ajustes: 5,
+      entregues: 22,
+      restantes: 3,
+      danificadas: 0,
+    });
     expect(b.esperado).toBe(25);
     expect(b.divergencia).toBe(0);
   });

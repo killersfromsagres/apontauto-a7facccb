@@ -35,7 +35,11 @@ function FotoCarga({
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
         {url && (
-          <img src={url} alt={label} className="h-16 w-16 rounded-xl border border-border/60 object-cover" />
+          <img
+            src={url}
+            alt={label}
+            className="h-16 w-16 rounded-xl border border-border/60 object-cover"
+          />
         )}
         <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border/60 px-3 text-sm">
           {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
@@ -123,7 +127,12 @@ export function InicioRotaCard({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label>Veículo</Label>
-          <Input className="min-h-[44px]" value={veiculo} onChange={(e) => setVeiculo(e.target.value)} placeholder="Placa ou prefixo" />
+          <Input
+            className="min-h-[44px]"
+            value={veiculo}
+            onChange={(e) => setVeiculo(e.target.value)}
+            placeholder="Placa ou prefixo"
+          />
         </div>
         <div className="space-y-1">
           <Label>Hodômetro inicial (km)</Label>
@@ -138,11 +147,19 @@ export function InicioRotaCard({
         </div>
         <div className="space-y-1">
           <Label>Colaborador principal</Label>
-          <Input className="min-h-[44px]" value={principal} onChange={(e) => setPrincipal(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            value={principal}
+            onChange={(e) => setPrincipal(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Acompanhante (opcional)</Label>
-          <Input className="min-h-[44px]" value={secundario} onChange={(e) => setSecundario(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            value={secundario}
+            onChange={(e) => setSecundario(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Bags carregadas</Label>
@@ -155,7 +172,12 @@ export function InicioRotaCard({
             onChange={(e) => setBags(e.target.value)}
           />
         </div>
-        <FotoCarga rotaId={rota.id} url={foto} onChange={setFoto} label="Foto da carga (opcional)" />
+        <FotoCarga
+          rotaId={rota.id}
+          url={foto}
+          onChange={setFoto}
+          label="Foto da carga (opcional)"
+        />
       </div>
 
       <div className="space-y-1">
@@ -175,8 +197,16 @@ export function InicioRotaCard({
         </span>
       </label>
 
-      <Button className="min-h-[48px] w-full" disabled={!pronto || salvando} onClick={() => void iniciar()}>
-        {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+      <Button
+        className="min-h-[48px] w-full"
+        disabled={!pronto || salvando}
+        onClick={() => void iniciar()}
+      >
+        {salvando ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <PlayCircle className="mr-2 h-4 w-4" />
+        )}
         Iniciar rota e registrar saída
       </Button>
     </GlassCard>
@@ -254,31 +284,71 @@ export function FimRotaCard({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label>Hodômetro final (km)</Label>
-          <Input className="min-h-[44px]" type="number" min={0} inputMode="numeric" value={hodometro} onChange={(e) => setHodometro(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={hodometro}
+            onChange={(e) => setHodometro(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Bags restantes</Label>
-          <Input className="min-h-[44px]" type="number" min={0} inputMode="numeric" value={restantes} onChange={(e) => setRestantes(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={restantes}
+            onChange={(e) => setRestantes(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Bags vazias recolhidas</Label>
-          <Input className="min-h-[44px]" type="number" min={0} inputMode="numeric" value={recolhidas} onChange={(e) => setRecolhidas(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={recolhidas}
+            onChange={(e) => setRecolhidas(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Bags danificadas/perdidas</Label>
-          <Input className="min-h-[44px]" type="number" min={0} inputMode="numeric" value={danificadas} onChange={(e) => setDanificadas(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            type="number"
+            min={0}
+            inputMode="numeric"
+            value={danificadas}
+            onChange={(e) => setDanificadas(e.target.value)}
+          />
         </div>
         <div className="space-y-1">
           <Label>Outras saídas / ajustes</Label>
-          <Input className="min-h-[44px]" type="number" inputMode="numeric" value={ajustes} onChange={(e) => setAjustes(e.target.value)} />
+          <Input
+            className="min-h-[44px]"
+            type="number"
+            inputMode="numeric"
+            value={ajustes}
+            onChange={(e) => setAjustes(e.target.value)}
+          />
         </div>
-        <FotoCarga rotaId={rota.id} url={foto} onChange={setFoto} label="Foto da carga remanescente" />
+        <FotoCarga
+          rotaId={rota.id}
+          url={foto}
+          onChange={setFoto}
+          label="Foto da carga remanescente"
+        />
       </div>
 
       <div className="rounded-xl border border-border/60 bg-card/40 p-3 text-sm">
         <p className="text-xs text-muted-foreground">
-          Carregadas {rota.bags_carregadas ?? 0} + ajustes {Number(ajustes) || 0} = entregues {totalEntregue} +
-          restantes {Number(restantes) || 0} + danificadas {Number(danificadas) || 0}
+          Carregadas {rota.bags_carregadas ?? 0} + ajustes {Number(ajustes) || 0} = entregues{" "}
+          {totalEntregue} + restantes {Number(restantes) || 0} + danificadas{" "}
+          {Number(danificadas) || 0}
         </p>
         <p
           className={
@@ -296,7 +366,11 @@ export function FimRotaCard({
       {balanco.divergencia !== 0 && (
         <div className="space-y-1">
           <Label>Justificativa da divergência</Label>
-          <Textarea rows={2} value={justificativa} onChange={(e) => setJustificativa(e.target.value)} />
+          <Textarea
+            rows={2}
+            value={justificativa}
+            onChange={(e) => setJustificativa(e.target.value)}
+          />
         </div>
       )}
 
@@ -311,13 +385,20 @@ export function FimRotaCard({
       </label>
       {rota.colaborador_secundario && (
         <label className="flex items-center gap-3 rounded-xl border border-border/60 p-3 text-sm">
-          <Checkbox checked={confSecundario} onCheckedChange={(v) => setConfSecundario(Boolean(v))} />
+          <Checkbox
+            checked={confSecundario}
+            onCheckedChange={(v) => setConfSecundario(Boolean(v))}
+          />
           Confirmação de {rota.colaborador_secundario}
         </label>
       )}
 
       <Button className="min-h-[48px] w-full" disabled={salvando} onClick={() => void finalizar()}>
-        {salvando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Flag className="mr-2 h-4 w-4" />}
+        {salvando ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Flag className="mr-2 h-4 w-4" />
+        )}
         Finalizar rota
       </Button>
     </GlassCard>

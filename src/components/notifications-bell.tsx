@@ -1,11 +1,7 @@
 import { Archive, Bell, BellRing, CheckCheck, ShieldAlert } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/pcm";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -62,9 +58,7 @@ export function NotificationsBell() {
         </div>
 
         {items.length === 0 ? (
-          <p className="py-6 text-center text-xs text-muted-foreground">
-            Nenhum aviso ativo.
-          </p>
+          <p className="py-6 text-center text-xs text-muted-foreground">Nenhum aviso ativo.</p>
         ) : (
           <ul className="max-h-80 space-y-2 overflow-auto pr-1">
             {items.slice(0, 12).map((n) => {
@@ -105,11 +99,7 @@ export function NotificationsBell() {
                       </Button>
                     ) : null}
                     {n.requires_ack && !n.isAcked ? (
-                      <Button
-                        size="sm"
-                        className="h-8 text-xs"
-                        onClick={() => acknowledge(n.id)}
-                      >
+                      <Button size="sm" className="h-8 text-xs" onClick={() => acknowledge(n.id)}>
                         Confirmar ciência
                       </Button>
                     ) : null}
@@ -122,7 +112,7 @@ export function NotificationsBell() {
                       <Archive className="mr-1.5 size-3.5" />
                       Arquivar
                     </Button>
-                    {n.deep_link ?? n.link_url ? (
+                    {(n.deep_link ?? n.link_url) ? (
                       <Button asChild size="sm" variant="outline" className="h-8 text-xs">
                         <a href={(n.deep_link ?? n.link_url) as string}>Abrir</a>
                       </Button>

@@ -41,7 +41,9 @@ export function computeDashboardStats(rows: ChamadoRow[]): DashboardStats {
   const concluidos = rows.filter((r) => r.statusNorm === "concluido").length;
 
   const naoConcluidos = rows.filter((r) => r.statusNorm !== "concluido");
-  const vencidos = naoConcluidos.filter((r) => r.dataLimiteTs != null && r.dataLimiteTs < now).length;
+  const vencidos = naoConcluidos.filter(
+    (r) => r.dataLimiteTs != null && r.dataLimiteTs < now,
+  ).length;
   const vencendo48h = naoConcluidos.filter(
     (r) => r.dataLimiteTs != null && r.dataLimiteTs >= now && r.dataLimiteTs - now <= 2 * DAY_MS,
   ).length;
@@ -146,7 +148,8 @@ export function computeDashboardStats(rows: ChamadoRow[]): DashboardStats {
       insights.push({
         tipo: "critico",
         titulo: `${vencidos} chamados com SLA vencido`,
-        descricao: "Priorize o atendimento — a data-limite já passou e a OS ainda não foi concluída.",
+        descricao:
+          "Priorize o atendimento — a data-limite já passou e a OS ainda não foi concluída.",
         metrica: vencidos,
       });
     }

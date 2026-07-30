@@ -75,7 +75,11 @@ type InputItem = z.infer<typeof InputSchema>["items"][number];
 function fallbackClassify(items: InputItem[], reason: string): AiResult[] {
   return items.map((item) => ({
     os: item.os,
-    categoria: classifyBackorder({ descricao: item.descricao, servico: item.ativo, categoria: item.predio }),
+    categoria: classifyBackorder({
+      descricao: item.descricao,
+      servico: item.ativo,
+      categoria: item.predio,
+    }),
     confianca: "media",
     justificativa: `Classificação por regras locais: ${reason}`,
   }));
@@ -142,12 +146,16 @@ export const classifyBackorderWithAi = createServerFn({ method: "POST" })
             `OSs:\n${JSON.stringify(userPayload, null, 2)}`,
         });
         const validos = normalizeResults(batch, output);
-        results.push(...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno vazio da IA")));
+        results.push(
+          ...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno vazio da IA")),
+        );
       } catch (error) {
         if (NoObjectGeneratedError.isInstance(error)) {
           const parsed = parseJsonFallback(error.text ?? "");
           const validos = normalizeResults(batch, parsed);
-          results.push(...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno inválido da IA")));
+          results.push(
+            ...(validos.length > 0 ? validos : fallbackClassify(batch, "retorno inválido da IA")),
+          );
           continue;
         }
 

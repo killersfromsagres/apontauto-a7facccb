@@ -68,12 +68,18 @@ export function computeDataSugerida(dataVencimento: string | null | undefined): 
 }
 
 /** Dias até vencer (negativo = já venceu). */
-export function computeDiasAVencer(dataVencimento: string | null | undefined, ref = todayIso()): number | null {
+export function computeDiasAVencer(
+  dataVencimento: string | null | undefined,
+  ref = todayIso(),
+): number | null {
   if (!dataVencimento) return null;
   return diffDays(ref, dataVencimento);
 }
 
-export function computeStatus(dataVencimento: string | null | undefined, ref = todayIso()): AsoStatus {
+export function computeStatus(
+  dataVencimento: string | null | undefined,
+  ref = todayIso(),
+): AsoStatus {
   if (!dataVencimento) return "sem_registro";
   const dias = computeDiasAVencer(dataVencimento, ref)!;
   if (dias < 0) return "vencido";
@@ -111,7 +117,7 @@ export function parseFlexibleDate(input: unknown): string | null {
   const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   // DD/MM/YYYY ou DD-MM-YYYY
-  const br = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/.exec(s);
+  const br = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/.exec(s);
   if (br) {
     const d = br[1].padStart(2, "0");
     const m = br[2].padStart(2, "0");

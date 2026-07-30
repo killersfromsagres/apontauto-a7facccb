@@ -77,7 +77,6 @@ const ImportadorWizard = lazy(() =>
   })),
 );
 
-
 type Visao = "calendario" | "tabela" | "cards";
 
 export function WeeklyWaterPlanner() {

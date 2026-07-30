@@ -36,7 +36,11 @@ import {
   type VisitaStatus,
 } from "@/features/water-delivery/queries/api";
 import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
-import { lerCacheRota, salvarCacheRota, useAguaSync } from "@/features/water-delivery/offline/offline";
+import {
+  lerCacheRota,
+  salvarCacheRota,
+  useAguaSync,
+} from "@/features/water-delivery/offline/offline";
 import {
   STATUS_FINALIZADO,
   listRetificacoes,
@@ -44,8 +48,10 @@ import {
   rotaDoDia,
 } from "@/features/water-delivery/mutations/execucao";
 import { EntregaDialog } from "@/features/water-delivery/components/entrega-dialog";
-import { FimRotaCard, InicioRotaCard } from "@/features/water-delivery/components/rota-execucao-cards";
-
+import {
+  FimRotaCard,
+  InicioRotaCard,
+} from "@/features/water-delivery/components/rota-execucao-cards";
 
 const STATUS_TONE: Record<VisitaStatus, string> = {
   pendente: "border-border/60 bg-card/40",
@@ -124,9 +130,7 @@ export function RouteDayView() {
   const kpis = useMemo(() => {
     const total = lista.length;
     const concluidas = lista.filter((r) => r.v.status === "concluida").length;
-    const pendentesRota = lista.filter(
-      (r) => !STATUS_FINALIZADO.includes(r.v.status),
-    ).length;
+    const pendentesRota = lista.filter((r) => !STATUS_FINALIZADO.includes(r.v.status)).length;
     const bags = lista.reduce((a, r) => a + (r.v.bags_entregues ?? 0), 0);
     return { total, concluidas, pendentes: pendentesRota, bags };
   }, [lista]);
@@ -180,7 +184,10 @@ export function RouteDayView() {
               : "Fora dos dias úteis programados na planilha."}
             {rota.data && (
               <span className="ml-1">
-                · Rota {rota.data.status === "concluida" ? "finalizada" : rota.data.status.replace("_", " ")}
+                · Rota{" "}
+                {rota.data.status === "concluida"
+                  ? "finalizada"
+                  : rota.data.status.replace("_", " ")}
               </span>
             )}
           </p>
@@ -188,15 +195,35 @@ export function RouteDayView() {
       </GlassCard>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Paradas do dia" value={kpis.total} icon={<Droplets className="h-4 w-4" />} />
-        <KpiCard label="Concluídas" value={kpis.concluidas} icon={<CheckCircle2 className="h-4 w-4" />} />
-        <KpiCard label="Em aberto" value={kpis.pendentes} icon={<CircleSlash className="h-4 w-4" />} />
-        <KpiCard label="Bags entregues" value={kpis.bags} icon={<PackageCheck className="h-4 w-4" />} />
+        <KpiCard
+          label="Paradas do dia"
+          value={kpis.total}
+          icon={<Droplets className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Concluídas"
+          value={kpis.concluidas}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Em aberto"
+          value={kpis.pendentes}
+          icon={<CircleSlash className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Bags entregues"
+          value={kpis.bags}
+          icon={<PackageCheck className="h-4 w-4" />}
+        />
       </div>
 
       {/* 8.1 — Início da rota */}
       {podeEscrever && rota.data && !rota.data.iniciada_em && rota.data.status !== "cancelada" && (
-        <InicioRotaCard rota={rota.data} checklistValido={rota.data.checklist_confirmado} onIniciada={recarregar} />
+        <InicioRotaCard
+          rota={rota.data}
+          checklistValido={rota.data.checklist_confirmado}
+          onIniciada={recarregar}
+        />
       )}
 
       {!rota.data && !rota.isLoading && (
@@ -229,8 +256,8 @@ export function RouteDayView() {
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-sm font-semibold">{predio}</h3>
                 <span className="text-xs text-muted-foreground">
-                  {itens.filter((i) => STATUS_FINALIZADO.includes(i.v.status)).length}/{itens.length}{" "}
-                  tratadas
+                  {itens.filter((i) => STATUS_FINALIZADO.includes(i.v.status)).length}/
+                  {itens.length} tratadas
                 </span>
               </div>
               {itens.map(({ v, p }, idx) => (
@@ -247,7 +274,8 @@ export function RouteDayView() {
                     try {
                       const r = await marcarAndamento(v.id, status, {
                         data,
-                        atualizadoEm: (v as { atualizado_em?: string | null }).atualizado_em ?? null,
+                        atualizadoEm:
+                          (v as { atualizado_em?: string | null }).atualizado_em ?? null,
                       });
                       if (r.pendente) toast.info("Salvo no aparelho — aguardando sincronização.");
                       recarregar();
@@ -360,7 +388,11 @@ function ParadaCard({
   return (
     <div
       id={`visita-${visita.id}`}
-      className={cn("rounded-2xl border transition-colors", STATUS_TONE[visita.status], !primeiroDoPredio && "sm:ml-3")}
+      className={cn(
+        "rounded-2xl border transition-colors",
+        STATUS_TONE[visita.status],
+        !primeiroDoPredio && "sm:ml-3",
+      )}
     >
       <button
         type="button"
@@ -497,7 +529,9 @@ function ParadaCard({
                 <History className="mr-2 h-4 w-4" />
                 Histórico de retificações
               </Button>
-              {historico?.length === 0 && <p className="text-muted-foreground">Sem retificações.</p>}
+              {historico?.length === 0 && (
+                <p className="text-muted-foreground">Sem retificações.</p>
+              )}
               {historico?.map((h) => (
                 <p key={h.id} className="text-muted-foreground">
                   {new Date(h.criado_em).toLocaleString("pt-BR")} · {h.campo} — {h.motivo}

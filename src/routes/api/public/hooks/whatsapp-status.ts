@@ -68,10 +68,7 @@ export const Route = createFileRoute("/api/public/hooks/whatsapp-status")({
                 patch.ultimo_erro = String(st?.errors?.[0]?.title ?? "falha").slice(0, 300);
               }
               patch.status = st.status === "failed" ? "falha" : String(st.status);
-              await admin
-                .from("agua_whatsapp_envios")
-                .update(patch)
-                .eq("provider_message_id", id);
+              await admin.from("agua_whatsapp_envios").update(patch).eq("provider_message_id", id);
             }
           }
         }

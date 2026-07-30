@@ -24,7 +24,10 @@ export function exportCsv(rows: Row[], filename: string, columns?: string[]) {
   const { cols, body } = toMatrix(rows, columns);
   const escape = (s: string) => `"${s.replace(/"/g, '""')}"`;
   const csv = [cols.map(escape).join(";"), ...body.map((r) => r.map(escape).join(";"))].join("\n");
-  downloadBlob(new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }), `${filename}-${stamp()}.csv`);
+  downloadBlob(
+    new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" }),
+    `${filename}-${stamp()}.csv`,
+  );
 }
 
 export async function exportExcel(
@@ -85,7 +88,10 @@ export async function exportExcel(
     });
     ws.views = [{ state: "frozen", ySplit: headerIdx }];
     if (body.length) {
-      ws.autoFilter = { from: { row: headerIdx, column: 1 }, to: { row: headerIdx, column: width } };
+      ws.autoFilter = {
+        from: { row: headerIdx, column: 1 },
+        to: { row: headerIdx, column: width },
+      };
     }
   }
 

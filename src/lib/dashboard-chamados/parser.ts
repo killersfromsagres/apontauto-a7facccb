@@ -69,7 +69,7 @@ function parseDate(v: string): { iso: string | null; ts: number | null } {
     const d = new Date(utcMs);
     return { iso: d.toISOString(), ts: d.getTime() };
   }
-  const br = v.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{1,2}))?/);
   if (br) {
     const [, d, m, y, hh, mm] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
@@ -133,8 +133,7 @@ export async function parseChamadosFile(file: File): Promise<ParseResult> {
   const wb = XLSX.read(buf, { type: "array" });
   // Prefere aba com "preventiv" ou "backorder" ou "chamado", senão a primeira.
   const preferred =
-    wb.SheetNames.find((n) => /PREVENTIV|BACKORDER|CHAMADO|OS/.test(norm(n))) ??
-    wb.SheetNames[0];
+    wb.SheetNames.find((n) => /PREVENTIV|BACKORDER|CHAMADO|OS/.test(norm(n))) ?? wb.SheetNames[0];
   const sheet = wb.Sheets[preferred];
   const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 

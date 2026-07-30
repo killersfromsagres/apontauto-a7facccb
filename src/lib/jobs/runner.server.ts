@@ -86,8 +86,7 @@ export async function runJob<T>(
     alertOnFailure = true,
     moduleKey = "observabilidade",
   } = options;
-  const lockTtlSeconds =
-    options.lockTtlSeconds ?? Math.max(60, Math.ceil((timeoutMs * 3) / 1000));
+  const lockTtlSeconds = options.lockTtlSeconds ?? Math.max(60, Math.ceil((timeoutMs * 3) / 1000));
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const admin = supabaseAdmin as any;
@@ -124,10 +123,7 @@ export async function runJob<T>(
     attempt += 1;
     const started = Date.now();
     try {
-      const result = await withTimeout(
-        (signal) => task({ signal, attempt, runId }),
-        timeoutMs,
-      );
+      const result = await withTimeout((signal) => task({ signal, attempt, runId }), timeoutMs);
       await admin.rpc("job_finish", {
         p_run_id: runId,
         p_status: "success",

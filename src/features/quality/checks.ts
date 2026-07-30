@@ -62,7 +62,7 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
     supabase.from("corretiva_fotos").select("os_id").limit(5000),
   ]);
 
-  const rows = <T,>(r: { data: unknown }) => ((r.data ?? []) as T[]);
+  const rows = <T>(r: { data: unknown }) => (r.data ?? []) as T[];
   type OS = Record<string, unknown>;
   const corOs = rows<OS>(cor);
   const refOs = rows<OS>(ref);
@@ -105,11 +105,7 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
     severity: "alta",
     rows: known.size
       ? allOs
-          .filter(
-            ({ o }) =>
-              !isBlank(o.ativo) &&
-              !known.has(String(o.ativo).trim().toUpperCase()),
-          )
+          .filter(({ o }) => !isBlank(o.ativo) && !known.has(String(o.ativo).trim().toUpperCase()))
           .map(({ o, t }) => osRow(o, t, "ativo"))
       : [],
   });
@@ -132,9 +128,7 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
     description: "OS em aberto sem equipe responsável definida.",
     severity: "alta",
     rows: allOs
-      .filter(
-        ({ o }) => isBlank(o.equipe) && toCanonicalStatus(o.status as string) !== "concluida",
-      )
+      .filter(({ o }) => isBlank(o.equipe) && toCanonicalStatus(o.status as string) !== "concluida")
       .map(({ o, t }) => osRow(o, t, "equipe")),
   });
 
@@ -171,7 +165,9 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
   const veics = rows<V>(veic);
   const byPlate = new Map<string, V[]>();
   for (const v of veics) {
-    const p = String(v.plate ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const p = String(v.plate ?? "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
     if (!p) continue;
     byPlate.set(p, [...(byPlate.get(p) ?? []), v]);
   }
@@ -235,7 +231,13 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
       .map((o) => osRow(o, "corretiva_os", "numero_os")),
   });
 
-  type PT = { id: string; numero_pt: string; status: string; data_trabalho: string; encerrada_em: string | null };
+  type PT = {
+    id: string;
+    numero_pt: string;
+    status: string;
+    data_trabalho: string;
+    encerrada_em: string | null;
+  };
   const hoje = new Date().toISOString().slice(0, 10);
   checks.push({
     key: "pt-sem-encerramento",
@@ -254,7 +256,12 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
       })),
   });
 
-  type C = { id: string; protocol: string; integrity_score: number | null; signature_url: string | null };
+  type C = {
+    id: string;
+    protocol: string;
+    integrity_score: number | null;
+    signature_url: string | null;
+  };
   checks.push({
     key: "checklist-incompleto",
     title: "Checklist incompleto",
@@ -274,8 +281,7 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
 
   const lastObs = (obs.data ?? [])[0] as { observed_at?: string } | undefined;
   const stale =
-    !lastObs?.observed_at ||
-    Date.now() - new Date(lastObs.observed_at).getTime() > 6 * 3600_000;
+    !lastObs?.observed_at || Date.now() - new Date(lastObs.observed_at).getTime() > 6 * 3600_000;
   checks.push({
     key: "clima-indisponivel",
     title: "Dados meteorológicos indisponíveis",
@@ -305,10 +311,15 @@ export async function applyFix(row: QualityRow, valor: string, observacao?: stri
   const id = row.id.split(":").slice(1).join(":");
   const client = supabase as unknown as {
     from: (t: string) => {
-      update: (v: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: { message: string } | null }> };
+      update: (v: Record<string, unknown>) => {
+        eq: (c: string, v: string) => Promise<{ error: { message: string } | null }>;
+      };
     };
   };
-  const { error } = await client.from(row.table).update({ [row.column]: valor }).eq("id", id);
+  const { error } = await client
+    .from(row.table)
+    .update({ [row.column]: valor })
+    .eq("id", id);
   if (error) throw new Error(error.message);
 
   const { data: userData } = await supabase.auth.getUser();

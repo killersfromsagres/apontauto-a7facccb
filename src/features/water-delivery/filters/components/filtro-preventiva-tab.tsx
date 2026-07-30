@@ -49,10 +49,7 @@ export function FiltroPreventivaTab({ podeEscrever }: { podeEscrever: boolean })
     () => new Map((pontos.data ?? []).map((p: Ponto) => [p.id, p])),
     [pontos.data],
   );
-  const porAtivo = useMemo(
-    () => new Map((ativos.data ?? []).map((a) => [a.id, a])),
-    [ativos.data],
-  );
+  const porAtivo = useMemo(() => new Map((ativos.data ?? []).map((a) => [a.id, a])), [ativos.data]);
 
   const resumo = useMemo(() => {
     const base = (ativos.data ?? []).filter((a) => a.situacao === "ativo");
@@ -120,14 +117,26 @@ export function FiltroPreventivaTab({ podeEscrever }: { podeEscrever: boolean })
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Filtros ativos" value={resumo.total} icon={<CalendarClock className="h-4 w-4" />} />
-        <KpiCard label="Vencidos" value={resumo.vencido} icon={<CalendarClock className="h-4 w-4" />} />
+        <KpiCard
+          label="Filtros ativos"
+          value={resumo.total}
+          icon={<CalendarClock className="h-4 w-4" />}
+        />
+        <KpiCard
+          label="Vencidos"
+          value={resumo.vencido}
+          icon={<CalendarClock className="h-4 w-4" />}
+        />
         <KpiCard
           label={`Vencendo (${alertaDias}d)`}
           value={resumo.vencendo}
           icon={<CalendarClock className="h-4 w-4" />}
         />
-        <KpiCard label="Sem data-base" value={resumo.sem_data} icon={<CalendarClock className="h-4 w-4" />} />
+        <KpiCard
+          label="Sem data-base"
+          value={resumo.sem_data}
+          icon={<CalendarClock className="h-4 w-4" />}
+        />
       </div>
 
       <GlassCard className="flex flex-col gap-3 p-4 sm:flex-row sm:items-end">
@@ -206,7 +215,12 @@ export function FiltroPreventivaTab({ podeEscrever }: { podeEscrever: boolean })
                       {ativo?.predio || (ponto ? pontoLabel(ponto) : "Ativo removido")}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
-                      {[ativo?.codigo, ativo?.tipo_equipamento, ativo?.modelo_elemento, ativo?.tipo_filtro]
+                      {[
+                        ativo?.codigo,
+                        ativo?.tipo_equipamento,
+                        ativo?.modelo_elemento,
+                        ativo?.tipo_filtro,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </p>

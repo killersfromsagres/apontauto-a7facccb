@@ -1,4 +1,3 @@
-
 import { maskCpf } from "@/lib/frota/cpf";
 import { vehicleLabel, type Checklist, type Vehicle } from "@/lib/frota/api";
 
@@ -46,12 +45,9 @@ export async function exportChecklistPdf(opts: {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.text(`Protocolo ${checklist.protocol}`, 12, 19);
-  doc.text(
-    new Date(checklist.submitted_at).toLocaleString("pt-BR"),
-    W - 12,
-    19,
-    { align: "right" },
-  );
+  doc.text(new Date(checklist.submitted_at).toLocaleString("pt-BR"), W - 12, 19, {
+    align: "right",
+  });
 
   const veic = vehicle
     ? [
@@ -108,11 +104,7 @@ export async function exportChecklistPdf(opts: {
     body: items.map((i) => [
       i.label,
       i.category,
-      i.status === "conforme"
-        ? "Conforme"
-        : i.status === "nao_conforme"
-          ? "NÃO CONFORME"
-          : "N/A",
+      i.status === "conforme" ? "Conforme" : i.status === "nao_conforme" ? "NÃO CONFORME" : "N/A",
       i.severity ?? "-",
       i.notes ?? "-",
     ]),

@@ -12,7 +12,7 @@ export function isValidCpf(input: string): boolean {
   for (const len of [9, 10]) {
     let sum = 0;
     for (let i = 0; i < len; i += 1) sum += digits[i] * (len + 1 - i);
-    const check = (sum * 10) % 11 % 10;
+    const check = ((sum * 10) % 11) % 10;
     if (check !== digits[len]) return false;
   }
   return true;

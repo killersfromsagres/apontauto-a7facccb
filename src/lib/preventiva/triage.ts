@@ -54,12 +54,41 @@ const HIDRAULICA_KEYWORDS = [
 
 export const REFRIG_1 = ["A160", "A170", "ADC", "AMBULATÓRIO", "AMBULATORIO", "B203"];
 export const REFRIG_2 = [
-  "A220", "B115", "B290", "C110", "C120", "C340", "C380", "C45", "C46", "C49", "C65", "C70",
-  "D240", "D246",
+  "A220",
+  "B115",
+  "B290",
+  "C110",
+  "C120",
+  "C340",
+  "C380",
+  "C45",
+  "C46",
+  "C49",
+  "C65",
+  "C70",
+  "D240",
+  "D246",
 ];
 export const REFRIG_3 = [
-  "D270", "D295", "D345", "D55", "E105", "E125", "E130", "E171", "E200", "E310", "E35", "E70", "E80",
-  "F30", "FUNDAÇÃO ECO+", "FUNDACAO ECO+", "Z210", "Z310", "Z500",
+  "D270",
+  "D295",
+  "D345",
+  "D55",
+  "E105",
+  "E125",
+  "E130",
+  "E171",
+  "E200",
+  "E310",
+  "E35",
+  "E70",
+  "E80",
+  "F30",
+  "FUNDAÇÃO ECO+",
+  "FUNDACAO ECO+",
+  "Z210",
+  "Z310",
+  "Z500",
 ];
 
 const norm = (v: unknown) =>
@@ -125,7 +154,8 @@ export function triage(rows: RawRow[]): TriagedOS[] {
 
   // Ordena Climatização por Prédio + Andar
   return out.sort((a, b) => {
-    if (a.equipe !== b.equipe) return EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
+    if (a.equipe !== b.equipe)
+      return EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
     if (a.equipe.startsWith("CLIMAT")) {
       return (
         a.predio.localeCompare(b.predio) ||

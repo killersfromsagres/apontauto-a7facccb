@@ -66,17 +66,13 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
     setTecInput("");
   };
 
-  const removeTecnico = (id: string) =>
-    setTecnicos((prev) => prev.filter((t) => t !== id));
+  const removeTecnico = (id: string) => setTecnicos((prev) => prev.filter((t) => t !== id));
 
-  const osPorTecnico = tecnicos.length
-    ? Math.ceil(osList.length / tecnicos.length)
-    : 0;
+  const osPorTecnico = tecnicos.length ? Math.ceil(osList.length / tecnicos.length) : 0;
   const minPorOs = osPorTecnico ? Math.floor(480 / osPorTecnico) : 0;
 
   const download = async () => {
-    if (!rows.length)
-      return toast.error("Informe ao menos um técnico, a data e uma OS.");
+    if (!rows.length) return toast.error("Informe ao menos um técnico, a data e uma OS.");
     try {
       const blob = await generateApontamentoWorkbook(titulo.toUpperCase(), rows);
       downloadBlob(blob, `${titulo.toUpperCase().replace(/\s+/g, "_")}_${data}.xlsx`);
@@ -176,8 +172,7 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
                 {osList.length} OS · {tecnicos.length} técnico{tecnicos.length === 1 ? "" : "s"}
                 {tecnicos.length > 0 && osList.length > 0 && (
                   <>
-                    {" · "}
-                    ≈{osPorTecnico} OS por técnico ({minPorOs} min/OS)
+                    {" · "}≈{osPorTecnico} OS por técnico ({minPorOs} min/OS)
                   </>
                 )}
               </p>
@@ -244,7 +239,6 @@ export function ApontamentoModule({ titulo, descricao, accent = "text-primary" }
                 </TableBody>
               </Table>
             </div>
-
           )}
         </GlassCard>
       </div>

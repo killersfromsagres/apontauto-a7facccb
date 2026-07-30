@@ -31,7 +31,6 @@ const COLUMNS = [
   { key: "sex", label: "SEXTA", width: 9, day: 4 },
 ];
 
-
 function formatSLA(iso: string): string {
   if (!iso) return "";
   const d = new Date(iso);

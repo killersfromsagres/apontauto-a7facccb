@@ -11,7 +11,6 @@
 import type { BackorderRow } from "./reader";
 import { resolveAtivoTree, type AssetsMap } from "./assets";
 
-
 const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
 // Paleta moderna — navy escuro + azul de destaque + zebra suave.
 const TITLE_BG = argb("#0B1F4D");
@@ -67,7 +66,6 @@ export async function generateBackorderExport(input: {
    *  (registros antigos ou importados antes da hidratação da base). */
   assetsMap?: AssetsMap;
 }): Promise<Blob> {
-
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Apont Auto";
@@ -145,7 +143,6 @@ export async function generateBackorderExport(input: {
       solicitante: r.outros,
     };
 
-
     visibleCols.forEach((c, i) => {
       const cell = row.getCell(i + 1);
       cell.value = values[c.key] as never;
@@ -171,7 +168,6 @@ export async function generateBackorderExport(input: {
     row.height = 28;
     rowIdx++;
   }
-
 
   // AutoFilter na linha 2 (cabeçalho) cobrindo todas colunas visíveis
   if (rowIdx > 3) {

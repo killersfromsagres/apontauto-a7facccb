@@ -151,9 +151,7 @@ function CorretivaGestor() {
     queryFn: async (): Promise<Peca[]> => {
       const { data, error } = await supabase
         .from("corretiva_pecas")
-        .select(
-          "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at",
-        )
+        .select("id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Peca[];
@@ -218,20 +216,12 @@ function CorretivaGestor() {
           <Button size="sm" variant="ghost" onClick={() => void baixarModeloCorretiva()}>
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Modelo de planilha
           </Button>
-          <LimparTudoDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva"] })}
-          />
-          <ColarOsDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
-          />
-          <ImportOsDialog
-            onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })}
-          />
+          <LimparTudoDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva"] })} />
+          <ColarOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
+          <ImportOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
           <NewOsDialog onDone={() => qc.invalidateQueries({ queryKey: ["corretiva", "os"] })} />
         </>
-
       }
-
     >
       <GlassCard className="mb-4 p-3">
         <div className="flex flex-wrap items-center gap-2">
@@ -591,11 +581,7 @@ function LimparTudoDialog({ onDone }: { onDone: () => void }) {
         setOpen(false);
         return;
       }
-      for (const tabela of [
-        "corretiva_fotos",
-        "corretiva_pecas",
-        "corretiva_problemas",
-      ] as const) {
+      for (const tabela of ["corretiva_fotos", "corretiva_pecas", "corretiva_problemas"] as const) {
         const { error } = await supabase.from(tabela).delete().in("os_id", osIds);
         if (error) throw error;
       }
@@ -632,7 +618,11 @@ function LimparTudoDialog({ onDone }: { onDone: () => void }) {
             <Label>
               Digite <b>LIMPAR</b> para confirmar
             </Label>
-            <Input value={confirma} onChange={(e) => setConfirma(e.target.value)} placeholder="LIMPAR" />
+            <Input
+              value={confirma}
+              onChange={(e) => setConfirma(e.target.value)}
+              placeholder="LIMPAR"
+            />
           </div>
         </div>
         <DialogFooter>
@@ -652,7 +642,6 @@ function LimparTudoDialog({ onDone }: { onDone: () => void }) {
   );
 }
 
-
 function ColarOsDialog({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [texto, setTexto] = useState("");
@@ -661,13 +650,18 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
   const parsed = useMemo(() => parseColagemCorretiva(texto), [texto]);
 
   const importar = async () => {
-    if (parsed.linhas.length === 0) return toast.warning("Cole ao menos uma linha com o número da OS.");
+    if (parsed.linhas.length === 0)
+      return toast.warning("Cole ao menos uma linha com o número da OS.");
     setSaving(true);
     try {
       const { data: eqs } = await supabase.from("corretiva_equipes").select("nome");
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
       const normz = (s: unknown) =>
-        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        String(s ?? "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
       const rows = parsed.linhas.map((r) => {
         const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
         if (cadastrada) return { ...r, equipe: cadastrada };
@@ -704,10 +698,9 @@ function ColarOsDialog({ onDone }: { onDone: () => void }) {
         </DialogHeader>
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Cole uma OS por linha, nesta ordem:{" "}
-            <b>{CORRETIVA_TEMPLATE_HEADERS.join(" · ")}</b>. Separe as colunas com Tab (copiando do
-            Excel), ponto e vírgula ou vírgula. Deixe <b>Equipe</b> em branco para o sistema
-            identificar automaticamente pela descrição.
+            Cole uma OS por linha, nesta ordem: <b>{CORRETIVA_TEMPLATE_HEADERS.join(" · ")}</b>.
+            Separe as colunas com Tab (copiando do Excel), ponto e vírgula ou vírgula. Deixe{" "}
+            <b>Equipe</b> em branco para o sistema identificar automaticamente pela descrição.
           </p>
           <Textarea
             value={texto}
@@ -802,7 +795,11 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
       const nomes = (eqs ?? []).map((e: any) => e.nome as string);
 
       const normz = (s: unknown) =>
-        String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        String(s ?? "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
       let auto = 0;
       const classificadas = rows.map((r) => {
         const cadastrada = nomes.find((n) => normz(n) === normz(r.equipe));
@@ -899,25 +896,27 @@ function ImportOsDialog({ onDone }: { onDone: () => void }) {
                     {preview.slice(0, 50).map((r, i) => {
                       const st = equipeStyles(r.equipe);
                       return (
-                      <tr key={i} className="border-t">
-                        <Td className="font-mono">{r.numero_os}</Td>
-                        <Td className="max-w-[160px] truncate">{r.nome_os ?? "—"}</Td>
-                        <Td>
-                          {r.equipe ? (
-                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                              <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`} />
-                              {r.equipe}
-                            </Badge>
-                          ) : (
-                            "—"
-                          )}
-                        </Td>
-                        <Td className="text-muted-foreground">
-                          {[r.predio, r.andar, r.local].filter(Boolean).join(" · ") || "—"}
-                        </Td>
-                        <Td>{r.ativo}</Td>
-                        <Td className="max-w-[180px] truncate">{r.equipamento}</Td>
-                      </tr>
+                        <tr key={i} className="border-t">
+                          <Td className="font-mono">{r.numero_os}</Td>
+                          <Td className="max-w-[160px] truncate">{r.nome_os ?? "—"}</Td>
+                          <Td>
+                            {r.equipe ? (
+                              <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                                <span
+                                  className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                                />
+                                {r.equipe}
+                              </Badge>
+                            ) : (
+                              "—"
+                            )}
+                          </Td>
+                          <Td className="text-muted-foreground">
+                            {[r.predio, r.andar, r.local].filter(Boolean).join(" · ") || "—"}
+                          </Td>
+                          <Td>{r.ativo}</Td>
+                          <Td className="max-w-[180px] truncate">{r.equipamento}</Td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -967,12 +966,10 @@ function FotosGrid({
       }
       if (Object.keys(direct).length) setUrls((u) => ({ ...u, ...direct }));
       if (needSigned.length === 0) return;
-      const { data, error } = await supabase.storage
-        .from("corretiva-fotos")
-        .createSignedUrls(
-          needSigned.map((m) => m.storage_path as string),
-          60 * 60,
-        );
+      const { data, error } = await supabase.storage.from("corretiva-fotos").createSignedUrls(
+        needSigned.map((m) => m.storage_path as string),
+        60 * 60,
+      );
       if (error || cancelled) return;
       const next: Record<string, string> = {};
       needSigned.forEach((m, i) => {
@@ -1110,9 +1107,7 @@ function PecasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">
-                  {osById.get(p.os_id)?.numero_os ?? "?"}
-                </Td>
+                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
                 <Td>{p.descricao}</Td>
                 <Td>{p.quantidade}</Td>
                 <Td>
@@ -1215,9 +1210,7 @@ function ProblemasTable({
           <tbody className="divide-y divide-border/60">
             {rows.map((p) => (
               <tr key={p.id} className="hover:bg-accent/40">
-                <Td className="font-mono font-semibold">
-                  {osById.get(p.os_id)?.numero_os ?? "?"}
-                </Td>
+                <Td className="font-mono font-semibold">{osById.get(p.os_id)?.numero_os ?? "?"}</Td>
                 <Td>{p.descricao}</Td>
                 <Td>
                   <Badge variant={gravityVariant(p.gravidade)}>{gravityLabel(p.gravidade)}</Badge>

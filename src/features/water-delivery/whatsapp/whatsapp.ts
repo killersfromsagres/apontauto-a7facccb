@@ -73,10 +73,9 @@ export function montarMensagem(
 
   if (opts?.linkUnico) {
     // Muitas fotos: um único link para o resumo (item 11.2).
-    lista = [
-      `*${itens.length} evidência(s)* organizadas em resumo único:`,
-      opts.linkUnico,
-    ].join("\n");
+    lista = [`*${itens.length} evidência(s)* organizadas em resumo único:`, opts.linkUnico].join(
+      "\n",
+    );
   } else {
     const porPredio = new Map<string, EvidenciaItem[]>();
     for (const i of itens) {
@@ -91,9 +90,7 @@ export function montarMensagem(
       if (restantes <= 0) break;
       const visiveis = itensPredio.slice(0, restantes);
       restantes -= visiveis.length;
-      blocos.push(
-        [`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"),
-      );
+      blocos.push([`*${predio}*`, ...visiveis.map((i) => `• ${i.parada}: ${i.url}`)].join("\n"));
     }
     const ocultas = itens.length - (maxLinks - Math.max(0, restantes));
     if (ocultas > 0) blocos.push(`_+${ocultas} evidência(s) disponíveis no histórico do sistema._`);
@@ -111,7 +108,6 @@ export function montarMensagem(
     .replace("{lista}", lista)
     .trim();
 }
-
 
 export const DEFAULT_TEMPLATE = `*Abastecimento de Água — Evidências da Rota*
 Data: {data}
@@ -181,10 +177,7 @@ async function baixarArquivos(itens: EvidenciaItem[], limite = 10): Promise<File
  * PDF resumido com os links organizados por prédio/parada — usado quando há
  * muitas evidências, para não gerar uma mensagem gigante (item 11.2).
  */
-export async function gerarPdfResumo(
-  resumo: ResumoRota,
-  itens: EvidenciaItem[],
-): Promise<File> {
+export async function gerarPdfResumo(resumo: ResumoRota, itens: EvidenciaItem[]): Promise<File> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margem = 40;
@@ -313,7 +306,6 @@ export async function compartilharEvidencias(params: {
   return { modo: "link", status: "compartilhamento_iniciado", url };
 }
 
-
 export async function copiarMensagem(texto: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(texto);
@@ -358,8 +350,5 @@ export async function registrarDisparo(params: {
 }
 
 export async function confirmarDisparo(id: string): Promise<void> {
-  await db
-    .from("agua_whatsapp_envios")
-    .update({ status: "confirmado_pelo_usuario" })
-    .eq("id", id);
+  await db.from("agua_whatsapp_envios").update({ status: "confirmado_pelo_usuario" }).eq("id", id);
 }

@@ -17,9 +17,9 @@ describe("permissões do módulo abastecimento", () => {
   });
 
   it("usuário com permissão explícita enxerga", () => {
-    expect(
-      canSeeMenuItem(abastecimento, { isAdmin: false, allowed: ["abastecimento"] }),
-    ).toBe(true);
+    expect(canSeeMenuItem(abastecimento, { isAdmin: false, allowed: ["abastecimento"] })).toBe(
+      true,
+    );
   });
 
   it("usuário de corretiva não enxerga frota/abastecimento", () => {

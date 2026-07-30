@@ -2,12 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, QrCode } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /** Gera e exibe o QR Code que abre a ficha mobile do ativo. */
 export function AssetQrDialog({
@@ -61,7 +56,11 @@ export function AssetQrDialog({
           </DialogHeader>
           <div className="flex flex-col items-center gap-3">
             {png ? (
-              <img src={png} alt={`QR Code do ativo ${code}`} className="h-56 w-56 rounded-xl bg-white p-2" />
+              <img
+                src={png}
+                alt={`QR Code do ativo ${code}`}
+                className="h-56 w-56 rounded-xl bg-white p-2"
+              />
             ) : (
               <div className="h-56 w-56 animate-pulse rounded-xl bg-muted" />
             )}

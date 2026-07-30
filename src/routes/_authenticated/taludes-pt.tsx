@@ -84,7 +84,9 @@ const FILTERS: { key: PTStatus | "todas"; label: string }[] = [
 ];
 
 function fmt(iso: string | null | undefined) {
-  return iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+  return iso
+    ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+    : "—";
 }
 
 function TaludesPTPage() {
@@ -131,7 +133,13 @@ function TaludesPTPage() {
       if (to === "liberada" && bloqueioChuva) {
         throw new Error("Chuva em curso — a liberação de PT está bloqueada até o fim do evento.");
       }
-      await transicionarPT({ pt, to, motivo, liberador_nome: liberador, weather_snapshot: snapshot });
+      await transicionarPT({
+        pt,
+        to,
+        motivo,
+        liberador_nome: liberador,
+        weather_snapshot: snapshot,
+      });
       toast.success(`PT ${pt.numero_pt}: ${PT_STATUS_LABEL[to]}`);
       qc.invalidateQueries({ queryKey: ["talude-pts"] });
       setDetalhe(null);
@@ -159,7 +167,10 @@ function TaludesPTPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <CloudRain
-                className={cn("h-6 w-6", bloqueioChuva ? "animate-pulse text-amber-400" : "text-primary")}
+                className={cn(
+                  "h-6 w-6",
+                  bloqueioChuva ? "animate-pulse text-amber-400" : "text-primary",
+                )}
               />
               <div>
                 <p className="text-sm font-semibold">
@@ -221,21 +232,37 @@ function TaludesPTPage() {
                     <p className="truncate text-sm font-semibold">PT {pt.numero_pt}</p>
                     <p className="truncate text-xs text-muted-foreground">{pt.servico}</p>
                   </div>
-                  <StatusBadge status={PT_STATUS_LABEL[pt.status]} tone={PT_STATUS_TONE[pt.status]} />
+                  <StatusBadge
+                    status={PT_STATUS_LABEL[pt.status]}
+                    tone={PT_STATUS_TONE[pt.status]}
+                  />
                 </div>
                 <div className="mt-2 grid gap-0.5 text-xs text-muted-foreground">
                   <span>Taludes: {pt.taludes_label || "—"}</span>
-                  <span>Data do trabalho: {new Date(`${pt.data_trabalho}T12:00`).toLocaleDateString("pt-BR")}</span>
-                  <span>Equipe: {pt.equipe || "—"} · Solicitante: {pt.solicitante}</span>
-                  <span>Liberação: {pt.liberador_nome || "—"} em {fmt(pt.liberada_em)}</span>
+                  <span>
+                    Data do trabalho:{" "}
+                    {new Date(`${pt.data_trabalho}T12:00`).toLocaleDateString("pt-BR")}
+                  </span>
+                  <span>
+                    Equipe: {pt.equipe || "—"} · Solicitante: {pt.solicitante}
+                  </span>
+                  <span>
+                    Liberação: {pt.liberador_nome || "—"} em {fmt(pt.liberada_em)}
+                  </span>
                   {pt.status === "suspensa_chuva" ? (
                     <span className="flex items-center gap-1 text-amber-300">
-                      <AlertTriangle className="h-3 w-3" /> Suspensa em {fmt(pt.suspensa_em)} — nova liberação obrigatória
+                      <AlertTriangle className="h-3 w-3" /> Suspensa em {fmt(pt.suspensa_em)} — nova
+                      liberação obrigatória
                     </span>
                   ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="min-h-11 rounded-full" onClick={() => setDetalhe(pt)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="min-h-11 rounded-full"
+                    onClick={() => setDetalhe(pt)}
+                  >
                     <History className="mr-1.5 h-4 w-4" /> Histórico
                   </Button>
                   {canRelease.allowed
@@ -351,7 +378,11 @@ function NovaPTDialog({
         <div className="grid gap-3">
           <div className="grid gap-1.5">
             <Label>Número da PT *</Label>
-            <Input value={numero} onChange={(e) => setNumero(e.target.value)} placeholder="PT-2026-001" />
+            <Input
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              placeholder="PT-2026-001"
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>Mapa de taludes</Label>
@@ -400,7 +431,11 @@ function NovaPTDialog({
           </div>
           <div className="grid gap-1.5">
             <Label>Serviço *</Label>
-            <Input value={servico} onChange={(e) => setServico(e.target.value)} placeholder="Ex.: Roçada em talude" />
+            <Input
+              value={servico}
+              onChange={(e) => setServico(e.target.value)}
+              placeholder="Ex.: Roçada em talude"
+            />
           </div>
           <div className="grid gap-1.5">
             <Label>Riscos</Label>
@@ -423,7 +458,11 @@ function NovaPTDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" className="min-h-11 rounded-full" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            className="min-h-11 rounded-full"
+            onClick={() => onOpenChange(false)}
+          >
             Cancelar
           </Button>
           <Button className="min-h-11 rounded-full" onClick={submit} disabled={saving}>
@@ -451,14 +490,19 @@ function HistoricoPTDialog({ pt, onClose }: { pt: PTRelease | null; onClose: () 
         </DialogHeader>
         <div className="space-y-2">
           {(eventsQuery.data ?? []).map((ev) => (
-            <div key={ev.id} className="rounded-2xl border border-border/50 bg-muted/15 p-3 text-xs">
+            <div
+              key={ev.id}
+              className="rounded-2xl border border-border/50 bg-muted/15 p-3 text-xs"
+            >
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge
                   status={PT_STATUS_LABEL[ev.to_status as PTStatus] ?? ev.to_status}
                   tone={PT_STATUS_TONE[ev.to_status as PTStatus]}
                 />
                 <span className="text-muted-foreground">{fmt(ev.created_at)}</span>
-                <span className="text-muted-foreground">· {ev.actor_nome ?? "—"} ({ev.origem})</span>
+                <span className="text-muted-foreground">
+                  · {ev.actor_nome ?? "—"} ({ev.origem})
+                </span>
               </div>
               {ev.motivo ? <p className="mt-1">{ev.motivo}</p> : null}
               {ev.weather_snapshot && Object.keys(ev.weather_snapshot).length ? (

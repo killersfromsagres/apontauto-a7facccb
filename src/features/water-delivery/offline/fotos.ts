@@ -26,10 +26,7 @@ import {
   blobParaDataUrl,
   processarImagemOffThread,
 } from "@/features/water-delivery/offline/image-offthread";
-import {
-  registrarUpload,
-  sanitizarErro,
-} from "@/features/water-delivery/offline/metrics";
+import { registrarUpload, sanitizarErro } from "@/features/water-delivery/offline/metrics";
 
 export type { FotoFilaItem, FotoMetadados } from "@/features/water-delivery/offline/fotos-db";
 
@@ -370,7 +367,9 @@ export async function tentarEnviar(id: string): Promise<string | null> {
     // Confirmação recebida: o binário local pode ser descartado (10.3).
     await removerItem(id);
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("agua:foto-enviada", { detail: { id, url, meta: item.meta } }));
+      window.dispatchEvent(
+        new CustomEvent("agua:foto-enviada", { detail: { id, url, meta: item.meta } }),
+      );
     }
     return url;
   } catch (e) {
@@ -388,7 +387,9 @@ export async function tentarEnviar(id: string): Promise<string | null> {
 }
 
 /** Processa a fila respeitando o backoff. Chamado ao voltar a rede e a cada 30s. */
-export async function processarFilaFotos(force = false): Promise<{ enviadas: number; restantes: number }> {
+export async function processarFilaFotos(
+  force = false,
+): Promise<{ enviadas: number; restantes: number }> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return { enviadas: 0, restantes: (await listarFila()).length };
   }
@@ -414,7 +415,9 @@ export function useFilaFotosAgua() {
   const [processando, setProcessando] = useState(false);
 
   const atualizar = useCallback(() => {
-    void listarFila().then(setItens).catch(() => setItens([]));
+    void listarFila()
+      .then(setItens)
+      .catch(() => setItens([]));
   }, []);
 
   const reenviar = useCallback(

@@ -66,9 +66,7 @@ export function InsightsPanel({ insights }: { insights: Insight[] }) {
               strokeWidth={1.75}
             />
           </div>
-          <h3 className="text-sm font-semibold">
-            Agente inteligente — Análise automática
-          </h3>
+          <h3 className="text-sm font-semibold">Agente inteligente — Análise automática</h3>
         </div>
         <div className="grid gap-2 md:grid-cols-2">
           {insights.map((ins, i) => (

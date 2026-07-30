@@ -91,7 +91,7 @@ export async function fetchBackorderRows(): Promise<ChamadoRow[]> {
   const out: ChamadoRow[] = [];
   let from = 0;
   // Paginação para suportar bases grandes.
-  // eslint-disable-next-line no-constant-condition
+
   while (true) {
     const { data, error } = await supabase
       .from("backorder_os")
@@ -155,9 +155,7 @@ export async function setBackorderConcluido(row: ChamadoRow): Promise<BackorderS
     ativo: row.ativo || "",
     termino_sla: row.dataLimite,
   };
-  const { error } = await supabase
-    .from("backorder_os")
-    .upsert(payload, { onConflict: "os" });
+  const { error } = await supabase.from("backorder_os").upsert(payload, { onConflict: "os" });
   if (error) throw error;
   return { os: row.os, finalizado: true, data_finalizacao: nowIso };
 }
@@ -173,28 +171,22 @@ export async function setBackorderReaberto(os: string): Promise<BackorderStatus>
 }
 
 /** Assina mudanças em backorder_os e notifica o callback com o novo status. */
-export function subscribeBackorderChanges(
-  onChange: (status: BackorderStatus) => void,
-): () => void {
+export function subscribeBackorderChanges(onChange: (status: BackorderStatus) => void): () => void {
   const channel = supabase
     .channel("dashboard-chamados-backorder-sync")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "backorder_os" },
-      (payload) => {
-        const row = (payload.new ?? payload.old) as {
-          os?: string;
-          finalizado?: boolean;
-          data_finalizacao?: string | null;
-        } | null;
-        if (!row?.os) return;
-        onChange({
-          os: row.os,
-          finalizado: !!row.finalizado,
-          data_finalizacao: row.data_finalizacao ?? null,
-        });
-      },
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "backorder_os" }, (payload) => {
+      const row = (payload.new ?? payload.old) as {
+        os?: string;
+        finalizado?: boolean;
+        data_finalizacao?: string | null;
+      } | null;
+      if (!row?.os) return;
+      onChange({
+        os: row.os,
+        finalizado: !!row.finalizado,
+        data_finalizacao: row.data_finalizacao ?? null,
+      });
+    })
     .subscribe();
   return () => {
     supabase.removeChannel(channel);
@@ -206,10 +198,8 @@ export function subscribeBackorderChanges(
 export function subscribeBackorderTable(onChange: () => void): () => void {
   const channel = supabase
     .channel("dashboard-chamados-backorder-table")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "backorder_os" },
-      () => onChange(),
+    .on("postgres_changes", { event: "*", schema: "public", table: "backorder_os" }, () =>
+      onChange(),
     )
     .subscribe();
   return () => {

@@ -2,11 +2,7 @@
 // A conta "climatizacao" é compartilhada, então a escolha é persistida
 // localmente por dispositivo (localStorage).
 
-export const EQUIPES_REFRIGERACAO = [
-  "Refrigeração 1",
-  "Refrigeração 2",
-  "Refrigeração 3",
-] as const;
+export const EQUIPES_REFRIGERACAO = ["Refrigeração 1", "Refrigeração 2", "Refrigeração 3"] as const;
 
 export type EquipeRefrig = (typeof EQUIPES_REFRIGERACAO)[number];
 export type EquipeFiltro = "todas" | EquipeRefrig;

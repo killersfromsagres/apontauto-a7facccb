@@ -9,20 +9,36 @@
 /** Remove espaços das pontas, colapsa espaços internos e normaliza hífens/traços. */
 export function limparTexto(valor: string | null | undefined): string {
   if (!valor) return "";
-  return valor
-    .normalize("NFC")
-    // travessões e hífens tipográficos viram hífen simples
-    .replace(/[\u2010-\u2015\u2212]/g, "-")
-    // espaços especiais (nbsp, narrow nbsp…) viram espaço comum
-    .replace(/[\u00a0\u2007\u202f\t]/g, " ")
-    // " - " padronizado
-    .replace(/\s*-\s*/g, " - ")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  return (
+    valor
+      .normalize("NFC")
+      // travessões e hífens tipográficos viram hífen simples
+      .replace(/[\u2010-\u2015\u2212]/g, "-")
+      // espaços especiais (nbsp, narrow nbsp…) viram espaço comum
+      .replace(/[\u00a0\u2007\u202f\t]/g, " ")
+      // " - " padronizado
+      .replace(/\s*-\s*/g, " - ")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
 }
 
 const MINUSCULAS = new Set([
-  "de", "da", "do", "das", "dos", "e", "em", "no", "na", "nos", "nas", "a", "o", "com", "para",
+  "de",
+  "da",
+  "do",
+  "das",
+  "dos",
+  "e",
+  "em",
+  "no",
+  "na",
+  "nos",
+  "nas",
+  "a",
+  "o",
+  "com",
+  "para",
 ]);
 
 /** Caixa de título preservando acentos, siglas e numerações (ex.: "2º Andar - Bloco B"). */
@@ -103,7 +119,7 @@ export function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
   if (!a.length) return b.length;
   if (!b.length) return a.length;
-  let linha = Array.from({ length: b.length + 1 }, (_, i) => i);
+  const linha = Array.from({ length: b.length + 1 }, (_, i) => i);
   for (let i = 1; i <= a.length; i++) {
     let anterior = linha[0];
     linha[0] = i;
@@ -139,7 +155,10 @@ export type Duplicidade<T> = {
  */
 export function detectarDuplicidades<
   T extends { id?: string; predio: string; andar: string; espaco: string },
->(alvo: { id?: string; predio: string; andar: string; espaco: string }, lista: T[]): Duplicidade<T>[] {
+>(
+  alvo: { id?: string; predio: string; andar: string; espaco: string },
+  lista: T[],
+): Duplicidade<T>[] {
   const chaveAlvo = chaveLocal(alvo.predio, alvo.andar, alvo.espaco);
   const fonAlvo = chaveFonetica(`${alvo.predio} ${alvo.andar} ${alvo.espaco}`);
   const achados: Duplicidade<T>[] = [];

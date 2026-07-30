@@ -33,13 +33,24 @@ function extractEmbeddedAssets(wb: ExcelJS.Workbook) {
     const n = norm(s.name);
     return n === "ATIVOS" || n === "ATIVO" || n.includes("CADASTRO DE ATIVO");
   });
-  if (!ws) return [] as Array<{ ativo: string; denominacao?: string; nivel?: string; codigo_pai?: string | null }>;
+  if (!ws)
+    return [] as Array<{
+      ativo: string;
+      denominacao?: string;
+      nivel?: string;
+      codigo_pai?: string | null;
+    }>;
   const header = ws.getRow(1);
   const idx: Record<string, number> = {};
   header.eachCell((cell, col) => {
     const key = norm(cellText(cell.value));
     if (key === "ATIVO" || key === "CODIGO" || key === "TAG") idx.ativo = col;
-    else if (key.startsWith("DENOMINACAO ATIVO") || key === "DENOMINACAO" || key === "NOME" || key === "DESCRICAO")
+    else if (
+      key.startsWith("DENOMINACAO ATIVO") ||
+      key === "DENOMINACAO" ||
+      key === "NOME" ||
+      key === "DESCRICAO"
+    )
       idx.denominacao = col;
     else if (key.includes("NIVEL")) idx.nivel = col;
     else if (key === "ATIVO PAI" || key === "CODIGO PAI" || key === "PAI") idx.pai = col;
@@ -54,7 +65,9 @@ function extractEmbeddedAssets(wb: ExcelJS.Workbook) {
       ativo,
       denominacao: idx.denominacao ? cellText(row.getCell(idx.denominacao).value).trim() : "",
       nivel: idx.nivel ? cellText(row.getCell(idx.nivel).value).trim() : "",
-      codigo_pai: idx.pai ? cellText(row.getCell(idx.pai).value).trim().toUpperCase() || null : null,
+      codigo_pai: idx.pai
+        ? cellText(row.getCell(idx.pai).value).trim().toUpperCase() || null
+        : null,
     });
   }
   return out;
@@ -80,13 +93,21 @@ function mapSheet(ws: ExcelJS.Worksheet): SheetMap | null {
     row.eachCell((cell, col) => {
       const k = norm(cellText(cell.value));
       if (!k) return;
-      if (k === "ATIVO" && !cAtivo) cAtivo = col; // "Ativo" exato — evita casar "Denominação Ativo"
+      if (k === "ATIVO" && !cAtivo)
+        cAtivo = col; // "Ativo" exato — evita casar "Denominação Ativo"
       else if (k === "PREDIO" || k === "PREDIO / AREA" || k === "AREA") cPredio = col;
       else if (k === "ANDAR" || k === "PAVIMENTO") cAndar = col;
       else if (k === "AMBIENTE" || k === "LOCAL" || k === "ESPACO") cAmbiente = col;
     });
     if (cAtivo && (cPredio || cAndar || cAmbiente)) {
-      return { ws, headerRow: r, cAtivo, cPredio: cPredio || undefined, cAndar: cAndar || undefined, cAmbiente: cAmbiente || undefined };
+      return {
+        ws,
+        headerRow: r,
+        cAtivo,
+        cPredio: cPredio || undefined,
+        cAndar: cAndar || undefined,
+        cAmbiente: cAmbiente || undefined,
+      };
     }
   }
   return null;

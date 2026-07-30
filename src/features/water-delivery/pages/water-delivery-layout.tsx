@@ -9,7 +9,6 @@ import {
   LayoutDashboard,
   MapPin,
   Route as RouteIcon,
-
   PackageCheck,
   Settings,
 } from "lucide-react";
@@ -19,14 +18,11 @@ import { PageShell } from "@/components/page-shell";
 import { cn } from "@/lib/utils";
 import { useAguaSync } from "@/features/water-delivery/offline/offline";
 
-
 const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { to: "/abastecimento/agua", label: "Visão Geral", icon: LayoutDashboard, exact: true },
   { to: "/abastecimento/agua/pontos", label: "Pontos de Entrega", icon: MapPin },
   { to: "/abastecimento/agua/programacao", label: "Programação", icon: Calendar },
   { to: "/abastecimento/agua/rotas", label: "Rotas", icon: RouteIcon },
-
-
 
   { to: "/abastecimento/agua/rota", label: "Rota do Dia", icon: Droplets },
   { to: "/abastecimento/agua/bags", label: "Controle de Bags", icon: PackageCheck },

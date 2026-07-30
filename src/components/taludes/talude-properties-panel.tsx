@@ -15,11 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  updateMarcacao,
-  type TaludeMap,
-  type TaludeMarcacao,
-} from "@/lib/taludes/api";
+import { updateMarcacao, type TaludeMap, type TaludeMarcacao } from "@/lib/taludes/api";
 import { formatArea, formatLength } from "@/lib/taludes/geometry";
 import { medidas, scaleOf } from "@/lib/taludes/export";
 
@@ -73,7 +69,7 @@ export function TaludePropertiesPanel({
   const set = <K extends keyof TaludeMarcacao>(k: K, v: TaludeMarcacao[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const txt = (k: keyof TaludeMarcacao) => (String(form[k] ?? "") as string);
+  const txt = (k: keyof TaludeMarcacao) => String(form[k] ?? "") as string;
 
   return (
     <div className="space-y-3">
@@ -103,7 +99,11 @@ export function TaludePropertiesPanel({
       </div>
 
       <Field label="Nome">
-        <Input value={txt("nome")} onChange={(e) => set("nome", e.target.value)} placeholder="Ex.: Talude Norte" />
+        <Input
+          value={txt("nome")}
+          onChange={(e) => set("nome", e.target.value)}
+          placeholder="Ex.: Talude Norte"
+        />
       </Field>
 
       <div className="grid grid-cols-2 gap-2">
@@ -120,7 +120,9 @@ export function TaludePropertiesPanel({
           <Input
             type="number"
             value={form.inclinacao ?? ""}
-            onChange={(e) => set("inclinacao", e.target.value === "" ? null : Number(e.target.value))}
+            onChange={(e) =>
+              set("inclinacao", e.target.value === "" ? null : Number(e.target.value))
+            }
           />
         </Field>
         <Field label="Tipo de solo">
@@ -130,7 +132,11 @@ export function TaludePropertiesPanel({
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Vegetação">
-          <Picker value={txt("vegetacao")} onChange={(v) => set("vegetacao", v)} options={VEGETACOES} />
+          <Picker
+            value={txt("vegetacao")}
+            onChange={(v) => set("vegetacao", v)}
+            options={VEGETACOES}
+          />
         </Field>
         <Field label="Estado operacional">
           <Picker
@@ -143,7 +149,10 @@ export function TaludePropertiesPanel({
 
       <div className="grid grid-cols-2 gap-2">
         <Field label="Serviço atual">
-          <Input value={txt("servico_atual")} onChange={(e) => set("servico_atual", e.target.value)} />
+          <Input
+            value={txt("servico_atual")}
+            onChange={(e) => set("servico_atual", e.target.value)}
+          />
         </Field>
         <Field label="Equipe responsável">
           <Input value={txt("equipe")} onChange={(e) => set("equipe", e.target.value)} />
@@ -231,7 +240,11 @@ export function TaludePropertiesPanel({
       </div>
 
       <Button onClick={() => save.mutate()} disabled={save.isPending} className="w-full gap-2">
-        {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+        {save.isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="h-4 w-4" />
+        )}
         Salvar dados do talude
       </Button>
     </div>

@@ -72,6 +72,9 @@ const LEGACY_MAP: Record<string, WorkOrderStatus> = {
 
 /** Converte status legados dos módulos antigos para o estado canônico. */
 export function toCanonicalStatus(raw: string | null | undefined): WorkOrderStatus {
-  const key = String(raw ?? "").trim().toLowerCase().replace(/\s+/g, "_");
+  const key = String(raw ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
   return LEGACY_MAP[key] ?? "aberta";
 }

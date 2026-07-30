@@ -16,9 +16,7 @@ export async function compressImage(
     if (!ctx) return file;
     ctx.drawImage(bmp, 0, 0, w, h);
     bmp.close?.();
-    const blob: Blob | null = await new Promise((res) =>
-      canvas.toBlob(res, "image/jpeg", quality),
-    );
+    const blob: Blob | null = await new Promise((res) => canvas.toBlob(res, "image/jpeg", quality));
     return blob ?? file;
   } catch {
     return file;

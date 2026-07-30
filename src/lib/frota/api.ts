@@ -15,12 +15,7 @@ const db = supabase as unknown as {
   from: (t: string) => any;
 };
 
-export type VehicleStatus =
-  | "disponivel"
-  | "em_uso"
-  | "bloqueado"
-  | "manutencao"
-  | "inativo";
+export type VehicleStatus = "disponivel" | "em_uso" | "bloqueado" | "manutencao" | "inativo";
 
 export type Vehicle = {
   id: string;
@@ -92,7 +87,6 @@ export async function updateVehicle(id: string, patch: VehiclePatch): Promise<Ve
   if (error) throw error;
   return data as Vehicle;
 }
-
 
 export type Checklist = {
   id: string;

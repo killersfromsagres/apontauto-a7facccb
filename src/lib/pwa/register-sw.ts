@@ -6,11 +6,7 @@
  * editor. Nestes contextos, qualquer registro anterior é removido.
  * `?sw=off` funciona como chave de emergência para desinstalar o SW.
  */
-const PREVIEW_HOST_SUFFIXES = [
-  "lovableproject.com",
-  "lovableproject-dev.com",
-  "beta.lovable.dev",
-];
+const PREVIEW_HOST_SUFFIXES = ["lovableproject.com", "lovableproject-dev.com", "beta.lovable.dev"];
 
 function isBlockedContext(): boolean {
   if (typeof window === "undefined") return true;

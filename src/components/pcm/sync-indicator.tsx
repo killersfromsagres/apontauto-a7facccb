@@ -4,10 +4,7 @@ import { cn } from "@/lib/utils";
 
 export type SyncStatus = "online" | "offline" | "syncing" | "error";
 
-const CONFIG: Record<
-  SyncStatus,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
+const CONFIG: Record<SyncStatus, { label: string; className: string; icon: React.ReactNode }> = {
   online: {
     label: "Sincronizado",
     className: "border-success/40 bg-success/10 text-success",
@@ -66,12 +63,7 @@ export function SyncIndicator({
           : ""}
       </span>
       {onRetry && (status === "error" || pending > 0) && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1.5 text-[11px]"
-          onClick={onRetry}
-        >
+        <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[11px]" onClick={onRetry}>
           <RefreshCw className="size-3" aria-hidden />
           Repetir
         </Button>

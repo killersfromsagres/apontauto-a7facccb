@@ -22,7 +22,11 @@ describe("work order state machine", () => {
   it("calcula o estado do SLA", () => {
     const created = new Date("2026-07-27T08:00:00");
     expect(slaState("corretiva", "critica", created, new Date("2026-07-27T09:00:00"))).toBe("ok");
-    expect(slaState("corretiva", "critica", created, new Date("2026-07-27T11:30:00"))).toBe("atencao");
-    expect(slaState("corretiva", "critica", created, new Date("2026-07-27T13:00:00"))).toBe("vencido");
+    expect(slaState("corretiva", "critica", created, new Date("2026-07-27T11:30:00"))).toBe(
+      "atencao",
+    );
+    expect(slaState("corretiva", "critica", created, new Date("2026-07-27T13:00:00"))).toBe(
+      "vencido",
+    );
   });
 });

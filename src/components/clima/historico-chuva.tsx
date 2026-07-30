@@ -29,7 +29,12 @@ import {
   aggregateByHour,
   type WeatherEvent,
 } from "@/lib/weather/history";
-import { SOURCE_LABEL, SOURCE_META, SOURCE_TYPE_LABEL, type WeatherSourceKey } from "@/lib/weather/sources";
+import {
+  SOURCE_LABEL,
+  SOURCE_META,
+  SOURCE_TYPE_LABEL,
+  type WeatherSourceKey,
+} from "@/lib/weather/sources";
 
 const PERIODS = [
   { key: "7", label: "7 dias" },
@@ -91,7 +96,8 @@ export function HistoricoChuva() {
     const total = new Date(ref.getFullYear(), ref.getMonth() + 1, 0).getDate();
     const pad = first.getDay();
     const byDate = new Map(days.map((d) => [d.date, d]));
-    const cells: ({ date: string; day: number; agg: (typeof days)[number] | undefined } | null)[] = [];
+    const cells: ({ date: string; day: number; agg: (typeof days)[number] | undefined } | null)[] =
+      [];
     for (let i = 0; i < pad; i++) cells.push(null);
     for (let d = 1; d <= total; d++) {
       const date = new Date(ref.getFullYear(), ref.getMonth(), d).toLocaleDateString("sv-SE");
@@ -190,10 +196,20 @@ export function HistoricoChuva() {
                 {p.label}
               </Button>
             ))}
-            <Button size="sm" variant="outline" className="min-h-11 rounded-full" onClick={exportCsv}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-h-11 rounded-full"
+              onClick={exportCsv}
+            >
               <Download className="mr-1.5 h-4 w-4" /> Excel/CSV
             </Button>
-            <Button size="sm" variant="outline" className="min-h-11 rounded-full" onClick={exportPdf}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="min-h-11 rounded-full"
+              onClick={exportPdf}
+            >
               <Download className="mr-1.5 h-4 w-4" /> PDF
             </Button>
             <Button
@@ -287,14 +303,25 @@ export function HistoricoChuva() {
                 formatter={(v: number, n) => [`${Number(v).toFixed(2)} mm`, n]}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="observado" name="Observado/medido" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              <Line dataKey="previsto" name="Previsto (modelo)" stroke="#f59e0b" dot={false} strokeWidth={2} />
+              <Bar
+                dataKey="observado"
+                name="Observado/medido"
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+              />
+              <Line
+                dataKey="previsto"
+                name="Previsto (modelo)"
+                stroke="#f59e0b"
+                dot={false}
+                strokeWidth={2}
+              />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Previsão de modelo não é medição física local. Medições locais só aparecem quando uma estação
-          observacional ou pluviômetro está configurado.
+          Previsão de modelo não é medição física local. Medições locais só aparecem quando uma
+          estação observacional ou pluviômetro está configurado.
         </p>
       </GlassCard>
 
@@ -313,7 +340,10 @@ export function HistoricoChuva() {
                 <div className="flex flex-wrap items-center gap-2">
                   <StatusBadge status={e.status === "aberto" ? "aberto" : e.status} />
                   {e.max_intensity ? (
-                    <Badge variant="outline" className={cn("rounded-full", INTENSITY_COLOR[e.max_intensity])}>
+                    <Badge
+                      variant="outline"
+                      className={cn("rounded-full", INTENSITY_COLOR[e.max_intensity])}
+                    >
                       {e.max_intensity}
                     </Badge>
                   ) : null}
@@ -355,13 +385,14 @@ export function HistoricoChuva() {
               </div>
               <div className="mt-1 grid gap-0.5 text-[11px] text-muted-foreground">
                 <span>
-                  Tipo: {SOURCE_TYPE_LABEL[SOURCE_META[h.source as WeatherSourceKey]?.type ?? "previsao"]}
+                  Tipo:{" "}
+                  {SOURCE_TYPE_LABEL[SOURCE_META[h.source as WeatherSourceKey]?.type ?? "previsao"]}
                 </span>
                 <span>Última execução: {fmtDateTime(h.last_run_at)}</span>
                 <span>Última resposta válida: {fmtDateTime(h.last_success_at)}</span>
                 <span className="flex items-center gap-1">
-                  <Gauge className="h-3 w-3" /> Latência: {h.latency_ms ?? "—"} ms · erros consecutivos:{" "}
-                  {h.consecutive_errors}
+                  <Gauge className="h-3 w-3" /> Latência: {h.latency_ms ?? "—"} ms · erros
+                  consecutivos: {h.consecutive_errors}
                 </span>
                 {h.last_error ? <span className="text-destructive">{h.last_error}</span> : null}
               </div>

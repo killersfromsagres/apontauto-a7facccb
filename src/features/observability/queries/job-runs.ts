@@ -17,7 +17,9 @@ export interface JobRun {
 export async function fetchJobRuns(limit = 60): Promise<JobRun[]> {
   const { data, error } = await (supabase as any)
     .from("job_runs")
-    .select("id, job_key, status, attempt, started_at, finished_at, duration_ms, error_message, result")
+    .select(
+      "id, job_key, status, attempt, started_at, finished_at, duration_ms, error_message, result",
+    )
     .order("started_at", { ascending: false })
     .limit(limit);
   if (error) throw error;

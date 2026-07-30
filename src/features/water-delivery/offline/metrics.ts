@@ -73,9 +73,7 @@ export function resumoUploads(): ResumoUpload {
     bytesOriginais,
     bytesFinais,
     economiaPercent:
-      bytesOriginais > 0
-        ? Math.max(0, Math.round((1 - bytesFinais / bytesOriginais) * 100))
-        : 0,
+      bytesOriginais > 0 ? Math.max(0, Math.round((1 - bytesFinais / bytesOriginais) * 100)) : 0,
     offThreadPercent: total
       ? Math.round((amostras.filter((a) => a.offThread).length / total) * 100)
       : 0,

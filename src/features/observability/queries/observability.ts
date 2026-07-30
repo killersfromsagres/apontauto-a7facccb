@@ -42,7 +42,11 @@ export async function fetchObservability(signal?: AbortSignal): Promise<Observab
       .abortSignal(signal as AbortSignal),
     supabase
       .from("weather_source_health")
-      .select(sel("source, state, last_error, last_run_at, last_success_at, latency_ms, consecutive_errors"))
+      .select(
+        sel(
+          "source, state, last_error, last_run_at, last_success_at, latency_ms, consecutive_errors",
+        ),
+      )
       .abortSignal(signal as AbortSignal),
     supabase
       .from("pointing_jobs")
@@ -86,7 +90,9 @@ export async function fetchObservability(signal?: AbortSignal): Promise<Observab
     const status = String(b.status ?? "ok");
     byIntegration.set(key, {
       integration: key,
-      status: (["ok", "degradado", "falha"].includes(status) ? status : "desconhecido") as HealthStatus,
+      status: (["ok", "degradado", "falha"].includes(status)
+        ? status
+        : "desconhecido") as HealthStatus,
       message: (b.message as string | null) ?? null,
       lastRunAt: String(b.created_at),
       durationMs: (b.duration_ms as number | null) ?? null,
@@ -124,7 +130,9 @@ export async function fetchObservability(signal?: AbortSignal): Promise<Observab
   ].sort((a, b) => b.at.localeCompare(a.at));
 
   const uploadFailures: JobFailure[] = errors
-    .filter((e) => /upload|imgbb|foto|imagem/i.test(`${e.origin} ${e.message} ${e.moduleKey ?? ""}`))
+    .filter((e) =>
+      /upload|imgbb|foto|imagem/i.test(`${e.origin} ${e.message} ${e.moduleKey ?? ""}`),
+    )
     .slice(0, 30)
     .map((e) => ({
       id: e.id,
@@ -143,7 +151,9 @@ export async function fetchObservability(signal?: AbortSignal): Promise<Observab
   return {
     errors,
     errors24h: errors.filter((e) => e.createdAt >= day && e.level === "error").length,
-    integrations: [...byIntegration.values()].sort((a, b) => a.integration.localeCompare(b.integration)),
+    integrations: [...byIntegration.values()].sort((a, b) =>
+      a.integration.localeCompare(b.integration),
+    ),
     jobFailures,
     uploadFailures,
     lastSyncAt: lastUpload ? String(lastUpload.created_at) : null,
@@ -163,7 +173,9 @@ export async function fetchOfflineQueue(): Promise<OfflineQueueSnapshot[]> {
       pending: items.filter((i) => !("dead" in i && i.dead)).length,
       dead: items.filter((i) => "dead" in i && Boolean(i.dead)).length,
       oldestAt: items.length
-        ? Math.min(...items.map((i) => Number((i as { createdAt?: number }).createdAt ?? Date.now())))
+        ? Math.min(
+            ...items.map((i) => Number((i as { createdAt?: number }).createdAt ?? Date.now())),
+          )
         : null,
     });
   } catch {

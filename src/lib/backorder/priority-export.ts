@@ -193,7 +193,8 @@ export function openPriorityPrintView(titulo: string, rows: PriorityRow[]) {
 }
 
 function escapeHtml(v: string) {
-  return String(v).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  return String(v).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
   );
 }

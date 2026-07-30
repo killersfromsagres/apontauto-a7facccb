@@ -61,9 +61,15 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
   matricula: ["matricula", "matrícula", "chapa", "registro"],
   cpf: ["cpf", "n cpf", "nº cpf", "numero cpf", "número cpf"],
   nome: [
-    "nome", "colaborador", "funcionario", "funcionário",
-    "nome do colaborador", "nome colaborador",
-    "nome do funcionario", "nome do funcionário", "nome completo",
+    "nome",
+    "colaborador",
+    "funcionario",
+    "funcionário",
+    "nome do colaborador",
+    "nome colaborador",
+    "nome do funcionario",
+    "nome do funcionário",
+    "nome completo",
   ],
   funcao: ["funcao", "função", "cargo"],
   cod_funcao: ["cod funcao", "código função", "cod função"],
@@ -89,25 +95,63 @@ const HEADER_ALIASES: Record<CoreKey, string[]> = {
   serie_ctps: ["serie ctps", "série ctps"],
   cc: ["cc", "centro de custo"],
   cr: ["cr", "centro de resultado", "centro resultado", "c r"],
-  data_admissao: ["data admissao", "data admissão", "data de admissao", "data de admissão", "dt admissao", "dt admissão", "admissao", "admissão"],
-  data_demissao: ["data demissao", "data demissão", "dt demissao", "dt demissão", "demissao", "demissão"],
+  data_admissao: [
+    "data admissao",
+    "data admissão",
+    "data de admissao",
+    "data de admissão",
+    "dt admissao",
+    "dt admissão",
+    "admissao",
+    "admissão",
+  ],
+  data_demissao: [
+    "data demissao",
+    "data demissão",
+    "dt demissao",
+    "dt demissão",
+    "demissao",
+    "demissão",
+  ],
   data_exame_realizado: [
-    "data exame realizado", "data exame", "data do exame", "data aso", "data do aso",
-    "data dos exames", "data ultimo exame", "data último exame",
-    "ultimo aso", "último aso", "data_ultimo_exame",
+    "data exame realizado",
+    "data exame",
+    "data do exame",
+    "data aso",
+    "data do aso",
+    "data dos exames",
+    "data ultimo exame",
+    "data último exame",
+    "ultimo aso",
+    "último aso",
+    "data_ultimo_exame",
   ],
   tipo_exame: [
-    "tipo de exame", "tipo aso", "tipo do aso",
-    "exames ocupacionais", "exame ocupacional", "tipo",
+    "tipo de exame",
+    "tipo aso",
+    "tipo do aso",
+    "exames ocupacionais",
+    "exame ocupacional",
+    "tipo",
   ],
   data_vencimento: [
-    "data vencimento", "data de vencimento", "vencimento",
-    "validade", "data validade", "vencto", "dt vencimento",
+    "data vencimento",
+    "data de vencimento",
+    "vencimento",
+    "validade",
+    "data validade",
+    "vencto",
+    "dt vencimento",
     "data de vencimento (1 ano)",
   ],
   data_sugerida_agendamento: [
-    "data sugerida de agendamento", "data sugerida", "sugerido",
-    "agendar em", "agendamento", "data agendamento", "data do agendamento",
+    "data sugerida de agendamento",
+    "data sugerida",
+    "sugerido",
+    "agendar em",
+    "agendamento",
+    "data agendamento",
+    "data do agendamento",
     "data sugerida de agendamento (30 dias antes)",
   ],
   observacao: ["observacao", "observação", "obs", "observacoes", "observações"],
@@ -224,14 +268,17 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
       const matricula = cellString(pick("matricula"));
       const cpf = normalizeCpf(cpfRaw);
       if (!cpf && !matricula) {
-        errors.push({ sheet: sheet.name, row: r, message: `${nome}: sem CPF nem matrícula — linha pulada.` });
+        errors.push({
+          sheet: sheet.name,
+          row: r,
+          message: `${nome}: sem CPF nem matrícula — linha pulada.`,
+        });
         continue;
       }
 
       const funcaoRaw = cellString(pick("funcao"));
-      const funcao = funcaoRaw && funcaoRaw.includes(" - ")
-        ? funcaoRaw.split(" - ").pop()!.trim()
-        : funcaoRaw;
+      const funcao =
+        funcaoRaw && funcaoRaw.includes(" - ") ? funcaoRaw.split(" - ").pop()!.trim() : funcaoRaw;
 
       const agendRaw = pick("data_sugerida_agendamento");
       const agendText = !parseFlexibleDate(agendRaw) ? cellString(agendRaw) : null;
@@ -298,7 +345,18 @@ export async function readSstXlsx(file: File): Promise<SstImportResult> {
       const prev = dedup[seen.get(key)!];
       dedup[seen.get(key)!] = {
         ...prev,
-        ...Object.fromEntries(Object.entries(r).filter(([, v]) => v !== null && v !== "" && !(typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0))),
+        ...Object.fromEntries(
+          Object.entries(r).filter(
+            ([, v]) =>
+              v !== null &&
+              v !== "" &&
+              !(
+                typeof v === "object" &&
+                !Array.isArray(v) &&
+                Object.keys(v as object).length === 0
+              ),
+          ),
+        ),
         dados_extras: { ...prev.dados_extras, ...r.dados_extras },
       } as SstImportRow;
     } else {

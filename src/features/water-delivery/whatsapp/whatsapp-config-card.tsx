@@ -208,7 +208,9 @@ export function WhatsAppConfigCard({ podeEditar }: { podeEditar: boolean }) {
             id="wa-validado"
             checked={cfg.cloud.validado}
             disabled={!podeEditar}
-            onCheckedChange={(v) => void persistir({ ...cfg, cloud: { ...cfg.cloud, validado: v } })}
+            onCheckedChange={(v) =>
+              void persistir({ ...cfg, cloud: { ...cfg.cloud, validado: v } })
+            }
           />
         </div>
         <div className="space-y-1">

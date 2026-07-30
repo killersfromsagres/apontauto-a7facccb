@@ -248,7 +248,9 @@ export function FiltroDetalheDialog({
         { nome: `filtro-${alvoFoto}-${id}` },
       );
       if (!url) throw new Error("Sem rede: a foto ficou na fila. Tente novamente com conexão.");
-      setConcl((c) => (alvoFoto === "antes" ? { ...c, fotoAntes: url } : { ...c, fotoDepois: url }));
+      setConcl((c) =>
+        alvoFoto === "antes" ? { ...c, fotoAntes: url } : { ...c, fotoDepois: url },
+      );
     } catch (e) {
       erro(e);
     } finally {
@@ -326,7 +328,9 @@ export function FiltroDetalheDialog({
               {solicitacao.disponibilidade_acesso && (
                 <p className="mt-0.5">Acesso: {solicitacao.disponibilidade_acesso}</p>
               )}
-              {solicitacao.os_relacionada && <p className="mt-0.5">OS: {solicitacao.os_relacionada}</p>}
+              {solicitacao.os_relacionada && (
+                <p className="mt-0.5">OS: {solicitacao.os_relacionada}</p>
+              )}
               {solicitacao.motivos?.length > 0 && (
                 <p className="mt-1">
                   Motivos: {solicitacao.motivos.map((m) => MOTIVO_LABEL[m] ?? m).join(", ")}
@@ -663,7 +667,8 @@ export function FiltroDetalheDialog({
                     />
                     {ativo && !concl.proxima && (
                       <p className="text-[11px] text-muted-foreground">
-                        Em branco, o sistema calcula {ativo.periodicidade_dias} dias a partir de hoje.
+                        Em branco, o sistema calcula {ativo.periodicidade_dias} dias a partir de
+                        hoje.
                       </p>
                     )}
                   </div>

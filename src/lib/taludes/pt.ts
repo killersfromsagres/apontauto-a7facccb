@@ -17,7 +17,10 @@ export const PT_STATUS_LABEL: Record<PTStatus, string> = {
   encerrada: "Encerrada",
 };
 
-export const PT_STATUS_TONE: Record<PTStatus, "neutral" | "primary" | "success" | "warning" | "danger"> = {
+export const PT_STATUS_TONE: Record<
+  PTStatus,
+  "neutral" | "primary" | "success" | "warning" | "danger"
+> = {
   solicitada: "neutral",
   em_analise: "primary",
   liberada: "success",
@@ -79,8 +82,15 @@ export interface PTEvent {
   created_at: string;
 }
 
-export async function listPTs(filters?: { status?: PTStatus | "todas"; from?: string; to?: string }) {
-  let q = supabase.from("talude_pt_releases").select("*").order("data_trabalho", { ascending: false });
+export async function listPTs(filters?: {
+  status?: PTStatus | "todas";
+  from?: string;
+  to?: string;
+}) {
+  let q = supabase
+    .from("talude_pt_releases")
+    .select("*")
+    .order("data_trabalho", { ascending: false });
   if (filters?.status && filters.status !== "todas") q = q.eq("status", filters.status);
   if (filters?.from) q = q.gte("data_trabalho", filters.from);
   if (filters?.to) q = q.lte("data_trabalho", filters.to);
@@ -104,10 +114,7 @@ async function currentActor() {
   const user = data.user;
   return {
     id: user?.id ?? null,
-    nome:
-      (user?.user_metadata?.full_name as string | undefined) ??
-      user?.email ??
-      "Usuário",
+    nome: (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "Usuário",
   };
 }
 

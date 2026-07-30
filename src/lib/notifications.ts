@@ -11,16 +11,9 @@ export type NotificationCategory =
   | "pt"
   | "seguranca";
 
-export type NotificationStatus =
-  | "draft"
-  | "scheduled"
-  | "published"
-  | "paused"
-  | "cancelled";
+export type NotificationStatus = "draft" | "scheduled" | "published" | "paused" | "cancelled";
 
 export type TargetMode = "all" | "users" | "roles" | "modules" | "teams";
-
-
 
 export const CATEGORIES: {
   key: NotificationCategory;
@@ -37,8 +30,7 @@ export const CATEGORIES: {
   { key: "seguranca", label: "Segurança", tone: "danger" },
 ];
 
-export const categoryMeta = (key: string) =>
-  CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
+export const categoryMeta = (key: string) => CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[0];
 
 export const TARGET_MODES: { key: TargetMode; label: string }[] = [
   { key: "all", label: "Todos os colaboradores" },
@@ -137,12 +129,9 @@ export function filtrarPorPreferencias<T extends { category: string; severity: s
   if (!prefs.inapp) return [];
   const minimo = PESO[prefs.prioridade_minima] ?? 0;
   return itens.filter(
-    (n) =>
-      !prefs.categorias_silenciadas.includes(n.category) &&
-      (PESO[n.severity] ?? 0) >= minimo,
+    (n) => !prefs.categorias_silenciadas.includes(n.category) && (PESO[n.severity] ?? 0) >= minimo,
   );
 }
-
 
 export type TargetRow = {
   id: string;
@@ -225,7 +214,6 @@ export async function savePrefs(userId: string, patch: Partial<NotificationPrefs
   if (error) throw error;
 }
 
-
 /** Cria o recibo de entrega (idempotente por (notification_id, user_id)). */
 export async function ensureDelivered(userId: string, ids: string[]) {
   if (!userId || ids.length === 0) return;
@@ -252,17 +240,17 @@ export async function markRead(userId: string, ids: string[]) {
 
 export async function acknowledge(userId: string, id: string) {
   const now = new Date().toISOString();
-  const { error } = await supabase.from("notification_receipts").upsert(
-    { notification_id: id, user_id: userId, read_at: now, acknowledged_at: now },
-    { onConflict: "notification_id,user_id" },
-  );
+  const { error } = await supabase
+    .from("notification_receipts")
+    .upsert(
+      { notification_id: id, user_id: userId, read_at: now, acknowledged_at: now },
+      { onConflict: "notification_id,user_id" },
+    );
   if (error) throw error;
 }
 
 export const fmtDateTime = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
-    : "—";
+  iso ? new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
 
 /** Converte um valor de <input type="datetime-local"> em ISO. */
 export const localToIso = (v: string) => (v ? new Date(v).toISOString() : null);

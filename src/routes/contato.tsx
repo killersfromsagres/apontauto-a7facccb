@@ -8,7 +8,8 @@ export const Route = createFileRoute("/contato")({
       { title: "Contato — Apont Auto" },
       {
         name: "description",
-        content: "Fale com o responsável pelo Apont Auto — suporte, dúvidas e solicitações de acesso.",
+        content:
+          "Fale com o responsável pelo Apont Auto — suporte, dúvidas e solicitações de acesso.",
       },
       { property: "og:title", content: "Contato — Apont Auto" },
       { property: "og:description", content: "Fale com o responsável pelo Apont Auto." },
@@ -23,8 +24,8 @@ function ContatoPage() {
   return (
     <LegalLayout title="Contato">
       <p>
-        Para dúvidas sobre o sistema, solicitações de acesso, correções de dados ou
-        assuntos de privacidade, utilize os canais abaixo.
+        Para dúvidas sobre o sistema, solicitações de acesso, correções de dados ou assuntos de
+        privacidade, utilize os canais abaixo.
       </p>
       <div className="not-prose mt-6 grid gap-3 sm:grid-cols-2">
         <a

@@ -49,10 +49,7 @@ export function Timeline({
 
   return (
     <ol className={cn("relative space-y-4 pl-6", className)}>
-      <span
-        aria-hidden
-        className="absolute bottom-2 left-[7px] top-2 w-px bg-border/60"
-      />
+      <span aria-hidden className="absolute bottom-2 left-[7px] top-2 w-px bg-border/60" />
       {items.map((item) => (
         <li key={item.id} className="relative min-w-0">
           <span
@@ -63,18 +60,14 @@ export function Timeline({
             )}
           />
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <p className="min-w-0 break-words text-sm font-semibold">
-              {item.title}
-            </p>
+            <p className="min-w-0 break-words text-sm font-semibold">{item.title}</p>
             <span className="text-[11px] text-muted-foreground">
               {formatWhen(item.at)}
               {item.actor ? ` · ${item.actor}` : ""}
             </span>
           </div>
           {item.description && (
-            <div className="mt-1 text-sm text-muted-foreground">
-              {item.description}
-            </div>
+            <div className="mt-1 text-sm text-muted-foreground">{item.description}</div>
           )}
         </li>
       ))}
@@ -99,13 +92,7 @@ const ACTION_TONE: Record<string, StatusTone> = {
 };
 
 /** Renderiza registros da tabela `audit_events` na timeline padrão. */
-export function AuditTimeline({
-  events,
-  className,
-}: {
-  events: AuditEvent[];
-  className?: string;
-}) {
+export function AuditTimeline({ events, className }: { events: AuditEvent[]; className?: string }) {
   return (
     <Timeline
       className={className}

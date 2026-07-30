@@ -1,13 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { uploadPhotoWithFallback } from "@/lib/photo-upload";
-import {
-  outboxAll,
-  outboxRemove,
-  outboxUpdate,
-  blobGet,
-  blobDelete,
-  type OutboxItem,
-} from "./db";
+import { outboxAll, outboxRemove, outboxUpdate, blobGet, blobDelete, type OutboxItem } from "./db";
 
 let running: Promise<SyncResultDetailed> | null = null;
 
@@ -38,7 +31,9 @@ function getErrorMessage(err: unknown): string {
     if (typeof message === "string" && message.trim()) return message;
     try {
       return JSON.stringify(record);
-    } catch {}
+    } catch {
+      /* falha silenciosa: cache local é um extra */
+    }
   }
   return "Erro desconhecido ao sincronizar";
 }
@@ -109,7 +104,10 @@ async function sendOne(item: OutboxItem): Promise<void> {
   if (item.kind === "status") {
     const { error } = await supabase
       .from("corretiva_os")
-      .update({ status: item.payload.status ?? "concluida", fim: item.payload.fim ?? new Date().toISOString() })
+      .update({
+        status: item.payload.status ?? "concluida",
+        fim: item.payload.fim ?? new Date().toISOString(),
+      })
       .eq("id", item.osId);
     if (error) throw error;
     return;

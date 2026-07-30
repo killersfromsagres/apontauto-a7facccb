@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { STATUS_EXIGE_EVIDENCIA, sanitizarParaCache } from "@/features/water-delivery/offline/offline";
+import {
+  STATUS_EXIGE_EVIDENCIA,
+  sanitizarParaCache,
+} from "@/features/water-delivery/offline/offline";
 import { backoffDelay, drainOutbox, type OutboxRecord } from "@/lib/offline/outbox-core";
 
 describe("cache offline do módulo Água", () => {

@@ -100,7 +100,11 @@ function QrFiltro({ token, rotulo }: { token: string; rotulo: string }) {
           </DialogHeader>
           <div className="flex flex-col items-center gap-3">
             {png ? (
-              <img src={png} alt="QR Code do filtro" className="h-56 w-56 rounded-xl bg-white p-2" />
+              <img
+                src={png}
+                alt="QR Code do filtro"
+                className="h-56 w-56 rounded-xl bg-white p-2"
+              />
             ) : (
               <div className="h-56 w-56 animate-pulse rounded-xl bg-muted" />
             )}
@@ -243,7 +247,11 @@ export function FiltroAtivosTab({ podeEscrever }: Props) {
           value={vencendo.length}
           icon={<CalendarClock className="h-4 w-4" />}
         />
-        <KpiCard label="Trocas vencidas" value={vencidos} icon={<CalendarClock className="h-4 w-4" />} />
+        <KpiCard
+          label="Trocas vencidas"
+          value={vencidos}
+          icon={<CalendarClock className="h-4 w-4" />}
+        />
         <KpiCard
           label="Periodicidade média"
           value={

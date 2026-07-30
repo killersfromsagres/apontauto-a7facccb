@@ -46,22 +46,14 @@ export function DetailDrawer({
         <ScrollArea className="flex-1">
           <div className="space-y-4 p-5">{children}</div>
         </ScrollArea>
-        {footer ? (
-          <div className="border-t border-border/60 p-4">{footer}</div>
-        ) : null}
+        {footer ? <div className="border-t border-border/60 p-4">{footer}</div> : null}
       </SheetContent>
     </Sheet>
   );
 }
 
 /** Linha rótulo/valor usada dentro do DetailDrawer. */
-export function DetailRow({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[minmax(0,7rem)_1fr] items-start gap-3 border-b border-border/40 pb-2 last:border-0">
       <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

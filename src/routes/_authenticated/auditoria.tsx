@@ -118,7 +118,8 @@ function diffFields(oldData: unknown, newData: unknown) {
   const a = (oldData ?? {}) as Record<string, unknown>;
   const b = (newData ?? {}) as Record<string, unknown>;
   const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)])).sort();
-  const str = (v: unknown) => (v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v));
+  const str = (v: unknown) =>
+    v == null ? "—" : typeof v === "object" ? JSON.stringify(v) : String(v);
   return keys
     .map((k) => ({ key: k, before: str(a[k]), after: str(b[k]) }))
     .filter((d) => d.before !== d.after);
@@ -143,7 +144,6 @@ function toCsv(rows: AuditRow[]) {
   return `\uFEFF${[head, ...body].join("\n")}`;
 }
 
-
 function AuditoriaPage() {
   const { allowed, isLoading: loadingAccess } = useCanAccessModule("auditoria", "read");
   const [periodo, setPeriodo] = useState<(typeof PERIODOS)[number]["key"]>("7d");
@@ -151,7 +151,6 @@ function AuditoriaPage() {
   const [modulo, setModulo] = useState("todos");
   const [acao, setAcao] = useState("todas");
   const [selecionado, setSelecionado] = useState<AuditRow | null>(null);
-
 
   const eventos = useQuery({
     queryKey: ["audit-events", periodo],
@@ -203,7 +202,6 @@ function AuditoriaPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
-
 
   const kpis = useMemo(() => {
     const total = rows.length;
@@ -265,12 +263,7 @@ function AuditoriaPage() {
       key: "detalhe",
       header: "",
       cell: (r) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-11"
-          onClick={() => setSelecionado(r)}
-        >
+        <Button variant="ghost" size="sm" className="h-11" onClick={() => setSelecionado(r)}>
           Detalhes
         </Button>
       ),
@@ -302,8 +295,16 @@ function AuditoriaPage() {
       description="Histórico imutável de criações, alterações e exclusões, com os dados antes e depois de cada evento."
     >
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-        <KpiCard icon={<Activity className="size-4" />} label="Eventos" value={String(kpis.total)} />
-        <KpiCard icon={<Users className="size-4" />} label="Usuários" value={String(kpis.usuarios)} />
+        <KpiCard
+          icon={<Activity className="size-4" />}
+          label="Eventos"
+          value={String(kpis.total)}
+        />
+        <KpiCard
+          icon={<Users className="size-4" />}
+          label="Usuários"
+          value={String(kpis.usuarios)}
+        />
         <KpiCard
           icon={<FileClock className="size-4" />}
           label="Módulos"
@@ -368,7 +369,6 @@ function AuditoriaPage() {
           </div>
         </div>
 
-
         <div className="mt-4">
           {eventos.isError ? (
             <ErrorState
@@ -418,7 +418,10 @@ function AuditoriaPage() {
                   <span>Depois</span>
                 </div>
                 {diffFields(selecionado.old_data, selecionado.new_data).map((d) => (
-                  <div key={d.key} className="grid grid-cols-3 gap-2 border-t border-border/40 px-3 py-2 text-[11px]">
+                  <div
+                    key={d.key}
+                    className="grid grid-cols-3 gap-2 border-t border-border/40 px-3 py-2 text-[11px]"
+                  >
                     <span className="font-medium break-words">{d.key}</span>
                     <span className="break-words text-muted-foreground">{d.before}</span>
                     <span className="break-words">{d.after}</span>
@@ -428,7 +431,6 @@ function AuditoriaPage() {
             ) : null}
 
             <div className="grid gap-3 lg:grid-cols-2">
-
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Antes</p>
                 <pre className="max-h-64 overflow-auto rounded-2xl bg-muted/40 p-3 text-[11px] leading-relaxed">

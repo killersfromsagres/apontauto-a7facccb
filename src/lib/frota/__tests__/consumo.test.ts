@@ -20,8 +20,18 @@ const fueling = (over: Partial<F>): F =>
 describe("consumo e custo por km", () => {
   it("calcula km/l e custo por km entre tanques cheios", () => {
     const rows = computeConsumption([
-      fueling({ fueled_at: "2026-01-01T10:00:00Z", odometer_km: 1000, liters: 30, total_value: 180 }),
-      fueling({ fueled_at: "2026-01-10T10:00:00Z", odometer_km: 1400, liters: 40, total_value: 240 }),
+      fueling({
+        fueled_at: "2026-01-01T10:00:00Z",
+        odometer_km: 1000,
+        liters: 30,
+        total_value: 180,
+      }),
+      fueling({
+        fueled_at: "2026-01-10T10:00:00Z",
+        odometer_km: 1400,
+        liters: 40,
+        total_value: 240,
+      }),
     ]);
     const v = rows.get("v1")!;
     expect(v.km).toBe(400);

@@ -126,7 +126,10 @@ export function scheduleTask(
       continue;
     }
     if (endMin > cal.endMinutes) {
-      start = nextWorkingSlot(atMinutes(new Date(start.getTime() + 86400_000), cal.startMinutes), cal);
+      start = nextWorkingSlot(
+        atMinutes(new Date(start.getTime() + 86400_000), cal.startMinutes),
+        cal,
+      );
       continue;
     }
     return { start, end: new Date(start.getTime() + duration * 60_000) };
@@ -140,10 +143,11 @@ export type BatchTaskInput = {
   durationMinutes?: number;
 };
 
-export type BatchTaskOutput = BatchTaskInput & ScheduledSlot & {
-  durationMinutes: number;
-  position: number;
-};
+export type BatchTaskOutput = BatchTaskInput &
+  ScheduledSlot & {
+    durationMinutes: number;
+    position: number;
+  };
 
 /** Agenda um lote em sequência, sem sobreposição. */
 export function scheduleBatch(

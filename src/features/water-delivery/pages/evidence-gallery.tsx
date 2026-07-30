@@ -18,10 +18,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/pcm";
 import { WhatsAppShareDialog } from "@/features/water-delivery/whatsapp/whatsapp-share-dialog";
 import { FilaFotosAviso } from "@/features/water-delivery/components/fila-fotos-aviso";
-import { hojeISO, listPontos, listVisitas, pontoLabel, VISITA_STATUS_LABEL } from "@/features/water-delivery/queries/api";
+import {
+  hojeISO,
+  listPontos,
+  listVisitas,
+  pontoLabel,
+  VISITA_STATUS_LABEL,
+} from "@/features/water-delivery/queries/api";
 import { listFotos } from "@/features/water-delivery/offline/fotos";
 import type { EvidenciaItem } from "@/features/water-delivery/whatsapp/whatsapp";
-
 
 function diasAtras(dias: number): string {
   const d = new Date();
@@ -59,10 +64,7 @@ export function EvidenceGallery() {
     queryFn: () => listFotos(de, ate),
   });
 
-  const porPonto = useMemo(
-    () => new Map((pontos.data ?? []).map((p) => [p.id, p])),
-    [pontos.data],
-  );
+  const porPonto = useMemo(() => new Map((pontos.data ?? []).map((p) => [p.id, p])), [pontos.data]);
   const porVisita = useMemo(
     () => new Map((visitas.data ?? []).map((v) => [v.id, v])),
     [visitas.data],
@@ -181,11 +183,7 @@ export function EvidenceGallery() {
 
   const resumo = useMemo(() => {
     const visitasAlvo = Array.from(
-      new Set(
-        selecionadas
-          .map((f) => porVisita.get(f.chave.split("-")[0]))
-          .filter(Boolean),
-      ),
+      new Set(selecionadas.map((f) => porVisita.get(f.chave.split("-")[0])).filter(Boolean)),
     );
     const base = visitas.data ?? [];
     const doDia = base.filter((v) => selecionadas.some((f) => f.data === v.data));
@@ -237,7 +235,7 @@ export function EvidenceGallery() {
           <SelectItem value={TODOS}>{rotuloTodos}</SelectItem>
           {lista.map((v) => (
             <SelectItem key={v} value={v}>
-              {rotulo === "Status" ? (VISITA_STATUS_LABEL as any)[v] ?? v : v}
+              {rotulo === "Status" ? ((VISITA_STATUS_LABEL as any)[v] ?? v) : v}
             </SelectItem>
           ))}
         </SelectContent>

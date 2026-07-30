@@ -5,9 +5,7 @@ export interface SheetInput {
   rows: ApontamentoRow[];
 }
 
-export async function generateApontamentosMultiSheetWorkbook(
-  sheets: SheetInput[],
-): Promise<Blob> {
+export async function generateApontamentosMultiSheetWorkbook(sheets: SheetInput[]): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
   const wb = new ExcelJS.Workbook();
   wb.creator = "Sistema de Apontamento";

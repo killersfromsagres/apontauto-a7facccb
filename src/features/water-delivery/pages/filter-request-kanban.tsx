@@ -27,7 +27,6 @@ import {
   listFiltroAtivos,
 } from "@/features/water-delivery/filters/filtros";
 
-
 const SITUACAO_TONE: Record<FiltroSituacao, string> = {
   aberta: "border-sky-400/40 bg-sky-500/10",
   solicitada: "border-sky-400/40 bg-sky-500/10",
@@ -77,17 +76,14 @@ export function FilterRequestKanban() {
 
   /** Abertura por QR Code do filtro (item 12.2). */
   const ativoDoQr = useMemo(
-    () => (qr ? (ativos.data ?? []).find((a) => a.qr_token === qr) ?? null : null),
+    () => (qr ? ((ativos.data ?? []).find((a) => a.qr_token === qr) ?? null) : null),
     [qr, ativos.data],
   );
   useEffect(() => {
     if (ativoDoQr) setAba("solicitacoes");
   }, [ativoDoQr]);
 
-  const reincidentes = useMemo(
-    () => ativosReincidentes(filtros.data ?? [], 90),
-    [filtros.data],
-  );
+  const reincidentes = useMemo(() => ativosReincidentes(filtros.data ?? [], 90), [filtros.data]);
 
   const lista = useMemo(() => {
     const base = filtros.data ?? [];
@@ -251,7 +247,7 @@ export function FilterRequestKanban() {
         solicitacao={detalhe}
         titulo={detalhe ? detalhe.predio || nomePonto(detalhe.ponto_id) : ""}
         podeEscrever={podeEscrever}
-        ativo={detalhe?.ativo_id ? porAtivo.get(detalhe.ativo_id) ?? null : null}
+        ativo={detalhe?.ativo_id ? (porAtivo.get(detalhe.ativo_id) ?? null) : null}
         onOpenChange={(open) => !open && setDetalhe(null)}
       />
     </div>

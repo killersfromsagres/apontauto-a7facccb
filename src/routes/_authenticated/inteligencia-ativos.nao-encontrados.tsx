@@ -20,7 +20,10 @@ export const Route = createFileRoute("/_authenticated/inteligencia-ativos/nao-en
         content: "Revise e corrija códigos de ativo que não foram localizados no catálogo.",
       },
       { property: "og:title", content: "Ativos não encontrados — Inteligência de Ativos" },
-      { property: "og:description", content: "Fila de revisão de códigos de ativo sem correspondência." },
+      {
+        property: "og:description",
+        content: "Fila de revisão de códigos de ativo sem correspondência.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -132,7 +135,9 @@ function NaoEncontrados() {
                         size="sm"
                         variant="outline"
                         disabled={resolve.isPending}
-                        onClick={() => resolve.mutate({ id: r.id, code: drafts[r.id] ?? r.resolved_code ?? "" })}
+                        onClick={() =>
+                          resolve.mutate({ id: r.id, code: drafts[r.id] ?? r.resolved_code ?? "" })
+                        }
                       >
                         <Check className="h-4 w-4" />
                       </Button>

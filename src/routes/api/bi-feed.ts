@@ -42,10 +42,7 @@ export const Route = createFileRoute("/api/bi-feed")({
         const url = new URL(request.url);
         const view = url.searchParams.get("view") ?? "";
         if (!ALLOWED.has(view)) {
-          return Response.json(
-            { error: "View inválida", allowed: [...ALLOWED] },
-            { status: 400 },
-          );
+          return Response.json({ error: "View inválida", allowed: [...ALLOWED] }, { status: 400 });
         }
 
         const since = url.searchParams.get("since");

@@ -1,9 +1,12 @@
 // Cálculo de capacidade semanal e fatiamento de OS em semanas.
 
 import type { TriagedOS, Equipe } from "./triage";
-import { businessDaysUntilEndOfMonth, businessDaysUntil, isBusinessDay, brHolidays } from "./business-days";
-
-
+import {
+  businessDaysUntilEndOfMonth,
+  businessDaysUntil,
+  isBusinessDay,
+  brHolidays,
+} from "./business-days";
 
 export const DEFAULT_MINUTOS_POR_OS = 60;
 export const MINUTOS_UTEIS_DIA = 480; // 08-12 + 13-17
@@ -65,8 +68,15 @@ export function weeksBetween(from: Date, until: Date): WeekInfo[] {
   }
   if (weeks.length === 0) {
     const m = mondayOf(from);
-    const f = new Date(m); f.setDate(f.getDate() + 4);
-    weeks.push({ isoWeek: isoWeekNumber(m), year: m.getFullYear(), monday: m, friday: f, label: `Semana ${isoWeekNumber(m)}` });
+    const f = new Date(m);
+    f.setDate(f.getDate() + 4);
+    weeks.push({
+      isoWeek: isoWeekNumber(m),
+      year: m.getFullYear(),
+      monday: m,
+      friday: f,
+      label: `Semana ${isoWeekNumber(m)}`,
+    });
   }
   return weeks;
 }
@@ -90,7 +100,6 @@ export function weeksToCoverAll(
   }
   return { weeks: weeksBetween(fromMid, until), until };
 }
-
 
 export interface WeekBucket {
   week: WeekInfo;
@@ -208,7 +217,6 @@ export function distributeAcrossMonth(
   const businessDays = businessDaysUntil(from, until);
   const businessDaysCount = Math.max(1, businessDays.length);
 
-
   const sorted = sortByLocation(os);
   const perDayIdeal = Math.max(1, Math.ceil(sorted.length / businessDaysCount));
   const perDay = Math.min(perDayIdeal, capPerDay);
@@ -241,7 +249,7 @@ export function distributeAcrossMonth(
   // aumenta a alocação nos dias finais (flexibilização da última semana),
   // respeitando capPerDay.
   const perDayArr = new Array(daySlots.length).fill(perDay) as number[];
-  let assigned = perDayArr.reduce((s, n) => s + n, 0);
+  const assigned = perDayArr.reduce((s, n) => s + n, 0);
   let extra = Math.max(0, sorted.length - assigned);
   // Preenche do fim para o começo até esgotar `extra` ou saturar capPerDay.
   for (let i = daySlots.length - 1; i >= 0 && extra > 0; i--) {

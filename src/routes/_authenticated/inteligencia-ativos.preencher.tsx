@@ -70,7 +70,11 @@ import {
 } from "@/features/assets/services/spreadsheet-io";
 import { saveJob } from "@/features/assets/services/fill-jobs";
 import type { AssetRecord } from "@/features/assets/types";
-import { fetchCatalogAssets, fetchLegacyAssets, getActiveCatalog } from "@/features/assets/services/asset-catalog";
+import {
+  fetchCatalogAssets,
+  fetchLegacyAssets,
+  getActiveCatalog,
+} from "@/features/assets/services/asset-catalog";
 
 export const Route = createFileRoute("/_authenticated/inteligencia-ativos/preencher")({
   head: () => ({
@@ -222,7 +226,9 @@ function PreencherPlanilha() {
         setFile(f);
         setLoaded(wb);
         setConfigs(cfg);
-        setActiveSheet(wb.sheets.find((s) => cfg[s.name].selected)?.name ?? wb.sheets[0]?.name ?? "");
+        setActiveSheet(
+          wb.sheets.find((s) => cfg[s.name].selected)?.name ?? wb.sheets[0]?.name ?? "",
+        );
         setStep("analise");
         if (wb.kind === "csv")
           toast.info("CSV não possui estilos nem múltiplas abas — o resultado sairá em .xlsx.");
@@ -241,7 +247,10 @@ function PreencherPlanilha() {
   /* --------------------------------------------------------------- prévia  */
 
   const selectedSheets = useMemo(
-    () => (loaded?.sheets ?? []).filter((s) => configs[s.name]?.selected && configs[s.name].ativoIndex >= 0),
+    () =>
+      (loaded?.sheets ?? []).filter(
+        (s) => configs[s.name]?.selected && configs[s.name].ativoIndex >= 0,
+      ),
     [loaded, configs],
   );
 
@@ -440,7 +449,6 @@ function PreencherPlanilha() {
     downloadBlob(blob, fileName);
   };
 
-
   const downloadFailureReport = () => {
     const text = [
       `Arquivo: ${loaded?.fileName ?? "-"}`,
@@ -532,7 +540,9 @@ function PreencherPlanilha() {
           <Badge variant="outline" className="border-primary/30 text-primary">
             catálogo: {catalogQuery.isLoading ? "carregando…" : catalogName}
           </Badge>
-          {catalogQuery.data && <span>{catalogQuery.data.total.toLocaleString("pt-BR")} ativos indexados</span>}
+          {catalogQuery.data && (
+            <span>{catalogQuery.data.total.toLocaleString("pt-BR")} ativos indexados</span>
+          )}
         </div>
 
         {/* -------------------------------------------------------- UPLOAD */}
@@ -587,7 +597,11 @@ function PreencherPlanilha() {
                 onClick={() => inputRef.current?.click()}
                 className="h-12 rounded-2xl bg-gradient-to-r from-primary to-violet-500 px-8 text-base font-semibold shadow-elegant hover:opacity-90"
               >
-                {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Upload className="mr-2 h-5 w-5" />}
+                {busy ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-5 w-5" />
+                )}
                 Selecionar arquivo
               </Button>
               <Button
@@ -598,7 +612,8 @@ function PreencherPlanilha() {
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
               </Button>
               <p className="text-[11px] text-muted-foreground">
-                O conteúdo da planilha é processado no seu navegador e nunca é enviado a serviços de IA.
+                O conteúdo da planilha é processado no seu navegador e nunca é enviado a serviços de
+                IA.
               </p>
             </div>
           </LiquidPanel>
@@ -613,7 +628,9 @@ function PreencherPlanilha() {
                   <p className="truncate font-semibold">{loaded.fileName}</p>
                   <p className="text-xs text-muted-foreground">
                     {(loaded.fileSize / 1024).toFixed(0)} KB · {loaded.sheets.length} aba(s) ·{" "}
-                    {loaded.kind === "xlsx" ? "estilos preservados" : "sem estilos (formato de origem)"}
+                    {loaded.kind === "xlsx"
+                      ? "estilos preservados"
+                      : "sem estilos (formato de origem)"}
                   </p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={reset}>
@@ -632,13 +649,17 @@ function PreencherPlanilha() {
                       <Checkbox
                         checked={cfg?.selected}
                         onCheckedChange={(v) =>
-                          setConfigs((c) => ({ ...c, [s.name]: { ...c[s.name], selected: Boolean(v) } }))
+                          setConfigs((c) => ({
+                            ...c,
+                            [s.name]: { ...c[s.name], selected: Boolean(v) },
+                          }))
                         }
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{s.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          cabeçalho na linha {cfg.headerRow + 1} · {s.totalRows.toLocaleString("pt-BR")} linhas
+                          cabeçalho na linha {cfg.headerRow + 1} ·{" "}
+                          {s.totalRows.toLocaleString("pt-BR")} linhas
                           {cfg.ativoIndex >= 0
                             ? ` · Ativo em ${colLetter(cfg.ativoIndex)} (${s.headers[cfg.ativoIndex]})`
                             : " · coluna Ativo não identificada"}
@@ -657,7 +678,12 @@ function PreencherPlanilha() {
                                 : "border-destructive/40 text-destructive",
                           )}
                         >
-                          confiança {cfg.detection.confidence === "high" ? "alta" : cfg.detection.confidence === "medium" ? "média" : "baixa"}
+                          confiança{" "}
+                          {cfg.detection.confidence === "high"
+                            ? "alta"
+                            : cfg.detection.confidence === "medium"
+                              ? "média"
+                              : "baixa"}
                         </Badge>
                       )}
                     </div>
@@ -691,14 +717,24 @@ function PreencherPlanilha() {
                       onChange={(v) =>
                         setConfigs((c) => ({
                           ...c,
-                          [s.name]: { ...c[s.name], ativoIndex: v, targets: detectTargetColumns(s.headers, v) },
+                          [s.name]: {
+                            ...c[s.name],
+                            ativoIndex: v,
+                            targets: detectTargetColumns(s.headers, v),
+                          },
                         }))
                       }
                     />
                     {(["predio", "andar", "ambiente"] as const).map((k) => (
                       <ColumnSelect
                         key={k}
-                        label={k === "predio" ? "Prédio" : k === "andar" ? "Andar / Pavimento" : "Ambiente / Local"}
+                        label={
+                          k === "predio"
+                            ? "Prédio"
+                            : k === "andar"
+                              ? "Andar / Pavimento"
+                              : "Ambiente / Local"
+                        }
                         headers={s.headers}
                         value={cfg.targets[k]}
                         allowNone
@@ -715,13 +751,15 @@ function PreencherPlanilha() {
                   {cfg.detection && cfg.detection.confidence !== "high" && (
                     <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
                       <p className="mb-1 flex items-center gap-2 font-medium text-amber-500">
-                        <AlertTriangle className="h-3.5 w-3.5" /> Confirme a coluna do código do ativo
+                        <AlertTriangle className="h-3.5 w-3.5" /> Confirme a coluna do código do
+                        ativo
                       </p>
                       <ul className="space-y-0.5 text-muted-foreground">
                         {cfg.detection.candidates.slice(0, 3).map((c) => (
                           <li key={c.index}>
-                            {colLetter(c.index)} · {c.header || "(sem título)"} — score {c.score}, {Math.round(c.sampleHitRate * 100)}% dos
-                            valores no catálogo ({c.reason})
+                            {colLetter(c.index)} · {c.header || "(sem título)"} — score {c.score},{" "}
+                            {Math.round(c.sampleHitRate * 100)}% dos valores no catálogo ({c.reason}
+                            )
                           </li>
                         ))}
                       </ul>
@@ -763,7 +801,11 @@ function PreencherPlanilha() {
                 onChange={(v) => setOptions((o) => ({ ...o, includeCatalogSheet: v }))}
               />
             </GlassCard>
-            <StepNav onBack={() => setStep("mapeamento")} onNext={() => setStep("previa")} nextLabel="Ver prévia" />
+            <StepNav
+              onBack={() => setStep("mapeamento")}
+              onNext={() => setStep("previa")}
+              nextLabel="Ver prévia"
+            />
           </div>
         )}
 
@@ -842,13 +884,19 @@ function PreencherPlanilha() {
                                 <input
                                   value={calc[k]}
                                   onChange={(e) => {
-                                    const next: [string, string, string] = [...calc] as [string, string, string];
+                                    const next: [string, string, string] = [...calc] as [
+                                      string,
+                                      string,
+                                      string,
+                                    ];
                                     next[k] = e.target.value;
                                     setOverrides((o) => ({ ...o, [key]: next }));
                                   }}
                                   className={cn(
                                     "w-full rounded-md border border-transparent bg-transparent px-2 py-1 outline-none transition-colors focus:border-primary/50 focus:bg-background",
-                                    calc[k] && calc[k] !== r.current[k] && "bg-primary/10 font-medium",
+                                    calc[k] &&
+                                      calc[k] !== r.current[k] &&
+                                      "bg-primary/10 font-medium",
                                   )}
                                 />
                               </td>
@@ -857,7 +905,10 @@ function PreencherPlanilha() {
 
                           <td className="px-3 py-1.5 text-muted-foreground">{r.method}</td>
                           <td className="px-3 py-1.5">
-                            <Badge variant="outline" className={cn("text-[10px]", STATUS_TONE[r.status])}>
+                            <Badge
+                              variant="outline"
+                              className={cn("text-[10px]", STATUS_TONE[r.status])}
+                            >
                               {STATUS_LABEL[r.status]}
                             </Badge>
                           </td>
@@ -895,7 +946,9 @@ function PreencherPlanilha() {
             <div>
               <p className="font-display text-lg font-bold">Processando…</p>
               <p className="text-sm text-muted-foreground">
-                {progress.sheet ? `Aba “${progress.sheet}” · ${progress.done}/${progress.total} linhas` : "Preparando"}
+                {progress.sheet
+                  ? `Aba “${progress.sheet}” · ${progress.done}/${progress.total} linhas`
+                  : "Preparando"}
               </p>
             </div>
             <Progress value={Math.round(progress.overall * 100)} className="h-2" />
@@ -922,14 +975,16 @@ function PreencherPlanilha() {
             {errors.length > 0 && (
               <GlassCard className="border-destructive/30">
                 <p className="flex items-center gap-2 font-medium text-destructive">
-                  <AlertTriangle className="h-4 w-4" /> {errors.length} aba(s) falharam — o restante foi processado
-                  normalmente.
+                  <AlertTriangle className="h-4 w-4" /> {errors.length} aba(s) falharam — o restante
+                  foi processado normalmente.
                 </p>
                 <button
                   onClick={() => setShowTech((v) => !v)}
                   className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"
                 >
-                  <ChevronDown className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")} />
+                  <ChevronDown
+                    className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")}
+                  />
                   Detalhes técnicos
                 </button>
                 {showTech && (
@@ -937,7 +992,12 @@ function PreencherPlanilha() {
                     {errors.map((e) => `[${e.sheet}] ${e.message}`).join("\n")}
                   </pre>
                 )}
-                <Button variant="outline" size="sm" className="mt-3" onClick={downloadFailureReport}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={downloadFailureReport}
+                >
                   <Download className="mr-2 h-4 w-4" /> Relatório de falha
                 </Button>
               </GlassCard>
@@ -951,12 +1011,18 @@ function PreencherPlanilha() {
                 className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-violet-500/10 to-transparent p-4 text-left transition-all hover:border-primary/60 hover:shadow-elegant disabled:opacity-60 sm:p-5"
               >
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-white shadow-elegant">
-                  {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Download className="h-6 w-6" />}
+                  {busy ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <Download className="h-6 w-6" />
+                  )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-display text-base font-bold sm:text-lg">Baixar planilha processada</p>
+                  <p className="font-display text-base font-bold sm:text-lg">
+                    Baixar planilha processada
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {(output?.fileName ?? processedFileName())} ·{" "}
+                    {output?.fileName ?? processedFileName()} ·{" "}
                     {output
                       ? `${(output.size / 1024 / 1024).toFixed(2)} MB`
                       : `~${((loaded?.fileSize ?? 0) / 1024 / 1024 + 0.15).toFixed(2)} MB estimados`}
@@ -988,7 +1054,6 @@ function PreencherPlanilha() {
                 </Button>
               </div>
             </GlassCard>
-
           </div>
         )}
 
@@ -1001,7 +1066,10 @@ function PreencherPlanilha() {
               onClick={() => setShowTech((v) => !v)}
               className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"
             >
-              <ChevronDown className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")} /> Detalhes técnicos
+              <ChevronDown
+                className={cn("h-3 w-3 transition-transform", showTech && "rotate-180")}
+              />{" "}
+              Detalhes técnicos
             </button>
             {showTech && <pre className="mt-2 rounded-xl bg-muted/40 p-3 text-[11px]">{fatal}</pre>}
           </GlassCard>
@@ -1043,7 +1111,11 @@ function StepNav({
       <Button variant="ghost" onClick={onBack}>
         <ArrowLeft className="mr-2 h-4 w-4" /> {backLabel}
       </Button>
-      <Button onClick={onNext} disabled={nextDisabled} className="bg-gradient-to-r from-primary to-violet-500">
+      <Button
+        onClick={onNext}
+        disabled={nextDisabled}
+        className="bg-gradient-to-r from-primary to-violet-500"
+      >
         {nextLabel} {nextIcon ?? <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
     </div>

@@ -77,36 +77,31 @@ const STATUS_META: Record<
 > = {
   pendente: {
     label: "Pendente",
-    badge:
-      "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300",
+    badge: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300",
     icon: Clock,
     order: 0,
   },
   em_analise: {
     label: "Em análise",
-    badge:
-      "bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-300",
+    badge: "bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-300",
     icon: Loader2,
     order: 1,
   },
   aprovado: {
     label: "Aprovado",
-    badge:
-      "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
+    badge: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
     icon: CheckCircle2,
     order: 2,
   },
   rejeitado: {
     label: "Rejeitado",
-    badge:
-      "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300",
+    badge: "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300",
     icon: XCircle,
     order: 3,
   },
   concluido: {
     label: "Concluído",
-    badge:
-      "bg-violet-500/15 text-violet-700 border-violet-500/30 dark:text-violet-300",
+    badge: "bg-violet-500/15 text-violet-700 border-violet-500/30 dark:text-violet-300",
     icon: Sparkles,
     order: 4,
   },
@@ -116,8 +111,7 @@ const STAGES: StatusGestor[] = ["pendente", "em_analise", "aprovado", "concluido
 
 function urgencyBadge(u: string): string {
   const k = (u ?? "").toLowerCase();
-  if (k === "alta")
-    return "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300";
+  if (k === "alta") return "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300";
   if (k === "media" || k === "média")
     return "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300";
   return "bg-slate-500/15 text-slate-700 border-slate-500/30 dark:text-slate-300";
@@ -192,10 +186,7 @@ function PecasStatusPage() {
               return [newRow, ...prev];
             }
             if (payload.eventType === "UPDATE" && newRow) {
-              if (
-                oldRow &&
-                newRow.status_gestor !== oldRow.status_gestor
-              ) {
+              if (oldRow && newRow.status_gestor !== oldRow.status_gestor) {
                 const meta = STATUS_META[newRow.status_gestor];
                 toast.success(
                   `Peça “${newRow.descricao}” agora está: ${meta?.label ?? newRow.status_gestor}`,
@@ -273,9 +264,7 @@ function PecasStatusPage() {
                 active ? "scale-[1.02]" : "hover:scale-[1.01]"
               }`}
             >
-              <GlassCard
-                className={`p-2 sm:p-3 ${active ? "ring-2 ring-primary/60" : ""}`}
-              >
+              <GlassCard className={`p-2 sm:p-3 ${active ? "ring-2 ring-primary/60" : ""}`}>
                 <div className="flex items-center justify-between gap-1">
                   <span className="truncate text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
                     {meta.label}
@@ -290,7 +279,6 @@ function PecasStatusPage() {
           );
         })}
       </div>
-
 
       <GlassCard className="mt-4 p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -371,12 +359,8 @@ function PecasStatusPage() {
                     <div className="text-xs text-muted-foreground">
                       Qtd {p.quantidade}
                       {os?.nome_os ? ` · ${os.nome_os}` : ""}
-                      {[os?.predio, os?.andar, os?.local]
-                        .filter(Boolean)
-                        .join(" · ")
-                        ? ` · ${[os?.predio, os?.andar, os?.local]
-                            .filter(Boolean)
-                            .join(" · ")}`
+                      {[os?.predio, os?.andar, os?.local].filter(Boolean).join(" · ")
+                        ? ` · ${[os?.predio, os?.andar, os?.local].filter(Boolean).join(" · ")}`
                         : ""}
                     </div>
                     {p.observacao && (
@@ -411,10 +395,7 @@ function PecasStatusPage() {
                         const active = i === stageIdx;
                         const m = STATUS_META[s];
                         return (
-                          <div
-                            key={s}
-                            className="flex flex-1 items-center gap-1 sm:gap-2"
-                          >
+                          <div key={s} className="flex flex-1 items-center gap-1 sm:gap-2">
                             <div className="flex min-w-0 flex-col items-center gap-1">
                               <div
                                 className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold transition sm:h-7 sm:w-7 sm:text-[11px] ${
@@ -445,7 +426,6 @@ function PecasStatusPage() {
                       })}
                     </div>
                   )}
-
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
                     <span>Enviada {timeAgo(p.created_at)}</span>

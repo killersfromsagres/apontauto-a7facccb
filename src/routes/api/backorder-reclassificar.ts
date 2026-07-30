@@ -19,7 +19,6 @@ const InputSchema = z.object({
     .max(500),
 });
 
-
 const AiOutputSchema = z.object({
   results: z.array(
     z.object({
@@ -64,7 +63,11 @@ Regras:
 function fallbackClassify(items: InputItem[], reason: string): AiResult[] {
   return items.map((item) => ({
     os: item.os,
-    categoria: classifyBackorder({ descricao: item.descricao, servico: item.ativo, categoria: item.predio }),
+    categoria: classifyBackorder({
+      descricao: item.descricao,
+      servico: item.ativo,
+      categoria: item.predio,
+    }),
     confianca: "media",
     justificativa: `Classificação por regras locais: ${reason}`,
   }));
@@ -125,7 +128,9 @@ async function classifyItems(items: InputItem[]) {
       if (NoObjectGeneratedError.isInstance(error)) {
         const parsed = parseJsonFallback(error.text ?? "");
         const valid = normalizeResults(batch, parsed);
-        results.push(...(valid.length > 0 ? valid : fallbackClassify(batch, "retorno inválido da IA")));
+        results.push(
+          ...(valid.length > 0 ? valid : fallbackClassify(batch, "retorno inválido da IA")),
+        );
         continue;
       }
       const message = error instanceof Error ? error.message : String(error);

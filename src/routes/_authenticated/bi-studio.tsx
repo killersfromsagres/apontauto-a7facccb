@@ -132,7 +132,11 @@ function BiStudioPage() {
   const boardRef = useRef<HTMLDivElement>(null);
 
   const neededDatasets = useMemo(
-    () => [...new Set(dashboard.widgets.flatMap((w) => [w.dataset, ...(w.kpi ? KPIS[w.kpi].datasets : [])]))],
+    () => [
+      ...new Set(
+        dashboard.widgets.flatMap((w) => [w.dataset, ...(w.kpi ? KPIS[w.kpi].datasets : [])]),
+      ),
+    ],
     [dashboard.widgets],
   );
 
@@ -256,7 +260,8 @@ function BiStudioPage() {
       shared: Boolean(r.shared),
       widgets: (layout.widgets ?? []).map((w) => ({ ...w, id: w.id || uid() })),
     });
-    if (r.default_filters) setFilters({ ...DEFAULT_FILTERS, ...(r.default_filters as GlobalFilters) });
+    if (r.default_filters)
+      setFilters({ ...DEFAULT_FILTERS, ...(r.default_filters as GlobalFilters) });
     setTab("painel");
   }
 
@@ -287,7 +292,9 @@ function BiStudioPage() {
             .filter((w) => w.chart === "kpi" || w.chart === "gauge")
             .map((w) => ({
               label: w.title,
-              value: w.kpi ? formatKpi(KPIS[w.kpi].compute(data), KPIS[w.kpi].unit) : String(rowsFor(w).length),
+              value: w.kpi
+                ? formatKpi(KPIS[w.kpi].compute(data), KPIS[w.kpi].unit)
+                : String(rowsFor(w).length),
             })),
           tables: dashboard.widgets
             .filter((w) => w.chart === "table")
@@ -371,20 +378,47 @@ function BiStudioPage() {
             onClick={() => void dataQuery.refetch()}
             disabled={dataQuery.isFetching}
           >
-            <RefreshCw className={cn("size-4", dataQuery.isFetching && "animate-spin")} aria-hidden />
+            <RefreshCw
+              className={cn("size-4", dataQuery.isFetching && "animate-spin")}
+              aria-hidden
+            />
             Atualizar
           </Button>
           <ExportMenu
             disabled={exporting || dataQuery.isLoading}
             options={[
-              { key: "xlsx", label: "Excel (todas as abas)", kind: "xlsx", onSelect: () => handleExport("xlsx") },
-              { key: "csv", label: "CSV do dataset principal", kind: "csv", onSelect: () => handleExport("csv") },
-              { key: "pdf", label: "PDF executivo", kind: "pdf", onSelect: () => handleExport("pdf") },
-              { key: "png", label: "Imagem do painel (PNG)", kind: "png", onSelect: () => handleExport("png") },
+              {
+                key: "xlsx",
+                label: "Excel (todas as abas)",
+                kind: "xlsx",
+                onSelect: () => handleExport("xlsx"),
+              },
+              {
+                key: "csv",
+                label: "CSV do dataset principal",
+                kind: "csv",
+                onSelect: () => handleExport("csv"),
+              },
+              {
+                key: "pdf",
+                label: "PDF executivo",
+                kind: "pdf",
+                onSelect: () => handleExport("pdf"),
+              },
+              {
+                key: "png",
+                label: "Imagem do painel (PNG)",
+                kind: "png",
+                onSelect: () => handleExport("png"),
+              },
             ]}
           />
           <Button size="sm" className="h-10" onClick={() => void saveDashboard()} disabled={saving}>
-            {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Save className="size-4" aria-hidden />}
+            {saving ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Save className="size-4" aria-hidden />
+            )}
             Salvar painel
           </Button>
         </>
@@ -454,7 +488,12 @@ function BiStudioPage() {
                   allLabel="Todos"
                 />
               )}
-              <Button variant="secondary" size="sm" className="h-10" onClick={() => setAddOpen(true)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="h-10"
+                onClick={() => setAddOpen(true)}
+              >
                 <Plus className="size-4" aria-hidden />
                 Novo bloco
               </Button>
@@ -482,7 +521,10 @@ function BiStudioPage() {
               description="Adicione blocos ou escolha um modelo pronto na aba Modelos."
             />
           ) : (
-            <div ref={boardRef} className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4">
+            <div
+              ref={boardRef}
+              className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 sm:gap-4"
+            >
               {dashboard.widgets.map((widget, index) => (
                 <GlassCard
                   key={widget.id}
@@ -497,13 +539,31 @@ function BiStudioPage() {
                       </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-0.5" data-export-ignore="true">
-                      <Button variant="ghost" size="icon" className="size-7" onClick={() => moveWidget(index, -1)} aria-label="Mover para trás">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        onClick={() => moveWidget(index, -1)}
+                        aria-label="Mover para trás"
+                      >
                         <Move className="size-3.5 rotate-180" aria-hidden />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-7" onClick={() => cycleSize(widget.id)} aria-label="Alterar tamanho">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        onClick={() => cycleSize(widget.id)}
+                        aria-label="Alterar tamanho"
+                      >
                         <LayoutTemplate className="size-3.5" aria-hidden />
                       </Button>
-                      <Button variant="ghost" size="icon" className="size-7" onClick={() => removeWidget(widget.id)} aria-label="Remover bloco">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-7"
+                        onClick={() => removeWidget(widget.id)}
+                        aria-label="Remover bloco"
+                      >
                         <Trash2 className="size-3.5 text-destructive" aria-hidden />
                       </Button>
                     </div>
@@ -523,7 +583,10 @@ function BiStudioPage() {
         </TabsContent>
 
         {/* ----------------------------- MODELOS ----------------------------- */}
-        <TabsContent value="modelos" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <TabsContent
+          value="modelos"
+          className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3"
+        >
           {TEMPLATES.map((tpl) => (
             <GlassCard key={tpl.key} className="flex flex-col justify-between gap-3">
               <div>
@@ -580,7 +643,11 @@ function BiStudioPage() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" className="h-10 flex-1" onClick={() => void openDashboard(String(d.id))}>
+                    <Button
+                      size="sm"
+                      className="h-10 flex-1"
+                      onClick={() => void openDashboard(String(d.id))}
+                    >
                       Abrir
                     </Button>
                     <Button
@@ -686,8 +753,10 @@ function AddWidgetDialog({
   const isKpi = chart === "kpi" || chart === "gauge";
 
   useEffect(() => {
-    if (!def.dimensions.some((d) => d.key === dimension)) setDimension(def.dimensions[0]?.key ?? "");
-    if (!def.dimensions.some((d) => d.key === series)) setSeries(def.dimensions[1]?.key ?? def.dimensions[0]?.key ?? "");
+    if (!def.dimensions.some((d) => d.key === dimension))
+      setDimension(def.dimensions[0]?.key ?? "");
+    if (!def.dimensions.some((d) => d.key === series))
+      setSeries(def.dimensions[1]?.key ?? def.dimensions[0]?.key ?? "");
     if (field && !(def.measures ?? []).some((m) => m.key === field)) setField("");
   }, [dataset, def, dimension, series, field]);
 
@@ -698,7 +767,7 @@ function AddWidgetDialog({
         title.trim() ||
         (isKpi
           ? kpiDef.label
-          : `${def.label} por ${bucket ? "período" : def.dimensions.find((d) => d.key === dimension)?.label ?? dimension}`),
+          : `${def.label} por ${bucket ? "período" : (def.dimensions.find((d) => d.key === dimension)?.label ?? dimension)}`),
       chart,
       dataset: isKpi ? kpiDef.datasets[0] : dataset,
       dimension: bucket ? undefined : dimension,
@@ -707,7 +776,11 @@ function AddWidgetDialog({
       aggregation: aggregation as WidgetSpec["aggregation"],
       field: field || undefined,
       kpi: isKpi ? kpi : undefined,
-      size: isKpi ? "sm" : chart === "table" || chart === "timeline" || chart === "heatmap" ? "lg" : "md",
+      size: isKpi
+        ? "sm"
+        : chart === "table" || chart === "timeline" || chart === "heatmap"
+          ? "lg"
+          : "md",
     });
     onOpenChange(false);
     setTitle("");
@@ -916,11 +989,12 @@ function ConnectorPanel() {
           <li>Baixe o arquivo Excel da visão desejada abaixo para uma carga inicial rápida.</li>
           <li>
             Para atualização automática, use o feed autenticado abaixo em “Obter dados → Web”,
-            informando o cabeçalho <code className="rounded bg-muted px-1">Authorization: Bearer &lt;token&gt;</code>.
+            informando o cabeçalho{" "}
+            <code className="rounded bg-muted px-1">Authorization: Bearer &lt;token&gt;</code>.
           </li>
           <li>
-            Use o parâmetro <code className="rounded bg-muted px-1">since</code> (data ISO) para trazer só o que mudou
-            desde a última atualização — carga incremental.
+            Use o parâmetro <code className="rounded bg-muted px-1">since</code> (data ISO) para
+            trazer só o que mudou desde a última atualização — carga incremental.
           </li>
         </ol>
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/30 p-2.5">
@@ -931,15 +1005,18 @@ function ConnectorPanel() {
             size="sm"
             variant="outline"
             className="h-9"
-            onClick={() => void copy(`${origin}/api/bi-feed?view=vw_bi_work_orders&since=2026-01-01T00:00:00Z`)}
+            onClick={() =>
+              void copy(`${origin}/api/bi-feed?view=vw_bi_work_orders&since=2026-01-01T00:00:00Z`)
+            }
           >
             <Copy className="size-3.5" aria-hidden />
             Copiar
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          O feed respeita as permissões do usuário: cada pessoa enxerga apenas o que já pode ver no sistema.
-          Dados sensíveis (CPF completo, tokens e URLs administrativas) não são publicados nas visões.
+          O feed respeita as permissões do usuário: cada pessoa enxerga apenas o que já pode ver no
+          sistema. Dados sensíveis (CPF completo, tokens e URLs administrativas) não são publicados
+          nas visões.
         </p>
       </GlassCard>
 
@@ -965,10 +1042,17 @@ function ConnectorPanel() {
                 disabled={busy === view.name}
                 onClick={() => void download(view, "xlsx")}
               >
-                {busy === view.name ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                {busy === view.name ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
                 Excel
               </Button>
-              <Button size="sm" variant="outline" className="h-10" onClick={() => void download(view, "csv")}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-10"
+                onClick={() => void download(view, "csv")}
+              >
                 CSV
               </Button>
               <Button

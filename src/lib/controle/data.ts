@@ -117,7 +117,9 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
   const [rPecas, rProblemas, cPecas, cProblemas, rOs, cOs, metas] = await Promise.all([
     supabase
       .from("refrigeracao_pecas")
-      .select("id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at, modelo")
+      .select(
+        "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at, modelo",
+      )
       .order("created_at", { ascending: false }),
     supabase
       .from("refrigeracao_problemas")
@@ -125,7 +127,9 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
       .order("created_at", { ascending: false }),
     supabase
       .from("corretiva_pecas")
-      .select("id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at, modelo")
+      .select(
+        "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at, modelo",
+      )
       .order("created_at", { ascending: false }),
     supabase
       .from("corretiva_problemas")
@@ -233,10 +237,7 @@ export async function upsertMeta(
 }
 
 export async function fetchCentrosCusto(): Promise<CentroCusto[]> {
-  const { data, error } = await supabase
-    .from("controle_centros_custo")
-    .select("*")
-    .order("codigo");
+  const { data, error } = await supabase.from("controle_centros_custo").select("*").order("codigo");
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as CentroCusto[];
 }

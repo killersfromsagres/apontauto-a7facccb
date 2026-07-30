@@ -47,11 +47,7 @@ describe("inspeção da planilha (etapas 2 e 3 do assistente)", () => {
     });
     const insp = inspecionarPlanilha(buf);
 
-    expect(insp.abas.map((a) => a.nome)).toEqual([
-      "PROGRAMAÇÃO 2",
-      "Segunda-feira",
-      "Terça-feira",
-    ]);
+    expect(insp.abas.map((a) => a.nome)).toEqual(["PROGRAMAÇÃO 2", "Segunda-feira", "Terça-feira"]);
     expect(insp.abas[0].consolidada).toBe(true);
     expect(insp.abaPorDia).toMatchObject({ 1: "Segunda-feira", 2: "Terça-feira" });
     expect(insp.mapeamentoSugerido).toMatchObject({
@@ -97,21 +93,35 @@ describe("parser e cálculo dos dias", () => {
 
   it("aponta duplicidade quando o ponto se repete no mesmo dia sem contar duas visitas", () => {
     const r = lerPlanilhaAgua(
-      planilha({ segunda: [["Bloco D55", "Térreo", "Copa"], ["Bloco D55", "Térreo", "Copa"]] }),
+      planilha({
+        segunda: [
+          ["Bloco D55", "Térreo", "Copa"],
+          ["Bloco D55", "Térreo", "Copa"],
+        ],
+      }),
     );
     expect(r.porDia[1]).toBe(1);
     expect(r.divergencias.some((d) => d.tipo === "duplicidade_no_dia")).toBe(true);
   });
 
   it("registra erro em linha sem prédio e ignora linhas totalmente vazias", () => {
-    const r = lerPlanilhaAgua(planilha({ segunda: [["", "Térreo", "Copa"], ["", "", ""]] }));
+    const r = lerPlanilhaAgua(
+      planilha({
+        segunda: [
+          ["", "Térreo", "Copa"],
+          ["", "", ""],
+        ],
+      }),
+    );
     expect(r.pontos).toHaveLength(0);
     expect(r.totalLinhas).toBe(1);
     expect(r.divergencias.find((d) => d.tipo === "predio_vazio")?.severidade).toBe("erro");
   });
 
   it("avisa quando faltam abas diárias e a consolidada", () => {
-    const r = lerPlanilhaAgua(planilha({ segunda: [["Bloco D55", "Térreo", "Copa"]], semConsolidada: true }));
+    const r = lerPlanilhaAgua(
+      planilha({ segunda: [["Bloco D55", "Térreo", "Copa"]], semConsolidada: true }),
+    );
     const ausentes = r.divergencias.filter((d) => d.tipo === "aba_ausente");
     // terça a sexta + a aba consolidada
     expect(ausentes).toHaveLength(5);
@@ -119,7 +129,9 @@ describe("parser e cálculo dos dias", () => {
 
   it("informa os campos que a planilha não possui", () => {
     const r = lerPlanilhaAgua(planilha({ segunda: [["Bloco D55", "Térreo", "Copa"]] }));
-    expect(r.divergencias.some((d) => d.tipo === "campos_ausentes" && d.severidade === "info")).toBe(true);
+    expect(
+      r.divergencias.some((d) => d.tipo === "campos_ausentes" && d.severidade === "info"),
+    ).toBe(true);
   });
 });
 

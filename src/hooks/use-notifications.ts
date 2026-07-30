@@ -83,21 +83,18 @@ export function useNotifications() {
     staleTime: 5 * 60 * 1000,
     queryFn: () => fetchPrefs(userId as string),
   });
-  const prefs = prefsQuery.data ?? ({ user_id: userId ?? "", ...DEFAULT_PREFS } as NotificationPrefs);
+  const prefs =
+    prefsQuery.data ?? ({ user_id: userId ?? "", ...DEFAULT_PREFS } as NotificationPrefs);
 
   // Realtime em canal privado do usuário autenticado.
   useEffect(() => {
     if (!userId) return;
     const channel = supabase
       .channel(`notifications:${userId}`, { config: { private: true } })
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "notifications" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["notifications-inbox"] });
-          qc.invalidateQueries({ queryKey: ["notifications-admin"] });
-        },
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
+        qc.invalidateQueries({ queryKey: ["notifications-inbox"] });
+        qc.invalidateQueries({ queryKey: ["notifications-admin"] });
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);

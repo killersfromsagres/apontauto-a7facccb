@@ -20,8 +20,16 @@ function quando(ts: number): string {
  * e botão de tentar novamente. Nenhum rascunho é descartado automaticamente.
  */
 export function FilaSincronizacaoCard() {
-  const { itens, pendentes, falhas, listaFalhas, online, sincronizando, sincronizar, tentarNovamente } =
-    useAguaSync();
+  const {
+    itens,
+    pendentes,
+    falhas,
+    listaFalhas,
+    online,
+    sincronizando,
+    sincronizar,
+    tentarNovamente,
+  } = useAguaSync();
 
   return (
     <GlassCard className="space-y-3 p-4">

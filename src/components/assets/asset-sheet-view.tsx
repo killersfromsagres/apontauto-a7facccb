@@ -1,15 +1,7 @@
 import { useMemo } from "react";
 import { Link, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CalendarClock,
-  Camera,
-  Lock,
-  MapPin,
-  Plus,
-  ScrollText,
-  Wrench,
-} from "lucide-react";
+import { CalendarClock, Camera, Lock, MapPin, Plus, ScrollText, Wrench } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -87,8 +79,8 @@ export function AssetSheetView() {
         <GlassCard className="flex items-center gap-3">
           <Lock className="h-5 w-5 text-destructive" />
           <p className="text-sm text-muted-foreground">
-            Você não tem permissão para visualizar fichas de ativos. Solicite acesso ao módulo
-            Base de Ativos.
+            Você não tem permissão para visualizar fichas de ativos. Solicite acesso ao módulo Base
+            de Ativos.
           </p>
         </GlassCard>
       </PageShell>
@@ -157,7 +149,9 @@ export function AssetSheetView() {
               <div key={o.id} className="rounded-lg border border-border/50 p-2 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">OS {o.numero_os}</span>
-                  <Badge variant="outline">{STATUS_LABEL[toCanonicalStatus(o.status as string)]}</Badge>
+                  <Badge variant="outline">
+                    {STATUS_LABEL[toCanonicalStatus(o.status as string)]}
+                  </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground">{o.nome_os}</div>
               </div>
@@ -170,7 +164,10 @@ export function AssetSheetView() {
             <ScrollText className="h-4 w-4 text-primary" /> Histórico
           </div>
           {(q.data?.ordens ?? []).slice(0, 30).map((o) => (
-            <div key={`${o.modalidade}-${o.id}`} className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 py-1.5 text-sm last:border-0">
+            <div
+              key={`${o.modalidade}-${o.id}`}
+              className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 py-1.5 text-sm last:border-0"
+            >
               <span className="truncate">
                 {o.numero_os} — {o.nome_os}
               </span>
@@ -193,7 +190,12 @@ export function AssetSheetView() {
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
               {(q.data?.fotos ?? []).map((src) => (
                 <a key={src} href={src} target="_blank" rel="noreferrer">
-                  <img src={src} alt={`Evidência do ativo ${code}`} loading="lazy" className="h-24 w-full rounded-lg object-cover" />
+                  <img
+                    src={src}
+                    alt={`Evidência do ativo ${code}`}
+                    loading="lazy"
+                    className="h-24 w-full rounded-lg object-cover"
+                  />
                 </a>
               ))}
             </div>

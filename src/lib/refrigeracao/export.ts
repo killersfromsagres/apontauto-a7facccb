@@ -111,7 +111,9 @@ type Column = {
 
 function badgeColors(kind: Column["badge"], raw: string): { bg: string; fg: string } | null {
   if (!kind) return null;
-  const v = String(raw ?? "").toLowerCase().trim();
+  const v = String(raw ?? "")
+    .toLowerCase()
+    .trim();
   if (!v) return null;
   if (kind === "status") {
     if (v.includes("conclu") || v.includes("finaliz") || v.includes("aprov"))
@@ -279,7 +281,7 @@ async function makeSheet(
     printTitlesRow: "1:4",
   };
   ws.headerFooter = {
-    oddFooter: "&L&\"Aptos\"&9 Apont Auto — Refrigeração&C&\"Aptos\"&9&P / &N&R&\"Aptos\"&9&D",
+    oddFooter: '&L&"Aptos"&9 Apont Auto — Refrigeração&C&"Aptos"&9&P / &N&R&"Aptos"&9&D',
   };
 }
 
@@ -319,7 +321,13 @@ async function makeCover(
   // KPIs
   const cards: Array<{ range: string; label: string; value: number; bg: string; fg: string }> = [
     { range: "A6:B8", label: "ORDENS DE SERVIÇO", value: kpis.osTotal, bg: C.brand, fg: C.white },
-    { range: "C6:D8", label: "PEÇAS SOLICITADAS", value: kpis.pecasTotal, bg: C.accent, fg: C.white },
+    {
+      range: "C6:D8",
+      label: "PEÇAS SOLICITADAS",
+      value: kpis.pecasTotal,
+      bg: C.accent,
+      fg: C.white,
+    },
     { range: "E6:F8", label: "PROBLEMAS", value: kpis.problemasTotal, bg: C.cyan, fg: C.white },
     { range: "G6:H8", label: "FOTOS", value: kpis.fotosTotal, bg: C.slate800, fg: C.white },
   ];

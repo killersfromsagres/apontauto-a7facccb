@@ -25,7 +25,13 @@ export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[
     const monthCols: Record<string, string> = {};
     MONTHS.forEach((m, i) => {
       monthCols[m] =
-        cells[i] === "done" ? "✓" : cells[i] === "scheduled" ? "•" : cells[i] === "overdue" ? "X" : "";
+        cells[i] === "done"
+          ? "✓"
+          : cells[i] === "scheduled"
+            ? "•"
+            : cells[i] === "overdue"
+              ? "X"
+              : "";
     });
     return {
       Tarefa: it.titulo,
@@ -126,16 +132,30 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       // Meses coloridos
       if (data.section === "body" && data.column.index >= 7) {
         const v = String(data.cell.raw ?? "");
-        if (v === "✓") { data.cell.styles.fillColor = [220, 252, 231]; data.cell.styles.textColor = [22, 101, 52]; }
-        else if (v === "X") { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [153, 27, 27]; }
-        else if (v === "•") { data.cell.styles.fillColor = [254, 243, 199]; data.cell.styles.textColor = [146, 64, 14]; }
+        if (v === "✓") {
+          data.cell.styles.fillColor = [220, 252, 231];
+          data.cell.styles.textColor = [22, 101, 52];
+        } else if (v === "X") {
+          data.cell.styles.fillColor = [254, 226, 226];
+          data.cell.styles.textColor = [153, 27, 27];
+        } else if (v === "•") {
+          data.cell.styles.fillColor = [254, 243, 199];
+          data.cell.styles.textColor = [146, 64, 14];
+        }
         data.cell.styles.halign = "center";
       }
       if (data.section === "body" && data.column.index === 6) {
         const s = String(data.cell.raw ?? "");
-        if (s === "Vencido") { data.cell.styles.fillColor = [254, 226, 226]; data.cell.styles.textColor = [153, 27, 27]; }
-        else if (s === "Próximo") { data.cell.styles.fillColor = [254, 243, 199]; data.cell.styles.textColor = [146, 64, 14]; }
-        else if (s === "Em dia" || s === "Concluído") { data.cell.styles.fillColor = [220, 252, 231]; data.cell.styles.textColor = [22, 101, 52]; }
+        if (s === "Vencido") {
+          data.cell.styles.fillColor = [254, 226, 226];
+          data.cell.styles.textColor = [153, 27, 27];
+        } else if (s === "Próximo") {
+          data.cell.styles.fillColor = [254, 243, 199];
+          data.cell.styles.textColor = [146, 64, 14];
+        } else if (s === "Em dia" || s === "Concluído") {
+          data.cell.styles.fillColor = [220, 252, 231];
+          data.cell.styles.textColor = [22, 101, 52];
+        }
       }
     },
     didDrawPage: () => {

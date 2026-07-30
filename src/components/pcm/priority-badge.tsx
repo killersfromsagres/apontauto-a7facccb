@@ -4,10 +4,7 @@ import { cn } from "@/lib/utils";
 
 export type Priority = "critica" | "alta" | "media" | "baixa";
 
-const CONFIG: Record<
-  Priority,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
+const CONFIG: Record<Priority, { label: string; className: string; icon: React.ReactNode }> = {
   critica: {
     label: "Crítica",
     className: "border-destructive/50 bg-destructive/14 text-destructive",

@@ -29,7 +29,9 @@ const normHeader = (v: unknown) =>
     .replace(/[\u0300-\u036f]/g, "");
 
 function slugKey(prefix: string, raw: string): string {
-  const s = normHeader(raw).replace(/[^A-Z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  const s = normHeader(raw)
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
   return `${prefix}__${s}`.slice(0, 60);
 }
 
@@ -98,7 +100,7 @@ function parseAnyDate(v: unknown): Date | null {
     const d = excelSerialToDate(asNum);
     if (d) return d;
   }
-  const br = s.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})/);
+  const br = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);

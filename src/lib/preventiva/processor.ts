@@ -68,12 +68,41 @@ const HIDRAULICA_KEYWORDS = [
 
 export const REFRIG_1 = ["A160", "A170", "ADC", "AMBULATÓRIO", "AMBULATORIO", "B203"];
 export const REFRIG_2 = [
-  "A220","B115","B290","C110","C120","C340","C380","C45","C46","C49","C65","C70",
-  "D240","D246",
+  "A220",
+  "B115",
+  "B290",
+  "C110",
+  "C120",
+  "C340",
+  "C380",
+  "C45",
+  "C46",
+  "C49",
+  "C65",
+  "C70",
+  "D240",
+  "D246",
 ];
 export const REFRIG_3 = [
-  "D270","D295","D345","D55","E105","E125","E130","E171","E200","E310","E35","E70","E80",
-  "F30","FUNDAÇÃO ECO+","FUNDACAO ECO+","Z210","Z310","Z500",
+  "D270",
+  "D295",
+  "D345",
+  "D55",
+  "E105",
+  "E125",
+  "E130",
+  "E171",
+  "E200",
+  "E310",
+  "E35",
+  "E70",
+  "E80",
+  "F30",
+  "FUNDAÇÃO ECO+",
+  "FUNDACAO ECO+",
+  "Z210",
+  "Z310",
+  "Z500",
 ];
 
 export const TEAM_COLORS: Record<Team, string> = {
@@ -119,7 +148,7 @@ const parseSLA = (v: string): { iso: string; ts: number } => {
     const date = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12, 0, 0);
     return { iso: date.toISOString(), ts: date.getTime() };
   }
-  const br = v.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
   if (br) {
     const [, d, m, y] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
@@ -133,7 +162,16 @@ const parseSLA = (v: string): { iso: string; ts: number } => {
 
 const detectCategory = (row: RawRow): Category => {
   const raw = norm(
-    pick(row, "CATEGORIA", "CATEGORY", "GRUPO", "TIPO DE SERVIÇO", "TIPO DE SERVICO", "FAMÍLIA", "FAMILIA"),
+    pick(
+      row,
+      "CATEGORIA",
+      "CATEGORY",
+      "GRUPO",
+      "TIPO DE SERVIÇO",
+      "TIPO DE SERVICO",
+      "FAMÍLIA",
+      "FAMILIA",
+    ),
   );
   if (raw.includes("ABASTEC")) return "Abastecimento";
   if (raw.includes("CIVIL")) return "Civil";
@@ -158,12 +196,7 @@ const isHidraulica = (row: RawRow, keywords: string[]) => {
   return keywords.some((k) => bag.includes(norm(k)));
 };
 
-const refrigTeamForPredio = (
-  predio: string,
-  r1: string[],
-  r2: string[],
-  r3: string[],
-): Team => {
+const refrigTeamForPredio = (predio: string, r1: string[], r2: string[], r3: string[]): Team => {
   const p = norm(predio);
   const match = (arr: string[]) => arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
   if (match(r1)) return "Refrigeração 1";

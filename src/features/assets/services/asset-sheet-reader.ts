@@ -2,13 +2,7 @@
 
 import type { AssetRecord } from "../types";
 
-export type AssetField =
-  | "code"
-  | "name"
-  | "level"
-  | "parentCode"
-  | "parentName"
-  | "businessUnit";
+export type AssetField = "code" | "name" | "level" | "parentCode" | "parentName" | "businessUnit";
 
 export const FIELD_LABELS: Record<AssetField, string> = {
   code: "Ativo",
@@ -23,6 +17,7 @@ export type ColumnMapping = Partial<Record<AssetField, string>>;
 
 const norm = (v: unknown) =>
   String(v ?? "")
+    // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
     .replace(/[\u0000-\u001F\u00A0\u200B-\u200F\uFEFF]/g, " ")
     .trim()
     .toUpperCase()
@@ -34,12 +29,7 @@ const norm = (v: unknown) =>
 const EXACT_ALIASES: Record<AssetField, string[]> = {
   code: ["ATIVO", "CODIGO", "CODIGO ATIVO", "TAG", "EQUIPAMENTO"],
   name: ["DENOMINACAO ATIVO", "DENOMINACAO", "NOME", "DESCRICAO", "DESCRICAO ATIVO"],
-  level: [
-    "DENOMINACAO NIVEL DE EMPRESA",
-    "NIVEL DE EMPRESA",
-    "NIVEL",
-    "DENOMINACAO NIVEL",
-  ],
+  level: ["DENOMINACAO NIVEL DE EMPRESA", "NIVEL DE EMPRESA", "NIVEL", "DENOMINACAO NIVEL"],
   parentCode: ["ATIVO PAI", "CODIGO PAI", "PAI", "ATIVO SUPERIOR"],
   parentName: ["DESCRICAO ATIVO PAI", "DENOMINACAO ATIVO PAI", "DESCRICAO PAI"],
   businessUnit: ["UNIDADE DE NEGOCIO", "UNIDADE NEGOCIO", "UN", "PLANTA"],
@@ -54,14 +44,7 @@ const CONTAINS_ALIASES: Record<AssetField, string[]> = {
   businessUnit: ["UNIDADE DE NEGOCIO"],
 };
 
-const FIELDS: AssetField[] = [
-  "code",
-  "name",
-  "level",
-  "parentCode",
-  "parentName",
-  "businessUnit",
-];
+const FIELDS: AssetField[] = ["code", "name", "level", "parentCode", "parentName", "businessUnit"];
 
 /** Casa cabeçalhos com os campos — exato primeiro, depois "contém". */
 export function autoMapColumns(headers: string[]): ColumnMapping {
@@ -70,9 +53,7 @@ export function autoMapColumns(headers: string[]): ColumnMapping {
   const normalized = headers.map((h) => ({ raw: h, n: norm(h) }));
 
   for (const field of FIELDS) {
-    const hit = normalized.find(
-      (h) => !used.has(h.raw) && EXACT_ALIASES[field].includes(h.n),
-    );
+    const hit = normalized.find((h) => !used.has(h.raw) && EXACT_ALIASES[field].includes(h.n));
     if (hit) {
       mapping[field] = hit.raw;
       used.add(hit.raw);

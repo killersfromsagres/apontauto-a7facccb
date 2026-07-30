@@ -43,20 +43,25 @@ import {
   type Rota,
 } from "@/features/water-delivery/queries/programacao";
 
-
 export function RoutePlannerView() {
   const qc = useQueryClient();
   const gestor = useCanAccessModule("abastecimento", "update").allowed;
   const [data, setData] = useState(hojeSP());
 
-  const rotas = useQuery({ queryKey: ["agua", "rotas", data], queryFn: () => listRotas(data, data) });
+  const rotas = useQuery({
+    queryKey: ["agua", "rotas", data],
+    queryFn: () => listRotas(data, data),
+  });
   const visitas = useQuery({
     queryKey: ["agua", "visitas", data],
     queryFn: () => listVisitas(data, data),
   });
   const jobs = useQuery({ queryKey: ["agua", "geracao-jobs"], queryFn: listGeracaoJobs });
   const veiculos = useQuery({ queryKey: ["frota", "vehicles"], queryFn: listVehicles });
-  const checklists = useQuery({ queryKey: ["frota", "checklists"], queryFn: () => listChecklists(200) });
+  const checklists = useQuery({
+    queryKey: ["frota", "checklists"],
+    queryFn: () => listChecklists(200),
+  });
 
   const gerar = useMutation({
     mutationFn: () => gerarRotas(data, "manual"),
@@ -178,7 +183,16 @@ function RotaCard({
   rota: Rota;
   paradas: number;
   gestor: boolean;
-  veiculos: Array<{ id: string; prefix: string; status: string; plate: string | null; brand: string; model: string; version: string | null; year_model: number | null }>;
+  veiculos: Array<{
+    id: string;
+    prefix: string;
+    status: string;
+    plate: string | null;
+    brand: string;
+    model: string;
+    version: string | null;
+    year_model: number | null;
+  }>;
   checklistHoje: Array<{ vehicle_id: string; critical_block: boolean }>;
   onDone: () => void;
 }) {
@@ -234,7 +248,9 @@ function RotaCard({
         <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] text-primary">
           {ROTA_STATUS_LABEL[rota.status] ?? rota.status}
         </span>
-        <span className="text-[11px] text-muted-foreground">v{rota.versao} · {paradas} parada(s)</span>
+        <span className="text-[11px] text-muted-foreground">
+          v{rota.versao} · {paradas} parada(s)
+        </span>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
