@@ -35,6 +35,7 @@ import {
   BellRing,
   Megaphone,
   type LucideIcon,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -439,6 +440,14 @@ export const sections: MenuSection[] = [
         keywords: ["inconsistência", "cadastro", "correção", "cpf", "hodômetro"],
       },
       {
+        key: "imagens",
+        title: "Imagens e Armazenamento",
+        short: "Imagens",
+        url: "/imagens",
+        icon: ImageIcon,
+        keywords: ["fotos", "imgbb", "storage", "espaço", "migrar", "limpeza"],
+      },
+      {
         key: "configuracoes",
         title: "Configurações",
         short: "Config.",
@@ -538,6 +547,7 @@ export function canSeeMenuItem(
   if (isRestrictedModule(key)) {
     return isAdmin || (allowed?.includes(key) ?? false);
   }
+  if (key === "imagens") return isAdmin;
   if (key === "configuracoes") return isAdmin;
   if (key === "refrigeracao-gestor") return isAdmin;
   if (key === "corretiva-gestor") return isAdmin;
