@@ -551,6 +551,11 @@ export async function concluirTroca(
   }
 
   await marcarPreventivaConcluida(id);
+  await notificarSituacao(
+    id,
+    "concluida",
+    `Troca concluída com evidências (${input.filtro_utilizado}).`,
+  );
 }
 
 /** Validação/pesquisa de satisfação do solicitante (12.7). */
@@ -678,6 +683,12 @@ export async function abrirSolicitacaoPreventiva(
     .update({ solicitacao_id: data.id })
     .eq("id", preventiva.id);
   if (upErr) throw upErr;
+
+  await notificarSituacao(
+    data.id,
+    "solicitada",
+    `Troca preventiva aberta para ${ativo.predio ?? "ponto"} — prevista para ${preventiva.prevista_para}.`,
+  );
 }
 
 async function marcarPreventivaConcluida(solicitacaoId: string): Promise<void> {
