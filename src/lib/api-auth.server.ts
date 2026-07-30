@@ -80,6 +80,13 @@ export function unauthorized(): Response {
 }
 
 /** Resposta padrão 403 para chamadas sem permissão no módulo. */
-export function forbidden(): Response {
-  return Response.json({ error: "Sem permissão para este módulo" }, { status: 403 });
+export function forbidden(moduleKey?: string, action = "create"): Response {
+  return Response.json(
+    {
+      error: moduleKey
+        ? `Sem permissão para "${moduleKey}" (${action}). Peça ao administrador para liberar este módulo em Configurações → Usuários.`
+        : "Sem permissão para este módulo",
+    },
+    { status: 403 },
+  );
 }

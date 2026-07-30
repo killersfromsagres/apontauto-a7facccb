@@ -77,7 +77,7 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           return Response.json({ error: "Módulo de origem obrigatório" }, { status: 400 });
         }
         if (!(await callerCanAccessModule(request, moduleKey, "create"))) {
-          return forbidden();
+          return forbidden(moduleKey, "create");
         }
 
         const file = form.get("image");
