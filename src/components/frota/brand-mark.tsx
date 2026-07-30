@@ -1,6 +1,8 @@
 import { memo } from "react";
 
 import { cn } from "@/lib/utils";
+import fiatLogo from "@/assets/fiat-logo.png.asset.json";
+import vwLogo from "@/assets/vw-logo.png.asset.json";
 
 export type CarBrand = "fiat" | "vw" | "generic";
 
@@ -23,34 +25,17 @@ export const BrandMark = memo(function BrandMark({
   brand: CarBrand;
   className?: string;
 }) {
-  if (brand === "vw") {
-    return (
-      <svg viewBox="0 0 32 32" className={cn("h-5 w-5", className)} role="img" aria-label="Volkswagen">
-        <circle cx="16" cy="16" r="14.5" fill="#0a1e3c" stroke="#c9d4e4" strokeWidth="1.6" />
-        <g fill="none" stroke="#f2f6fb" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round">
-          <path d="M8 9.5l4.4 12.8L16 12.6l3.6 9.7L24 9.5" />
-        </g>
-      </svg>
-    );
-  }
-  if (brand === "fiat") {
-    return (
-      <svg viewBox="0 0 46 20" className={cn("h-5 w-auto", className)} role="img" aria-label="Fiat">
-        <rect x="0.7" y="0.7" width="44.6" height="18.6" rx="3.2" fill="#8f1421" stroke="#e2c3c7" strokeWidth="1.2" />
-        <text
-          x="23"
-          y="14.4"
-          textAnchor="middle"
-          fontFamily="Helvetica, Arial, sans-serif"
-          fontSize="11"
-          fontWeight="700"
-          letterSpacing="2"
-          fill="#ffffff"
-        >
-          FIAT
-        </text>
-      </svg>
-    );
-  }
-  return null;
+  if (brand === "generic") return null;
+  const src = brand === "fiat" ? fiatLogo.url : vwLogo.url;
+  const label = brand === "fiat" ? "Fiat" : "Volkswagen";
+
+  return (
+    <img
+      src={src}
+      alt={label}
+      title={label}
+      loading="lazy"
+      className={cn("h-3.5 w-3.5 shrink-0 object-contain", className)}
+    />
+  );
 });
