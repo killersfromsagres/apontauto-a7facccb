@@ -95,13 +95,25 @@ export const VehicleCard3D = memo(function VehicleCard3D({
         </div>
         <p className="truncate text-sm font-semibold">{vehicleLabel(vehicle)}</p>
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-border/60 bg-background/60 px-2 py-0.5 font-mono text-[11px] font-bold tracking-widest">
-            {formatPlate(vehicle.plate) || "SEM PLACA"}
+          <PlateBadge plate={vehicle.plate} />
+          <span className="flex items-center gap-1.5">
+            <BrandMark brand={brand} />
+            {use !== "outro" && (
+              <span
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                  VEHICLE_USE_TONE[use],
+                )}
+              >
+                {VEHICLE_USE_LABEL[use]}
+              </span>
+            )}
           </span>
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="ml-auto font-mono text-[11px] text-muted-foreground">
             {vehicle.year_model ?? "—"}
           </span>
         </div>
+
       </div>
     </button>
   );
