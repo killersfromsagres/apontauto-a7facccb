@@ -94,8 +94,7 @@ function Alternador({
  */
 export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
   const [settings, salvarSettings] = useSettings();
-  const extras = settings as unknown as Record<string, unknown>;
-  const salvo = useMemo(() => mergeAguaAdmin(extras.aguaAdmin), [extras.aguaAdmin]);
+  const salvo = useMemo(() => mergeAguaAdmin(settings.aguaAdmin), [settings.aguaAdmin]);
   const [cfg, setCfg] = useState<AguaAdminConfig>(salvo);
   const [erros, setErros] = useState<string[]>([]);
   const [salvando, setSalvando] = useState(false);
@@ -114,10 +113,7 @@ export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
     setErros([]);
     setSalvando(true);
     try {
-      await salvarSettings({
-        ...(settings as Record<string, unknown>),
-        aguaAdmin: parsed.data,
-      } as never);
+      await salvarSettings({ ...settings, aguaAdmin: parsed.data });
       toast.success("Configurações salvas.");
     } catch (e) {
       toast.error((e as Error)?.message ?? "Não foi possível salvar.");
