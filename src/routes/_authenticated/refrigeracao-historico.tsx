@@ -336,9 +336,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
 
   return (
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto sm:w-full">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:w-full sm:p-6">
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="text-base break-words [overflow-wrap:anywhere] sm:text-lg">
             OS {os?.numero_os} — {os?.nome_os ?? "sem título"}
           </DialogTitle>
         </DialogHeader>
@@ -347,8 +347,8 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
             <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
           </div>
         ) : (
-          <div className="space-y-4">
-            <section className="rounded-lg border bg-muted/30 p-3">
+          <div className="min-w-0 space-y-4">
+            <section className="min-w-0 overflow-hidden rounded-lg border bg-muted/30 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="text-[10px]">
                   {os?.status}
@@ -364,7 +364,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs min-[380px]:grid-cols-2 sm:grid-cols-3">
                 <InfoField label="Prédio" value={os?.predio ?? "—"} />
                 <InfoField label="Andar" value={os?.andar ?? "—"} />
                 <InfoField label="Local" value={os?.local ?? "—"} />
@@ -375,6 +375,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 )}
               </div>
             </section>
+
 
             <section>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
