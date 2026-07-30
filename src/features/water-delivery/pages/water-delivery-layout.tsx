@@ -48,7 +48,7 @@ export function WaterDeliveryLayout() {
       )}
 
       <nav className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
           return (
             <Link
