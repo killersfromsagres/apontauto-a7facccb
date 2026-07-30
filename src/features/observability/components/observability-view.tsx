@@ -20,6 +20,7 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { qk, staleTimes } from "@/lib/query/keys";
 import { fetchObservability, fetchOfflineQueue } from "../queries/observability";
+import { fetchJobRuns } from "../queries/job-runs";
 import type { HealthStatus } from "../types";
 
 const statusTone: Record<HealthStatus, string> = {
@@ -28,6 +29,14 @@ const statusTone: Record<HealthStatus, string> = {
   falha: "border-destructive/40 bg-destructive/10 text-destructive",
   desconhecido: "border-border/60 bg-muted/30 text-muted-foreground",
 };
+
+const jobTone: Record<string, string> = {
+  success: statusTone.ok,
+  running: "border-sky-500/40 bg-sky-500/10 text-sky-300",
+  skipped: statusTone.desconhecido,
+  failed: statusTone.falha,
+};
+
 
 function fmt(dt: string | null | undefined) {
   if (!dt) return "—";
