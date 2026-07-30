@@ -68,6 +68,7 @@ import { Route as AuthenticatedAbastecimentoAguaRouteImport } from './routes/_au
 import { Route as AuthenticatedAbastecimentoAguaIndexRouteImport } from './routes/_authenticated/abastecimento.agua.index'
 import { Route as ApiPublicHooksWhatsappStatusRouteImport } from './routes/api/public/hooks/whatsapp-status'
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
+import { Route as ApiPublicHooksWaterQueueCleanupRouteImport } from './routes/api/public/hooks/water-queue-cleanup'
 import { Route as ApiPublicHooksWaterFilterDueMonitorRouteImport } from './routes/api/public/hooks/water-filter-due-monitor'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 import { Route as ApiPublicHooksAguaNotificacoesRouteImport } from './routes/api/public/hooks/agua-notificacoes'
@@ -410,6 +411,12 @@ const ApiPublicHooksWeatherMonitorRoute =
     path: '/api/public/hooks/weather-monitor',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWaterQueueCleanupRoute =
+  ApiPublicHooksWaterQueueCleanupRouteImport.update({
+    id: '/api/public/hooks/water-queue-cleanup',
+    path: '/api/public/hooks/water-queue-cleanup',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksWaterFilterDueMonitorRoute =
   ApiPublicHooksWaterFilterDueMonitorRouteImport.update({
     id: '/api/public/hooks/water-filter-due-monitor',
@@ -565,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
+  '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
   '/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -637,6 +645,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
+  '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
   '/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -713,6 +722,7 @@ export interface FileRoutesById {
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
+  '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
   '/api/public/hooks/whatsapp-status': typeof ApiPublicHooksWhatsappStatusRoute
   '/_authenticated/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
@@ -789,6 +799,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/water-filter-due-monitor'
+    | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
     | '/abastecimento/agua/'
@@ -861,6 +872,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/water-filter-due-monitor'
+    | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
     | '/abastecimento/agua'
@@ -936,6 +948,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
     | '/api/public/hooks/water-filter-due-monitor'
+    | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
     | '/api/public/hooks/whatsapp-status'
     | '/_authenticated/abastecimento/agua/'
@@ -959,6 +972,7 @@ export interface RootRouteChildren {
   ApiPublicHooksAguaNotificacoesRoute: typeof ApiPublicHooksAguaNotificacoesRoute
   ApiPublicHooksPluviometroRoute: typeof ApiPublicHooksPluviometroRoute
   ApiPublicHooksWaterFilterDueMonitorRoute: typeof ApiPublicHooksWaterFilterDueMonitorRoute
+  ApiPublicHooksWaterQueueCleanupRoute: typeof ApiPublicHooksWaterQueueCleanupRoute
   ApiPublicHooksWeatherMonitorRoute: typeof ApiPublicHooksWeatherMonitorRoute
   ApiPublicHooksWhatsappStatusRoute: typeof ApiPublicHooksWhatsappStatusRoute
 }
@@ -1378,6 +1392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWeatherMonitorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/water-queue-cleanup': {
+      id: '/api/public/hooks/water-queue-cleanup'
+      path: '/api/public/hooks/water-queue-cleanup'
+      fullPath: '/api/public/hooks/water-queue-cleanup'
+      preLoaderRoute: typeof ApiPublicHooksWaterQueueCleanupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/water-filter-due-monitor': {
       id: '/api/public/hooks/water-filter-due-monitor'
       path: '/api/public/hooks/water-filter-due-monitor'
@@ -1658,6 +1679,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksPluviometroRoute: ApiPublicHooksPluviometroRoute,
   ApiPublicHooksWaterFilterDueMonitorRoute:
     ApiPublicHooksWaterFilterDueMonitorRoute,
+  ApiPublicHooksWaterQueueCleanupRoute: ApiPublicHooksWaterQueueCleanupRoute,
   ApiPublicHooksWeatherMonitorRoute: ApiPublicHooksWeatherMonitorRoute,
   ApiPublicHooksWhatsappStatusRoute: ApiPublicHooksWhatsappStatusRoute,
 }
