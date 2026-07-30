@@ -78,7 +78,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const [items, setItems] = useState<Record<string, ItemState>>(() =>
     Object.fromEntries(CHECKLIST_ITEMS.map((i) => [i.key, emptyItem()])),
   );
-  const [slotPhotos, setSlotPhotos] = useState<Record<string, string>>({});
+  const [slotPhotos, setSlotPhotos] = useState<Record<string, string[]>>({});
   const [uploading, setUploading] = useState<string | null>(null);
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
