@@ -2,7 +2,7 @@
 // Gera uma planilha pronta para envio ao Suprimentos/Facilities,
 // sem preenchimento manual item a item.
 
-import type { CarrinhoItem, Solicitacao } from "./data";
+import type { Solicitacao } from "./data";
 import { PRIORIDADE_LABEL, STATUS_LABEL } from "./data";
 
 const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
