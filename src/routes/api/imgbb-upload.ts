@@ -178,28 +178,41 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           );
         }
 
-        const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
-          _user_id: caller.userId,
-          _role: "admin",
-        });
+        let isAdmin = false;
+        if (admin) {
+          try {
+            const { data } = await admin.rpc("has_role", {
+              _user_id: caller.userId,
+              _role: "admin",
+            });
+            isAdmin = Boolean(data);
+          } catch {
+            isAdmin = false;
+          }
 
-        await supabaseAdmin.from("image_uploads").insert({
-          user_id: caller.userId,
-          module_key: moduleKey,
-          entity_type:
-            typeof form.get("entity_type") === "string"
-              ? String(form.get("entity_type")).slice(0, 60)
-              : null,
-          entity_id:
-            typeof form.get("entity_id") === "string"
-              ? String(form.get("entity_id")).slice(0, 120)
-              : null,
-          sha256,
-          size_bytes: file.size,
-          mime_type: mime,
-          url: json.data.url as string,
-          delete_url: (json.data.delete_url as string) ?? null,
-        });
+          try {
+            await admin.from("image_uploads").insert({
+              user_id: caller.userId,
+              module_key: moduleKey,
+              entity_type:
+                typeof form.get("entity_type") === "string"
+                  ? String(form.get("entity_type")).slice(0, 60)
+                  : null,
+              entity_id:
+                typeof form.get("entity_id") === "string"
+                  ? String(form.get("entity_id")).slice(0, 120)
+                  : null,
+              sha256,
+              size_bytes: file.size,
+              mime_type: mime,
+              url: json.data.url as string,
+              delete_url: (json.data.delete_url as string) ?? null,
+            });
+          } catch {
+            /* auditoria opcional */
+          }
+        }
+
 
         return Response.json({
           url: json.data.url as string,
