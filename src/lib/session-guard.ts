@@ -95,9 +95,9 @@ export function refreshSessionShared(): Promise<string> {
     let result: Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
     try {
       result = await supabase.auth.refreshSession();
-    } catch (err) {
+    } catch {
       // Falha de rede/fetch — temporária, jamais logout.
-      throw new TemporarySessionError(err instanceof Error ? undefined : undefined);
+      throw new TemporarySessionError();
     }
     if (result.error) {
       if (isRevokedSessionError(result.error)) throw new SessionExpiredError();
