@@ -270,14 +270,22 @@ export function FleetFuelings() {
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, index = 0 }: { label: string; value: string; index?: number }) {
   return (
-    <GlassCard className="space-y-1 p-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="font-display text-lg font-semibold">{value}</p>
+    <GlassCard
+      variant="block"
+      className="fleet-in space-y-1 p-3.5"
+      // escalona a entrada dos KPIs
+      {...({ style: { ["--i" as string]: index } } as any)}
+    >
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-display text-lg font-semibold tabular-nums sm:text-xl">{value}</p>
     </GlassCard>
   );
 }
+
 
 function NumField({
   label,
