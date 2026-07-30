@@ -1,17 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import {
-  BarChart3,
-  Calendar,
-  Camera,
-  Droplets,
-  Filter,
-  History,
-  LayoutDashboard,
-  MapPin,
-  Route as RouteIcon,
-  PackageCheck,
-  Settings,
-} from "lucide-react";
+import { ClipboardList, History } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -19,19 +7,10 @@ import { cn } from "@/lib/utils";
 import { useAguaSync } from "@/features/water-delivery/offline/offline";
 
 const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
-  { to: "/abastecimento/agua", label: "Visão Geral", icon: LayoutDashboard, exact: true },
-  { to: "/abastecimento/agua/pontos", label: "Pontos de Entrega", icon: MapPin },
-  { to: "/abastecimento/agua/programacao", label: "Programação", icon: Calendar },
-  { to: "/abastecimento/agua/rotas", label: "Rotas", icon: RouteIcon },
-
-  { to: "/abastecimento/agua/rota", label: "Rota do Dia", icon: Droplets },
-  { to: "/abastecimento/agua/bags", label: "Controle de Bags", icon: PackageCheck },
-  { to: "/abastecimento/agua/evidencias", label: "Evidências", icon: Camera },
-  { to: "/abastecimento/agua/filtros", label: "Solicitações de Filtro", icon: Filter },
+  { to: "/abastecimento/agua", label: "Programação do Dia", icon: ClipboardList, exact: true },
   { to: "/abastecimento/agua/historico", label: "Histórico", icon: History },
-  { to: "/abastecimento/agua/indicadores", label: "Indicadores", icon: BarChart3 },
-  { to: "/abastecimento/agua/configuracoes", label: "Configurações", icon: Settings },
 ];
+
 
 export function WaterDeliveryLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -40,7 +19,7 @@ export function WaterDeliveryLayout() {
   return (
     <PageShell
       title="Abastecimento de Água"
-      description="Programação semanal, execução em campo e histórico auditável das entregas de bags."
+      description="Programação diária das entregas de bags, com equipe, carro e foto como comprovação."
     >
       {(!online || pendentes > 0) && (
         <div
