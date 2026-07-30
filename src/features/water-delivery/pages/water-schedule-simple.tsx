@@ -377,6 +377,8 @@ function EntregaSheet({
   entrega,
   colaboradores,
   veiculo,
+  veiculos,
+  onEquipeChange,
   onClose,
   onSaved,
 }: {
@@ -385,14 +387,19 @@ function EntregaSheet({
   entrega: Entrega | null;
   colaboradores: string[];
   veiculo: string | null;
+  veiculos: string[];
+  onEquipeChange: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [bags, setBags] = useState<number>(entrega?.bags ?? ponto.bags ?? 1);
+  const [bags, setBags] = useState<number>(() =>
+    Math.max(1, Math.round(entrega?.bags ?? ponto.bags ?? 1)),
+  );
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
+
 
   useEffect(() => () => novas.forEach((n) => URL.revokeObjectURL(n.url)), [novas]);
 
