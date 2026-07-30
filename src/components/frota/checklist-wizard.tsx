@@ -622,12 +622,12 @@ function PhotoField({
         <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
           {list.map((src) => (
             <div key={src} className="relative">
-              <img
+              <ResilientPhoto
                 src={src}
                 alt={label}
-                loading="lazy"
                 className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
               />
+
               {onRemove && (
                 <button
                   type="button"
