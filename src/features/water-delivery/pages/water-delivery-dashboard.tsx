@@ -20,7 +20,6 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
@@ -680,22 +679,9 @@ export function WaterDeliveryDashboard() {
         <GlassCard className="space-y-3 p-4">
           <h2 className="text-sm font-semibold">Bags por dia da semana (30 dias)</h2>
           <div className="h-56 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={porDiaSemana} margin={{ top: 8, right: 8, bottom: 0, left: -18 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" vertical={false} />
-                <XAxis dataKey="dia" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis tickLine={false} axisLine={false} fontSize={11} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--card)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="entregues" name="Bags" radius={[6, 6, 0, 0]} fill="var(--primary)" />
-              </BarChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<Skeleton className="h-full w-full rounded-xl" />}>
+              <BagsPorDiaChart dados={porDiaSemana} />
+            </Suspense>
           </div>
         </GlassCard>
 
