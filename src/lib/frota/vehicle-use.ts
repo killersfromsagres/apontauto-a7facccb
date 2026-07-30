@@ -17,9 +17,12 @@ export const VEHICLE_USE_TONE: Record<VehicleUse, string> = {
 
 /** Deduz o uso do veículo pelo nome/versão cadastrada. */
 export function inferVehicleUse(text?: string | null): VehicleUse {
-  const t = (text ?? "").toLowerCase();
-  if (/\b[áa]gua\b/.test(t)) return "agua";
-  if (/m[áa]scara/.test(t)) return "mascara";
-  if (/manuten[cç][ãa]o/.test(t)) return "manutencao";
+  const t = (text ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (/\bagua\b/.test(t)) return "agua";
+  if (/mascara/.test(t)) return "mascara";
+  if (/manutencao/.test(t)) return "manutencao";
   return "outro";
 }
