@@ -187,8 +187,11 @@ export function WaterScheduleSimple() {
         </div>
       </GlassCard>
 
-      {/* Quem está entregando + carro */}
+      {/* Equipe padrão do dia — apenas pré-preenche cada entrega */}
       <GlassCard className="p-4 sm:p-5">
+        <p className="mb-3 text-xs text-muted-foreground">
+          Padrão do dia — cada prédio ainda confirma quem entregou e qual carro foi usado.
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
