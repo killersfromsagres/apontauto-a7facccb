@@ -91,19 +91,27 @@ export function FleetHistory() {
           <p className="text-sm text-muted-foreground">Nenhum checklist registrado ainda.</p>
         </GlassCard>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((c) => {
+        <div className="space-y-2.5">
+          {filtered.map((c, i) => {
             const v = vehicleById[c.vehicle_id];
             const open = openId === c.id;
             const photos = photosByChecklist[c.id] ?? [];
             return (
-              <GlassCard key={c.id} className="space-y-3">
+              <GlassCard
+                key={c.id}
+                style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
+                className={cn(
+                  "fleet-in space-y-3",
+                  open && "border-primary/40 shadow-elegant",
+                )}
+              >
                 <button
                   type="button"
-                  className="flex w-full items-start gap-3 text-left"
+                  className="tap-press flex w-full items-start gap-3 rounded-xl text-left"
                   onClick={() => setOpenId(open ? null : c.id)}
                 >
                   <PlateBadge plate={v?.plate} size="sm" />
+
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
                       <BrandMark brand={inferBrand(`${v?.brand ?? ""} ${v?.model ?? ""}`)} />
