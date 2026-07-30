@@ -11,6 +11,16 @@ import * as XLSX from "xlsx";
 
 import { fakeSupabase, resetarBanco } from "./harness/fake-supabase";
 
+// Ambiente Node: o módulo offline usa localStorage para o identificador do aparelho.
+const memoria = new Map<string, string>();
+(globalThis as any).localStorage ??= {
+  getItem: (k: string) => memoria.get(k) ?? null,
+  setItem: (k: string, v: string) => void memoria.set(k, String(v)),
+  removeItem: (k: string) => void memoria.delete(k),
+  clear: () => memoria.clear(),
+};
+(globalThis as any).window ??= globalThis;
+
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: fakeSupabase,
   supabaseAdmin: fakeSupabase,
