@@ -256,7 +256,8 @@ export interface Rota {
   horario_previsto: string | null;
   bags_carregadas: number | null;
   observacao: string | null;
-  status: string;
+  status: RotaStatus;
+
   motivo_cancelamento: string | null;
   versao: number;
   iniciada_em: string | null;
