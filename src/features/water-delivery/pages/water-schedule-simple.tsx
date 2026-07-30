@@ -505,7 +505,7 @@ function EntregaSheet({
         side="bottom"
         className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-3xl pb-0"
       >
-        <SheetHeader className="text-left">
+        <SheetHeader className="shrink-0 pr-10 text-left">
           <SheetTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-sky-500" />
             {ponto.predio} · {ponto.espaco ?? "—"}
