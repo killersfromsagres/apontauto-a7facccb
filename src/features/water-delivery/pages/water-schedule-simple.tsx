@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 
+import bagThumb from "@/assets/bag-agua-12l.png";
 import { GlassCard } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
