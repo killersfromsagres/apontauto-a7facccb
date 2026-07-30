@@ -1,5 +1,5 @@
 import { compressImage } from "@/lib/corretiva/image";
-import { supabase } from "@/integrations/supabase/client";
+import { postImgbbForm } from "@/lib/imgbb-post";
 
 export type FrotaUpload = { url: string; hash: string | null };
 
@@ -14,10 +14,6 @@ export async function uploadFrotaPhoto(
 ): Promise<FrotaUpload> {
   const compressed = await compressImage(file, { maxDim: 1600, quality: 0.78 });
 
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre novamente.");
-
   const form = new FormData();
   form.append("image", compressed, filename);
   form.append("name", filename.replace(/\.[^.]+$/, ""));
@@ -25,14 +21,6 @@ export async function uploadFrotaPhoto(
   if (opts.entityType) form.append("entity_type", opts.entityType);
   if (opts.entityId) form.append("entity_id", opts.entityId);
 
-  const res = await fetch("/api/imgbb-upload", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-  const json = (await res.json().catch(() => ({}))) as any;
-  if (!res.ok || !json?.url) {
-    throw new Error(json?.error ?? `Falha no envio da imagem (${res.status})`);
-  }
+  const json = await postImgbbForm(form);
   return { url: json.url as string, hash: (json.hash as string) ?? null };
 }

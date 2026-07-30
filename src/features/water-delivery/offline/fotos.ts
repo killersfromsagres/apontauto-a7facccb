@@ -178,10 +178,6 @@ export async function prepararFoto(
 /* ------------------------------------------------------------------ */
 
 async function enviarParaImgbb(item: FotoFilaItem): Promise<string> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) throw new Error("Sessão expirada. Entre novamente para enviar as evidências.");
-
   const form = new FormData();
   form.append("image", item.blob, item.nomeArquivo);
   form.append("name", item.nomeArquivo.replace(/\.[^.]+$/, ""));
@@ -190,15 +186,8 @@ async function enviarParaImgbb(item: FotoFilaItem): Promise<string> {
   const entityId = item.meta.visitaId ?? item.meta.filtroSolicitacaoId ?? item.meta.pontoId ?? "";
   if (entityId) form.append("entity_id", entityId);
 
-  const res = await fetch("/api/imgbb-upload", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-  });
-  const json = (await res.json().catch(() => ({}))) as any;
-  if (!res.ok || !json?.url) {
-    throw new Error(json?.error ?? `Falha no envio da imagem (${res.status})`);
-  }
+  const { postImgbbForm } = await import("@/lib/imgbb-post");
+  const json = await postImgbbForm(form);
   // `delete_url` nunca é exposto ao operador (10.2).
   return json.url as string;
 }
