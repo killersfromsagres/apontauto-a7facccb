@@ -182,5 +182,5 @@ export function jobResponse(outcome: JobOutcome<unknown>): Response {
       { status: 500 },
     );
   }
-  return Response.json({ ok: true, ...outcome });
+  return Response.json({ ...outcome, ok: true });
 }
