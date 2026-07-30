@@ -617,16 +617,19 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
 
           <Button
             className="min-h-[48px] w-full"
-            disabled={!declaration || submit.isPending}
+            disabled={!declaration || submit.isPending || uploadingCount > 0}
             onClick={() => submit.mutate()}
           >
-            {submit.isPending ? (
+            {submit.isPending || uploadingCount > 0 ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            Enviar checklist e gerar protocolo
+            {uploadingCount > 0
+              ? `Enviando ${uploadingCount} foto(s)…`
+              : "Enviar checklist e gerar protocolo"}
           </Button>
+
         </GlassCard>
       )}
 
