@@ -37,6 +37,24 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { listVehicles, vehicleLabel } from "@/lib/frota/api";
+import { PlateBadge } from "@/components/frota/plate-badge";
+import { BrandMark, inferBrand, type CarBrand } from "@/components/frota/brand-mark";
+import {
+  VEHICLE_USE_LABEL,
+  VEHICLE_USE_TONE,
+  inferVehicleUse,
+  type VehicleUse,
+} from "@/lib/frota/vehicle-use";
+
+type VeiculoOpcao = {
+  valor: string;
+  prefix: string | null;
+  plate: string | null;
+  nome: string;
+  brand: CarBrand;
+  use: VehicleUse;
+};
+
 import {
   COLABORADORES,
   DIAS,
