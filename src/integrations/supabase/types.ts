@@ -1129,6 +1129,8 @@ export type Database = {
         Row: {
           atualizado_em: string
           bags: number
+          bebedouro_obs: string | null
+          bebedouro_ok: boolean | null
           colaboradores: string[]
           criado_em: string
           data: string
@@ -1142,6 +1144,8 @@ export type Database = {
         Insert: {
           atualizado_em?: string
           bags?: number
+          bebedouro_obs?: string | null
+          bebedouro_ok?: boolean | null
           colaboradores?: string[]
           criado_em?: string
           data: string
@@ -1155,6 +1159,8 @@ export type Database = {
         Update: {
           atualizado_em?: string
           bags?: number
+          bebedouro_obs?: string | null
+          bebedouro_ok?: boolean | null
           colaboradores?: string[]
           criado_em?: string
           data?: string
