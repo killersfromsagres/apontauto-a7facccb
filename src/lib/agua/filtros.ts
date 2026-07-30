@@ -6,7 +6,7 @@
 // usadas pela UI e pelos testes.
 
 import { supabase } from "@/integrations/supabase/client";
-import { notificarAgua } from "@/lib/agua/notificacoes";
+import { notificarAgua, type AguaEvento } from "@/lib/agua/notificacoes";
 import type { FiltroPrioridade, FiltroSituacao } from "@/lib/agua/api";
 
 const db = supabase as unknown as { from: (t: string) => any };
