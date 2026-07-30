@@ -43,7 +43,7 @@ import { EmptyState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { aplicarImportacao, listPontos, loteComHash, pontoLabel, type Ponto } from "@/lib/agua/api";
+import { listPontos, pontoLabel, type Ponto } from "@/lib/agua/api";
 import {
   atualizarProgramacao,
   atualizarProgramacaoEmLote,
@@ -67,7 +67,8 @@ import {
   addDias,
   type ProgramacaoLinha,
 } from "@/lib/agua/programacao";
-import { DIAS, lerPlanilhaAgua, sha256Hex, type LeituraAgua } from "@/lib/agua/reader";
+import { DIAS } from "@/lib/agua/reader";
+import { ImportadorWizard } from "@/components/agua/importador-wizard";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/programacao")({
   component: ProgramacaoSemanal,
@@ -557,92 +558,8 @@ function ProgramacaoSemanal() {
       {/* Feriados e bloqueios */}
       {gestor && <FeriadosCard onDone={invalidar} feriados={feriados.data ?? []} />}
 
-      {/* Importação */}
-      {gestor && (
-        <GlassCard className="space-y-3 p-4">
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Importar planilha de programação</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            As abas diárias são usadas como rota real; a aba consolidada é comparada e as
-            divergências ficam visíveis antes de confirmar. Nada é gravado parcialmente.
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void selecionarArquivo(f);
-              e.target.value = "";
-            }}
-          />
-          <Button variant="secondary" disabled={lendo} onClick={() => inputRef.current?.click()}>
-            {lendo ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            Selecionar arquivo
-          </Button>
-
-          {previa && (
-            <div className="space-y-3 rounded-2xl border border-border/60 bg-background/40 p-3">
-              <p className="text-sm font-medium">{previa.nome}</p>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                <Info2 label="Linhas lidas" value={previa.leitura.totalLinhas} />
-                <Info2 label="Pontos canônicos" value={previa.leitura.pontos.length} />
-                <Info2 label="Visitas/semana" value={previa.leitura.totalVisitas} />
-                <Info2 label="Divergências" value={previa.leitura.divergencias.length} />
-              </div>
-              <div className="max-h-64 space-y-1 overflow-auto">
-                {previa.leitura.divergencias.map((d, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 rounded-lg border border-border/50 bg-card/40 p-2 text-xs"
-                  >
-                    {d.severidade === "info" ? (
-                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-300" />
-                    ) : (
-                      <AlertTriangle
-                        className={
-                          d.severidade === "erro"
-                            ? "mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300"
-                            : "mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"
-                        }
-                      />
-                    )}
-                    <span>{d.mensagem}</span>
-                  </div>
-                ))}
-              </div>
-              {previa.duplicado && (
-                <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 p-2 text-xs text-amber-200">
-                  Este arquivo já foi importado antes (mesmo conteúdo). Confirme apenas se quiser
-                  reaplicar a programação.
-                </p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  disabled={
-                    aplicar.isPending ||
-                    previa.leitura.divergencias.some((d) => d.severidade === "erro")
-                  }
-                  onClick={() => aplicar.mutate()}
-                >
-                  {aplicar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {previa.duplicado ? "Confirmar mesmo assim" : "Confirmar importação"}
-                </Button>
-                <Button variant="ghost" onClick={() => setPrevia(null)}>
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          )}
-        </GlassCard>
-      )}
+      {/* Importação (item 19 — assistente em etapas) */}
+      {gestor && <ImportadorWizard onDone={invalidar} />}
     </div>
   );
 }
