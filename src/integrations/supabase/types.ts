@@ -3411,6 +3411,42 @@ export type Database = {
         }
         Relationships: []
       }
+      materiais_catalogo: {
+        Row: {
+          ativo: boolean
+          categoria: string | null
+          codigo: string
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria?: string | null
+          codigo: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string | null
+          codigo?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       material_movements: {
         Row: {
           created_at: string
@@ -3521,6 +3557,111 @@ export type Database = {
           status?: string
           unidade?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      material_solicitacao_itens: {
+        Row: {
+          catalogo_id: string | null
+          codigo: string | null
+          created_at: string
+          descricao: string
+          id: string
+          justificativa: string | null
+          quantidade: number
+          solicitacao_id: string
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          catalogo_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          justificativa?: string | null
+          quantidade?: number
+          solicitacao_id: string
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          catalogo_id?: string | null
+          codigo?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          justificativa?: string | null
+          quantidade?: number
+          solicitacao_id?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_solicitacao_itens_catalogo_id_fkey"
+            columns: ["catalogo_id"]
+            isOneToOne: false
+            referencedRelation: "materiais_catalogo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_solicitacao_itens_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "material_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_solicitacoes: {
+        Row: {
+          centro_custo: string | null
+          created_at: string
+          enviada_em: string | null
+          id: string
+          local: string | null
+          numero: string
+          observacao: string | null
+          predio: string | null
+          prioridade: string
+          setor: string | null
+          solicitante: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          centro_custo?: string | null
+          created_at?: string
+          enviada_em?: string | null
+          id?: string
+          local?: string | null
+          numero?: string
+          observacao?: string | null
+          predio?: string | null
+          prioridade?: string
+          setor?: string | null
+          solicitante: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          centro_custo?: string | null
+          created_at?: string
+          enviada_em?: string | null
+          id?: string
+          local?: string | null
+          numero?: string
+          observacao?: string | null
+          predio?: string | null
+          prioridade?: string
+          setor?: string | null
+          solicitante?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -6740,6 +6881,7 @@ export type Database = {
       }
       frota_can: { Args: { required_action?: string }; Returns: boolean }
       frota_is_gestor: { Args: never; Returns: boolean }
+      gen_material_solicitacao_numero: { Args: never; Returns: string }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
