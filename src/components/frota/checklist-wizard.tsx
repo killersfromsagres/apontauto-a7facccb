@@ -128,8 +128,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const [items, setItems] = useState<Record<string, ItemState>>(() =>
     Object.fromEntries(CHECKLIST_ITEMS.map((i) => [i.key, emptyItem()])),
   );
-  const [slotPhotos, setSlotPhotos] = useState<Record<string, string[]>>({});
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [slotPhotos, setSlotPhotos] = useState<Record<string, Photo[]>>({});
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
 
@@ -146,35 +145,87 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const critical = hasCriticalBlock(filled);
   const nonConform = CHECKLIST_ITEMS.filter((d) => items[d.key].status === "nao_conforme");
 
-  async function handleUpload(
-    file: File,
-    apply: (url: string, hash: string | null) => void,
-    tag: string,
-  ) {
-    setUploading(tag);
-    const localPreview = URL.createObjectURL(file);
+  const makePhoto = (file: File): Photo => ({
+    id: newId(),
+    file,
+    preview: URL.createObjectURL(file),
+    url: null,
+    hash: null,
+    status: "uploading",
+  });
+
+  /** Envia uma foto e reflete o resultado no estado, sem perder o preview. */
+  async function runUpload(photo: Photo, apply: (patch: Partial<Photo>) => void) {
+    apply({ status: "uploading", error: undefined });
     try {
-      const { url, hash } = await uploadFrotaPhoto(file, file.name || "checklist.jpg", {
+      const { url, hash } = await uploadFrotaPhoto(photo.file, photo.file.name || "checklist.jpg", {
         module: "frota-checklist",
         entityType: "vehicle_checklist",
         entityId: vehicleId ?? undefined,
       });
-      // Mantém o preview local enquanto a CDN propaga a imagem remota.
-      LOCAL_PREVIEWS.set(url, localPreview);
-      apply(url, hash);
+      apply({ url, hash, status: "ok" });
     } catch (e: any) {
-      URL.revokeObjectURL(localPreview);
+      apply({ status: "error", error: e?.message ?? "Falha ao enviar a foto" });
       toast.error(e?.message ?? "Falha ao enviar a foto");
-    } finally {
-      setUploading(null);
     }
   }
 
+  const patchSlotPhoto = (slot: string, id: string, patch: Partial<Photo>) =>
+    setSlotPhotos((prev) => ({
+      ...prev,
+      [slot]: (prev[slot] ?? []).map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }));
 
-  const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
+  /** Aceita várias fotos de uma vez e envia em fila (mais estável no 4G). */
+  function addSlotFiles(slot: string, files: File[]) {
+    if (!files.length) return;
+    const photos = files.map(makePhoto);
+    setSlotPhotos((prev) => ({ ...prev, [slot]: [...(prev[slot] ?? []), ...photos] }));
+    void (async () => {
+      for (const p of photos) {
+        await runUpload(p, (patch) => patchSlotPhoto(slot, p.id, patch));
+      }
+    })();
+  }
+
+  function retrySlotPhoto(slot: string, id: string) {
+    const photo = (slotPhotos[slot] ?? []).find((p) => p.id === id);
+    if (photo) void runUpload(photo, (patch) => patchSlotPhoto(slot, id, patch));
+  }
+
+  const patchItemPhoto = (key: string, id: string, patch: Partial<Photo>) =>
+    setItems((prev) => {
+      const current = prev[key].photo;
+      if (!current || current.id !== id) return prev;
+      return { ...prev, [key]: { ...prev[key], photo: { ...current, ...patch } } };
+    });
+
+  function setItemPhoto(key: string, file: File | null) {
+    if (!file) {
+      setItems((prev) => ({ ...prev, [key]: { ...prev[key], photo: null } }));
+      return;
+    }
+    const photo = makePhoto(file);
+    setItems((prev) => ({ ...prev, [key]: { ...prev[key], photo } }));
+    void runUpload(photo, (patch) => patchItemPhoto(key, photo.id, patch));
+  }
+
+  function retryItemPhoto(key: string) {
+    const photo = items[key].photo;
+    if (photo) void runUpload(photo, (patch) => patchItemPhoto(key, photo.id, patch));
+  }
+
+  const okPhotos = (key: string) => (slotPhotos[key] ?? []).filter((p) => p.status === "ok");
+  const slotCount = (key: string) => okPhotos(key).length;
   const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
   const totalSlotPhotos = PHOTO_SLOTS.reduce((acc, s) => acc + slotCount(s.key), 0);
-  const missingNcPhotos = nonConform.filter((d) => !items[d.key].photoUrl);
+  const missingNcPhotos = nonConform.filter((d) => items[d.key].photo?.status !== "ok");
+  const uploadingCount =
+    PHOTO_SLOTS.reduce(
+      (acc, s) => acc + (slotPhotos[s.key] ?? []).filter((p) => p.status === "uploading").length,
+      0,
+    ) + CHECKLIST_ITEMS.filter((d) => items[d.key].photo?.status === "uploading").length;
+
 
   const canAdvance = (() => {
     if (step === 0) return !!vehicleId;
