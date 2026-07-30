@@ -518,16 +518,12 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
                     />
                     <PhotoField
                       label="Foto da não conformidade (obrigatória)"
-                      url={st.photoUrl ?? null}
-                      busy={uploading === def.key}
-                      onFile={(f) =>
-                        handleUpload(
-                          f,
-                          (url, hash) => set({ photoUrl: url, photoHash: hash }),
-                          def.key,
-                        )
-                      }
+                      photos={st.photo ? [st.photo] : []}
+                      onFiles={(files) => setItemPhoto(def.key, files[0] ?? null)}
+                      onRetry={() => retryItemPhoto(def.key)}
+                      onRemove={() => setItemPhoto(def.key, null)}
                     />
+
                   </div>
                 )}
               </GlassCard>
