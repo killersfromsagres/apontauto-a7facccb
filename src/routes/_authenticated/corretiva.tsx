@@ -1038,7 +1038,7 @@ function OsDetail({
         </div>
       </GlassCard>
 
-      <div className="sticky bottom-2 z-10">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-10 md:bottom-2">
         <Button
           size="lg"
           className="h-14 w-full text-base font-semibold shadow-lg"

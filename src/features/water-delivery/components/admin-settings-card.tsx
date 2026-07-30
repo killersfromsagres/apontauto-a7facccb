@@ -505,7 +505,7 @@ export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
       )}
 
       {podeEditar && (
-        <div className="sticky bottom-2 z-10 flex flex-wrap items-center gap-2">
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.75rem)] z-10 flex flex-wrap items-center gap-2 md:bottom-2">
           <Button
             className="min-h-[44px]"
             disabled={!sujo || salvando}
