@@ -492,7 +492,13 @@ function EntregaSheet({
               >
                 <Plus className="h-5 w-5" />
               </Button>
-              <span className="text-sm text-muted-foreground">bag(s) inteira(s)</span>
+              <img
+                src={bagThumb}
+                alt="Bag de água mineral de 12 litros"
+                loading="lazy"
+                className="h-12 w-auto drop-shadow-sm"
+              />
+              <span className="text-sm text-muted-foreground">bag(s) de 12 L</span>
             </div>
           </div>
 
