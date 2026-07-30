@@ -259,17 +259,18 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
       ];
       const photos = [
         ...PHOTO_SLOTS.flatMap((s) =>
-          (slotPhotos[s.key] ?? []).map((url) => ({ slot: s.key as string, url })),
+          okPhotos(s.key).map((p) => ({ slot: s.key as string, url: p.url!, hash: p.hash })),
         ),
         ...nonConform
-          .filter((d) => items[d.key].photoUrl)
+          .filter((d) => items[d.key].photo?.status === "ok")
           .map((d) => ({
             slot: `nc_${d.key}`,
-            url: items[d.key].photoUrl!,
+            url: items[d.key].photo!.url!,
             itemKey: d.key,
-            hash: items[d.key].photoHash ?? null,
+            hash: items[d.key].photo!.hash ?? null,
           })),
       ];
+
       return submitChecklist({
         vehicleId,
         checklistType,
