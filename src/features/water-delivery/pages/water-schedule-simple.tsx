@@ -515,7 +515,7 @@ function EntregaSheet({
           </p>
         </SheetHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="-mx-4 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 sm:-mx-6 sm:px-6">
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
               Situação
