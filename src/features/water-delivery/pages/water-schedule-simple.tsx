@@ -379,20 +379,20 @@ function EntregaSheet({
   ponto,
   data,
   entrega,
-  colaboradores,
-  veiculo,
+  defaultColaboradores,
+  defaultVeiculo,
   veiculos,
-  onEquipeChange,
+  onCommitEquipe,
   onClose,
   onSaved,
 }: {
   ponto: PontoProg;
   data: string;
   entrega: Entrega | null;
-  colaboradores: string[];
-  veiculo: string | null;
+  defaultColaboradores: string[];
+  defaultVeiculo: string | null;
   veiculos: string[];
-  onEquipeChange: (cols: string[], veiculo: string | null) => void;
+  onCommitEquipe: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -403,7 +403,13 @@ function EntregaSheet({
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
-
+  // Seleção local: só é aplicada a esta entrega e só vira padrão ao confirmar.
+  const [colaboradores, setColaboradores] = useState<string[]>(
+    () => entrega?.colaboradores ?? defaultColaboradores,
+  );
+  const [veiculo, setVeiculo] = useState<string | null>(
+    () => entrega?.veiculo ?? defaultVeiculo,
+  );
 
   useEffect(() => () => novas.forEach((n) => URL.revokeObjectURL(n.url)), [novas]);
 
@@ -423,6 +429,7 @@ function EntregaSheet({
         fotos: novas.map((n) => n.blob),
       }),
     onSuccess: () => {
+      onCommitEquipe(colaboradores, veiculo);
       toast.success("Entrega registrada.");
       onSaved();
     },
@@ -430,7 +437,7 @@ function EntregaSheet({
   });
 
   const podeSalvar =
-    colaboradores.length > 0 && (!exigeFoto || jaTemFoto) && !salvar.isPending;
+    colaboradores.length > 0 && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
