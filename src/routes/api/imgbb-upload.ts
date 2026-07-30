@@ -54,16 +54,29 @@ export const Route = createFileRoute("/api/imgbb-upload")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { getRequestUser, callerCanAccessModule, unauthorized, forbidden } =
-          await import("@/lib/api-auth.server");
+        const {
+          getRequestUser,
+          callerCanAccessModule,
+          unauthorized,
+          forbidden,
+          serviceUnavailable,
+          hasAuthConfig,
+        } = await import("@/lib/api-auth.server");
+
+        // Configuração ausente é falha de servidor (503) — nunca 401, para não
+        // derrubar a sessão de quem está apenas enviando uma foto.
+        if (!hasAuthConfig()) {
+          return serviceUnavailable("Backend indisponível para validar a sessão.");
+        }
 
         const caller = await getRequestUser(request);
         if (!caller) return unauthorized();
 
         const key = process.env.IMGBB_API_KEY;
         if (!key) {
-          return Response.json({ error: "IMGBB_API_KEY não configurada" }, { status: 500 });
+          return serviceUnavailable("Serviço de imagens não configurado.");
         }
+
 
         let form: FormData;
         try {
