@@ -352,12 +352,12 @@ export function WaterScheduleSimple() {
           ponto={pontoAberto}
           data={data}
           entrega={entregaPorPonto.get(pontoAberto.id) ?? null}
-          colaboradores={colaboradores}
-          veiculo={veiculo}
+          defaultColaboradores={colaboradores}
+          defaultVeiculo={veiculo}
           veiculos={(veiculosQ.data ?? []).map((v) =>
             [v.prefix, v.plate].filter(Boolean).join(" · ") || vehicleLabel(v),
           )}
-          onEquipeChange={atualizarEquipe}
+          onCommitEquipe={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["agua-prog"] });
