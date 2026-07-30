@@ -1,5 +1,5 @@
 import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Camera, ClipboardList, History } from "lucide-react";
+import { ClipboardList, History } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -9,7 +9,6 @@ import { useAguaSync } from "@/features/water-delivery/offline/offline";
 const TABS: { to: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { to: "/abastecimento/agua", label: "Programação do Dia", icon: ClipboardList, exact: true },
   { to: "/abastecimento/agua/historico", label: "Histórico", icon: History },
-  { to: "/abastecimento/agua/evidencias", label: "Evidências", icon: Camera },
 ];
 
 
@@ -20,7 +19,7 @@ export function WaterDeliveryLayout() {
   return (
     <PageShell
       title="Abastecimento de Água"
-      description="Programação semanal, execução em campo e histórico auditável das entregas de bags."
+      description="Programação diária das entregas de bags, com equipe, carro e foto como comprovação."
     >
       {(!online || pendentes > 0) && (
         <div
