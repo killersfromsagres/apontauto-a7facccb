@@ -16,7 +16,6 @@ import {
   Minus,
   Plus,
   Search,
-  Trash2,
   Users,
   X,
 } from "lucide-react";
@@ -604,4 +603,3 @@ function EntregaSheet({
   );
 }
 
-export { Trash2 as _unused };
