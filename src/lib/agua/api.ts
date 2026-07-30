@@ -10,7 +10,6 @@ import {
   normalizarTelefone,
 } from "@/lib/agua/normalize";
 
-
 // As tabelas novas ainda não constam nos tipos gerados.
 const db = supabase as unknown as { from: (t: string) => any };
 
@@ -26,8 +25,6 @@ export {
 export type { VisitaStatus } from "@/lib/agua/estados";
 
 import type { VisitaStatus } from "@/lib/agua/estados";
-
-
 
 export const MOTIVOS_NAO_REALIZADA = [
   "Feriado",
@@ -93,7 +90,6 @@ export interface Ponto {
   atualizado_por?: string | null;
 }
 
-
 export interface ProgramacaoItem {
   id: string;
   ponto_id: string;
@@ -136,7 +132,6 @@ export interface Visita {
 export const VISITA_FIELDS =
   "id, ponto_id, data, dia_semana, status, motivo, bags_previstas, bags_entregues, bags_recolhidas, estoque_antes, estoque_depois, condicao, recebido_por, fotos, assinatura_url, local_confirmado, latitude, longitude, deslocamento_em, atendimento_em, foto_url, observacao, responsavel, veiculo, ordem, rota_id, executado_em";
 
-
 export interface Lote {
   id: string;
   arquivo_nome: string;
@@ -153,7 +148,6 @@ export interface Lote {
 
 const PONTO_FIELDS =
   "id, codigo, predio, andar, espaco, descricao, bags_padrao, bag_tipo, bag_capacidade_litros, estoque_minimo, frequencia, prioridade, tempo_estimado_min, janela_inicio, janela_fim, ordem, responsavel, contato_telefone, acesso_observacoes, requer_epi, epi_descricao, veiculo, veiculo_recomendado, latitude, longitude, imagem_url, qr_code, observacao, ativo, criado_em, atualizado_em, atualizado_por";
-
 
 export const pontoLabel = (p: Ponto) =>
   `${p.predio}${p.andar ? ` · ${p.andar}` : ""}${p.espaco ? ` · ${p.espaco}` : ""}`;
@@ -229,12 +223,32 @@ export async function loteComHash(hash: string): Promise<Lote | null> {
  * substitui apenas a programação semanal dos pontos do arquivo.
  * As visitas já executadas nunca são tocadas.
  */
+export interface AjustePonto {
+  /** Dias confirmados pelo administrador (sobrepõe o que veio da planilha). */
+  dias?: number[];
+  /** Quantidade padrão de bags do ponto. */
+  bags?: number;
+  /** Ordem do ponto dentro do dia. */
+  ordem?: number;
+  /** Quando falso, o ponto não é importado. */
+  incluir?: boolean;
+}
+
 export async function aplicarImportacao(args: {
   leitura: LeituraAgua;
   arquivoNome: string;
   hash: string;
+  /** Revisões do assistente, por código canônico do ponto. */
+  ajustes?: Record<string, AjustePonto>;
+  /** Bags padrão aplicado a quem não tem ajuste específico. */
+  bagsPadrao?: number;
+  /** Relatório final do assistente, gravado junto ao lote. */
+  relatorio?: Record<string, unknown>;
 }): Promise<{ loteId: string }> {
   const { leitura, arquivoNome, hash } = args;
+  const ajustes = args.ajustes ?? {};
+  const bagsPadrao = args.bagsPadrao ?? 1;
+  const pontosImportados = leitura.pontos.filter((p) => ajustes[p.codigo]?.incluir !== false);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
 
@@ -247,7 +261,8 @@ export async function aplicarImportacao(args: {
       total_pontos: leitura.pontos.length,
       total_visitas: leitura.totalVisitas,
       divergencias: leitura.divergencias,
-      resumo: { por_dia: leitura.porDia },
+      resumo: { por_dia: leitura.porDia, bags_padrao: bagsPadrao },
+      relatorio: (args.relatorio ?? {}) as never,
       criado_por: uid,
     })
     .select("id")
@@ -255,12 +270,12 @@ export async function aplicarImportacao(args: {
   if (loteErr) throw loteErr;
   const loteId = lote.id as string;
 
-  const payload = leitura.pontos.map((p, i) => ({
+  const payload = pontosImportados.map((p, i) => ({
     codigo: p.codigo,
     predio: p.predio,
     andar: p.andar,
     espaco: p.espaco,
-    ordem: i + 1,
+    ordem: ajustes[p.codigo]?.ordem ?? i + 1,
     lote_id: loteId,
     ativo: true,
   }));
@@ -286,14 +301,16 @@ export async function aplicarImportacao(args: {
     throw delErr;
   }
 
-  const progRows = leitura.pontos.flatMap((p) => {
+  const progRows = pontosImportados.flatMap((p, i) => {
     const pid = idPorCodigo.get(p.codigo);
     if (!pid) return [];
-    return p.dias.map((dia, idx) => ({
+    const ajuste = ajustes[p.codigo] ?? {};
+    const dias = ajuste.dias ?? p.dias;
+    return dias.map((dia) => ({
       ponto_id: pid,
       dia_semana: dia,
-      ordem: idx + 1,
-      bags: 1,
+      ordem: ajuste.ordem ?? i + 1,
+      bags: ajuste.bags ?? bagsPadrao,
       origem: "aba_diaria",
       lote_id: loteId,
     }));
@@ -327,10 +344,7 @@ export async function desfazerLote(loteId: string): Promise<void> {
 /** Cria (se faltar) as visitas do dia a partir da programação e devolve todas. */
 export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
   const dia = diaSemanaISO(dataISO);
-  const [prog, existentes] = await Promise.all([
-    listProgramacao(),
-    listVisitas(dataISO, dataISO),
-  ]);
+  const [prog, existentes] = await Promise.all([listProgramacao(), listVisitas(dataISO, dataISO)]);
   const doDia = prog.filter((p) => p.dia_semana === dia);
   const jaTem = new Set(existentes.map((v) => v.ponto_id));
   const faltando = doDia.filter((p) => !jaTem.has(p.ponto_id));
@@ -346,7 +360,7 @@ export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
       })),
     );
     // Conflito de unicidade = outro usuário criou primeiro; seguimos com a releitura.
-    if (error && !String(error.code) .includes("23505")) throw error;
+    if (error && !String(error.code).includes("23505")) throw error;
     return listVisitas(dataISO, dataISO);
   }
   return existentes;
@@ -481,7 +495,10 @@ export async function mesclarPontos(args: {
   if (mergeErr) throw mergeErr;
 
   for (const tabela of ["agua_visitas", "agua_filtro_solicitacoes"]) {
-    const { error } = await db.from(tabela).update({ ponto_id: destino.id }).eq("ponto_id", origem.id);
+    const { error } = await db
+      .from(tabela)
+      .update({ ponto_id: destino.id })
+      .eq("ponto_id", origem.id);
     if (error) throw error;
   }
 
@@ -496,14 +513,11 @@ export async function mesclarPontos(args: {
       mesclado_em: new Date().toISOString(),
       mesclado_para: destino.id,
       atualizado_por: usuario,
-      observacao: limparTexto(
-        `${origem.observacao ?? ""} [mesclado em ${destino.codigo}]`,
-      ),
+      observacao: limparTexto(`${origem.observacao ?? ""} [mesclado em ${destino.codigo}]`),
     })
     .eq("id", origem.id);
   if (offErr) throw offErr;
 }
-
 
 /* ------------------------------------------------------------------ */
 /* Solicitações de filtro                                              */
@@ -640,7 +654,6 @@ export async function listFiltros(): Promise<FiltroSolicitacao[]> {
   return (data ?? []) as FiltroSolicitacao[];
 }
 
-
 export async function criarFiltro(input: {
   ponto_id: string;
   tipo: string;
@@ -661,7 +674,6 @@ export async function criarFiltro(input: {
   disponibilidade_acesso?: string | null;
   os_relacionada?: string | null;
 }): Promise<void> {
-
   const { data: userData } = await supabase.auth.getUser();
   const { data: criada, error } = await db
     .from("agua_filtro_solicitacoes")
@@ -689,7 +701,12 @@ export async function criarFiltro(input: {
 
 export async function atualizarFiltro(
   id: string,
-  patch: Partial<Pick<FiltroSolicitacao, "situacao" | "prioridade" | "atendimento" | "prevista_para" | "foto_url">>,
+  patch: Partial<
+    Pick<
+      FiltroSolicitacao,
+      "situacao" | "prioridade" | "atendimento" | "prevista_para" | "foto_url"
+    >
+  >,
 ): Promise<void> {
   const payload: Record<string, unknown> = { ...patch };
   if (patch.situacao === "concluida") payload.concluida_em = new Date().toISOString();

@@ -33,12 +33,48 @@ export interface Divergencia {
   referencia?: string;
 }
 
+export interface RevisaoPonto {
+  motivo: string;
+  diasExtras: number[];
+  diasFaltando: number[];
+}
+
 export interface PontoLido {
   codigo: string;
   predio: string;
   andar: string;
   espaco: string;
   dias: number[];
+  /** Preenchido quando a aba consolidada discorda das abas diárias (item 19.2). */
+  revisao?: RevisaoPonto;
+}
+
+export interface MapeamentoColunas {
+  predio?: string;
+  andar?: string;
+  espaco?: string;
+}
+
+export interface OpcoesLeitura {
+  /** Aba escolhida manualmente para cada dia (1=segunda … 5=sexta). */
+  abas?: Partial<Record<number, string>>;
+  /** Cabeçalhos escolhidos manualmente para cada campo. */
+  mapeamento?: MapeamentoColunas;
+}
+
+export interface AbaInspecionada {
+  nome: string;
+  linhas: number;
+  cabecalhos: string[];
+  diaSugerido: number | null;
+  consolidada: boolean;
+}
+
+export interface InspecaoPlanilha {
+  abas: AbaInspecionada[];
+  abaPorDia: Partial<Record<number, string>>;
+  mapeamentoSugerido: MapeamentoColunas;
+  cabecalhos: string[];
 }
 
 export interface LeituraAgua {
@@ -104,6 +140,46 @@ function diasDoPeriodo(texto: string): number[] {
   return out;
 }
 
+/** Lê cabeçalhos e abas do arquivo para o passo de mapeamento do assistente. */
+export function inspecionarPlanilha(buffer: ArrayBuffer): InspecaoPlanilha {
+  const wb = XLSX.read(buffer, { type: "array" });
+  const abas: AbaInspecionada[] = [];
+  const abaPorDia: Partial<Record<number, string>> = {};
+  const todosCabecalhos = new Set<string>();
+
+  for (const nome of wb.SheetNames) {
+    const raw = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[nome], { header: 1, defval: "" });
+    const idx = raw.findIndex((r) => r.some((c) => /^pr(é|e)dio$/i.test(String(c).trim())));
+    const cabecalhos = (idx >= 0 ? raw[idx] : (raw[0] ?? []))
+      .map((c) => String(c ?? "").trim())
+      .filter(Boolean);
+    for (const c of cabecalhos) todosCabecalhos.add(c);
+    const dia = DIAS.find((d) => d.aliases.test(nome.trim()))?.dia ?? null;
+    if (dia && !abaPorDia[dia]) abaPorDia[dia] = nome;
+    abas.push({
+      nome,
+      linhas: Math.max(raw.length - (idx >= 0 ? idx + 1 : 1), 0),
+      cabecalhos,
+      diaSugerido: dia,
+      consolidada: /programa/i.test(nome),
+    });
+  }
+
+  const lista = [...todosCabecalhos];
+  const acha = (...alvos: string[]) => lista.find((c) => alvos.some((a) => norm(c) === norm(a)));
+
+  return {
+    abas,
+    abaPorDia,
+    cabecalhos: lista,
+    mapeamentoSugerido: {
+      predio: acha("Prédio", "Predio"),
+      andar: acha("Andar"),
+      espaco: acha("Espaço", "Espaco"),
+    },
+  };
+}
+
 export async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", buffer);
   return Array.from(new Uint8Array(digest))
@@ -112,8 +188,10 @@ export async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
 }
 
 /** Lê o arquivo e devolve pontos canônicos + programação + divergências. */
-export function lerPlanilhaAgua(buffer: ArrayBuffer): LeituraAgua {
+export function lerPlanilhaAgua(buffer: ArrayBuffer, opts: OpcoesLeitura = {}): LeituraAgua {
   const wb = XLSX.read(buffer, { type: "array" });
+  const map = opts.mapeamento ?? {};
+  const revisoes = new Map<string, RevisaoPonto>();
   const divergencias: Divergencia[] = [];
   const mapa = new Map<string, PontoLido>();
   const porDia: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -121,7 +199,11 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer): LeituraAgua {
 
   // ---------- abas diárias (fonte da rota real) ----------
   for (const d of DIAS) {
-    const nome = wb.SheetNames.find((s) => d.aliases.test(s.trim()));
+    const escolhida = opts.abas?.[d.dia];
+    const nome =
+      escolhida && wb.SheetNames.includes(escolhida)
+        ? escolhida
+        : wb.SheetNames.find((s) => d.aliases.test(s.trim()));
     if (!nome) {
       divergencias.push({
         tipo: "aba_ausente",
@@ -133,9 +215,13 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer): LeituraAgua {
     }
     const linhas = XLSX.utils.sheet_to_json<Linha>(wb.Sheets[nome], { defval: "" });
     for (const row of linhas) {
-      const predio = normPredio(col(row, "Prédio", "Predio"));
-      const espaco = normEspaco(col(row, "Espaço", "Espaco"));
-      const andar = norm(col(row, "Andar"));
+      const predio = normPredio(
+        col(row, ...([map.predio, "Prédio", "Predio"].filter(Boolean) as string[])),
+      );
+      const espaco = normEspaco(
+        col(row, ...([map.espaco, "Espaço", "Espaco"].filter(Boolean) as string[])),
+      );
+      const andar = norm(col(row, ...([map.andar, "Andar"].filter(Boolean) as string[])));
       if (!predio && !espaco) continue;
       totalLinhas += 1;
       if (!predio) {
@@ -219,6 +305,13 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer): LeituraAgua {
           const extras = reais.filter((d) => !declarados.includes(d));
           const faltando = declarados.filter((d) => !reais.includes(d));
           if (extras.length || faltando.length) {
+            revisoes.set(codigo, {
+              motivo:
+                `Aba consolidada declara ${declarados.map((d) => DIA_LABEL[d]).join(", ") || "—"};` +
+                ` abas diárias trazem ${reais.map((d) => DIA_LABEL[d]).join(", ") || "nenhum dia"}.`,
+              diasExtras: extras,
+              diasFaltando: faltando,
+            });
             divergencias.push({
               tipo: "periodo_divergente",
               severidade: "alerta",
@@ -256,6 +349,11 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer): LeituraAgua {
       severidade: "alerta",
       mensagem: "A aba consolidada de programação não foi encontrada.",
     });
+  }
+
+  for (const [codigo, revisao] of revisoes) {
+    const ponto = mapa.get(codigo);
+    if (ponto) ponto.revisao = revisao;
   }
 
   const pontos = [...mapa.values()].sort(

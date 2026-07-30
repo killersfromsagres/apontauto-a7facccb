@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -43,7 +43,7 @@ import { EmptyState } from "@/components/pcm";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { aplicarImportacao, listPontos, loteComHash, pontoLabel, type Ponto } from "@/lib/agua/api";
+import { listPontos, pontoLabel, type Ponto } from "@/lib/agua/api";
 import {
   atualizarProgramacao,
   atualizarProgramacaoEmLote,
@@ -67,7 +67,8 @@ import {
   addDias,
   type ProgramacaoLinha,
 } from "@/lib/agua/programacao";
-import { DIAS, lerPlanilhaAgua, sha256Hex, type LeituraAgua } from "@/lib/agua/reader";
+import { DIAS } from "@/lib/agua/reader";
+import { ImportadorWizard } from "@/components/agua/importador-wizard";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/programacao")({
   component: ProgramacaoSemanal,
@@ -79,7 +80,6 @@ function ProgramacaoSemanal() {
   const qc = useQueryClient();
   const gestor = useCanAccessModule("abastecimento", "update").allowed;
   const isMobile = useIsMobile();
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const [visao, setVisao] = useState<Visao>(isMobile ? "cards" : "calendario");
   const [predio, setPredio] = useState("todos");
@@ -87,13 +87,6 @@ function ProgramacaoSemanal() {
   const [semana, setSemana] = useState(() => inicioSemana(hojeSP()));
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [arraste, setArraste] = useState<string | null>(null);
-  const [lendo, setLendo] = useState(false);
-  const [previa, setPrevia] = useState<{
-    leitura: LeituraAgua;
-    nome: string;
-    hash: string;
-    duplicado: boolean;
-  } | null>(null);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
   const prog = useQuery({
@@ -185,38 +178,6 @@ function ProgramacaoSemanal() {
     setArraste(null);
     reordenar.mutate(lista.map((l, idx) => ({ id: l.id, ordem: idx + 1 })));
   }
-
-  async function selecionarArquivo(file: File) {
-    setLendo(true);
-    try {
-      const buf = await file.arrayBuffer();
-      const hash = await sha256Hex(buf.slice(0));
-      const leitura = lerPlanilhaAgua(buf);
-      const jaImportado = await loteComHash(hash);
-      setPrevia({ leitura, nome: file.name, hash, duplicado: Boolean(jaImportado) });
-    } catch (e) {
-      toast.error((e as Error)?.message ?? "Não foi possível ler a planilha.");
-    } finally {
-      setLendo(false);
-    }
-  }
-
-  const aplicar = useMutation({
-    mutationFn: async () => {
-      if (!previa) throw new Error("Nenhuma pré-visualização carregada.");
-      return aplicarImportacao({
-        leitura: previa.leitura,
-        arquivoNome: previa.nome,
-        hash: previa.hash,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Programação importada.");
-      setPrevia(null);
-      invalidar();
-    },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha na importação."),
-  });
 
   const feriadosDaSemana = useMemo(() => {
     const set = new Map<string, string>();
@@ -380,9 +341,7 @@ function ProgramacaoSemanal() {
                       <Checkbox
                         checked={selecionados.includes(l.id)}
                         onCheckedChange={(c) =>
-                          setSelecionados((s) =>
-                            c ? [...s, l.id] : s.filter((x) => x !== l.id),
-                          )
+                          setSelecionados((s) => (c ? [...s, l.id] : s.filter((x) => x !== l.id)))
                         }
                         disabled={!gestor}
                       />
@@ -557,101 +516,8 @@ function ProgramacaoSemanal() {
       {/* Feriados e bloqueios */}
       {gestor && <FeriadosCard onDone={invalidar} feriados={feriados.data ?? []} />}
 
-      {/* Importação */}
-      {gestor && (
-        <GlassCard className="space-y-3 p-4">
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Importar planilha de programação</h2>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            As abas diárias são usadas como rota real; a aba consolidada é comparada e as
-            divergências ficam visíveis antes de confirmar. Nada é gravado parcialmente.
-          </p>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void selecionarArquivo(f);
-              e.target.value = "";
-            }}
-          />
-          <Button variant="secondary" disabled={lendo} onClick={() => inputRef.current?.click()}>
-            {lendo ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            Selecionar arquivo
-          </Button>
-
-          {previa && (
-            <div className="space-y-3 rounded-2xl border border-border/60 bg-background/40 p-3">
-              <p className="text-sm font-medium">{previa.nome}</p>
-              <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-                <Info2 label="Linhas lidas" value={previa.leitura.totalLinhas} />
-                <Info2 label="Pontos canônicos" value={previa.leitura.pontos.length} />
-                <Info2 label="Visitas/semana" value={previa.leitura.totalVisitas} />
-                <Info2 label="Divergências" value={previa.leitura.divergencias.length} />
-              </div>
-              <div className="max-h-64 space-y-1 overflow-auto">
-                {previa.leitura.divergencias.map((d, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-2 rounded-lg border border-border/50 bg-card/40 p-2 text-xs"
-                  >
-                    {d.severidade === "info" ? (
-                      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky-300" />
-                    ) : (
-                      <AlertTriangle
-                        className={
-                          d.severidade === "erro"
-                            ? "mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-300"
-                            : "mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300"
-                        }
-                      />
-                    )}
-                    <span>{d.mensagem}</span>
-                  </div>
-                ))}
-              </div>
-              {previa.duplicado && (
-                <p className="rounded-lg border border-amber-400/40 bg-amber-500/10 p-2 text-xs text-amber-200">
-                  Este arquivo já foi importado antes (mesmo conteúdo). Confirme apenas se quiser
-                  reaplicar a programação.
-                </p>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  disabled={
-                    aplicar.isPending ||
-                    previa.leitura.divergencias.some((d) => d.severidade === "erro")
-                  }
-                  onClick={() => aplicar.mutate()}
-                >
-                  {aplicar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {previa.duplicado ? "Confirmar mesmo assim" : "Confirmar importação"}
-                </Button>
-                <Button variant="ghost" onClick={() => setPrevia(null)}>
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          )}
-        </GlassCard>
-      )}
-    </div>
-  );
-}
-
-function Info2({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/40 p-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-base font-semibold">{value}</p>
+      {/* Importação (item 19 — assistente em etapas) */}
+      {gestor && <ImportadorWizard onDone={invalidar} />}
     </div>
   );
 }
@@ -947,7 +813,12 @@ function FeriadosCard({
     <GlassCard className="space-y-3 p-3 sm:p-4">
       <h2 className="text-sm font-semibold">Feriados e bloqueios temporários</h2>
       <div className="grid gap-2 sm:grid-cols-[150px_1fr_150px_auto]">
-        <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-11" />
+        <Input
+          type="date"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          className="h-11"
+        />
         <Input
           placeholder="Descrição"
           value={descricao}
