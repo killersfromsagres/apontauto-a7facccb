@@ -283,7 +283,7 @@ function Kpi({ label, value, index = 0 }: { label: string; value: string; index?
     <GlassCard
       variant="block"
       className="fleet-in space-y-1 p-3.5"
-      style={{ ["--i" as string]: index } as React.CSSProperties}
+      style={{ ["--i" as string]: index } as CSSProperties}
     >
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         {label}
