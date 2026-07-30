@@ -26,7 +26,7 @@ export const BrandMark = memo(function BrandMark({
   className?: string;
 }) {
   if (brand === "generic") return null;
-  const src = brand === "fiat" ? fiatLogo.url : vwLogo.url;
+  const src = brand === "fiat" ? fiatLogo : vwLogo;
   const label = brand === "fiat" ? "Fiat" : "Volkswagen";
 
   return (
