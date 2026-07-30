@@ -140,59 +140,74 @@ export async function generateChecklistCertificate({
     doc.setFont("helvetica", "normal");
   });
 
-  /* ---------------- Desenho a lápis do veículo ---------------- */
-  y += 36;
+  /* ---------------- Desenho técnico do veículo ---------------- */
+  y += 38;
   const sketch = renderVehicleSketch(
     inferSketchKind(`${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`),
-    {
-      label: vehicle ? `${vehicle.prefix} — ${vehicleTitle(vehicle)}` : "Veículo inspecionado",
-      scale: 2,
-    },
+    { scale: 3 },
   );
-  const sketchH = 54;
+  const sketchH = 60;
   doc.setDrawColor(226, 230, 238);
-  doc.roundedRect(M, y, W - M * 2, sketchH, 2, 2, "S");
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(M, y, W - M * 2, sketchH, 2, 2, "FD");
   if (sketch) {
     try {
-      doc.addImage(sketch, "PNG", M + 3, y + 2, W - M * 2 - 6, sketchH - 4, undefined, "FAST");
+      doc.addImage(sketch, "PNG", M + 4, y + 3, W - M * 2 - 8, sketchH - 12, undefined, "FAST");
     } catch {
       /* desenho opcional */
     }
   }
-  doc.setFontSize(7);
+  doc.setFontSize(7.5);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
-  doc.text("Representação técnica ilustrativa do veículo inspecionado", M + 3, y + sketchH + 4);
+  doc.text(
+    vehicle
+      ? `Representação técnica ilustrativa — ${vehicleTitle(vehicle)}`
+      : "Representação técnica ilustrativa do veículo inspecionado",
+    W / 2,
+    y + sketchH - 4,
+    { align: "center" },
+  );
 
   /* ---------------- Itens verificados ---------------- */
-  y += sketchH + 10;
+  y += sketchH + 12;
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
   doc.text("ITENS VERIFICADOS", M, y);
+  doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
+  doc.setLineWidth(0.6);
+  doc.line(M, y + 1.8, M + 34, y + 1.8);
+  doc.setLineWidth(0.2);
   doc.setFont("helvetica", "normal");
-  y += 4;
+  y += 6;
 
   const items = checklist.items ?? [];
   const half = Math.ceil(items.length / 2);
-  const rowH = 7;
+  const rowH = 7.4;
+  const colGap = 6;
+  const cw = (W - M * 2 - colGap) / 2;
   items.forEach((item, i) => {
     const col = i < half ? 0 : 1;
     const row = i < half ? i : i - half;
-    const x = M + col * ((W - M * 2) / 2 + 2);
+    const x = M + col * (cw + colGap);
     const ry = y + row * rowH;
-    const cw = (W - M * 2) / 2 - 2;
-    doc.setFillColor(row % 2 === 0 ? 246 : 252, row % 2 === 0 ? 248 : 253, 255);
-    doc.rect(x, ry, cw, rowH - 1, "F");
+    if (row % 2 === 0) {
+      doc.setFillColor(246, 248, 251);
+      doc.rect(x, ry, cw, rowH - 1.2, "F");
+    }
     doc.setFontSize(8.5);
     doc.setTextColor(40, 46, 58);
-    doc.text(String(item.label).slice(0, 40), x + 2.5, ry + 4.4);
+    doc.text(String(item.label).slice(0, 38), x + 3, ry + 4.6);
     const c = STATUS_RGB[item.status] ?? STATUS_RGB.ok;
     doc.setTextColor(c[0], c[1], c[2]);
     doc.setFont("helvetica", "bold");
-    doc.text(STATUS_LABEL[item.status] ?? item.status, x + cw - 2.5, ry + 4.4, { align: "right" });
+    doc.setFontSize(8);
+    doc.text((STATUS_LABEL[item.status] ?? item.status).toUpperCase(), x + cw - 3, ry + 4.6, {
+      align: "right",
+    });
     doc.setFont("helvetica", "normal");
   });
-  y += half * rowH + 6;
+  y += half * rowH + 8;
 
   /* ---------------- Observações ---------------- */
   if (checklist.notes) {
@@ -200,25 +215,31 @@ export async function generateChecklistCertificate({
     doc.setFont("helvetica", "bold");
     doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
     doc.text("OBSERVAÇÕES", M, y);
+    doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
+    doc.setLineWidth(0.6);
+    doc.line(M, y + 1.8, M + 26, y + 1.8);
+    doc.setLineWidth(0.2);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(60, 66, 78);
     const lines = doc.splitTextToSize(checklist.notes, W - M * 2);
-    doc.text(lines.slice(0, 5), M, y + 5);
-    y += 6 + Math.min(lines.length, 5) * 4.4;
+    doc.text(lines.slice(0, 5), M, y + 7);
+    y += 9 + Math.min(lines.length, 5) * 4.4;
   }
 
   /* ---------------- Assinaturas e rodapé ---------------- */
-  const sigY = Math.max(y + 12, 252);
+  const sigY = Math.max(y + 14, 252);
   doc.setDrawColor(150, 156, 168);
-  doc.line(M, sigY, M + 70, sigY);
-  doc.line(W - M - 70, sigY, W - M, sigY);
-  doc.setFontSize(8);
+  doc.line(M, sigY, M + 72, sigY);
+  doc.line(W - M - 72, sigY, W - M, sigY);
+  doc.setFontSize(8.5);
+  doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
+  doc.text(checklist.driver_name, M, sigY + 4.5);
+  doc.text("Gestor de frota", W - M, sigY + 4.5, { align: "right" });
+  doc.setFontSize(7.5);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
-  doc.text(checklist.driver_name, M, sigY + 4);
-  doc.text("Condutor responsável", M, sigY + 8);
-  doc.text("Gestor de frota", W - M, sigY + 4, { align: "right" });
-  doc.text("Validação da inspeção", W - M, sigY + 8, { align: "right" });
+  doc.text("Condutor responsável", M, sigY + 9);
+  doc.text("Validação da inspeção", W - M, sigY + 9, { align: "right" });
 
   doc.setFillColor(NAVY.r, NAVY.g, NAVY.b);
   doc.rect(0, 283, W, 14, "F");
@@ -230,7 +251,10 @@ export async function generateChecklistCertificate({
     291,
   );
   doc.setTextColor(ORANGE.r, ORANGE.g, ORANGE.b);
+  doc.setFont("helvetica", "bold");
   doc.text("In-Haus Industrial", W - M, 291, { align: "right" });
+  doc.setFont("helvetica", "normal");
+
 
   /* ---------------- Página de evidências ---------------- */
   const withUrls = photos.filter((p) => p.url);
