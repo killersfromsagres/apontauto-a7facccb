@@ -116,7 +116,9 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
     }
   }
 
-  const missingSlots = PHOTO_SLOTS.filter((s) => !slotPhotos[s.key]);
+  const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
+  const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
+  const totalSlotPhotos = PHOTO_SLOTS.reduce((acc, s) => acc + slotCount(s.key), 0);
   const missingNcPhotos = nonConform.filter((d) => !items[d.key].photoUrl);
 
   const canAdvance = (() => {
