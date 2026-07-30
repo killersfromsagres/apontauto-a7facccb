@@ -291,9 +291,17 @@ export async function salvarRota(
   patch: Partial<Rota>,
   motivo?: string,
 ): Promise<void> {
+  // Item 14 — bloqueia cedo o que a trigger do banco também recusaria.
+  if (patch.status && !podeTransicionarRota(rota.status, patch.status, { gestor: true })) {
+    throw new Error(
+      `Transição de rota inválida: ${rota.status} → ${patch.status}.`,
+    );
+  }
+
   const { data: u } = await supabase.auth.getUser();
   const usuario = u.user?.id ?? null;
   const jaIniciou = Boolean(rota.iniciada_em);
+
 
   const { error: vErr } = await db.from("agua_rota_versoes").insert({
     rota_id: rota.id,
