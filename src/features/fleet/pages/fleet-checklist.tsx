@@ -162,6 +162,26 @@ export function FleetChecklist() {
         onChange={(e) => onFiles(e.target.files)}
       />
 
+      {/* Barra de progresso fixa */}
+      <div className="sticky top-2 z-20 rounded-2xl border border-border/60 bg-background/80 px-3 py-2 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-2 text-xs font-medium">
+          <span className="truncate">
+            {vehicle ? `${vehicle.prefix} · ${vehicle.plate}` : "Selecione o veículo"}
+          </span>
+          <span className="shrink-0 text-muted-foreground">
+            {answered}/{allItems.length} itens · {photos.filter((p) => p.path).length} fotos
+          </span>
+        </div>
+        <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
+
+
+
       {/* 1. Veículo */}
       <GlassCard className="space-y-3">
         <SectionTitle step={1} title="Veículo" />
