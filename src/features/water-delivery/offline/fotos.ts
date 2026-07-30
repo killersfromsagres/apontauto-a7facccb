@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSettings } from "@/lib/settings";
 import {
   existeHashNaFila,
   listarFila,
