@@ -40,7 +40,7 @@ function fmtBytes(n: number): string {
 }
 
 function Page() {
-  const isAdmin = useIsAdmin();
+  const { isAdmin, loading: adminLoading } = useIsAdmin();
 
   const inventory = useServerFn(inventoryStorageImages);
   const migrate = useServerFn(migrateStorageImagesBatch);
@@ -59,7 +59,7 @@ function Page() {
 
   const busy = phase === "listing" || phase === "migrating" || phase === "cleaning";
 
-  if (isAdmin === false) {
+  if (!isAdmin && !adminLoading) {
     return (
       <PageShell title="Imagens" description="Acesso restrito.">
         <GlassCard>
