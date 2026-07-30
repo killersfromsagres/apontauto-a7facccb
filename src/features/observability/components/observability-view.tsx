@@ -190,12 +190,40 @@ export function ObservabilityView() {
           ))}
         </TabsContent>
 
-        <TabsContent value="rotinas" className="space-y-2 pt-3">
-          {(data?.jobFailures ?? []).length === 0 && (
-            <GlassCard>
-              <p className="text-sm text-muted-foreground">Nenhuma rotina com falha.</p>
-            </GlassCard>
-          )}
+        <TabsContent value="rotinas" className="space-y-3 pt-3">
+          <GlassCard className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">Execuções automáticas (últimas)</span>
+              <Badge variant="outline">{(jobRuns.data ?? []).length}</Badge>
+            </div>
+            {(jobRuns.data ?? []).length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                Nenhuma execução registrada ainda.
+              </p>
+            )}
+            <div className="space-y-1">
+              {(jobRuns.data ?? []).map((r) => (
+                <div
+                  key={r.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/50 bg-muted/20 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{r.job_key}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {fmt(r.started_at)}
+                      {r.duration_ms != null ? ` · ${r.duration_ms} ms` : ""}
+                      {r.attempt > 1 ? ` · tentativa ${r.attempt}` : ""}
+                      {r.error_message ? ` · ${r.error_message}` : ""}
+                    </div>
+                  </div>
+                  <Badge className={jobTone[r.status] ?? statusTone.desconhecido}>
+                    {r.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
           {(data?.jobFailures ?? []).map((j) => (
             <GlassCard key={`${j.source}-${j.id}`} className="flex flex-wrap items-center justify-between gap-2">
               <div className="min-w-0">
@@ -208,6 +236,7 @@ export function ObservabilityView() {
             </GlassCard>
           ))}
         </TabsContent>
+
 
         <TabsContent value="integracoes" className="grid gap-3 pt-3 sm:grid-cols-2">
           {(data?.integrations ?? []).map((i) => (
