@@ -35,7 +35,7 @@ export const BrandMark = memo(function BrandMark({
       alt={label}
       title={label}
       loading="lazy"
-      className={cn("h-3.5 w-3.5 shrink-0 object-contain", className)}
+      className={cn("h-3 w-3 shrink-0 object-contain", className)}
     />
   );
 });

@@ -230,7 +230,7 @@ export function WaterScheduleSimple() {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-              <Users className="h-3.5 w-3.5" /> Quem está entregando
+              <Users className="h-3 w-3" /> Quem está entregando
             </Label>
             <div className="flex flex-wrap gap-2">
               {COLABORADORES.map((nome) => {
@@ -272,7 +272,7 @@ export function WaterScheduleSimple() {
 
           <div>
             <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-              <Car className="h-3.5 w-3.5" /> Carro utilizado
+              <Car className="h-3 w-3" /> Carro utilizado
             </Label>
             <Select
               value={veiculo ?? ""}
@@ -285,7 +285,7 @@ export function WaterScheduleSimple() {
                 {opcoesVeiculos.map((v) => (
                   <SelectItem key={v.valor} value={v.valor}>
                     <span className="flex items-center gap-2">
-                      <BrandMark brand={v.brand} className="h-3.5 w-3.5" />
+                      <BrandMark brand={v.brand} className="h-3 w-3" />
                       <span className="font-medium">{v.nome}</span>
                       <span className="font-mono text-xs text-muted-foreground">{v.valor}</span>
                     </span>
@@ -376,7 +376,7 @@ export function WaterScheduleSimple() {
                           : "bg-muted text-muted-foreground",
                       )}
                     >
-                      {fotos > 0 ? <Camera className="h-3.5 w-3.5" /> : <ImageOff className="h-3.5 w-3.5" />}
+                      {fotos > 0 ? <Camera className="h-3 w-3" /> : <ImageOff className="h-3.5 w-3.5" />}
                       {fotos}
                     </span>
                   </button>
@@ -624,7 +624,7 @@ function EntregaSheet({
                       onClick={() => setNovas((list) => list.filter((x) => x.id !== n.id))}
                       className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
@@ -706,7 +706,7 @@ function EntregaSheet({
 
             <div>
               <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Users className="h-3.5 w-3.5" /> Quem entregou
+                <Users className="h-3 w-3" /> Quem entregou
                 <span className="text-destructive">*</span>
                 <span
                   className={cn(
@@ -769,7 +769,7 @@ function EntregaSheet({
 
             <div>
               <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Car className="h-3.5 w-3.5" /> Carro utilizado
+                <Car className="h-3 w-3" /> Carro utilizado
               </Label>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {veiculos.length === 0 && (
@@ -811,7 +811,7 @@ function EntregaSheet({
                       </span>
                       <span className="flex w-full items-center gap-2">
                         <PlateBadge plate={v.plate} size="sm" />
-                        <BrandMark brand={v.brand} className="h-3.5 w-3.5" />
+                        <BrandMark brand={v.brand} className="h-3 w-3" />
                         <span className="truncate text-[11px] text-muted-foreground">
                           {v.nome}
                         </span>
