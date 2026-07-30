@@ -82,13 +82,16 @@ function AuthPage() {
     if (!saved) return;
     setEmail(saved.email.replace(/@apontauto\.local$/, ""));
     setAutoLogin(true);
-    supabase.auth.getSession().then(({ data }) => {
+    // Valida contra o servidor: uma sessão salva pode ter sido revogada e
+    // "restaurá-la" deixaria o usuário logado com um token morto.
+    supabase.auth.getUser().then(({ data, error }) => {
       if (autoCancelled.current) return;
-      if (data.session) {
+      if (!error && data.user) {
         touchCredentials();
         toast.success("Sessão restaurada.");
         navigate({ to: "/" });
       } else {
+        void supabase.auth.signOut({ scope: "local" }).catch(() => {});
         setAutoLogin(false);
       }
     });
