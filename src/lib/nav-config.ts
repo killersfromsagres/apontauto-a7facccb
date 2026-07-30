@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import {
   Activity,
+  BrainCircuit,
+
   Gauge,
   LayoutDashboard,
   CalendarRange,
@@ -399,6 +401,23 @@ export const sections: MenuSection[] = [
     icon: ChartColumn,
     items: [
       {
+        key: "agente-ia",
+        title: "Agente de Documentos (IA)",
+        short: "Agente IA",
+        url: "/agente-ia",
+        icon: BrainCircuit,
+        keywords: [
+          "ia",
+          "agente",
+          "excel",
+          "powerpoint",
+          "power bi",
+          "relatório",
+          "planilha",
+          "apresentação",
+        ],
+      },
+      {
         key: "dashboard-chamados",
         title: "Dashboard de Chamados",
         short: "Chamados",
@@ -414,6 +433,7 @@ export const sections: MenuSection[] = [
         icon: ChartPie,
         keywords: ["power bi", "painel", "dashboard", "gráfico", "kpi", "exportar", "conector"],
       },
+
     ],
   },
 
