@@ -464,6 +464,36 @@
   .card-sheen::after { display: none !important; }
 }
 
+/* --- Frota: entrada escalonada, toque e realce de tiles --- */
+@keyframes fleet-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@utility fleet-in {
+  animation: fleet-fade-up 420ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+@utility tap-press {
+  transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease;
+  &:active { transform: scale(0.97); }
+}
+@utility photo-tile {
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 240ms ease,
+    border-color 240ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+    box-shadow: 0 14px 30px -18px color-mix(in oklab, var(--primary) 70%, transparent);
+  }
+  &:active { transform: scale(0.96); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fleet-in { animation: none !important; }
+  .photo-tile:hover, .tap-press:active, .photo-tile:active { transform: none !important; }
+}
+
+
 /* Bloco escuro com brilho azul/violeta — usado na central operacional */
 @utility glow-card {
   position: relative;
