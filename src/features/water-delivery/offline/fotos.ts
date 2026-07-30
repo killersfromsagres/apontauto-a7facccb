@@ -287,7 +287,9 @@ export async function enviarEvidencia(
   meta: FotoMetadados,
   opts: { maxDim?: number; nome?: string } = {},
 ): Promise<EnfileirarResultado> {
+  const t0 = Date.now();
   const preparada = await prepararFoto(file, { maxDim: opts.maxDim });
+  const msProcessamento = Date.now() - t0;
 
   if (await existeHashNaFila(preparada.hash)) {
     return { id: "", hash: preparada.hash, thumb: preparada.thumb, url: null, duplicada: true };
@@ -330,7 +332,18 @@ export async function enviarEvidencia(
   };
   await salvarItem(item);
 
+  const t1 = Date.now();
   const url = await tentarEnviar(item.id);
+  registrarUpload({
+    em: Date.now(),
+    bytesOriginal: file.size,
+    bytesFinal: preparada.sizeBytes,
+    msProcessamento,
+    msEnvio: Date.now() - t1,
+    offThread: Boolean(preparada.offThread),
+    ok: Boolean(url),
+    erro: url ? undefined : "envio pendente na fila local",
+  });
   return { id: item.id, hash: item.hash, thumb: item.thumb, url, duplicada: false };
 }
 
@@ -367,7 +380,8 @@ export async function tentarEnviar(id: string): Promise<string | null> {
       status: "erro",
       tentativas,
       proximaTentativaEm: Date.now() + backoffMs(tentativas),
-      ultimoErro: (e as Error)?.message ?? "Falha no envio",
+      // Log sem dados sensíveis (item 24).
+      ultimoErro: sanitizarErro(e),
     });
     return null;
   }
@@ -459,14 +473,41 @@ export interface FotoHistorico {
 const FOTO_COLS =
   "id, rota_id, visita_id, ponto_id, filtro_solicitacao_id, tipo, image_url, thumbnail_url, image_hash, capturada_em, enviada_em, enviada_por, origem, metadados";
 
-export async function listFotos(de: string, ate: string): Promise<FotoHistorico[]> {
+export async function listFotos(de: string, ate: string, limite = 500): Promise<FotoHistorico[]> {
   const { data, error } = await db
     .from("agua_fotos")
     .select(FOTO_COLS)
     .gte("enviada_em", `${de}T00:00:00`)
     .lte("enviada_em", `${ate}T23:59:59`)
     .order("enviada_em", { ascending: false })
-    .limit(500);
+    .limit(limite);
   if (error) throw error;
   return (data ?? []) as FotoHistorico[];
+}
+
+export interface PaginaFotos {
+  itens: FotoHistorico[];
+  total: number;
+}
+
+/**
+ * Item 24 — a galeria nunca carrega o acervo inteiro: pagina no servidor
+ * usando o índice (enviada_em desc) e devolve só a página pedida.
+ */
+export async function listFotosPagina(
+  de: string,
+  ate: string,
+  pagina = 0,
+  tamanho = 24,
+): Promise<PaginaFotos> {
+  const from = pagina * tamanho;
+  const { data, error, count } = await db
+    .from("agua_fotos")
+    .select(FOTO_COLS, { count: "exact" })
+    .gte("enviada_em", `${de}T00:00:00`)
+    .lte("enviada_em", `${ate}T23:59:59`)
+    .order("enviada_em", { ascending: false })
+    .range(from, from + tamanho - 1);
+  if (error) throw error;
+  return { itens: (data ?? []) as FotoHistorico[], total: count ?? 0 };
 }
