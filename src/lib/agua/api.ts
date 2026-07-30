@@ -663,12 +663,28 @@ export async function criarFiltro(input: {
 }): Promise<void> {
 
   const { data: userData } = await supabase.auth.getUser();
-  const { error } = await db.from("agua_filtro_solicitacoes").insert({
-    situacao: "solicitada",
-    ...input,
-    criado_por: userData.user?.id ?? null,
-  });
+  const { data: criada, error } = await db
+    .from("agua_filtro_solicitacoes")
+    .insert({
+      situacao: "solicitada",
+      ...input,
+      criado_por: userData.user?.id ?? null,
+    })
+    .select("id")
+    .single();
   if (error) throw error;
+
+  // Item 17 — avisa gestão e técnicos sobre a nova solicitação.
+  const { notificarAgua } = await import("@/lib/agua/notificacoes");
+  await notificarAgua({
+    evento: "filtro_solicitacao_criada",
+    corpo: `Novo pedido de filtro em ${input.predio ?? "ponto não informado"}${
+      input.andar_setor ? ` — ${input.andar_setor}` : ""
+    }. Prioridade: ${input.prioridade ?? "media"}.`,
+    deepLink: "/abastecimento/agua/filtros",
+    chave: `filtro:${criada?.id ?? crypto.randomUUID()}:solicitada`,
+    metadata: { solicitacao_id: criada?.id ?? null },
+  });
 }
 
 export async function atualizarFiltro(

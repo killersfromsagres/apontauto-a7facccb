@@ -6,6 +6,7 @@
 // usadas pela UI e pelos testes.
 
 import { supabase } from "@/integrations/supabase/client";
+import { notificarAgua, type AguaEvento } from "@/lib/agua/notificacoes";
 import type { FiltroPrioridade, FiltroSituacao } from "@/lib/agua/api";
 
 const db = supabase as unknown as { from: (t: string) => any };
@@ -404,6 +405,32 @@ export async function mudarSituacao(
     throw new Error("Transição não permitida para esta etapa do fluxo.");
   }
   await patch(id, { situacao: para });
+  await notificarSituacao(id, para);
+}
+
+/** Item 17 — dispara o aviso correspondente à nova situação da solicitação. */
+export async function notificarSituacao(
+  id: string,
+  situacao: FiltroSituacao,
+  extra?: string | null,
+): Promise<void> {
+  const mapa: Partial<Record<FiltroSituacao, AguaEvento>> = {
+    solicitada: "filtro_solicitacao_criada",
+    aprovada: "filtro_solicitacao_aprovada",
+    aguardando_material: "filtro_material_pendente",
+    programada: "filtro_troca_programada",
+    concluida: "filtro_solicitacao_concluida",
+    reaberta: "filtro_solicitacao_reaberta",
+  };
+  const evento = mapa[situacao];
+  if (!evento) return;
+  await notificarAgua({
+    evento,
+    corpo: extra ?? `Solicitação de filtro ${id.slice(0, 8)} — situação: ${situacao}.`,
+    deepLink: "/abastecimento/agua/filtros",
+    chave: `filtro:${id}:${situacao}`,
+    metadata: { solicitacao_id: id, situacao },
+  });
 }
 
 export async function rejeitarSolicitacao(id: string, motivo: string): Promise<void> {
@@ -449,6 +476,18 @@ export async function programarTroca(
     lembrete_em: input.lembrete_em ? new Date(input.lembrete_em).toISOString() : null,
     ...(input.prioridade ? { prioridade: input.prioridade } : {}),
   });
+  await notificarSituacao(
+    id,
+    "programada",
+    `Troca programada para ${new Date(input.programada_em).toLocaleString("pt-BR")} — responsável: ${input.responsavel_nome.trim()}.`,
+  );
+  if (input.material_descricao && !input.material_reservado) {
+    await notificarSituacao(
+      id,
+      "aguardando_material",
+      `Material pendente para a troca: ${input.material_descricao.trim()}.`,
+    );
+  }
 }
 
 /**
@@ -512,6 +551,11 @@ export async function concluirTroca(
   }
 
   await marcarPreventivaConcluida(id);
+  await notificarSituacao(
+    id,
+    "concluida",
+    `Troca concluída com evidências (${input.filtro_utilizado}).`,
+  );
 }
 
 /** Validação/pesquisa de satisfação do solicitante (12.7). */
@@ -531,6 +575,7 @@ export async function reabrirSolicitacao(id: string, motivo: string): Promise<vo
   const texto = motivo.trim();
   if (!texto) throw new Error("Explique o motivo da reabertura.");
   await patch(id, { situacao: "reaberta", descricao: texto.slice(0, 1000) });
+  await notificarSituacao(id, "reaberta", `Solicitação reaberta. Motivo: ${texto.slice(0, 300)}`);
 }
 
 export async function cancelarSolicitacao(id: string, motivo: string): Promise<void> {
@@ -638,6 +683,12 @@ export async function abrirSolicitacaoPreventiva(
     .update({ solicitacao_id: data.id })
     .eq("id", preventiva.id);
   if (upErr) throw upErr;
+
+  await notificarSituacao(
+    data.id,
+    "solicitada",
+    `Troca preventiva aberta para ${ativo.predio ?? "ponto"} — prevista para ${preventiva.prevista_para}.`,
+  );
 }
 
 async function marcarPreventivaConcluida(solicitacaoId: string): Promise<void> {

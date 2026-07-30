@@ -3,6 +3,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { limparTexto } from "@/lib/agua/normalize";
+import { notificarAgua } from "@/lib/agua/notificacoes";
 
 const db = supabase as unknown as { from: (t: string) => any; rpc: (fn: string, args?: any) => any };
 
@@ -321,6 +322,25 @@ export async function salvarRota(
     })
     .eq("id", rota.id);
   if (error) throw error;
+
+  // Item 17 — avisa quem foi atribuído (ou o módulo) sobre a rota nova/alterada.
+  const nomes = [
+    patch.colaborador_principal ?? rota.colaborador_principal,
+    patch.colaborador_secundario ?? rota.colaborador_secundario,
+  ].filter(Boolean) as string[];
+  const trocouEquipe =
+    patch.colaborador_principal !== undefined &&
+    patch.colaborador_principal !== rota.colaborador_principal;
+  const dados = patch.data ?? rota.data;
+  await notificarAgua({
+    evento: trocouEquipe || !jaIniciou ? "rota_atribuida" : "rota_alterada",
+    corpo: `Rota de ${dados} (${patch.turno ?? rota.turno}) — equipe: ${
+      nomes.join(" e ") || "a definir"
+    }.${motivo ? ` Motivo: ${limparTexto(motivo)}` : ""}`,
+    deepLink: "/abastecimento/agua/rotas",
+    chave: `rota:${rota.id}:${rota.versao}`,
+    metadata: { rota_id: rota.id, versao: rota.versao },
+  });
 }
 
 export async function cancelarRota(rota: Rota, motivo: string): Promise<void> {

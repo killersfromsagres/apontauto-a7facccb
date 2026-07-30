@@ -95,7 +95,54 @@ export type ReceiptRow = {
   delivered_at: string;
   read_at: string | null;
   acknowledged_at: string | null;
+  archived_at: string | null;
 };
+
+/** Preferências por canal (item 17). */
+export type NotificationPrefs = {
+  user_id: string;
+  inapp: boolean;
+  toast: boolean;
+  som: boolean;
+  email: boolean;
+  whatsapp: boolean;
+  categorias_silenciadas: string[];
+  prioridade_minima: string;
+};
+
+export const DEFAULT_PREFS: Omit<NotificationPrefs, "user_id"> = {
+  inapp: true,
+  toast: true,
+  som: false,
+  email: false,
+  whatsapp: false,
+  categorias_silenciadas: [],
+  prioridade_minima: "info",
+};
+
+export const PRIORIDADES: { key: string; label: string }[] = [
+  { key: "info", label: "Todas" },
+  { key: "warn", label: "Atenção ou maior" },
+  { key: "critical", label: "Somente críticas" },
+];
+
+const PESO: Record<string, number> = { info: 0, warn: 1, critical: 2 };
+
+/** Aplica as preferências do usuário sobre a lista de avisos. */
+export function filtrarPorPreferencias<T extends { category: string; severity: string }>(
+  itens: T[],
+  prefs: Omit<NotificationPrefs, "user_id"> | null,
+): T[] {
+  if (!prefs) return itens;
+  if (!prefs.inapp) return [];
+  const minimo = PESO[prefs.prioridade_minima] ?? 0;
+  return itens.filter(
+    (n) =>
+      !prefs.categorias_silenciadas.includes(n.category) &&
+      (PESO[n.severity] ?? 0) >= minimo,
+  );
+}
+
 
 export type TargetRow = {
   id: string;
@@ -140,10 +187,44 @@ export async function fetchAllNotifications(): Promise<NotificationRow[]> {
 export async function fetchMyReceipts(): Promise<ReceiptRow[]> {
   const { data, error } = await supabase
     .from("notification_receipts")
-    .select("notification_id, user_id, delivered_at, read_at, acknowledged_at");
+    .select("notification_id, user_id, delivered_at, read_at, acknowledged_at, archived_at");
   if (error) throw error;
   return (data ?? []) as ReceiptRow[];
 }
+
+/** Arquiva (ou desarquiva) avisos para o usuário atual. */
+export async function setArchived(userId: string, ids: string[], archived: boolean) {
+  if (!userId || ids.length === 0) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("notification_receipts").upsert(
+    ids.map((notification_id) => ({
+      notification_id,
+      user_id: userId,
+      archived_at: archived ? now : null,
+      ...(archived ? { read_at: now } : {}),
+    })),
+    { onConflict: "notification_id,user_id" },
+  );
+  if (error) throw error;
+}
+
+export async function fetchPrefs(userId: string): Promise<NotificationPrefs> {
+  const { data, error } = await supabase
+    .from("notification_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return { user_id: userId, ...DEFAULT_PREFS, ...(data ?? {}) } as NotificationPrefs;
+}
+
+export async function savePrefs(userId: string, patch: Partial<NotificationPrefs>) {
+  const { error } = await supabase
+    .from("notification_preferences")
+    .upsert({ user_id: userId, ...DEFAULT_PREFS, ...patch }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 
 /** Cria o recibo de entrega (idempotente por (notification_id, user_id)). */
 export async function ensureDelivered(userId: string, ids: string[]) {

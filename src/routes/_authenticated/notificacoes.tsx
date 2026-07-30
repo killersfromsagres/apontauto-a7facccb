@@ -2,11 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Archive,
+  ArchiveRestore,
   BellRing,
   CheckCheck,
   Inbox,
   RefreshCw,
   ShieldAlert,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -15,7 +18,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState, KpiCard, StatusBadge } from "@/components/pcm";
 import { useNotifications } from "@/hooks/use-notifications";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
-import { categoryMeta, fmtDateTime } from "@/lib/notifications";
+import { Switch } from "@/components/ui/switch";
+import { CATEGORIES, categoryMeta, fmtDateTime, PRIORIDADES } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/notificacoes")({
@@ -39,28 +43,35 @@ export const Route = createFileRoute("/_authenticated/notificacoes")({
   component: NotificacoesPage,
 });
 
-type Filtro = "nao-lidas" | "ciencia" | "todas";
+type Filtro = "nao-lidas" | "ciencia" | "todas" | "arquivados";
 
 function NotificacoesPage() {
   const {
     items,
+    archived,
     unread,
     pendingAck,
+    prefs,
     error,
     isLoading,
     refetch,
     markRead,
     acknowledge,
+    archiveItems,
+    unarchiveItems,
+    savePreferences,
     isMutating,
   } = useNotifications();
   const { allowed: podeAdministrar } = useCanAccessModule("notificacoes-admin", "read");
   const [filtro, setFiltro] = useState<Filtro>("nao-lidas");
+  const [prefsAbertas, setPrefsAbertas] = useState(false);
 
   const lista = useMemo(() => {
     if (filtro === "nao-lidas") return unread;
     if (filtro === "ciencia") return pendingAck;
+    if (filtro === "arquivados") return archived;
     return items;
-  }, [filtro, items, unread, pendingAck]);
+  }, [filtro, items, unread, pendingAck, archived]);
 
   if (error) {
     return (
@@ -116,6 +127,7 @@ function NotificacoesPage() {
                 ["nao-lidas", `Não lidos (${unread.length})`],
                 ["ciencia", `Ciência (${pendingAck.length})`],
                 ["todas", "Todos"],
+                ["arquivados", `Arquivados (${archived.length})`],
               ] as const
             ).map(([k, label]) => (
               <Button
@@ -130,6 +142,15 @@ function NotificacoesPage() {
             ))}
           </div>
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant={prefsAbertas ? "default" : "outline"}
+              className="h-11"
+              onClick={() => setPrefsAbertas((v) => !v)}
+            >
+              <SlidersHorizontal className="mr-2 size-4" />
+              Preferências
+            </Button>
             <Button size="sm" variant="outline" className="h-11" onClick={refetch}>
               <RefreshCw className="mr-2 size-4" />
               Atualizar
@@ -146,6 +167,81 @@ function NotificacoesPage() {
             </Button>
           </div>
         </div>
+
+        {prefsAbertas ? (
+          <div className="mt-4 rounded-2xl border border-border/60 bg-card/40 p-4">
+            <p className="text-sm font-semibold">Preferências por canal</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Escolha como quer receber os avisos. Vale apenas para a sua conta.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["inapp", "Receber avisos no aplicativo"],
+                  ["toast", "Alerta flutuante na tela"],
+                  ["som", "Alerta sonoro"],
+                  ["email", "Resumo por e-mail"],
+                  ["whatsapp", "Resumo por WhatsApp"],
+                ] as const
+              ).map(([campo, label]) => (
+                <label
+                  key={campo}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border/50 px-3 py-2.5"
+                >
+                  <span className="text-sm">{label}</span>
+                  <Switch
+                    checked={Boolean(prefs[campo])}
+                    onCheckedChange={(v) => savePreferences({ [campo]: v })}
+                  />
+                </label>
+              ))}
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Prioridade mínima
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {PRIORIDADES.map((p) => (
+                <Button
+                  key={p.key}
+                  size="sm"
+                  variant={prefs.prioridade_minima === p.key ? "default" : "outline"}
+                  className="h-10"
+                  onClick={() => savePreferences({ prioridade_minima: p.key })}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Categorias silenciadas
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORIES.map((c) => {
+                const off = prefs.categorias_silenciadas.includes(c.key);
+                return (
+                  <Button
+                    key={c.key}
+                    size="sm"
+                    variant={off ? "default" : "outline"}
+                    className="h-10"
+                    onClick={() =>
+                      savePreferences({
+                        categorias_silenciadas: off
+                          ? prefs.categorias_silenciadas.filter((k) => k !== c.key)
+                          : [...prefs.categorias_silenciadas, c.key],
+                      })
+                    }
+                  >
+                    {off ? "🔕 " : ""}
+                    {c.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-4 space-y-3">
           {isLoading ? (
@@ -212,6 +308,29 @@ function NotificacoesPage() {
                           Confirmar ciência
                         </Button>
                       ) : null}
+                      {n.isArchived ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-11"
+                          disabled={isMutating}
+                          onClick={() => unarchiveItems([n.id])}
+                        >
+                          <ArchiveRestore className="mr-2 size-4" />
+                          Desarquivar
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-11"
+                          disabled={isMutating}
+                          onClick={() => archiveItems([n.id])}
+                        >
+                          <Archive className="mr-2 size-4" />
+                          Arquivar
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </article>

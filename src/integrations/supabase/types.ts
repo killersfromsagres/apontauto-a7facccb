@@ -3352,6 +3352,45 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          categorias_silenciadas: string[]
+          created_at: string
+          email: boolean
+          inapp: boolean
+          prioridade_minima: string
+          som: boolean
+          toast: boolean
+          updated_at: string
+          user_id: string
+          whatsapp: boolean
+        }
+        Insert: {
+          categorias_silenciadas?: string[]
+          created_at?: string
+          email?: boolean
+          inapp?: boolean
+          prioridade_minima?: string
+          som?: boolean
+          toast?: boolean
+          updated_at?: string
+          user_id: string
+          whatsapp?: boolean
+        }
+        Update: {
+          categorias_silenciadas?: string[]
+          created_at?: string
+          email?: boolean
+          inapp?: boolean
+          prioridade_minima?: string
+          som?: boolean
+          toast?: boolean
+          updated_at?: string
+          user_id?: string
+          whatsapp?: boolean
+        }
+        Relationships: []
+      }
       notification_reads: {
         Row: {
           id: string
@@ -3384,6 +3423,7 @@ export type Database = {
       notification_receipts: {
         Row: {
           acknowledged_at: string | null
+          archived_at: string | null
           delivered_at: string
           id: string
           notification_id: string
@@ -3392,6 +3432,7 @@ export type Database = {
         }
         Insert: {
           acknowledged_at?: string | null
+          archived_at?: string | null
           delivered_at?: string
           id?: string
           notification_id: string
@@ -3400,6 +3441,7 @@ export type Database = {
         }
         Update: {
           acknowledged_at?: string | null
+          archived_at?: string | null
           delivered_at?: string
           id?: string
           notification_id?: string
@@ -6532,6 +6574,22 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      notificar_evento: {
+        Args: {
+          p_alvos?: Json
+          p_categoria?: string
+          p_corpo?: string
+          p_dedupe_key?: string
+          p_deep_link?: string
+          p_evento: string
+          p_metadata?: Json
+          p_modulo?: string
+          p_requires_ack?: boolean
+          p_severidade?: string
+          p_titulo: string
+        }
+        Returns: string
       }
       notification_is_for_me: {
         Args: { _notification_id: string; _target_mode: string }

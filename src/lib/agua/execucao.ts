@@ -7,6 +7,7 @@ import type { Visita, VisitaStatus } from "@/lib/agua/api";
 import { VISITA_FIELDS } from "@/lib/agua/api";
 import type { Rota } from "@/lib/agua/programacao";
 import { enfileirar } from "@/lib/agua/offline";
+import { notificarAgua } from "@/lib/agua/notificacoes";
 
 
 const db = supabase as unknown as { from: (t: string) => any };
@@ -192,6 +193,15 @@ export async function registrarEntrega(
       .eq("id", visitaId);
     if (error) throw error;
     await registrarEvento(visitaId, `status:${input.status}`, patch);
+    if (input.status === "concluida" && input.fotos.length === 0) {
+      await notificarAgua({
+        evento: "foto_pendente",
+        corpo: "Uma parada foi concluída sem evidência fotográfica anexada. Regularize o registro.",
+        deepLink: "/abastecimento/agua/rota",
+        chave: `foto_pendente:${visitaId}`,
+        metadata: { visita_id: visitaId },
+      });
+    }
     return { pendente: false };
   } catch (err) {
     if (!ctx || !semRede(err)) throw err;
@@ -440,19 +450,13 @@ export async function finalizarRota(
 }
 
 async function notificarGestor(rota: RotaExecucao, divergencia: number, justificativa: string) {
-  try {
-    await db.from("notifications").insert({
-      title: "Divergência de bags na rota de água",
-      body: `Rota de ${rota.data} (${rota.turno}) fechou com divergência de ${divergencia} bag(s). Justificativa: ${justificativa}`,
-      category: "atencao",
-      severity: "warning",
-      module_key: "abastecimento-agua",
-      target_mode: "modules",
-      deep_link: "/abastecimento/agua/rotas",
-    });
-  } catch {
-    /* a ocorrência já foi registrada; a notificação é best-effort */
-  }
+  await notificarAgua({
+    evento: "divergencia_bags",
+    corpo: `Rota de ${rota.data} (${rota.turno}) fechou com divergência de ${divergencia} bag(s). Justificativa: ${justificativa}`,
+    deepLink: "/abastecimento/agua/rotas",
+    chave: `divergencia_bags:${rota.id}`,
+    metadata: { rota_id: rota.id, divergencia },
+  });
 }
 
 export interface RotaOcorrencia {
