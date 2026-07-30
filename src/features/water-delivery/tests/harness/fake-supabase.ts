@@ -147,7 +147,9 @@ export class FakeSupabase {
             id: bruta.id ?? novoId(tabela.replace(/^agua_/, "")),
             criado_em: new Date().toISOString(),
             atualizado_em: new Date().toISOString(),
+            ...(PADROES[tabela] ?? {}),
             ...bruta,
+
           };
           store.push(nova);
           inseridas.push(nova);
