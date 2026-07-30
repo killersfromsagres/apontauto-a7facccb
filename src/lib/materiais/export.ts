@@ -133,7 +133,11 @@ const ITEM_HEADERS = [
 /** Planilha de uma solicitação (usada no carrinho e no histórico). */
 export async function exportSolicitacaoMateriais(params: {
   cabecalho: CabecalhoSolicitacao;
-  itens: Array<Pick<CarrinhoItem, "codigo" | "descricao" | "unidade" | "quantidade"> & {
+  itens: Array<{
+    codigo?: string | null;
+    descricao: string;
+    unidade: string;
+    quantidade: number;
     justificativa?: string | null;
   }>;
 }): Promise<Blob> {
