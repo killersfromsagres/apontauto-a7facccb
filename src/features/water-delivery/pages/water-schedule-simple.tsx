@@ -350,6 +350,10 @@ export function WaterScheduleSimple() {
           entrega={entregaPorPonto.get(pontoAberto.id) ?? null}
           colaboradores={colaboradores}
           veiculo={veiculo}
+          veiculos={(veiculosQ.data ?? []).map((v) =>
+            [v.prefix, v.plate].filter(Boolean).join(" · ") || vehicleLabel(v),
+          )}
+          onEquipeChange={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
             qc.invalidateQueries({ queryKey: ["agua-prog"] });
@@ -357,6 +361,7 @@ export function WaterScheduleSimple() {
           }}
         />
       )}
+
     </div>
   );
 }
@@ -372,6 +377,8 @@ function EntregaSheet({
   entrega,
   colaboradores,
   veiculo,
+  veiculos,
+  onEquipeChange,
   onClose,
   onSaved,
 }: {
@@ -380,14 +387,19 @@ function EntregaSheet({
   entrega: Entrega | null;
   colaboradores: string[];
   veiculo: string | null;
+  veiculos: string[];
+  onEquipeChange: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [bags, setBags] = useState<number>(entrega?.bags ?? ponto.bags ?? 1);
+  const [bags, setBags] = useState<number>(() =>
+    Math.max(1, Math.round(entrega?.bags ?? ponto.bags ?? 1)),
+  );
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
+
 
   useEffect(() => () => novas.forEach((n) => URL.revokeObjectURL(n.url)), [novas]);
 
@@ -455,15 +467,16 @@ function EntregaSheet({
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
-              Bags entregues
+              Bags entregues — unidades inteiras
             </Label>
             <div className="flex items-center gap-3">
               <Button
                 size="icon"
                 variant="outline"
                 className="h-12 w-12 rounded-xl"
-                aria-label="Diminuir"
-                onClick={() => setBags((b) => Math.max(0, +(b - 0.5).toFixed(1)))}
+                aria-label="Diminuir uma bag"
+                disabled={bags <= 1}
+                onClick={() => setBags((b) => Math.max(1, Math.round(b) - 1))}
               >
                 <Minus className="h-5 w-5" />
               </Button>
@@ -474,13 +487,15 @@ function EntregaSheet({
                 size="icon"
                 variant="outline"
                 className="h-12 w-12 rounded-xl"
-                aria-label="Aumentar"
-                onClick={() => setBags((b) => +(b + 0.5).toFixed(1))}
+                aria-label="Aumentar uma bag"
+                onClick={() => setBags((b) => Math.round(b) + 1)}
               >
                 <Plus className="h-5 w-5" />
               </Button>
+              <span className="text-sm text-muted-foreground">bag(s) inteira(s)</span>
             </div>
           </div>
+
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
@@ -569,16 +584,76 @@ function EntregaSheet({
             />
           </div>
 
-          <div className="rounded-xl border border-border/60 bg-card/40 p-3 text-sm">
-            <p className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-muted-foreground" />
-              {colaboradores.length ? colaboradores.join(" e ") : "Selecione quem está entregando"}
-            </p>
-            <p className="mt-1 flex items-center gap-2">
-              <Car className="h-4 w-4 text-muted-foreground" />
-              {veiculo ?? "Selecione o carro"}
-            </p>
+          <div className="space-y-4 rounded-xl border border-border/60 bg-card/40 p-3">
+            <div>
+              <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                <Users className="h-3.5 w-3.5" /> Quem entregou
+                {colaboradores.length > 0 && (
+                  <span className="ml-auto normal-case tracking-normal">
+                    {colaboradores.length} colaborador{colaboradores.length > 1 ? "es" : ""}
+                  </span>
+                )}
+              </Label>
+              <div className="grid gap-2">
+                {COLABORADORES.map((nome) => {
+                  const ativo = colaboradores.includes(nome);
+                  return (
+                    <button
+                      key={nome}
+                      type="button"
+                      onClick={() =>
+                        onEquipeChange(
+                          ativo
+                            ? colaboradores.filter((c) => c !== nome)
+                            : [...colaboradores, nome],
+                          veiculo,
+                        )
+                      }
+                      className={cn(
+                        "flex min-h-[48px] w-full items-center gap-2 rounded-xl border px-3 text-left text-sm font-medium transition-all active:scale-[0.99]",
+                        ativo
+                          ? "border-sky-400/60 bg-sky-500/15 text-sky-600 dark:text-sky-300"
+                          : "border-border/60 bg-card/40 text-muted-foreground",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold",
+                          ativo ? "bg-sky-500 text-white" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {iniciais(nome)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate">{nome}</span>
+                      {ativo && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
+                <Car className="h-3.5 w-3.5" /> Carro utilizado
+              </Label>
+              <Select
+                value={veiculo ?? ""}
+                onValueChange={(v) => onEquipeChange(colaboradores, v || null)}
+              >
+                <SelectTrigger className="h-12 rounded-xl text-base">
+                  <SelectValue placeholder="Selecione o carro" />
+                </SelectTrigger>
+                <SelectContent>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {v}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
         </div>
 
         <div className="sticky bottom-0 -mx-6 flex gap-2 border-t border-border/60 bg-background/90 px-6 py-3 backdrop-blur">
