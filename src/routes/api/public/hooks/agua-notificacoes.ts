@@ -157,12 +157,29 @@ async function handle() {
   return { enviados, data: hoje };
 }
 
+// Item 21: execução controlada (trava, timeout, retry com backoff, log em job_runs
+// e alarme de falha). Sem idempotência por dia — o job roda a cada 30 min e a
+// deduplicação dos avisos é feita por chave dentro de `publicar`.
+async function executar() {
+  const { runJob, jobResponse } = await import("@/lib/jobs/runner.server");
+  const outcome = await runJob(
+    {
+      key: "water-delivery-reminders",
+      timeoutMs: 60_000,
+      maxAttempts: 3,
+      maxConcurrent: 1,
+      moduleKey: MODULO,
+    },
+    () => handle(),
+  );
+  return jobResponse(outcome);
+}
 
 export const Route = createFileRoute("/api/public/hooks/agua-notificacoes")({
   server: {
     handlers: {
-      POST: async () => handle(),
-      GET: async () => handle(),
+      POST: async () => executar(),
+      GET: async () => executar(),
     },
   },
 });
