@@ -121,23 +121,51 @@ async function registrarEvento(visitaId: string, tipo: string, dados: unknown) {
   if (error) throw error;
 }
 
+/** Contexto usado para conclusão local quando não há rede (item 16). */
+export interface ContextoOffline {
+  data: string;
+  atualizadoEm?: string | null;
+}
+
+/** Falha de rede (ou aparelho offline) — a ação vai para a fila local. */
+function semRede(err: unknown): boolean {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  const msg = (err as Error)?.message ?? "";
+  return /fetch|network|failed to fetch|timeout|offline/i.test(msg);
+}
+
 /** Marca deslocamento/atendimento sem finalizar a parada. */
 export async function marcarAndamento(
   visitaId: string,
   status: Extract<VisitaStatus, "em_deslocamento" | "em_atendimento">,
-): Promise<void> {
+  ctx?: ContextoOffline,
+): Promise<{ pendente: boolean }> {
   const campo = status === "em_deslocamento" ? "deslocamento_em" : "atendimento_em";
-  const { error } = await db
-    .from("agua_visitas")
-    .update({ status, [campo]: new Date().toISOString() })
-    .eq("id", visitaId);
-  if (error) throw error;
-  await registrarEvento(visitaId, `status:${status}`, { status });
+  const patch = { status, [campo]: new Date().toISOString() };
+  try {
+    const { error } = await db.from("agua_visitas").update(patch).eq("id", visitaId);
+    if (error) throw error;
+    await registrarEvento(visitaId, `status:${status}`, { status });
+    return { pendente: false };
+  } catch (err) {
+    if (!ctx || !semRede(err)) throw err;
+    await enfileirar("visita.andamento", {
+      visitaId,
+      data: ctx.data,
+      patch,
+      baseAtualizadoEm: ctx.atualizadoEm ?? null,
+    });
+    return { pendente: true };
+  }
 }
 
 /** Grava a entrega da parada e o evento imutável correspondente. */
-export async function registrarEntrega(visitaId: string, input: EntregaInput): Promise<void> {
-  const usuario = await uid();
+export async function registrarEntrega(
+  visitaId: string,
+  input: EntregaInput,
+  ctx?: ContextoOffline,
+): Promise<{ pendente: boolean }> {
+  const usuario = await uid().catch(() => null);
   const patch = {
     status: input.status,
     bags_entregues: input.bags_entregues,
@@ -154,13 +182,27 @@ export async function registrarEntrega(visitaId: string, input: EntregaInput): P
     local_confirmado: input.local_confirmado,
     latitude: input.latitude,
     longitude: input.longitude,
-    executado_por: usuario,
-    executado_em: new Date().toISOString(),
   };
-  const { error } = await db.from("agua_visitas").update(patch).eq("id", visitaId);
-  if (error) throw error;
-  await registrarEvento(visitaId, `status:${input.status}`, patch);
+  try {
+    const { error } = await db
+      .from("agua_visitas")
+      .update({ ...patch, executado_por: usuario, executado_em: new Date().toISOString() })
+      .eq("id", visitaId);
+    if (error) throw error;
+    await registrarEvento(visitaId, `status:${input.status}`, patch);
+    return { pendente: false };
+  } catch (err) {
+    if (!ctx || !semRede(err)) throw err;
+    await enfileirar("visita.entrega", {
+      visitaId,
+      data: ctx.data,
+      patch,
+      baseAtualizadoEm: ctx.atualizadoEm ?? null,
+    });
+    return { pendente: true };
+  }
 }
+
 
 /* ------------------------------------------------------------------ */
 /* Retificação (8.4)                                                   */
