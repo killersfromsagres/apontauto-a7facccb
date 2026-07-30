@@ -2923,6 +2923,156 @@ export type Database = {
         }
         Relationships: []
       }
+      fleet_checklist_photos: {
+        Row: {
+          category: string
+          checklist_id: string
+          created_at: string
+          created_by: string
+          id: string
+          storage_path: string
+        }
+        Insert: {
+          category?: string
+          checklist_id: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          storage_path: string
+        }
+        Update: {
+          category?: string
+          checklist_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_checklist_photos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "fleet_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_checklists: {
+        Row: {
+          created_at: string
+          created_by: string
+          driver_name: string
+          fuel_level_pct: number | null
+          id: string
+          items: Json
+          kind: string
+          notes: string | null
+          odometer_km: number
+          overall_status: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          driver_name: string
+          fuel_level_pct?: number | null
+          id?: string
+          items?: Json
+          kind?: string
+          notes?: string | null
+          odometer_km: number
+          overall_status?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          driver_name?: string
+          fuel_level_pct?: number | null
+          id?: string
+          items?: Json
+          kind?: string
+          notes?: string | null
+          odometer_km?: number
+          overall_status?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_checklists_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fleet_fuelings: {
+        Row: {
+          created_at: string
+          created_by: string
+          driver_name: string | null
+          fuel_type: string
+          fueled_at: string
+          id: string
+          invoice_number: string | null
+          liters: number
+          notes: string | null
+          odometer_km: number
+          payment_method: string | null
+          station: string | null
+          total_cost: number
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          driver_name?: string | null
+          fuel_type?: string
+          fueled_at?: string
+          id?: string
+          invoice_number?: string | null
+          liters: number
+          notes?: string | null
+          odometer_km: number
+          payment_method?: string | null
+          station?: string | null
+          total_cost: number
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          driver_name?: string | null
+          fuel_type?: string
+          fueled_at?: string
+          id?: string
+          invoice_number?: string | null
+          liters?: number
+          notes?: string | null
+          odometer_km?: number
+          payment_method?: string | null
+          station?: string | null
+          total_cost?: number
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fleet_fuelings_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       frota_abastecimentos: {
         Row: {
           combustivel: string
