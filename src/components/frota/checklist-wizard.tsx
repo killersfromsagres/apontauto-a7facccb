@@ -568,20 +568,46 @@ function Summary({ label, value }: { label: string; value: string }) {
 function PhotoField({
   label,
   url,
+  urls,
   busy,
   onFile,
+  onRemove,
 }: {
   label: string;
-  url: string | null;
+  url?: string | null;
+  urls?: string[];
   busy: boolean;
   onFile: (file: File) => void;
+  onRemove?: (url: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const list = urls ?? (url ? [url] : []);
+  const multiple = Array.isArray(urls);
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {url ? (
-        <img src={url} alt={label} loading="lazy" className="h-32 w-full rounded-xl object-cover" />
+      {list.length > 0 ? (
+        <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          {list.map((src) => (
+            <div key={src} className="relative">
+              <img
+                src={src}
+                alt={label}
+                loading="lazy"
+                className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
+              />
+              {onRemove && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(src)}
+                  className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white"
+                >
+                  remover
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-border/60 text-muted-foreground">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
@@ -607,11 +633,22 @@ function PhotoField({
         disabled={busy}
         onClick={() => ref.current?.click()}
       >
-        {url ? "Substituir foto" : "Capturar / escolher"}
+        {busy ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando…
+          </>
+        ) : multiple ? (
+          "Adicionar foto"
+        ) : list.length > 0 ? (
+          "Substituir foto"
+        ) : (
+          "Capturar / escolher"
+        )}
       </Button>
     </div>
   );
 }
+
 
 function CollaboratorFields({
   title,
