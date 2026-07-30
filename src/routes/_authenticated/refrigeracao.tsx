@@ -886,22 +886,24 @@ function OsDetail({
         )}
       </div>
 
-      <GlassCard className="p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <GlassCard className="overflow-hidden p-4">
+        <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="min-w-0">
             <div className="text-xs uppercase tracking-wider text-muted-foreground">
               OS selecionada
             </div>
             <div className="truncate font-mono text-lg font-bold">#{os.numero_os}</div>
             {os.nome_os && (
-              <div className="mt-0.5 truncate text-sm text-muted-foreground">{os.nome_os}</div>
+              <div className="mt-0.5 text-sm text-muted-foreground break-words [overflow-wrap:anywhere]">
+                {os.nome_os}
+              </div>
             )}
           </div>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="shrink-0 text-[10px]">
             {os.status}
           </Badge>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
           <ReadOnly label="Ativo" value={os.ativo} />
           <ReadOnly label="Equipamento" value={os.equipamento} />
           <ReadOnly label="Tipo" value={os.tipo ?? "—"} />
@@ -1443,9 +1445,11 @@ function HostedPhotoLinksCard({
 
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="min-w-0">
       <Label>{label}</Label>
-      <div className="mt-1 rounded-md border bg-muted/40 px-3 py-2 text-sm">{value}</div>
+      <div className="mt-1 min-w-0 overflow-hidden rounded-md border bg-muted/40 px-3 py-2 text-sm break-words [overflow-wrap:anywhere]">
+        {value}
+      </div>
     </div>
   );
 }
