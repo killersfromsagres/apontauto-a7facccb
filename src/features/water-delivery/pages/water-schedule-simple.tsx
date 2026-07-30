@@ -501,8 +501,11 @@ function EntregaSheet({
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-        <SheetHeader className="text-left">
+      <SheetContent
+        side="bottom"
+        className="flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-t-3xl pb-0"
+      >
+        <SheetHeader className="shrink-0 pr-10 text-left">
           <SheetTitle className="flex items-center gap-2">
             <Droplets className="h-5 w-5 text-sky-500" />
             {ponto.predio} · {ponto.espaco ?? "—"}
@@ -512,7 +515,7 @@ function EntregaSheet({
           </p>
         </SheetHeader>
 
-        <div className="space-y-5 py-4">
+        <div className="-mx-4 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 sm:-mx-6 sm:px-6">
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
               Situação
@@ -838,7 +841,7 @@ function EntregaSheet({
 
         </div>
 
-        <div className="sticky bottom-0 -mx-6 flex gap-2 border-t border-border/60 bg-background/90 px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+        <div className="-mx-4 flex shrink-0 gap-2 border-t border-border/60 bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-mx-6 sm:px-6">
           <Button variant="outline" className="h-12 flex-1 rounded-xl" onClick={onClose}>
             Cancelar
           </Button>
