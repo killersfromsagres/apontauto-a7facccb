@@ -229,12 +229,32 @@ export async function loteComHash(hash: string): Promise<Lote | null> {
  * substitui apenas a programação semanal dos pontos do arquivo.
  * As visitas já executadas nunca são tocadas.
  */
+export interface AjustePonto {
+  /** Dias confirmados pelo administrador (sobrepõe o que veio da planilha). */
+  dias?: number[];
+  /** Quantidade padrão de bags do ponto. */
+  bags?: number;
+  /** Ordem do ponto dentro do dia. */
+  ordem?: number;
+  /** Quando falso, o ponto não é importado. */
+  incluir?: boolean;
+}
+
 export async function aplicarImportacao(args: {
   leitura: LeituraAgua;
   arquivoNome: string;
   hash: string;
+  /** Revisões do assistente, por código canônico do ponto. */
+  ajustes?: Record<string, AjustePonto>;
+  /** Bags padrão aplicado a quem não tem ajuste específico. */
+  bagsPadrao?: number;
+  /** Relatório final do assistente, gravado junto ao lote. */
+  relatorio?: Record<string, unknown>;
 }): Promise<{ loteId: string }> {
   const { leitura, arquivoNome, hash } = args;
+  const ajustes = args.ajustes ?? {};
+  const bagsPadrao = args.bagsPadrao ?? 1;
+  const pontosImportados = leitura.pontos.filter((p) => ajustes[p.codigo]?.incluir !== false);
   const { data: userData } = await supabase.auth.getUser();
   const uid = userData.user?.id ?? null;
 
@@ -247,7 +267,8 @@ export async function aplicarImportacao(args: {
       total_pontos: leitura.pontos.length,
       total_visitas: leitura.totalVisitas,
       divergencias: leitura.divergencias,
-      resumo: { por_dia: leitura.porDia },
+      resumo: { por_dia: leitura.porDia, bags_padrao: bagsPadrao },
+      relatorio: (args.relatorio ?? {}) as never,
       criado_por: uid,
     })
     .select("id")
@@ -255,12 +276,12 @@ export async function aplicarImportacao(args: {
   if (loteErr) throw loteErr;
   const loteId = lote.id as string;
 
-  const payload = leitura.pontos.map((p, i) => ({
+  const payload = pontosImportados.map((p, i) => ({
     codigo: p.codigo,
     predio: p.predio,
     andar: p.andar,
     espaco: p.espaco,
-    ordem: i + 1,
+    ordem: ajustes[p.codigo]?.ordem ?? i + 1,
     lote_id: loteId,
     ativo: true,
   }));
@@ -286,14 +307,16 @@ export async function aplicarImportacao(args: {
     throw delErr;
   }
 
-  const progRows = leitura.pontos.flatMap((p) => {
+  const progRows = pontosImportados.flatMap((p, i) => {
     const pid = idPorCodigo.get(p.codigo);
     if (!pid) return [];
-    return p.dias.map((dia, idx) => ({
+    const ajuste = ajustes[p.codigo] ?? {};
+    const dias = ajuste.dias ?? p.dias;
+    return dias.map((dia) => ({
       ponto_id: pid,
       dia_semana: dia,
-      ordem: idx + 1,
-      bags: 1,
+      ordem: ajuste.ordem ?? i + 1,
+      bags: ajuste.bags ?? bagsPadrao,
       origem: "aba_diaria",
       lote_id: loteId,
     }));
