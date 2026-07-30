@@ -187,10 +187,44 @@ export async function fetchAllNotifications(): Promise<NotificationRow[]> {
 export async function fetchMyReceipts(): Promise<ReceiptRow[]> {
   const { data, error } = await supabase
     .from("notification_receipts")
-    .select("notification_id, user_id, delivered_at, read_at, acknowledged_at");
+    .select("notification_id, user_id, delivered_at, read_at, acknowledged_at, archived_at");
   if (error) throw error;
   return (data ?? []) as ReceiptRow[];
 }
+
+/** Arquiva (ou desarquiva) avisos para o usuário atual. */
+export async function setArchived(userId: string, ids: string[], archived: boolean) {
+  if (!userId || ids.length === 0) return;
+  const now = new Date().toISOString();
+  const { error } = await supabase.from("notification_receipts").upsert(
+    ids.map((notification_id) => ({
+      notification_id,
+      user_id: userId,
+      archived_at: archived ? now : null,
+      ...(archived ? { read_at: now } : {}),
+    })),
+    { onConflict: "notification_id,user_id" },
+  );
+  if (error) throw error;
+}
+
+export async function fetchPrefs(userId: string): Promise<NotificationPrefs> {
+  const { data, error } = await supabase
+    .from("notification_preferences")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return { user_id: userId, ...DEFAULT_PREFS, ...(data ?? {}) } as NotificationPrefs;
+}
+
+export async function savePrefs(userId: string, patch: Partial<NotificationPrefs>) {
+  const { error } = await supabase
+    .from("notification_preferences")
+    .upsert({ user_id: userId, ...DEFAULT_PREFS, ...patch }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 
 /** Cria o recibo de entrega (idempotente por (notification_id, user_id)). */
 export async function ensureDelivered(userId: string, ids: string[]) {
