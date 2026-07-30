@@ -41,43 +41,66 @@ import {
 } from "@/lib/frota/checklist-catalog";
 import { submitChecklist, vehicleLabel, type Vehicle } from "@/lib/frota/api";
 
+/** Uma evidência fotográfica: preview local imediato + envio resiliente. */
+type Photo = {
+  id: string;
+  file: File;
+  preview: string;
+  url: string | null;
+  hash: string | null;
+  status: "uploading" | "ok" | "error";
+  error?: string;
+};
+
 type ItemState = {
   status: ItemStatus;
   severity: Severity;
   notes: string;
-  photoUrl?: string | null;
-  photoHash?: string | null;
+  photo: Photo | null;
 };
 
 const STEPS = ["Veículo", "Colaboradores", "Contexto", "Checklist", "Fotos", "Revisão"] as const;
 
-const emptyItem = (): ItemState => ({ status: "conforme", severity: "media", notes: "" });
+const emptyItem = (): ItemState => ({
+  status: "conforme",
+  severity: "media",
+  notes: "",
+  photo: null,
+});
 
-/** URL remota -> objectURL local, usado enquanto a CDN propaga a imagem. */
-const LOCAL_PREVIEWS = new Map<string, string>();
+const newId = () => Math.random().toString(36).slice(2);
 
-/** Miniatura tolerante à latência de propagação da CDN de imagens. */
-function ResilientPhoto({ src, alt, className }: { src: string; alt: string; className?: string }) {
+/**
+ * Miniatura tolerante à latência da CDN: mostra o arquivo local até a imagem
+ * remota responder e volta para o local caso a remota falhe.
+ */
+function ResilientPhoto({ photo, className }: { photo: Photo; className?: string }) {
   const [attempt, setAttempt] = useState(0);
-  const [fallback, setFallback] = useState(false);
-  const local = LOCAL_PREVIEWS.get(src);
-  const shown = fallback && local ? local : attempt === 0 ? src : `${src}${src.includes("?") ? "&" : "?"}r=${attempt}`;
+  const [broken, setBroken] = useState(false);
+  const remote = photo.status === "ok" ? photo.url : null;
+  const shown =
+    !remote || broken
+      ? photo.preview
+      : attempt === 0
+        ? remote
+        : `${remote}${remote.includes("?") ? "&" : "?"}r=${attempt}`;
   return (
     <img
       src={shown}
-      alt={alt}
+      alt="Evidência do checklist"
       loading="lazy"
       className={className}
       onError={() => {
-        if (attempt < 3) {
+        if (remote && attempt < 3) {
           window.setTimeout(() => setAttempt((a) => a + 1), 600 * (attempt + 1));
-        } else if (local) {
-          setFallback(true);
+        } else {
+          setBroken(true);
         }
       }}
     />
   );
 }
+
 
 
 export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
@@ -105,8 +128,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const [items, setItems] = useState<Record<string, ItemState>>(() =>
     Object.fromEntries(CHECKLIST_ITEMS.map((i) => [i.key, emptyItem()])),
   );
-  const [slotPhotos, setSlotPhotos] = useState<Record<string, string[]>>({});
-  const [uploading, setUploading] = useState<string | null>(null);
+  const [slotPhotos, setSlotPhotos] = useState<Record<string, Photo[]>>({});
 
   const vehicle = vehicles.find((v) => v.id === vehicleId);
 
@@ -123,35 +145,87 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
   const critical = hasCriticalBlock(filled);
   const nonConform = CHECKLIST_ITEMS.filter((d) => items[d.key].status === "nao_conforme");
 
-  async function handleUpload(
-    file: File,
-    apply: (url: string, hash: string | null) => void,
-    tag: string,
-  ) {
-    setUploading(tag);
-    const localPreview = URL.createObjectURL(file);
+  const makePhoto = (file: File): Photo => ({
+    id: newId(),
+    file,
+    preview: URL.createObjectURL(file),
+    url: null,
+    hash: null,
+    status: "uploading",
+  });
+
+  /** Envia uma foto e reflete o resultado no estado, sem perder o preview. */
+  async function runUpload(photo: Photo, apply: (patch: Partial<Photo>) => void) {
+    apply({ status: "uploading", error: undefined });
     try {
-      const { url, hash } = await uploadFrotaPhoto(file, file.name || "checklist.jpg", {
+      const { url, hash } = await uploadFrotaPhoto(photo.file, photo.file.name || "checklist.jpg", {
         module: "frota-checklist",
         entityType: "vehicle_checklist",
         entityId: vehicleId ?? undefined,
       });
-      // Mantém o preview local enquanto a CDN propaga a imagem remota.
-      LOCAL_PREVIEWS.set(url, localPreview);
-      apply(url, hash);
+      apply({ url, hash, status: "ok" });
     } catch (e: any) {
-      URL.revokeObjectURL(localPreview);
+      apply({ status: "error", error: e?.message ?? "Falha ao enviar a foto" });
       toast.error(e?.message ?? "Falha ao enviar a foto");
-    } finally {
-      setUploading(null);
     }
   }
 
+  const patchSlotPhoto = (slot: string, id: string, patch: Partial<Photo>) =>
+    setSlotPhotos((prev) => ({
+      ...prev,
+      [slot]: (prev[slot] ?? []).map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }));
 
-  const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
+  /** Aceita várias fotos de uma vez e envia em fila (mais estável no 4G). */
+  function addSlotFiles(slot: string, files: File[]) {
+    if (!files.length) return;
+    const photos = files.map(makePhoto);
+    setSlotPhotos((prev) => ({ ...prev, [slot]: [...(prev[slot] ?? []), ...photos] }));
+    void (async () => {
+      for (const p of photos) {
+        await runUpload(p, (patch) => patchSlotPhoto(slot, p.id, patch));
+      }
+    })();
+  }
+
+  function retrySlotPhoto(slot: string, id: string) {
+    const photo = (slotPhotos[slot] ?? []).find((p) => p.id === id);
+    if (photo) void runUpload(photo, (patch) => patchSlotPhoto(slot, id, patch));
+  }
+
+  const patchItemPhoto = (key: string, id: string, patch: Partial<Photo>) =>
+    setItems((prev) => {
+      const current = prev[key].photo;
+      if (!current || current.id !== id) return prev;
+      return { ...prev, [key]: { ...prev[key], photo: { ...current, ...patch } } };
+    });
+
+  function setItemPhoto(key: string, file: File | null) {
+    if (!file) {
+      setItems((prev) => ({ ...prev, [key]: { ...prev[key], photo: null } }));
+      return;
+    }
+    const photo = makePhoto(file);
+    setItems((prev) => ({ ...prev, [key]: { ...prev[key], photo } }));
+    void runUpload(photo, (patch) => patchItemPhoto(key, photo.id, patch));
+  }
+
+  function retryItemPhoto(key: string) {
+    const photo = items[key].photo;
+    if (photo) void runUpload(photo, (patch) => patchItemPhoto(key, photo.id, patch));
+  }
+
+  const okPhotos = (key: string) => (slotPhotos[key] ?? []).filter((p) => p.status === "ok");
+  const slotCount = (key: string) => okPhotos(key).length;
   const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
   const totalSlotPhotos = PHOTO_SLOTS.reduce((acc, s) => acc + slotCount(s.key), 0);
-  const missingNcPhotos = nonConform.filter((d) => !items[d.key].photoUrl);
+  const missingNcPhotos = nonConform.filter((d) => items[d.key].photo?.status !== "ok");
+  const uploadingCount =
+    PHOTO_SLOTS.reduce(
+      (acc, s) => acc + (slotPhotos[s.key] ?? []).filter((p) => p.status === "uploading").length,
+      0,
+    ) + CHECKLIST_ITEMS.filter((d) => items[d.key].photo?.status === "uploading").length;
+
 
   const canAdvance = (() => {
     if (step === 0) return !!vehicleId;
@@ -185,17 +259,18 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
       ];
       const photos = [
         ...PHOTO_SLOTS.flatMap((s) =>
-          (slotPhotos[s.key] ?? []).map((url) => ({ slot: s.key as string, url })),
+          okPhotos(s.key).map((p) => ({ slot: s.key as string, url: p.url!, hash: p.hash })),
         ),
         ...nonConform
-          .filter((d) => items[d.key].photoUrl)
+          .filter((d) => items[d.key].photo?.status === "ok")
           .map((d) => ({
             slot: `nc_${d.key}`,
-            url: items[d.key].photoUrl!,
+            url: items[d.key].photo!.url!,
             itemKey: d.key,
-            hash: items[d.key].photoHash ?? null,
+            hash: items[d.key].photo!.hash ?? null,
           })),
       ];
+
       return submitChecklist({
         vehicleId,
         checklistType,
@@ -443,16 +518,12 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
                     />
                     <PhotoField
                       label="Foto da não conformidade (obrigatória)"
-                      url={st.photoUrl ?? null}
-                      busy={uploading === def.key}
-                      onFile={(f) =>
-                        handleUpload(
-                          f,
-                          (url, hash) => set({ photoUrl: url, photoHash: hash }),
-                          def.key,
-                        )
-                      }
+                      photos={st.photo ? [st.photo] : []}
+                      onFiles={(files) => setItemPhoto(def.key, files[0] ?? null)}
+                      onRetry={() => retryItemPhoto(def.key)}
+                      onRemove={() => setItemPhoto(def.key, null)}
                     />
+
                   </div>
                 )}
               </GlassCard>
@@ -488,26 +559,18 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
               <GlassCard key={slot.key} className="space-y-2 p-3">
                 <PhotoField
                   label={`${slot.label} (${slotCount(slot.key)})`}
-                  urls={slotPhotos[slot.key] ?? []}
-                  busy={uploading === slot.key}
-                  onRemove={(url) =>
+                  multiple
+                  photos={slotPhotos[slot.key] ?? []}
+                  onFiles={(files) => addSlotFiles(slot.key, files)}
+                  onRetry={(id) => retrySlotPhoto(slot.key, id)}
+                  onRemove={(id) =>
                     setSlotPhotos((prev) => ({
                       ...prev,
-                      [slot.key]: (prev[slot.key] ?? []).filter((u) => u !== url),
+                      [slot.key]: (prev[slot.key] ?? []).filter((p) => p.id !== id),
                     }))
                   }
-                  onFile={(f) =>
-                    handleUpload(
-                      f,
-                      (url) =>
-                        setSlotPhotos((prev) => ({
-                          ...prev,
-                          [slot.key]: [...(prev[slot.key] ?? []), url],
-                        })),
-                      slot.key,
-                    )
-                  }
                 />
+
               </GlassCard>
             ))}
           </div>
@@ -554,16 +617,19 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
 
           <Button
             className="min-h-[48px] w-full"
-            disabled={!declaration || submit.isPending}
+            disabled={!declaration || submit.isPending || uploadingCount > 0}
             onClick={() => submit.mutate()}
           >
-            {submit.isPending ? (
+            {submit.isPending || uploadingCount > 0 ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            Enviar checklist e gerar protocolo
+            {uploadingCount > 0
+              ? `Enviando ${uploadingCount} foto(s)…`
+              : "Enviar checklist e gerar protocolo"}
           </Button>
+
         </GlassCard>
       )}
 
@@ -599,39 +665,58 @@ function Summary({ label, value }: { label: string; value: string }) {
 
 function PhotoField({
   label,
-  url,
-  urls,
-  busy,
-  onFile,
+  photos,
+  multiple,
+  onFiles,
   onRemove,
+  onRetry,
 }: {
   label: string;
-  url?: string | null;
-  urls?: string[];
-  busy: boolean;
-  onFile: (file: File) => void;
-  onRemove?: (url: string) => void;
+  photos: Photo[];
+  multiple?: boolean;
+  onFiles: (files: File[]) => void;
+  onRemove?: (id: string) => void;
+  onRetry?: (id: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-  const list = urls ?? (url ? [url] : []);
-  const multiple = Array.isArray(urls);
+  const busy = photos.some((p) => p.status === "uploading");
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {list.length > 0 ? (
-        <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-          {list.map((src) => (
-            <div key={src} className="relative">
+      {photos.length > 0 ? (
+        <div className={cn("grid gap-1.5", photos.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          {photos.map((p) => (
+            <div key={p.id} className="relative">
               <ResilientPhoto
-                src={src}
-                alt={label}
-                className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
+                photo={p}
+                className={cn(
+                  "w-full rounded-xl object-cover",
+                  photos.length > 1 ? "h-20" : "h-32",
+                  p.status !== "ok" && "opacity-60",
+                )}
               />
+
+              {p.status === "uploading" && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/35">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </span>
+              )}
+
+              {p.status === "error" && (
+                <button
+                  type="button"
+                  onClick={() => onRetry?.(p.id)}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-rose-950/70 px-2 text-center text-[11px] font-semibold text-rose-100"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Tentar novamente
+                </button>
+              )}
 
               {onRemove && (
                 <button
                   type="button"
-                  onClick={() => onRemove(src)}
+                  onClick={() => onRemove(p.id)}
                   className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white"
                 >
                   remover
@@ -642,18 +727,19 @@ function PhotoField({
         </div>
       ) : (
         <div className="flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-border/60 text-muted-foreground">
-          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          <Camera className="h-5 w-5" />
         </div>
       )}
       <input
         ref={ref}
         type="file"
         accept="image/*"
-        capture="environment"
+        multiple={multiple}
+        capture={multiple ? undefined : "environment"}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFile(f);
+          const files = Array.from(e.target.files ?? []);
+          if (files.length) onFiles(multiple ? files : files.slice(0, 1));
           e.target.value = "";
         }}
       />
@@ -661,8 +747,7 @@ function PhotoField({
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-[40px] w-full"
-        disabled={busy}
+        className="min-h-[44px] w-full"
         onClick={() => ref.current?.click()}
       >
         {busy ? (
@@ -670,8 +755,8 @@ function PhotoField({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando…
           </>
         ) : multiple ? (
-          "Adicionar foto"
-        ) : list.length > 0 ? (
+          "Adicionar fotos"
+        ) : photos.length > 0 ? (
           "Substituir foto"
         ) : (
           "Capturar / escolher"
@@ -680,6 +765,7 @@ function PhotoField({
     </div>
   );
 }
+
 
 
 function CollaboratorFields({

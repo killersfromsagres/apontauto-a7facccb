@@ -54,16 +54,29 @@ export const Route = createFileRoute("/api/imgbb-upload")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { getRequestUser, callerCanAccessModule, unauthorized, forbidden } =
-          await import("@/lib/api-auth.server");
+        const {
+          getRequestUser,
+          callerCanAccessModule,
+          unauthorized,
+          forbidden,
+          serviceUnavailable,
+          hasAuthConfig,
+        } = await import("@/lib/api-auth.server");
+
+        // Configuração ausente é falha de servidor (503) — nunca 401, para não
+        // derrubar a sessão de quem está apenas enviando uma foto.
+        if (!hasAuthConfig()) {
+          return serviceUnavailable("Backend indisponível para validar a sessão.");
+        }
 
         const caller = await getRequestUser(request);
         if (!caller) return unauthorized();
 
         const key = process.env.IMGBB_API_KEY;
         if (!key) {
-          return Response.json({ error: "IMGBB_API_KEY não configurada" }, { status: 500 });
+          return serviceUnavailable("Serviço de imagens não configurado.");
         }
+
 
         let form: FormData;
         try {
@@ -105,19 +118,34 @@ export const Route = createFileRoute("/api/imgbb-upload")({
         }
         const sha256 = await sha256Hex(buf);
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-        const { count } = await supabaseAdmin
-          .from("image_uploads")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", caller.userId)
-          .gte("created_at", since);
-        if ((count ?? 0) >= 150) {
-          return Response.json(
-            { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
-            { status: 429, headers: { "Retry-After": "600" } },
-          );
+        // Auditoria/rate-limit são melhores-esforços: se o cliente
+        // administrativo não estiver disponível no runtime, o envio continua.
+        let admin: any = null;
+        try {
+          admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+        } catch {
+          admin = null;
         }
+
+        if (admin) {
+          try {
+            const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const { count } = await admin
+              .from("image_uploads")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", caller.userId)
+              .gte("created_at", since);
+            if ((count ?? 0) >= 150) {
+              return Response.json(
+                { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
+                { status: 429, headers: { "Retry-After": "600" } },
+              );
+            }
+          } catch {
+            /* sem contagem: segue o envio */
+          }
+        }
+
 
         const rawName = typeof (file as File).name === "string" ? (file as File).name : "";
         const provided = form.get("name");
@@ -150,28 +178,41 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           );
         }
 
-        const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
-          _user_id: caller.userId,
-          _role: "admin",
-        });
+        let isAdmin = false;
+        if (admin) {
+          try {
+            const { data } = await admin.rpc("has_role", {
+              _user_id: caller.userId,
+              _role: "admin",
+            });
+            isAdmin = Boolean(data);
+          } catch {
+            isAdmin = false;
+          }
 
-        await supabaseAdmin.from("image_uploads").insert({
-          user_id: caller.userId,
-          module_key: moduleKey,
-          entity_type:
-            typeof form.get("entity_type") === "string"
-              ? String(form.get("entity_type")).slice(0, 60)
-              : null,
-          entity_id:
-            typeof form.get("entity_id") === "string"
-              ? String(form.get("entity_id")).slice(0, 120)
-              : null,
-          sha256,
-          size_bytes: file.size,
-          mime_type: mime,
-          url: json.data.url as string,
-          delete_url: (json.data.delete_url as string) ?? null,
-        });
+          try {
+            await admin.from("image_uploads").insert({
+              user_id: caller.userId,
+              module_key: moduleKey,
+              entity_type:
+                typeof form.get("entity_type") === "string"
+                  ? String(form.get("entity_type")).slice(0, 60)
+                  : null,
+              entity_id:
+                typeof form.get("entity_id") === "string"
+                  ? String(form.get("entity_id")).slice(0, 120)
+                  : null,
+              sha256,
+              size_bytes: file.size,
+              mime_type: mime,
+              url: json.data.url as string,
+              delete_url: (json.data.delete_url as string) ?? null,
+            });
+          } catch {
+            /* auditoria opcional */
+          }
+        }
+
 
         return Response.json({
           url: json.data.url as string,

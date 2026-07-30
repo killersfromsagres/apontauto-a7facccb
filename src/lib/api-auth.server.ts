@@ -15,10 +15,34 @@ function bearer(request: Request): string {
   return header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
 }
 
-function anonClient(token?: string): SupabaseClient | null {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+/**
+ * Credenciais públicas do backend. Em alguns provedores (ex.: Vercel) apenas as
+ * variáveis `VITE_*` chegam ao runtime; sem esse fallback o servidor devolvia
+ * 401 para uploads perfeitamente válidos — e o app derrubava a sessão do
+ * usuário achando que o token tinha expirado.
+ */
+function authConfig(): { url: string; key: string } | null {
+  const url =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    import.meta.env?.VITE_SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return null;
+  return { url, key };
+}
+
+/** `true` quando o servidor tem como validar sessões. */
+export function hasAuthConfig(): boolean {
+  return authConfig() !== null;
+}
+
+function anonClient(token?: string): SupabaseClient | null {
+  const config = authConfig();
+  if (!config) return null;
+  const { url, key } = config;
 
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -32,6 +56,7 @@ function anonClient(token?: string): SupabaseClient | null {
     },
   });
 }
+
 
 /**
  * Retorna o usuário autenticado a partir do header `Authorization: Bearer`.
@@ -76,8 +101,18 @@ export async function callerCanAccessModule(
 
 /** Resposta padrão 401 para chamadas sem sessão válida. */
 export function unauthorized(): Response {
-  return Response.json({ error: "Não autorizado" }, { status: 401 });
+  return Response.json({ error: "Não autorizado", code: "session_invalid" }, { status: 401 });
 }
+
+/**
+ * 503 para indisponibilidade de configuração do servidor. Usar isto em vez de
+ * 401 evita que o cliente interprete falha de infraestrutura como sessão
+ * expirada e desconecte o usuário no meio de um envio.
+ */
+export function serviceUnavailable(detail = "Serviço temporariamente indisponível."): Response {
+  return Response.json({ error: detail, code: "server_config" }, { status: 503 });
+}
+
 
 /** Resposta padrão 403 para chamadas sem permissão no módulo. */
 export function forbidden(moduleKey?: string, action = "create"): Response {
