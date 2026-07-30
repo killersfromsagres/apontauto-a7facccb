@@ -124,6 +124,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "agua_bag_movimentos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "agua_bag_movimentos_rota_id_fkey"
             columns: ["rota_id"]
             isOneToOne: false
@@ -243,6 +250,13 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_excecoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
             referencedColumns: ["id"]
           },
         ]
@@ -379,6 +393,13 @@ export type Database = {
             referencedRelation: "agua_pontos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agua_filtro_ativos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
+            referencedColumns: ["id"]
+          },
         ]
       }
       agua_filtro_eventos: {
@@ -421,6 +442,13 @@ export type Database = {
             columns: ["solicitacao_id"]
             isOneToOne: false
             referencedRelation: "agua_filtro_solicitacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_filtro_eventos_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes_operacao"
             referencedColumns: ["id"]
           },
         ]
@@ -478,6 +506,13 @@ export type Database = {
             columns: ["solicitacao_id"]
             isOneToOne: false
             referencedRelation: "agua_filtro_solicitacoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_filtro_preventivas_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes_operacao"
             referencedColumns: ["id"]
           },
         ]
@@ -679,6 +714,13 @@ export type Database = {
             referencedRelation: "agua_pontos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
+            referencedColumns: ["id"]
+          },
         ]
       }
       agua_fotos: {
@@ -754,10 +796,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "agua_fotos_filtro_solicitacao_id_fkey"
+            columns: ["filtro_solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_solicitacoes_operacao"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "agua_fotos_ponto_id_fkey"
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_fotos_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
             referencedColumns: ["id"]
           },
           {
@@ -1060,6 +1116,13 @@ export type Database = {
             referencedRelation: "agua_pontos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "agua_pontos_mesclado_para_fkey"
+            columns: ["mesclado_para"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
+            referencedColumns: ["id"]
+          },
         ]
       }
       agua_programacao: {
@@ -1136,6 +1199,13 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_programacao_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
             referencedColumns: ["id"]
           },
         ]
@@ -1271,6 +1341,13 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_rota_template_paradas_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
             referencedColumns: ["id"]
           },
           {
@@ -1674,6 +1751,13 @@ export type Database = {
             columns: ["ponto_id"]
             isOneToOne: false
             referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_visitas_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
             referencedColumns: ["id"]
           },
           {
@@ -5873,6 +5957,231 @@ export type Database = {
       }
     }
     Views: {
+      agua_filtro_solicitacoes_operacao: {
+        Row: {
+          andar_setor: string | null
+          atendida_por: string | null
+          ativo_id: string | null
+          atualizado_em: string | null
+          concluida_em: string | null
+          criado_em: string | null
+          criado_por: string | null
+          descricao: string | null
+          espaco: string | null
+          id: string | null
+          motivo_outro: string | null
+          motivos: string[] | null
+          numero: number | null
+          origem: string | null
+          ponto_id: string | null
+          predio: string | null
+          prevista_para: string | null
+          prioridade: string | null
+          programada_em: string | null
+          reaberturas: number | null
+          responsavel_2_nome: string | null
+          responsavel_nome: string | null
+          situacao: Database["public"]["Enums"]["agua_filtro_situacao"] | null
+          sla_horas: number | null
+          solicitante_nome: string | null
+          telefone: string | null
+          tipo: string | null
+          validada_em: string | null
+          vence_em: string | null
+        }
+        Insert: {
+          andar_setor?: string | null
+          atendida_por?: string | null
+          ativo_id?: string | null
+          atualizado_em?: string | null
+          concluida_em?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          espaco?: string | null
+          id?: string | null
+          motivo_outro?: string | null
+          motivos?: string[] | null
+          numero?: number | null
+          origem?: string | null
+          ponto_id?: string | null
+          predio?: string | null
+          prevista_para?: string | null
+          prioridade?: string | null
+          programada_em?: string | null
+          reaberturas?: number | null
+          responsavel_2_nome?: string | null
+          responsavel_nome?: string | null
+          situacao?: Database["public"]["Enums"]["agua_filtro_situacao"] | null
+          sla_horas?: number | null
+          solicitante_nome?: never
+          telefone?: never
+          tipo?: string | null
+          validada_em?: string | null
+          vence_em?: string | null
+        }
+        Update: {
+          andar_setor?: string | null
+          atendida_por?: string | null
+          ativo_id?: string | null
+          atualizado_em?: string | null
+          concluida_em?: string | null
+          criado_em?: string | null
+          criado_por?: string | null
+          descricao?: string | null
+          espaco?: string | null
+          id?: string | null
+          motivo_outro?: string | null
+          motivos?: string[] | null
+          numero?: number | null
+          origem?: string | null
+          ponto_id?: string | null
+          predio?: string | null
+          prevista_para?: string | null
+          prioridade?: string | null
+          programada_em?: string | null
+          reaberturas?: number | null
+          responsavel_2_nome?: string | null
+          responsavel_nome?: string | null
+          situacao?: Database["public"]["Enums"]["agua_filtro_situacao"] | null
+          sla_horas?: number | null
+          solicitante_nome?: never
+          telefone?: never
+          tipo?: string | null
+          validada_em?: string | null
+          vence_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_filtro_ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agua_filtro_solicitacoes_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_pontos_operacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_pontos_operacao: {
+        Row: {
+          acesso_observacoes: string | null
+          andar: string | null
+          arquivado_em: string | null
+          ativo: boolean | null
+          atualizado_em: string | null
+          bag_capacidade_litros: number | null
+          bag_tipo: string | null
+          bag_tipo_id: string | null
+          bags_padrao: number | null
+          codigo: string | null
+          contato_nome: string | null
+          contato_telefone: string | null
+          criado_em: string | null
+          descricao: string | null
+          epi_descricao: string | null
+          espaco: string | null
+          estoque_minimo: number | null
+          frequencia: string | null
+          id: string | null
+          imagem_url: string | null
+          janela_fim: string | null
+          janela_inicio: string | null
+          latitude: number | null
+          longitude: number | null
+          ordem: number | null
+          predio: string | null
+          prioridade: string | null
+          requer_epi: boolean | null
+          tempo_estimado_min: number | null
+          veiculo_recomendado: string | null
+        }
+        Insert: {
+          acesso_observacoes?: string | null
+          andar?: string | null
+          arquivado_em?: string | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          bag_capacidade_litros?: number | null
+          bag_tipo?: string | null
+          bag_tipo_id?: string | null
+          bags_padrao?: number | null
+          codigo?: string | null
+          contato_nome?: never
+          contato_telefone?: never
+          criado_em?: string | null
+          descricao?: string | null
+          epi_descricao?: string | null
+          espaco?: string | null
+          estoque_minimo?: number | null
+          frequencia?: string | null
+          id?: string | null
+          imagem_url?: string | null
+          janela_fim?: string | null
+          janela_inicio?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          ordem?: number | null
+          predio?: string | null
+          prioridade?: string | null
+          requer_epi?: boolean | null
+          tempo_estimado_min?: number | null
+          veiculo_recomendado?: string | null
+        }
+        Update: {
+          acesso_observacoes?: string | null
+          andar?: string | null
+          arquivado_em?: string | null
+          ativo?: boolean | null
+          atualizado_em?: string | null
+          bag_capacidade_litros?: number | null
+          bag_tipo?: string | null
+          bag_tipo_id?: string | null
+          bags_padrao?: number | null
+          codigo?: string | null
+          contato_nome?: never
+          contato_telefone?: never
+          criado_em?: string | null
+          descricao?: string | null
+          epi_descricao?: string | null
+          espaco?: string | null
+          estoque_minimo?: number | null
+          frequencia?: string | null
+          id?: string | null
+          imagem_url?: string | null
+          janela_fim?: string | null
+          janela_inicio?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          ordem?: number | null
+          predio?: string | null
+          prioridade?: string | null
+          requer_epi?: boolean | null
+          tempo_estimado_min?: number | null
+          veiculo_recomendado?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_pontos_bag_tipo_id_fkey"
+            columns: ["bag_tipo_id"]
+            isOneToOne: false
+            referencedRelation: "agua_bag_tipos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_bi_assets: {
         Row: {
           ativo: string | null
@@ -6096,11 +6405,17 @@ export type Database = {
     }
     Functions: {
       agua_can: { Args: { required_action?: string }; Returns: boolean }
+      agua_escopo_restrito: { Args: never; Returns: boolean }
+      agua_filtro_escopo_restrito: { Args: never; Returns: boolean }
       agua_gerar_rotas: {
         Args: { p_data?: string; p_origem?: string }
         Returns: Json
       }
       agua_is_gestor: { Args: never; Returns: boolean }
+      agua_meu_nome: { Args: never; Returns: string }
+      agua_perm: { Args: { _perm: string }; Returns: boolean }
+      agua_rota_ativa: { Args: { _rota_id: string }; Returns: boolean }
+      agua_rota_minha: { Args: { _rota_id: string }; Returns: boolean }
       audit_redact: { Args: { payload: Json }; Returns: Json }
       can_access_backorder: {
         Args: { required_action?: string }
