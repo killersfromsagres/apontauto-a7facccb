@@ -70,6 +70,7 @@ import { Route as ApiPublicHooksWhatsappStatusRouteImport } from './routes/api/p
 import { Route as ApiPublicHooksWeatherMonitorRouteImport } from './routes/api/public/hooks/weather-monitor'
 import { Route as ApiPublicHooksWaterQueueCleanupRouteImport } from './routes/api/public/hooks/water-queue-cleanup'
 import { Route as ApiPublicHooksWaterFilterDueMonitorRouteImport } from './routes/api/public/hooks/water-filter-due-monitor'
+import { Route as ApiPublicHooksWaterDailyReportRouteImport } from './routes/api/public/hooks/water-daily-report'
 import { Route as ApiPublicHooksPluviometroRouteImport } from './routes/api/public/hooks/pluviometro'
 import { Route as ApiPublicHooksAguaNotificacoesRouteImport } from './routes/api/public/hooks/agua-notificacoes'
 import { Route as ApiPublicHooksAguaGerarRotasRouteImport } from './routes/api/public/hooks/agua-gerar-rotas'
@@ -423,6 +424,12 @@ const ApiPublicHooksWaterFilterDueMonitorRoute =
     path: '/api/public/hooks/water-filter-due-monitor',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksWaterDailyReportRoute =
+  ApiPublicHooksWaterDailyReportRouteImport.update({
+    id: '/api/public/hooks/water-daily-report',
+    path: '/api/public/hooks/water-daily-report',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksPluviometroRoute =
   ApiPublicHooksPluviometroRouteImport.update({
     id: '/api/public/hooks/pluviometro',
@@ -571,6 +578,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/water-daily-report': typeof ApiPublicHooksWaterDailyReportRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
   '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -644,6 +652,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/water-daily-report': typeof ApiPublicHooksWaterDailyReportRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
   '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -721,6 +730,7 @@ export interface FileRoutesById {
   '/api/public/hooks/agua-gerar-rotas': typeof ApiPublicHooksAguaGerarRotasRoute
   '/api/public/hooks/agua-notificacoes': typeof ApiPublicHooksAguaNotificacoesRoute
   '/api/public/hooks/pluviometro': typeof ApiPublicHooksPluviometroRoute
+  '/api/public/hooks/water-daily-report': typeof ApiPublicHooksWaterDailyReportRoute
   '/api/public/hooks/water-filter-due-monitor': typeof ApiPublicHooksWaterFilterDueMonitorRoute
   '/api/public/hooks/water-queue-cleanup': typeof ApiPublicHooksWaterQueueCleanupRoute
   '/api/public/hooks/weather-monitor': typeof ApiPublicHooksWeatherMonitorRoute
@@ -798,6 +808,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/water-daily-report'
     | '/api/public/hooks/water-filter-due-monitor'
     | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
@@ -871,6 +882,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/water-daily-report'
     | '/api/public/hooks/water-filter-due-monitor'
     | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
@@ -947,6 +959,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agua-gerar-rotas'
     | '/api/public/hooks/agua-notificacoes'
     | '/api/public/hooks/pluviometro'
+    | '/api/public/hooks/water-daily-report'
     | '/api/public/hooks/water-filter-due-monitor'
     | '/api/public/hooks/water-queue-cleanup'
     | '/api/public/hooks/weather-monitor'
@@ -971,6 +984,7 @@ export interface RootRouteChildren {
   ApiPublicHooksAguaGerarRotasRoute: typeof ApiPublicHooksAguaGerarRotasRoute
   ApiPublicHooksAguaNotificacoesRoute: typeof ApiPublicHooksAguaNotificacoesRoute
   ApiPublicHooksPluviometroRoute: typeof ApiPublicHooksPluviometroRoute
+  ApiPublicHooksWaterDailyReportRoute: typeof ApiPublicHooksWaterDailyReportRoute
   ApiPublicHooksWaterFilterDueMonitorRoute: typeof ApiPublicHooksWaterFilterDueMonitorRoute
   ApiPublicHooksWaterQueueCleanupRoute: typeof ApiPublicHooksWaterQueueCleanupRoute
   ApiPublicHooksWeatherMonitorRoute: typeof ApiPublicHooksWeatherMonitorRoute
@@ -1406,6 +1420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWaterFilterDueMonitorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/water-daily-report': {
+      id: '/api/public/hooks/water-daily-report'
+      path: '/api/public/hooks/water-daily-report'
+      fullPath: '/api/public/hooks/water-daily-report'
+      preLoaderRoute: typeof ApiPublicHooksWaterDailyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/pluviometro': {
       id: '/api/public/hooks/pluviometro'
       path: '/api/public/hooks/pluviometro'
@@ -1677,6 +1698,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksAguaGerarRotasRoute: ApiPublicHooksAguaGerarRotasRoute,
   ApiPublicHooksAguaNotificacoesRoute: ApiPublicHooksAguaNotificacoesRoute,
   ApiPublicHooksPluviometroRoute: ApiPublicHooksPluviometroRoute,
+  ApiPublicHooksWaterDailyReportRoute: ApiPublicHooksWaterDailyReportRoute,
   ApiPublicHooksWaterFilterDueMonitorRoute:
     ApiPublicHooksWaterFilterDueMonitorRoute,
   ApiPublicHooksWaterQueueCleanupRoute: ApiPublicHooksWaterQueueCleanupRoute,
