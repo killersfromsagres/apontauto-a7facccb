@@ -40,6 +40,13 @@ function fmtBytes(n: number): string {
   return `${(n / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 }
 
+function friendlyError(err: unknown, fallback: string): string {
+  const msg = err instanceof Error ? err.message : String(err ?? "");
+  if (/unauthorized|invalid token|jwt|401/i.test(msg))
+    return "Sessão expirada. Saia e entre novamente para listar as imagens.";
+  return msg || fallback;
+}
+
 function Page() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
 
@@ -84,7 +91,7 @@ function Page() {
       if (!data.imgbbConfigured) toast.warning("IMGBB_API_KEY não configurada no servidor.");
     } catch (err: any) {
       setPhase("idle");
-      toast.error(err?.message ?? "Falha ao listar imagens");
+      toast.error(friendlyError(err, "Falha ao listar imagens"));
     }
   };
 
@@ -97,7 +104,7 @@ function Page() {
         setInv(data);
       } catch (err: any) {
         setPhase("idle");
-        toast.error(err?.message ?? "Falha ao listar imagens");
+        toast.error(friendlyError(err, "Falha ao listar imagens"));
         return;
       }
     }
@@ -157,7 +164,7 @@ function Page() {
       );
     } catch (err: any) {
       setPhase("idle");
-      toast.error(err?.message ?? "Falha durante a migração");
+      toast.error(friendlyError(err, "Falha durante a migração"));
     }
   };
 
