@@ -467,15 +467,16 @@ function EntregaSheet({
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
-              Bags entregues
+              Bags entregues — unidades inteiras
             </Label>
             <div className="flex items-center gap-3">
               <Button
                 size="icon"
                 variant="outline"
                 className="h-12 w-12 rounded-xl"
-                aria-label="Diminuir"
-                onClick={() => setBags((b) => Math.max(0, +(b - 0.5).toFixed(1)))}
+                aria-label="Diminuir uma bag"
+                disabled={bags <= 1}
+                onClick={() => setBags((b) => Math.max(1, Math.round(b) - 1))}
               >
                 <Minus className="h-5 w-5" />
               </Button>
@@ -486,13 +487,15 @@ function EntregaSheet({
                 size="icon"
                 variant="outline"
                 className="h-12 w-12 rounded-xl"
-                aria-label="Aumentar"
-                onClick={() => setBags((b) => +(b + 0.5).toFixed(1))}
+                aria-label="Aumentar uma bag"
+                onClick={() => setBags((b) => Math.round(b) + 1)}
               >
                 <Plus className="h-5 w-5" />
               </Button>
+              <span className="text-sm text-muted-foreground">bag(s) inteira(s)</span>
             </div>
           </div>
+
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
