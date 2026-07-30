@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSettings } from "@/lib/settings";
 import {
   existeHashNaFila,
   listarFila,
@@ -71,8 +72,13 @@ export async function hashBlob(blob: Blob): Promise<string> {
  */
 export async function prepararFoto(
   file: Blob,
-  { maxDim = MAX_DIM_PADRAO, quality = QUALIDADE }: { maxDim?: number; quality?: number } = {},
+  opcoes: { maxDim?: number; quality?: number } = {},
 ): Promise<FotoPreparada> {
+  // Item 22: qualidade e lado máximo vêm das configurações administrativas.
+  const admin = getSettings().aguaAdmin?.evidencias;
+  const maxDim = opcoes.maxDim ?? admin?.ladoMaximoPx ?? MAX_DIM_PADRAO;
+  const quality = opcoes.quality ?? admin?.qualidadeImagem ?? QUALIDADE;
+
   const capturadaEm = new Date().toISOString();
   const fallback = async (): Promise<FotoPreparada> => ({
     blob: file,

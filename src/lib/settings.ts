@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  DEFAULT_AGUA_ADMIN,
+  mergeAguaAdmin,
+  type AguaAdminConfig,
+} from "@/features/water-delivery/schemas/config";
 
 export interface WhatsAppNumeroAdmin {
   label: string;
@@ -45,6 +50,8 @@ export interface AppSettings {
   defaultTaskMinutes: number;
   workdays: number[];
   aguaWhatsapp: AguaWhatsappConfig;
+  /** Configurações administrativas do módulo Água (item 22). */
+  aguaAdmin: AguaAdminConfig;
 }
 
 export const DEFAULT_AGUA_WHATSAPP: AguaWhatsappConfig = {
@@ -95,6 +102,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultTaskMinutes: 60,
   workdays: [1, 2, 3, 4, 5],
   aguaWhatsapp: DEFAULT_AGUA_WHATSAPP,
+  aguaAdmin: DEFAULT_AGUA_ADMIN,
 };
 
 
@@ -125,6 +133,7 @@ export async function loadSettings(): Promise<AppSettings> {
         ...(parcial.aguaWhatsapp ?? {}),
         cloud: { ...DEFAULT_AGUA_WHATSAPP.cloud, ...(parcial.aguaWhatsapp?.cloud ?? {}) },
       },
+      aguaAdmin: mergeAguaAdmin(parcial.aguaAdmin),
     };
   }
 

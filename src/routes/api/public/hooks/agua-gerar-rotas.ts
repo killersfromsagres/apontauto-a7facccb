@@ -34,8 +34,10 @@ async function handle(request: Request) {
     .select("data")
     .limit(1)
     .maybeSingle();
-  const conf = ((settings?.data ?? {}) as Record<string, any>).aguaGeracao ?? {};
-  const horaAlvo = Number.isFinite(Number(conf.hora)) ? Number(conf.hora) : 5;
+  const raw = (settings?.data ?? {}) as Record<string, any>;
+  // Nova chave (item 22): aguaAdmin.operacao.horaGeracao; mantém a antiga por compatibilidade.
+  const horaConfig = raw.aguaAdmin?.operacao?.horaGeracao ?? raw.aguaGeracao?.hora;
+  const horaAlvo = Number.isFinite(Number(horaConfig)) ? Number(horaConfig) : 5;
 
   if (!body.forcar && horaSP() !== horaAlvo) {
     return Response.json({ skipped: true, reason: "fora do horário configurado", horaAlvo });
