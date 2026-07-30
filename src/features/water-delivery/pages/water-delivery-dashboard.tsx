@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -27,6 +27,10 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, KpiCard } from "@/components/pcm";
 import { cn } from "@/lib/utils";
+
+const BagsPorDiaChart = lazy(
+  () => import("@/features/water-delivery/components/bags-por-dia-chart"),
+);
 import {
   diaSemanaISO,
   hojeISO,
