@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ImageOff } from "lucide-react";
+import { Award, ChevronDown, ImageOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +18,11 @@ import {
 } from "@/features/fleet/api";
 import { PHOTO_CATEGORIES, STATUS_LABEL, STATUS_TONE } from "@/features/fleet/checklist-items";
 import { signPhotoUrls } from "@/features/fleet/photos";
+import { generateChecklistCertificate } from "@/features/fleet/certificate";
 
 export function FleetHistory() {
+  const [certifyingId, setCertifyingId] = useState<string | null>(null);
+
   const vehiclesQ = useQuery({ queryKey: ["fleet", "vehicles"], queryFn: listFleetVehicles });
   const checklistsQ = useQuery({
     queryKey: ["fleet", "checklists"],
