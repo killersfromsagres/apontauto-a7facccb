@@ -662,39 +662,58 @@ function Summary({ label, value }: { label: string; value: string }) {
 
 function PhotoField({
   label,
-  url,
-  urls,
-  busy,
-  onFile,
+  photos,
+  multiple,
+  onFiles,
   onRemove,
+  onRetry,
 }: {
   label: string;
-  url?: string | null;
-  urls?: string[];
-  busy: boolean;
-  onFile: (file: File) => void;
-  onRemove?: (url: string) => void;
+  photos: Photo[];
+  multiple?: boolean;
+  onFiles: (files: File[]) => void;
+  onRemove?: (id: string) => void;
+  onRetry?: (id: string) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-  const list = urls ?? (url ? [url] : []);
-  const multiple = Array.isArray(urls);
+  const busy = photos.some((p) => p.status === "uploading");
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {list.length > 0 ? (
-        <div className={cn("grid gap-1.5", list.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
-          {list.map((src) => (
-            <div key={src} className="relative">
+      {photos.length > 0 ? (
+        <div className={cn("grid gap-1.5", photos.length > 1 ? "grid-cols-2" : "grid-cols-1")}>
+          {photos.map((p) => (
+            <div key={p.id} className="relative">
               <ResilientPhoto
-                src={src}
-                alt={label}
-                className={cn("w-full rounded-xl object-cover", list.length > 1 ? "h-20" : "h-32")}
+                photo={p}
+                className={cn(
+                  "w-full rounded-xl object-cover",
+                  photos.length > 1 ? "h-20" : "h-32",
+                  p.status !== "ok" && "opacity-60",
+                )}
               />
+
+              {p.status === "uploading" && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/35">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </span>
+              )}
+
+              {p.status === "error" && (
+                <button
+                  type="button"
+                  onClick={() => onRetry?.(p.id)}
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-rose-950/70 px-2 text-center text-[11px] font-semibold text-rose-100"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  Tentar novamente
+                </button>
+              )}
 
               {onRemove && (
                 <button
                   type="button"
-                  onClick={() => onRemove(src)}
+                  onClick={() => onRemove(p.id)}
                   className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-bold text-white"
                 >
                   remover
@@ -705,18 +724,19 @@ function PhotoField({
         </div>
       ) : (
         <div className="flex h-32 w-full items-center justify-center rounded-xl border border-dashed border-border/60 text-muted-foreground">
-          {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+          <Camera className="h-5 w-5" />
         </div>
       )}
       <input
         ref={ref}
         type="file"
         accept="image/*"
-        capture="environment"
+        multiple={multiple}
+        capture={multiple ? undefined : "environment"}
         className="hidden"
         onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onFile(f);
+          const files = Array.from(e.target.files ?? []);
+          if (files.length) onFiles(multiple ? files : files.slice(0, 1));
           e.target.value = "";
         }}
       />
@@ -724,8 +744,7 @@ function PhotoField({
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-[40px] w-full"
-        disabled={busy}
+        className="min-h-[44px] w-full"
         onClick={() => ref.current?.click()}
       >
         {busy ? (
@@ -733,8 +752,8 @@ function PhotoField({
             <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Enviando…
           </>
         ) : multiple ? (
-          "Adicionar foto"
-        ) : list.length > 0 ? (
+          "Adicionar fotos"
+        ) : photos.length > 0 ? (
           "Substituir foto"
         ) : (
           "Capturar / escolher"
@@ -743,6 +762,7 @@ function PhotoField({
     </div>
   );
 }
+
 
 
 function CollaboratorFields({
