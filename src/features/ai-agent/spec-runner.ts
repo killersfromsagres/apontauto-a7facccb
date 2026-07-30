@@ -1,0 +1,156 @@
+// Execução determinística do plano devolvido pela IA sobre o dataset local.
+
+import type { Dataset, DataRow, Filtro, Metrica, TabelaSpec } from "./types";
+
+export interface TabelaResultado {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  headers: string[];
+  rows: (string | number)[][];
+  total: number;
+}
+
+const txt = (v: unknown) =>
+  String(v ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+export function toNumber(v: unknown): number | null {
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const s = String(v ?? "")
+    .replace(/[^\d,.-]/g, "")
+    .replace(/\.(?=\d{3}\b)/g, "")
+    .replace(",", ".");
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function matchFiltro(row: DataRow, f: Filtro): boolean {
+  const raw = row[f.campo];
+  const val = txt(raw);
+  const alvo = txt(f.valor);
+  switch (f.operador) {
+    case "igual":
+      return val === alvo;
+    case "diferente":
+      return val !== alvo;
+    case "contem":
+      return val.includes(alvo);
+    case "naoContem":
+      return !val.includes(alvo);
+    case "vazio":
+      return val === "";
+    case "naoVazio":
+      return val !== "";
+    case "maior": {
+      const a = toNumber(raw);
+      const b = toNumber(f.valor);
+      return a != null && b != null && a > b;
+    }
+    case "menor": {
+      const a = toNumber(raw);
+      const b = toNumber(f.valor);
+      return a != null && b != null && a < b;
+    }
+    default:
+      return true;
+  }
+}
+
+function aplicarMetrica(rows: DataRow[], m: Metrica): number {
+  if (m.agregacao === "contagem" || !m.campo) return rows.length;
+  if (m.agregacao === "distintos") {
+    return new Set(rows.map((r) => String(r[m.campo as string] ?? "").trim())).size;
+  }
+  const nums = rows
+    .map((r) => toNumber(r[m.campo as string]))
+    .filter((n): n is number => n != null);
+  if (nums.length === 0) return 0;
+  switch (m.agregacao) {
+    case "soma":
+      return round(nums.reduce((a, b) => a + b, 0));
+    case "media":
+      return round(nums.reduce((a, b) => a + b, 0) / nums.length);
+    case "min":
+      return round(Math.min(...nums));
+    case "max":
+      return round(Math.max(...nums));
+    default:
+      return rows.length;
+  }
+}
+
+const round = (n: number) => Math.round(n * 100) / 100;
+
+export function runTabela(ds: Dataset, spec: TabelaSpec): TabelaResultado {
+  const validCol = (c: string) => ds.columns.includes(c);
+
+  let rows = ds.rows;
+  for (const f of spec.filtros) {
+    if (!validCol(f.campo)) continue;
+    rows = rows.filter((r) => matchFiltro(r, f));
+  }
+
+  const total = rows.length;
+  let headers: string[];
+  let out: (string | number)[][];
+
+  const grupos = spec.agruparPor.filter(validCol);
+
+  if (spec.tipo === "agrupado" && grupos.length > 0) {
+    const metricas: Metrica[] =
+      spec.metricas.length > 0
+        ? spec.metricas.filter((m) => !m.campo || validCol(m.campo))
+        : [{ rotulo: "Chamados", campo: null, agregacao: "contagem" }];
+
+    const buckets = new Map<string, { keys: string[]; rows: DataRow[] }>();
+    for (const r of rows) {
+      const keys = grupos.map((g) => String(r[g] ?? "").trim() || "(vazio)");
+      const id = keys.join(" ▸ ");
+      const b = buckets.get(id) ?? { keys, rows: [] };
+      b.rows.push(r);
+      buckets.set(id, b);
+    }
+
+    headers = [...grupos, ...metricas.map((m) => m.rotulo)];
+    out = Array.from(buckets.values()).map((b) => [
+      ...b.keys,
+      ...metricas.map((m) => aplicarMetrica(b.rows, m)),
+    ]);
+
+    const ordIdx = spec.ordenarPor
+      ? headers.findIndex((h) => h.toLowerCase() === spec.ordenarPor!.toLowerCase())
+      : grupos.length;
+    const idx = ordIdx >= 0 ? ordIdx : grupos.length;
+    out.sort((a, b) => compare(a[idx], b[idx], spec.ordem));
+  } else {
+    const cols = spec.colunas.filter(validCol);
+    headers = cols.length > 0 ? cols : ds.columns;
+    out = rows.map((r) => headers.map((h) => r[h] ?? ""));
+    if (spec.ordenarPor) {
+      const idx = headers.findIndex((h) => h.toLowerCase() === spec.ordenarPor!.toLowerCase());
+      if (idx >= 0) out.sort((a, b) => compare(a[idx], b[idx], spec.ordem));
+    }
+  }
+
+  if (spec.limite && out.length > spec.limite) out = out.slice(0, spec.limite);
+
+  return { id: spec.id, nome: spec.nome, descricao: spec.descricao, headers, rows: out, total };
+}
+
+function compare(a: unknown, b: unknown, ordem: "asc" | "desc") {
+  const na = toNumber(a);
+  const nb = toNumber(b);
+  let cmp: number;
+  if (na != null && nb != null) cmp = na - nb;
+  else cmp = String(a ?? "").localeCompare(String(b ?? ""), "pt-BR");
+  return ordem === "asc" ? cmp : -cmp;
+}
+
+export function runSpecTables(ds: Dataset, tabelas: TabelaSpec[]): TabelaResultado[] {
+  return tabelas.map((t) => runTabela(ds, t));
+}
