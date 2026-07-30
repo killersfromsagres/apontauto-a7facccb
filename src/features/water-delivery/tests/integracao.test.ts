@@ -274,7 +274,7 @@ describe("E2E — gestor importa, operador executa offline e sincroniza", () => 
         fotos: ["https://i.ibb.co/evidencia.jpg"],
         recebido_por: "Ana",
       },
-      baseAtualizadoEm: parada.atualizado_em ?? null,
+      baseAtualizadoEm: (parada as any).atualizado_em ?? null,
     } as never);
 
     expect(await lerFila()).toHaveLength(1);
