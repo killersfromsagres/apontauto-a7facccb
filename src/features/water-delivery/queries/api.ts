@@ -184,6 +184,34 @@ export async function listProgramacao(): Promise<ProgramacaoItem[]> {
   return (data ?? []) as ProgramacaoItem[];
 }
 
+export interface PaginaVisitas {
+  itens: Visita[];
+  total: number;
+}
+
+/**
+ * Item 24 — histórico paginado no servidor (índice por data). Evita trazer
+ * meses inteiros de visitas para a memória do navegador.
+ */
+export async function listVisitasPagina(
+  inicio: string,
+  fim: string,
+  pagina = 0,
+  tamanho = 50,
+): Promise<PaginaVisitas> {
+  const from = pagina * tamanho;
+  const { data, error, count } = await db
+    .from("agua_visitas")
+    .select(VISITA_FIELDS, { count: "exact" })
+    .gte("data", inicio)
+    .lte("data", fim)
+    .order("data", { ascending: false })
+    .order("ordem", { ascending: true })
+    .range(from, from + tamanho - 1);
+  if (error) throw error;
+  return { itens: (data ?? []) as Visita[], total: count ?? 0 };
+}
+
 export async function listVisitas(inicio: string, fim: string): Promise<Visita[]> {
   const { data, error } = await db
     .from("agua_visitas")
