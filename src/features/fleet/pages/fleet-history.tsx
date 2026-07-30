@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Award, ChevronDown, ImageOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
