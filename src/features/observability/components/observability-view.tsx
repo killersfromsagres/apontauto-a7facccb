@@ -65,6 +65,15 @@ export function ObservabilityView() {
     enabled: canSee,
   });
 
+  const jobRuns = useQuery({
+    queryKey: ["observability", "job-runs"],
+    queryFn: () => fetchJobRuns(60),
+    staleTime: staleTimes.short,
+    refetchInterval: 60_000,
+    enabled: canSee,
+  });
+
+
   const data = snapshot.data;
   const falhando = useMemo(
     () => (data?.integrations ?? []).filter((i) => i.status !== "ok").length,
