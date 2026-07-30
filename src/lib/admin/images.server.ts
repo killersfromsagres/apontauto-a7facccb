@@ -199,11 +199,12 @@ export async function migrateSourceBatch(
     .limit(opts.batchSize);
   if (error) throw new Error(`${src.table}: ${error.message}`);
 
+  const pending = (rows ?? []) as Array<{ id: string; storage_path: string }>;
   const failures: MigrationBatchResult["failures"] = [];
   const links: MigrationBatchResult["links"] = [];
   let freedBytes = 0;
 
-  for (const row of (rows ?? []) as Array<{ id: string; storage_path: string }>) {
+  for (const row of pending) {
     const path = row.storage_path;
     try {
       const dl = await admin.storage.from(src.bucket).download(path);
@@ -263,7 +264,7 @@ export async function migrateSourceBatch(
 
   return {
     source: src.key,
-    processed: (rows ?? []).length,
+    processed: pending.length,
     migrated: links.length,
     freedBytes,
     remaining: count ?? 0,
