@@ -35,6 +35,11 @@ export const VehicleCard3D = memo(function VehicleCard3D({
   onSelect: (v: Vehicle) => void;
 }) {
   const photo = vehicle.thumbnail_url || vehicle.model_poster_url;
+  const brand = inferBrand(`${vehicle.brand ?? ""} ${vehicle.model ?? ""}`);
+  const use = inferVehicleUse(
+    `${vehicle.model ?? ""} ${vehicle.version ?? ""} ${vehicle.prefix ?? ""}`,
+  );
+
 
   return (
     <button
