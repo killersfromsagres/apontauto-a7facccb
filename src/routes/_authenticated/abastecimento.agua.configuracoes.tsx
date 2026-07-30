@@ -114,10 +114,13 @@ function Configuracoes() {
             Limpar cache ({cacheados})
           </Button>
           <span className="text-xs text-muted-foreground">
-            {online ? "Conectado" : "Sem conexão"} · {lerFila().length} pendência(s)
+            {online ? "Conectado" : "Sem conexão"} · {pendentes} pendência(s)
           </span>
         </div>
       </GlassCard>
+
+      <FilaSincronizacaoCard />
+
 
       {acesso.allowed && <GeracaoCard />}
 
