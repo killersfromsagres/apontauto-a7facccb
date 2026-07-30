@@ -208,14 +208,14 @@ function HistoricoPage() {
             {filtered.map((o) => {
               const st = equipeStyles(o.equipe);
               return (
-                <li key={o.id}>
+                <li key={o.id} className="min-w-0">
                   <div
-                    className={`flex w-full items-start gap-3 rounded-md px-3 py-3 text-left transition ${st.row}`}
+                    className={`flex w-full min-w-0 items-start gap-2 rounded-md px-2 py-3 text-left transition sm:gap-3 sm:px-3 ${st.row}`}
                   >
                     <button
                       type="button"
                       onClick={() => setOpen(o)}
-                      className="flex flex-1 items-start gap-3 text-left"
+                      className="flex min-w-0 flex-1 items-start gap-2 text-left sm:gap-3"
                     >
                       <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
                       <div className="min-w-0 flex-1">
@@ -336,9 +336,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
 
   return (
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto sm:w-full">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="w-[calc(100vw-1.5rem)] max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:w-full sm:p-6">
+        <DialogHeader className="min-w-0">
+          <DialogTitle className="text-base break-words [overflow-wrap:anywhere] sm:text-lg">
             OS {os?.numero_os} — {os?.nome_os ?? "sem título"}
           </DialogTitle>
         </DialogHeader>
@@ -347,8 +347,8 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
             <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
           </div>
         ) : (
-          <div className="space-y-4">
-            <section className="rounded-lg border bg-muted/30 p-3">
+          <div className="min-w-0 space-y-4">
+            <section className="min-w-0 overflow-hidden rounded-lg border bg-muted/30 p-3">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary" className="text-[10px]">
                   {os?.status}
@@ -364,7 +364,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                   </span>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-x-4 gap-y-2 text-xs min-[380px]:grid-cols-2 sm:grid-cols-3">
                 <InfoField label="Prédio" value={os?.predio ?? "—"} />
                 <InfoField label="Andar" value={os?.andar ?? "—"} />
                 <InfoField label="Local" value={os?.local ?? "—"} />
@@ -375,6 +375,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 )}
               </div>
             </section>
+
 
             <section>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -483,9 +484,14 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               {data?.pecas.length ? (
                 <ul className="space-y-2">
                   {data.pecas.map((p) => (
-                    <li key={p.id} className="rounded-md border bg-background/40 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{p.descricao}</span>
+                    <li
+                      key={p.id}
+                      className="min-w-0 overflow-hidden rounded-md border bg-background/40 p-3 text-sm"
+                    >
+                      <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="font-medium break-words [overflow-wrap:anywhere]">
+                          {p.descricao}
+                        </span>
                         <Badge variant="outline" className="text-[10px]">
                           Qtd {p.quantidade}
                         </Badge>
@@ -510,7 +516,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         </div>
                       )}
                       {p.observacao && (
-                        <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>
+                        <p className="mt-1 text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
+                          {p.observacao}
+                        </p>
                       )}
                     </li>
                   ))}
@@ -527,13 +535,16 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               {data?.problemas.length ? (
                 <ul className="space-y-2">
                   {data.problemas.map((pr) => (
-                    <li key={pr.id} className="rounded-md border bg-background/40 p-3 text-sm">
+                    <li
+                      key={pr.id}
+                      className="min-w-0 overflow-hidden rounded-md border bg-background/40 p-3 text-sm"
+                    >
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="text-[10px]">
                           {pr.gravidade}
                         </Badge>
                       </div>
-                      <p className="mt-1">{pr.descricao}</p>
+                      <p className="mt-1 break-words [overflow-wrap:anywhere]">{pr.descricao}</p>
                     </li>
                   ))}
                 </ul>
@@ -565,7 +576,7 @@ function InfoField({
         {label}
       </div>
       <div
-        className={`truncate text-sm ${mono ? "font-mono" : ""} ${
+        className={`text-sm break-words [overflow-wrap:anywhere] ${mono ? "font-mono" : ""} ${
           highlight ? "font-semibold text-emerald-700 dark:text-emerald-300" : ""
         }`}
       >
