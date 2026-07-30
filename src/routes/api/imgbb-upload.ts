@@ -118,19 +118,34 @@ export const Route = createFileRoute("/api/imgbb-upload")({
         }
         const sha256 = await sha256Hex(buf);
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-        const { count } = await supabaseAdmin
-          .from("image_uploads")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", caller.userId)
-          .gte("created_at", since);
-        if ((count ?? 0) >= 150) {
-          return Response.json(
-            { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
-            { status: 429, headers: { "Retry-After": "600" } },
-          );
+        // Auditoria/rate-limit são melhores-esforços: se o cliente
+        // administrativo não estiver disponível no runtime, o envio continua.
+        let admin: any = null;
+        try {
+          admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
+        } catch {
+          admin = null;
         }
+
+        if (admin) {
+          try {
+            const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const { count } = await admin
+              .from("image_uploads")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", caller.userId)
+              .gte("created_at", since);
+            if ((count ?? 0) >= 150) {
+              return Response.json(
+                { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
+                { status: 429, headers: { "Retry-After": "600" } },
+              );
+            }
+          } catch {
+            /* sem contagem: segue o envio */
+          }
+        }
+
 
         const rawName = typeof (file as File).name === "string" ? (file as File).name : "";
         const provided = form.get("name");
