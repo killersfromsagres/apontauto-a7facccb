@@ -295,16 +295,17 @@ export function FleetChecklist() {
                       type="button"
                       onClick={() => setAnswers((a) => ({ ...a, [item.key]: s }))}
                       className={cn(
-                        "h-10 rounded-lg border text-xs font-medium transition",
+                        "tap-press h-10 rounded-lg border text-xs font-medium",
                         answers[item.key] === s
-                          ? STATUS_TONE[s]
-                          : "border-border/60 text-muted-foreground hover:bg-muted/50",
+                          ? cn(STATUS_TONE[s], "shadow-elegant ring-1 ring-primary/20")
+                          : "border-border/60 text-muted-foreground hover:border-primary/30 hover:bg-muted/50",
                       )}
                     >
                       {STATUS_LABEL[s]}
                     </button>
                   ))}
                 </div>
+
               </div>
             ))}
           </div>
