@@ -68,9 +68,11 @@ export function ImportadorWizard({ onDone }: { onDone: () => void }) {
   const [passo, setPasso] = useState(0);
   const [lendo, setLendo] = useState(false);
 
-  const [arquivo, setArquivo] = useState<{ nome: string; hash: string; buffer: ArrayBuffer } | null>(
-    null,
-  );
+  const [arquivo, setArquivo] = useState<{
+    nome: string;
+    hash: string;
+    buffer: ArrayBuffer;
+  } | null>(null);
   const [inspecao, setInspecao] = useState<InspecaoPlanilha | null>(null);
   const [abas, setAbas] = useState<Partial<Record<number, string>>>({});
   const [mapeamento, setMapeamento] = useState<MapeamentoColunas>({});
@@ -80,10 +82,7 @@ export function ImportadorWizard({ onDone }: { onDone: () => void }) {
   const [bagsPadrao, setBagsPadrao] = useState(1);
   const [loteId, setLoteId] = useState<string | null>(null);
 
-  const revisao = useMemo(
-    () => (leitura?.pontos ?? []).filter((p) => p.revisao),
-    [leitura],
-  );
+  const revisao = useMemo(() => (leitura?.pontos ?? []).filter((p) => p.revisao), [leitura]);
 
   function reset() {
     setPasso(0);

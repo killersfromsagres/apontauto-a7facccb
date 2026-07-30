@@ -341,9 +341,7 @@ function ProgramacaoSemanal() {
                       <Checkbox
                         checked={selecionados.includes(l.id)}
                         onCheckedChange={(c) =>
-                          setSelecionados((s) =>
-                            c ? [...s, l.id] : s.filter((x) => x !== l.id),
-                          )
+                          setSelecionados((s) => (c ? [...s, l.id] : s.filter((x) => x !== l.id)))
                         }
                         disabled={!gestor}
                       />
@@ -815,7 +813,12 @@ function FeriadosCard({
     <GlassCard className="space-y-3 p-3 sm:p-4">
       <h2 className="text-sm font-semibold">Feriados e bloqueios temporários</h2>
       <div className="grid gap-2 sm:grid-cols-[150px_1fr_150px_auto]">
-        <Input type="date" value={data} onChange={(e) => setData(e.target.value)} className="h-11" />
+        <Input
+          type="date"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          className="h-11"
+        />
         <Input
           placeholder="Descrição"
           value={descricao}

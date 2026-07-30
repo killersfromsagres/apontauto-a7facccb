@@ -200,9 +200,10 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer, opts: OpcoesLeitura = {}): 
   // ---------- abas diárias (fonte da rota real) ----------
   for (const d of DIAS) {
     const escolhida = opts.abas?.[d.dia];
-    const nome = escolhida && wb.SheetNames.includes(escolhida)
-      ? escolhida
-      : wb.SheetNames.find((s) => d.aliases.test(s.trim()));
+    const nome =
+      escolhida && wb.SheetNames.includes(escolhida)
+        ? escolhida
+        : wb.SheetNames.find((s) => d.aliases.test(s.trim()));
     if (!nome) {
       divergencias.push({
         tipo: "aba_ausente",
@@ -214,9 +215,13 @@ export function lerPlanilhaAgua(buffer: ArrayBuffer, opts: OpcoesLeitura = {}): 
     }
     const linhas = XLSX.utils.sheet_to_json<Linha>(wb.Sheets[nome], { defval: "" });
     for (const row of linhas) {
-      const predio = normPredio(col(row, ...[map.predio, "Prédio", "Predio"].filter(Boolean) as string[]));
-      const espaco = normEspaco(col(row, ...[map.espaco, "Espaço", "Espaco"].filter(Boolean) as string[]));
-      const andar = norm(col(row, ...[map.andar, "Andar"].filter(Boolean) as string[]));
+      const predio = normPredio(
+        col(row, ...([map.predio, "Prédio", "Predio"].filter(Boolean) as string[])),
+      );
+      const espaco = normEspaco(
+        col(row, ...([map.espaco, "Espaço", "Espaco"].filter(Boolean) as string[])),
+      );
+      const andar = norm(col(row, ...([map.andar, "Andar"].filter(Boolean) as string[])));
       if (!predio && !espaco) continue;
       totalLinhas += 1;
       if (!predio) {
