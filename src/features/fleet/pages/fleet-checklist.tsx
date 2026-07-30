@@ -295,16 +295,17 @@ export function FleetChecklist() {
                       type="button"
                       onClick={() => setAnswers((a) => ({ ...a, [item.key]: s }))}
                       className={cn(
-                        "h-10 rounded-lg border text-xs font-medium transition",
+                        "tap-press h-10 rounded-lg border text-xs font-medium",
                         answers[item.key] === s
-                          ? STATUS_TONE[s]
-                          : "border-border/60 text-muted-foreground hover:bg-muted/50",
+                          ? cn(STATUS_TONE[s], "shadow-elegant ring-1 ring-primary/20")
+                          : "border-border/60 text-muted-foreground hover:border-primary/30 hover:bg-muted/50",
                       )}
                     >
                       {STATUS_LABEL[s]}
                     </button>
                   ))}
                 </div>
+
               </div>
             ))}
           </div>
@@ -336,18 +337,20 @@ export function FleetChecklist() {
                 onClick={() => openPicker(c.key)}
                 aria-label={`Adicionar foto: ${c.label}`}
                 className={cn(
-                  "group relative aspect-square overflow-hidden rounded-2xl border text-left transition active:scale-[0.97]",
+                  "photo-tile group relative aspect-square overflow-hidden rounded-2xl border text-left",
                   shots.length
                     ? "border-primary/50 shadow-elegant"
                     : "border-dashed border-border/70 bg-background/40 hover:bg-muted/40",
                 )}
               >
+
                 {cover ? (
                   <img
                     src={cover.preview}
                     alt={c.label}
-                    className="absolute inset-0 h-full w-full object-cover"
+                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
+
                 ) : (
                   <span className="absolute inset-0 flex items-center justify-center">
                     <Camera className="h-6 w-6 text-muted-foreground/70 transition group-hover:text-primary" />
@@ -454,7 +457,12 @@ export function FleetChecklist() {
             )}
             {uploading && <span>Enviando fotos…</span>}
           </div>
-          <Button className="h-12 w-full sm:w-auto" onClick={submit} disabled={save.isPending}>
+          <Button
+            className="tap-press h-12 w-full shadow-elegant hover:shadow-glow sm:w-auto"
+            onClick={submit}
+            disabled={save.isPending}
+          >
+
             {save.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -496,12 +504,13 @@ function VehicleOption({
       type="button"
       onClick={onSelect}
       className={cn(
-        "flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left transition",
+        "tap-press flex min-w-0 items-center gap-3 rounded-xl border p-3 text-left",
         selected
-          ? "border-primary/60 bg-primary/10"
-          : "border-border/60 bg-background/40 hover:bg-muted/40",
+          ? "border-primary/60 bg-primary/10 shadow-elegant"
+          : "border-border/60 bg-background/40 hover:border-primary/30 hover:bg-muted/40",
       )}
     >
+
       <PlateBadge plate={vehicle.plate} size="sm" />
       <div className="min-w-0">
         <p className="flex items-center gap-1 truncate text-sm font-semibold">

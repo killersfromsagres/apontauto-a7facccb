@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fuel, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -109,19 +109,20 @@ export function FleetFuelings() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Gasto no mês" value={brl(kpis.cost)} />
-        <Kpi label="Litros no mês" value={`${kpis.liters.toLocaleString("pt-BR")} L`} />
-        <Kpi label="Preço médio" value={kpis.avg ? `${brl(kpis.avg)}/L` : "—"} />
-        <Kpi label="Abastecimentos" value={String(kpis.count)} />
+        <Kpi index={0} label="Gasto no mês" value={brl(kpis.cost)} />
+        <Kpi index={1} label="Litros no mês" value={`${kpis.liters.toLocaleString("pt-BR")} L`} />
+        <Kpi index={2} label="Preço médio" value={kpis.avg ? `${brl(kpis.avg)}/L` : "—"} />
+        <Kpi index={3} label="Abastecimentos" value={String(kpis.count)} />
       </div>
 
       <div className="flex justify-end">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="h-11 w-full sm:w-auto">
+            <Button className="tap-press h-11 w-full shadow-elegant hover:shadow-glow sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Registrar abastecimento
             </Button>
           </DialogTrigger>
+
           <DialogContent className="max-h-[85vh] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo abastecimento</DialogTitle>
@@ -225,11 +226,15 @@ export function FleetFuelings() {
           </p>
         </GlassCard>
       ) : (
-        <div className="space-y-2">
-          {rows.map((r) => {
+        <div className="space-y-2.5">
+          {rows.map((r, i) => {
             const v = vehicleById[r.vehicle_id];
             return (
-              <GlassCard key={r.id} className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <GlassCard
+                key={r.id}
+                style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
+                className="fleet-in flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:p-5"
+              >
                 <div className="flex min-w-0 items-center gap-3">
                   <PlateBadge plate={v?.plate} size="sm" />
                   <div className="min-w-0">
@@ -243,18 +248,20 @@ export function FleetFuelings() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-sm sm:ml-auto">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Fuel className="h-4 w-4" />
+                  <span className="flex items-center gap-1 rounded-full bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
+                    <Fuel className="h-3.5 w-3.5" />
                     {r.liters.toLocaleString("pt-BR")} L
                   </span>
-                  <span className="font-semibold">{brl(r.total_cost)}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="font-display font-semibold tabular-nums">
+                    {brl(r.total_cost)}
+                  </span>
+                  <span className="text-xs tabular-nums text-muted-foreground">
                     {r.liters ? `${brl(r.total_cost / r.liters)}/L` : ""}
                   </span>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-9 w-9"
+                    className="tap-press h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     aria-label="Excluir"
                     onClick={() => remove.mutate(r.id)}
                   >
@@ -264,20 +271,29 @@ export function FleetFuelings() {
               </GlassCard>
             );
           })}
+
         </div>
       )}
     </div>
   );
 }
 
-function Kpi({ label, value }: { label: string; value: string }) {
+function Kpi({ label, value, index = 0 }: { label: string; value: string; index?: number }) {
   return (
-    <GlassCard className="space-y-1 p-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className="font-display text-lg font-semibold">{value}</p>
+    <GlassCard
+      variant="block"
+      className="fleet-in space-y-1 p-3.5"
+      style={{ ["--i" as string]: index } as CSSProperties}
+    >
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-display text-lg font-semibold tabular-nums sm:text-xl">{value}</p>
     </GlassCard>
   );
 }
+
+
 
 function NumField({
   label,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Award, ChevronDown, ImageOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -91,19 +91,27 @@ export function FleetHistory() {
           <p className="text-sm text-muted-foreground">Nenhum checklist registrado ainda.</p>
         </GlassCard>
       ) : (
-        <div className="space-y-2">
-          {filtered.map((c) => {
+        <div className="space-y-2.5">
+          {filtered.map((c, i) => {
             const v = vehicleById[c.vehicle_id];
             const open = openId === c.id;
             const photos = photosByChecklist[c.id] ?? [];
             return (
-              <GlassCard key={c.id} className="space-y-3">
+              <GlassCard
+                key={c.id}
+                style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
+                className={cn(
+                  "fleet-in space-y-3",
+                  open && "border-primary/40 shadow-elegant",
+                )}
+              >
                 <button
                   type="button"
-                  className="flex w-full items-start gap-3 text-left"
+                  className="tap-press flex w-full items-start gap-3 rounded-xl text-left"
                   onClick={() => setOpenId(open ? null : c.id)}
                 >
                   <PlateBadge plate={v?.plate} size="sm" />
+
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
                       <BrandMark brand={inferBrand(`${v?.brand ?? ""} ${v?.model ?? ""}`)} />
@@ -126,7 +134,7 @@ export function FleetHistory() {
                 </button>
 
                 {open && (
-                  <div className="space-y-3 border-t border-border/60 pt-3">
+                  <div className="fleet-in space-y-3 border-t border-border/60 pt-3">
                     <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                       {(c.items ?? []).map((item) => (
                         <div
@@ -158,16 +166,18 @@ export function FleetHistory() {
                           return (
                             <div
                               key={p.storage_path}
-                              className="overflow-hidden rounded-xl border border-border/60 bg-muted/30"
+                              className="photo-tile group overflow-hidden rounded-xl border border-border/60 bg-muted/30"
                             >
+
                               {url ? (
                                 <a href={url} target="_blank" rel="noreferrer">
                                   <img
                                     src={url}
                                     alt={label}
                                     loading="lazy"
-                                    className="h-28 w-full object-cover"
+                                    className="h-28 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   />
+
                                 </a>
                               ) : (
                                 <div className="flex h-28 w-full items-center justify-center text-muted-foreground">
@@ -187,7 +197,8 @@ export function FleetHistory() {
 
                     <Button
                       type="button"
-                      className="h-11 w-full"
+                      className="tap-press h-11 w-full shadow-elegant hover:shadow-glow"
+
                       disabled={certifyingId === c.id}
                       onClick={async () => {
                         setCertifyingId(c.id);
