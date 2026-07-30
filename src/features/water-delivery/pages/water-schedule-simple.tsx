@@ -832,7 +832,7 @@ function EntregaSheet({
 
         </div>
 
-        <div className="sticky bottom-0 -mx-6 flex gap-2 border-t border-border/60 bg-background/90 px-6 py-3 backdrop-blur">
+        <div className="sticky bottom-0 -mx-6 flex gap-2 border-t border-border/60 bg-background/90 px-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
           <Button variant="outline" className="h-12 flex-1 rounded-xl" onClick={onClose}>
             Cancelar
           </Button>
