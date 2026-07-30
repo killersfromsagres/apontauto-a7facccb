@@ -9,10 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { WhatsAppConfigCard } from "@/components/agua/whatsapp-config-card";
+import { FilaSincronizacaoCard } from "@/components/agua/fila-sincronizacao-card";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 
 import { listPontos, listProgramacao } from "@/lib/agua/api";
-import { lerFila, useAguaSync } from "@/lib/agua/offline";
+import { useAguaSync } from "@/lib/agua/offline";
 import { useSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/_authenticated/abastecimento/agua/configuracoes")({
