@@ -59,7 +59,6 @@ import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_a
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
-import { Route as AuthenticatedAbastecimentoIndexRouteImport } from './routes/_authenticated/abastecimento.index'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
@@ -363,12 +362,6 @@ const AuthenticatedAbastecimentoRoute =
     path: '/abastecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAbastecimentoIndexRoute =
-  AuthenticatedAbastecimentoIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedAbastecimentoRoute,
-  } as any)
 const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
   id: '/api/public/clima-forecast',
   path: '/api/public/clima-forecast',
@@ -586,7 +579,6 @@ export interface FileRoutesByFullPath {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -615,6 +607,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -663,7 +656,6 @@ export interface FileRoutesByTo {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -744,7 +736,6 @@ export interface FileRoutesById {
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/_authenticated/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/_authenticated/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -825,7 +816,6 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/abastecimento/'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -854,6 +844,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/abastecimento'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -902,7 +893,6 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/abastecimento'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -982,7 +972,6 @@ export interface FileRouteTypes {
     | '/_authenticated/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/_authenticated/abastecimento/'
     | '/_authenticated/abastecimento/agua/bags'
     | '/_authenticated/abastecimento/agua/configuracoes'
     | '/_authenticated/abastecimento/agua/evidencias'
@@ -1381,13 +1370,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/abastecimento/': {
-      id: '/_authenticated/abastecimento/'
-      path: '/'
-      fullPath: '/abastecimento/'
-      preLoaderRoute: typeof AuthenticatedAbastecimentoIndexRouteImport
-      parentRoute: typeof AuthenticatedAbastecimentoRoute
-    }
     '/api/public/clima-forecast': {
       id: '/api/public/clima-forecast'
       path: '/api/public/clima-forecast'
@@ -1630,14 +1612,12 @@ const AuthenticatedAbastecimentoAguaRouteWithChildren =
 
 interface AuthenticatedAbastecimentoRouteChildren {
   AuthenticatedAbastecimentoAguaRoute: typeof AuthenticatedAbastecimentoAguaRouteWithChildren
-  AuthenticatedAbastecimentoIndexRoute: typeof AuthenticatedAbastecimentoIndexRoute
 }
 
 const AuthenticatedAbastecimentoRouteChildren: AuthenticatedAbastecimentoRouteChildren =
   {
     AuthenticatedAbastecimentoAguaRoute:
       AuthenticatedAbastecimentoAguaRouteWithChildren,
-    AuthenticatedAbastecimentoIndexRoute: AuthenticatedAbastecimentoIndexRoute,
   }
 
 const AuthenticatedAbastecimentoRouteWithChildren =
@@ -1775,13 +1755,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
