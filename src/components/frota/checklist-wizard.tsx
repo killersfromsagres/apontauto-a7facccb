@@ -102,19 +102,24 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
     tag: string,
   ) {
     setUploading(tag);
+    const localPreview = URL.createObjectURL(file);
     try {
       const { url, hash } = await uploadFrotaPhoto(file, file.name || "checklist.jpg", {
         module: "frota-checklist",
         entityType: "vehicle_checklist",
         entityId: vehicleId ?? undefined,
       });
+      // Mantém o preview local enquanto a CDN propaga a imagem remota.
+      LOCAL_PREVIEWS.set(url, localPreview);
       apply(url, hash);
     } catch (e: any) {
+      URL.revokeObjectURL(localPreview);
       toast.error(e?.message ?? "Falha ao enviar a foto");
     } finally {
       setUploading(null);
     }
   }
+
 
   const slotCount = (key: string) => slotPhotos[key]?.length ?? 0;
   const missingSlots = PHOTO_SLOTS.filter((s) => slotCount(s.key) === 0);
