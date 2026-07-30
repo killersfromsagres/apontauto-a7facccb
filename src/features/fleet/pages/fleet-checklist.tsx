@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Loader2, RefreshCw, Trash2, X } from "lucide-react";
+import { Camera, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
@@ -436,4 +436,3 @@ function VehicleOption({
   );
 }
 
-export { Trash2 };
