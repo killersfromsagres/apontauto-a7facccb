@@ -495,7 +495,7 @@ export function ChecklistWizard({ vehicles }: { vehicles: Vehicle[] }) {
             <Summary label="Não conformidades" value={String(nonConform.length)} />
             <Summary
               label="Fotos obrigatórias"
-              value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length}`}
+              value={`${PHOTO_SLOTS.length - missingSlots.length}/${PHOTO_SLOTS.length} · ${totalSlotPhotos} foto(s)`}
             />
             <Summary label="Colaborador" value={mainName || "—"} />
           </div>
