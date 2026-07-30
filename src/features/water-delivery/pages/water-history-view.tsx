@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Download, Loader2 } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
@@ -10,7 +9,6 @@ import { EmptyState } from "@/components/pcm";
 import {
   VISITA_STATUS_LABEL,
   hojeISO,
-  listPontos,
   listVisitas,
   pontoLabel,
 } from "@/features/water-delivery/queries/api";
