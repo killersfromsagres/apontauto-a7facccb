@@ -1,14 +1,16 @@
 import { jsPDF } from "jspdf";
 
+import fiorinoAsset from "@/assets/fiorino-sketch.png.asset.json";
 import logoAsset from "@/assets/in-haus-logo.png.asset.json";
+import saveiroAsset from "@/assets/saveiro-sketch.png.asset.json";
 import type { FleetChecklist, FleetVehicle } from "@/features/fleet/api";
 import { vehicleTitle } from "@/features/fleet/api";
 import { PHOTO_CATEGORIES, STATUS_LABEL } from "@/features/fleet/checklist-items";
-import { inferSketchKind, renderVehicleSketch } from "@/features/fleet/vehicle-sketch";
 
 const NAVY = { r: 17, g: 24, b: 39 };
 const ORANGE = { r: 245, g: 158, b: 11 };
 const GRAY = { r: 110, g: 116, b: 128 };
+const LINE = { r: 223, g: 228, b: 236 };
 
 const STATUS_RGB: Record<string, [number, number, number]> = {
   ok: [16, 143, 94],
@@ -30,6 +32,14 @@ async function toDataUrl(url: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** Escolhe a ilustração real conforme marca/modelo do veículo. */
+function vehicleArt(text: string): { url: string; label: string } {
+  const t = (text || "").toLowerCase();
+  if (/(fiorino|doblo|doblò|ducato|kangoo|partner|van|furg)/.test(t))
+    return { url: fiorinoAsset.url, label: "Fiat Fiorino — vista lateral" };
+  return { url: saveiroAsset.url, label: "VW Saveiro — vista lateral" };
 }
 
 /** Código de verificação legível derivado do id do checklist. */
@@ -55,206 +65,225 @@ export async function generateChecklistCertificate({
 }: CertificateInput): Promise<void> {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
-  const M = 14;
+  const M = 15;
+  const CW = W - M * 2;
   const code = certificateCode(checklist);
 
+  const sectionTitle = (text: string, y: number) => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
+    doc.text(text.toUpperCase(), M, y);
+    doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
+    doc.setLineWidth(0.7);
+    doc.line(M, y + 1.9, M + doc.getTextWidth(text.toUpperCase()), y + 1.9);
+    doc.setLineWidth(0.2);
+    doc.setFont("helvetica", "normal");
+  };
+
   /* ---------------- Cabeçalho ---------------- */
-  doc.setFillColor(NAVY.r, NAVY.g, NAVY.b);
-  doc.rect(0, 0, W, 34, "F");
-  doc.setFillColor(ORANGE.r, ORANGE.g, ORANGE.b);
-  doc.rect(0, 34, W, 1.6, "F");
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, W, 297, "F");
+  doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+  doc.roundedRect(M, 12, CW, 26, 2, 2, "S");
 
   const logo = await toDataUrl(logoAsset.url);
   if (logo) {
     try {
-      doc.addImage(logo, "PNG", M, 9, 38, 16, undefined, "FAST");
+      doc.addImage(logo, "PNG", M + 5, 17, 34, 15, undefined, "FAST");
     } catch {
       /* logo opcional */
     }
   }
+  doc.line(M + 45, 12, M + 45, 38);
 
-  doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text("CERTIFICADO DE INSPEÇÃO VEICULAR", W - M, 17, { align: "right" });
+  doc.setFontSize(14);
+  doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
+  doc.text("CHECK LIST DE VEÍCULOS", M + 52, 23);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(215, 220, 230);
+  doc.setFontSize(8.5);
+  doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
   doc.text(
-    `Checklist ${checklist.kind === "saida" ? "de saída" : "de retorno"} · Frota e Abastecimento`,
-    W - M,
-    23,
-    { align: "right" },
+    `Certificado de inspeção ${checklist.kind === "saida" ? "de saída" : "de retorno"} · Frota e Abastecimento`,
+    M + 52,
+    29,
   );
-  doc.text(`Protocolo ${code}`, W - M, 28.5, { align: "right" });
+  doc.setFontSize(8);
+  doc.text(
+    `${new Date(checklist.created_at).toLocaleString("pt-BR")}   ·   Protocolo ${code}`,
+    M + 52,
+    34,
+  );
 
-  /* ---------------- Faixa de status ---------------- */
+  /* ---------------- Faixa de resultado ---------------- */
   const st = STATUS_RGB[checklist.overall_status] ?? STATUS_RGB.ok;
-  let y = 44;
+  let y = 43;
   doc.setFillColor(st[0], st[1], st[2]);
-  doc.roundedRect(M, y - 6, W - M * 2, 12, 2, 2, "F");
+  doc.roundedRect(M, y, CW, 11, 2, 2, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10.5);
+  doc.setFontSize(10);
   doc.text(
     `RESULTADO GERAL: ${(STATUS_LABEL[checklist.overall_status] ?? checklist.overall_status).toUpperCase()}`,
-    M + 4,
-    y + 1.6,
+    M + 5,
+    y + 7,
   );
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.text(new Date(checklist.created_at).toLocaleString("pt-BR"), W - M - 4, y + 1.6, {
+  doc.setFontSize(8.5);
+  doc.text(`${(checklist.items ?? []).length} itens avaliados`, W - M - 5, y + 7, {
     align: "right",
   });
 
-  /* ---------------- Dados do veículo ---------------- */
-  y += 16;
-  doc.setDrawColor(226, 230, 238);
-  doc.setFillColor(249, 250, 252);
-  doc.roundedRect(M, y, W - M * 2, 30, 2, 2, "FD");
+  /* ---------------- Dados do veículo / condutor ---------------- */
+  y += 19;
+  sectionTitle("Identificação", y);
+  y += 5;
+  doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+  doc.setFillColor(250, 251, 253);
+  doc.roundedRect(M, y, CW, 28, 2, 2, "FD");
 
   const info: [string, string][] = [
     ["Prefixo", vehicle?.prefix ?? "—"],
     ["Placa", vehicle?.plate ?? "—"],
-    ["Veículo", vehicle ? vehicleTitle(vehicle) : "—"],
-    ["Ano/Cor", `${vehicle?.year_model ?? "—"} · ${vehicle?.color ?? "—"}`],
-    ["Condutor", checklist.driver_name],
+    ["Marca / Modelo", vehicle ? vehicleTitle(vehicle) : "—"],
+    ["Ano / Cor", `${vehicle?.year_model ?? "—"} · ${vehicle?.color ?? "—"}`],
+    ["Motorista", checklist.driver_name],
     ["Odômetro", `${Number(checklist.odometer_km).toLocaleString("pt-BR")} km`],
     [
       "Combustível",
       checklist.fuel_level_pct == null ? "—" : `${checklist.fuel_level_pct}% do tanque`,
     ],
-    ["Itens avaliados", String((checklist.items ?? []).length)],
+    ["Tipo", checklist.kind === "saida" ? "Saída" : "Retorno"],
   ];
-  const colW = (W - M * 2) / 4;
+  const colW = CW / 4;
   info.forEach(([label, value], i) => {
-    const cx = M + 4 + (i % 4) * colW;
-    const cy = y + 8 + Math.floor(i / 4) * 13;
-    doc.setFontSize(7);
+    const cx = M + 5 + (i % 4) * colW;
+    const cy = y + 9 + Math.floor(i / 4) * 12;
+    doc.setFontSize(6.8);
     doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
     doc.text(label.toUpperCase(), cx, cy);
-    doc.setFontSize(9.5);
+    doc.setFontSize(9);
     doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
     doc.setFont("helvetica", "bold");
-    doc.text(String(value).slice(0, 26), cx, cy + 5);
+    doc.text(String(value).slice(0, 24), cx, cy + 5);
     doc.setFont("helvetica", "normal");
   });
 
-  /* ---------------- Desenho técnico do veículo ---------------- */
-  y += 38;
-  const sketch = renderVehicleSketch(
-    inferSketchKind(`${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`),
-    { scale: 3 },
+  /* ---------------- Ilustração do veículo ---------------- */
+  y += 36;
+  sectionTitle("Avarias — vista lateral do veículo", y);
+  y += 5;
+
+  const art = vehicleArt(
+    `${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`,
   );
-  const sketchH = 60;
-  doc.setDrawColor(226, 230, 238);
+  const boxH = 62;
+  doc.setDrawColor(LINE.r, LINE.g, LINE.b);
   doc.setFillColor(255, 255, 255);
-  doc.roundedRect(M, y, W - M * 2, sketchH, 2, 2, "FD");
-  if (sketch) {
+  doc.roundedRect(M, y, CW, boxH, 2, 2, "FD");
+
+  const artData = await toDataUrl(art.url);
+  if (artData) {
+    // proporção original 4:3 — encaixa na altura útil do quadro
+    const availH = boxH - 12;
+    const availW = CW - 12;
+    const imgW = Math.min(availW, availH * (4 / 3));
+    const imgH = imgW * (3 / 4);
     try {
-      doc.addImage(sketch, "PNG", M + 4, y + 3, W - M * 2 - 8, sketchH - 12, undefined, "FAST");
+      doc.addImage(
+        artData,
+        "PNG",
+        M + (CW - imgW) / 2,
+        y + 4,
+        imgW,
+        imgH,
+        undefined,
+        "FAST",
+      );
     } catch {
-      /* desenho opcional */
+      /* ilustração opcional */
     }
   }
-  doc.setFontSize(7.5);
+  doc.setFontSize(7);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
   doc.text(
-    vehicle
-      ? `Representação técnica ilustrativa — ${vehicleTitle(vehicle)}`
-      : "Representação técnica ilustrativa do veículo inspecionado",
+    `${art.label} — assinale avarias: [X] batido · [-] riscado · [O] amassado · [*] quebrado`,
     W / 2,
-    y + sketchH - 4,
+    y + boxH - 3.5,
     { align: "center" },
   );
 
   /* ---------------- Itens verificados ---------------- */
-  y += sketchH + 12;
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
-  doc.text("ITENS VERIFICADOS", M, y);
-  doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
-  doc.setLineWidth(0.6);
-  doc.line(M, y + 1.8, M + 34, y + 1.8);
-  doc.setLineWidth(0.2);
-  doc.setFont("helvetica", "normal");
+  y += boxH + 9;
+  sectionTitle("Itens verificados", y);
   y += 6;
 
   const items = checklist.items ?? [];
   const half = Math.ceil(items.length / 2);
-  const rowH = 7.4;
+  const rowH = 7;
   const colGap = 6;
-  const cw = (W - M * 2 - colGap) / 2;
+  const cw = (CW - colGap) / 2;
   items.forEach((item, i) => {
     const col = i < half ? 0 : 1;
     const row = i < half ? i : i - half;
     const x = M + col * (cw + colGap);
     const ry = y + row * rowH;
     if (row % 2 === 0) {
-      doc.setFillColor(246, 248, 251);
-      doc.rect(x, ry, cw, rowH - 1.2, "F");
+      doc.setFillColor(247, 249, 252);
+      doc.rect(x, ry, cw, rowH - 1, "F");
     }
-    doc.setFontSize(8.5);
-    doc.setTextColor(40, 46, 58);
-    doc.text(String(item.label).slice(0, 38), x + 3, ry + 4.6);
+    doc.setFontSize(8.2);
+    doc.setTextColor(45, 51, 62);
+    doc.text(String(item.label).slice(0, 40), x + 3, ry + 4.4);
     const c = STATUS_RGB[item.status] ?? STATUS_RGB.ok;
     doc.setTextColor(c[0], c[1], c[2]);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text((STATUS_LABEL[item.status] ?? item.status).toUpperCase(), x + cw - 3, ry + 4.6, {
+    doc.setFontSize(7.6);
+    doc.text((STATUS_LABEL[item.status] ?? item.status).toUpperCase(), x + cw - 3, ry + 4.4, {
       align: "right",
     });
     doc.setFont("helvetica", "normal");
   });
-  y += half * rowH + 8;
+  y += half * rowH + 7;
 
   /* ---------------- Observações ---------------- */
   if (checklist.notes) {
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
-    doc.text("OBSERVAÇÕES", M, y);
-    doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
-    doc.setLineWidth(0.6);
-    doc.line(M, y + 1.8, M + 26, y + 1.8);
-    doc.setLineWidth(0.2);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    sectionTitle("Observações", y);
+    doc.setFontSize(8.6);
     doc.setTextColor(60, 66, 78);
-    const lines = doc.splitTextToSize(checklist.notes, W - M * 2);
+    const lines = doc.splitTextToSize(checklist.notes, CW);
     doc.text(lines.slice(0, 5), M, y + 7);
-    y += 9 + Math.min(lines.length, 5) * 4.4;
+    y += 10 + Math.min(lines.length, 5) * 4.2;
   }
 
   /* ---------------- Assinaturas e rodapé ---------------- */
-  const sigY = Math.max(y + 14, 252);
+  const sigY = Math.max(y + 14, 258);
   doc.setDrawColor(150, 156, 168);
-  doc.line(M, sigY, M + 72, sigY);
-  doc.line(W - M - 72, sigY, W - M, sigY);
+  doc.line(M, sigY, M + 74, sigY);
+  doc.line(W - M - 74, sigY, W - M, sigY);
   doc.setFontSize(8.5);
   doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
   doc.text(checklist.driver_name, M, sigY + 4.5);
   doc.text("Gestor de frota", W - M, sigY + 4.5, { align: "right" });
-  doc.setFontSize(7.5);
+  doc.setFontSize(7.2);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
-  doc.text("Condutor responsável", M, sigY + 9);
-  doc.text("Validação da inspeção", W - M, sigY + 9, { align: "right" });
+  doc.text("Condutor responsável", M, sigY + 8.8);
+  doc.text("Validação da inspeção", W - M, sigY + 8.8, { align: "right" });
 
-  doc.setFillColor(NAVY.r, NAVY.g, NAVY.b);
-  doc.rect(0, 283, W, 14, "F");
-  doc.setTextColor(220, 224, 232);
-  doc.setFontSize(7.5);
+  doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+  doc.line(M, 283, W - M, 283);
+  doc.setFontSize(7.2);
+  doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
   doc.text(
     `Documento gerado eletronicamente em ${new Date().toLocaleString("pt-BR")} · Protocolo ${code}`,
     M,
-    291,
+    288,
   );
   doc.setTextColor(ORANGE.r, ORANGE.g, ORANGE.b);
   doc.setFont("helvetica", "bold");
-  doc.text("In-Haus Industrial", W - M, 291, { align: "right" });
+  doc.text("In-Haus Industrial", W - M, 288, { align: "right" });
   doc.setFont("helvetica", "normal");
-
 
   /* ---------------- Página de evidências ---------------- */
   const withUrls = photos.filter((p) => p.url);
@@ -265,34 +294,35 @@ export async function generateChecklistCertificate({
     const ok = images.filter((i) => i.data);
     if (ok.length > 0) {
       doc.addPage();
-      doc.setFillColor(NAVY.r, NAVY.g, NAVY.b);
-      doc.rect(0, 0, W, 22, "F");
-      doc.setTextColor(255, 255, 255);
+      doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+      doc.roundedRect(M, 12, CW, 18, 2, 2, "S");
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("EVIDÊNCIAS FOTOGRÁFICAS", M, 14);
+      doc.setFontSize(11);
+      doc.setTextColor(NAVY.r, NAVY.g, NAVY.b);
+      doc.text("EVIDÊNCIAS FOTOGRÁFICAS", M + 5, 23.5);
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
-      doc.text(code, W - M, 14, { align: "right" });
+      doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
+      doc.text(code, W - M - 5, 23.5, { align: "right" });
 
-      const cw = (W - M * 2 - 6) / 2;
-      const ch = 55;
+      const pw = (CW - 6) / 2;
+      const ph = 54;
       ok.forEach((img, i) => {
-        const x = M + (i % 2) * (cw + 6);
-        const py = 30 + Math.floor(i / 2) * (ch + 12);
+        const x = M + (i % 2) * (pw + 6);
+        const py = 38 + Math.floor(i / 2) * (ph + 12);
         try {
-          doc.addImage(img.data!, "JPEG", x, py, cw, ch, undefined, "FAST");
+          doc.addImage(img.data!, "JPEG", x, py, pw, ph, undefined, "FAST");
         } catch {
           /* ignora imagem inválida */
         }
-        doc.setDrawColor(226, 230, 238);
-        doc.rect(x, py, cw, ch, "S");
-        doc.setFontSize(8);
+        doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+        doc.rect(x, py, pw, ph, "S");
+        doc.setFontSize(7.6);
         doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
         doc.text(
           PHOTO_CATEGORIES.find((c) => c.key === img.category)?.label ?? img.category,
           x,
-          py + ch + 5,
+          py + ph + 4.5,
         );
       });
     }
