@@ -114,7 +114,10 @@ export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
     setErros([]);
     setSalvando(true);
     try {
-      await salvarSettings({ ...(settings as never), aguaAdmin: parsed.data } as never);
+      await salvarSettings({
+        ...(settings as Record<string, unknown>),
+        aguaAdmin: parsed.data,
+      } as never);
       toast.success("Configurações salvas.");
     } catch (e) {
       toast.error((e as Error)?.message ?? "Não foi possível salvar.");
