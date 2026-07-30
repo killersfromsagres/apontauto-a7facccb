@@ -357,6 +357,21 @@ export function WaterLocationsView() {
         </div>
       )}
 
+      {listaVisivel.length < lista.length && (
+        <div className="flex flex-col items-center gap-2">
+          <p aria-live="polite" className="text-xs text-muted-foreground">
+            Mostrando {listaVisivel.length} de {lista.length} pontos
+          </p>
+          <Button
+            variant="secondary"
+            className="min-h-[44px]"
+            onClick={() => setVisiveis((v) => v + PAGINA_PONTOS)}
+          >
+            Carregar mais pontos
+          </Button>
+        </div>
+      )}
+
       {(merges.data?.length ?? 0) > 0 && (
         <GlassCard className="space-y-2 p-4">
           <div className="flex items-center gap-2">
