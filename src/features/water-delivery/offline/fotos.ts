@@ -22,6 +22,14 @@ import {
   type FotoFilaItem,
   type FotoMetadados,
 } from "@/features/water-delivery/offline/fotos-db";
+import {
+  blobParaDataUrl,
+  processarImagemOffThread,
+} from "@/features/water-delivery/offline/image-offthread";
+import {
+  registrarUpload,
+  sanitizarErro,
+} from "@/features/water-delivery/offline/metrics";
 
 export type { FotoFilaItem, FotoMetadados } from "@/features/water-delivery/offline/fotos-db";
 
@@ -42,6 +50,8 @@ export interface FotoPreparada {
   altura: number;
   sizeBytes: number;
   capturadaEm: string;
+  /** true quando o processamento rodou no worker (fora do main thread). */
+  offThread?: boolean;
 }
 
 function suportaWebp(): boolean {
