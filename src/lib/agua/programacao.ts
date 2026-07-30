@@ -266,10 +266,22 @@ export interface Rota {
   versao: number;
   iniciada_em: string | null;
   finalizada_em: string | null;
+  /* Item 18 — dados usados nos relatórios de rota */
+  hodometro_inicial?: number | null;
+  hodometro_final?: number | null;
+  bags_recolhidas?: number | null;
+  bags_restantes?: number | null;
+  bags_danificadas?: number | null;
+  divergencia_bags?: number | null;
+  divergencia_justificativa?: string | null;
+  foto_carga_url?: string | null;
+  confirmado_principal?: boolean | null;
+  confirmado_secundario?: boolean | null;
 }
 
 const ROTA_FIELDS =
-  "id, data, turno, equipe, template_key, colaborador_principal, colaborador_secundario, veiculo, supervisor, horario_previsto, bags_carregadas, observacao, status, motivo_cancelamento, versao, iniciada_em, finalizada_em";
+  "id, data, turno, equipe, template_key, colaborador_principal, colaborador_secundario, veiculo, supervisor, horario_previsto, bags_carregadas, observacao, status, motivo_cancelamento, versao, iniciada_em, finalizada_em, hodometro_inicial, hodometro_final, bags_recolhidas, bags_restantes, bags_danificadas, divergencia_bags, divergencia_justificativa, foto_carga_url, confirmado_principal, confirmado_secundario";
+
 
 export async function listRotas(inicio: string, fim: string): Promise<Rota[]> {
   const { data, error } = await db
