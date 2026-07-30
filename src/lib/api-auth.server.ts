@@ -101,8 +101,18 @@ export async function callerCanAccessModule(
 
 /** Resposta padrão 401 para chamadas sem sessão válida. */
 export function unauthorized(): Response {
-  return Response.json({ error: "Não autorizado" }, { status: 401 });
+  return Response.json({ error: "Não autorizado", code: "session_invalid" }, { status: 401 });
 }
+
+/**
+ * 503 para indisponibilidade de configuração do servidor. Usar isto em vez de
+ * 401 evita que o cliente interprete falha de infraestrutura como sessão
+ * expirada e desconecte o usuário no meio de um envio.
+ */
+export function serviceUnavailable(detail = "Serviço temporariamente indisponível."): Response {
+  return Response.json({ error: detail, code: "server_config" }, { status: 503 });
+}
+
 
 /** Resposta padrão 403 para chamadas sem permissão no módulo. */
 export function forbidden(moduleKey?: string, action = "create"): Response {
