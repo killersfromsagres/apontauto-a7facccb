@@ -58,9 +58,7 @@ function parseDate(v: unknown): Date | null {
     const d = excelSerialToDate(asNum);
     if (d) return d;
   }
-  const br = s.match(
-    /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
-  );
+  const br = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
   if (br) {
     const [, d, m, y, hh, mm, ss] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);

@@ -221,8 +221,8 @@ function useMarkedLegal() {
     try {
       window.localStorage.setItem("legal-calendar-marked", JSON.stringify(Array.from(s)));
     } catch {
-        /* falha silenciosa: cache local é um extra */
-      }
+      /* falha silenciosa: cache local é um extra */
+    }
   };
   const toggleMark = (id: string) =>
     setMarked((prev) => {

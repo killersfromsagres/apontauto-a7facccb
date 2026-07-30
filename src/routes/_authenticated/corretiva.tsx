@@ -716,8 +716,8 @@ function OsDetail({
           if (r.sent > 0) toast.success(`${r.sent} enviado(s) ao servidor.`);
           if (r.failed > 0) toast.error(await getSyncFailureMessage(r));
         } catch {
-        /* falha silenciosa: cache local é um extra */
-      }
+          /* falha silenciosa: cache local é um extra */
+        }
       }
     } finally {
       setSaving(false);

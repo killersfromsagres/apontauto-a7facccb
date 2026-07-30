@@ -47,13 +47,15 @@ export const importFileSchema = z.object({
 
 /** Nome de arquivo seguro para exibir, registrar e reutilizar no download. */
 export function sanitizeFileName(name: string): string {
-  return (name.split(/[\\/]/).pop() ?? "")
-    // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
-    .replace(/[\u0000-\u001F\u007F]/g, "")
-    .replace(/[^a-zA-Z0-9._\- ]/g, "-")
-    .replace(/\s{2,}/g, " ")
-    .trim()
-    .slice(0, 180);
+  return (
+    (name.split(/[\\/]/).pop() ?? "")
+      // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
+      .replace(/[\u0000-\u001F\u007F]/g, "")
+      .replace(/[^a-zA-Z0-9._\- ]/g, "-")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+      .slice(0, 180)
+  );
 }
 
 export function assertImportFileIsAllowed(file: { name: string; size: number; type: string }) {

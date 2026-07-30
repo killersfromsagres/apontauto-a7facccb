@@ -32,8 +32,8 @@ function getErrorMessage(err: unknown): string {
     try {
       return JSON.stringify(record);
     } catch {
-        /* falha silenciosa: cache local é um extra */
-      }
+      /* falha silenciosa: cache local é um extra */
+    }
   }
   return "Erro desconhecido ao sincronizar";
 }
