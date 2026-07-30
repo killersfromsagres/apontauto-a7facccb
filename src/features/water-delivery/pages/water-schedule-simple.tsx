@@ -441,6 +441,10 @@ function EntregaSheet({
   );
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
+  const [bebedouroOk, setBebedouroOk] = useState<boolean | null>(
+    entrega?.bebedouro_ok ?? null,
+  );
+  const [bebedouroObs, setBebedouroObs] = useState(entrega?.bebedouro_obs ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
   // Seleção local: só é aplicada a esta entrega e só vira padrão ao confirmar.
   const [colaboradores, setColaboradores] = useState<string[]>(
@@ -465,6 +469,8 @@ function EntregaSheet({
         bags,
         observacao: observacao.trim() || null,
         status,
+        bebedouroOk,
+        bebedouroObs: bebedouroOk === false ? bebedouroObs.trim() || null : null,
         fotos: novas.map((n) => n.blob),
       }),
     onSuccess: () => {
@@ -475,8 +481,17 @@ function EntregaSheet({
     onError: (e: any) => toast.error(e?.message ?? "Não foi possível registrar."),
   });
 
+  const semColaborador = colaboradores.length === 0;
   const podeSalvar =
-    colaboradores.length > 0 && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
+    !semColaborador && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
+
+  function tentarSalvar() {
+    if (semColaborador) {
+      toast.error("Selecione ao menos 1 colaborador em \u201cQuem entregou\u201d.");
+      return;
+    }
+    salvar.mutate();
+  }
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
@@ -622,6 +637,55 @@ function EntregaSheet({
             )}
           </div>
 
+          <div className="rounded-2xl border border-border/60 bg-card/50 p-3.5">
+            <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
+              Checklist do bebedouro
+            </Label>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                { ok: true, label: "Funcionando normalmente" },
+                { ok: false, label: "Com problema" },
+              ].map((op) => {
+                const ativo = bebedouroOk === op.ok;
+                return (
+                  <button
+                    key={op.label}
+                    type="button"
+                    role="checkbox"
+                    aria-checked={ativo}
+                    onClick={() => setBebedouroOk(ativo ? null : op.ok)}
+                    className={cn(
+                      "flex min-h-[52px] items-center gap-3 rounded-xl border px-3 text-left text-sm font-medium transition-all active:scale-[0.99]",
+                      ativo
+                        ? op.ok
+                          ? "border-emerald-400/70 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                          : "border-amber-400/70 bg-amber-500/15 text-amber-700 dark:text-amber-300"
+                        : "border-border/60 bg-background/40 text-muted-foreground",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
+                        ativo ? "border-current bg-current/10" : "border-border",
+                      )}
+                    >
+                      {ativo && <CheckCircle2 className="h-4 w-4" />}
+                    </span>
+                    {op.label}
+                  </button>
+                );
+              })}
+            </div>
+            {bebedouroOk === false && (
+              <Textarea
+                value={bebedouroObs}
+                onChange={(e) => setBebedouroObs(e.target.value)}
+                placeholder="Qual o problema? (opcional)"
+                className="mt-3 min-h-[64px] rounded-xl text-base"
+              />
+            )}
+          </div>
+
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
               Observação
@@ -643,13 +707,24 @@ function EntregaSheet({
             <div>
               <Label className="mb-2 flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
                 <Users className="h-3.5 w-3.5" /> Quem entregou
-                <span className="ml-auto normal-case tracking-normal">
-                  {colaboradores.length === 0
-                    ? "nenhum selecionado"
+                <span className="text-destructive">*</span>
+                <span
+                  className={cn(
+                    "ml-auto normal-case tracking-normal",
+                    semColaborador && "font-semibold text-destructive",
+                  )}
+                >
+                  {semColaborador
+                    ? "obrigatório"
                     : `${colaboradores.length} colaborador${colaboradores.length > 1 ? "es" : ""}`}
                 </span>
               </Label>
-              <div className="grid gap-2">
+              <div
+                className={cn(
+                  "grid gap-2 rounded-xl",
+                  semColaborador && "border border-destructive/60 bg-destructive/5 p-2",
+                )}
+              >
                 {COLABORADORES.map((nome) => {
                   const ativo = colaboradores.includes(nome);
                   return (
@@ -685,6 +760,11 @@ function EntregaSheet({
                   );
                 })}
               </div>
+              {semColaborador && (
+                <p className="mt-2 text-xs font-medium text-destructive">
+                  Seleção obrigatória — marque ao menos 1 colaborador.
+                </p>
+              )}
             </div>
 
             <div>
@@ -759,7 +839,7 @@ function EntregaSheet({
           <Button
             className="h-12 flex-[2] rounded-xl"
             disabled={!podeSalvar}
-            onClick={() => salvar.mutate()}
+            onClick={tentarSalvar}
           >
             {salvar.isPending ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />

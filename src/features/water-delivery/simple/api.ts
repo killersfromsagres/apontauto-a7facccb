@@ -57,13 +57,15 @@ export interface Entrega {
   bags: number;
   observacao: string | null;
   status: EntregaStatus;
+  bebedouro_ok: boolean | null;
+  bebedouro_obs: string | null;
   criado_em: string;
   fotos?: EntregaFoto[];
 }
 
 const PONTO_FIELDS = "id, predio, andar, espaco, periodo, dias, bags, ordem, ativo";
 const ENTREGA_FIELDS =
-  "id, ponto_id, data, colaboradores, veiculo, bags, observacao, status, criado_em";
+  "id, ponto_id, data, colaboradores, veiculo, bags, observacao, status, bebedouro_ok, bebedouro_obs, criado_em";
 
 /** Data de hoje no fuso operacional (YYYY-MM-DD). */
 export function hojeISO(): string {
@@ -125,6 +127,8 @@ export interface RegistroEntrega {
   bags: number;
   observacao: string | null;
   status: EntregaStatus;
+  bebedouroOk: boolean | null;
+  bebedouroObs: string | null;
   fotos: Blob[];
 }
 
@@ -142,6 +146,8 @@ export async function registrarEntrega(input: RegistroEntrega): Promise<Entrega>
         bags: input.bags,
         observacao: input.observacao,
         status: input.status,
+        bebedouro_ok: input.bebedouroOk,
+        bebedouro_obs: input.bebedouroObs,
         registrado_por: u.user?.id ?? null,
         atualizado_em: new Date().toISOString(),
       },
