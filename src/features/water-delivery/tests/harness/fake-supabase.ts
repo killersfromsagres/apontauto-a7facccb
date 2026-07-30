@@ -68,6 +68,16 @@ function combina(row: Row, filtros: Filtro[]): boolean {
 
 type Filtro = { coluna: string; op: string; valor: unknown };
 
+/** Valores default das colunas do banco (o Postgres real os aplica). */
+const PADROES: Record<string, Row> = {
+  agua_pontos: { ativo: true },
+  agua_programacao: { ativo: true },
+  agua_visitas: { status: "pendente", fotos: [], bags_entregues: 0, bags_recolhidas: 0 },
+  agua_rotas: { status: "planejada" },
+  agua_filtro_solicitacoes: { situacao: "solicitada", reaberturas: 0 },
+};
+
+
 let seq = 0;
 function novoId(prefixo: string): string {
   seq += 1;
