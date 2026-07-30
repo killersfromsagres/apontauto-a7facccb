@@ -129,7 +129,7 @@ describe("progresso da rota", () => {
       pontos: [{ id: "p1", predio: "Bloco D55", andar: "1", espaco: "Copa" } as any],
     });
     expect(r.totalParadas).toBe(3);
-    expect(r.taxaConclusao).toBe(67);
+    expect(r.taxaConclusao).toBe(66.7);
   });
 
   it("agrupa paradas por prédio para a navegação em campo", () => {
