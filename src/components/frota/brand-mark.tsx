@@ -1,8 +1,8 @@
 import { memo } from "react";
 
 import { cn } from "@/lib/utils";
-import fiatLogo from "@/assets/fiat-logo.png.asset.json";
-import vwLogo from "@/assets/vw-logo.png.asset.json";
+import fiatLogo from "@/assets/fiat-logo.png";
+import vwLogo from "@/assets/vw-logo.png";
 
 export type CarBrand = "fiat" | "vw" | "generic";
 
