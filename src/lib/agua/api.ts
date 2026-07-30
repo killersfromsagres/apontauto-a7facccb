@@ -14,36 +14,19 @@ import {
 // As tabelas novas ainda não constam nos tipos gerados.
 const db = supabase as unknown as { from: (t: string) => any };
 
-export type VisitaStatus =
-  | "pendente"
-  | "em_deslocamento"
-  | "em_atendimento"
-  | "concluida"
-  | "parcial"
-  | "nao_realizada"
-  | "sem_necessidade"
-  | "acesso_bloqueado"
-  | "local_fechado"
-  | "falta_bags"
-  | "endereco_divergente"
-  | "reprogramada"
-  | "cancelada";
+// Item 14 — os estados oficiais vivem em estados.ts (espelho dos enums do banco).
+export {
+  VISITA_STATUS,
+  VISITA_STATUS_LABEL,
+  VISITA_FINAIS,
+  VISITA_TRANSICOES,
+  podeTransicionarVisita,
+  visitaAtendida,
+} from "@/lib/agua/estados";
+export type { VisitaStatus } from "@/lib/agua/estados";
 
-export const VISITA_STATUS_LABEL: Record<VisitaStatus, string> = {
-  pendente: "Pendente",
-  em_deslocamento: "Em deslocamento",
-  em_atendimento: "Em atendimento",
-  concluida: "Concluída",
-  parcial: "Concluída parcialmente",
-  nao_realizada: "Não realizada",
-  sem_necessidade: "Ponto sem necessidade",
-  acesso_bloqueado: "Acesso bloqueado",
-  local_fechado: "Local fechado",
-  falta_bags: "Falta de bags",
-  endereco_divergente: "Endereço divergente",
-  reprogramada: "Reprogramada",
-  cancelada: "Cancelada",
-};
+import type { VisitaStatus } from "@/lib/agua/estados";
+
 
 
 export const MOTIVOS_NAO_REALIZADA = [
