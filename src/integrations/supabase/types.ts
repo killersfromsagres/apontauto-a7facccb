@@ -1125,6 +1125,127 @@ export type Database = {
           },
         ]
       }
+      agua_prog_entregas: {
+        Row: {
+          atualizado_em: string
+          bags: number
+          colaboradores: string[]
+          criado_em: string
+          data: string
+          id: string
+          observacao: string | null
+          ponto_id: string
+          registrado_por: string | null
+          status: string
+          veiculo: string | null
+        }
+        Insert: {
+          atualizado_em?: string
+          bags?: number
+          colaboradores?: string[]
+          criado_em?: string
+          data: string
+          id?: string
+          observacao?: string | null
+          ponto_id: string
+          registrado_por?: string | null
+          status?: string
+          veiculo?: string | null
+        }
+        Update: {
+          atualizado_em?: string
+          bags?: number
+          colaboradores?: string[]
+          criado_em?: string
+          data?: string
+          id?: string
+          observacao?: string | null
+          ponto_id?: string
+          registrado_por?: string | null
+          status?: string
+          veiculo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_prog_entregas_ponto_id_fkey"
+            columns: ["ponto_id"]
+            isOneToOne: false
+            referencedRelation: "agua_prog_pontos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_prog_fotos: {
+        Row: {
+          criado_em: string
+          entrega_id: string
+          id: string
+          storage_path: string | null
+          url: string
+        }
+        Insert: {
+          criado_em?: string
+          entrega_id: string
+          id?: string
+          storage_path?: string | null
+          url: string
+        }
+        Update: {
+          criado_em?: string
+          entrega_id?: string
+          id?: string
+          storage_path?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agua_prog_fotos_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "agua_prog_entregas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agua_prog_pontos: {
+        Row: {
+          andar: string | null
+          ativo: boolean
+          bags: number
+          criado_em: string
+          dias: number[]
+          espaco: string | null
+          id: string
+          ordem: number
+          periodo: string | null
+          predio: string
+        }
+        Insert: {
+          andar?: string | null
+          ativo?: boolean
+          bags?: number
+          criado_em?: string
+          dias?: number[]
+          espaco?: string | null
+          id?: string
+          ordem?: number
+          periodo?: string | null
+          predio: string
+        }
+        Update: {
+          andar?: string | null
+          ativo?: boolean
+          bags?: number
+          criado_em?: string
+          dias?: number[]
+          espaco?: string | null
+          id?: string
+          ordem?: number
+          periodo?: string | null
+          predio?: string
+        }
+        Relationships: []
+      }
       agua_programacao: {
         Row: {
           ativo: boolean
