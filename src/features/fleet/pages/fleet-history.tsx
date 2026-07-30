@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ImageOff } from "lucide-react";
+import { Award, ChevronDown, ImageOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
@@ -17,8 +18,11 @@ import {
 } from "@/features/fleet/api";
 import { PHOTO_CATEGORIES, STATUS_LABEL, STATUS_TONE } from "@/features/fleet/checklist-items";
 import { signPhotoUrls } from "@/features/fleet/photos";
+import { generateChecklistCertificate } from "@/features/fleet/certificate";
 
 export function FleetHistory() {
+  const [certifyingId, setCertifyingId] = useState<string | null>(null);
+
   const vehiclesQ = useQuery({ queryKey: ["fleet", "vehicles"], queryFn: listFleetVehicles });
   const checklistsQ = useQuery({
     queryKey: ["fleet", "checklists"],
@@ -180,6 +184,39 @@ export function FleetHistory() {
                     ) : (
                       <p className="text-xs text-muted-foreground">Sem fotos neste checklist.</p>
                     )}
+
+                    <Button
+                      type="button"
+                      className="h-11 w-full"
+                      disabled={certifyingId === c.id}
+                      onClick={async () => {
+                        setCertifyingId(c.id);
+                        try {
+                          await generateChecklistCertificate({
+                            checklist: c,
+                            vehicle: v,
+                            photos: photos
+                              .map((p) => ({ category: p.category, url: urls[p.storage_path] }))
+                              .filter((p) => p.url),
+                          });
+                          toast.success("Certificado gerado.");
+                        } catch (err) {
+                          toast.error(
+                            `Não foi possível gerar o certificado. ${(err as Error)?.message ?? ""}`.trim(),
+                          );
+                        } finally {
+                          setCertifyingId(null);
+                        }
+                      }}
+                    >
+                      {certifyingId === c.id ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Award className="mr-2 h-4 w-4" />
+                      )}
+                      Gerar certificado em PDF
+                    </Button>
+
                   </div>
                 )}
               </GlassCard>
