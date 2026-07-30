@@ -21,6 +21,8 @@ export const TURNO_LABEL: Record<string, string> = {
 };
 
 // Item 14 — estados oficiais da rota (espelho do enum agua_rota_status).
+import { podeTransicionarRota, type RotaStatus } from "@/lib/agua/estados";
+
 export {
   ROTA_STATUS,
   ROTA_STATUS_LABEL,
@@ -29,6 +31,7 @@ export {
   podeTransicionarRota,
 } from "@/lib/agua/estados";
 export type { RotaStatus } from "@/lib/agua/estados";
+
 
 
 /** Data de hoje no fuso operacional (YYYY-MM-DD). */
