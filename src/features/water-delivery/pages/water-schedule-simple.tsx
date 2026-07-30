@@ -394,9 +394,8 @@ export function WaterScheduleSimple() {
           entrega={entregaPorPonto.get(pontoAberto.id) ?? null}
           defaultColaboradores={colaboradores}
           defaultVeiculo={veiculo}
-          veiculos={(veiculosQ.data ?? []).map((v) =>
-            [v.prefix, v.plate].filter(Boolean).join(" · ") || vehicleLabel(v),
-          )}
+          veiculos={opcoesVeiculos}
+
           onCommitEquipe={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
