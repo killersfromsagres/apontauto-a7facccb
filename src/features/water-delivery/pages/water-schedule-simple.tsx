@@ -362,10 +362,16 @@ export function WaterScheduleSimple() {
                         {p.espaco ?? "—"}
                       </span>
                       {e && (
-                        <span className="mt-0.5 block truncate text-xs text-muted-foreground/80">
-                          {e.colaboradores.join(" e ") || "sem colaborador"}
-                          {e.veiculo ? ` · ${e.veiculo}` : ""} · {e.bags} bag(s)
-                        </span>
+                        <>
+                          <span className="mt-1 flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Entrega realizada
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-emerald-700/80 dark:text-emerald-300/80">
+                            {e.colaboradores.join(" e ") || "sem colaborador"}
+                            {e.veiculo ? ` · ${e.veiculo}` : ""} · {e.bags} bag(s)
+                          </span>
+                        </>
                       )}
                     </span>
                     <span

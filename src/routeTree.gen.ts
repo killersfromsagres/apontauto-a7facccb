@@ -81,6 +81,7 @@ import { Route as AuthenticatedAbastecimentoAguaProgramacaoRouteImport } from '.
 import { Route as AuthenticatedAbastecimentoAguaPontosRouteImport } from './routes/_authenticated/abastecimento.agua.pontos'
 import { Route as AuthenticatedAbastecimentoAguaIndicadoresRouteImport } from './routes/_authenticated/abastecimento.agua.indicadores'
 import { Route as AuthenticatedAbastecimentoAguaHistoricoRouteImport } from './routes/_authenticated/abastecimento.agua.historico'
+import { Route as AuthenticatedAbastecimentoAguaGestaoRouteImport } from './routes/_authenticated/abastecimento.agua.gestao'
 import { Route as AuthenticatedAbastecimentoAguaFiltrosRouteImport } from './routes/_authenticated/abastecimento.agua.filtros'
 import { Route as AuthenticatedAbastecimentoAguaEvidenciasRouteImport } from './routes/_authenticated/abastecimento.agua.evidencias'
 import { Route as AuthenticatedAbastecimentoAguaConfiguracoesRouteImport } from './routes/_authenticated/abastecimento.agua.configuracoes'
@@ -490,6 +491,12 @@ const AuthenticatedAbastecimentoAguaHistoricoRoute =
     path: '/historico',
     getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
   } as any)
+const AuthenticatedAbastecimentoAguaGestaoRoute =
+  AuthenticatedAbastecimentoAguaGestaoRouteImport.update({
+    id: '/gestao',
+    path: '/gestao',
+    getParentRoute: () => AuthenticatedAbastecimentoAguaRoute,
+  } as any)
 const AuthenticatedAbastecimentoAguaFiltrosRoute =
   AuthenticatedAbastecimentoAguaFiltrosRouteImport.update({
     id: '/filtros',
@@ -576,6 +583,7 @@ export interface FileRoutesByFullPath {
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
+  '/abastecimento/agua/gestao': typeof AuthenticatedAbastecimentoAguaGestaoRoute
   '/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/abastecimento/agua/indicadores': typeof AuthenticatedAbastecimentoAguaIndicadoresRoute
   '/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
@@ -651,6 +659,7 @@ export interface FileRoutesByTo {
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
+  '/abastecimento/agua/gestao': typeof AuthenticatedAbastecimentoAguaGestaoRoute
   '/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/abastecimento/agua/indicadores': typeof AuthenticatedAbastecimentoAguaIndicadoresRoute
   '/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
@@ -730,6 +739,7 @@ export interface FileRoutesById {
   '/_authenticated/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   '/_authenticated/abastecimento/agua/filtros': typeof AuthenticatedAbastecimentoAguaFiltrosRoute
+  '/_authenticated/abastecimento/agua/gestao': typeof AuthenticatedAbastecimentoAguaGestaoRoute
   '/_authenticated/abastecimento/agua/historico': typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   '/_authenticated/abastecimento/agua/indicadores': typeof AuthenticatedAbastecimentoAguaIndicadoresRoute
   '/_authenticated/abastecimento/agua/pontos': typeof AuthenticatedAbastecimentoAguaPontosRoute
@@ -809,6 +819,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
     | '/abastecimento/agua/filtros'
+    | '/abastecimento/agua/gestao'
     | '/abastecimento/agua/historico'
     | '/abastecimento/agua/indicadores'
     | '/abastecimento/agua/pontos'
@@ -884,6 +895,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
     | '/abastecimento/agua/filtros'
+    | '/abastecimento/agua/gestao'
     | '/abastecimento/agua/historico'
     | '/abastecimento/agua/indicadores'
     | '/abastecimento/agua/pontos'
@@ -962,6 +974,7 @@ export interface FileRouteTypes {
     | '/_authenticated/abastecimento/agua/configuracoes'
     | '/_authenticated/abastecimento/agua/evidencias'
     | '/_authenticated/abastecimento/agua/filtros'
+    | '/_authenticated/abastecimento/agua/gestao'
     | '/_authenticated/abastecimento/agua/historico'
     | '/_authenticated/abastecimento/agua/indicadores'
     | '/_authenticated/abastecimento/agua/pontos'
@@ -1509,6 +1522,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAbastecimentoAguaHistoricoRouteImport
       parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
     }
+    '/_authenticated/abastecimento/agua/gestao': {
+      id: '/_authenticated/abastecimento/agua/gestao'
+      path: '/gestao'
+      fullPath: '/abastecimento/agua/gestao'
+      preLoaderRoute: typeof AuthenticatedAbastecimentoAguaGestaoRouteImport
+      parentRoute: typeof AuthenticatedAbastecimentoAguaRoute
+    }
     '/_authenticated/abastecimento/agua/filtros': {
       id: '/_authenticated/abastecimento/agua/filtros'
       path: '/filtros'
@@ -1545,6 +1565,7 @@ interface AuthenticatedAbastecimentoAguaRouteChildren {
   AuthenticatedAbastecimentoAguaConfiguracoesRoute: typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   AuthenticatedAbastecimentoAguaEvidenciasRoute: typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
   AuthenticatedAbastecimentoAguaFiltrosRoute: typeof AuthenticatedAbastecimentoAguaFiltrosRoute
+  AuthenticatedAbastecimentoAguaGestaoRoute: typeof AuthenticatedAbastecimentoAguaGestaoRoute
   AuthenticatedAbastecimentoAguaHistoricoRoute: typeof AuthenticatedAbastecimentoAguaHistoricoRoute
   AuthenticatedAbastecimentoAguaIndicadoresRoute: typeof AuthenticatedAbastecimentoAguaIndicadoresRoute
   AuthenticatedAbastecimentoAguaPontosRoute: typeof AuthenticatedAbastecimentoAguaPontosRoute
@@ -1564,6 +1585,8 @@ const AuthenticatedAbastecimentoAguaRouteChildren: AuthenticatedAbastecimentoAgu
       AuthenticatedAbastecimentoAguaEvidenciasRoute,
     AuthenticatedAbastecimentoAguaFiltrosRoute:
       AuthenticatedAbastecimentoAguaFiltrosRoute,
+    AuthenticatedAbastecimentoAguaGestaoRoute:
+      AuthenticatedAbastecimentoAguaGestaoRoute,
     AuthenticatedAbastecimentoAguaHistoricoRoute:
       AuthenticatedAbastecimentoAguaHistoricoRoute,
     AuthenticatedAbastecimentoAguaIndicadoresRoute:
