@@ -91,11 +91,33 @@ export async function prepararFoto(
     capturadaEm,
   });
 
+  const mimeAlvo = suportaWebp() ? "image/webp" : "image/jpeg";
+
+  // Caminho preferencial: worker com OffscreenCanvas (fora do main thread).
+  const offThread = await processarImagemOffThread(file, {
+    maxDim,
+    quality,
+    thumbDim: THUMB_DIM,
+    mime: mimeAlvo,
+  }).catch(() => null);
+  if (offThread) {
+    return {
+      blob: offThread.blob,
+      thumb: await blobParaDataUrl(offThread.thumbBlob),
+      hash: offThread.hash,
+      mime: offThread.mime,
+      largura: offThread.largura,
+      altura: offThread.altura,
+      sizeBytes: offThread.blob.size,
+      capturadaEm,
+      offThread: true,
+    };
+  }
+
   if (typeof createImageBitmap === "undefined" || typeof document === "undefined") {
     return fallback();
   }
 
-  try {
     const bmp = await createImageBitmap(file);
     const alvo = Math.min(1600, Math.max(1280, maxDim));
     const ratio = Math.min(1, alvo / Math.max(bmp.width, bmp.height));
