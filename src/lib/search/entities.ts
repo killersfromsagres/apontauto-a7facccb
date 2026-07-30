@@ -138,7 +138,7 @@ export async function searchEntities(termRaw: string): Promise<EntityResult[]> {
       title: `${v.placa}${v.modelo ? ` — ${v.modelo}` : ""}`,
       subtitle: [v.marca, v.situacao].filter(Boolean).join(" · "),
       group: "Frota",
-      url: "/abastecimento",
+      url: "/frota",
     });
   }
 

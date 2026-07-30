@@ -299,7 +299,7 @@ export const sections: MenuSection[] = [
         key: "abastecimento",
         title: "Frota e Abastecimento",
         short: "Frota",
-        url: "/abastecimento",
+        url: "/frota",
         icon: Fuel,
         keywords: [
           "combustível",

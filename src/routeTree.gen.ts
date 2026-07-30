@@ -43,6 +43,7 @@ import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authent
 import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenticated/materiais-os'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
+import { Route as AuthenticatedFrotaRouteImport } from './routes/_authenticated/frota'
 import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
@@ -59,7 +60,6 @@ import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_a
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
-import { Route as AuthenticatedAbastecimentoIndexRouteImport } from './routes/_authenticated/abastecimento.index'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
@@ -273,6 +273,11 @@ const AuthenticatedImagensRoute = AuthenticatedImagensRouteImport.update({
   path: '/imagens',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFrotaRoute = AuthenticatedFrotaRouteImport.update({
+  id: '/frota',
+  path: '/frota',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardChamadosRoute =
   AuthenticatedDashboardChamadosRouteImport.update({
     id: '/dashboard-chamados',
@@ -362,12 +367,6 @@ const AuthenticatedAbastecimentoRoute =
     id: '/abastecimento',
     path: '/abastecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAbastecimentoIndexRoute =
-  AuthenticatedAbastecimentoIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedAbastecimentoRoute,
   } as any)
 const ApiPublicClimaForecastRoute = ApiPublicClimaForecastRouteImport.update({
   id: '/api/public/clima-forecast',
@@ -553,6 +552,7 @@ export interface FileRoutesByFullPath {
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -586,7 +586,6 @@ export interface FileRoutesByFullPath {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -615,6 +614,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
+  '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
@@ -630,6 +630,7 @@ export interface FileRoutesByTo {
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -663,7 +664,6 @@ export interface FileRoutesByTo {
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/abastecimento': typeof AuthenticatedAbastecimentoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -710,6 +710,7 @@ export interface FileRoutesById {
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/_authenticated/frota': typeof AuthenticatedFrotaRoute
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -744,7 +745,6 @@ export interface FileRoutesById {
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
-  '/_authenticated/abastecimento/': typeof AuthenticatedAbastecimentoIndexRoute
   '/_authenticated/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/_authenticated/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -792,6 +792,7 @@ export interface FileRouteTypes {
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
+    | '/frota'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
@@ -825,7 +826,6 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/abastecimento/'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -854,6 +854,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
+    | '/abastecimento'
     | '/apontamentos'
     | '/auditoria'
     | '/backlog-inteligente'
@@ -869,6 +870,7 @@ export interface FileRouteTypes {
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
     | '/dashboard-chamados'
+    | '/frota'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
@@ -902,7 +904,6 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/abastecimento'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -948,6 +949,7 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva-historico'
     | '/_authenticated/corretiva-pecas-status'
     | '/_authenticated/dashboard-chamados'
+    | '/_authenticated/frota'
     | '/_authenticated/imagens'
     | '/_authenticated/lavanderia'
     | '/_authenticated/materiais-os'
@@ -982,7 +984,6 @@ export interface FileRouteTypes {
     | '/_authenticated/inteligencia-ativos/preencher'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
-    | '/_authenticated/abastecimento/'
     | '/_authenticated/abastecimento/agua/bags'
     | '/_authenticated/abastecimento/agua/configuracoes'
     | '/_authenticated/abastecimento/agua/evidencias'
@@ -1269,6 +1270,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImagensRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/frota': {
+      id: '/_authenticated/frota'
+      path: '/frota'
+      fullPath: '/frota'
+      preLoaderRoute: typeof AuthenticatedFrotaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard-chamados': {
       id: '/_authenticated/dashboard-chamados'
       path: '/dashboard-chamados'
@@ -1380,13 +1388,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/abastecimento'
       preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/abastecimento/': {
-      id: '/_authenticated/abastecimento/'
-      path: '/'
-      fullPath: '/abastecimento/'
-      preLoaderRoute: typeof AuthenticatedAbastecimentoIndexRouteImport
-      parentRoute: typeof AuthenticatedAbastecimentoRoute
     }
     '/api/public/clima-forecast': {
       id: '/api/public/clima-forecast'
@@ -1630,14 +1631,12 @@ const AuthenticatedAbastecimentoAguaRouteWithChildren =
 
 interface AuthenticatedAbastecimentoRouteChildren {
   AuthenticatedAbastecimentoAguaRoute: typeof AuthenticatedAbastecimentoAguaRouteWithChildren
-  AuthenticatedAbastecimentoIndexRoute: typeof AuthenticatedAbastecimentoIndexRoute
 }
 
 const AuthenticatedAbastecimentoRouteChildren: AuthenticatedAbastecimentoRouteChildren =
   {
     AuthenticatedAbastecimentoAguaRoute:
       AuthenticatedAbastecimentoAguaRouteWithChildren,
-    AuthenticatedAbastecimentoIndexRoute: AuthenticatedAbastecimentoIndexRoute,
   }
 
 const AuthenticatedAbastecimentoRouteWithChildren =
@@ -1662,6 +1661,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
   AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
+  AuthenticatedFrotaRoute: typeof AuthenticatedFrotaRoute
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedMateriaisOsRoute: typeof AuthenticatedMateriaisOsRoute
@@ -1709,6 +1709,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorretivaPecasStatusRoute:
     AuthenticatedCorretivaPecasStatusRoute,
   AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
+  AuthenticatedFrotaRoute: AuthenticatedFrotaRoute,
   AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedMateriaisOsRoute: AuthenticatedMateriaisOsRoute,
