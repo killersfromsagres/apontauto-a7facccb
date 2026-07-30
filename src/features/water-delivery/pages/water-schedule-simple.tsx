@@ -37,6 +37,24 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { listVehicles, vehicleLabel } from "@/lib/frota/api";
+import { PlateBadge } from "@/components/frota/plate-badge";
+import { BrandMark, inferBrand, type CarBrand } from "@/components/frota/brand-mark";
+import {
+  VEHICLE_USE_LABEL,
+  VEHICLE_USE_TONE,
+  inferVehicleUse,
+  type VehicleUse,
+} from "@/lib/frota/vehicle-use";
+
+type VeiculoOpcao = {
+  valor: string;
+  prefix: string | null;
+  plate: string | null;
+  nome: string;
+  brand: CarBrand;
+  use: VehicleUse;
+};
+
 import {
   COLABORADORES,
   DIAS,
@@ -90,6 +108,23 @@ export function WaterScheduleSimple() {
     queryFn: () => listEntregasDoDia(data),
   });
   const veiculosQ = useQuery({ queryKey: ["frota", "veiculos"], queryFn: listVehicles });
+
+  const opcoesVeiculos = useMemo<VeiculoOpcao[]>(
+    () =>
+      (veiculosQ.data ?? []).map((v) => {
+        const nome = vehicleLabel(v);
+        return {
+          valor: [v.prefix, v.plate].filter(Boolean).join(" · ") || nome,
+          prefix: v.prefix ?? null,
+          plate: v.plate ?? null,
+          nome,
+          brand: inferBrand(`${v.brand ?? ""} ${v.model ?? ""}`),
+          use: inferVehicleUse(`${nome} ${v.version ?? ""} ${v.prefix ?? ""}`),
+        };
+      }),
+    [veiculosQ.data],
+  );
+
 
   const entregaPorPonto = useMemo(() => {
     const map = new Map<string, Entrega>();
@@ -247,12 +282,17 @@ export function WaterScheduleSimple() {
                 <SelectValue placeholder="Selecione o carro" />
               </SelectTrigger>
               <SelectContent>
-                {(veiculosQ.data ?? []).map((v) => (
-                  <SelectItem key={v.id} value={v.prefix || v.plate || v.id}>
-                    {[v.prefix, v.plate].filter(Boolean).join(" · ")} — {vehicleLabel(v)}
+                {opcoesVeiculos.map((v) => (
+                  <SelectItem key={v.valor} value={v.valor}>
+                    <span className="flex items-center gap-2">
+                      <BrandMark brand={v.brand} className="h-4 w-auto" />
+                      <span className="font-medium">{v.nome}</span>
+                      <span className="font-mono text-xs text-muted-foreground">{v.valor}</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
+
             </Select>
           </div>
         </div>
@@ -354,9 +394,8 @@ export function WaterScheduleSimple() {
           entrega={entregaPorPonto.get(pontoAberto.id) ?? null}
           defaultColaboradores={colaboradores}
           defaultVeiculo={veiculo}
-          veiculos={(veiculosQ.data ?? []).map((v) =>
-            [v.prefix, v.plate].filter(Boolean).join(" · ") || vehicleLabel(v),
-          )}
+          veiculos={opcoesVeiculos}
+
           onCommitEquipe={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
@@ -391,7 +430,7 @@ function EntregaSheet({
   entrega: Entrega | null;
   defaultColaboradores: string[];
   defaultVeiculo: string | null;
-  veiculos: string[];
+  veiculos: VeiculoOpcao[];
   onCommitEquipe: (cols: string[], veiculo: string | null) => void;
   onClose: () => void;
   onSaved: () => void;
@@ -657,26 +696,50 @@ function EntregaSheet({
                   <p className="text-sm text-muted-foreground">Nenhum veículo cadastrado.</p>
                 )}
                 {veiculos.map((v) => {
-                  const ativo = veiculo === v;
+                  const ativo = veiculo === v.valor;
                   return (
                     <button
-                      key={v}
+                      key={v.valor}
                       type="button"
                       aria-pressed={ativo}
-                      onClick={() => setVeiculo(ativo ? null : v)}
+                      onClick={() => setVeiculo(ativo ? null : v.valor)}
                       className={cn(
-                        "flex min-h-[48px] shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-all active:scale-[0.98]",
+                        "flex min-h-[76px] w-[190px] shrink-0 flex-col justify-between gap-2 rounded-2xl border p-3 text-left transition-all active:scale-[0.98]",
                         ativo
-                          ? "border-primary/70 bg-primary/15 text-primary shadow-sm"
-                          : "border-border/60 bg-background/40 text-muted-foreground",
+                          ? "border-primary/70 bg-primary/10 shadow-sm"
+                          : "border-border/60 bg-background/40",
                       )}
                     >
-                      <Car className="h-4 w-4 shrink-0" />
-                      {v}
-                      {ativo && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                      <span className="flex w-full items-center gap-2">
+                        <span
+                          className={cn(
+                            "truncate text-sm font-semibold",
+                            ativo ? "text-primary" : "text-foreground",
+                          )}
+                        >
+                          {v.prefix ?? v.nome}
+                        </span>
+                        <span
+                          className={cn(
+                            "ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                            VEHICLE_USE_TONE[v.use],
+                          )}
+                        >
+                          {VEHICLE_USE_LABEL[v.use]}
+                        </span>
+                        {ativo && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
+                      </span>
+                      <span className="flex w-full items-center gap-2">
+                        <PlateBadge plate={v.plate} size="sm" />
+                        <BrandMark brand={v.brand} className="h-4 w-auto" />
+                        <span className="truncate text-[11px] text-muted-foreground">
+                          {v.nome}
+                        </span>
+                      </span>
                     </button>
                   );
                 })}
+
               </div>
               {!veiculo && (
                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">

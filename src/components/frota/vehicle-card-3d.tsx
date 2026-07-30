@@ -4,7 +4,14 @@ import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VEHICLE_STATUS_LABEL, vehicleLabel, type Vehicle } from "@/lib/frota/api";
 import { VehiclePhoto } from "@/components/frota/vehicle-photo";
-import { formatPlate } from "@/lib/frota/plate";
+import { PlateBadge } from "@/components/frota/plate-badge";
+import { BrandMark, inferBrand } from "@/components/frota/brand-mark";
+import {
+  VEHICLE_USE_LABEL,
+  VEHICLE_USE_TONE,
+  inferVehicleUse,
+} from "@/lib/frota/vehicle-use";
+
 
 const STATUS_TONE: Record<string, string> = {
   disponivel: "text-emerald-300 bg-emerald-400/10 border-emerald-400/30",
@@ -28,6 +35,11 @@ export const VehicleCard3D = memo(function VehicleCard3D({
   onSelect: (v: Vehicle) => void;
 }) {
   const photo = vehicle.thumbnail_url || vehicle.model_poster_url;
+  const brand = inferBrand(`${vehicle.brand ?? ""} ${vehicle.model ?? ""}`);
+  const use = inferVehicleUse(
+    `${vehicle.model ?? ""} ${vehicle.version ?? ""} ${vehicle.prefix ?? ""}`,
+  );
+
 
   return (
     <button
@@ -88,13 +100,25 @@ export const VehicleCard3D = memo(function VehicleCard3D({
         </div>
         <p className="truncate text-sm font-semibold">{vehicleLabel(vehicle)}</p>
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-border/60 bg-background/60 px-2 py-0.5 font-mono text-[11px] font-bold tracking-widest">
-            {formatPlate(vehicle.plate) || "SEM PLACA"}
+          <PlateBadge plate={vehicle.plate} />
+          <span className="flex items-center gap-1.5">
+            <BrandMark brand={brand} />
+            {use !== "outro" && (
+              <span
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                  VEHICLE_USE_TONE[use],
+                )}
+              >
+                {VEHICLE_USE_LABEL[use]}
+              </span>
+            )}
           </span>
-          <span className="font-mono text-[11px] text-muted-foreground">
+          <span className="ml-auto font-mono text-[11px] text-muted-foreground">
             {vehicle.year_model ?? "—"}
           </span>
         </div>
+
       </div>
     </button>
   );
