@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -80,7 +80,6 @@ function ProgramacaoSemanal() {
   const qc = useQueryClient();
   const gestor = useCanAccessModule("abastecimento", "update").allowed;
   const isMobile = useIsMobile();
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const [visao, setVisao] = useState<Visao>(isMobile ? "cards" : "calendario");
   const [predio, setPredio] = useState("todos");
@@ -88,13 +87,6 @@ function ProgramacaoSemanal() {
   const [semana, setSemana] = useState(() => inicioSemana(hojeSP()));
   const [selecionados, setSelecionados] = useState<string[]>([]);
   const [arraste, setArraste] = useState<string | null>(null);
-  const [lendo, setLendo] = useState(false);
-  const [previa, setPrevia] = useState<{
-    leitura: LeituraAgua;
-    nome: string;
-    hash: string;
-    duplicado: boolean;
-  } | null>(null);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
   const prog = useQuery({
@@ -186,38 +178,6 @@ function ProgramacaoSemanal() {
     setArraste(null);
     reordenar.mutate(lista.map((l, idx) => ({ id: l.id, ordem: idx + 1 })));
   }
-
-  async function selecionarArquivo(file: File) {
-    setLendo(true);
-    try {
-      const buf = await file.arrayBuffer();
-      const hash = await sha256Hex(buf.slice(0));
-      const leitura = lerPlanilhaAgua(buf);
-      const jaImportado = await loteComHash(hash);
-      setPrevia({ leitura, nome: file.name, hash, duplicado: Boolean(jaImportado) });
-    } catch (e) {
-      toast.error((e as Error)?.message ?? "Não foi possível ler a planilha.");
-    } finally {
-      setLendo(false);
-    }
-  }
-
-  const aplicar = useMutation({
-    mutationFn: async () => {
-      if (!previa) throw new Error("Nenhuma pré-visualização carregada.");
-      return aplicarImportacao({
-        leitura: previa.leitura,
-        arquivoNome: previa.nome,
-        hash: previa.hash,
-      });
-    },
-    onSuccess: () => {
-      toast.success("Programação importada.");
-      setPrevia(null);
-      invalidar();
-    },
-    onError: (e: unknown) => toast.error((e as Error)?.message ?? "Falha na importação."),
-  });
 
   const feriadosDaSemana = useMemo(() => {
     const set = new Map<string, string>();
@@ -560,15 +520,6 @@ function ProgramacaoSemanal() {
 
       {/* Importação (item 19 — assistente em etapas) */}
       {gestor && <ImportadorWizard onDone={invalidar} />}
-    </div>
-  );
-}
-
-function Info2({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-lg border border-border/50 bg-card/40 p-2">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-base font-semibold">{value}</p>
     </div>
   );
 }
