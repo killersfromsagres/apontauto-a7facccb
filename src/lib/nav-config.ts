@@ -330,6 +330,13 @@ export const sections: MenuSection[] = [
     icon: ClipboardList,
     items: [
       {
+        key: "solicitacao-materiais",
+        title: "Solicitação de Materiais",
+        short: "Solicitar",
+        url: "/solicitacao-materiais",
+        icon: Boxes,
+        keywords: ["pedido", "material", "catálogo", "planilha", "colaborador", "suprimentos"],
+      },
         key: "controle-materiais",
         title: "Controle de Materiais",
         short: "Materiais",
