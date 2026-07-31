@@ -185,7 +185,23 @@ export async function buildPptx(
     );
   }
 
-  for (const slide of spec.slides) {
+  // Garante que TODA análise gerada a partir do arquivo apareça na apresentação,
+  // mesmo que a IA não tenha criado um slide para ela.
+  const referenciadas = new Set(spec.slides.map((s) => s.tabelaId).filter(Boolean) as string[]);
+  const slidesExtras = tabelas
+    .filter((t) => !referenciadas.has(t.id))
+    .map((t) => ({
+      titulo: t.nome,
+      subtitulo: t.descricao ?? `${t.total} registros do arquivo enviado`,
+      bullets: [] as string[],
+      tabelaId: t.id,
+      grafico: (t.rows.length <= 12 && t.headers.length <= 3 ? "barras" : "nenhum") as
+        | "barras"
+        | "nenhum",
+    }));
+
+  for (const slide of [...spec.slides, ...slidesExtras]) {
+
     const s = pptx.addSlide();
     s.addText(slide.titulo, {
       x: 0.6,
