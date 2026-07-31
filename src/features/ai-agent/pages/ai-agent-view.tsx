@@ -157,7 +157,19 @@ export function AiAgentView() {
           descricao: `${plano.slides.length + 2} slides com gráficos e tabelas.`,
         });
       }
-      setProgresso(90);
+      setProgresso(85);
+
+      if (plano.formatos.includes("pdf")) {
+        out.push({
+          id: "pdf",
+          nome: "Relatório em PDF",
+          arquivo: `${base}.pdf`,
+          icon: FileText,
+          blob: await buildPdf(plano, resultados, dataset),
+          descricao: "Relatório executivo A4 com resumo, KPIs e todas as análises.",
+        });
+      }
+      setProgresso(92);
 
       if (plano.formatos.includes("powerbi") || plano.formatos.includes("csv")) {
         out.push({
