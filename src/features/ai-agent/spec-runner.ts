@@ -107,24 +107,25 @@ function aplicarMetrica(rows: DataRow[], m: Metrica): number {
 const round = (n: number) => Math.round(n * 100) / 100;
 
 export function runTabela(ds: Dataset, spec: TabelaSpec): TabelaResultado {
-  const validCol = (c: string) => ds.columns.includes(c);
+  const col = (c: unknown) => resolveColumn(ds.columns, c);
 
   let rows = ds.rows;
   for (const f of spec.filtros) {
-    if (!validCol(f.campo)) continue;
-    rows = rows.filter((r) => matchFiltro(r, f));
+    const campo = col(f.campo);
+    if (!campo) continue;
+    rows = rows.filter((r) => matchFiltro(r, { ...f, campo }));
   }
 
   const total = rows.length;
   let headers: string[];
   let out: (string | number)[][];
 
-  const grupos = spec.agruparPor.filter(validCol);
+  const grupos = spec.agruparPor.map(col).filter((c): c is string => !!c);
 
   if (spec.tipo === "agrupado" && grupos.length > 0) {
     const metricas: Metrica[] =
       spec.metricas.length > 0
-        ? spec.metricas.filter((m) => !m.campo || validCol(m.campo))
+        ? spec.metricas.map((m) => ({ ...m, campo: m.campo ? col(m.campo) : null }))
         : [{ rotulo: "Chamados", campo: null, agregacao: "contagem" }];
 
     const buckets = new Map<string, { keys: string[]; rows: DataRow[] }>();
@@ -143,19 +144,22 @@ export function runTabela(ds: Dataset, spec: TabelaSpec): TabelaResultado {
     ]);
 
     const ordIdx = spec.ordenarPor
-      ? headers.findIndex((h) => h.toLowerCase() === spec.ordenarPor!.toLowerCase())
+      ? headers.findIndex((h) => colKey(h) === colKey(spec.ordenarPor))
       : grupos.length;
     const idx = ordIdx >= 0 ? ordIdx : grupos.length;
     out.sort((a, b) => compare(a[idx], b[idx], spec.ordem));
   } else {
-    const cols = spec.colunas.filter(validCol);
-    headers = cols.length > 0 ? cols : ds.columns;
+    // Detalhe: se a IA não indicou colunas válidas, usa a base completa —
+    // nunca devolvemos uma tabela vazia sem os dados do arquivo enviado.
+    const cols = spec.colunas.map(col).filter((c): c is string => !!c);
+    headers = cols.length > 0 ? Array.from(new Set(cols)) : ds.columns;
     out = rows.map((r) => headers.map((h) => r[h] ?? ""));
     if (spec.ordenarPor) {
-      const idx = headers.findIndex((h) => h.toLowerCase() === spec.ordenarPor!.toLowerCase());
+      const idx = headers.findIndex((h) => colKey(h) === colKey(spec.ordenarPor));
       if (idx >= 0) out.sort((a, b) => compare(a[idx], b[idx], spec.ordem));
     }
   }
+
 
   if (spec.limite && out.length > spec.limite) out = out.slice(0, spec.limite);
 
