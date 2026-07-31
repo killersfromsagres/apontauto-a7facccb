@@ -22,7 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadBlob } from "@/lib/download";
 import { planDocumentAgent } from "@/lib/ai-agent/plan.functions";
-import { buildPowerBiCsv, buildPptx, buildTabelaCsv, buildXlsx } from "../builders";
+import { buildPdf, buildPowerBiCsv, buildPptx, buildTabelaCsv, buildXlsx } from "../builders";
 import { enrichDataset, summarizeDataset, validateFile } from "../dataset";
 import { runSpecTables, type TabelaResultado } from "../spec-runner";
 import type { Dataset, Spec } from "../types";
