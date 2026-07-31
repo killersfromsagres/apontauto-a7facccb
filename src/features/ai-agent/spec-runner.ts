@@ -18,6 +18,26 @@ const txt = (v: unknown) =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+/** Chave de comparação de nomes de coluna (ignora acento, caixa e pontuação). */
+export const colKey = (v: unknown) => txt(v).replace(/[^a-z0-9]/g, "");
+
+/**
+ * Resolve o nome informado pela IA para uma coluna real do dataset.
+ * Tolera acentos, caixa, espaços e abreviações ("Predio" → "Prédio").
+ */
+export function resolveColumn(columns: string[], name: unknown): string | null {
+  const target = colKey(name);
+  if (!target) return null;
+  const exact = columns.find((c) => colKey(c) === target);
+  if (exact) return exact;
+  const partial = columns.find((c) => {
+    const k = colKey(c);
+    return k.includes(target) || target.includes(k);
+  });
+  return partial ?? null;
+}
+
+
 export function toNumber(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
   const s = String(v ?? "")
