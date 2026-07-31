@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Download,
   FileSpreadsheet,
+  FileText,
   Loader2,
   Presentation,
   Sparkles,
@@ -21,7 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { downloadBlob } from "@/lib/download";
 import { planDocumentAgent } from "@/lib/ai-agent/plan.functions";
-import { buildPowerBiCsv, buildPptx, buildTabelaCsv, buildXlsx } from "../builders";
+import { buildPdf, buildPowerBiCsv, buildPptx, buildTabelaCsv, buildXlsx } from "../builders";
 import { enrichDataset, summarizeDataset, validateFile } from "../dataset";
 import { runSpecTables, type TabelaResultado } from "../spec-runner";
 import type { Dataset, Spec } from "../types";
@@ -40,6 +41,7 @@ interface Artefato {
 const SUGESTOES = [
   "Monte um relatório executivo separando os chamados por equipe, prédio e andar, com um PowerPoint de apresentação para a diretoria.",
   "Quero uma planilha profissional com uma aba por equipe e um ranking dos prédios com mais chamados.",
+  "Gere um relatório em PDF com resumo executivo e ranking de prédios e andares críticos.",
   "Gere a base pronta para Power BI e slides com os gráficos de distribuição por categoria e por prédio.",
 ];
 
@@ -157,7 +159,19 @@ export function AiAgentView() {
           descricao: `${plano.slides.length + 2} slides com gráficos e tabelas.`,
         });
       }
-      setProgresso(90);
+      setProgresso(85);
+
+      if (plano.formatos.includes("pdf")) {
+        out.push({
+          id: "pdf",
+          nome: "Relatório em PDF",
+          arquivo: `${base}.pdf`,
+          icon: FileText,
+          blob: await buildPdf(plano, resultados, dataset),
+          descricao: "Relatório executivo A4 com resumo, KPIs e todas as análises.",
+        });
+      }
+      setProgresso(92);
 
       if (plano.formatos.includes("powerbi") || plano.formatos.includes("csv")) {
         out.push({
@@ -202,7 +216,7 @@ export function AiAgentView() {
     <PageShell
       eyebrow="Inteligência e BI"
       title="Agente de Documentos (IA)"
-      description="Anexe a planilha de chamados, descreva o que precisa e o agente entrega Excel, PowerPoint e base para Power BI já com equipes, prédios e andares resolvidos pela inteligência de ativos."
+      description="Anexe a planilha de chamados, descreva o que precisa e o agente entrega Excel, PowerPoint, PDF e base para Power BI já com equipes, prédios e andares resolvidos pela inteligência de ativos."
       actions={
         file ? (
           <Button variant="outline" size="sm" onClick={limpar} disabled={ocupado}>

@@ -59,7 +59,7 @@ export const SpecSchema = z.object({
   titulo: z.string().min(1),
   subtitulo: z.string().default(""),
   resumo: z.array(z.string()).default([]),
-  formatos: z.array(z.enum(["xlsx", "pptx", "powerbi", "csv"])).min(1),
+  formatos: z.array(z.enum(["xlsx", "pptx", "powerbi", "csv", "pdf"])).min(1),
   tabelas: z.array(TabelaSchema).default([]),
   slides: z.array(SlideSchema).default([]),
   observacoes: z.string().nullable().default(null),
