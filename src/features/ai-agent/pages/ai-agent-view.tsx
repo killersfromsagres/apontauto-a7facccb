@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Download,
   FileSpreadsheet,
+  FileText,
   Loader2,
   Presentation,
   Sparkles,
