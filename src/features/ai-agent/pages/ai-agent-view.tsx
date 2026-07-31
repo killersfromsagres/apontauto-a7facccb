@@ -216,7 +216,7 @@ export function AiAgentView() {
     <PageShell
       eyebrow="Inteligência e BI"
       title="Agente de Documentos (IA)"
-      description="Anexe a planilha de chamados, descreva o que precisa e o agente entrega Excel, PowerPoint e base para Power BI já com equipes, prédios e andares resolvidos pela inteligência de ativos."
+      description="Anexe a planilha de chamados, descreva o que precisa e o agente entrega Excel, PowerPoint, PDF e base para Power BI já com equipes, prédios e andares resolvidos pela inteligência de ativos."
       actions={
         file ? (
           <Button variant="outline" size="sm" onClick={limpar} disabled={ocupado}>
