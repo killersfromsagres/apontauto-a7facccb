@@ -95,7 +95,15 @@ export async function listPontos(): Promise<PontoProg[]> {
     .eq("ativo", true)
     .order("ordem");
   if (error) throw error;
-  return (data ?? []) as PontoProg[];
+  const pontos = (data ?? []) as PontoProg[];
+  // Ordem alfabética por prédio → andar → espaço (números lidos como números).
+  const collator = new Intl.Collator("pt-BR", { numeric: true, sensitivity: "base" });
+  return pontos.sort(
+    (a, b) =>
+      collator.compare(a.predio ?? "", b.predio ?? "") ||
+      collator.compare(a.andar ?? "", b.andar ?? "") ||
+      collator.compare(a.espaco ?? "", b.espaco ?? ""),
+  );
 }
 
 export async function listEntregasDoDia(dataISO: string): Promise<Entrega[]> {
