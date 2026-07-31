@@ -41,6 +41,7 @@ interface Artefato {
 const SUGESTOES = [
   "Monte um relatório executivo separando os chamados por equipe, prédio e andar, com um PowerPoint de apresentação para a diretoria.",
   "Quero uma planilha profissional com uma aba por equipe e um ranking dos prédios com mais chamados.",
+  "Gere um relatório em PDF com resumo executivo e ranking de prédios e andares críticos.",
   "Gere a base pronta para Power BI e slides com os gráficos de distribuição por categoria e por prédio.",
 ];
 
