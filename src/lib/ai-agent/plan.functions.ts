@@ -117,17 +117,17 @@ function fallbackSpec(pedido: string, ctx: Contexto): Spec {
   const has = (c: string) => ctx.colunas.includes(c);
   const grupos = ["Equipe (IA)", "Prédio", "Andar", "Categoria (IA)"].filter(has);
 
-  const tabelas = grupos.map((g, i) => ({
+  const tabelas: Spec["tabelas"] = grupos.map((g, i) => ({
     id: `g${i + 1}`,
     nome: `Chamados por ${g.replace(" (IA)", "")}`,
     descricao: `Distribuição dos chamados por ${g.replace(" (IA)", "").toLowerCase()}.`,
-    tipo: "agrupado" as const,
+    tipo: "agrupado",
     colunas: [],
     agruparPor: [g],
-    metricas: [{ rotulo: "Chamados", campo: null, agregacao: "contagem" as const }],
+    metricas: [{ rotulo: "Chamados", campo: null, agregacao: "contagem" }],
     filtros: [],
     ordenarPor: "Chamados",
-    ordem: "desc" as const,
+    ordem: "desc",
     limite: 50,
   }));
 
@@ -135,7 +135,7 @@ function fallbackSpec(pedido: string, ctx: Contexto): Spec {
     id: "detalhe",
     nome: "Detalhamento dos chamados",
     descricao: "Base completa enriquecida com equipe, prédio, andar e ambiente.",
-    tipo: "detalhe" as unknown as "agrupado",
+    tipo: "detalhe",
     colunas: ctx.colunas.slice(0, 12),
     agruparPor: [],
     metricas: [],
