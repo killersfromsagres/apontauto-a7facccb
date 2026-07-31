@@ -284,6 +284,149 @@ export async function buildPptx(
   return blob;
 }
 
+/* --------------------------------- PDF ----------------------------------- */
+
+const RGB_NAVY: [number, number, number] = [11, 27, 58];
+const RGB_ELECTRIC: [number, number, number] = [29, 78, 216];
+const RGB_MUTED: [number, number, number] = [100, 116, 139];
+
+/** Relatório executivo em PDF (A4 retrato) com capa, KPIs e todas as análises. */
+export async function buildPdf(
+  spec: Spec,
+  tabelas: TabelaResultado[],
+  ds: Dataset,
+): Promise<Blob> {
+  const [{ jsPDF }, autoTableMod] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const autoTable = (autoTableMod.default ?? autoTableMod) as unknown as (
+    doc: unknown,
+    options: Record<string, unknown>,
+  ) => void;
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  const M = 14;
+  const geradoEm = new Date().toLocaleString("pt-BR");
+
+  const header = (titulo: string, subtitulo: string) => {
+    doc.setFillColor(...RGB_NAVY);
+    doc.rect(0, 0, W, 26, "F");
+    doc.setFillColor(...RGB_ELECTRIC);
+    doc.rect(0, 26, W, 1.2, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.text(titulo.slice(0, 78), M, 12);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(157, 182, 232);
+    doc.text(subtitulo.slice(0, 110), M, 19);
+    doc.setTextColor(30, 41, 59);
+  };
+
+  // Capa / resumo executivo
+  header(spec.titulo, spec.subtitulo || ds.fileName);
+  let y = 38;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Resumo executivo", M, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  for (const linha of spec.resumo) {
+    const wrapped = doc.splitTextToSize(`•  ${linha}`, W - M * 2) as string[];
+    if (y + wrapped.length * 5 > 265) {
+      doc.addPage();
+      header(spec.titulo, spec.subtitulo || ds.fileName);
+      y = 38;
+    }
+    doc.text(wrapped, M, y);
+    y += wrapped.length * 5 + 1;
+  }
+
+  y += 4;
+  const kpis: [string, string][] = [
+    ["Linhas processadas", String(ds.rows.length)],
+    ["Ativos resolvidos", String(ds.resolvidos)],
+    ["Sem correspondência", String(ds.naoResolvidos)],
+    ["Análises geradas", String(tabelas.length)],
+  ];
+  const cardW = (W - M * 2 - 6) / 4;
+  kpis.forEach(([label, value], i) => {
+    const x = M + i * (cardW + 2);
+    doc.setDrawColor(203, 213, 225);
+    doc.setFillColor(243, 246, 251);
+    doc.roundedRect(x, y, cardW, 18, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...RGB_ELECTRIC);
+    doc.text(value, x + 3, y + 8);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...RGB_MUTED);
+    doc.text(doc.splitTextToSize(label, cardW - 6) as string[], x + 3, y + 13);
+  });
+  y += 26;
+  doc.setTextColor(30, 41, 59);
+
+  if (spec.observacoes) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...RGB_MUTED);
+    const obs = doc.splitTextToSize(spec.observacoes, W - M * 2) as string[];
+    doc.text(obs, M, y);
+    y += obs.length * 4.5 + 4;
+    doc.setTextColor(30, 41, 59);
+  }
+
+  // Análises
+  for (const t of tabelas) {
+    doc.addPage();
+    header(t.nome, t.descricao || `${spec.titulo} • gerado em ${geradoEm}`);
+    const head = [t.headers.slice(0, 8)];
+    const body = t.rows.slice(0, 300).map((r) => r.slice(0, 8).map((c) => String(c ?? "")));
+    autoTable(doc, {
+      head,
+      body,
+      startY: 36,
+      margin: { left: M, right: M, top: 34 },
+      styles: { font: "helvetica", fontSize: 8, cellPadding: 2, overflow: "linebreak" },
+      headStyles: { fillColor: RGB_ELECTRIC, textColor: 255, fontStyle: "bold", fontSize: 8 },
+      alternateRowStyles: { fillColor: [243, 246, 251] },
+      didDrawPage: () => header(t.nome, t.descricao || `Gerado em ${geradoEm}`),
+    });
+    if (t.rows.length > 300) {
+      const finalY =
+        (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 250;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(...RGB_MUTED);
+      doc.text(
+        `Exibindo as primeiras 300 de ${t.rows.length} linhas. Base completa no Excel/CSV.`,
+        M,
+        finalY + 6,
+      );
+      doc.setTextColor(30, 41, 59);
+    }
+  }
+
+  // Rodapé com paginação
+  const total = doc.getNumberOfPages();
+  for (let p = 1; p <= total; p += 1) {
+    doc.setPage(p);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...RGB_MUTED);
+    doc.text(`Apontauto • Agente de Documentos (IA) • ${geradoEm}`, M, 290);
+    doc.text(`${p}/${total}`, W - M, 290, { align: "right" });
+  }
+
+  return doc.output("blob");
+}
+
 /* ------------------------------ CSV / BI --------------------------------- */
 
 function toCsv(headers: string[], rows: (string | number)[][]): string {
