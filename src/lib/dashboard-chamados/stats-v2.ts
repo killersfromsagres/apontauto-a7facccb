@@ -90,6 +90,7 @@ export const EMPTY_V2: V2Stats = {
   kpis: {
     total: 0,
     abertos: 0,
+    backorder: 0,
     concluidos: 0,
     cancelados: 0,
     aguardandoAprovacao: 0,

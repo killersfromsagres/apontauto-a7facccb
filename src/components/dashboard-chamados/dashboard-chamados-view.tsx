@@ -245,7 +245,7 @@ export function DashboardChamadosView() {
         </GlassCard>
 
         {/* KPIs */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-7">
           <Kpi
             icon={<Database className="h-3.5 w-3.5" />}
             label="Total"
@@ -257,7 +257,14 @@ export function DashboardChamadosView() {
             label="Em aberto"
             value={num(k.abertos)}
             tone="info"
-            hint="Aberto, pendente, programado, execução"
+            hint="Tudo que não foi concluído nem cancelado"
+          />
+          <Kpi
+            icon={<Hourglass className="h-3.5 w-3.5" />}
+            label="Backorder (+30d)"
+            value={num(k.backorder)}
+            tone="warning"
+            hint="Em aberto há mais de 30 dias"
           />
           <Kpi
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
