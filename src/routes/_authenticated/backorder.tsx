@@ -440,6 +440,17 @@ function BackorderPage() {
     try {
       // 1) carrega o grafo de ativos vigente (catálogo ativo ou base legada)
       const assetsMap = await loadAssetsIndex(true);
+      // Mesmo catálogo usado em "Inteligência de Ativos → Preencher localização".
+      const loadedGraph = await loadActiveAssetGraph(true);
+      const assetRecords = Array.from(loadedGraph.graph.byCode.values()).map((n) => ({
+        code: n.code,
+        name: n.name,
+        level: n.rawLevel,
+        parentCode: n.parentCode,
+        parentName: n.parentName,
+        businessUnit: n.businessUnit,
+      }));
+
 
       const [ovRes, locRes, teamRes] = await Promise.all([
         supabase.from("backorder_atividade_override").select("os, atividade"),
