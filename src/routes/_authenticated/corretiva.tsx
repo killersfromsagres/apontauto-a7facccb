@@ -24,7 +24,7 @@ function CorretivaPageV2() {
     id: row.id,
     numero: row.numero_os,
     descricao: row.nome_os,
-    local: `${row.predio || ''} ${row.andar || ''} ${row.local || ''}`.trim(),
+    local: `${row.predio || ""} ${row.andar || ""} ${row.local || ""}`.trim(),
     equipe: row.equipe || "Sem Equipe",
     status: row.status as any,
     prioridade: "media", // Default as it's not in the original schema directly
@@ -32,7 +32,7 @@ function CorretivaPageV2() {
     sla_horas: 24, // Default mock
     fotos: [],
     pecas: [],
-    problemas: []
+    problemas: [],
   });
 
   const loadData = async () => {
@@ -46,7 +46,7 @@ function CorretivaPageV2() {
           .from("corretiva_os")
           .select(OS_COLUMNS)
           .order("numero_os", { ascending: true });
-        
+
         if (error) throw error;
         const rows = data as any[];
         await cacheOsList(rows);

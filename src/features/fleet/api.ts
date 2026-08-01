@@ -131,7 +131,11 @@ export async function deleteFueling(id: string): Promise<void> {
 /* Checklist veicular                                                  */
 /* ------------------------------------------------------------------ */
 
-export type ChecklistItemResult = { key: string; label: string; status: "ok" | "atencao" | "critico" };
+export type ChecklistItemResult = {
+  key: string;
+  label: string;
+  status: "ok" | "atencao" | "critico";
+};
 
 export type FleetChecklist = {
   id: string;

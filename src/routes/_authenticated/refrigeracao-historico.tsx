@@ -376,7 +376,6 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               </div>
             </section>
 
-
             <section>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">

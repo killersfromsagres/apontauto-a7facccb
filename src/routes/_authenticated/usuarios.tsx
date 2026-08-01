@@ -416,7 +416,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             size="sm"
             variant="outline"
             onClick={() => roleMut.mutate(user.role === "admin" ? "user" : "admin")}
-            disabled={roleMut.isPending}
+            loading={roleMut.isPending}
             title="Alternar papel"
           >
             <ShieldCheck className="mr-1 h-3.5 w-3.5" />
@@ -426,7 +426,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             size="sm"
             variant="outline"
             onClick={() => banMut.mutate(!user.banned)}
-            disabled={banMut.isPending}
+            loading={banMut.isPending}
           >
             {user.banned ? (
               <>
@@ -442,7 +442,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
             size="sm"
             variant="destructive"
             onClick={() => setConfirmDelete(true)}
-            disabled={delMut.isPending}
+            loading={delMut.isPending}
           >
             <Trash2 className="mr-1 h-3.5 w-3.5" /> Excluir
           </Button>

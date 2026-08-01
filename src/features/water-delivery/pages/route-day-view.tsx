@@ -453,8 +453,8 @@ function ParadaCard({
                 </a>
               </Button>
             )}
-            <WaterScanner 
-              expectedCode={ponto.qr_code ?? `AGUA:${ponto.codigo}`} 
+            <WaterScanner
+              expectedCode={ponto.qr_code ?? `AGUA:${ponto.codigo}`}
               onSuccess={onQrSuccess}
               onOpenChange={setScannerAberto}
             />

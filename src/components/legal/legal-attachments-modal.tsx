@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -69,9 +70,17 @@ export function LegalAttachmentsModal({
     }
   };
 
+  const { confirmar, dialogo } = useConfirm();
+
   const removeAttachment = async (att: LegalAttachment) => {
     if (!item) return;
-    if (!confirm(`Remover "${att.fileName}"?`)) return;
+    const ok = await confirmar({
+      titulo: "Remover anexo",
+      descricao: `Remover "${att.fileName}"?`,
+      confirmar: "Remover",
+      destrutivo: true,
+    });
+    if (!ok) return;
     try {
       await deleteAttachment(att);
       toast.success("Removido.");
@@ -84,6 +93,7 @@ export function LegalAttachmentsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {dialogo}
       <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto sm:w-full">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

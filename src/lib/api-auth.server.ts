@@ -23,9 +23,7 @@ function bearer(request: Request): string {
  */
 function authConfig(): { url: string; key: string } | null {
   const url =
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    import.meta.env?.VITE_SUPABASE_URL;
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || import.meta.env?.VITE_SUPABASE_URL;
   const key =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
@@ -56,7 +54,6 @@ function anonClient(token?: string): SupabaseClient | null {
     },
   });
 }
-
 
 /**
  * Retorna o usuário autenticado a partir do header `Authorization: Bearer`.
@@ -112,7 +109,6 @@ export function unauthorized(): Response {
 export function serviceUnavailable(detail = "Serviço temporariamente indisponível."): Response {
   return Response.json({ error: detail, code: "server_config" }, { status: 503 });
 }
-
 
 /** Resposta padrão 403 para chamadas sem permissão no módulo. */
 export function forbidden(moduleKey?: string, action = "create"): Response {

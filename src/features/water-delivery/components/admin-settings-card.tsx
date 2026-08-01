@@ -529,7 +529,7 @@ export function AdminSettingsCard({ podeEditar }: { podeEditar: boolean }) {
           <Button
             variant="ghost"
             className="min-h-[44px]"
-            disabled={salvando}
+            loading={salvando}
             onClick={() => setCfg(DEFAULT_AGUA_ADMIN)}
           >
             Restaurar padrões

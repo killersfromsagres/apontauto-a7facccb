@@ -132,7 +132,9 @@ function Page() {
         // Lotes pequenos: cada volta baixa do Storage, republica no ImgBB,
         // grava o link e só então apaga o binário local.
         while (guard++ < 400) {
-          const r = await withValidSession(() => migrate({ data: { source: src.key, batchSize: 6 } }));
+          const r = await withValidSession(() =>
+            migrate({ data: { source: src.key, batchSize: 6 } }),
+          );
           done += r.migrated;
           freedBytes += r.freedBytes;
           allFailures.push(...r.failures);
@@ -247,9 +249,17 @@ function Page() {
         {inv && (
           <>
             <div className="grid gap-3 sm:grid-cols-4">
-              <Kpi icon={ImageIcon} label="Objetos no armazenamento" value={String(inv.totals.objects)} />
+              <Kpi
+                icon={ImageIcon}
+                label="Objetos no armazenamento"
+                value={String(inv.totals.objects)}
+              />
               <Kpi icon={HardDrive} label="Espaço ocupado" value={fmtBytes(inv.totals.bytes)} />
-              <Kpi icon={CloudUpload} label="Pendentes de migração" value={String(inv.totals.pendingRows)} />
+              <Kpi
+                icon={CloudUpload}
+                label="Pendentes de migração"
+                value={String(inv.totals.pendingRows)}
+              />
               <Kpi icon={Trash2} label="Órfãos (sem registro)" value={String(inv.totals.orphans)} />
             </div>
 

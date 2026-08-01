@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -244,6 +245,7 @@ function useMarkedLegal() {
 /* -------------------------------------------------------------------------- */
 
 function PainelLegalPage() {
+  const { confirmar, dialogo } = useConfirm();
   const qc = useQueryClient();
   const [view, setView] = useState<"lista" | "calendario">("lista");
   const [year, setYear] = useState(new Date().getFullYear());
@@ -312,7 +314,13 @@ function PainelLegalPage() {
   };
 
   const handleDelete = async (it: LegalItem) => {
-    if (!confirm(`Excluir "${it.titulo}"?`)) return;
+    const ok = await confirmar({
+      titulo: "Excluir item",
+      descricao: `Excluir "${it.titulo}"?`,
+      confirmar: "Excluir",
+      destrutivo: true,
+    });
+    if (!ok) return;
     try {
       await deleteLegalItem(it.id);
       toast.success("Item excluído.");
@@ -349,6 +357,7 @@ function PainelLegalPage() {
       title="Painel de Itens Legais"
       description="Controle de tarefas legais e recorrentes, execução mensal e certificados."
     >
+      {dialogo}
       {/* Cabeçalho de ações — mais compacto */}
       <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-2">
@@ -707,11 +716,21 @@ function ListView({
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setYear(year - 1)} aria-label="Anterior">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setYear(year - 1)}
+            aria-label="Anterior"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="min-w-14 text-center font-mono text-sm font-semibold">{year}</span>
-          <Button variant="outline" size="icon" onClick={() => setYear(year + 1)} aria-label="Próximo">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setYear(year + 1)}
+            aria-label="Próximo"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -1123,13 +1142,25 @@ function CalendarView({
       <GlassCard className="p-3 sm:p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="icon" onClick={() => change(-1)} className="h-7 w-7" aria-label="Anterior">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => change(-1)}
+              className="h-7 w-7"
+              aria-label="Anterior"
+            >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <p className="min-w-32 text-center text-sm font-semibold">
               {MONTHS_FULL[month]} <span className="text-muted-foreground">{year}</span>
             </p>
-            <Button variant="outline" size="icon" onClick={() => change(1)} className="h-7 w-7" aria-label="Próximo">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => change(1)}
+              className="h-7 w-7"
+              aria-label="Próximo"
+            >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

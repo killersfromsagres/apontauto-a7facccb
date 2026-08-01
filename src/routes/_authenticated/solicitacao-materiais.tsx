@@ -317,7 +317,9 @@ function SolicitacaoMateriaisPage() {
       setForm((f) => ({ ...f, observacao: "" }));
       await load();
       toast.success(
-        status === "enviada" ? `Solicitação ${sol.numero} enviada.` : `Rascunho ${sol.numero} salvo.`,
+        status === "enviada"
+          ? `Solicitação ${sol.numero} enviada.`
+          : `Rascunho ${sol.numero} salvo.`,
       );
       if (status === "enviada") {
         const blob = await exportSolicitacaoMateriais({
@@ -710,7 +712,7 @@ function SolicitacaoMateriaisPage() {
                   <Button
                     className="h-12 flex-1"
                     onClick={() => void salvar("enviada")}
-                    disabled={salvando}
+                    loading={salvando}
                   >
                     {salvando ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -723,7 +725,7 @@ function SolicitacaoMateriaisPage() {
                     variant="outline"
                     className="h-12 flex-1"
                     onClick={() => void salvar("rascunho")}
-                    disabled={salvando}
+                    loading={salvando}
                   >
                     Salvar rascunho
                   </Button>
@@ -777,7 +779,10 @@ function SolicitacaoMateriaisPage() {
                       >
                         <div className="flex min-w-0 flex-wrap items-center gap-2">
                           <span className="font-mono font-bold">{s.numero}</span>
-                          <Badge variant="outline" className={`text-[10px] ${statusTone[s.status]}`}>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] ${statusTone[s.status]}`}
+                          >
                             {STATUS_LABEL[s.status]}
                           </Badge>
                           <Badge

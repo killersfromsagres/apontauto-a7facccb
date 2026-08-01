@@ -523,7 +523,13 @@ function LavanderiaPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          <Button variant="ghost" size="icon" onClick={() => void refresh()} title="Atualizar" aria-label="Atualizar">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void refresh()}
+            title="Atualizar"
+            aria-label="Atualizar"
+          >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
           <input

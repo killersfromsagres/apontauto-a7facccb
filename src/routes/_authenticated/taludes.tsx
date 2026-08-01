@@ -589,7 +589,7 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
           <Button
             variant="secondary"
             onClick={() => snapshot.mutate("Versão manual")}
-            disabled={snapshot.isPending}
+            loading={snapshot.isPending}
             className="gap-2"
           >
             {snapshot.isPending ? (

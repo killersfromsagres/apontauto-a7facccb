@@ -15,13 +15,11 @@ const TABS: Tab[] = [
   { to: "/abastecimento/agua/gestao", label: "Gestão (Admin)", icon: ShieldCheck, adminOnly: true },
 ];
 
-
 export function WaterDeliveryLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { pendentes, online, sincronizando } = useAguaSync();
   const { isAdmin } = useIsAdmin();
   const tabs = TABS.filter((t) => !t.adminOnly || isAdmin);
-
 
   return (
     <PageShell

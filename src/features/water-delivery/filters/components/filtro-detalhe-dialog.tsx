@@ -405,7 +405,7 @@ export function FiltroDetalheDialog({
                       key={s}
                       variant="secondary"
                       className="min-h-[44px]"
-                      disabled={avancar.isPending}
+                      loading={avancar.isPending}
                       onClick={() => avancar.mutate(s)}
                     >
                       {FILTRO_SITUACAO_LABEL[s]}
@@ -534,7 +534,7 @@ export function FiltroDetalheDialog({
 
                 <Button
                   className="min-h-[44px] w-full"
-                  disabled={programar.isPending}
+                  loading={programar.isPending}
                   onClick={() => programar.mutate()}
                 >
                   {programar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -694,7 +694,7 @@ export function FiltroDetalheDialog({
 
                 <Button
                   className="min-h-[44px] w-full"
-                  disabled={concluir.isPending}
+                  loading={concluir.isPending}
                   onClick={() => concluir.mutate()}
                 >
                   {concluir.isPending ? (
@@ -731,7 +731,7 @@ export function FiltroDetalheDialog({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     className="min-h-[44px]"
-                    disabled={validar.isPending}
+                    loading={validar.isPending}
                     onClick={() => validar.mutate()}
                   >
                     Validar conclusão

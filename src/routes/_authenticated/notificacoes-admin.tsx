@@ -509,7 +509,7 @@ function NotificacoesAdminPage() {
             <div className="flex flex-wrap gap-2 pt-1">
               <Button
                 className="h-11"
-                disabled={salvar.isPending}
+                loading={salvar.isPending}
                 onClick={() => salvar.mutate("published")}
               >
                 <Send className="mr-2 size-4" />
@@ -518,7 +518,7 @@ function NotificacoesAdminPage() {
               <Button
                 variant="outline"
                 className="h-11"
-                disabled={salvar.isPending}
+                loading={salvar.isPending}
                 onClick={() => salvar.mutate("scheduled")}
               >
                 <Play className="mr-2 size-4" />
@@ -527,7 +527,7 @@ function NotificacoesAdminPage() {
               <Button
                 variant="ghost"
                 className="h-11"
-                disabled={salvar.isPending}
+                loading={salvar.isPending}
                 onClick={() => salvar.mutate("draft")}
               >
                 Salvar rascunho

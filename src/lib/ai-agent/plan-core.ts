@@ -68,7 +68,10 @@ Regras obrigatórias:
 
 /** Extrai o primeiro objeto JSON balanceado do texto. */
 export function extractJson(text: string): unknown | null {
-  const cleaned = text.replace(/```json/gi, "```").split("```").join("\n");
+  const cleaned = text
+    .replace(/```json/gi, "```")
+    .split("```")
+    .join("\n");
   const start = cleaned.indexOf("{");
   if (start < 0) return null;
   let depth = 0;

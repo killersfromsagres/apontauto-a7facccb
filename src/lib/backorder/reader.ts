@@ -235,7 +235,13 @@ export async function readBackorderWorkbook(
     return hasOs && hasDescription;
   };
   const detectedHeader = aoa.findIndex((r) => Array.isArray(r) && looksLikeHeader(r));
-  const headerIdx = detectedHeader >= 0 ? detectedHeader : Math.max(0, aoa.findIndex((r) => notEmpty(r)));
+  const headerIdx =
+    detectedHeader >= 0
+      ? detectedHeader
+      : Math.max(
+          0,
+          aoa.findIndex((r) => notEmpty(r)),
+        );
   const header = (aoa[headerIdx] ?? []).map((h, i) => String(h ?? "").trim() || `COL${i}`);
   const raw: Record<string, unknown>[] = aoa
     .slice(headerIdx + 1)

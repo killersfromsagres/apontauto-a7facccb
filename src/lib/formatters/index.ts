@@ -9,17 +9,19 @@ export const formatters = {
   date: (date: string | Date) => format(new Date(date), "dd/MM/yyyy", { locale: ptBR }),
   dateTime: (date: string | Date) => format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR }),
   time: (date: string | Date) => format(new Date(date), "HH:mm", { locale: ptBR }),
-  
-  currency: (val: number) => 
+
+  currency: (val: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val),
-  
-  percent: (val: number) => 
-    new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1 }).format(val / 100),
-  
+
+  percent: (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "percent", minimumFractionDigits: 1 }).format(
+      val / 100,
+    ),
+
   distance: (km: number) => `${km.toLocaleString("pt-BR")} km`,
-  
+
   volume: (liters: number) => `${liters.toLocaleString("pt-BR")} L`,
-  
+
   duration: (minutes: number) => {
     const h = Math.floor(minutes / 60);
     const m = minutes % 60;
@@ -38,5 +40,5 @@ export const formatters = {
     const n = v.replace(/\D/g, "");
     // Máscara de segurança: oculta início e fim para proteção de dados (Item 8.4)
     return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "***.$2.$3-**");
-  }
+  },
 };

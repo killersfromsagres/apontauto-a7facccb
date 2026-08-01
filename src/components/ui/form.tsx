@@ -160,9 +160,7 @@ const FormMessage = React.forwardRef<
       )}
       {...props}
     >
-      {error ? (
-        <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-      ) : null}
+      {error ? <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden="true" /> : null}
       <span>{body}</span>
     </p>
   );

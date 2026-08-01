@@ -6,9 +6,8 @@ import type { ImageSourceKey } from "@/lib/admin/images.server";
 export const inventoryStorageImages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { assertAdmin, inventorySource, IMAGE_SOURCES } = await import(
-      "@/lib/admin/images.server"
-    );
+    const { assertAdmin, inventorySource, IMAGE_SOURCES } =
+      await import("@/lib/admin/images.server");
     await assertAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -37,9 +36,8 @@ export const migrateStorageImagesBatch = createServerFn({ method: "POST" })
     batchSize: Math.max(1, Math.min(15, Number(input?.batchSize ?? 6))),
   }))
   .handler(async ({ data, context }) => {
-    const { assertAdmin, migrateSourceBatch, sourceByKey } = await import(
-      "@/lib/admin/images.server"
-    );
+    const { assertAdmin, migrateSourceBatch, sourceByKey } =
+      await import("@/lib/admin/images.server");
     await assertAdmin(context.supabase, context.userId);
 
     const src = sourceByKey(data.source);
@@ -61,9 +59,8 @@ export const purgeStorageOrphans = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { source: ImageSourceKey }) => ({ source: input.source }))
   .handler(async ({ data, context }) => {
-    const { assertAdmin, purgeSourceOrphans, sourceByKey } = await import(
-      "@/lib/admin/images.server"
-    );
+    const { assertAdmin, purgeSourceOrphans, sourceByKey } =
+      await import("@/lib/admin/images.server");
     await assertAdmin(context.supabase, context.userId);
 
     const src = sourceByKey(data.source);

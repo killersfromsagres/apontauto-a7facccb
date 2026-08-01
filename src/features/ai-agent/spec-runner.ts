@@ -37,7 +37,6 @@ export function resolveColumn(columns: string[], name: unknown): string | null {
   return partial ?? null;
 }
 
-
 export function toNumber(v: unknown): number | null {
   if (typeof v === "number") return Number.isFinite(v) ? v : null;
   const s = String(v ?? "")
@@ -159,7 +158,6 @@ export function runTabela(ds: Dataset, spec: TabelaSpec): TabelaResultado {
       if (idx >= 0) out.sort((a, b) => compare(a[idx], b[idx], spec.ordem));
     }
   }
-
 
   if (spec.limite && out.length > spec.limite) out = out.slice(0, spec.limite);
 

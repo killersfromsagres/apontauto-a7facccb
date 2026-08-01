@@ -3,12 +3,7 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, Info } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type KpiTone = "neutro" | "bom" | "atencao" | "critico";
 
@@ -84,7 +79,11 @@ export function KpiCard({
           {!carregando && !erro && variacao !== null && (
             <p
               className={`mt-1 flex items-center gap-1 text-[11px] ${
-                neutro ? "text-muted-foreground" : positivo ? "text-emerald-400" : "text-destructive"
+                neutro
+                  ? "text-muted-foreground"
+                  : positivo
+                    ? "text-emerald-400"
+                    : "text-destructive"
               }`}
             >
               {neutro ? (

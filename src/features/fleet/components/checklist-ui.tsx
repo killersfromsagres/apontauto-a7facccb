@@ -1,14 +1,14 @@
-import { 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  Camera, 
-  ChevronRight, 
-  ChevronLeft, 
-  Check, 
+import {
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
+  Camera,
+  ChevronRight,
+  ChevronLeft,
+  Check,
   Info,
   History,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,15 +27,15 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
     <div className="relative flex justify-between w-full">
       {/* Background Line */}
       <div className="absolute top-5 left-0 w-full h-0.5 bg-muted -z-10" />
-      <div 
-        className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-300 -z-10" 
+      <div
+        className="absolute top-5 left-0 h-0.5 bg-primary transition-all duration-300 -z-10"
         style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
       />
-      
+
       {steps.map((step, i) => {
         const isCompleted = i < currentStep;
         const isActive = i === currentStep;
-        
+
         return (
           <button
             key={i}
@@ -43,19 +43,30 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
             disabled={!isCompleted && !isActive}
             className="flex flex-col items-center gap-2 group outline-none"
           >
-            <div className={cn(
-              "h-10 w-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 bg-background",
-              isCompleted ? "bg-primary border-primary text-primary-foreground" :
-              isActive ? "border-primary text-primary shadow-glow ring-4 ring-primary/10" :
-              "border-muted text-muted-foreground"
-            )}>
-              {isCompleted ? <Check className="h-5 w-5" /> : 
-               step.icon ? <step.icon className="h-5 w-5" /> : (i + 1)}
+            <div
+              className={cn(
+                "h-10 w-10 rounded-full border-2 flex items-center justify-center transition-all duration-200 bg-background",
+                isCompleted
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : isActive
+                    ? "border-primary text-primary shadow-glow ring-4 ring-primary/10"
+                    : "border-muted text-muted-foreground",
+              )}
+            >
+              {isCompleted ? (
+                <Check className="h-5 w-5" />
+              ) : step.icon ? (
+                <step.icon className="h-5 w-5" />
+              ) : (
+                i + 1
+              )}
             </div>
-            <span className={cn(
-              "text-[10px] font-bold uppercase tracking-wider transition-colors",
-              isActive ? "text-primary" : "text-muted-foreground"
-            )}>
+            <span
+              className={cn(
+                "text-[10px] font-bold uppercase tracking-wider transition-colors",
+                isActive ? "text-primary" : "text-muted-foreground",
+              )}
+            >
               {step.label}
             </span>
           </button>
@@ -65,19 +76,19 @@ export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
   );
 }
 
-export function ChecklistProgress({ 
-  total, 
-  answered, 
-  photos, 
-  isOffline 
-}: { 
-  total: number; 
-  answered: number; 
+export function ChecklistProgress({
+  total,
+  answered,
+  photos,
+  isOffline,
+}: {
+  total: number;
+  answered: number;
   photos: number;
   isOffline?: boolean;
 }) {
   const percentage = Math.round((answered / total) * 100);
-  
+
   return (
     <div className="sticky top-0 z-30 pt-2 pb-1 bg-background/80 backdrop-blur-xl border-b border-border/40 px-4 -mx-4 mb-4">
       <div className="flex items-center justify-between mb-2">
@@ -89,7 +100,10 @@ export function ChecklistProgress({
         </div>
         <div className="flex items-center gap-3">
           {isOffline && (
-            <Badge variant="outline" className="h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 text-[9px]">
+            <Badge
+              variant="outline"
+              className="h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 text-[9px]"
+            >
               Offline
             </Badge>
           )}
@@ -120,7 +134,8 @@ export function CriticalItemAlert({ count }: { count: number }) {
           Atenção: Itens Críticos
         </p>
         <p className="text-[11px] text-rose-500/80 leading-snug">
-          Existem {count} {count === 1 ? 'item crítico' : 'itens críticos'} que impedem a liberação segura do veículo.
+          Existem {count} {count === 1 ? "item crítico" : "itens críticos"} que impedem a liberação
+          segura do veículo.
         </p>
       </div>
     </div>

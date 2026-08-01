@@ -343,7 +343,7 @@ function RotaCard({
       {gestor && (
         <div className="flex flex-wrap gap-2">
           <Button
-            disabled={salvando}
+            loading={salvando}
             onClick={() =>
               salvar({
                 colaborador_principal: form.colaborador_principal || null,

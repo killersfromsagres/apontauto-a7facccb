@@ -36,10 +36,7 @@ export function WaterScheduleHistory() {
     queryFn: () => listEntregasPeriodo(inicio, fim),
   });
 
-  const pontos = useMemo(
-    () => new Map((pontosQ.data ?? []).map((p) => [p.id, p])),
-    [pontosQ.data],
-  );
+  const pontos = useMemo(() => new Map((pontosQ.data ?? []).map((p) => [p.id, p])), [pontosQ.data]);
 
   const linhas = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -131,7 +128,9 @@ export function WaterScheduleHistory() {
                     <Badge className="border border-emerald-500/40 bg-emerald-500/15 text-[10px] text-emerald-700 hover:bg-emerald-500/15 dark:text-emerald-300">
                       {STATUS_LABEL[e.status as EntregaStatus] ?? e.status}
                     </Badge>
-                    <span className="ml-auto text-sm font-medium tabular-nums">{e.bags} bag(s)</span>
+                    <span className="ml-auto text-sm font-medium tabular-nums">
+                      {e.bags} bag(s)
+                    </span>
                   </div>
 
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">

@@ -77,7 +77,6 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           return serviceUnavailable("Serviço de imagens não configurado.");
         }
 
-
         let form: FormData;
         try {
           form = await request.formData();
@@ -146,7 +145,6 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           }
         }
 
-
         const rawName = typeof (file as File).name === "string" ? (file as File).name : "";
         const provided = form.get("name");
         const baseName = sanitizeName(
@@ -212,7 +210,6 @@ export const Route = createFileRoute("/api/imgbb-upload")({
             /* auditoria opcional */
           }
         }
-
 
         return Response.json({
           url: json.data.url as string,

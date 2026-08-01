@@ -134,7 +134,7 @@ function NaoEncontrados() {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={resolve.isPending}
+                        loading={resolve.isPending}
                         onClick={() =>
                           resolve.mutate({ id: r.id, code: drafts[r.id] ?? r.resolved_code ?? "" })
                         }

@@ -42,8 +42,7 @@ export function gerarInsights(
     });
   }
 
-  const sla =
-    d.os.concluidas > 0 ? Math.round((d.os.sla_ok / d.os.concluidas) * 100) : null;
+  const sla = d.os.concluidas > 0 ? Math.round((d.os.sla_ok / d.os.concluidas) * 100) : null;
   if (sla !== null && sla < 90) {
     out.push({
       key: "sla",
@@ -100,7 +99,8 @@ export function gerarInsights(
     if (Math.abs(varCusto) >= 20 && d.frota.custo_ant > 0) {
       out.push({
         key: "combustivel",
-        titulo: varCusto > 0 ? "Custo de combustível acima do padrão" : "Redução no custo de combustível",
+        titulo:
+          varCusto > 0 ? "Custo de combustível acima do padrão" : "Redução no custo de combustível",
         evidencia: `R$ ${d.frota.custo.toFixed(2)} no período contra R$ ${d.frota.custo_ant.toFixed(2)} no anterior (${varCusto > 0 ? "+" : ""}${varCusto}%).`,
         impacto: "Efeito direto no custo operacional mensal da frota.",
         confianca: "media",

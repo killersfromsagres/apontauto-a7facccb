@@ -154,7 +154,7 @@ export function FiltroPreventivaTab({ podeEscrever }: { podeEscrever: boolean })
         {podeEscrever && (
           <Button
             className="min-h-[44px] sm:ml-auto"
-            disabled={gerar.isPending}
+            loading={gerar.isPending}
             onClick={() => gerar.mutate()}
           >
             {gerar.isPending ? (
@@ -302,7 +302,7 @@ export function FiltroPreventivaTab({ podeEscrever }: { podeEscrever: boolean })
           <DialogFooter>
             <Button
               className="min-h-[44px] w-full"
-              disabled={reagendar.isPending}
+              loading={reagendar.isPending}
               onClick={() => reagendar.mutate()}
             >
               {reagendar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

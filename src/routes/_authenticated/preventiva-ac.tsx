@@ -461,7 +461,7 @@ function PreventivaAcPage() {
             <Button
               size="lg"
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
+              loading={saveMutation.isPending}
             >
               <Save className="mr-2 h-4 w-4" />
               {saveMutation.isPending ? "Salvando..." : "Salvar e gerar planilha"}

@@ -1,14 +1,14 @@
 import * as React from "react";
-import { 
-  ArrowLeft, 
-  Search, 
-  Plus, 
-  Filter, 
-  LayoutGrid, 
-  List, 
+import {
+  ArrowLeft,
+  Search,
+  Plus,
+  Filter,
+  LayoutGrid,
+  List,
   Clock,
   Wifi,
-  WifiOff
+  WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +22,8 @@ interface OSPageHeaderProps {
   onAdd?: () => void;
   isOnline?: boolean;
   totalItems?: number;
-  viewMode?: 'grid' | 'list';
-  onViewModeChange?: (mode: 'grid' | 'list') => void;
+  viewMode?: "grid" | "list";
+  onViewModeChange?: (mode: "grid" | "list") => void;
 }
 
 export function OSPageHeader({
@@ -32,8 +32,8 @@ export function OSPageHeader({
   onAdd,
   isOnline = true,
   totalItems = 0,
-  viewMode = 'grid',
-  onViewModeChange
+  viewMode = "grid",
+  onViewModeChange,
 }: OSPageHeaderProps) {
   const navigate = useNavigate();
 
@@ -42,12 +42,13 @@ export function OSPageHeader({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="h-8 w-8 -ml-2"
               onClick={() => navigate({ to: "/" })}
-             aria-label="Voltar">
+              aria-label="Voltar"
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex flex-col">
@@ -62,17 +63,28 @@ export function OSPageHeader({
 
           <div className="flex items-center gap-2">
             {isOnline ? (
-              <Badge variant="outline" className="h-5 bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 px-1.5 text-[9px]">
+              <Badge
+                variant="outline"
+                className="h-5 bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 px-1.5 text-[9px]"
+              >
                 <Wifi className="h-2.5 w-2.5" /> ONLINE
               </Badge>
             ) : (
-              <Badge variant="outline" className="h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 gap-1 px-1.5 text-[9px]">
+              <Badge
+                variant="outline"
+                className="h-5 bg-amber-500/10 text-amber-500 border-amber-500/20 gap-1 px-1.5 text-[9px]"
+              >
                 <WifiOff className="h-2.5 w-2.5" /> OFFLINE
               </Badge>
             )}
-            
+
             {onAdd && (
-              <Button size="icon" className="h-9 w-9 rounded-full shadow-lg" onClick={onAdd} aria-label="Adicionar">
+              <Button
+                size="icon"
+                className="h-9 w-9 rounded-full shadow-lg"
+                onClick={onAdd}
+                aria-label="Adicionar"
+              >
                 <Plus className="h-5 w-5" />
               </Button>
             )}
@@ -81,23 +93,30 @@ export function OSPageHeader({
 
         <div className="flex items-center justify-between gap-4">
           <div className="text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">{totalItems}</span> registros encontrados
+            <span className="font-semibold text-foreground">{totalItems}</span> registros
+            encontrados
           </div>
-          
+
           <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn("h-7 w-7 rounded-md", viewMode === 'grid' && "bg-white/10 text-primary")}
-              onClick={() => onViewModeChange?.('grid')}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-7 w-7 rounded-md",
+                viewMode === "grid" && "bg-white/10 text-primary",
+              )}
+              onClick={() => onViewModeChange?.("grid")}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className={cn("h-7 w-7 rounded-md", viewMode === 'list' && "bg-white/10 text-primary")}
-              onClick={() => onViewModeChange?.('list')}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-7 w-7 rounded-md",
+                viewMode === "list" && "bg-white/10 text-primary",
+              )}
+              onClick={() => onViewModeChange?.("list")}
             >
               <List className="h-3.5 w-3.5" />
             </Button>

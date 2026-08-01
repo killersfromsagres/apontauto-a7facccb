@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -145,6 +146,7 @@ function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
 }
 
 function ProgramacaoPage() {
+  const { confirmar, dialogo } = useConfirm();
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
     REFRIG: null,
@@ -363,6 +365,7 @@ function ProgramacaoPage() {
         </div>
       }
     >
+      {dialogo}
       <div className="space-y-6">
         {/* Campo 1 — 5 slots de upload */}
         <GlassCard>
@@ -539,7 +542,13 @@ function ProgramacaoPage() {
               {historico.length > 0 && (
                 <button
                   onClick={async () => {
-                    if (!confirm("Apagar todo o histórico local?")) return;
+                    const ok = await confirmar({
+                      titulo: "Limpar histórico",
+                      descricao: "Apagar todo o histórico local?",
+                      confirmar: "Apagar",
+                      destrutivo: true,
+                    });
+                    if (!ok) return;
                     await clearHistorico();
                     await reloadHistorico();
                     toast.success("Histórico limpo");
