@@ -433,10 +433,17 @@ function BackorderPage() {
           type: "run",
           file,
           assetsMap,
-          dynamicRules: (rulesRes.data ?? []).map((r: any) => ({
-            equipe: r.equipe,
-            palavra_chave: r.palavra_chave,
-          })),
+          dynamicRules: rulesDB
+            .filter((r) => r.ativo)
+            .map((r) => ({
+              equipe: r.equipe as Categoria,
+              palavra_chave: r.palavra_chave,
+              fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as
+                | "descricao"
+                | "categoria",
+              prioridade: r.prioridade,
+            })),
+
           learnedLoc: locRes.data ?? [],
           learnedTeam: teamRes.data ?? [],
           overrides,
