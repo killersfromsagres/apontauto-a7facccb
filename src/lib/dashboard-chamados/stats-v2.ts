@@ -7,6 +7,7 @@ import type { StatusCat } from "@/lib/backorder/status";
 export interface V2Kpis {
   total: number;
   abertos: number;
+  backorder: number;
   concluidos: number;
   cancelados: number;
   aguardandoAprovacao: number;
@@ -89,6 +90,7 @@ export const EMPTY_V2: V2Stats = {
   kpis: {
     total: 0,
     abertos: 0,
+    backorder: 0,
     concluidos: 0,
     cancelados: 0,
     aguardandoAprovacao: 0,
