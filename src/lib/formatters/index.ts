@@ -27,13 +27,16 @@ export const formatters = {
   },
 
   phone: (v: string) => {
+    if (!v) return "";
     const n = v.replace(/\D/g, "");
     if (n.length <= 10) return n.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
     return n.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
   },
 
   cpf: (v: string) => {
+    if (!v) return "";
     const n = v.replace(/\D/g, "");
-    return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+    // Máscara de segurança: oculta início e fim para proteção de dados (Item 8.4)
+    return n.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "***.$2.$3-**");
   }
 };
