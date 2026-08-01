@@ -49,7 +49,7 @@ export function useDashboardV2() {
       equipe: filters.equipe === "todas" ? null : filters.equipe,
       statusCat: filters.statusCat === "todos" ? null : (filters.statusCat as StatusCat),
       predio: filters.predio === "todos" ? null : filters.predio,
-      rowLimit: 300,
+      rowLimit: 1000,
     }),
     [filters],
   );
