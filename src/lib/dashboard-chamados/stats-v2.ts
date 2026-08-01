@@ -131,7 +131,7 @@ export async function fetchDashboardV2(q: V2Query = {}): Promise<V2Stats> {
     p_predio: q.predio ?? null,
     p_solicitante: q.solicitante ?? null,
     p_criticidade: q.criticidade ?? null,
-    p_row_limit: q.rowLimit ?? 300,
+    p_row_limit: q.rowLimit ?? 10000,
   } as never);
   if (error) throw error;
   const d = (data ?? {}) as Partial<V2Stats>;

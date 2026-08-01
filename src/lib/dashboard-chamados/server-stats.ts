@@ -117,7 +117,7 @@ export async function fetchDashboardStats(q: StatsQuery = {}): Promise<DashStats
     p_predio: q.predio ?? null,
     p_ano: q.ano ?? null,
     p_dias: q.dias ?? null,
-    p_row_limit: q.rowLimit ?? 300,
+    p_row_limit: q.rowLimit ?? 10000,
   } as never);
   if (error) throw error;
   return { ...EMPTY_STATS, ...((data ?? {}) as Partial<DashStats>) } as DashStats;
