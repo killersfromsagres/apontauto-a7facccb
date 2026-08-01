@@ -47,7 +47,16 @@ export const STATUS_COLOR: Record<StatusCat, string> = {
 };
 
 /** Grupos macro usados nos KPIs. */
-export const ABERTOS_CATS: StatusCat[] = ["aberto", "pendente", "programado", "em_execucao"];
+// "Em aberto" = tudo que ainda não foi concluído nem cancelado — inclui
+// aguardando aprovação e não validado (a OS segue pendente de tratativa).
+export const ABERTOS_CATS: StatusCat[] = [
+  "aberto",
+  "pendente",
+  "programado",
+  "em_execucao",
+  "aguardando_aprovacao",
+  "nao_validado",
+];
 export const CONCLUIDOS_CATS: StatusCat[] = ["concluido", "fechado", "validado"];
 export const CANCELADOS_CATS: StatusCat[] = ["cancelado", "nao_executada"];
 
