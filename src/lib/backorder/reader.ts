@@ -224,10 +224,18 @@ export async function readBackorderWorkbook(
   const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" });
   const notEmpty = (arr: unknown[]) =>
     Array.isArray(arr) && arr.some((c) => String(c ?? "").trim() !== "");
-  const headerIdx = Math.max(
-    0,
-    aoa.findIndex((r) => notEmpty(r)),
-  );
+  const looksLikeHeader = (row: unknown[]) => {
+    const cells = row.map(slug);
+    const hasOs = cells.some((c) =>
+      ["OS", "NUMEROOS", "NUMERODAOS", "NROOS", "CHAMADO", "ORDEMDESERVICO"].includes(c),
+    );
+    const hasDescription = cells.some((c) =>
+      ["DESCRICAOOS", "DESCRICAODAOS", "DESCRICAO", "NOME"].includes(c),
+    );
+    return hasOs && hasDescription;
+  };
+  const detectedHeader = aoa.findIndex((r) => Array.isArray(r) && looksLikeHeader(r));
+  const headerIdx = detectedHeader >= 0 ? detectedHeader : Math.max(0, aoa.findIndex((r) => notEmpty(r)));
   const header = (aoa[headerIdx] ?? []).map((h, i) => String(h ?? "").trim() || `COL${i}`);
   const raw: Record<string, unknown>[] = aoa
     .slice(headerIdx + 1)
@@ -341,13 +349,17 @@ export async function readBackorderWorkbook(
       "DATA PREVISTA MÁXIMA",
     );
 
-    const solicitante = pick(
-      r,
-      "DENOMINAÇÃO DO SOLICITANTE",
-      "DENOMINACAO DO SOLICITANTE",
-      "SOLICITANTE",
-      "NOME DO SOLICITANTE",
-    );
+    // COLUNA E — solicitante na planilha oficial; cabeçalho é fallback para
+    // versões exportadas com ordem diferente.
+    const solicitante =
+      colAt(r, 4) ||
+      pick(
+        r,
+        "DENOMINAÇÃO DO SOLICITANTE",
+        "DENOMINACAO DO SOLICITANTE",
+        "SOLICITANTE",
+        "NOME DO SOLICITANTE",
+      );
     const criticidade = pick(
       r,
       "CRITICIDADE",
