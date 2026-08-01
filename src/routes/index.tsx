@@ -1,8 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { rootRouteImport } from "./__root";
 
 export const Route = createFileRoute("/")({
-  getParentRoute: () => rootRouteImport,
   head: () => ({
     meta: [
       { title: "Apont Auto · Design System Premium" },
