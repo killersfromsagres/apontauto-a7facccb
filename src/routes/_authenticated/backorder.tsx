@@ -3442,6 +3442,7 @@ const BackorderPanel = memo(function BackorderPanel({
               );
             })}
           </div>
+          {hasMoreCards && <div ref={cardsSentinel} className="h-8" aria-hidden />}
         </PriorityScroller>
       )}
     </GlassCard>
