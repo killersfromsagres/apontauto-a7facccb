@@ -387,8 +387,7 @@ function OsTable({
   const removeOs = async (id: string) => {
     const ok = await confirmar({
       titulo: "Excluir OS",
-      descricao:
-        "Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos.",
+      descricao: "Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos.",
       confirmar: "Excluir",
       destrutivo: true,
     });
