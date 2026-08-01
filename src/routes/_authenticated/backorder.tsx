@@ -643,10 +643,13 @@ function BackorderPage() {
       if (overrideSet.size > 0) {
         const marcar = rows.filter((r) => overrideSet.has(r.os)).map((r) => r.os);
         for (let i = 0; i < marcar.length; i += 500) {
-          await supabase
-            .from("backorder_os")
-            .update({ atividade_manual: true })
-            .in("os", marcar.slice(i, i + 500));
+          const chunk = marcar.slice(i, i + 500);
+          if (chunk.length > 0) {
+            await supabase
+              .from("backorder_os")
+              .update({ atividade_manual: true } as never)
+              .in("os", chunk);
+          }
         }
       }
 
@@ -879,10 +882,13 @@ function BackorderPage() {
             };
             if (p.atividade) upd.atividade = p.atividade;
             if (p.equipe) upd.equipe = p.equipe;
-            return supabase
-              .from("backorder_os")
-              .update(upd as never)
-              .eq("os", p.os);
+            if (p.os) {
+              return supabase
+                .from("backorder_os")
+                .update(upd as never)
+                .eq("os", p.os);
+            }
+            return Promise.resolve();
           }),
         );
       }
