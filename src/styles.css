@@ -2172,10 +2172,10 @@ main:focus:not(:focus-visible) {
 
 /* Landscape em celulares: cabeçalhos e barras não podem consumir a tela */
 @media (orientation: landscape) and (max-height: 480px) {
-  [data-mobile-tab-bar] {
+  [data-mobile-tabbar] {
     padding-block: 0.25rem;
   }
-  [data-mobile-tab-bar] span {
+  [data-mobile-tabbar] span {
     display: none;
   }
   .sticky-header,
