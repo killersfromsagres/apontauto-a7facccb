@@ -79,7 +79,16 @@ export function DashboardFilters({
           )}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+          <FilterSelect
+            label="Ano"
+            value={filters.ano}
+            onChange={(v) => set({ ano: v })}
+            options={[
+              { value: "todos", label: "Todos" },
+              ...uniques.anos.map((v) => ({ value: String(v), label: String(v) })),
+            ]}
+          />
           <FilterSelect
             label="Período"
             value={filters.periodo}
