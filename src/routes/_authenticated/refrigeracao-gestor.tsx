@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -373,9 +374,17 @@ function OsTable({
     onChanged();
   };
 
+  const { confirmar, dialogo } = useConfirm();
+
   const removeOs = async (id: string) => {
-    if (!confirm("Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos."))
-      return;
+    const ok = await confirmar({
+      titulo: "Excluir OS",
+      descricao:
+        "Excluir esta OS? Fotos, peças e problemas vinculados também serão removidos.",
+      confirmar: "Excluir",
+      destrutivo: true,
+    });
+    if (!ok) return;
     const { error } = await supabase.from("refrigeracao_os").delete().eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("OS removida.");
@@ -384,6 +393,7 @@ function OsTable({
 
   return (
     <GlassCard className="p-0 overflow-hidden">
+      {dialogo}
       <div className="flex items-center justify-between border-b p-3">
         <div className="text-sm text-muted-foreground">
           {loading ? "Carregando…" : `${list.length} OS`}
