@@ -97,8 +97,8 @@ export function ClimaOperacional({ ptSuspensas }: { ptSuspensas?: number }) {
           </p>
           <p className="mt-0.5 text-xs opacity-90">{resumo.status.descricao}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {WEATHER_LOCATION.cidade} — {WEATHER_LOCATION.estado} · {resumo.info.label} ·
-            atualizado às{" "}
+            {WEATHER_LOCATION.cidade} — {WEATHER_LOCATION.estado} · {resumo.info.label} · atualizado
+            às{" "}
             {new Date(q.data.fetched_at).toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
@@ -113,25 +113,23 @@ export function ClimaOperacional({ ptSuspensas }: { ptSuspensas?: number }) {
           ) : (
             <Badge variant="secondary">Sem chuva no momento</Badge>
           )}
-          {ptSuspensas ? (
-            <Badge variant="outline">{ptSuspensas} PT suspensa(s)</Badge>
-          ) : null}
+          {ptSuspensas ? <Badge variant="outline">{ptSuspensas} PT suspensa(s)</Badge> : null}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Metrica icon={Thermometer} label="Temperatura" valor={`${Math.round(c.temperature_2m)}°C`} />
+        <Metrica
+          icon={Thermometer}
+          label="Temperatura"
+          valor={`${Math.round(c.temperature_2m)}°C`}
+        />
         <Metrica
           icon={CloudRain}
           label="Chuva hoje"
           valor={`${resumo.probHoje}% · ${resumo.chuva.mm_dia.toFixed(1)} mm`}
         />
         <Metrica icon={Wind} label="Vento" valor={`${Math.round(c.wind_speed_10m)} km/h`} />
-        <Metrica
-          icon={Droplets}
-          label="Umidade"
-          valor={`${Math.round(c.relative_humidity_2m)}%`}
-        />
+        <Metrica icon={Droplets} label="Umidade" valor={`${Math.round(c.relative_humidity_2m)}%`} />
       </div>
 
       <WeatherForecastStrip
