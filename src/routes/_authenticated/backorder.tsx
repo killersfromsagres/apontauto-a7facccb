@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useIncrementalList } from "@/hooks/use-incremental-list";
 import { toast } from "sonner";
 import {
   Upload,
@@ -2274,12 +2283,22 @@ function TeamSummaryStrip({
   );
 }
 
-function FinalizadosView({ rows, onReabrir }: { rows: BOSRow[]; onReabrir: (r: BOSRow) => void }) {
+const FinalizadosView = memo(function FinalizadosView({
+  rows,
+  onReabrir,
+}: {
+  rows: BOSRow[];
+  onReabrir: (r: BOSRow) => void;
+}) {
+  const { visible, hasMore, sentinelRef, shown, total } = useIncrementalList(rows, 60);
   return (
     <GlassCard>
-      <div className="overflow-x-auto rounded-xl border border-border/60">
+      <div className="mb-2 text-xs text-muted-foreground">
+        Mostrando {shown} de {total} OS
+      </div>
+      <div className="max-h-[65vh] overflow-auto rounded-xl border border-border/60">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-background/95 backdrop-blur">
             <TableRow>
               <TableHead>OS</TableHead>
               <TableHead>Nome</TableHead>
@@ -2290,14 +2309,14 @@ function FinalizadosView({ rows, onReabrir }: { rows: BOSRow[]; onReabrir: (r: B
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="py-8 text-center text-sm text-muted-foreground">
                   Nenhuma OS finalizada.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((r) => (
+              visible.map((r) => (
                 <TableRow key={r.os}>
                   <TableCell className="font-mono text-xs">{r.os}</TableCell>
                   <TableCell className="max-w-[360px] truncate">{r.nome}</TableCell>
@@ -2318,10 +2337,11 @@ function FinalizadosView({ rows, onReabrir }: { rows: BOSRow[]; onReabrir: (r: B
             )}
           </TableBody>
         </Table>
+        {hasMore && <div ref={sentinelRef} className="h-8" aria-hidden />}
       </div>
     </GlassCard>
   );
-}
+});
 
 // ---------- Dashboard ----------
 
