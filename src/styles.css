@@ -5,15 +5,15 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system — "PCM Neon Grid"
- * Inspirado na identidade PCM: azul-elétrico neon sobre preto profundo, circuit aesthetic.
- * Palette: #030712 bg · #0b1220 surface · #1e40af border · #1e90ff primary · #38bdf8 glow
- * Typography: Space Grotesk (display) · DM Sans (body) · JetBrains Mono (mono/tech)
+ * Design System — "Premium Liquid Glass"
+ * Identidade visual minimalista, corporativa e elegante inspirada na clareza da Apple.
+ * Palette: Dark (#05070C bg, Blue primary) · Light (#F8FAFC bg, Ice White glass)
+ * Typography: Inter / SF Pro (sans) · Tabular Numbers (KPIs)
  */
 
 @theme inline {
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", "SF Pro Display", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", "SF Pro Display", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --radius-sm: calc(var(--radius) - 4px);
@@ -68,15 +68,15 @@
 
 /* Light theme — clean canvas with cool electric-blue accents */
 :root {
-  --radius: 0.875rem;
+  --radius: 0.75rem;
   --motion-fast: 160ms;
   --motion-base: 220ms;
-  --motion-slow: 280ms;
-  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-slow: 260ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Light — "Frosted Aqua": gelo levemente azulado + teal translúcido */
-  --background: oklch(0.985 0.008 210);
-  --foreground: oklch(0.20 0.045 235);
+  --background: oklch(0.985 0.005 240);
+  --foreground: #1A1F2C;
 
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.20 0.045 235);
@@ -147,8 +147,8 @@
 
   --motion-fast: 160ms;
   --motion-base: 220ms;
-  --motion-slow: 280ms;
-  --motion-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-slow: 260ms;
+  --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   --background: #05070C;
   --foreground: #F4F7FB;
@@ -279,9 +279,9 @@
 
 /* Gentle hover lift — opt-in, no baked animation */
 @utility hover-lift {
-  transition: transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
-              box-shadow 240ms ease;
-  &:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  transition: transform var(--motion-base) var(--motion-ease),
+              box-shadow var(--motion-base) var(--motion-ease);
+  &:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
 }
 
 /* Mesh gradient background for hero/empty states */
@@ -335,21 +335,20 @@
 /* Liquid Glass — painel translúcido de vidro turquesa (referência).
    Profundidade vem de blur + saturação + refração nas bordas, nunca fill sólido. */
 @utility glass-surface {
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in oklab, var(--primary) 12%, transparent) 0%,
-      transparent 42%,
-      color-mix(in oklab, var(--primary-glow) 8%, transparent) 100%
-    ),
-    color-mix(in oklch, var(--card) 24%, transparent);
-  border: 1px solid color-mix(in oklab, var(--primary) 22%, color-mix(in srgb, white 16%, transparent));
-  backdrop-filter: blur(30px) saturate(190%);
+  background: color-mix(in oklch, var(--card) 60%, transparent);
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  backdrop-filter: blur(24px);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 26%, transparent),
-    inset 0 0 22px -10px color-mix(in oklab, var(--primary-glow) 45%, transparent),
-    inset 0 -1px 0 color-mix(in srgb, black 20%, transparent),
-    0 20px 60px -30px color-mix(in srgb, black 60%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 4px 12px -2px color-mix(in srgb, black 5%, transparent);
+}
+
+.dark @utility glass-surface {
+  background: color-mix(in oklch, var(--card) 45%, transparent);
+  border: 1px solid color-mix(in srgb, white 8%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+    0 10px 30px -15px color-mix(in srgb, black 40%, transparent);
 }
 
 /* Inner tile (buttons/links inside a glass card) — same recipe, tighter blur */
