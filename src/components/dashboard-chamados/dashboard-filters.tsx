@@ -133,7 +133,9 @@ export function DashboardFilters({
             onChange={(v) => set({ status: v })}
             options={[
               { value: "todos", label: "Todos" },
-              ...uniques.statuses.map((v) => ({ value: v, label: v })),
+              { value: "aberto", label: "Em aberto" },
+              { value: "concluido", label: "Concluídas" },
+              { value: "cancelado", label: "Canceladas" },
             ]}
           />
           <FilterSelect

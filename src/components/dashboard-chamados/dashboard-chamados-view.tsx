@@ -18,10 +18,9 @@ const DashboardCharts = lazy(() => import("./dashboard-charts"));
 
 export function DashboardChamadosView() {
   const {
-    rows,
-    filtered,
     stats,
-    topPredios,
+    insights,
+    rows,
     uniques,
     filters,
     setFilters,
@@ -35,6 +34,8 @@ export function DashboardChamadosView() {
     pendingOs,
     toggleConcluido,
   } = useDashboardChamados();
+
+  const total = stats.kpis.total;
 
   const refreshAction = (
     <div className="flex items-center gap-2">
@@ -52,16 +53,16 @@ export function DashboardChamadosView() {
     </div>
   );
 
-  if (loading && rows.length === 0) {
+  if (loading) {
     return (
       <PageShell
         title="Dashboard de Chamados"
-        description="Carregando informações da aba Backorder…"
+        description="Carregando indicadores da base Backorder…"
       >
         <div className="space-y-4">
           <QuickAccessStrip />
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-            {[0, 1, 2, 3].map((i) => (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-6">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <GlassCard key={i} variant="block" className="h-[104px]" delay={i * 0.03}>
                 <span className="sr-only">Carregando indicador</span>
               </GlassCard>
@@ -75,7 +76,7 @@ export function DashboardChamadosView() {
     );
   }
 
-  if (error && rows.length === 0) {
+  if (error) {
     return (
       <PageShell title="Dashboard de Chamados" description="Sincronizado com Backorder">
         <div className="space-y-4">
@@ -86,11 +87,11 @@ export function DashboardChamadosView() {
     );
   }
 
-  if (rows.length === 0) {
+  if (total === 0 && activeFilterCount === 0) {
     return (
       <PageShell
         title="Dashboard de Chamados"
-        description="Nenhum chamado disponível no módulo Backorder"
+        description="Nenhuma OS disponível no módulo Backorder"
         actions={refreshAction}
       >
         <div className="space-y-4">
@@ -99,8 +100,8 @@ export function DashboardChamadosView() {
             <EmptyState
               className="border-0"
               icon={<Database className="size-5" aria-hidden />}
-              title="Sem chamados no Backorder"
-              description="Assim que uma OS for adicionada ou finalizada na aba Backorder, os gráficos deste dashboard são atualizados automaticamente em tempo real."
+              title="Base de Backorder vazia"
+              description="Importe a planilha na aba Backorder — os indicadores deste dashboard são atualizados automaticamente em tempo real, incluindo OS concluídas e canceladas."
               action={
                 <Button asChild size="sm" variant="outline">
                   <Link to="/backorder">
@@ -119,13 +120,13 @@ export function DashboardChamadosView() {
   return (
     <PageShell
       title="Dashboard de Chamados"
-      description={`Sincronizado com Backorder · ${filtered.length} de ${rows.length} chamados no filtro`}
+      description={`Sincronizado com Backorder · ${total.toLocaleString("pt-BR")} OS na seleção`}
       actions={refreshAction}
     >
       <div className="space-y-4">
         <QuickAccessStrip />
 
-        <DashboardKpis stats={stats} lastUpdate={lastUpdate} loading={refreshing && !rows.length} />
+        <DashboardKpis stats={stats} lastUpdate={lastUpdate} loading={refreshing} />
 
         <DashboardFilters
           filters={filters}
@@ -135,7 +136,7 @@ export function DashboardChamadosView() {
           onReset={resetFilters}
         />
 
-        <InsightsPanel insights={stats.insights} />
+        <InsightsPanel insights={insights} />
 
         <Suspense
           fallback={
@@ -144,11 +145,12 @@ export function DashboardChamadosView() {
             </GlassCard>
           }
         >
-          <DashboardCharts stats={stats} topPredios={topPredios} />
+          <DashboardCharts stats={stats} />
         </Suspense>
 
         <ChamadosTable
-          rows={filtered}
+          rows={rows}
+          total={total}
           pendingOs={pendingOs}
           onToggle={(row, next) => void toggleConcluido(row, next)}
         />
