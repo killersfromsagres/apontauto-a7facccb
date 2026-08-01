@@ -393,12 +393,12 @@ function BackorderPage() {
       // 1) carrega o grafo de ativos vigente (catálogo ativo ou base legada)
       const assetsMap = await loadAssetsIndex(true);
 
-      const [ovRes, locRes, teamRes, rulesRes] = await Promise.all([
+      const [ovRes, locRes, teamRes] = await Promise.all([
         supabase.from("backorder_atividade_override").select("os, atividade"),
         supabase.from("regras_aprendidas_localizacao").select("*"),
         supabase.from("regras_aprendidas_equipe").select("*"),
-        supabase.from("backorder_regras").select("equipe, palavra_chave"),
       ]);
+
       const overrides: Array<[string, string]> = (ovRes.data ?? []).map((o: any) => [
         o.os,
         o.atividade,
