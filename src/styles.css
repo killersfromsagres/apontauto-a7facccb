@@ -74,6 +74,10 @@
   --motion-slow: 260ms;
   --motion-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* Safe Area for iPhone / Notch */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+
   /* Light — "Frosted Aqua": gelo levemente azulado + teal translúcido */
   --background: oklch(0.985 0.005 240);
   --foreground: #1A1F2C;
