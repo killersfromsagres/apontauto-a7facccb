@@ -854,16 +854,23 @@ function BackorderPage() {
       .update({
         finalizado: next,
         data_finalizacao: next ? new Date().toISOString() : null,
+        ...(next ? {} : { cancelado: false }),
       })
       .eq("os", r.os);
     if (error) return toast.error("Falha ao atualizar");
     setRows((prev) =>
       prev.map((x) =>
         x.os === r.os
-          ? { ...x, finalizado: next, data_finalizacao: next ? new Date().toISOString() : null }
+          ? {
+              ...x,
+              finalizado: next,
+              cancelado: next ? x.cancelado : false,
+              data_finalizacao: next ? new Date().toISOString() : null,
+            }
           : x,
       ),
     );
+
   }
 
   async function updateAtividade(r: BOSRow, atividade: Categoria) {
