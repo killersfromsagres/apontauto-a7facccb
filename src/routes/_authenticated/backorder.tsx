@@ -337,8 +337,13 @@ function BackorderPage() {
     void refresh();
   }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
-  const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
-  const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
+  const abertas = useMemo(() => rows.filter((r) => !r.finalizado && !r.cancelado), [rows]);
+  const finalizadas = useMemo(
+    () => rows.filter((r) => r.finalizado && !r.cancelado),
+    [rows],
+  );
+  const cancelados = useMemo(() => rows.filter((r) => !!r.cancelado), [rows]);
+
   const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
 
   async function saveRule(
