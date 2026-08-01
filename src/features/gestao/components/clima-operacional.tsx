@@ -97,7 +97,8 @@ export function ClimaOperacional({ ptSuspensas }: { ptSuspensas?: number }) {
           </p>
           <p className="mt-0.5 text-xs opacity-90">{resumo.status.descricao}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {WEATHER_LOCATION.label} · {resumo.info.label} · atualizado às{" "}
+            {WEATHER_LOCATION.cidade} — {WEATHER_LOCATION.estado} · {resumo.info.label} ·
+            atualizado às{" "}
             {new Date(q.data.fetched_at).toLocaleTimeString("pt-BR", {
               hour: "2-digit",
               minute: "2-digit",
