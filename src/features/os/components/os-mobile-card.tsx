@@ -29,9 +29,10 @@ interface OSMobileCardProps {
   os: OSBase;
   onAction?: (action: string, os: OSBase) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function OSMobileCard({ os, onAction, className }: OSMobileCardProps) {
+export function OSMobileCard({ os, onAction, className, style }: OSMobileCardProps) {
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       aberto: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -56,7 +57,7 @@ export function OSMobileCard({ os, onAction, className }: OSMobileCardProps) {
   const slaProgress = 65; // Mock for visual representation
 
   return (
-    <GlassCard className={cn("p-4 space-y-4", className)}>
+    <GlassCard className={cn("p-4 space-y-4", className)} style={style}>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
