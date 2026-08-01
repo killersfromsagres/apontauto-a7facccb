@@ -387,10 +387,10 @@ export async function readBackorderWorkbook(
     const espaco = tree.espaco || sheetEspaco;
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
 
-    const statusNorm = norm(status);
     const dataConclusao = parseDateISO(conclusao);
-    const cancelado = RE_CANCELADO.test(statusNorm);
-    const finalizado = cancelado || RE_CONCLUIDO.test(statusNorm) || !!dataConclusao;
+    const statusCat = toStatusCat(status);
+    const cancelado = isCancelado(statusCat);
+    const finalizado = cancelado || isConcluido(statusCat);
     const revisao_manual = !finalizado && ((!!ativo && !found) || atividade === "Outros");
 
     out.push({
@@ -402,6 +402,7 @@ export async function readBackorderWorkbook(
       espaco,
       atividade,
       equipe: CATEGORIA_TO_EQUIPE[atividade],
+      equipe_hint: equipeHint,
       termino_sla: parseDateISO(sla),
       data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
       outros: solicitante,
@@ -410,10 +411,11 @@ export async function readBackorderWorkbook(
       cancelado,
       data_conclusao: dataConclusao,
       status_origem: status,
+      status_cat: statusCat,
       revisao_manual,
     });
-
   }
+
   return { rows: out, embeddedAssets, sheetName };
 }
 
