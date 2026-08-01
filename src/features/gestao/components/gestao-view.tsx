@@ -1170,7 +1170,7 @@ export function GestaoView() {
               titulo="Ações rápidas de água"
               acao={
                 <Button asChild variant="outline" size="sm" className="min-h-10">
-                  <Link to="/entrega-agua">Abrir entrega de água</Link>
+                  <Link to="/abastecimento/agua">Abrir entrega de água</Link>
                 </Button>
               }
             >
