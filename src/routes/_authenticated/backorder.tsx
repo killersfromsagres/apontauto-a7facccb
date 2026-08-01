@@ -123,6 +123,15 @@ import {
   type DynamicRule,
 } from "@/lib/backorder/classify";
 import {
+  STATUS_CATS,
+  STATUS_LABEL,
+  STATUS_COLOR,
+  toStatusCat,
+  isAberto as isStatusAberto,
+  type StatusCat,
+} from "@/lib/backorder/status";
+
+import {
   classifyTeamByText,
   EQUIPE_COR,
   EQUIPES,
