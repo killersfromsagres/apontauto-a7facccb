@@ -2,6 +2,7 @@
 
 import { classifyBackorder, CATEGORIA_TO_EQUIPE, type Categoria } from "./classify";
 import { resolveAtivoTree, type AssetsMap } from "./assets";
+import { toStatusCat, isCancelado, isConcluido, type StatusCat } from "./status";
 
 export interface BackorderRow {
   os: string;
@@ -12,9 +13,11 @@ export interface BackorderRow {
   espaco: string;
   atividade: Categoria;
   equipe: string;
+  /** Texto da COLUNA C — sugestão de equipe vinda da planilha (nem sempre correta). */
+  equipe_hint: string;
   termino_sla: string | null;
   data_solicitacao: string; // ISO
-  outros: string; // Solicitante (Denominação do Solicitante)
+  outros: string; // Solicitante (COLUNA E)
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   /** OS cancelada / recusada na origem. */
@@ -22,15 +25,13 @@ export interface BackorderRow {
   /** Data de conclusão/cancelamento vinda da planilha (ISO) quando existir. */
   data_conclusao: string | null;
   status_origem: string;
+  /** Categoria normalizada do status da COLUNA G. */
+  status_cat: StatusCat;
   /** true quando o ativo não foi encontrado na base OU a classificação
    *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
   revisao_manual: boolean;
 }
 
-/** Status da planilha que indicam OS encerrada. */
-const RE_CONCLUIDO = /FINAL|CONCLU|ENCERR|FECHAD|EXECUTAD|ATENDID|RESOLVID|BAIXAD/;
-/** Status da planilha que indicam OS cancelada / recusada. */
-const RE_CANCELADO = /CANCEL|RECUSAD|REPROVAD|ANULAD|INVALID|DESCARTAD/;
 
 
 const norm = (v: unknown) =>
