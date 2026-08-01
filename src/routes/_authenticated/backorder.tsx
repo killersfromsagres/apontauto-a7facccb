@@ -1545,11 +1545,18 @@ function BackorderPage() {
             <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="finalizados">
-            Finalizados{" "}
+            Concluídos{" "}
             <Badge variant="secondary" className="ml-2">
               {finalizadas.length}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="cancelados">
+            Cancelados{" "}
+            <Badge variant="secondary" className="ml-2">
+              {cancelados.length}
+            </Badge>
+          </TabsTrigger>
+
           <TabsTrigger value="dashboard">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
