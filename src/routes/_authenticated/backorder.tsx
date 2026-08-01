@@ -254,9 +254,12 @@ function BackorderPage() {
     // Carga paginada e paralela: bases com dezenas de milhares de OS não cabem
     // em uma única resposta do PostgREST. A primeira página já é renderizada e
     // o restante chega em lotes concorrentes, sem travar a tela.
-    const PAGE = 2000;
-    const CONCURRENCY = 6;
+    // Páginas maiores = menos consultas com OFFSET profundo (o custo cresce com
+    // o offset), mantendo a mesma ordenação e o mesmo conjunto de dados.
+    const PAGE = 5000;
+    const CONCURRENCY = 4;
     const MAX = 300_000;
+
     const fetchPage = async (from: number) => {
       const { data, error } = await supabase
         .from("backorder_os")
