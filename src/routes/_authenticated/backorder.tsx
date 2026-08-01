@@ -3296,7 +3296,7 @@ function PriorityScroller({ total, children }: { total: number; children: ReactN
 
 // ---------- Painel de Backorder (cards clicáveis, mesmo estilo dos prioritários) ----------
 
-function BackorderPanel({
+const BackorderPanel = memo(function BackorderPanel({
   rows,
   onSelect,
   onFinalizar,
@@ -3306,6 +3306,12 @@ function BackorderPanel({
   onFinalizar: (r: BOSRow) => void;
 }) {
   const [query, setQuery] = useState("");
+  const [debounced, setDebounced] = useState("");
+  useEffect(() => {
+    // Debounce da busca: evita refiltrar milhares de OS a cada tecla.
+    const t = setTimeout(() => setDebounced(query), 220);
+    return () => clearTimeout(t);
+  }, [query]);
   const ordered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const list = q
