@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { OSBase } from "../schemas/os-base";
 
 interface OSDraftState {
@@ -28,6 +28,7 @@ export const useOSDraftStore = create<OSDraftState>()(
     }),
     {
       name: "os-drafts-storage",
+      storage: createJSONStorage(() => localStorage),
     },
   ),
 );
