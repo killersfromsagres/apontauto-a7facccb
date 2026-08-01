@@ -80,7 +80,7 @@ export function OSMobileCard({ os, onAction, className, style }: OSMobileCardPro
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()} aria-label="Mais opções">
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
