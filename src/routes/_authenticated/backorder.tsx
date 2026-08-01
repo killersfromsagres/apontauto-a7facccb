@@ -388,192 +388,124 @@ function BackorderPage() {
 
   async function handleBackorderImport(file: File) {
     setImporting(true);
+    const tid = toast.loading("Preparando importação…");
     try {
       // 1) carrega o grafo de ativos vigente (catálogo ativo ou base legada)
       const assetsMap = await loadAssetsIndex(true);
 
-      const { rows: parsed, embeddedAssets } = await readBackorderWorkbook(file, assetsMap);
-      if (parsed.length === 0) {
-        toast.warning("Nenhuma OS reconhecida na planilha.");
+      const [ovRes, locRes, teamRes, rulesRes] = await Promise.all([
+        supabase.from("backorder_atividade_override").select("os, atividade"),
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+        supabase.from("backorder_regras").select("equipe, palavra_chave"),
+      ]);
+      const overrides: Array<[string, string]> = (ovRes.data ?? []).map((o: any) => [
+        o.os,
+        o.atividade,
+      ]);
+
+      toast.loading("Lendo planilha (isso roda em segundo plano)…", { id: tid });
+
+      // 2) parsing + resolução de ativos em Web Worker (não trava a UI)
+      const worker = new Worker(new URL("@/lib/backorder/import.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      const result = await new Promise<any>((resolve, reject) => {
+        worker.onmessage = (ev: MessageEvent<any>) => {
+          const m = ev.data;
+          if (m.type === "progress") {
+            if (m.phase === "processando") {
+              toast.loading(`Processando OS… ${m.done.toLocaleString("pt-BR")}`, { id: tid });
+            }
+          } else if (m.type === "result") {
+            resolve(m);
+            worker.terminate();
+          } else if (m.type === "error") {
+            reject(new Error(m.message));
+            worker.terminate();
+          }
+        };
+        worker.onerror = (e) => {
+          reject(new Error(e.message || "Falha no processamento da planilha"));
+          worker.terminate();
+        };
+        worker.postMessage({
+          type: "run",
+          file,
+          assetsMap,
+          dynamicRules: (rulesRes.data ?? []).map((r: any) => ({
+            equipe: r.equipe,
+            palavra_chave: r.palavra_chave,
+          })),
+          learnedLoc: locRes.data ?? [],
+          learnedTeam: teamRes.data ?? [],
+          overrides,
+        });
+      });
+
+      const rows: any[] = result.rows ?? [];
+      const embeddedAssets: any[] = result.embeddedAssets ?? [];
+      if (rows.length === 0) {
+        toast.warning("Nenhuma OS reconhecida na planilha.", { id: tid });
         return;
       }
 
-      // Se o workbook trouxe uma aba `ativos` embutida, hidrata a base
-      // `assets_ref` antes de qualquer resolução futura.
+      // 3) hidrata a base de ativos embutida no próprio arquivo
       if (embeddedAssets.length > 0) {
-        const chunkSize = 500;
-        for (let i = 0; i < embeddedAssets.length; i += chunkSize) {
-          const chunk = embeddedAssets.slice(i, i + chunkSize);
+        for (let i = 0; i < embeddedAssets.length; i += 1000) {
+          const chunk = embeddedAssets.slice(i, i + 1000);
           const { error } = await supabase
             .from("assets_ref")
             .upsert(chunk, { onConflict: "ativo" });
           if (error) throw error;
         }
-        toast.info(
-          `Base de ativos atualizada com ${embeddedAssets.length} registros do próprio arquivo.`,
-        );
       }
 
-      // Overrides manuais persistidos (Atividade corrigida à mão)
-      const { data: overrides } = await supabase
-        .from("backorder_atividade_override")
-        .select("os, atividade");
-      const overrideMap = new Map<string, string>();
-      (overrides ?? []).forEach((o: any) => overrideMap.set(o.os, o.atividade));
-
-      // Preserva "finalizado" local (nunca reabrir automaticamente por reimport)
-      const { data: existing } = await supabase
-        .from("backorder_os")
-        .select(
-          "os, finalizado, atividade_manual, atividade, equipe, data_finalizacao, nome, ativo, predio, andar, espaco, data_solicitacao, termino_sla, outros, criticidade",
-        );
-      const existMap = new Map<string, any>();
-      (existing ?? []).forEach((e: any) => existMap.set(e.os, e));
-
+      // 4) grava em lotes via RPC (upsert em massa no servidor)
+      const overrideSet = new Set(overrides.map(([os]) => os));
+      const CHUNK = 1000;
       let novas = 0;
       let atualizadas = 0;
-      let ignoradas = 0;
-
-      // Recarrega regras aprendidas (o motor precisa da versão mais atual)
-      const [locRes, teamRes] = await Promise.all([
-        supabase.from("regras_aprendidas_localizacao").select("*"),
-        supabase.from("regras_aprendidas_equipe").select("*"),
-      ]);
-      const learnedIdx = buildLearnedIndex(
-        (locRes.data ?? []) as LearnedLocation[],
-        (teamRes.data ?? []) as LearnedTeam[],
-      );
-
-      const toUpsert: Array<
-        BackorderRow & {
-          origem_predio_andar_espaco: string;
-          origem_equipe: string;
-        }
-      > = [];
-      for (const r of parsed) {
-        const prev = existMap.get(r.os);
-        if (prev?.finalizado) {
-          ignoradas++;
-          continue;
-        }
-        const override = overrideMap.get(r.os);
-
-        // Aplica regra aprendida (prioridade sobre árvore) — mas nunca sobrescreve override manual
-        const tree = resolveAtivoTree(assetsMap, r.ativo);
-        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
-
-        // Classificador de texto (Nome) — fonte primária de equipe quando não
-        // há override manual nem regra aprendida por ativo confiável.
-        const textResult = classifyTeamByText(r.nome ?? "");
-
-        const atividadeFinal: Categoria =
-          (override as Categoria | undefined) ??
-          (prev?.atividade_manual
-            ? (prev.atividade as Categoria)
-            : (textResult.equipe as Categoria));
-        const equipeFinal = override
-          ? CATEGORIA_TO_EQUIPE[override as Categoria]
-          : prev?.atividade_manual
-            ? prev.equipe
-            : CATEGORIA_TO_EQUIPE[atividadeFinal];
-        const revisaoText = !override && !prev?.atividade_manual && textResult.ambiguo;
-
-        const next = {
-          ...r,
-          // Preserva o que veio na planilha. Depois tenta regra aprendida
-          // / árvore. Se ainda vier vazio e a OS já existir com valor
-          // salvo (correção manual anterior), mantém o valor salvo — a
-          // reimportação nunca destrói uma localização já preenchida.
-          predio: r.predio || applied.predio || prev?.predio || "",
-          andar: r.andar || applied.andar || prev?.andar || "",
-          espaco: r.espaco || applied.espaco || prev?.espaco || "",
-          atividade: atividadeFinal,
-          equipe: equipeFinal,
-          revisao_manual:
-            (applied.revisao_manual &&
-              !override &&
-              !prev?.atividade_manual &&
-              !r.predio &&
-              !r.andar &&
-              !r.espaco &&
-              !(prev?.predio || prev?.andar || prev?.espaco)) ||
-            revisaoText,
-          origem_predio_andar_espaco:
-            r.predio || r.andar || r.espaco
-              ? "planilha"
-              : applied.origem_predio_andar_espaco !== "pendente"
-                ? applied.origem_predio_andar_espaco
-                : prev?.predio || prev?.andar || prev?.espaco
-                  ? "manual_preservado"
-                  : "pendente",
-          origem_equipe:
-            override || prev?.atividade_manual
-              ? "regra_aprendida"
-              : revisaoText
-                ? "pendente"
-                : "regra_local",
-        };
-        if (prev) {
-          const sameISO = (a?: string | null, b?: string | null) =>
-            (a ? new Date(a).toISOString() : "") === (b ? new Date(b).toISOString() : "");
-          const identical =
-            prev.nome === next.nome &&
-            prev.ativo === next.ativo &&
-            prev.predio === next.predio &&
-            prev.andar === next.andar &&
-            prev.espaco === next.espaco &&
-            prev.atividade === next.atividade &&
-            prev.equipe === next.equipe &&
-            prev.outros === next.outros &&
-            (prev.criticidade ?? "") === (next.criticidade ?? "") &&
-            sameISO(prev.data_solicitacao, next.data_solicitacao) &&
-            sameISO(prev.termino_sla, next.termino_sla);
-          if (identical) {
-            ignoradas++;
-            continue;
-          }
-          atualizadas++;
-        } else {
-          novas++;
-        }
-        toUpsert.push(next);
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const chunk = rows.slice(i, i + CHUNK);
+        const { data, error } = await supabase.rpc("backorder_bulk_upsert", {
+          p_rows: chunk as any,
+        });
+        if (error) throw error;
+        const res = data as any;
+        novas += Number(res?.novas ?? 0);
+        atualizadas += Number(res?.atualizadas ?? 0);
+        toast.loading(
+          `Enviando… ${Math.min(i + CHUNK, rows.length).toLocaleString("pt-BR")} de ${rows.length.toLocaleString("pt-BR")}`,
+          { id: tid },
+        );
       }
 
-      // Upsert em lotes de 500
-      for (let i = 0; i < toUpsert.length; i += 500) {
-        const chunk = toUpsert.slice(i, i + 500).map((r) => ({
-          os: r.os,
-          nome: r.nome,
-          ativo: r.ativo,
-          predio: r.predio,
-          andar: r.andar,
-          espaco: r.espaco,
-          atividade: r.atividade,
-          atividade_manual: !!overrideMap.get(r.os),
-          equipe: r.equipe,
-          termino_sla: r.termino_sla,
-          data_solicitacao: r.data_solicitacao,
-          outros: r.outros,
-          criticidade: r.criticidade ?? "",
-          revisao_manual: r.revisao_manual,
-          origem_predio_andar_espaco: r.origem_predio_andar_espaco,
-          origem_equipe: r.origem_equipe,
-        }));
-        const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
-        if (error) throw error;
+      // mantém a marcação de classificação manual das OS com override
+      if (overrideSet.size > 0) {
+        const marcar = rows.filter((r) => overrideSet.has(r.os)).map((r) => r.os);
+        for (let i = 0; i < marcar.length; i += 500) {
+          await supabase
+            .from("backorder_os")
+            .update({ atividade_manual: true })
+            .in("os", marcar.slice(i, i + 500));
+        }
       }
 
       toast.success(
-        `Importado: ${novas} nova(s), ${atualizadas} atualizada(s), ${ignoradas} ignorada(s).`,
+        `Importado: ${novas} nova(s), ${atualizadas} atualizada(s). ` +
+          `${result.abertas} em aberto, ${result.concluidas} concluída(s) e ${result.canceladas} cancelada(s) separadas automaticamente.`,
+        { id: tid, duration: 8000 },
       );
       await refresh();
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ?? "Falha ao importar planilha");
+      toast.error(e?.message ?? "Falha ao importar planilha", { id: tid });
     } finally {
       setImporting(false);
     }
   }
+
 
   async function handleAssetsImport(file: File) {
     setImporting(true);
