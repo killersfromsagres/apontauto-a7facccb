@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { ChamadoRow } from "@/lib/dashboard-chamados/parser";
-import { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
+import { subscribeBackorderTable } from "@/lib/dashboard-chamados/backorder-sync";
 import {
-  fetchBackorderRows,
-  setBackorderConcluido,
-  setBackorderReaberto,
-  subscribeBackorderTable,
-} from "@/lib/dashboard-chamados/backorder-sync";
+  EMPTY_STATS,
+  buildInsights,
+  fetchDashboardFiltros,
+  fetchDashboardStats,
+  setOsFinalizado,
+  type DashFiltros,
+  type DashStats,
+  type OsStatus,
+  type ServerRow,
+} from "@/lib/dashboard-chamados/server-stats";
 
 export type Filters = {
   equipe: string;
@@ -17,6 +21,7 @@ export type Filters = {
   solicitante: string;
   predio: string;
   periodo: string;
+  ano: string;
 };
 
 export const EMPTY_FILTERS: Filters = {
@@ -27,14 +32,28 @@ export const EMPTY_FILTERS: Filters = {
   solicitante: "todos",
   predio: "todos",
   periodo: "todos",
+  ano: "todos",
 };
 
+const EMPTY_UNIQUES: DashFiltros = {
+  equipes: [],
+  categorias: [],
+  criticidades: [],
+  predios: [],
+  solicitantes: [],
+  anos: [],
+};
+
+const isAll = (v: string) => v === "todos" || v === "todas";
+
 /**
- * Estado do Dashboard de Chamados: carga, realtime, filtros e ações de OS.
- * A view apenas consome — nada de fetch dentro de componentes de apresentação.
+ * Estado do Dashboard de Chamados.
+ * Todos os agregados vêm prontos do servidor (RPC), então a base pode ter
+ * centenas de milhares de OS sem travar o navegador.
  */
 export function useDashboardChamados() {
-  const [rows, setRows] = useState<ChamadoRow[]>([]);
+  const [stats, setStats] = useState<DashStats>(EMPTY_STATS);
+  const [uniques, setUniques] = useState<DashFiltros>(EMPTY_UNIQUES);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,92 +61,71 @@ export function useDashboardChamados() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [pendingOs, setPendingOs] = useState<Set<string>>(new Set());
   const debounceRef = useRef<number | null>(null);
+  const reqRef = useRef(0);
 
-  const loadRows = useCallback(async (silent = false) => {
-    if (!silent) setRefreshing(true);
-    try {
-      const data = await fetchBackorderRows();
-      setRows(data);
-      setError(null);
-      setLastUpdate(Date.now());
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha ao carregar backorders";
-      console.error("[dashboard] fetchBackorderRows", err);
-      setError(message);
-      if (!silent) toast.error(message);
-    } finally {
-      setRefreshing(false);
-      setLoading(false);
-    }
-  }, []);
+  const query = useMemo(
+    () => ({
+      equipe: isAll(filters.equipe) ? null : filters.equipe,
+      categoria: isAll(filters.categoria) ? null : filters.categoria,
+      criticidade: isAll(filters.criticidade) ? null : filters.criticidade,
+      status: isAll(filters.status) ? null : (filters.status as OsStatus),
+      solicitante: isAll(filters.solicitante) ? null : filters.solicitante,
+      predio: isAll(filters.predio) ? null : filters.predio,
+      ano: isAll(filters.ano) ? null : Number(filters.ano),
+      dias: isAll(filters.periodo) ? null : Number(filters.periodo),
+    }),
+    [filters],
+  );
+
+  const load = useCallback(
+    async (silent = false) => {
+      const id = ++reqRef.current;
+      if (!silent) setRefreshing(true);
+      try {
+        const data = await fetchDashboardStats(query);
+        if (id !== reqRef.current) return;
+        setStats(data);
+        setError(null);
+        setLastUpdate(Date.now());
+      } catch (err) {
+        if (id !== reqRef.current) return;
+        const message = err instanceof Error ? err.message : "Falha ao carregar indicadores";
+        console.error("[dashboard] backorder_dashboard_stats", err);
+        setError(message);
+        if (!silent) toast.error(message);
+      } finally {
+        if (id === reqRef.current) {
+          setRefreshing(false);
+          setLoading(false);
+        }
+      }
+    },
+    [query],
+  );
 
   useEffect(() => {
-    void loadRows(true);
-  }, [loadRows]);
+    void load(true);
+  }, [load]);
 
-  // Realtime: agrupa rajadas de eventos (imports em massa) com debounce.
+  useEffect(() => {
+    fetchDashboardFiltros()
+      .then(setUniques)
+      .catch((err) => console.error("[dashboard] filtros", err));
+  }, []);
+
+  // Realtime com debounce — imports em massa geram rajadas de eventos.
   useEffect(() => {
     const unsub = subscribeBackorderTable(() => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      debounceRef.current = window.setTimeout(() => {
-        void loadRows(true);
-      }, 350);
+      debounceRef.current = window.setTimeout(() => void load(true), 1200);
     });
     return () => {
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
       unsub();
     };
-  }, [loadRows]);
+  }, [load]);
 
-  const uniques = useMemo(() => {
-    const eq = new Set<string>();
-    const ca = new Set<string>();
-    const cr = new Set<string>();
-    const st = new Set<string>();
-    const so = new Set<string>();
-    const pr = new Set<string>();
-    for (const r of rows) {
-      if (r.equipe) eq.add(r.equipe);
-      if (r.categoria) ca.add(r.categoria);
-      if (r.criticidade) cr.add(r.criticidade);
-      if (r.status) st.add(r.status);
-      if (r.solicitante) so.add(r.solicitante);
-      if (r.predio) pr.add(r.predio);
-    }
-    return {
-      equipes: [...eq].sort(),
-      categorias: [...ca].sort(),
-      criticidades: [...cr].sort(),
-      statuses: [...st].sort(),
-      solicitantes: [...so].sort(),
-      predios: [...pr].sort(),
-    };
-  }, [rows]);
-
-  const filtered = useMemo(() => {
-    const now = Date.now();
-    const periodoMs = filters.periodo === "todos" ? 0 : Number(filters.periodo) * 86_400_000;
-    return rows.filter((r) => {
-      if (filters.equipe !== "todas" && r.equipe !== filters.equipe) return false;
-      if (filters.categoria !== "todas" && r.categoria !== filters.categoria) return false;
-      if (filters.criticidade !== "todas" && r.criticidade !== filters.criticidade) return false;
-      if (filters.status !== "todos" && r.status !== filters.status) return false;
-      if (filters.solicitante !== "todos" && r.solicitante !== filters.solicitante) return false;
-      if (filters.predio !== "todos" && r.predio !== filters.predio) return false;
-      if (periodoMs > 0) {
-        if (!r.dataAberturaTs) return false;
-        if (now - r.dataAberturaTs > periodoMs) return false;
-      }
-      return true;
-    });
-  }, [rows, filters]);
-
-  const stats = useMemo(() => computeDashboardStats(filtered), [filtered]);
-
-  const topPredios = useMemo(
-    () => [...stats.porPredio].sort((a, b) => b.value - a.value).slice(0, 10),
-    [stats.porPredio],
-  );
+  const insights = useMemo(() => buildInsights(stats), [stats]);
 
   const activeFilterCount = useMemo(
     () =>
@@ -138,28 +136,20 @@ export function useDashboardChamados() {
   );
 
   const toggleConcluido = useCallback(
-    async (row: ChamadoRow, next: boolean) => {
+    async (row: ServerRow, next: boolean) => {
       setPendingOs((prev) => new Set(prev).add(row.os));
-      // Atualização otimista — o realtime completa o restante em seguida.
-      setRows((prev) =>
-        prev.map((r) =>
-          r.os === row.os
-            ? {
-                ...r,
-                statusNorm: next ? "concluido" : "aberto",
-                status: next ? "Concluído" : "Reaberto",
-                dataConclusao: next ? new Date().toISOString() : null,
-              }
-            : r,
+      setStats((prev) => ({
+        ...prev,
+        rows: prev.rows.map((r) =>
+          r.os === row.os ? { ...r, status: next ? "concluido" : "aberto" } : r,
         ),
-      );
+      }));
       try {
-        if (next) await setBackorderConcluido(row);
-        else await setBackorderReaberto(row.os);
+        await setOsFinalizado(row.os, next);
         toast.success(next ? `OS ${row.os} concluída` : `OS ${row.os} reaberta`);
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com backorder");
-        void loadRows(true);
+        toast.error(err instanceof Error ? err.message : "Falha ao sincronizar com o Backorder");
+        void load(true);
       } finally {
         setPendingOs((prev) => {
           const s = new Set(prev);
@@ -168,14 +158,13 @@ export function useDashboardChamados() {
         });
       }
     },
-    [loadRows],
+    [load],
   );
 
   return {
-    rows,
-    filtered,
     stats,
-    topPredios,
+    insights,
+    rows: stats.rows,
     uniques,
     filters,
     setFilters,
@@ -185,7 +174,7 @@ export function useDashboardChamados() {
     refreshing,
     error,
     lastUpdate,
-    reload: loadRows,
+    reload: load,
     pendingOs,
     toggleConcluido,
   };

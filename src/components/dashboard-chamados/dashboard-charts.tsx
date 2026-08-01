@@ -13,10 +13,12 @@ import {
   AreaChart,
   Area,
   LabelList,
+  ComposedChart,
+  Line,
 } from "recharts";
-import { Building2, TrendingUp, Users } from "lucide-react";
+import { Building2, CalendarRange, TrendingUp, Users } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
-import type { DashboardChamadosState } from "./use-dashboard-chamados";
+import type { DashStats } from "@/lib/dashboard-chamados/server-stats";
 
 const CHART_COLORS = [
   "oklch(0.62 0.19 256)",
@@ -31,6 +33,10 @@ const CHART_COLORS = [
   "oklch(0.6 0.18 220)",
 ];
 
+const COLOR_CONC = "oklch(0.696 0.17 162.48)";
+const COLOR_CANC = "oklch(0.7 0.2 25)";
+const COLOR_ABERTO = "oklch(0.75 0.18 60)";
+
 const TOOLTIP_STYLE = {
   background: "var(--popover)",
   color: "var(--popover-foreground)",
@@ -39,40 +45,113 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
 } as const;
 
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+function mesLabel(mes: string) {
+  const [y, m] = mes.split("-");
+  return `${MESES[Number(m) - 1] ?? m}/${y.slice(2)}`;
+}
+
 /**
  * Bloco de gráficos do dashboard. Carregado sob demanda (React.lazy) para
  * tirar o Recharts do bundle inicial da rota.
  */
-export default function DashboardCharts({
-  stats,
-  topPredios,
-}: {
-  stats: DashboardChamadosState["stats"];
-  topPredios: DashboardChamadosState["topPredios"];
-}) {
+export default function DashboardCharts({ stats }: { stats: DashStats }) {
+  const porAno = stats.porAno;
+  const porMes = stats.porMes.slice(-36).map((m) => ({ ...m, label: mesLabel(m.mes) }));
+  const topPredios = stats.porPredio;
+  const anoComTaxa = porAno.map((a) => ({
+    ...a,
+    taxa: a.total === 0 ? 0 : Math.round((a.concluidos / a.total) * 100),
+  }));
+
   return (
     <>
+      <GlassCard delay={0.2}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CalendarRange className="h-4 w-4 text-primary" strokeWidth={1.75} />
+            <h3 className="text-base font-semibold">Histórico por ano</h3>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            Concluídas · canceladas · em aberto e taxa de conclusão
+          </span>
+        </div>
+        <div className="h-80 w-full">
+          {anoComTaxa.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+              Sem datas de abertura na base
+            </div>
+          ) : (
+            <ResponsiveContainer>
+              <ComposedChart data={anoComTaxa} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="ano" stroke="var(--muted-foreground)" fontSize={11} />
+                <YAxis
+                  yAxisId="l"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  allowDecimals={false}
+                />
+                <YAxis
+                  yAxisId="r"
+                  orientation="right"
+                  stroke="var(--muted-foreground)"
+                  fontSize={11}
+                  unit="%"
+                  domain={[0, 100]}
+                />
+                <Tooltip contentStyle={TOOLTIP_STYLE} />
+                <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+                <Bar
+                  yAxisId="l"
+                  dataKey="concluidos"
+                  stackId="a"
+                  name="Concluídas"
+                  fill={COLOR_CONC}
+                  radius={[0, 0, 0, 0]}
+                />
+                <Bar
+                  yAxisId="l"
+                  dataKey="cancelados"
+                  stackId="a"
+                  name="Canceladas"
+                  fill={COLOR_CANC}
+                />
+                <Bar
+                  yAxisId="l"
+                  dataKey="abertos"
+                  stackId="a"
+                  name="Em aberto"
+                  fill={COLOR_ABERTO}
+                  radius={[6, 6, 0, 0]}
+                />
+                <Line
+                  yAxisId="r"
+                  type="monotone"
+                  dataKey="taxa"
+                  name="Taxa de conclusão (%)"
+                  stroke={CHART_COLORS[0]}
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </GlassCard>
+
       <GlassCard delay={0.25}>
         <div className="mb-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-primary" strokeWidth={1.75} />
-            <h3 className="text-base font-semibold">Chamados por equipe</h3>
+            <h3 className="text-base font-semibold">OS por equipe</h3>
           </div>
-          <span className="text-xs text-muted-foreground">Concluídos vs. em aberto</span>
+          <span className="text-xs text-muted-foreground">Concluídas vs. canceladas vs. abertas</span>
         </div>
         <div className="h-72 w-full">
           <ResponsiveContainer>
             <BarChart data={stats.porEquipe} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
-              <defs>
-                <linearGradient id="gConc" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART_COLORS[1]} stopOpacity={0.95} />
-                  <stop offset="100%" stopColor={CHART_COLORS[1]} stopOpacity={0.55} />
-                </linearGradient>
-                <linearGradient id="gAb" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={CHART_COLORS[3]} stopOpacity={0.95} />
-                  <stop offset="100%" stopColor={CHART_COLORS[3]} stopOpacity={0.55} />
-                </linearGradient>
-              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis
                 dataKey="name"
@@ -86,13 +165,15 @@ export default function DashboardCharts({
               <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Legend wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }} />
+              <Bar dataKey="concluidos" stackId="e" name="Concluídas" fill={COLOR_CONC} />
+              <Bar dataKey="cancelados" stackId="e" name="Canceladas" fill={COLOR_CANC} />
               <Bar
-                dataKey="concluidos"
-                name="Concluídos"
-                fill="url(#gConc)"
+                dataKey="abertos"
+                stackId="e"
+                name="Em aberto"
+                fill={COLOR_ABERTO}
                 radius={[6, 6, 0, 0]}
               />
-              <Bar dataKey="abertos" name="Em aberto" fill="url(#gAb)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -105,7 +186,7 @@ export default function DashboardCharts({
               <TrendingUp className="h-4 w-4 text-primary" strokeWidth={1.75} />
               <h3 className="text-base font-semibold">Top solicitantes</h3>
             </div>
-            <span className="text-xs text-muted-foreground">Quem abriu mais chamados</span>
+            <span className="text-xs text-muted-foreground">Quem mais abriu OS</span>
           </div>
           <div
             className="w-full"
@@ -115,7 +196,7 @@ export default function DashboardCharts({
               <BarChart
                 data={stats.porSolicitante}
                 layout="vertical"
-                margin={{ top: 8, right: 32, bottom: 8, left: 8 }}
+                margin={{ top: 8, right: 40, bottom: 8, left: 8 }}
                 barCategoryGap={8}
               >
                 <defs>
@@ -125,13 +206,7 @@ export default function DashboardCharts({
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis
-                  type="number"
-                  stroke="var(--muted-foreground)"
-                  fontSize={11}
-                  allowDecimals={false}
-                  hide
-                />
+                <XAxis type="number" fontSize={11} allowDecimals={false} hide />
                 <YAxis
                   type="category"
                   dataKey="name"
@@ -191,30 +266,52 @@ export default function DashboardCharts({
 
       <div className="grid gap-4 lg:grid-cols-3">
         <GlassCard className="lg:col-span-2" delay={0.45}>
-          <h3 className="mb-4 text-base font-semibold">Aberturas ao longo do tempo</h3>
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <h3 className="text-base font-semibold">Evolução mensal</h3>
+            <span className="text-xs text-muted-foreground">Últimos 36 meses com registro</span>
+          </div>
           <div className="h-64 w-full">
-            {stats.timeline.length === 0 ? (
+            {porMes.length === 0 ? (
               <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
                 Datas de abertura não disponíveis
               </div>
             ) : (
               <ResponsiveContainer>
-                <AreaChart data={stats.timeline}>
+                <AreaChart data={porMes}>
                   <defs>
                     <linearGradient id="gTL" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={CHART_COLORS[0]} stopOpacity={0.7} />
                       <stop offset="100%" stopColor={CHART_COLORS[0]} stopOpacity={0} />
                     </linearGradient>
+                    <linearGradient id="gTLc" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={COLOR_CONC} stopOpacity={0.6} />
+                      <stop offset="100%" stopColor={COLOR_CONC} stopOpacity={0} />
+                    </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={10} />
+                  <XAxis
+                    dataKey="label"
+                    stroke="var(--muted-foreground)"
+                    fontSize={10}
+                    minTickGap={16}
+                  />
                   <YAxis stroke="var(--muted-foreground)" fontSize={11} allowDecimals={false} />
                   <Tooltip contentStyle={TOOLTIP_STYLE} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: "var(--muted-foreground)" }} />
                   <Area
                     type="monotone"
                     dataKey="total"
+                    name="Abertas"
                     stroke={CHART_COLORS[0]}
                     fill="url(#gTL)"
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="concluidos"
+                    name="Concluídas"
+                    stroke={COLOR_CONC}
+                    fill="url(#gTLc)"
                     strokeWidth={2}
                   />
                 </AreaChart>
@@ -227,7 +324,7 @@ export default function DashboardCharts({
           <div className="mb-4 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary" strokeWidth={1.75} />
-              <h3 className="text-base font-semibold">Prédios mais recorrentes</h3>
+              <h3 className="text-base font-semibold">Prédios recorrentes</h3>
             </div>
             <span className="text-xs text-muted-foreground">Top {topPredios.length}</span>
           </div>
@@ -237,14 +334,14 @@ export default function DashboardCharts({
           >
             {topPredios.length === 0 ? (
               <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                Sem dados de prédio nos chamados filtrados
+                Sem dados de prédio nas OS filtradas
               </div>
             ) : (
               <ResponsiveContainer>
                 <BarChart
                   data={topPredios}
                   layout="vertical"
-                  margin={{ top: 4, right: 40, bottom: 4, left: 8 }}
+                  margin={{ top: 4, right: 44, bottom: 4, left: 8 }}
                 >
                   <defs>
                     <linearGradient id="gPredio" x1="0" y1="0" x2="1" y2="0">
@@ -253,13 +350,7 @@ export default function DashboardCharts({
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    stroke="var(--muted-foreground)"
-                    fontSize={11}
-                    allowDecimals={false}
-                    hide
-                  />
+                  <XAxis type="number" fontSize={11} allowDecimals={false} hide />
                   <YAxis
                     type="category"
                     dataKey="name"
@@ -272,7 +363,7 @@ export default function DashboardCharts({
                     cursor={{ fill: "color-mix(in oklab, var(--primary) 10%, transparent)" }}
                     contentStyle={TOOLTIP_STYLE}
                   />
-                  <Bar dataKey="value" name="Chamados" fill="url(#gPredio)" radius={[0, 6, 6, 0]}>
+                  <Bar dataKey="value" name="OS" fill="url(#gPredio)" radius={[0, 6, 6, 0]}>
                     <LabelList
                       dataKey="value"
                       position="right"
