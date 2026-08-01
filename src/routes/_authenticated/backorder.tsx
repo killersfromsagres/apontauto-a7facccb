@@ -1597,6 +1597,11 @@ function BackorderPage() {
           <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
         </TabsContent>
 
+        <TabsContent value="cancelados">
+          <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
+        </TabsContent>
+
+
         <TabsContent value="dashboard">
           <Dashboard
             abertas={abertas}
