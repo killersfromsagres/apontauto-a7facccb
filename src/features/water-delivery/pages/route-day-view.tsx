@@ -35,7 +35,7 @@ import {
   type Visita,
   type VisitaStatus,
 } from "@/features/water-delivery/queries/api";
-import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
+import { DIA_LABEL } from "@/features/water-delivery/importer/constants";
 import {
   lerCacheRota,
   salvarCacheRota,

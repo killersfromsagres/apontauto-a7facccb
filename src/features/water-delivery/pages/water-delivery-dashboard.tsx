@@ -44,7 +44,7 @@ import {
   type Visita,
   type VisitaStatus,
 } from "@/features/water-delivery/queries/api";
-import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
+import { DIA_LABEL } from "@/features/water-delivery/importer/constants";
 
 /** Minutos considerados por parada quando não há histórico suficiente. */
 const MINUTOS_PADRAO_PARADA = 12;

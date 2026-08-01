@@ -87,27 +87,45 @@ function mapRowToChamado(r: BackorderDbRow): ChamadoRow {
 
 /** Carrega todas as OS da tabela backorder_os e converte para ChamadoRow. */
 export async function fetchBackorderRows(): Promise<ChamadoRow[]> {
-  const pageSize = 1000;
-  const out: ChamadoRow[] = [];
-  let from = 0;
-  // Paginação para suportar bases grandes.
+  // Paginação por chave (keyset) na PK `os`: evita OFFSET profundo, que faz o
+  // Postgres reordenar e descartar dezenas de milhares de linhas a cada página
+  // em bases grandes. A ordenação final (data_solicitacao desc, nulos por
+  // último) é reaplicada em memória — resultado idêntico ao anterior.
+  const pageSize = 5000;
+  const raw: BackorderDbRow[] = [];
+  let cursor: string | null = null;
 
   while (true) {
-    const { data, error } = await supabase
+    let q = supabase
       .from("backorder_os")
       .select(
         "os, nome, ativo, predio, andar, espaco, atividade, equipe, criticidade, outros, termino_sla, data_solicitacao, data_finalizacao, finalizado",
       )
-      .order("data_solicitacao", { ascending: false, nullsFirst: false })
-      .range(from, from + pageSize - 1);
+      .order("os", { ascending: true })
+      .limit(pageSize);
+    if (cursor) q = q.gt("os", cursor);
+    const { data, error } = await q;
     if (error) throw error;
     const rows = (data ?? []) as BackorderDbRow[];
-    for (const r of rows) out.push(mapRowToChamado(r));
+    raw.push(...rows);
     if (rows.length < pageSize) break;
-    from += pageSize;
+    cursor = rows[rows.length - 1]!.os;
   }
-  return out;
+
+  raw.sort((a, b) => {
+    const da = a.data_solicitacao ? Date.parse(String(a.data_solicitacao)) : NaN;
+    const db = b.data_solicitacao ? Date.parse(String(b.data_solicitacao)) : NaN;
+    const va = Number.isNaN(da) ? null : da;
+    const vb = Number.isNaN(db) ? null : db;
+    if (va === null && vb === null) return 0;
+    if (va === null) return 1; // nulos por último
+    if (vb === null) return -1;
+    return vb - va;
+  });
+
+  return raw.map(mapRowToChamado);
 }
+
 
 export async function fetchBackorderStatuses(
   osList: string[],

@@ -18,7 +18,6 @@ import {
 } from "@/features/fleet/api";
 import { PHOTO_CATEGORIES, STATUS_LABEL, STATUS_TONE } from "@/features/fleet/checklist-items";
 import { signPhotoUrls } from "@/features/fleet/photos";
-import { generateChecklistCertificate } from "@/features/fleet/certificate";
 
 export function FleetHistory() {
   const [certifyingId, setCertifyingId] = useState<string | null>(null);
@@ -203,6 +202,11 @@ export function FleetHistory() {
                       onClick={async () => {
                         setCertifyingId(c.id);
                         try {
+                          // Import dinâmico: jsPDF + as artes dos veículos (~1 MB)
+                          // só entram na rede quando o usuário gera o certificado.
+                          const { generateChecklistCertificate } = await import(
+                            "@/features/fleet/certificate"
+                          );
                           await generateChecklistCertificate({
                             checklist: c,
                             vehicle: v,

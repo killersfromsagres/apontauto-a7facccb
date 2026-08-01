@@ -6,23 +6,9 @@
 
 import * as XLSX from "xlsx";
 
-export const DIAS: { key: string; dia: number; label: string; aliases: RegExp }[] = [
-  { key: "segunda", dia: 1, label: "Segunda-feira", aliases: /^segunda/i },
-  { key: "terca", dia: 2, label: "Terça-feira", aliases: /^ter(ç|c)a/i },
-  { key: "quarta", dia: 3, label: "Quarta-feira", aliases: /^quarta/i },
-  { key: "quinta", dia: 4, label: "Quinta-feira", aliases: /^quinta/i },
-  { key: "sexta", dia: 5, label: "Sexta-feira", aliases: /^sexta/i },
-];
+export { DIAS, DIA_LABEL } from "./constants";
+import { DIAS, DIA_LABEL } from "./constants";
 
-export const DIA_LABEL: Record<number, string> = {
-  1: "Segunda-feira",
-  2: "Terça-feira",
-  3: "Quarta-feira",
-  4: "Quinta-feira",
-  5: "Sexta-feira",
-  6: "Sábado",
-  7: "Domingo",
-};
 
 export type Severidade = "erro" | "alerta" | "info";
 
