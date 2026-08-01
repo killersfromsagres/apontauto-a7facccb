@@ -25,7 +25,7 @@ const fmtDate = (iso: string) => {
 };
 
 /** Quadro por status detalhado da coluna G — otimizado para mobile. */
-export function StatusBoard({
+export const StatusBoard = memo(function StatusBoard({
   rows,
   onSelect,
 }: {
@@ -34,6 +34,13 @@ export function StatusBoard({
 }) {
   const [cat, setCat] = useState<StatusCat | "todos">("todos");
   const [q, setQ] = useState("");
+  const [busca, setBusca] = useState("");
+
+  // Debounce: filtrar milhares de OS a cada tecla travava o campo no celular.
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q), 220);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const counts = useMemo(() => {
     const m = {} as Record<string, number>;
@@ -42,7 +49,7 @@ export function StatusBoard({
   }, [rows]);
 
   const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const s = busca.trim().toLowerCase();
     return rows
       .filter((r) => (cat === "todos" ? true : r.statusCat === cat))
       .filter((r) =>
@@ -54,7 +61,9 @@ export function StatusBoard({
             r.predio.toLowerCase().includes(s),
       )
       .sort((a, b) => +new Date(b.data_solicitacao) - +new Date(a.data_solicitacao));
-  }, [rows, cat, q]);
+  }, [rows, cat, busca]);
+
+  const { visible, hasMore, sentinelRef, shown, total } = useIncrementalList(list, 60);
 
   return (
     <div className="space-y-3">
