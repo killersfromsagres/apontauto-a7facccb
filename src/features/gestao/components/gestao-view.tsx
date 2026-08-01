@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -143,6 +144,7 @@ function Secao({
 }
 
 export function GestaoView() {
+  const { confirmar, dialogo } = useConfirm();
   const qc = useQueryClient();
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
   const { allowed: canRead, isLoading: loadingRead } = useCanAccessModule(
@@ -1658,10 +1660,14 @@ export function GestaoView() {
                           size="sm"
                           variant="ghost"
                           className="min-h-11"
-                          onClick={() => {
-                            if (window.confirm(`Excluir definitivamente a ação "${n.titulo}"?`)) {
-                              remover.mutate(n.id);
-                            }
+                          onClick={async () => {
+                            const ok = await confirmar({
+                              titulo: "Excluir ação",
+                              descricao: `Excluir definitivamente a ação "${n.titulo}"?`,
+                              confirmar: "Excluir",
+                              destrutivo: true,
+                            });
+                            if (ok) remover.mutate(n.id);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
