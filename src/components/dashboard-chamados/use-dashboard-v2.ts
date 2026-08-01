@@ -29,7 +29,7 @@ export interface V2Filters {
 export function useDashboardV2() {
   const anoAtual = new Date().getFullYear();
   const [filters, setFilters] = useState<V2Filters>({
-    ano: String(anoAtual),
+    ano: "todos",
     equipe: "todas",
     statusCat: "todos",
     predio: "todos",
