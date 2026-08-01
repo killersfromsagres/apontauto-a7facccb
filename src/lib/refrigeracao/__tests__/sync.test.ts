@@ -67,7 +67,10 @@ beforeEach(() => {
 
 describe("sincronização da fila offline (refrigeração)", () => {
   it("envia os itens pendentes e esvazia a fila", async () => {
-    state.items = [item({ id: "a" }), item({ id: "b", kind: "peca", payload: { descricao: "Capacitor" } })];
+    state.items = [
+      item({ id: "a" }),
+      item({ id: "b", kind: "peca", payload: { descricao: "Capacitor" } }),
+    ];
 
     const r = await syncPending();
 
@@ -83,7 +86,10 @@ describe("sincronização da fila offline (refrigeração)", () => {
   });
 
   it("trata erro de duplicidade como sucesso (sem duplicar registro)", async () => {
-    state.insertError = { code: "23505", message: "duplicate key value violates unique constraint" };
+    state.insertError = {
+      code: "23505",
+      message: "duplicate key value violates unique constraint",
+    };
     state.items = [item({ id: "dup" })];
 
     const r = await syncPending();
@@ -113,7 +119,9 @@ describe("sincronização da fila offline (refrigeração)", () => {
   });
 
   it("envia foto hospedada e registra a URL", async () => {
-    state.items = [item({ id: "foto-1", kind: "foto", payload: { blobKey: "k1", legenda: "Antes" } })];
+    state.items = [
+      item({ id: "foto-1", kind: "foto", payload: { blobKey: "k1", legenda: "Antes" } }),
+    ];
 
     const r = await syncPending();
 
