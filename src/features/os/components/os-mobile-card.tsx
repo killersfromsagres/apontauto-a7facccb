@@ -1,6 +1,4 @@
 import * as React from "react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { 
   MoreVertical, 
   MapPin, 
@@ -12,6 +10,11 @@ import {
   History,
   CheckCircle2
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { GlassCard } from "@/components/glass-card";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +36,8 @@ interface OSMobileCardProps {
 }
 
 export function OSMobileCard({ os, onAction, className, style }: OSMobileCardProps) {
+  const navigate = useNavigate();
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       aberto: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -57,7 +62,14 @@ export function OSMobileCard({ os, onAction, className, style }: OSMobileCardPro
   const slaProgress = 65; // Mock for visual representation
 
   return (
-    <GlassCard className={cn("p-4 space-y-4", className)} style={style}>
+    <GlassCard 
+      className={cn("p-4 space-y-4 active:scale-[0.98] transition-transform", className)} 
+      style={style}
+      onClick={() => {
+        // Implementação do clique no card para ver detalhes
+        toast.info(`Abrindo OS ${os.numero}`);
+      }}
+    >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">

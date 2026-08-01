@@ -9,7 +9,6 @@ import { OSFiltersMobile } from "../components/os-filters-mobile";
 import { OSPageHeader } from "../components/os-page-header";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import type { OSBase } from "../schemas/os-base";
 
 interface OSListViewProps {
