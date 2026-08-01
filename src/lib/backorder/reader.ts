@@ -218,7 +218,24 @@ export async function readBackorderWorkbook(
   const sheet = wb.Sheets[sheetName];
   const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
+  // A planilha oficial traz o estado da OS (Concluída / Cancelada / etc.) na
+  // COLUNA G. Guardamos o nome do cabeçalho dessa coluna para lê-la
+  // diretamente, sem depender de o título ser "Status".
+  const statusHeaderG = (() => {
+    try {
+      const ref = sheet?.["!ref"];
+      if (!ref) return "";
+      const range = XLSX.utils.decode_range(ref);
+      const addr = XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + 6 });
+      const cell = sheet[addr];
+      return cell ? String(cell.w ?? cell.v ?? "").trim() : "";
+    } catch {
+      return "";
+    }
+  })();
+
   const out: BackorderRow[] = [];
+
   for (const r of raw) {
     const os = pick(
       r,
@@ -255,16 +272,21 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    const status = pick(
-      r,
-      "STATUS RESUMIDO",
-      "STATUS",
-      "SITUAÇÃO",
-      "SITUACAO",
-      "STATUS DA OS",
-      "STATUS OS",
-      "ESTADO",
-    );
+    // Prioridade absoluta para a coluna G (estado da OS na planilha oficial).
+    const statusG = statusHeaderG ? String(r[statusHeaderG] ?? "").trim() : "";
+    const status =
+      statusG ||
+      pick(
+        r,
+        "STATUS RESUMIDO",
+        "STATUS",
+        "SITUAÇÃO",
+        "SITUACAO",
+        "STATUS DA OS",
+        "STATUS OS",
+        "ESTADO",
+      );
+
     const conclusao = pick(
       r,
       "DATA/HORA CONCLUSÃO",
