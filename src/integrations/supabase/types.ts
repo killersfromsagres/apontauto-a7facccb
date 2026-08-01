@@ -2252,6 +2252,7 @@ export type Database = {
           prioridade_nivel: number
           prioridade_scanned_at: string | null
           revisao_manual: boolean
+          status_cat: string
           status_origem: string
           termino_sla: string | null
         }
@@ -2281,6 +2282,7 @@ export type Database = {
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
           revisao_manual?: boolean
+          status_cat?: string
           status_origem?: string
           termino_sla?: string | null
         }
@@ -2310,6 +2312,7 @@ export type Database = {
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
           revisao_manual?: boolean
+          status_cat?: string
           status_origem?: string
           termino_sla?: string | null
         }
@@ -6949,6 +6952,19 @@ export type Database = {
         }
         Returns: Json
       }
+      backorder_dashboard_v2: {
+        Args: {
+          p_ano?: number
+          p_criticidade?: string
+          p_equipe?: string
+          p_predio?: string
+          p_row_limit?: number
+          p_solicitante?: string
+          p_status_cat?: string
+        }
+        Returns: Json
+      }
+      backorder_status_cat: { Args: { p_status: string }; Returns: string }
       can_access_backorder: {
         Args: { required_action?: string }
         Returns: boolean
