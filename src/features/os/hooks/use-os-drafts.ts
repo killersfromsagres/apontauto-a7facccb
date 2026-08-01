@@ -12,15 +12,15 @@ export const useOSDraftStore = create<OSDraftState>()(
   persist(
     (set) => ({
       drafts: {},
-      setDraft: (osId, draft) =>
-        set((state) => ({
+      setDraft: (osId: string, draft: Partial<OSBase>) =>
+        set((state: OSDraftState) => ({
           drafts: {
             ...state.drafts,
             [osId]: { ...state.drafts[osId], ...draft },
           },
         })),
-      clearDraft: (osId) =>
-        set((state) => {
+      clearDraft: (osId: string) =>
+        set((state: OSDraftState) => {
           const newDrafts = { ...state.drafts };
           delete newDrafts[osId];
           return { drafts: newDrafts };
