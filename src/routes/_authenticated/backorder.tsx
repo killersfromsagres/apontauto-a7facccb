@@ -1809,42 +1809,44 @@ function BackorderPage() {
         </TabsContent>
 
         <TabsContent value="revisao">
-          <RevisaoPanel
-            rows={revisaoRows}
-            rules={rulesDB}
-            onSelectRow={setSelectedBackorder}
-            onSaveRule={saveRule}
-            onDeleteRule={deleteRule}
-            onReprocessar={handleReprocessarChamados}
-            importing={importing}
-            learnedLoc={learnedLoc}
-            learnedTeam={learnedTeamRules}
-            allRows={rows}
-            onDeleteLearnedLoc={async (id) => {
-              await supabase.from("regras_aprendidas_localizacao").delete().eq("id", id);
-              await loadLearnedRules();
-              toast.success("Regra aprendida removida");
-            }}
-            onDeleteLearnedTeam={async (id) => {
-              await supabase.from("regras_aprendidas_equipe").delete().eq("id", id);
-              await loadLearnedRules();
-              toast.success("Regra aprendida removida");
-            }}
-            onToggleLearnedLoc={async (id, ativo) => {
-              await supabase
-                .from("regras_aprendidas_localizacao")
-                .update({ ativo } as never)
-                .eq("id", id);
-              await loadLearnedRules();
-            }}
-            onToggleLearnedTeam={async (id, ativo) => {
-              await supabase
-                .from("regras_aprendidas_equipe")
-                .update({ ativo } as never)
-                .eq("id", id);
-              await loadLearnedRules();
-            }}
-          />
+          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <RevisaoPanel
+              rows={revisaoRows}
+              rules={rulesDB}
+              onSelectRow={setSelectedBackorder}
+              onSaveRule={saveRule}
+              onDeleteRule={deleteRule}
+              onReprocessar={handleReprocessarChamados}
+              importing={importing}
+              learnedLoc={learnedLoc}
+              learnedTeam={learnedTeamRules}
+              allRows={rows}
+              onDeleteLearnedLoc={async (id) => {
+                await supabase.from("regras_aprendidas_localizacao").delete().eq("id", id);
+                await loadLearnedRules();
+                toast.success("Regra aprendida removida");
+              }}
+              onDeleteLearnedTeam={async (id) => {
+                await supabase.from("regras_aprendidas_equipe").delete().eq("id", id);
+                await loadLearnedRules();
+                toast.success("Regra aprendida removida");
+              }}
+              onToggleLearnedLoc={async (id, ativo) => {
+                await supabase
+                  .from("regras_aprendidas_localizacao")
+                  .update({ ativo } as never)
+                  .eq("id", id);
+                await loadLearnedRules();
+              }}
+              onToggleLearnedTeam={async (id, ativo) => {
+                await supabase
+                  .from("regras_aprendidas_equipe")
+                  .update({ ativo } as never)
+                  .eq("id", id);
+                await loadLearnedRules();
+              }}
+            />
+          </div>
         </TabsContent>
       </Tabs>
       <PriorityConfigDialog
