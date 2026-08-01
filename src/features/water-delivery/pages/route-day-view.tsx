@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
+  Camera,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleSlash,
   Clock,
   Droplets,
   History,
+  Info,
+  MapPin,
   Navigation,
   PackageCheck,
   PenSquare,
@@ -48,6 +54,7 @@ import {
   rotaDoDia,
 } from "@/features/water-delivery/mutations/execucao";
 import { EntregaDialog } from "@/features/water-delivery/components/entrega-dialog";
+import { WaterScanner } from "@/features/water-delivery/components/water-scanner";
 import {
   FimRotaCard,
   InicioRotaCard,
