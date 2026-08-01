@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ExternalLink, Share2 } from "lucide-react";
+import { Camera, ExternalLink, Share2, ZoomIn, Maximize2, X, Download } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -50,9 +50,10 @@ export function EvidenceGallery() {
   const [status, setStatus] = useState(TODOS);
   const [tipo, setTipo] = useState(TODOS);
   const [selecao, setSelecao] = useState<Set<string>>(new Set());
-  // Item 24: a tela inicial nunca renderiza a galeria completa.
   const [limite, setLimite] = useState(PAGINA);
   const [compartilhar, setCompartilhar] = useState(false);
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+  const [comparando, setComparando] = useState<string[]>([]);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
   const visitas = useQuery({
@@ -322,12 +323,25 @@ export function EvidenceGallery() {
               key={f.chave}
               className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 transition-colors hover:border-primary/50"
             >
-              <div className="absolute left-2 top-2 z-10 rounded-md bg-background/80 p-1 backdrop-blur">
-                <Checkbox
-                  checked={selecao.has(f.chave)}
-                  onCheckedChange={() => alternar(f.chave)}
-                  aria-label={`Selecionar evidência de ${f.nome}`}
-                />
+              <div className="absolute left-2 top-2 z-10 flex gap-1">
+                <div className="rounded-md bg-background/80 p-1 backdrop-blur">
+                  <Checkbox
+                    checked={selecao.has(f.chave)}
+                    onCheckedChange={() => alternar(f.chave)}
+                    aria-label={`Selecionar evidência de ${f.nome}`}
+                  />
+                </div>
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  className="h-6 w-6 bg-background/80 backdrop-blur"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setZoomUrl(f.url);
+                  }}
+                >
+                  <ZoomIn className="h-3 w-3" />
+                </Button>
               </div>
               <a href={f.url} target="_blank" rel="noreferrer">
                 <div className="aspect-square overflow-hidden bg-muted/30">
@@ -375,6 +389,46 @@ export function EvidenceGallery() {
         itens={itens}
         escopoTipo="selecao"
       />
+
+      {zoomUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          onClick={() => setZoomUrl(null)}
+        >
+          <div className="relative max-h-full max-w-5xl overflow-hidden rounded-2xl bg-card">
+            <div className="absolute right-4 top-4 z-10 flex gap-2">
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(zoomUrl, '_blank');
+                }}
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoomUrl(null);
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <img 
+              src={zoomUrl} 
+              alt="Zoom" 
+              className="max-h-[85vh] w-auto object-contain" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
