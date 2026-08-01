@@ -707,11 +707,11 @@ function ListView({
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => setYear(year - 1)}>
+          <Button variant="outline" size="icon" onClick={() => setYear(year - 1)} aria-label="Anterior">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="min-w-14 text-center font-mono text-sm font-semibold">{year}</span>
-          <Button variant="outline" size="icon" onClick={() => setYear(year + 1)}>
+          <Button variant="outline" size="icon" onClick={() => setYear(year + 1)} aria-label="Próximo">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -1123,13 +1123,13 @@ function CalendarView({
       <GlassCard className="p-3 sm:p-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="icon" onClick={() => change(-1)} className="h-7 w-7">
+            <Button variant="outline" size="icon" onClick={() => change(-1)} className="h-7 w-7" aria-label="Anterior">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <p className="min-w-32 text-center text-sm font-semibold">
               {MONTHS_FULL[month]} <span className="text-muted-foreground">{year}</span>
             </p>
-            <Button variant="outline" size="icon" onClick={() => change(1)} className="h-7 w-7">
+            <Button variant="outline" size="icon" onClick={() => change(1)} className="h-7 w-7" aria-label="Próximo">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

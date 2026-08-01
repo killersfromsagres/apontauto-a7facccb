@@ -146,9 +146,16 @@ function AuthenticatedLayout() {
       <div className="flex min-h-dvh w-full app-bg">
         <AppSidebar />
         <SidebarInset className="flex min-h-dvh min-w-0 flex-1 flex-col bg-transparent">
+          <a href="#conteudo-principal" className="skip-link">
+            Pular para o conteúdo principal
+          </a>
           <AppHeader />
           <AccessGuard />
-          <main className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]">
+          <main
+            id="conteudo-principal"
+            tabIndex={-1}
+            className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
+          >
             {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
           <MobileTabBar />

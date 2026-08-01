@@ -128,6 +128,7 @@ export function WhatsAppConfigCard({ podeEditar }: { podeEditar: boolean }) {
               <Button
                 size="icon"
                 variant="ghost"
+                aria-label="Remover número"
                 onClick={() =>
                   void persistir({
                     ...cfg,

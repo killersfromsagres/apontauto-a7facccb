@@ -349,7 +349,7 @@ export function EvidenceGallery() {
                     e.preventDefault();
                     setZoomUrl(f.url);
                   }}
-                >
+                 aria-label="Aproximar">
                   <ZoomIn className="h-3 w-3" />
                 </Button>
               </div>
@@ -433,7 +433,7 @@ export function EvidenceGallery() {
                   e.stopPropagation();
                   window.open(zoomUrl, '_blank');
                 }}
-              >
+               aria-label="Baixar">
                 <Download className="h-5 w-5" />
               </Button>
               <Button 
@@ -444,7 +444,7 @@ export function EvidenceGallery() {
                   e.stopPropagation();
                   setZoomUrl(null);
                 }}
-              >
+               aria-label="Fechar">
                 <X className="h-5 w-5" />
               </Button>
             </div>

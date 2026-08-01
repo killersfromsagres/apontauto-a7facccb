@@ -47,7 +47,7 @@ export function OSPageHeader({
               size="icon" 
               className="h-8 w-8 -ml-2"
               onClick={() => navigate({ to: "/" })}
-            >
+             aria-label="Voltar">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex flex-col">
@@ -72,7 +72,7 @@ export function OSPageHeader({
             )}
             
             {onAdd && (
-              <Button size="icon" className="h-9 w-9 rounded-full shadow-lg" onClick={onAdd}>
+              <Button size="icon" className="h-9 w-9 rounded-full shadow-lg" onClick={onAdd} aria-label="Adicionar">
                 <Plus className="h-5 w-5" />
               </Button>
             )}

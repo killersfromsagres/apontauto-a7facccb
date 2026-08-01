@@ -2066,3 +2066,144 @@ button,
   -webkit-user-select: none;
   user-select: none;
 }
+
+/* ============================================================
+   ACESSIBILIDADE — WCAG 2.2 AA (Item 9)
+   ============================================================ */
+
+/* Skip link: primeiro item na ordem de tabulação */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -100px;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  transition: top 160ms ease;
+}
+.skip-link:focus-visible {
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+}
+
+/* Foco visível consistente (claro e escuro), sempre acima do vidro fosco */
+:where(a, button, [role="button"], [role="tab"], [role="menuitem"], [role="option"],
+  input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-ring, var(--color-primary));
+  outline-offset: 2px;
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+}
+/* Reforço em fundos translúcidos: halo de contraste */
+.glass :focus-visible,
+[class*="backdrop-blur"] :focus-visible {
+  box-shadow: 0 0 0 5px color-mix(in oklab, var(--color-background) 85%, transparent);
+}
+/* main recebe foco pelo skip link sem contorno permanente */
+main:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Alvos de toque mínimos de 44px em qualquer viewport (WCAG 2.2 — 2.5.8) */
+@media (pointer: coarse) {
+  button,
+  [role="button"],
+  a[role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  input[type="checkbox"],
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Exceções: elementos dentro de texto corrido não devem quebrar o fluxo */
+  p a,
+  li a,
+  .inline-target {
+    min-height: 0;
+    min-width: 0;
+  }
+}
+
+/* Não depender somente de cor: estados críticos ganham reforço tipográfico */
+[aria-invalid="true"] {
+  border-color: var(--color-destructive) !important;
+  box-shadow: 0 0 0 1px var(--color-destructive);
+}
+[data-slot="form-message"],
+[role="alert"] {
+  font-weight: 600;
+}
+
+/* Redução de movimento global (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .skip-link {
+    transition: none;
+  }
+}
+
+/* Zoom de 200% e reflow (WCAG 1.4.10): nada pode exigir rolagem horizontal */
+@media (max-width: 640px), (max-height: 480px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+  .container,
+  main > * {
+    max-width: 100%;
+  }
+}
+
+/* Landscape em celulares: cabeçalhos e barras não podem consumir a tela */
+@media (orientation: landscape) and (max-height: 480px) {
+  [data-mobile-tabbar] {
+    padding-block: 0.25rem;
+  }
+  [data-mobile-tabbar] span {
+    display: none;
+  }
+  .sticky-header,
+  header.sticky {
+    position: static;
+  }
+}
+
+/* Alto contraste / forced-colors (Windows) */
+@media (forced-colors: active) {
+  * {
+    backdrop-filter: none !important;
+  }
+  :focus-visible {
+    outline: 3px solid Highlight;
+  }
+  button,
+  [role="button"] {
+    border: 1px solid ButtonBorder;
+  }
+}
+
+/* Utilitário para conteúdo somente de leitor de tela */
+.sr-only-focusable:not(:focus):not(:focus-within) {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
