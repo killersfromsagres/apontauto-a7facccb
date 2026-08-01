@@ -220,7 +220,7 @@ function BackorderPage() {
   const [rows, setRows] = useState<BOSRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("tabela");
-  // O Backorder trabalha, por padrão, apenas com o ano corrente.
+  // Exibe a planilha inteira por padrão; o ano continua disponível como filtro.
   const anoAtual = new Date().getFullYear();
   const [ano, setAno] = useState<string>("todos");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
@@ -266,12 +266,9 @@ function BackorderPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    // Carga paginada e paralela: bases com dezenas de milhares de OS não cabem
-    // em uma única resposta do PostgREST. A primeira página já é renderizada e
-    // o restante chega em lotes concorrentes, sem travar a tela.
-    // Páginas maiores = menos consultas com OFFSET profundo (o custo cresce com
-    // o offset), mantendo a mesma ordenação e o mesmo conjunto de dados.
-    const PAGE = 5000;
+    // A API entrega no máximo 1.000 registros por resposta. Uma página maior
+    // fazia a carga parar nos primeiros 1.000 mesmo quando havia mais OS.
+    const PAGE = 1000;
     const CONCURRENCY = 4;
     const MAX = 1_000_000;
 
@@ -279,8 +276,9 @@ function BackorderPage() {
       const { data, error } = await supabase
         .from("backorder_os")
         .select("*")
-        .order("finalizado", { ascending: true }).order("os", { ascending: true })
+        .order("finalizado", { ascending: true })
         .order("data_solicitacao", { ascending: true })
+        .order("os", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error) throw error;
       return (data as BOSRow[]) ?? [];
@@ -609,6 +607,7 @@ function BackorderPage() {
       const CHUNK = 1000;
       let novas = 0;
       let atualizadas = 0;
+      let processadas = 0;
       for (let i = 0; i < rows.length; i += CHUNK) {
         const chunk = rows.slice(i, i + CHUNK);
         const { data, error } = await supabase.rpc("backorder_bulk_upsert", {
@@ -616,11 +615,27 @@ function BackorderPage() {
         });
         if (error) throw error;
         const res = data as any;
+        const totalLote = Number(res?.total ?? 0);
+        if (totalLote !== chunk.length) {
+          throw new Error(
+            `Importação interrompida no lote ${Math.floor(i / CHUNK) + 1}: ` +
+              `${chunk.length.toLocaleString("pt-BR")} OS enviadas e ` +
+              `${totalLote.toLocaleString("pt-BR")} processadas. Verifique números de OS vazios ou repetidos.`,
+          );
+        }
+        processadas += totalLote;
         novas += Number(res?.novas ?? 0);
         atualizadas += Number(res?.atualizadas ?? 0);
         toast.loading(
           `Enviando… ${Math.min(i + CHUNK, rows.length).toLocaleString("pt-BR")} de ${rows.length.toLocaleString("pt-BR")}`,
           { id: tid },
+        );
+      }
+
+      if (processadas !== rows.length) {
+        throw new Error(
+          `Importação incompleta: ${rows.length.toLocaleString("pt-BR")} OS lidas e ` +
+            `${processadas.toLocaleString("pt-BR")} gravadas.`,
         );
       }
 
@@ -636,7 +651,8 @@ function BackorderPage() {
       }
 
       toast.success(
-        `Importado: ${novas} nova(s), ${atualizadas} atualizada(s). ` +
+        `Importação conferida: ${processadas.toLocaleString("pt-BR")} OS gravadas ` +
+          `(${novas.toLocaleString("pt-BR")} novas e ${atualizadas.toLocaleString("pt-BR")} atualizadas). ` +
           `${result.abertas} em aberto, ${result.concluidas} concluída(s) e ${result.canceladas} cancelada(s) separadas automaticamente.`,
         { id: tid, duration: 8000 },
       );
