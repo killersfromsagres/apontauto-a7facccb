@@ -176,7 +176,11 @@ interface BOSRow {
   outros: string;
   criticidade?: string;
   finalizado: boolean;
+  cancelado?: boolean;
+  status_origem?: string;
+  data_conclusao?: string | null;
   data_finalizacao: string | null;
+
   is_prioridade?: boolean;
   motivo_prioridade?: string | null;
   prioridade_nivel?: number;
