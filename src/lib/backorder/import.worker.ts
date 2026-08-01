@@ -78,6 +78,22 @@ ctx.onmessage = async (ev: MessageEvent<ImportRunMessage>) => {
     const assets = msg.assetsMap;
     const { rows: parsed, embeddedAssets } = await readBackorderWorkbook(msg.file, assets);
 
+    // Mesmo motor de resolução da tela "Inteligência de Ativos → Preencher
+    // localização": catálogo vigente + ativos embutidos no próprio arquivo,
+    // com hierarquia (Prédio → Andar → Ambiente) e fallback LEFT(5)/LEFT(7).
+    const graph = buildAssetGraph([
+      ...(msg.assetRecords ?? []),
+      ...embeddedAssets.map((a) => ({
+        code: a.ativo,
+        name: a.denominacao,
+        level: a.nivel,
+        parentCode: a.codigo_pai,
+        parentName: a.descricao_pai,
+        businessUnit: a.unidade_negocio,
+      })),
+    ]);
+    const hasGraph = graph.byCode.size > 0;
+
     const learnedIdx = buildLearnedIndex(msg.learnedLoc, msg.learnedTeam);
     const overrideMap = new Map(msg.overrides);
 
@@ -95,12 +111,25 @@ ctx.onmessage = async (ev: MessageEvent<ImportRunMessage>) => {
       const atividadeFinal: Categoria = override ?? (textResult.equipe as Categoria);
       const equipeFinal = CATEGORIA_TO_EQUIPE[atividadeFinal];
 
-      const predio = r.predio || applied.predio || "";
-      const andar = r.andar || applied.andar || "";
-      const espaco = r.espaco || applied.espaco || "";
+      const res = hasGraph && r.ativo ? resolveAsset(graph, r.ativo) : null;
+      const catalogo = res && (res.predio || res.andar || res.ambiente) ? res : null;
+
+      const predio = catalogo?.predio || applied.predio || r.predio || "";
+      const andar = catalogo?.andar || applied.andar || r.andar || "";
+      const espaco = catalogo?.ambiente || applied.espaco || r.espaco || "";
 
       if (r.cancelado) canceladas++;
       else if (r.finalizado) concluidas++;
+
+      const origemLocal = catalogo
+        ? catalogo.method === "legacy"
+          ? "catalogo_legado"
+          : "catalogo_ativos"
+        : applied.origem_predio_andar_espaco !== "pendente"
+          ? applied.origem_predio_andar_espaco
+          : predio || andar || espaco
+            ? "planilha"
+            : "pendente";
 
       out.push({
         os: r.os,
@@ -117,15 +146,9 @@ ctx.onmessage = async (ev: MessageEvent<ImportRunMessage>) => {
         criticidade: r.criticidade ?? "",
         revisao_manual: r.finalizado
           ? false
-          : (applied.revisao_manual && !override && !predio && !andar && !espaco) ||
-            (!override && textResult.ambiguo),
-        origem_predio_andar_espaco: r.predio
-          ? "planilha"
-          : applied.origem_predio_andar_espaco !== "pendente"
-            ? applied.origem_predio_andar_espaco
-            : predio || andar || espaco
-              ? "arvore_ativos"
-              : "pendente",
+          : (!predio && !andar && !espaco && !override) || (!override && textResult.ambiguo),
+        origem_predio_andar_espaco: origemLocal,
+
         origem_equipe: override ? "regra_aprendida" : textResult.ambiguo ? "pendente" : "regra_local",
         status_origem: r.status_origem,
         finalizado: r.finalizado,
