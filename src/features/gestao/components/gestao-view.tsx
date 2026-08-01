@@ -80,6 +80,7 @@ import {
   STATUS_CANONICOS,
   WIDGETS,
   type GestaoFiltros,
+  type OsConsolidada,
 } from "../types";
 import { derivarAtencao, type ItemAtencao } from "../lib/atencao";
 import { gerarInsights } from "../lib/insights";
