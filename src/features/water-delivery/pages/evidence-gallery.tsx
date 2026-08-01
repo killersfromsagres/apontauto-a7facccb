@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, ExternalLink, Share2, ZoomIn, Maximize2, X, Download } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,7 @@ export function EvidenceGallery() {
           status: v.status,
           tipo: "entrega",
           rotaId: v.rota_id ?? null,
+          origem: 'imgbb'
         });
       }
     }
