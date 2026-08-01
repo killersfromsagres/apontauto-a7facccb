@@ -135,7 +135,7 @@ export function WhatsAppConfigCard({ podeEditar }: { podeEditar: boolean }) {
                     numeros: cfg.numeros.filter((x) => x.numero !== n.numero),
                   })
                 }
-               aria-label="Excluir">
+              >
                 <Trash2 className="h-4 w-4" />
               </Button>
             ) : null}
