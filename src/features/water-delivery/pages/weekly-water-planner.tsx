@@ -455,107 +455,99 @@ export function WeeklyWaterPlanner() {
                             </Button>
                             <Button
                               variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            aria-label="Descer"
-                            disabled={idx === lista.length - 1}
-                            onClick={() => mover(d.dia, l.id, 1)}
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        
-                        <Drawer>
-                          <DrawerTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label="Descer"
+                              disabled={idx === lista.length - 1}
+                              onClick={() => mover(d.dia, l.id, 1)}
+                            >
+                              <ChevronDown className="h-4 w-4" />
                             </Button>
-                          </DrawerTrigger>
-                          <DrawerContent>
-                            <DrawerHeader>
-                              <DrawerTitle>Opções da Parada</DrawerTitle>
-                            </DrawerHeader>
-                            <div className="p-4 space-y-3">
-                              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
-                                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                  <Info className="h-5 w-5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold truncate">{p ? pontoLabel(p) : '—'}</p>
-                                  <p className="text-xs text-muted-foreground">{l.bags} bag(s) · {TURNO_LABEL[l.turno]}</p>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  className="h-12 flex flex-col gap-0.5"
-                                  onClick={() => mover(d.dia, l.id, -1)}
-                                  disabled={idx === 0}
-                                >
-                                  <ChevronUp className="h-4 w-4" />
-                                  <span className="text-[10px] uppercase font-bold">Subir</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <ExcecaoDialog
+                              pontoId={l.ponto_id}
+                              data={dataDia}
+                              rotulo={p ? pontoLabel(p) : ""}
+                              onDone={invalidar}
+                            />
+                            
+                            <Drawer>
+                              <DrawerTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
                                 </Button>
-                                <Button 
-                                  variant="outline" 
-                                  className="h-12 flex flex-col gap-0.5"
-                                  onClick={() => mover(d.dia, l.id, 1)}
-                                  disabled={idx === lista.length - 1}
-                                >
-                                  <ChevronDown className="h-4 w-4" />
-                                  <span className="text-[10px] uppercase font-bold">Descer</span>
-                                </Button>
-                              </div>
-
-                              <div className="space-y-2 pt-2">
-                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Mover para outro dia</p>
-                                <div className="grid grid-cols-4 gap-2">
-                                  {DIAS.map(diaOption => (
-                                    <Button
-                                      key={diaOption.dia}
-                                      variant={l.dia_semana === diaOption.dia ? "default" : "secondary"}
-                                      className="h-10 text-xs"
-                                      onClick={() => editar.mutate({ id: l.id, patch: { dia_semana: diaOption.dia } })}
+                              </DrawerTrigger>
+                              <DrawerContent>
+                                <DrawerHeader>
+                                  <DrawerTitle>Opções da Parada</DrawerTitle>
+                                </DrawerHeader>
+                                <div className="p-4 space-y-3 pb-8">
+                                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-xl">
+                                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                      <Info className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-bold truncate">{p ? pontoLabel(p) : '—'}</p>
+                                      <p className="text-xs text-muted-foreground">{l.bags} bag(s) · {TURNO_LABEL[l.turno]}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      className="h-12 flex flex-col gap-0.5"
+                                      onClick={() => mover(d.dia, l.id, -1)}
+                                      disabled={idx === 0}
                                     >
-                                      {diaOption.label.slice(0, 3)}
+                                      <ChevronUp className="h-4 w-4" />
+                                      <span className="text-[10px] uppercase font-bold">Subir</span>
                                     </Button>
-                                  ))}
+                                    <Button 
+                                      variant="outline" 
+                                      className="h-12 flex flex-col gap-0.5"
+                                      onClick={() => mover(d.dia, l.id, 1)}
+                                      disabled={idx === lista.length - 1}
+                                    >
+                                      <ChevronDown className="h-4 w-4" />
+                                      <span className="text-[10px] uppercase font-bold">Descer</span>
+                                    </Button>
+                                  </div>
+
+                                  <div className="space-y-2 pt-2">
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Mover para outro dia</p>
+                                    <div className="grid grid-cols-4 gap-2">
+                                      {DIAS.map(diaOption => (
+                                        <Button
+                                          key={diaOption.dia}
+                                          variant={l.dia_semana === diaOption.dia ? "default" : "secondary"}
+                                          className="h-10 text-xs"
+                                          onClick={() => {
+                                            editar.mutate({ id: l.id, patch: { dia_semana: diaOption.dia } });
+                                          }}
+                                        >
+                                          {diaOption.label.slice(0, 3)}
+                                        </Button>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <Button 
+                                    variant="destructive" 
+                                    className="w-full h-12 mt-4"
+                                    onClick={() => {
+                                      if (confirm("Remover esta parada da programação?")) {
+                                        excluir.mutate(l.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Remover Parada
+                                  </Button>
                                 </div>
-                              </div>
-
-                              <Button 
-                                variant="destructive" 
-                                className="w-full h-12 mt-4"
-                                onClick={() => {
-                                  if (confirm("Remover esta parada da programação?")) {
-                                    excluir.mutate(l.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" /> Remover Parada
-                              </Button>
-                            </div>
-                          </DrawerContent>
-                        </Drawer>
-
-                        </div>
-                      )}
-                      {gestor && (
-                        <ExcecaoDialog
-                          pontoId={l.ponto_id}
-                          data={dataDia}
-                            rotulo={p ? pontoLabel(p) : ""}
-                            onDone={invalidar}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="ml-auto h-8 w-8"
-                            aria-label="Remover"
-                            onClick={() => excluir.mutate(l.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-rose-300" />
-                          </Button>
+                              </DrawerContent>
+                            </Drawer>
+                          </div>
                         </div>
                       )}
                     </div>
