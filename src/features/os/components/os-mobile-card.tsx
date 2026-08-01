@@ -13,6 +13,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,21 +80,21 @@ export function OSMobileCard({ os, onAction, className, style }: OSMobileCardPro
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2">
+            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()}>
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => onAction?.("start", os)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("start", os); }}>
               <CheckCircle2 className="mr-2 h-4 w-4" /> Iniciar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction?.("photo", os)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("photo", os); }}>
               <Camera className="mr-2 h-4 w-4" /> Adicionar Foto
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction?.("parts", os)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("parts", os); }}>
               <Package className="mr-2 h-4 w-4" /> Registrar Peça
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onAction?.("history", os)}>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("history", os); }}>
               <History className="mr-2 h-4 w-4" /> Abrir Histórico
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -12,6 +12,7 @@ function GlassCardImpl({
   delay = 0,
   variant = "surface",
   style: styleProp,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
