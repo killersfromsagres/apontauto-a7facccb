@@ -68,7 +68,7 @@ import {
   addDias,
   type ProgramacaoLinha,
 } from "@/features/water-delivery/queries/programacao";
-import { DIAS } from "@/features/water-delivery/importer/reader";
+import { DIAS } from "@/features/water-delivery/importer/constants";
 // Item 24 — o assistente carrega a biblioteca de planilhas; só é baixado
 // quando um gestor realmente abre a tela de programação.
 const ImportadorWizard = lazy(() =>

@@ -55,7 +55,7 @@ import {
   detectarDuplicidades,
   normalizarCodigo,
 } from "@/features/water-delivery/schemas/normalize";
-import { DIA_LABEL } from "@/features/water-delivery/importer/reader";
+import { DIA_LABEL } from "@/features/water-delivery/importer/constants";
 import { cn } from "@/lib/utils";
 
 type Form = Partial<Ponto>;
