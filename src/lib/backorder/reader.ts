@@ -272,16 +272,21 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    const status = pick(
-      r,
-      "STATUS RESUMIDO",
-      "STATUS",
-      "SITUAÇÃO",
-      "SITUACAO",
-      "STATUS DA OS",
-      "STATUS OS",
-      "ESTADO",
-    );
+    // Prioridade absoluta para a coluna G (estado da OS na planilha oficial).
+    const statusG = statusHeaderG ? String(r[statusHeaderG] ?? "").trim() : "";
+    const status =
+      statusG ||
+      pick(
+        r,
+        "STATUS RESUMIDO",
+        "STATUS",
+        "SITUAÇÃO",
+        "SITUACAO",
+        "STATUS DA OS",
+        "STATUS OS",
+        "ESTADO",
+      );
+
     const conclusao = pick(
       r,
       "DATA/HORA CONCLUSÃO",
