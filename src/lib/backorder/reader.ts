@@ -17,11 +17,21 @@ export interface BackorderRow {
   outros: string; // Solicitante (Denominação do Solicitante)
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
+  /** OS cancelada / recusada na origem. */
+  cancelado: boolean;
+  /** Data de conclusão/cancelamento vinda da planilha (ISO) quando existir. */
+  data_conclusao: string | null;
   status_origem: string;
   /** true quando o ativo não foi encontrado na base OU a classificação
    *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
   revisao_manual: boolean;
 }
+
+/** Status da planilha que indicam OS encerrada. */
+const RE_CONCLUIDO = /FINAL|CONCLU|ENCERR|FECHAD|EXECUTAD|ATENDID|RESOLVID|BAIXAD/;
+/** Status da planilha que indicam OS cancelada / recusada. */
+const RE_CANCELADO = /CANCEL|RECUSAD|REPROVAD|ANULAD|INVALID|DESCARTAD/;
+
 
 const norm = (v: unknown) =>
   String(v ?? "")
