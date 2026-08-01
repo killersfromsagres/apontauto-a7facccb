@@ -39,6 +39,10 @@ import {
   type LucideIcon,
   Image as ImageIcon,
   Crown,
+  Bell,
+  Search,
+  Star,
+  PlusCircle,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -62,6 +66,36 @@ export type MenuSection =
   | { kind: "group"; key: string; title: string; icon: LucideIcon; items: MenuItem[] };
 
 export const sections: MenuSection[] = [
+  {
+    kind: "group",
+    key: "acoes-rapidas-grp",
+    title: "Ações e Atalhos",
+    icon: PlusCircle,
+    items: [
+      {
+        key: "notificacoes",
+        title: "Notificações",
+        short: "Avisos",
+        url: "/notificacoes",
+        icon: Bell,
+        keywords: ["alertas", "avisos", "comunicados"],
+      },
+      {
+        key: "favoritos",
+        title: "Meus Favoritos",
+        short: "Favoritos",
+        url: "#",
+        icon: Star,
+      },
+      {
+        key: "pesquisa",
+        title: "Busca Global",
+        short: "Busca",
+        url: "#",
+        icon: Search,
+      },
+    ],
+  },
   {
     kind: "group",
     key: "visao-geral-grp",
@@ -585,6 +619,9 @@ export function canSeeMenuItem(
   if (isRestrictedModule(key)) {
     return isAdmin || (allowed?.includes(key) ?? false);
   }
+  if (key === "pesquisa") return true;
+  if (key === "favoritos") return true;
+  if (key === "notificacoes") return true;
   if (key === "imagens") return isAdmin;
   if (key === "configuracoes") return isAdmin;
   if (key === "refrigeracao-gestor") return isAdmin;
