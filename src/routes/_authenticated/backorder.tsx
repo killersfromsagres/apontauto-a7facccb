@@ -1168,10 +1168,12 @@ function BackorderPage() {
       finalizado: false,
       cancelado: false,
       data_conclusao: null,
-      status_origem: "",
+      status_origem: r.status_origem ?? "",
+      status_cat: toStatusCat(r.status_origem ?? ""),
+      equipe_hint: "",
       revisao_manual: false,
-
     }));
+
     const blob = await generateBackorderExport({
       titulo: "DEMARCHI",
       rows: rowsExp,
