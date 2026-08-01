@@ -38,6 +38,7 @@ import {
   Megaphone,
   type LucideIcon,
   Image as ImageIcon,
+  Crown,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -74,6 +75,14 @@ export const sections: MenuSection[] = [
         url: "/",
         icon: Gauge,
         keywords: ["home", "início", "kpi"],
+      },
+      {
+        key: "gestao-executiva",
+        title: "Centro de Gestão",
+        short: "Gestão",
+        url: "/gestao",
+        icon: Crown,
+        keywords: ["executivo", "gestor", "indicadores", "riscos", "plano de ação", "consolidado"],
       },
     ],
   },
@@ -528,6 +537,7 @@ const RESTRICTED_KEYS = [
   "auditoria",
   "observabilidade",
   "confiabilidade",
+  "gestao-executiva",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
