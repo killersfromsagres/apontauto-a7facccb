@@ -16,6 +16,8 @@ import {
   type LearnedTeam,
 } from "./learned";
 import { resolveAtivoTree, type AssetsMap } from "./assets";
+import { buildAssetGraph, resolveAsset } from "@/features/assets/services/asset-resolver";
+import type { AssetRecord } from "@/features/assets/types";
 
 export interface ImportPayloadRow {
   os: string;
@@ -43,11 +45,14 @@ export interface ImportRunMessage {
   type: "run";
   file: File;
   assetsMap: AssetsMap;
+  /** Catálogo de ativos vigente — mesmo motor da tela "Preencher localização". */
+  assetRecords?: AssetRecord[];
   dynamicRules: DynamicRule[] | null;
   learnedLoc: LearnedLocation[];
   learnedTeam: LearnedTeam[];
   overrides: Array<[string, string]>;
 }
+
 
 export type ImportOutMessage =
   | { type: "progress"; phase: "lendo" | "processando"; done: number; total: number }
