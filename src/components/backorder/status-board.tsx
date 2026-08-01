@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/glass-card";
+import { useIncrementalList } from "@/hooks/use-incremental-list";
 import { STATUS_CATS, STATUS_COLOR, STATUS_LABEL, type StatusCat } from "@/lib/backorder/status";
 
 export interface StatusBoardRow {
