@@ -122,6 +122,8 @@ import {
   type Categoria,
   type DynamicRule,
 } from "@/lib/backorder/classify";
+import { AvaliacaoEmailCard } from "@/components/backorder/avaliacao-email-card";
+import { StatusBoard } from "@/components/backorder/status-board";
 import {
   STATUS_CATS,
   STATUS_LABEL,
@@ -187,6 +189,7 @@ interface BOSRow {
   finalizado: boolean;
   cancelado?: boolean;
   status_origem?: string;
+  status_cat?: StatusCat;
   data_conclusao?: string | null;
   data_finalizacao: string | null;
 
@@ -217,6 +220,9 @@ function BackorderPage() {
   const [rows, setRows] = useState<BOSRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("tabela");
+  // O Backorder trabalha, por padrão, apenas com o ano corrente.
+  const anoAtual = new Date().getFullYear();
+  const [ano, setAno] = useState<string>(String(anoAtual));
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("__all__");
@@ -369,12 +375,83 @@ function BackorderPage() {
     void refresh();
   }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
-  const abertas = useMemo(() => rows.filter((r) => !r.finalizado && !r.cancelado), [rows]);
-  const finalizadas = useMemo(
-    () => rows.filter((r) => r.finalizado && !r.cancelado),
-    [rows],
+  const catOf = useCallback(
+    (r: BOSRow): StatusCat => (r.status_cat as StatusCat) ?? toStatusCat(r.status_origem ?? ""),
+    [],
   );
-  const cancelados = useMemo(() => rows.filter((r) => !!r.cancelado), [rows]);
+
+  const anosDisponiveis = useMemo(() => {
+    const set = new Set<number>();
+    for (const r of rows) {
+      const y = new Date(r.data_solicitacao).getFullYear();
+      if (!Number.isNaN(y)) set.add(y);
+    }
+    set.add(anoAtual);
+    return Array.from(set).sort((a, b) => b - a);
+  }, [rows, anoAtual]);
+
+  /** Base do módulo: por padrão só o ano corrente. */
+  const rowsAno = useMemo(
+    () =>
+      ano === "todos"
+        ? rows
+        : rows.filter((r) => String(new Date(r.data_solicitacao).getFullYear()) === ano),
+    [rows, ano],
+  );
+
+  const porStatus = useMemo(() => {
+    const m = new Map<StatusCat, BOSRow[]>();
+    for (const r of rowsAno) {
+      const c = catOf(r);
+      const arr = m.get(c);
+      if (arr) arr.push(r);
+      else m.set(c, [r]);
+    }
+    return m;
+  }, [rowsAno, catOf]);
+
+  const statusRows = useMemo(
+    () =>
+      rowsAno.map((r) => ({
+        os: r.os,
+        nome: r.nome,
+        equipe: r.equipe,
+        predio: r.predio,
+        andar: r.andar,
+        espaco: r.espaco,
+        outros: r.outros,
+        data_solicitacao: r.data_solicitacao,
+        status_origem: r.status_origem,
+        statusCat: catOf(r),
+      })),
+    [rowsAno, catOf],
+  );
+
+  const abertas = useMemo(
+    () => rowsAno.filter((r) => isStatusAberto(catOf(r)) && !r.finalizado && !r.cancelado),
+    [rowsAno, catOf],
+  );
+  const finalizadas = useMemo(
+    () => rowsAno.filter((r) => ["concluido", "fechado", "validado"].includes(catOf(r))),
+    [rowsAno, catOf],
+  );
+  const cancelados = useMemo(
+    () => rowsAno.filter((r) => ["cancelado", "nao_executada"].includes(catOf(r))),
+    [rowsAno, catOf],
+  );
+  const aguardandoAprovacao = useMemo(
+    () => rowsAno.filter((r) => catOf(r) === "aguardando_aprovacao"),
+    [rowsAno, catOf],
+  );
+  const avaliacaoRows = useMemo(
+    () =>
+      [...finalizadas, ...aguardandoAprovacao].map((r) => ({
+        os: r.os,
+        solicitante: r.outros,
+        statusCat: catOf(r) as string,
+      })),
+    [finalizadas, aguardandoAprovacao, catOf],
+  );
 
   const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
 
@@ -1587,40 +1664,67 @@ function BackorderPage() {
       }
     >
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="mb-4 flex flex-wrap">
-          <TabsTrigger value="tabela">
-            <PackageX className="mr-1.5 h-3.5 w-3.5" /> Em aberto
-            <Badge variant="secondary" className="ml-2">
-              {abertas.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="backorder">
-            <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Backorder
-            <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="finalizados">
-            Concluídos{" "}
-            <Badge variant="secondary" className="ml-2">
-              {finalizadas.length}
-            </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="cancelados">
-            Cancelados{" "}
-            <Badge variant="secondary" className="ml-2">
-              {cancelados.length}
-            </Badge>
-          </TabsTrigger>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Select value={ano} onValueChange={setAno}>
+            <SelectTrigger className="h-11 w-full sm:w-44">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {anosDisponiveis.map((a) => (
+                <SelectItem key={a} value={String(a)}>
+                  {a === anoAtual ? `${a} (ano atual)` : a}
+                </SelectItem>
+              ))}
+              <SelectItem value="todos">Todos os anos</SelectItem>
+            </SelectContent>
+          </Select>
+          <Badge variant="outline" className="h-9 px-3">
+            {rowsAno.length.toLocaleString("pt-BR")} OS na base
+          </Badge>
+        </div>
 
-          <TabsTrigger value="dashboard">
-            <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="revisao">
-            <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Revisão
-            {revisaoRows.length > 0 && (
-              <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-1">
+          <TabsList className="flex w-max gap-1">
+            <TabsTrigger value="tabela" className="min-h-11">
+              <PackageX className="mr-1.5 h-3.5 w-3.5" /> Em aberto
+              <Badge variant="secondary" className="ml-2">
+                {abertas.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="backorder" className="min-h-11">
+              <ClipboardList className="mr-1.5 h-3.5 w-3.5" /> Backorder
+              <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="finalizados" className="min-h-11">
+              Concluídos
+              <Badge variant="secondary" className="ml-2">
+                {finalizadas.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="aprovacao" className="min-h-11">
+              Aguardando aprovação
+              <Badge className="ml-2 bg-amber-500 text-white">{aguardandoAprovacao.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="cancelados" className="min-h-11">
+              Cancelados
+              <Badge variant="secondary" className="ml-2">
+                {cancelados.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="status" className="min-h-11">
+              Todos os status
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="min-h-11">
+              <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="revisao" className="min-h-11">
+              <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Revisão
+              {revisaoRows.length > 0 && (
+                <Badge className="ml-2 bg-amber-500 text-white">{revisaoRows.length}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="tabela">
           <TableView
@@ -1647,12 +1751,31 @@ function BackorderPage() {
           />
         </TabsContent>
 
-        <TabsContent value="finalizados">
+        <TabsContent value="finalizados" className="space-y-4">
+          <AvaliacaoEmailCard rows={avaliacaoRows} ano={ano === "todos" ? "todos os anos" : ano} />
           <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
+        </TabsContent>
+
+        <TabsContent value="aprovacao" className="space-y-4">
+          <AvaliacaoEmailCard
+            rows={avaliacaoRows.filter((r) => r.statusCat === "aguardando_aprovacao")}
+            ano={ano === "todos" ? "todos os anos" : ano}
+          />
+          <FinalizadosView
+            rows={aguardandoAprovacao}
+            onReabrir={(r) => toggleFinalizado(r, false)}
+          />
         </TabsContent>
 
         <TabsContent value="cancelados">
           <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
+        </TabsContent>
+
+        <TabsContent value="status">
+          <StatusBoard
+            rows={statusRows}
+            onSelect={(os) => setSelectedBackorder(rows.find((r) => r.os === os) ?? null)}
+          />
         </TabsContent>
 
 
