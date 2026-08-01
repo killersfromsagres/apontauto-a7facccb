@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { lazy, Suspense, useMemo, useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -92,6 +93,7 @@ const ImportadorWizard = lazy(() =>
 type Visao = "calendario" | "tabela" | "cards";
 
 export function WeeklyWaterPlanner() {
+  const { confirmar, dialogo } = useConfirm();
   const qc = useQueryClient();
   const gestor = useCanAccessModule("abastecimento", "update").allowed;
   const isMobile = useIsMobile();
@@ -202,6 +204,7 @@ export function WeeklyWaterPlanner() {
 
   return (
     <div className="space-y-4">
+      {dialogo}
       {/* Filtros e visões */}
       <GlassCard className="space-y-3 p-3 sm:p-4">
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
@@ -560,10 +563,14 @@ export function WeeklyWaterPlanner() {
                                   <Button
                                     variant="destructive"
                                     className="w-full h-12 mt-4"
-                                    onClick={() => {
-                                      if (confirm("Remover esta parada da programação?")) {
-                                        excluir.mutate(l.id);
-                                      }
+                                    onClick={async () => {
+                                      const ok = await confirmar({
+                                        titulo: "Remover parada",
+                                        descricao: "Remover esta parada da programação?",
+                                        confirmar: "Remover",
+                                        destrutivo: true,
+                                      });
+                                      if (ok) excluir.mutate(l.id);
                                     }}
                                   >
                                     <Trash2 className="mr-2 h-4 w-4" /> Remover Parada

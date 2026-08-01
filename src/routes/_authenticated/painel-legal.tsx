@@ -1,3 +1,4 @@
+import { useConfirm } from "@/components/ui/use-confirm";
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -244,6 +245,7 @@ function useMarkedLegal() {
 /* -------------------------------------------------------------------------- */
 
 function PainelLegalPage() {
+  const { confirmar, dialogo } = useConfirm();
   const qc = useQueryClient();
   const [view, setView] = useState<"lista" | "calendario">("lista");
   const [year, setYear] = useState(new Date().getFullYear());
@@ -312,7 +314,13 @@ function PainelLegalPage() {
   };
 
   const handleDelete = async (it: LegalItem) => {
-    if (!confirm(`Excluir "${it.titulo}"?`)) return;
+    const ok = await confirmar({
+      titulo: "Excluir item",
+      descricao: `Excluir "${it.titulo}"?`,
+      confirmar: "Excluir",
+      destrutivo: true,
+    });
+    if (!ok) return;
     try {
       await deleteLegalItem(it.id);
       toast.success("Item excluído.");
@@ -349,6 +357,7 @@ function PainelLegalPage() {
       title="Painel de Itens Legais"
       description="Controle de tarefas legais e recorrentes, execução mensal e certificados."
     >
+      {dialogo}
       {/* Cabeçalho de ações — mais compacto */}
       <div className="mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 items-center gap-2">
