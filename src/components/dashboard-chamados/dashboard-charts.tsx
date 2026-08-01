@@ -147,7 +147,9 @@ export default function DashboardCharts({ stats }: { stats: DashStats }) {
             <Users className="h-4 w-4 text-primary" strokeWidth={1.75} />
             <h3 className="text-base font-semibold">OS por equipe</h3>
           </div>
-          <span className="text-xs text-muted-foreground">Concluídas vs. canceladas vs. abertas</span>
+          <span className="text-xs text-muted-foreground">
+            Concluídas vs. canceladas vs. abertas
+          </span>
         </div>
         <div className="h-72 w-full">
           <ResponsiveContainer>

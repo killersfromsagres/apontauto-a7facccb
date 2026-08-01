@@ -126,7 +126,6 @@ export async function fetchBackorderRows(): Promise<ChamadoRow[]> {
   return raw.map(mapRowToChamado);
 }
 
-
 export async function fetchBackorderStatuses(
   osList: string[],
 ): Promise<Map<string, BackorderStatus>> {

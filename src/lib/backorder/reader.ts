@@ -2,6 +2,7 @@
 
 import { classifyBackorder, CATEGORIA_TO_EQUIPE, type Categoria } from "./classify";
 import { resolveAtivoTree, type AssetsMap } from "./assets";
+import { toStatusCat, isCancelado, isConcluido, type StatusCat } from "./status";
 
 export interface BackorderRow {
   os: string;
@@ -12,9 +13,11 @@ export interface BackorderRow {
   espaco: string;
   atividade: Categoria;
   equipe: string;
+  /** Texto da COLUNA C — sugestão de equipe vinda da planilha (nem sempre correta). */
+  equipe_hint: string;
   termino_sla: string | null;
   data_solicitacao: string; // ISO
-  outros: string; // Solicitante (Denominação do Solicitante)
+  outros: string; // Solicitante (COLUNA E)
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   /** OS cancelada / recusada na origem. */
@@ -22,16 +25,12 @@ export interface BackorderRow {
   /** Data de conclusão/cancelamento vinda da planilha (ISO) quando existir. */
   data_conclusao: string | null;
   status_origem: string;
+  /** Categoria normalizada do status da COLUNA G. */
+  status_cat: StatusCat;
   /** true quando o ativo não foi encontrado na base OU a classificação
    *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
   revisao_manual: boolean;
 }
-
-/** Status da planilha que indicam OS encerrada. */
-const RE_CONCLUIDO = /FINAL|CONCLU|ENCERR|FECHAD|EXECUTAD|ATENDID|RESOLVID|BAIXAD/;
-/** Status da planilha que indicam OS cancelada / recusada. */
-const RE_CANCELADO = /CANCEL|RECUSAD|REPROVAD|ANULAD|INVALID|DESCARTAD/;
-
 
 const norm = (v: unknown) =>
   String(v ?? "")
@@ -216,23 +215,36 @@ export async function readBackorderWorkbook(
 
   const sheetName = pickBackorderSheet(wb);
   const sheet = wb.Sheets[sheetName];
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
-  // A planilha oficial traz o estado da OS (Concluída / Cancelada / etc.) na
-  // COLUNA G. Guardamos o nome do cabeçalho dessa coluna para lê-la
-  // diretamente, sem depender de o título ser "Status".
-  const statusHeaderG = (() => {
-    try {
-      const ref = sheet?.["!ref"];
-      if (!ref) return "";
-      const range = XLSX.utils.decode_range(ref);
-      const addr = XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + 6 });
-      const cell = sheet[addr];
-      return cell ? String(cell.w ?? cell.v ?? "").trim() : "";
-    } catch {
-      return "";
-    }
-  })();
+  // Leitura posicional: a planilha oficial usa colunas fixas —
+  // B = descrição do chamado, C = equipe sugerida, E = solicitante,
+  // G = status da OS. Montamos os objetos manualmente para manter
+  // tanto o acesso por cabeçalho (pick) quanto o acesso por índice.
+  const COLS = Symbol.for("bo.cols");
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" });
+  const notEmpty = (arr: unknown[]) =>
+    Array.isArray(arr) && arr.some((c) => String(c ?? "").trim() !== "");
+  const headerIdx = Math.max(
+    0,
+    aoa.findIndex((r) => notEmpty(r)),
+  );
+  const header = (aoa[headerIdx] ?? []).map((h, i) => String(h ?? "").trim() || `COL${i}`);
+  const raw: Record<string, unknown>[] = aoa
+    .slice(headerIdx + 1)
+    .filter(notEmpty)
+    .map((arr) => {
+      const obj: Record<string, unknown> = {};
+      header.forEach((h, i) => {
+        if (h && obj[h] === undefined) obj[h] = arr[i] ?? "";
+      });
+      Object.defineProperty(obj, COLS, { value: arr, enumerable: false });
+      return obj;
+    });
+
+  const colAt = (r: Record<string, unknown>, i: number) => {
+    const arr = (r as unknown as Record<symbol, unknown[]>)[COLS];
+    return String(arr?.[i] ?? "").trim();
+  };
 
   const out: BackorderRow[] = [];
 
@@ -249,16 +261,21 @@ export async function readBackorderWorkbook(
       "ORDEM DE SERVICO",
     );
     if (!os) continue;
-    const descricao = pick(
-      r,
-      "DESCRIÇÃO OS",
-      "DESCRICAO OS",
-      "DESCRICAO DA OS",
-      "DESCRIÇÃO DA OS",
-      "DESCRIÇÃO",
-      "DESCRICAO",
-      "NOME",
-    );
+    // COLUNA B — descrição real do chamado (nunca a coluna C, que traz a equipe).
+    const descricao =
+      colAt(r, 1) ||
+      pick(
+        r,
+        "DESCRIÇÃO OS",
+        "DESCRICAO OS",
+        "DESCRICAO DA OS",
+        "DESCRIÇÃO DA OS",
+        "DESCRIÇÃO",
+        "DESCRICAO",
+        "NOME",
+      );
+    // COLUNA C — equipe sugerida pela planilha (usada só como pista).
+    const equipeHint = colAt(r, 2);
     const categoriaOrig = pick(r, "CATEGORIA");
     const servico = pick(r, "SERVIÇO", "SERVICO", "TAREFA EXECUTADA");
     const ativo = pick(
@@ -272,10 +289,9 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    // Prioridade absoluta para a coluna G (estado da OS na planilha oficial).
-    const statusG = statusHeaderG ? String(r[statusHeaderG] ?? "").trim() : "";
+    // COLUNA G — estado da OS na planilha oficial.
     const status =
-      statusG ||
+      colAt(r, 6) ||
       pick(
         r,
         "STATUS RESUMIDO",
@@ -367,10 +383,10 @@ export async function readBackorderWorkbook(
     const espaco = tree.espaco || sheetEspaco;
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
 
-    const statusNorm = norm(status);
     const dataConclusao = parseDateISO(conclusao);
-    const cancelado = RE_CANCELADO.test(statusNorm);
-    const finalizado = cancelado || RE_CONCLUIDO.test(statusNorm) || !!dataConclusao;
+    const statusCat = toStatusCat(status);
+    const cancelado = isCancelado(statusCat);
+    const finalizado = cancelado || isConcluido(statusCat);
     const revisao_manual = !finalizado && ((!!ativo && !found) || atividade === "Outros");
 
     out.push({
@@ -382,6 +398,7 @@ export async function readBackorderWorkbook(
       espaco,
       atividade,
       equipe: CATEGORIA_TO_EQUIPE[atividade],
+      equipe_hint: equipeHint,
       termino_sla: parseDateISO(sla),
       data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
       outros: solicitante,
@@ -390,10 +407,11 @@ export async function readBackorderWorkbook(
       cancelado,
       data_conclusao: dataConclusao,
       status_origem: status,
+      status_cat: statusCat,
       revisao_manual,
     });
-
   }
+
   return { rows: out, embeddedAssets, sheetName };
 }
 

@@ -104,10 +104,7 @@ export function ChamadosTable({
                         {dateLabel(r.dataSolicitacao)}
                       </td>
                       <td className="px-3 py-2">
-                        <StatusBadge
-                          status={STATUS_LABEL[r.status]}
-                          tone={STATUS_TONE[r.status]}
-                        />
+                        <StatusBadge status={STATUS_LABEL[r.status]} tone={STATUS_TONE[r.status]} />
                       </td>
                       <td className="px-3 py-2 text-right">
                         <Button
