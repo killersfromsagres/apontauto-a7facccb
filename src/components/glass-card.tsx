@@ -12,6 +12,7 @@ function GlassCardImpl({
   delay = 0,
   variant = "surface",
   style: styleProp,
+  onClick,
 }: {
   children: ReactNode;
   className?: string;
@@ -19,6 +20,7 @@ function GlassCardImpl({
   /** `block` usa o vidro turquesa com aresta luminosa (destaques/KPIs). */
   variant?: "surface" | "block";
   style?: CSSProperties;
+  onClick?: () => void;
 }) {
   const clamped = Math.min(delay, 0.12);
   const style: CSSProperties | undefined =
@@ -27,6 +29,7 @@ function GlassCardImpl({
   return (
     <div
       style={style}
+      onClick={onClick}
       className={cn(
         variant === "block" ? "glass-block" : "glass-surface",
         "animate-card-rise relative overflow-hidden rounded-xl p-4 sm:p-6",
