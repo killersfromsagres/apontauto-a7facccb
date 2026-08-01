@@ -3195,6 +3195,42 @@ export type Database = {
         }
         Relationships: []
       }
+      gestao_notas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          detalhe: string
+          id: string
+          modulo: string
+          prioridade: string
+          situacao: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          detalhe?: string
+          id?: string
+          modulo?: string
+          prioridade?: string
+          situacao?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          detalhe?: string
+          id?: string
+          modulo?: string
+          prioridade?: string
+          situacao?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       image_uploads: {
         Row: {
           created_at: string
@@ -6973,6 +7009,10 @@ export type Database = {
         Args: { required_action?: string }
         Returns: boolean
       }
+      can_access_gestao: {
+        Args: { required_action?: string }
+        Returns: boolean
+      }
       can_access_module: {
         Args: { module_key: string; required_action?: string }
         Returns: boolean
@@ -7074,6 +7114,7 @@ export type Database = {
       frota_can: { Args: { required_action?: string }; Returns: boolean }
       frota_is_gestor: { Args: never; Returns: boolean }
       gen_material_solicitacao_numero: { Args: never; Returns: string }
+      gestao_overview: { Args: { p_dias?: number }; Returns: Json }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
