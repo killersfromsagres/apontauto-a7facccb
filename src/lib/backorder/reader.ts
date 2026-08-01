@@ -17,11 +17,21 @@ export interface BackorderRow {
   outros: string; // Solicitante (Denominação do Solicitante)
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
+  /** OS cancelada / recusada na origem. */
+  cancelado: boolean;
+  /** Data de conclusão/cancelamento vinda da planilha (ISO) quando existir. */
+  data_conclusao: string | null;
   status_origem: string;
   /** true quando o ativo não foi encontrado na base OU a classificação
    *  caiu no fallback ("Outros"). O card fica marcado para revisão. */
   revisao_manual: boolean;
 }
+
+/** Status da planilha que indicam OS encerrada. */
+const RE_CONCLUIDO = /FINAL|CONCLU|ENCERR|FECHAD|EXECUTAD|ATENDID|RESOLVID|BAIXAD/;
+/** Status da planilha que indicam OS cancelada / recusada. */
+const RE_CANCELADO = /CANCEL|RECUSAD|REPROVAD|ANULAD|INVALID|DESCARTAD/;
+
 
 const norm = (v: unknown) =>
   String(v ?? "")
@@ -245,7 +255,34 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    const status = pick(r, "STATUS RESUMIDO", "STATUS");
+    const status = pick(
+      r,
+      "STATUS RESUMIDO",
+      "STATUS",
+      "SITUAÇÃO",
+      "SITUACAO",
+      "STATUS DA OS",
+      "STATUS OS",
+      "ESTADO",
+    );
+    const conclusao = pick(
+      r,
+      "DATA/HORA CONCLUSÃO",
+      "DATA HORA CONCLUSAO",
+      "DATA CONCLUSÃO",
+      "DATA CONCLUSAO",
+      "DATA DE CONCLUSÃO",
+      "DATA DE CONCLUSAO",
+      "DATA ENCERRAMENTO",
+      "DATA DE ENCERRAMENTO",
+      "DATA FECHAMENTO",
+      "DATA DE FECHAMENTO",
+      "DATA/HORA FECHAMENTO",
+      "DATA CANCELAMENTO",
+      "DATA DE CANCELAMENTO",
+      "DATA FINALIZAÇÃO",
+      "DATA FINALIZACAO",
+    );
     const abertura = pick(
       r,
       "DATA/HORA ABERTURA",
@@ -281,8 +318,7 @@ export async function readBackorderWorkbook(
       "NIVEL DE CRITICIDADE",
     );
 
-    // Preserva Prédio / Andar / Ambiente vindos da planilha ("as-is").
-    // Só recorre à árvore de ativos quando a coluna estiver vazia.
+    // Prédio / Andar / Ambiente vindos da planilha (fallback).
     const sheetPredio = pick(
       r,
       "PREDIO",
@@ -301,13 +337,19 @@ export async function readBackorderWorkbook(
       servico,
     });
 
+    // A árvore de ativos é a fonte primária da localização exata
+    // (prédio / andar / ambiente). A planilha só entra como fallback.
     const tree = resolveAtivoTree(effective, ativo);
-    const predio = sheetPredio || tree.predio;
-    const andar = sheetAndar || tree.andar;
-    const espaco = sheetEspaco || tree.espaco;
+    const predio = tree.predio || sheetPredio;
+    const andar = tree.andar || sheetAndar;
+    const espaco = tree.espaco || sheetEspaco;
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
-    const finalizado = /FINAL|CONCLU|ENCERR/.test(norm(status));
-    const revisao_manual = (!!ativo && !found) || atividade === "Outros";
+
+    const statusNorm = norm(status);
+    const dataConclusao = parseDateISO(conclusao);
+    const cancelado = RE_CANCELADO.test(statusNorm);
+    const finalizado = cancelado || RE_CONCLUIDO.test(statusNorm) || !!dataConclusao;
+    const revisao_manual = !finalizado && ((!!ativo && !found) || atividade === "Outros");
 
     out.push({
       os,
@@ -323,9 +365,12 @@ export async function readBackorderWorkbook(
       outros: solicitante,
       criticidade,
       finalizado,
+      cancelado,
+      data_conclusao: dataConclusao,
       status_origem: status,
       revisao_manual,
     });
+
   }
   return { rows: out, embeddedAssets, sheetName };
 }

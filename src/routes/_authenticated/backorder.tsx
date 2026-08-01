@@ -176,7 +176,11 @@ interface BOSRow {
   outros: string;
   criticidade?: string;
   finalizado: boolean;
+  cancelado?: boolean;
+  status_origem?: string;
+  data_conclusao?: string | null;
   data_finalizacao: string | null;
+
   is_prioridade?: boolean;
   motivo_prioridade?: string | null;
   prioridade_nivel?: number;
@@ -247,14 +251,33 @@ function BackorderPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("backorder_os")
-      .select("*")
-      .order("data_solicitacao", { ascending: true });
-    if (error) toast.error("Falha ao carregar backorder");
-    setRows((data as BOSRow[]) ?? []);
-    setLoading(false);
+    // Carga paginada: bases com dezenas de milhares de OS não cabem em uma
+    // única resposta do PostgREST e travavam a tela.
+    const PAGE = 1000;
+    const MAX = 60_000;
+    const all: BOSRow[] = [];
+    try {
+      for (let from = 0; from < MAX; from += PAGE) {
+        const { data, error } = await supabase
+          .from("backorder_os")
+          .select("*")
+          .order("finalizado", { ascending: true })
+          .order("data_solicitacao", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const page = (data as BOSRow[]) ?? [];
+        all.push(...page);
+        if (page.length < PAGE) break;
+      }
+      setRows(all);
+    } catch {
+      toast.error("Falha ao carregar backorder");
+      setRows(all);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
 
   const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
@@ -314,8 +337,13 @@ function BackorderPage() {
     void refresh();
   }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
-  const abertas = useMemo(() => rows.filter((r) => !r.finalizado), [rows]);
-  const finalizadas = useMemo(() => rows.filter((r) => r.finalizado), [rows]);
+  const abertas = useMemo(() => rows.filter((r) => !r.finalizado && !r.cancelado), [rows]);
+  const finalizadas = useMemo(
+    () => rows.filter((r) => r.finalizado && !r.cancelado),
+    [rows],
+  );
+  const cancelados = useMemo(() => rows.filter((r) => !!r.cancelado), [rows]);
+
   const revisaoRows = useMemo(() => abertas.filter((r) => r.revisao_manual), [abertas]);
 
   async function saveRule(
@@ -388,192 +416,131 @@ function BackorderPage() {
 
   async function handleBackorderImport(file: File) {
     setImporting(true);
+    const tid = toast.loading("Preparando importação…");
     try {
       // 1) carrega o grafo de ativos vigente (catálogo ativo ou base legada)
       const assetsMap = await loadAssetsIndex(true);
 
-      const { rows: parsed, embeddedAssets } = await readBackorderWorkbook(file, assetsMap);
-      if (parsed.length === 0) {
-        toast.warning("Nenhuma OS reconhecida na planilha.");
+      const [ovRes, locRes, teamRes] = await Promise.all([
+        supabase.from("backorder_atividade_override").select("os, atividade"),
+        supabase.from("regras_aprendidas_localizacao").select("*"),
+        supabase.from("regras_aprendidas_equipe").select("*"),
+      ]);
+
+      const overrides: Array<[string, string]> = (ovRes.data ?? []).map((o: any) => [
+        o.os,
+        o.atividade,
+      ]);
+
+      toast.loading("Lendo planilha (isso roda em segundo plano)…", { id: tid });
+
+      // 2) parsing + resolução de ativos em Web Worker (não trava a UI)
+      const worker = new Worker(new URL("@/lib/backorder/import.worker.ts", import.meta.url), {
+        type: "module",
+      });
+      const result = await new Promise<any>((resolve, reject) => {
+        worker.onmessage = (ev: MessageEvent<any>) => {
+          const m = ev.data;
+          if (m.type === "progress") {
+            if (m.phase === "processando") {
+              toast.loading(`Processando OS… ${m.done.toLocaleString("pt-BR")}`, { id: tid });
+            }
+          } else if (m.type === "result") {
+            resolve(m);
+            worker.terminate();
+          } else if (m.type === "error") {
+            reject(new Error(m.message));
+            worker.terminate();
+          }
+        };
+        worker.onerror = (e) => {
+          reject(new Error(e.message || "Falha no processamento da planilha"));
+          worker.terminate();
+        };
+        worker.postMessage({
+          type: "run",
+          file,
+          assetsMap,
+          dynamicRules: rulesDB
+            .filter((r) => r.ativo)
+            .map((r) => ({
+              equipe: r.equipe as Categoria,
+              palavra_chave: r.palavra_chave,
+              fonte: (r.fonte === "categoria" ? "categoria" : "descricao") as
+                | "descricao"
+                | "categoria",
+              prioridade: r.prioridade,
+            })),
+
+          learnedLoc: locRes.data ?? [],
+          learnedTeam: teamRes.data ?? [],
+          overrides,
+        });
+      });
+
+      const rows: any[] = result.rows ?? [];
+      const embeddedAssets: any[] = result.embeddedAssets ?? [];
+      if (rows.length === 0) {
+        toast.warning("Nenhuma OS reconhecida na planilha.", { id: tid });
         return;
       }
 
-      // Se o workbook trouxe uma aba `ativos` embutida, hidrata a base
-      // `assets_ref` antes de qualquer resolução futura.
+      // 3) hidrata a base de ativos embutida no próprio arquivo
       if (embeddedAssets.length > 0) {
-        const chunkSize = 500;
-        for (let i = 0; i < embeddedAssets.length; i += chunkSize) {
-          const chunk = embeddedAssets.slice(i, i + chunkSize);
+        for (let i = 0; i < embeddedAssets.length; i += 1000) {
+          const chunk = embeddedAssets.slice(i, i + 1000);
           const { error } = await supabase
             .from("assets_ref")
             .upsert(chunk, { onConflict: "ativo" });
           if (error) throw error;
         }
-        toast.info(
-          `Base de ativos atualizada com ${embeddedAssets.length} registros do próprio arquivo.`,
-        );
       }
 
-      // Overrides manuais persistidos (Atividade corrigida à mão)
-      const { data: overrides } = await supabase
-        .from("backorder_atividade_override")
-        .select("os, atividade");
-      const overrideMap = new Map<string, string>();
-      (overrides ?? []).forEach((o: any) => overrideMap.set(o.os, o.atividade));
-
-      // Preserva "finalizado" local (nunca reabrir automaticamente por reimport)
-      const { data: existing } = await supabase
-        .from("backorder_os")
-        .select(
-          "os, finalizado, atividade_manual, atividade, equipe, data_finalizacao, nome, ativo, predio, andar, espaco, data_solicitacao, termino_sla, outros, criticidade",
-        );
-      const existMap = new Map<string, any>();
-      (existing ?? []).forEach((e: any) => existMap.set(e.os, e));
-
+      // 4) grava em lotes via RPC (upsert em massa no servidor)
+      const overrideSet = new Set(overrides.map(([os]) => os));
+      const CHUNK = 1000;
       let novas = 0;
       let atualizadas = 0;
-      let ignoradas = 0;
-
-      // Recarrega regras aprendidas (o motor precisa da versão mais atual)
-      const [locRes, teamRes] = await Promise.all([
-        supabase.from("regras_aprendidas_localizacao").select("*"),
-        supabase.from("regras_aprendidas_equipe").select("*"),
-      ]);
-      const learnedIdx = buildLearnedIndex(
-        (locRes.data ?? []) as LearnedLocation[],
-        (teamRes.data ?? []) as LearnedTeam[],
-      );
-
-      const toUpsert: Array<
-        BackorderRow & {
-          origem_predio_andar_espaco: string;
-          origem_equipe: string;
-        }
-      > = [];
-      for (const r of parsed) {
-        const prev = existMap.get(r.os);
-        if (prev?.finalizado) {
-          ignoradas++;
-          continue;
-        }
-        const override = overrideMap.get(r.os);
-
-        // Aplica regra aprendida (prioridade sobre árvore) — mas nunca sobrescreve override manual
-        const tree = resolveAtivoTree(assetsMap, r.ativo);
-        const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
-
-        // Classificador de texto (Nome) — fonte primária de equipe quando não
-        // há override manual nem regra aprendida por ativo confiável.
-        const textResult = classifyTeamByText(r.nome ?? "");
-
-        const atividadeFinal: Categoria =
-          (override as Categoria | undefined) ??
-          (prev?.atividade_manual
-            ? (prev.atividade as Categoria)
-            : (textResult.equipe as Categoria));
-        const equipeFinal = override
-          ? CATEGORIA_TO_EQUIPE[override as Categoria]
-          : prev?.atividade_manual
-            ? prev.equipe
-            : CATEGORIA_TO_EQUIPE[atividadeFinal];
-        const revisaoText = !override && !prev?.atividade_manual && textResult.ambiguo;
-
-        const next = {
-          ...r,
-          // Preserva o que veio na planilha. Depois tenta regra aprendida
-          // / árvore. Se ainda vier vazio e a OS já existir com valor
-          // salvo (correção manual anterior), mantém o valor salvo — a
-          // reimportação nunca destrói uma localização já preenchida.
-          predio: r.predio || applied.predio || prev?.predio || "",
-          andar: r.andar || applied.andar || prev?.andar || "",
-          espaco: r.espaco || applied.espaco || prev?.espaco || "",
-          atividade: atividadeFinal,
-          equipe: equipeFinal,
-          revisao_manual:
-            (applied.revisao_manual &&
-              !override &&
-              !prev?.atividade_manual &&
-              !r.predio &&
-              !r.andar &&
-              !r.espaco &&
-              !(prev?.predio || prev?.andar || prev?.espaco)) ||
-            revisaoText,
-          origem_predio_andar_espaco:
-            r.predio || r.andar || r.espaco
-              ? "planilha"
-              : applied.origem_predio_andar_espaco !== "pendente"
-                ? applied.origem_predio_andar_espaco
-                : prev?.predio || prev?.andar || prev?.espaco
-                  ? "manual_preservado"
-                  : "pendente",
-          origem_equipe:
-            override || prev?.atividade_manual
-              ? "regra_aprendida"
-              : revisaoText
-                ? "pendente"
-                : "regra_local",
-        };
-        if (prev) {
-          const sameISO = (a?: string | null, b?: string | null) =>
-            (a ? new Date(a).toISOString() : "") === (b ? new Date(b).toISOString() : "");
-          const identical =
-            prev.nome === next.nome &&
-            prev.ativo === next.ativo &&
-            prev.predio === next.predio &&
-            prev.andar === next.andar &&
-            prev.espaco === next.espaco &&
-            prev.atividade === next.atividade &&
-            prev.equipe === next.equipe &&
-            prev.outros === next.outros &&
-            (prev.criticidade ?? "") === (next.criticidade ?? "") &&
-            sameISO(prev.data_solicitacao, next.data_solicitacao) &&
-            sameISO(prev.termino_sla, next.termino_sla);
-          if (identical) {
-            ignoradas++;
-            continue;
-          }
-          atualizadas++;
-        } else {
-          novas++;
-        }
-        toUpsert.push(next);
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const chunk = rows.slice(i, i + CHUNK);
+        const { data, error } = await supabase.rpc("backorder_bulk_upsert", {
+          p_rows: chunk as any,
+        });
+        if (error) throw error;
+        const res = data as any;
+        novas += Number(res?.novas ?? 0);
+        atualizadas += Number(res?.atualizadas ?? 0);
+        toast.loading(
+          `Enviando… ${Math.min(i + CHUNK, rows.length).toLocaleString("pt-BR")} de ${rows.length.toLocaleString("pt-BR")}`,
+          { id: tid },
+        );
       }
 
-      // Upsert em lotes de 500
-      for (let i = 0; i < toUpsert.length; i += 500) {
-        const chunk = toUpsert.slice(i, i + 500).map((r) => ({
-          os: r.os,
-          nome: r.nome,
-          ativo: r.ativo,
-          predio: r.predio,
-          andar: r.andar,
-          espaco: r.espaco,
-          atividade: r.atividade,
-          atividade_manual: !!overrideMap.get(r.os),
-          equipe: r.equipe,
-          termino_sla: r.termino_sla,
-          data_solicitacao: r.data_solicitacao,
-          outros: r.outros,
-          criticidade: r.criticidade ?? "",
-          revisao_manual: r.revisao_manual,
-          origem_predio_andar_espaco: r.origem_predio_andar_espaco,
-          origem_equipe: r.origem_equipe,
-        }));
-        const { error } = await supabase.from("backorder_os").upsert(chunk, { onConflict: "os" });
-        if (error) throw error;
+      // mantém a marcação de classificação manual das OS com override
+      if (overrideSet.size > 0) {
+        const marcar = rows.filter((r) => overrideSet.has(r.os)).map((r) => r.os);
+        for (let i = 0; i < marcar.length; i += 500) {
+          await supabase
+            .from("backorder_os")
+            .update({ atividade_manual: true })
+            .in("os", marcar.slice(i, i + 500));
+        }
       }
 
       toast.success(
-        `Importado: ${novas} nova(s), ${atualizadas} atualizada(s), ${ignoradas} ignorada(s).`,
+        `Importado: ${novas} nova(s), ${atualizadas} atualizada(s). ` +
+          `${result.abertas} em aberto, ${result.concluidas} concluída(s) e ${result.canceladas} cancelada(s) separadas automaticamente.`,
+        { id: tid, duration: 8000 },
       );
       await refresh();
     } catch (e: any) {
       console.error(e);
-      toast.error(e?.message ?? "Falha ao importar planilha");
+      toast.error(e?.message ?? "Falha ao importar planilha", { id: tid });
     } finally {
       setImporting(false);
     }
   }
+
 
   async function handleAssetsImport(file: File) {
     setImporting(true);
@@ -887,16 +854,23 @@ function BackorderPage() {
       .update({
         finalizado: next,
         data_finalizacao: next ? new Date().toISOString() : null,
+        ...(next ? {} : { cancelado: false }),
       })
       .eq("os", r.os);
     if (error) return toast.error("Falha ao atualizar");
     setRows((prev) =>
       prev.map((x) =>
         x.os === r.os
-          ? { ...x, finalizado: next, data_finalizacao: next ? new Date().toISOString() : null }
+          ? {
+              ...x,
+              finalizado: next,
+              cancelado: next ? x.cancelado : false,
+              data_finalizacao: next ? new Date().toISOString() : null,
+            }
           : x,
       ),
     );
+
   }
 
   async function updateAtividade(r: BOSRow, atividade: Categoria) {
@@ -1156,8 +1130,11 @@ function BackorderPage() {
       outros: r.outros,
       criticidade: r.criticidade ?? "",
       finalizado: false,
+      cancelado: false,
+      data_conclusao: null,
       status_origem: "",
       revisao_manual: false,
+
     }));
     const blob = await generateBackorderExport({
       titulo: "DEMARCHI",
@@ -1348,7 +1325,9 @@ function BackorderPage() {
     setClearing(true);
     const t = toast.loading("Limpando todos os chamados...");
     try {
-      const { error } = await supabase.from("backorder_os").delete().not("os", "is", null);
+      // Deleção em massa no servidor (uma única transação) — evita timeout
+      // do PostgREST com dezenas de milhares de linhas.
+      const { data, error } = await supabase.rpc("backorder_clear_all");
       if (error) throw error;
       setRows([]);
       setSelectedBackorder(null);
@@ -1357,7 +1336,8 @@ function BackorderPage() {
       setOrder("asc");
       setTab("tabela");
       setClearOpen(false);
-      toast.success("Todos os chamados foram removidos.", { id: t });
+      toast.success(`${Number(data ?? 0).toLocaleString("pt-BR")} chamados removidos.`, { id: t });
+
     } catch (e) {
       const err = e as { message?: string };
       toast.error(err?.message ?? "Falha ao limpar chamados", { id: t });
@@ -1572,11 +1552,18 @@ function BackorderPage() {
             <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
           </TabsTrigger>
           <TabsTrigger value="finalizados">
-            Finalizados{" "}
+            Concluídos{" "}
             <Badge variant="secondary" className="ml-2">
               {finalizadas.length}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="cancelados">
+            Cancelados{" "}
+            <Badge variant="secondary" className="ml-2">
+              {cancelados.length}
+            </Badge>
+          </TabsTrigger>
+
           <TabsTrigger value="dashboard">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" /> Dashboard
           </TabsTrigger>
@@ -1616,6 +1603,11 @@ function BackorderPage() {
         <TabsContent value="finalizados">
           <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
         </TabsContent>
+
+        <TabsContent value="cancelados">
+          <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
+        </TabsContent>
+
 
         <TabsContent value="dashboard">
           <Dashboard
