@@ -341,14 +341,14 @@
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
     0 4px 12px -2px color-mix(in srgb, black 5%, transparent);
-}
 
-.dark @utility glass-surface {
-  background: color-mix(in oklch, var(--card) 45%, transparent);
-  border: 1px solid color-mix(in srgb, white 8%, transparent);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
-    0 10px 30px -15px color-mix(in srgb, black 40%, transparent);
+  @variant dark {
+    background: color-mix(in oklch, var(--card) 45%, transparent);
+    border: 1px solid color-mix(in srgb, white 8%, transparent);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+      0 10px 30px -15px color-mix(in srgb, black 40%, transparent);
+  }
 }
 
 /* Inner tile (buttons/links inside a glass card) — same recipe, tighter blur */
@@ -375,12 +375,11 @@
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
     0 10px 40px -20px color-mix(in oklch, var(--primary) 30%, transparent);
-}
 
-.dark @utility glass-block {
-  background: color-mix(in oklch, var(--primary) 8%, transparent);
-  border: 1px solid color-mix(in oklch, var(--primary) 15%, transparent);
-}
+  @variant dark {
+    background: color-mix(in oklch, var(--primary) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--primary) 15%, transparent);
+  }
   &::before {
     content: "";
     position: absolute;
