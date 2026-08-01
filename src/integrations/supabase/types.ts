@@ -2232,8 +2232,10 @@ export type Database = {
           atividade_manual: boolean
           ativo: string
           atualizado_em: string
+          cancelado: boolean
           criado_em: string
           criticidade: string
+          data_conclusao: string | null
           data_finalizacao: string | null
           data_solicitacao: string
           equipe: string
@@ -2250,6 +2252,7 @@ export type Database = {
           prioridade_nivel: number
           prioridade_scanned_at: string | null
           revisao_manual: boolean
+          status_origem: string
           termino_sla: string | null
         }
         Insert: {
@@ -2258,8 +2261,10 @@ export type Database = {
           atividade_manual?: boolean
           ativo?: string
           atualizado_em?: string
+          cancelado?: boolean
           criado_em?: string
           criticidade?: string
+          data_conclusao?: string | null
           data_finalizacao?: string | null
           data_solicitacao: string
           equipe?: string
@@ -2276,6 +2281,7 @@ export type Database = {
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
           revisao_manual?: boolean
+          status_origem?: string
           termino_sla?: string | null
         }
         Update: {
@@ -2284,8 +2290,10 @@ export type Database = {
           atividade_manual?: boolean
           ativo?: string
           atualizado_em?: string
+          cancelado?: boolean
           criado_em?: string
           criticidade?: string
+          data_conclusao?: string | null
           data_finalizacao?: string | null
           data_solicitacao?: string
           equipe?: string
@@ -2302,6 +2310,7 @@ export type Database = {
           prioridade_nivel?: number
           prioridade_scanned_at?: string | null
           revisao_manual?: boolean
+          status_origem?: string
           termino_sla?: string | null
         }
         Relationships: []
@@ -6923,6 +6932,8 @@ export type Database = {
       agua_rota_ativa: { Args: { _rota_id: string }; Returns: boolean }
       agua_rota_minha: { Args: { _rota_id: string }; Returns: boolean }
       audit_redact: { Args: { payload: Json }; Returns: Json }
+      backorder_bulk_upsert: { Args: { p_rows: Json }; Returns: Json }
+      backorder_clear_all: { Args: never; Returns: number }
       can_access_backorder: {
         Args: { required_action?: string }
         Returns: boolean
