@@ -48,10 +48,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 }
 
 export function AvaliacaoEmailCard({ rows, ano, resumo }: Props) {
-  const solicitantes = useMemo(
-    () => resumo ?? agruparSolicitantes(rows),
-    [resumo, rows],
-  );
+  const solicitantes = useMemo(() => resumo ?? agruparSolicitantes(rows), [resumo, rows]);
   const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
   const assunto = assuntoEmail(ano, totalOs);
   const corpo = useMemo(() => corpoEmail({ solicitantes, ano }), [solicitantes, ano]);

@@ -246,12 +246,46 @@ export function DashboardChamadosView() {
 
         {/* KPIs */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-6">
-          <Kpi icon={<Database className="h-3.5 w-3.5" />} label="Total" value={num(k.total)} hint={`Taxa de conclusão ${taxa}%`} />
-          <Kpi icon={<Clock className="h-3.5 w-3.5" />} label="Em aberto" value={num(k.abertos)} tone="info" hint="Aberto, pendente, programado, execução" />
-          <Kpi icon={<CheckCircle2 className="h-3.5 w-3.5" />} label="Concluídos" value={num(k.concluidos)} tone="success" hint="Concluído, fechado, validado" />
-          <Kpi icon={<MailCheck className="h-3.5 w-3.5" />} label="Aguardando aprovação" value={num(k.aguardandoAprovacao)} tone="warning" hint="Precisam de avaliação" />
-          <Kpi icon={<XCircle className="h-3.5 w-3.5" />} label="Cancelados" value={num(k.cancelados)} tone="danger" hint="Cancelado e não executada" />
-          <Kpi icon={<Timer className="h-3.5 w-3.5" />} label="Tempo médio" value={`${k.tempoMedioDias} d`} hint={`${num(k.vencidos)} com SLA vencido`} />
+          <Kpi
+            icon={<Database className="h-3.5 w-3.5" />}
+            label="Total"
+            value={num(k.total)}
+            hint={`Taxa de conclusão ${taxa}%`}
+          />
+          <Kpi
+            icon={<Clock className="h-3.5 w-3.5" />}
+            label="Em aberto"
+            value={num(k.abertos)}
+            tone="info"
+            hint="Aberto, pendente, programado, execução"
+          />
+          <Kpi
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+            label="Concluídos"
+            value={num(k.concluidos)}
+            tone="success"
+            hint="Concluído, fechado, validado"
+          />
+          <Kpi
+            icon={<MailCheck className="h-3.5 w-3.5" />}
+            label="Aguardando aprovação"
+            value={num(k.aguardandoAprovacao)}
+            tone="warning"
+            hint="Precisam de avaliação"
+          />
+          <Kpi
+            icon={<XCircle className="h-3.5 w-3.5" />}
+            label="Cancelados"
+            value={num(k.cancelados)}
+            tone="danger"
+            hint="Cancelado e não executada"
+          />
+          <Kpi
+            icon={<Timer className="h-3.5 w-3.5" />}
+            label="Tempo médio"
+            value={`${k.tempoMedioDias} d`}
+            hint={`${num(k.vencidos)} com SLA vencido`}
+          />
         </div>
 
         {k.vencidos > 0 && (
@@ -267,7 +301,9 @@ export function DashboardChamadosView() {
         <Tabs defaultValue="graficos" className="w-full">
           <div className="-mx-1 overflow-x-auto px-1 pb-1">
             <TabsList className="flex w-max gap-1">
-              <TabsTrigger value="graficos" className="min-h-11">Gráficos</TabsTrigger>
+              <TabsTrigger value="graficos" className="min-h-11">
+                Gráficos
+              </TabsTrigger>
               <TabsTrigger value="avaliacao" className="min-h-11">
                 Avaliação pendente
                 <Badge className="ml-2 bg-amber-500 text-white">
@@ -276,9 +312,13 @@ export function DashboardChamadosView() {
               </TabsTrigger>
               <TabsTrigger value="cancelados" className="min-h-11">
                 Cancelados
-                <Badge variant="secondary" className="ml-2">{num(k.cancelados)}</Badge>
+                <Badge variant="secondary" className="ml-2">
+                  {num(k.cancelados)}
+                </Badge>
               </TabsTrigger>
-              <TabsTrigger value="chamados" className="min-h-11">Chamados</TabsTrigger>
+              <TabsTrigger value="chamados" className="min-h-11">
+                Chamados
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -286,7 +326,11 @@ export function DashboardChamadosView() {
             <div className="-mx-1 overflow-x-auto px-1 pb-1">
               <div className="flex w-max gap-2">
                 {STATUS_CATS.filter((c) => (stats.porStatus[c] ?? 0) > 0).map((c) => (
-                  <Badge key={c} className="text-[11px] text-white" style={{ background: STATUS_COLOR[c] }}>
+                  <Badge
+                    key={c}
+                    className="text-[11px] text-white"
+                    style={{ background: STATUS_COLOR[c] }}
+                  >
                     {STATUS_LABEL[c]} · {num(stats.porStatus[c] ?? 0)}
                   </Badge>
                 ))}

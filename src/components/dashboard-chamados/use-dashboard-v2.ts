@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { subscribeBackorderTable } from "@/lib/dashboard-chamados/backorder-sync";
 import { fetchDashboardFiltros, type DashFiltros } from "@/lib/dashboard-chamados/server-stats";
-import { EMPTY_V2, fetchDashboardV2, type V2Query, type V2Stats } from "@/lib/dashboard-chamados/stats-v2";
+import {
+  EMPTY_V2,
+  fetchDashboardV2,
+  type V2Query,
+  type V2Stats,
+} from "@/lib/dashboard-chamados/stats-v2";
 import type { StatusCat } from "@/lib/backorder/status";
 
 const EMPTY_FILTROS: DashFiltros = {

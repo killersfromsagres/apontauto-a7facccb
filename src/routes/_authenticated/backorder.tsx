@@ -315,8 +315,6 @@ function BackorderPage() {
     }
   }, []);
 
-
-
   const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
     setAssetsMap(await loadAssetsIndex());
@@ -529,7 +527,6 @@ function BackorderPage() {
         businessUnit: n.businessUnit,
       }));
 
-
       const [ovRes, locRes, teamRes] = await Promise.all([
         supabase.from("backorder_atividade_override").select("os, atividade"),
         supabase.from("regras_aprendidas_localizacao").select("*"),
@@ -651,7 +648,6 @@ function BackorderPage() {
       setImporting(false);
     }
   }
-
 
   async function handleAssetsImport(file: File) {
     setImporting(true);
@@ -981,7 +977,6 @@ function BackorderPage() {
           : x,
       ),
     );
-
   }
 
   async function updateAtividade(r: BOSRow, atividade: Categoria) {
@@ -1450,7 +1445,6 @@ function BackorderPage() {
       setTab("tabela");
       setClearOpen(false);
       toast.success(`${Number(data ?? 0).toLocaleString("pt-BR")} chamados removidos.`, { id: t });
-
     } catch (e) {
       const err = e as { message?: string };
       toast.error(err?.message ?? "Falha ao limpar chamados", { id: t });
@@ -1766,7 +1760,6 @@ function BackorderPage() {
             onSelect={(os) => setSelectedBackorder(rows.find((r) => r.os === os) ?? null)}
           />
         </TabsContent>
-
 
         <TabsContent value="dashboard">
           <Dashboard

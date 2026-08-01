@@ -32,8 +32,6 @@ export interface BackorderRow {
   revisao_manual: boolean;
 }
 
-
-
 const norm = (v: unknown) =>
   String(v ?? "")
     .trim()
@@ -251,7 +249,6 @@ export async function readBackorderWorkbook(
   const out: BackorderRow[] = [];
 
   for (const r of raw) {
-
     const os = pick(
       r,
       "OS",
@@ -296,7 +293,6 @@ export async function readBackorderWorkbook(
     const status =
       colAt(r, 6) ||
       pick(
-
         r,
         "STATUS RESUMIDO",
         "STATUS",

@@ -64,7 +64,9 @@ export function StatusBoard({
             type="button"
             onClick={() => setCat("todos")}
             className={`min-h-11 rounded-full border px-3 text-xs font-medium transition ${
-              cat === "todos" ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"
+              cat === "todos"
+                ? "border-primary bg-primary/10 text-primary"
+                : "text-muted-foreground"
             }`}
           >
             Todos <span className="ml-1 opacity-70">{rows.length}</span>

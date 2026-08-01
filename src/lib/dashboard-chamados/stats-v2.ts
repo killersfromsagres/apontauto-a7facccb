@@ -70,7 +70,13 @@ export interface V2Stats {
   porStatus: Partial<Record<StatusCat, number>>;
   porAno: V2Serie[];
   porMes: V2Serie[];
-  porEquipe: Array<{ name: string; total: number; concluidos: number; cancelados: number; abertos: number }>;
+  porEquipe: Array<{
+    name: string;
+    total: number;
+    concluidos: number;
+    cancelados: number;
+    abertos: number;
+  }>;
   porCategoria: Array<{ name: string; value: number }>;
   porCriticidade: Array<{ name: string; value: number }>;
   porPredio: Array<{ name: string; value: number }>;

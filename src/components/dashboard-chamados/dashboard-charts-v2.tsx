@@ -20,7 +20,16 @@ import { STATUS_CATS, STATUS_COLOR, STATUS_LABEL } from "@/lib/backorder/status"
 import type { V2Stats } from "@/lib/dashboard-chamados/stats-v2";
 
 const AXIS = { fontSize: 11 };
-const PALETTE = ["#06B6D4", "#10B981", "#8B5CF6", "#F59E0B", "#EF4444", "#3B82F6", "#EC4899", "#14B8A6"];
+const PALETTE = [
+  "#06B6D4",
+  "#10B981",
+  "#8B5CF6",
+  "#F59E0B",
+  "#EF4444",
+  "#3B82F6",
+  "#EC4899",
+  "#14B8A6",
+];
 
 function ChartCard({
   title,
@@ -90,9 +99,30 @@ export default function DashboardChartsV2({ stats }: { stats: V2Stats }) {
             <YAxis tick={AXIS} width={40} />
             <Tooltip />
             <Legend wrapperStyle={AXIS} />
-            <Area type="monotone" dataKey="abertos" name="Abertos" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.25} />
-            <Area type="monotone" dataKey="concluidos" name="Concluídos" stroke="#10B981" fill="#10B981" fillOpacity={0.25} />
-            <Area type="monotone" dataKey="cancelados" name="Cancelados" stroke="#DC2626" fill="#DC2626" fillOpacity={0.2} />
+            <Area
+              type="monotone"
+              dataKey="abertos"
+              name="Abertos"
+              stroke="#3B82F6"
+              fill="#3B82F6"
+              fillOpacity={0.25}
+            />
+            <Area
+              type="monotone"
+              dataKey="concluidos"
+              name="Concluídos"
+              stroke="#10B981"
+              fill="#10B981"
+              fillOpacity={0.25}
+            />
+            <Area
+              type="monotone"
+              dataKey="cancelados"
+              name="Cancelados"
+              stroke="#DC2626"
+              fill="#DC2626"
+              fillOpacity={0.2}
+            />
           </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -107,10 +137,24 @@ export default function DashboardChartsV2({ stats }: { stats: V2Stats }) {
             <Tooltip />
             <Legend wrapperStyle={AXIS} />
             <Bar yAxisId="l" dataKey="concluidos" name="Concluídos" stackId="a" fill="#10B981" />
-            <Bar yAxisId="l" dataKey="aguardando" name="Aguardando aprovação" stackId="a" fill="#EAB308" />
+            <Bar
+              yAxisId="l"
+              dataKey="aguardando"
+              name="Aguardando aprovação"
+              stackId="a"
+              fill="#EAB308"
+            />
             <Bar yAxisId="l" dataKey="abertos" name="Abertos" stackId="a" fill="#3B82F6" />
             <Bar yAxisId="l" dataKey="cancelados" name="Cancelados" stackId="a" fill="#DC2626" />
-            <Line yAxisId="r" type="monotone" dataKey="taxa" name="Taxa de conclusão" stroke="#8B5CF6" strokeWidth={2} dot={false} />
+            <Line
+              yAxisId="r"
+              type="monotone"
+              dataKey="taxa"
+              name="Taxa de conclusão"
+              stroke="#8B5CF6"
+              strokeWidth={2}
+              dot={false}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </ChartCard>
@@ -150,7 +194,14 @@ export default function DashboardChartsV2({ stats }: { stats: V2Stats }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={stats.porCategoria}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-            <XAxis dataKey="name" tick={AXIS} interval={0} angle={-20} textAnchor="end" height={60} />
+            <XAxis
+              dataKey="name"
+              tick={AXIS}
+              interval={0}
+              angle={-20}
+              textAnchor="end"
+              height={60}
+            />
             <YAxis tick={AXIS} width={40} />
             <Tooltip />
             <Bar dataKey="value" name="Chamados" radius={[6, 6, 0, 0]}>
