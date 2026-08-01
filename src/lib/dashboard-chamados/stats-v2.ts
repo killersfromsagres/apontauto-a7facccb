@@ -7,6 +7,7 @@ import type { StatusCat } from "@/lib/backorder/status";
 export interface V2Kpis {
   total: number;
   abertos: number;
+  backorder: number;
   concluidos: number;
   cancelados: number;
   aguardandoAprovacao: number;
