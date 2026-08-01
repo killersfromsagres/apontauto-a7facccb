@@ -6,7 +6,7 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
   ({ className, ...props }, ref) => (
     // `table-scroll` adiciona no mobile a dica visual de rolagem horizontal
     // e mantém o gesto de swipe contido na tabela (sem arrastar a página).
-    <div className="table-scroll relative w-full overflow-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+    <div className="table-scroll relative w-full overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-xl border border-border/40 bg-card/30 [-webkit-overflow-scrolling:touch]">
       <table ref={ref} className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   ),
@@ -66,7 +66,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-11 px-3 text-left align-middle text-xs font-semibold uppercase tracking-wider text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+      "h-11 px-3 text-left align-middle text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
       className,
     )}
     {...props}

@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Home, Crown, Bell, PlusCircle } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useVisibleSections } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
@@ -13,51 +13,55 @@ import { cn } from "@/lib/utils";
 export const MobileTabBar = memo(function MobileTabBar() {
   const { isMobile, openMobile, toggleSidebar } = useSidebar();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { quickItems, hasDashboard, loading } = useVisibleSections();
+  const { canAccess, loading } = useVisibleSections();
 
   if (!isMobile || loading) return null;
 
   const isActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
+  const hasGestao = canAccess("gestao-executiva");
+
   return (
     <nav
       aria-label="Navegação principal"
       data-mobile-tabbar=""
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/60 bg-background/85 pb-[max(env(safe-area-inset-bottom),0.25rem)] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border/40 bg-background/80 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur-xl md:hidden"
     >
-      <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1">
-        {hasDashboard && (
+      <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pt-1.5">
+        <TabLink
+          to="/"
+          label="Início"
+          active={isActive("/")}
+          icon={<Home className="h-5 w-5" strokeWidth={1.8} />}
+        />
+
+        {hasGestao && (
           <TabLink
-            to="/"
-            label="Início"
-            active={isActive("/")}
-            icon={
-              <svg
-                viewBox="0 0 24 24"
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M3 10.5 12 3l9 7.5" />
-                <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
-              </svg>
-            }
+            to="/gestao"
+            label="Gestão"
+            active={isActive("/gestao")}
+            icon={<Crown className="h-5 w-5" strokeWidth={1.8} />}
           />
         )}
-        {quickItems.map((item) => (
-          <TabLink
-            key={item.key}
-            to={item.url}
-            label={item.short ?? item.title}
-            active={isActive(item.url)}
-            icon={<item.icon className="h-5 w-5" strokeWidth={1.8} />}
-          />
-        ))}
+
+        <TabLink
+          to="#"
+          label="Ações"
+          active={false}
+          onClick={() => {
+            /* TODO: Abrir Drawer de Ações Rápidas */
+          }}
+          icon={<PlusCircle className="h-5 w-5" strokeWidth={1.8} />}
+        />
+
+        <TabLink
+          to="/notificacoes"
+          label="Avisos"
+          active={isActive("/notificacoes")}
+          icon={<Bell className="h-5 w-5" strokeWidth={1.8} />}
+        />
+
         <li className="flex-1">
           <button
             type="button"
@@ -65,7 +69,7 @@ export const MobileTabBar = memo(function MobileTabBar() {
             aria-label="Abrir menu de módulos"
             aria-expanded={openMobile}
             className={cn(
-              "flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
+              "flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium transition-all active:scale-95",
               openMobile ? "text-primary" : "text-muted-foreground",
             )}
           >
@@ -83,29 +87,47 @@ function TabLink({
   label,
   icon,
   active,
+  onClick,
 }: {
   to: string;
   label: string;
   icon: React.ReactNode;
   active: boolean;
+  onClick?: () => void;
 }) {
+  const content = (
+    <div
+      className={cn(
+        "relative flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium transition-all active:scale-95",
+        active ? "text-primary" : "text-muted-foreground",
+      )}
+    >
+      {active && (
+        <span
+          aria-hidden
+          className="absolute top-0 h-0.5 w-6 rounded-full bg-primary"
+        />
+      )}
+      {icon}
+      <span className="max-w-full truncate">{label}</span>
+    </div>
+  );
+
   return (
     <li className="flex-1">
-      <Link
-        to={to}
-        preload="intent"
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "relative flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-colors",
-          active ? "text-primary" : "text-muted-foreground",
-        )}
-      >
-        {active && (
-          <span aria-hidden className="absolute top-0 h-0.5 w-8 rounded-full bg-primary" />
-        )}
-        {icon}
-        <span className="max-w-full truncate">{label}</span>
-      </Link>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="w-full focus-visible:outline-none"
+        >
+          {content}
+        </button>
+      ) : (
+        <Link to={to} preload="intent" aria-current={active ? "page" : undefined}>
+          {content}
+        </Link>
+      )}
     </li>
   );
 }
