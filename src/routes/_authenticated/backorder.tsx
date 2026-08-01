@@ -399,17 +399,6 @@ function BackorderPage() {
     [rows, ano],
   );
 
-  const porStatus = useMemo(() => {
-    const m = new Map<StatusCat, BOSRow[]>();
-    for (const r of rowsAno) {
-      const c = catOf(r);
-      const arr = m.get(c);
-      if (arr) arr.push(r);
-      else m.set(c, [r]);
-    }
-    return m;
-  }, [rowsAno, catOf]);
-
   const statusRows = useMemo(
     () =>
       rowsAno.map((r) => ({
