@@ -342,7 +342,7 @@
     inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
     0 4px 12px -2px color-mix(in srgb, black 5%, transparent);
 
-  @variant dark {
+  &:is(.dark *) {
     background: color-mix(in oklch, var(--card) 45%, transparent);
     border: 1px solid color-mix(in srgb, white 8%, transparent);
     box-shadow:
@@ -376,7 +376,7 @@
     inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
     0 10px 40px -20px color-mix(in oklch, var(--primary) 30%, transparent);
 
-  @variant dark {
+  &:is(.dark *) {
     background: color-mix(in oklch, var(--primary) 8%, transparent);
     border: 1px solid color-mix(in oklch, var(--primary) 15%, transparent);
   }
