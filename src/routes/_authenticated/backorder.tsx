@@ -1156,8 +1156,11 @@ function BackorderPage() {
       outros: r.outros,
       criticidade: r.criticidade ?? "",
       finalizado: false,
+      cancelado: false,
+      data_conclusao: null,
       status_origem: "",
       revisao_manual: false,
+
     }));
     const blob = await generateBackorderExport({
       titulo: "DEMARCHI",
