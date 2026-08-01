@@ -1485,10 +1485,11 @@ export function GestaoView() {
                 </Button>
               }
             >
-              <p className="text-sm text-muted-foreground">
+              <p className="mb-3 text-sm text-muted-foreground">
                 A suspensão automática por chuva continua sendo aplicada pelo monitoramento
                 climático do módulo de taludes; aqui o gestor vê apenas o impacto consolidado.
               </p>
+              <ClimaOperacional ptSuspensas={d?.taludes.pt_suspensas} />
             </Secao>
           </TabsContent>
 
