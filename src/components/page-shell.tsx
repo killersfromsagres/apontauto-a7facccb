@@ -18,7 +18,7 @@ export function PageShell({
       <div className="relative flex min-w-0 flex-col gap-3 border-b border-border/50 pb-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-6">
         <div className="min-w-0">
           {eyebrow && <div className="text-eyebrow mb-2">{eyebrow}</div>}
-          <h2 className="font-display text-[1.375rem] font-bold leading-[1.15] tracking-tight sm:text-4xl md:text-5xl">
+          <h2 className="font-sans text-xl font-bold leading-tight tracking-tight sm:text-3xl md:text-4xl">
             <span className="text-gradient break-words">{title}</span>
           </h2>
           {description && (
