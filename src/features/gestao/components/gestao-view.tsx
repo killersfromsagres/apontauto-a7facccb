@@ -365,8 +365,8 @@ export function GestaoView() {
           <div className="flex items-center gap-3">
             <Lock className="h-5 w-5 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Você não possui a permissão <strong>gestao-executiva</strong>. Solicite liberação à
-              administração.
+              Você não possui a permissão <strong>gestao-executiva</strong> ou perfil de{' '}
+              <strong>administrador</strong>. Solicite liberação à administração.
             </p>
           </div>
         </GlassCard>

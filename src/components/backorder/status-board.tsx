@@ -106,7 +106,7 @@ export function StatusBoard({
           </p>
         </GlassCard>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid max-h-[60vh] gap-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20 sm:grid-cols-2 xl:grid-cols-3">
           {list.map((r) => (
             <button
               key={r.os}
