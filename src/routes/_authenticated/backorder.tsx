@@ -222,7 +222,7 @@ function BackorderPage() {
   const [tab, setTab] = useState("tabela");
   // O Backorder trabalha, por padrão, apenas com o ano corrente.
   const anoAtual = new Date().getFullYear();
-  const [ano, setAno] = useState<string>(String(anoAtual));
+  const [ano, setAno] = useState<string>("todos");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<string>("__all__");
@@ -273,7 +273,7 @@ function BackorderPage() {
     // o offset), mantendo a mesma ordenação e o mesmo conjunto de dados.
     const PAGE = 5000;
     const CONCURRENCY = 4;
-    const MAX = 300_000;
+    const MAX = 1_000_000;
 
     const fetchPage = async (from: number) => {
       const { data, error } = await supabase
