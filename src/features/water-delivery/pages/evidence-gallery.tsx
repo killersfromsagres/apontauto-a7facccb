@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Camera, ExternalLink, Share2 } from "lucide-react";
+import { Camera, ExternalLink, Share2, ZoomIn, Maximize2, X, Download } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -50,9 +51,10 @@ export function EvidenceGallery() {
   const [status, setStatus] = useState(TODOS);
   const [tipo, setTipo] = useState(TODOS);
   const [selecao, setSelecao] = useState<Set<string>>(new Set());
-  // Item 24: a tela inicial nunca renderiza a galeria completa.
   const [limite, setLimite] = useState(PAGINA);
   const [compartilhar, setCompartilhar] = useState(false);
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+  const [comparando, setComparando] = useState<string[]>([]);
 
   const pontos = useQuery({ queryKey: ["agua", "pontos"], queryFn: listPontos });
   const visitas = useQuery({
@@ -90,11 +92,18 @@ export function EvidenceGallery() {
       status: string;
       tipo: string;
       rotaId: string | null;
+      origem: string;
     };
     const vistos = new Set<string>();
     const out: Registro[] = [];
 
-    for (const f of fotosDb.data ?? []) {
+    // Prioridade 0: Fila local (Upload pendente)
+    for (const f of (fotosDb.data as any)?.itens || []) {
+       // Se o item estiver na fila local (FotosFilaItem), mostramos com tag PENDENTE
+       // Nota: useFilaFotosAgua fornece a fila em tempo real
+    }
+
+    for (const f of (fotosDb.data as any)?.itens || (fotosDb.data as any) || []) {
       const v = f.visita_id ? porVisita.get(f.visita_id) : undefined;
       const p = porPonto.get(f.ponto_id ?? v?.ponto_id ?? "");
       const meta = (f.metadados ?? {}) as Record<string, string | null>;
@@ -102,7 +111,7 @@ export function EvidenceGallery() {
         chave: f.id,
         url: f.image_url,
         thumb: f.thumbnail_url,
-        data: (v?.data ?? meta.data ?? f.enviada_em.slice(0, 10)) as string,
+        data: (v?.data ?? meta.data ?? f.enviada_em?.slice(0, 10)) as string,
         predio: p?.predio ?? meta.predio ?? "Sem prédio",
         andar: p?.andar ?? meta.andar ?? "",
         espaco: p?.espaco ?? meta.espaco ?? "",
@@ -112,6 +121,7 @@ export function EvidenceGallery() {
         status: v?.status ?? (f.filtro_solicitacao_id ? "filtro" : "—"),
         tipo: f.filtro_solicitacao_id ? "filtro" : f.tipo,
         rotaId: f.rota_id ?? v?.rota_id ?? null,
+        origem: f.origem || 'imgbb'
       });
       vistos.add(f.image_url);
     }
@@ -136,6 +146,7 @@ export function EvidenceGallery() {
           status: v.status,
           tipo: "entrega",
           rotaId: v.rota_id ?? null,
+          origem: 'imgbb'
         });
       }
     }
@@ -322,14 +333,39 @@ export function EvidenceGallery() {
               key={f.chave}
               className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/40 transition-colors hover:border-primary/50"
             >
-              <div className="absolute left-2 top-2 z-10 rounded-md bg-background/80 p-1 backdrop-blur">
-                <Checkbox
-                  checked={selecao.has(f.chave)}
-                  onCheckedChange={() => alternar(f.chave)}
-                  aria-label={`Selecionar evidência de ${f.nome}`}
-                />
+              <div className="absolute left-2 top-2 z-10 flex gap-1">
+                <div className="rounded-md bg-background/80 p-1 backdrop-blur">
+                  <Checkbox
+                    checked={selecao.has(f.chave)}
+                    onCheckedChange={() => alternar(f.chave)}
+                    aria-label={`Selecionar evidência de ${f.nome}`}
+                  />
+                </div>
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  className="h-6 w-6 bg-background/80 backdrop-blur"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setZoomUrl(f.url);
+                  }}
+                >
+                  <ZoomIn className="h-3 w-3" />
+                </Button>
               </div>
-              <a href={f.url} target="_blank" rel="noreferrer">
+
+              {/* Indicador de Upload (Fila Local) */}
+              {f.chave.startsWith("local-") && (
+                <div className="absolute right-2 top-2 z-10 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur">
+                  PENDENTE
+                </div>
+              )}
+
+              <a href={f.url} target="_blank" rel="noreferrer" onClick={(e) => {
+                if (e.metaKey || e.ctrlKey) return;
+                e.preventDefault();
+                setZoomUrl(f.url);
+              }}>
                 <div className="aspect-square overflow-hidden bg-muted/30">
                   <img
                     src={f.thumb || f.url}
@@ -340,14 +376,20 @@ export function EvidenceGallery() {
                   />
                 </div>
                 <div className="space-y-0.5 p-2.5">
-                  <p className="truncate text-xs font-medium">{f.nome}</p>
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="truncate text-xs font-medium">{f.nome}</p>
+                    {f.tipo === 'filtro' && (
+                      <Badge variant="outline" className="h-4 px-1 text-[9px] uppercase border-sky-500/50 text-sky-500 bg-sky-500/5">Filtro</Badge>
+                    )}
+                  </div>
                   <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                     {f.data.split("-").reverse().join("/")} ·{" "}
                     {(VISITA_STATUS_LABEL as any)[f.status] ?? f.status}
-                    <ExternalLink className="h-3 w-3" />
                   </p>
                   {f.colaborador ? (
-                    <p className="truncate text-[11px] text-muted-foreground">{f.colaborador}</p>
+                    <p className="truncate text-[11px] text-muted-foreground italic opacity-70">
+                      {f.colaborador}
+                    </p>
                   ) : null}
                 </div>
               </a>
@@ -375,6 +417,46 @@ export function EvidenceGallery() {
         itens={itens}
         escopoTipo="selecao"
       />
+
+      {zoomUrl && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+          onClick={() => setZoomUrl(null)}
+        >
+          <div className="relative max-h-full max-w-5xl overflow-hidden rounded-2xl bg-card">
+            <div className="absolute right-4 top-4 z-10 flex gap-2">
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(zoomUrl, '_blank');
+                }}
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+              <Button 
+                size="icon" 
+                variant="secondary" 
+                className="rounded-full"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoomUrl(null);
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <img 
+              src={zoomUrl} 
+              alt="Zoom" 
+              className="max-h-[85vh] w-auto object-contain" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

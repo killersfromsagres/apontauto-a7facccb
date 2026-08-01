@@ -2,12 +2,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
+  Camera,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   CircleSlash,
   Clock,
   Droplets,
   History,
+  Info,
+  MapPin,
   Navigation,
   PackageCheck,
   PenSquare,
@@ -48,6 +54,7 @@ import {
   rotaDoDia,
 } from "@/features/water-delivery/mutations/execucao";
 import { EntregaDialog } from "@/features/water-delivery/components/entrega-dialog";
+import { WaterScanner } from "@/features/water-delivery/components/water-scanner";
 import {
   FimRotaCard,
   InicioRotaCard,
@@ -374,14 +381,13 @@ function ParadaCard({
       ? `${ponto.janela_inicio.slice(0, 5)}–${ponto.janela_fim.slice(0, 5)}`
       : null;
 
-  function lerQr() {
-    const lido = window.prompt("Aponte o leitor ou digite o código do QR do ponto:");
-    if (!lido) return;
-    const esperado = ponto.qr_code ?? `AGUA:${ponto.codigo}`;
-    if (lido.trim().toUpperCase() === esperado.toUpperCase()) {
-      toast.success("QR Code confere com este ponto.");
-    } else {
-      toast.error("QR Code diferente do cadastro deste ponto.");
+  const [scannerAberto, setScannerAberto] = useState(false);
+
+  function onQrSuccess() {
+    setScannerAberto(false);
+    toast.success("Check-in realizado via QR Code.");
+    if (!finalizada) {
+      onAndamento("em_atendimento");
     }
   }
 
@@ -447,10 +453,11 @@ function ParadaCard({
                 </a>
               </Button>
             )}
-            <Button size="sm" variant="secondary" className="min-h-[44px]" onClick={lerQr}>
-              <QrCode className="mr-2 h-4 w-4" />
-              Ler QR Code
-            </Button>
+            <WaterScanner 
+              expectedCode={ponto.qr_code ?? `AGUA:${ponto.codigo}`} 
+              onSuccess={onQrSuccess}
+              onOpenChange={setScannerAberto}
+            />
             {podeEscrever && !finalizada && (
               <>
                 <Button
