@@ -3362,7 +3362,7 @@ const BackorderPanel = memo(function BackorderPanel({
       ) : (
         <PriorityScroller total={ordered.length}>
           <div className="grid gap-2 md:grid-cols-2">
-            {ordered.map((r) => {
+            {visibleCards.map((r) => {
               const dias = daysBetween(r.data_solicitacao);
               const nivelClass =
                 dias > 90
