@@ -1749,16 +1749,20 @@ function BackorderPage() {
         </TabsContent>
 
         <TabsContent value="backorder">
-          <BackorderPanel
-            rows={backorderAbertas}
-            onSelect={setSelectedBackorder}
-            onFinalizar={(r) => toggleFinalizado(r, true)}
-          />
+          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <BackorderPanel
+              rows={backorderAbertas}
+              onSelect={setSelectedBackorder}
+              onFinalizar={(r) => toggleFinalizado(r, true)}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="finalizados" className="space-y-4">
           <AvaliacaoEmailCard rows={avaliacaoRows} ano={ano === "todos" ? "todos os anos" : ano} />
-          <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
+          <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
+          </div>
         </TabsContent>
 
         <TabsContent value="aprovacao" className="space-y-4">
@@ -1766,14 +1770,18 @@ function BackorderPage() {
             rows={avaliacaoRows.filter((r) => r.statusCat === "aguardando_aprovacao")}
             ano={ano === "todos" ? "todos os anos" : ano}
           />
-          <FinalizadosView
-            rows={aguardandoAprovacao}
-            onReabrir={(r) => toggleFinalizado(r, false)}
-          />
+          <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <FinalizadosView
+              rows={aguardandoAprovacao}
+              onReabrir={(r) => toggleFinalizado(r, false)}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="cancelados">
-          <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
+          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
+          </div>
         </TabsContent>
 
         <TabsContent value="status">
