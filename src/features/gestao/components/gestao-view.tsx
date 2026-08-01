@@ -57,6 +57,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClimaOperacional } from "./clima-operacional";
 import { supabase } from "@/integrations/supabase/client";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { useIsAdmin } from "@/hooks/use-is-admin";
@@ -79,6 +80,7 @@ import {
   STATUS_CANONICOS,
   WIDGETS,
   type GestaoFiltros,
+  type OsConsolidada,
 } from "../types";
 import { derivarAtencao, type ItemAtencao } from "../lib/atencao";
 import { gerarInsights } from "../lib/insights";
@@ -98,6 +100,9 @@ const FILTROS_PADRAO: GestaoFiltros = {
   status: null,
   criticidade: null,
 };
+
+/** Referência estável para listas vazias (evita recomputar memos a cada render). */
+const EMPTY_OS: OsConsolidada[] = [];
 
 function Chip({
   ativo,
@@ -261,7 +266,8 @@ export function GestaoView() {
   });
 
   const d = overview.data;
-  const os = consolidada.data ?? [];
+  const osData = consolidada.data;
+  const os = useMemo(() => osData ?? EMPTY_OS, [osData]);
   const carregando = overview.isLoading;
   const erro = overview.isError;
   const atencao = useMemo(() => derivarAtencao(d), [d]);
@@ -1485,10 +1491,11 @@ export function GestaoView() {
                 </Button>
               }
             >
-              <p className="text-sm text-muted-foreground">
+              <p className="mb-3 text-sm text-muted-foreground">
                 A suspensão automática por chuva continua sendo aplicada pelo monitoramento
                 climático do módulo de taludes; aqui o gestor vê apenas o impacto consolidado.
               </p>
+              <ClimaOperacional ptSuspensas={d?.taludes.pt_suspensas} />
             </Secao>
           </TabsContent>
 
