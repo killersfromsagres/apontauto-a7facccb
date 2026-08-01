@@ -3231,6 +3231,36 @@ export type Database = {
         }
         Relationships: []
       }
+      gestor_dashboard_preferences: {
+        Row: {
+          created_at: string
+          favorites_json: Json
+          filters_json: Json
+          id: string
+          layout_json: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favorites_json?: Json
+          filters_json?: Json
+          id?: string
+          layout_json?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favorites_json?: Json
+          filters_json?: Json
+          id?: string
+          layout_json?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       image_uploads: {
         Row: {
           created_at: string
@@ -6955,6 +6985,37 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_gestao_os_consolidada: {
+        Row: {
+          andar: string | null
+          ativo: string | null
+          atrasada: boolean | null
+          conclusao: string | null
+          criado_em: string | null
+          criticidade: string | null
+          descricao: string | null
+          dias_atraso: number | null
+          equipe: string | null
+          horas_atendimento: number | null
+          horas_reparo: number | null
+          id: string | null
+          inicio: string | null
+          local: string | null
+          numero_os: string | null
+          origem: string | null
+          patrimonio: string | null
+          pecas_pendentes: number | null
+          prazo_sla: string | null
+          predio: string | null
+          prioridade: string | null
+          problemas: number | null
+          reincidencia: number | null
+          status_canonico: string | null
+          status_origem: string | null
+          tecnico: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agua_can: { Args: { required_action?: string }; Returns: boolean }
@@ -7114,7 +7175,54 @@ export type Database = {
       frota_can: { Args: { required_action?: string }; Returns: boolean }
       frota_is_gestor: { Args: never; Returns: boolean }
       gen_material_solicitacao_numero: { Args: never; Returns: string }
+      gestao_os_consolidada: {
+        Args: {
+          p_criticidade?: string
+          p_dias?: number
+          p_equipe?: string
+          p_limit?: number
+          p_modulo?: string
+          p_predio?: string
+          p_status?: string
+        }
+        Returns: {
+          andar: string | null
+          ativo: string | null
+          atrasada: boolean | null
+          conclusao: string | null
+          criado_em: string | null
+          criticidade: string | null
+          descricao: string | null
+          dias_atraso: number | null
+          equipe: string | null
+          horas_atendimento: number | null
+          horas_reparo: number | null
+          id: string | null
+          inicio: string | null
+          local: string | null
+          numero_os: string | null
+          origem: string | null
+          patrimonio: string | null
+          pecas_pendentes: number | null
+          prazo_sla: string | null
+          predio: string | null
+          prioridade: string | null
+          problemas: number | null
+          reincidencia: number | null
+          status_canonico: string | null
+          status_origem: string | null
+          tecnico: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "vw_gestao_os_consolidada"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       gestao_overview: { Args: { p_dias?: number }; Returns: Json }
+      gestao_overview_v2: { Args: { p_dias?: number }; Returns: Json }
+      gestao_status_canonico: { Args: { p_status: string }; Returns: string }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
         Args: {
