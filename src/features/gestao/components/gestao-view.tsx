@@ -262,7 +262,8 @@ export function GestaoView() {
   });
 
   const d = overview.data;
-  const os = consolidada.data ?? [];
+  const osData = consolidada.data;
+  const os = useMemo(() => osData ?? EMPTY_OS, [osData]);
   const carregando = overview.isLoading;
   const erro = overview.isError;
   const atencao = useMemo(() => derivarAtencao(d), [d]);
