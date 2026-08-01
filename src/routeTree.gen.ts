@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WelcomeRouteImport } from './routes/welcome'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
@@ -17,7 +16,7 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as ApiWhatsappEnviarRouteImport } from './routes/api/whatsapp-enviar'
 import { Route as ApiImgbbUploadRouteImport } from './routes/api/imgbb-upload'
 import { Route as ApiBiFeedRouteImport } from './routes/api/bi-feed'
@@ -91,11 +90,6 @@ import { Route as AuthenticatedAbastecimentoAguaEvidenciasRouteImport } from './
 import { Route as AuthenticatedAbastecimentoAguaConfiguracoesRouteImport } from './routes/_authenticated/abastecimento.agua.configuracoes'
 import { Route as AuthenticatedAbastecimentoAguaBagsRouteImport } from './routes/_authenticated/abastecimento.agua.bags'
 
-const WelcomeRoute = WelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
@@ -130,10 +124,10 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiWhatsappEnviarRoute = ApiWhatsappEnviarRouteImport.update({
   id: '/api/whatsapp-enviar',
@@ -547,14 +541,13 @@ const AuthenticatedAbastecimentoAguaBagsRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/welcome': typeof WelcomeRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
   '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
@@ -629,14 +622,12 @@ export interface FileRoutesByFullPath {
   '/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/welcome': typeof WelcomeRoute
   '/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
   '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
@@ -682,6 +673,7 @@ export interface FileRoutesByTo {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/api/whatsapp-enviar': typeof ApiWhatsappEnviarRoute
+  '/': typeof AuthenticatedIndexRoute
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -711,7 +703,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
@@ -719,7 +710,6 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/termos': typeof TermosRoute
-  '/welcome': typeof WelcomeRoute
   '/_authenticated/abastecimento': typeof AuthenticatedAbastecimentoRouteWithChildren
   '/_authenticated/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
@@ -765,6 +755,7 @@ export interface FileRoutesById {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/api/whatsapp-enviar': typeof ApiWhatsappEnviarRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRouteWithChildren
   '/_authenticated/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -803,7 +794,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/welcome'
     | '/abastecimento'
     | '/agente-ia'
     | '/apontamentos'
@@ -878,14 +868,12 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/auth'
     | '/contato'
     | '/privacidade'
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/welcome'
     | '/abastecimento'
     | '/agente-ia'
     | '/apontamentos'
@@ -931,6 +919,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/api/whatsapp-enviar'
+    | '/'
     | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -959,7 +948,6 @@ export interface FileRouteTypes {
     | '/abastecimento/agua'
   id:
     | '__root__'
-    | '/'
     | '/_authenticated'
     | '/auth'
     | '/contato'
@@ -967,7 +955,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/sobre'
     | '/termos'
-    | '/welcome'
     | '/_authenticated/abastecimento'
     | '/_authenticated/agente-ia'
     | '/_authenticated/apontamentos'
@@ -1013,6 +1000,7 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/api/whatsapp-enviar'
+    | '/_authenticated/'
     | '/_authenticated/abastecimento/agua'
     | '/_authenticated/ativo/$code'
     | '/_authenticated/inteligencia-ativos/historico'
@@ -1043,7 +1031,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
@@ -1051,7 +1038,6 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   TermosRoute: typeof TermosRoute
-  WelcomeRoute: typeof WelcomeRoute
   ApiBackorderReclassificarRoute: typeof ApiBackorderReclassificarRoute
   ApiBiFeedRoute: typeof ApiBiFeedRoute
   ApiImgbbUploadRoute: typeof ApiImgbbUploadRoute
@@ -1070,13 +1056,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/welcome': {
-      id: '/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof WelcomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/termos': {
       id: '/termos'
       path: '/termos'
@@ -1126,12 +1105,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/whatsapp-enviar': {
       id: '/api/whatsapp-enviar'
@@ -1745,6 +1724,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedTaludesPtRoute: typeof AuthenticatedTaludesPtRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAtivoCodeRoute: typeof AuthenticatedAtivoCodeRoute
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -1798,6 +1778,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedTaludesPtRoute: AuthenticatedTaludesPtRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAtivoCodeRoute: AuthenticatedAtivoCodeRoute,
   AuthenticatedInteligenciaAtivosHistoricoRoute:
     AuthenticatedInteligenciaAtivosHistoricoRoute,
@@ -1811,7 +1792,6 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,
@@ -1819,7 +1799,6 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   TermosRoute: TermosRoute,
-  WelcomeRoute: WelcomeRoute,
   ApiBackorderReclassificarRoute: ApiBackorderReclassificarRoute,
   ApiBiFeedRoute: ApiBiFeedRoute,
   ApiImgbbUploadRoute: ApiImgbbUploadRoute,

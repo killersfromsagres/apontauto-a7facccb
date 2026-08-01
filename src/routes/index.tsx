@@ -1,55 +1,306 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useVisibleSections } from "@/lib/nav-config";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { PcmHome } from "@/components/home/pcm-home";
-
-function HomeRoute() {
-  const { visibleItems, hasDashboard, loading } = useVisibleSections();
-  const [name, setName] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
-      const u = data.session?.user;
-      const full = (u?.user_metadata?.full_name as string | undefined) ?? null;
-      setName(full ?? (u?.email ? u.email.split("@")[0] : null));
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (loading) return null;
-  
-  // If user has access to dashboard, show it
-  if (hasDashboard) return <PcmHome userName={name} />;
-
-  // User without dashboard access: redirect to the first allowed module.
-  const first = visibleItems[0];
-  if (!first) return null;
-  return <Navigate to={first.url} replace />;
-}
+import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Central Operacional PCM — Apont Auto" },
+      { title: "Apont Auto · Design System Premium" },
       {
         name: "description",
-        content:
-          "Central operacional PCM: preenchimento de localização de ativos, indicadores de processamento e atalhos para os módulos liberados.",
+        content: "Evolução da identidade visual, arquitetura e gestão do Apont Auto.",
       },
-      { property: "og:title", content: "Central Operacional PCM — Apont Auto" },
-      {
-        property: "og:description",
-        content:
-          "Indicadores de processamento de planilhas, base de ativos ativa e atalhos operacionais.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: HomeRoute,
+  component: WelcomePage,
 });
+
+function WelcomePage() {
+  const content = `2. NOVO DESIGN SYSTEM PREMIUM
+
+2.1 Direção visual
+
+Evolua a identidade visual para:
+
+premium;
+
+minimalista;
+
+corporativa;
+
+elegante;
+
+moderna;
+
+profissional;
+
+inspirada na clareza dos produtos Apple;
+
+com superfícies de vidro fosco;
+
+sem excesso de neon;
+
+sem aparência gamer;
+
+sem brilhos exagerados;
+
+sem animações contínuas desnecessárias.
+
+Mantenha personalidade industrial discreta.
+
+2.2 Liquid Glass controlado
+
+Utilize vidro apenas em superfícies elevadas:
+
+barra superior;
+
+sidebar;
+
+bottom navigation;
+
+filtros;
+
+cards principais;
+
+dialogs;
+
+drawers;
+
+menus.
+
+Padrão sugerido:
+
+fundo translúcido;
+
+backdrop-blur entre 16 e 28 px;
+
+borda branca de baixa opacidade;
+
+sombra suave;
+
+brilho interno discreto;
+
+transparência suficiente para mostrar profundidade;
+
+contraste legível em light e dark mode.
+
+Não aplique blur pesado em listas extensas ou em todos os elementos, pois isso prejudica desempenho.
+
+2.3 Tokens
+
+Centralize tokens para:
+
+cores;
+
+superfícies;
+
+bordas;
+
+blur;
+
+raio;
+
+espaçamento;
+
+sombra;
+
+elevação;
+
+duração;
+
+easing;
+
+tipografia;
+
+estados semânticos.
+
+Use uma única identidade.
+
+Modo escuro:
+
+preto azulado;
+
+grafite;
+
+azul marinho;
+
+branco frio;
+
+azul como destaque;
+
+ciano somente para informação;
+
+verde para sucesso;
+
+âmbar para atenção;
+
+vermelho para risco.
+
+Modo claro:
+
+fundo branco gelo;
+
+cinza azulado;
+
+superfícies translúcidas;
+
+texto grafite;
+
+azul profissional.
+
+2.4 Tipografia
+
+Use tipografia limpa e legível.
+
+Preferência:
+
+Inter ou fonte de sistema semelhante a SF Pro;
+
+números tabulares em KPIs;
+
+hierarquia simples;
+
+títulos menos exagerados;
+
+textos mobile nunca menores que 12 px;
+
+corpo entre 14 e 16 px;
+
+títulos responsivos;
+
+evitar excesso de caixa alta e espaçamento entre letras.
+
+2.5 Botões
+
+Padronize variantes:
+
+Primary
+
+Secondary
+
+Glass
+
+Ghost
+
+Destructive
+
+Success
+
+Icon
+
+Floating Action
+
+Segmented Control
+
+Requisitos:
+
+altura mínima de 44 px no mobile;
+
+feedback de toque;
+
+loading interno;
+
+ícone consistente;
+
+estado desabilitado claro;
+
+foco visível;
+
+tooltip quando for apenas ícone;
+
+sem saltos de layout;
+
+confirmação para ações perigosas.
+
+2.6 Campos
+
+Melhore inputs, selects, date pickers, comboboxes e textareas:
+
+label permanente;
+
+ajuda opcional;
+
+validação inline;
+
+ícones funcionais;
+
+preenchimento automático quando seguro;
+
+teclado mobile adequado;
+
+busca em selects longos;
+
+mensagem de erro vinculada por aria-describedby;
+
+estado de sucesso;
+
+skeleton;
+
+autocomplete;
+
+scanner de QR quando aplicável.
+
+2.7 Cards
+
+Crie padrões:
+
+KPI card;
+
+action card;
+
+entity card;
+
+vehicle card;
+
+OS card;
+
+route card;
+
+alert card;
+
+empty state;
+
+error state;
+
+offline state.
+
+Cards não devem levantar ou animar excessivamente ao passar o mouse. Use movimento discreto.
+
+2.8 Movimento
+
+Animações:
+
+160 a 260 ms;
+
+easing suave;
+
+fade;
+
+slide curto;
+
+scale mínima;
+
+transição entre tabs;
+
+abertura de drawer;
+
+skeleton shimmer discreto.
+
+Respeite prefers-reduced-motion.
+
+Não use glow pulsante contínuo fora de alertas realmente críticos.`;
+
+  return (
+    <div className="mx-auto max-w-2xl px-6 py-12">
+      <div className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground/80">
+        {content}
+      </div>
+      <div className="mt-12 flex justify-center">
+        <a 
+          href="/auth"
+          className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground shadow-lg transition-transform active:scale-95"
+        >
+          Acessar Sistema
+        </a>
+      </div>
+    </div>
+  );
+}
