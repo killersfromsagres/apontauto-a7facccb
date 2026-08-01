@@ -1290,7 +1290,9 @@ function BackorderPage() {
     setClearing(true);
     const t = toast.loading("Limpando todos os chamados...");
     try {
-      const { error } = await supabase.from("backorder_os").delete().not("os", "is", null);
+      // Deleção em massa no servidor (uma única transação) — evita timeout
+      // do PostgREST com dezenas de milhares de linhas.
+      const { data, error } = await supabase.rpc("backorder_clear_all");
       if (error) throw error;
       setRows([]);
       setSelectedBackorder(null);
@@ -1299,7 +1301,8 @@ function BackorderPage() {
       setOrder("asc");
       setTab("tabela");
       setClearOpen(false);
-      toast.success("Todos os chamados foram removidos.", { id: t });
+      toast.success(`${Number(data ?? 0).toLocaleString("pt-BR")} chamados removidos.`, { id: t });
+
     } catch (e) {
       const err = e as { message?: string };
       toast.error(err?.message ?? "Falha ao limpar chamados", { id: t });
