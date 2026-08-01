@@ -329,7 +329,7 @@ export function FiltroNovaSolicitacao({ ativoInicial, onCriada }: Props) {
         <Button
           variant="secondary"
           className="min-h-[44px] sm:flex-1"
-          disabled={enviandoFoto}
+          loading={enviandoFoto}
           onClick={() => fileRef.current?.click()}
         >
           {enviandoFoto ? (

@@ -566,7 +566,7 @@ export function FiltroAtivosTab({ podeEscrever }: Props) {
               <Button
                 variant="secondary"
                 className="min-h-[44px] w-full"
-                disabled={enviandoFoto}
+                loading={enviandoFoto}
                 onClick={() => fotoRef.current?.click()}
               >
                 {enviandoFoto ? (
@@ -589,7 +589,7 @@ export function FiltroAtivosTab({ podeEscrever }: Props) {
           <DialogFooter>
             <Button
               className="min-h-[44px] w-full"
-              disabled={salvar.isPending}
+              loading={salvar.isPending}
               onClick={() => salvar.mutate()}
             >
               {salvar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

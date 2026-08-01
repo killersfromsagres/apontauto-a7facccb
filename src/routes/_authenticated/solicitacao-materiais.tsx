@@ -712,7 +712,7 @@ function SolicitacaoMateriaisPage() {
                   <Button
                     className="h-12 flex-1"
                     onClick={() => void salvar("enviada")}
-                    disabled={salvando}
+                    loading={salvando}
                   >
                     {salvando ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -725,7 +725,7 @@ function SolicitacaoMateriaisPage() {
                     variant="outline"
                     className="h-12 flex-1"
                     onClick={() => void salvar("rascunho")}
-                    disabled={salvando}
+                    loading={salvando}
                   >
                     Salvar rascunho
                   </Button>

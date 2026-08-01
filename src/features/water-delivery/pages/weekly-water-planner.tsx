@@ -692,7 +692,7 @@ function DuplicarSemanaDialog({ onDone }: { onDone: () => void }) {
         </p>
         <DialogFooter>
           <Button
-            disabled={salvando}
+            loading={salvando}
             onClick={async () => {
               setSalvando(true);
               try {

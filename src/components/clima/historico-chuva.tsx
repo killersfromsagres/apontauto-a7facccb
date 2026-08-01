@@ -438,7 +438,7 @@ export function RegistroManualChuva() {
             key={o}
             size="sm"
             variant="outline"
-            disabled={saving !== null}
+            loading={saving !== null}
             className={cn("min-h-11 rounded-full capitalize", INTENSITY_COLOR[o])}
             onClick={() => registrar(o)}
           >

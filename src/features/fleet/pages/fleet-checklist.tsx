@@ -457,7 +457,7 @@ export function FleetChecklist() {
           <Button
             className="tap-press h-12 w-full shadow-elegant hover:shadow-glow sm:w-auto"
             onClick={submit}
-            disabled={save.isPending}
+            loading={save.isPending}
           >
             {save.isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

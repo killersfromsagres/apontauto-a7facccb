@@ -298,7 +298,7 @@ export function WhatsAppShareDialog({
               variant="secondary"
               size="sm"
               className="w-full"
-              disabled={enviando}
+              loading={enviando}
               onClick={enviarOficial}
             >
               <Send className="mr-1.5 h-4 w-4" />
