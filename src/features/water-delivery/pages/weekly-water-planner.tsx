@@ -17,7 +17,13 @@ import {
   Table2,
   Trash2,
   Upload,
+  MoreVertical,
+  Check,
+  CheckCircle2,
+  GripVertical
 } from "lucide-react";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Badge } from "@/components/ui/badge";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
