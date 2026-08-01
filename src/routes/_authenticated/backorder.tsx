@@ -3313,7 +3313,7 @@ const BackorderPanel = memo(function BackorderPanel({
     return () => clearTimeout(t);
   }, [query]);
   const ordered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debounced.trim().toLowerCase();
     const list = q
       ? rows.filter(
           (r) =>
@@ -3326,7 +3326,12 @@ const BackorderPanel = memo(function BackorderPanel({
     return [...list].sort(
       (a, b) => new Date(a.data_solicitacao).getTime() - new Date(b.data_solicitacao).getTime(),
     );
-  }, [rows, query]);
+  }, [rows, debounced]);
+  const {
+    visible: visibleCards,
+    hasMore: hasMoreCards,
+    sentinelRef: cardsSentinel,
+  } = useIncrementalList(ordered, 60);
 
   return (
     <GlassCard className="border-2 border-orange-500/40 bg-orange-500/5">
@@ -3441,7 +3446,7 @@ const BackorderPanel = memo(function BackorderPanel({
       )}
     </GlassCard>
   );
-}
+});
 
 // ---------- Modal de edição/detalhes de Backorder ----------
 
