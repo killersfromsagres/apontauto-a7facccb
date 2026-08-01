@@ -9,7 +9,6 @@ import * as XLSX from "xlsx";
 export { DIAS, DIA_LABEL } from "./constants";
 import { DIAS, DIA_LABEL } from "./constants";
 
-
 export type Severidade = "erro" | "alerta" | "info";
 
 export interface Divergencia {

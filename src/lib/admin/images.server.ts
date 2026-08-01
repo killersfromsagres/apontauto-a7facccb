@@ -52,10 +52,13 @@ export function sourceByKey(key: string): SourceDef | undefined {
 }
 
 export async function assertAdmin(supabase: SupabaseClient, userId: string) {
-  const { data, error } = await supabase.rpc("has_role" as never, {
-    _user_id: userId,
-    _role: "admin",
-  } as never);
+  const { data, error } = await supabase.rpc(
+    "has_role" as never,
+    {
+      _user_id: userId,
+      _role: "admin",
+    } as never,
+  );
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Forbidden");
 }

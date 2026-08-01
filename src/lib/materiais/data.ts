@@ -173,7 +173,10 @@ export async function criarSolicitacao(input: NovaSolicitacaoInput): Promise<Sol
     .insert(payload as any)
     .select("*");
   if (eItens) {
-    await supabase.from("material_solicitacoes").delete().eq("id", (sol as any).id);
+    await supabase
+      .from("material_solicitacoes")
+      .delete()
+      .eq("id", (sol as any).id);
     throw new Error(eItens.message);
   }
 

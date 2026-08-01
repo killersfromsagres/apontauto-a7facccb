@@ -52,8 +52,7 @@ export function StatusBoard({
             r.outros.toLowerCase().includes(s) ||
             r.predio.toLowerCase().includes(s),
       )
-      .sort((a, b) => +new Date(b.data_solicitacao) - +new Date(a.data_solicitacao))
-      ;
+      .sort((a, b) => +new Date(b.data_solicitacao) - +new Date(a.data_solicitacao));
   }, [rows, cat, q]);
 
   return (

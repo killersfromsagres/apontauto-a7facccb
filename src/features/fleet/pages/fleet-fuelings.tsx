@@ -54,10 +54,7 @@ export function FleetFuelings() {
 
   const vehicles = vehiclesQ.data ?? [];
   const rows = fuelingsQ.data ?? [];
-  const vehicleById = useMemo(
-    () => Object.fromEntries(vehicles.map((v) => [v.id, v])),
-    [vehicles],
-  );
+  const vehicleById = useMemo(() => Object.fromEntries(vehicles.map((v) => [v.id, v])), [vehicles]);
 
   const month = new Date().toISOString().slice(0, 7);
   const kpis = useMemo(() => {
@@ -221,9 +218,7 @@ export function FleetFuelings() {
         <p className="text-sm text-muted-foreground">Carregando…</p>
       ) : rows.length === 0 ? (
         <GlassCard>
-          <p className="text-sm text-muted-foreground">
-            Nenhum abastecimento registrado ainda.
-          </p>
+          <p className="text-sm text-muted-foreground">Nenhum abastecimento registrado ainda.</p>
         </GlassCard>
       ) : (
         <div className="space-y-2.5">
@@ -271,7 +266,6 @@ export function FleetFuelings() {
               </GlassCard>
             );
           })}
-
         </div>
       )}
     </div>
@@ -293,8 +287,6 @@ function Kpi({ label, value, index = 0 }: { label: string; value: string; index?
   );
 }
 
-
-
 function NumField({
   label,
   value,
@@ -309,7 +301,12 @@ function NumField({
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
-      <Input className="h-11" type={type} value={value} onChange={(e) => onChange(e.target.value)} />
+      <Input
+        className="h-11"
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

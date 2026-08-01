@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 
-
 import { GlassCard } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,7 +123,6 @@ export function WaterScheduleSimple() {
       }),
     [veiculosQ.data],
   );
-
 
   const entregaPorPonto = useMemo(() => {
     const map = new Map<string, Entrega>();
@@ -241,9 +239,7 @@ export function WaterScheduleSimple() {
                     type="button"
                     onClick={() =>
                       atualizarEquipe(
-                        ativo
-                          ? colaboradores.filter((c) => c !== nome)
-                          : [...colaboradores, nome],
+                        ativo ? colaboradores.filter((c) => c !== nome) : [...colaboradores, nome],
                         veiculo,
                       )
                     }
@@ -292,7 +288,6 @@ export function WaterScheduleSimple() {
                   </SelectItem>
                 ))}
               </SelectContent>
-
             </Select>
           </div>
         </div>
@@ -382,7 +377,11 @@ export function WaterScheduleSimple() {
                           : "bg-muted text-muted-foreground",
                       )}
                     >
-                      {fotos > 0 ? <Camera className="h-3 w-3" /> : <ImageOff className="h-3.5 w-3.5" />}
+                      {fotos > 0 ? (
+                        <Camera className="h-3 w-3" />
+                      ) : (
+                        <ImageOff className="h-3.5 w-3.5" />
+                      )}
                       {fotos}
                     </span>
                   </button>
@@ -401,7 +400,6 @@ export function WaterScheduleSimple() {
           defaultColaboradores={colaboradores}
           defaultVeiculo={veiculo}
           veiculos={opcoesVeiculos}
-
           onCommitEquipe={atualizarEquipe}
           onClose={() => setPontoAberto(null)}
           onSaved={() => {
@@ -410,7 +408,6 @@ export function WaterScheduleSimple() {
           }}
         />
       )}
-
     </div>
   );
 }
@@ -447,18 +444,14 @@ function EntregaSheet({
   );
   const [status, setStatus] = useState<EntregaStatus>(entrega?.status ?? "concluida");
   const [observacao, setObservacao] = useState(entrega?.observacao ?? "");
-  const [bebedouroOk, setBebedouroOk] = useState<boolean | null>(
-    entrega?.bebedouro_ok ?? null,
-  );
+  const [bebedouroOk, setBebedouroOk] = useState<boolean | null>(entrega?.bebedouro_ok ?? null);
   const [bebedouroObs, setBebedouroObs] = useState(entrega?.bebedouro_obs ?? "");
   const [novas, setNovas] = useState<{ id: string; blob: Blob; url: string }[]>([]);
   // Seleção local: só é aplicada a esta entrega e só vira padrão ao confirmar.
   const [colaboradores, setColaboradores] = useState<string[]>(
     () => entrega?.colaboradores ?? defaultColaboradores,
   );
-  const [veiculo, setVeiculo] = useState<string | null>(
-    () => entrega?.veiculo ?? defaultVeiculo,
-  );
+  const [veiculo, setVeiculo] = useState<string | null>(() => entrega?.veiculo ?? defaultVeiculo);
 
   useEffect(() => () => novas.forEach((n) => URL.revokeObjectURL(n.url)), [novas]);
 
@@ -488,8 +481,7 @@ function EntregaSheet({
   });
 
   const semColaborador = colaboradores.length === 0;
-  const podeSalvar =
-    !semColaborador && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
+  const podeSalvar = !semColaborador && !!veiculo && (!exigeFoto || jaTemFoto) && !salvar.isPending;
 
   function tentarSalvar() {
     if (semColaborador) {
@@ -569,7 +561,6 @@ function EntregaSheet({
               <span className="text-sm text-muted-foreground">bag(s) de 12 L</span>
             </div>
           </div>
-
 
           <div>
             <Label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
@@ -709,8 +700,8 @@ function EntregaSheet({
 
           <div className="space-y-4 rounded-2xl border border-border/60 bg-card/50 p-3.5">
             <p className="text-xs font-medium text-muted-foreground">
-              Confirme para <span className="text-foreground">{ponto.predio}</span> — vale só
-              para esta entrega.
+              Confirme para <span className="text-foreground">{ponto.predio}</span> — vale só para
+              esta entrega.
             </p>
 
             <div>
@@ -743,9 +734,7 @@ function EntregaSheet({
                       aria-pressed={ativo}
                       onClick={() =>
                         setColaboradores((atual) =>
-                          atual.includes(nome)
-                            ? atual.filter((c) => c !== nome)
-                            : [...atual, nome],
+                          atual.includes(nome) ? atual.filter((c) => c !== nome) : [...atual, nome],
                         )
                       }
                       className={cn(
@@ -821,14 +810,11 @@ function EntregaSheet({
                       <span className="flex w-full items-center gap-2">
                         <PlateBadge plate={v.plate} size="sm" />
                         <BrandMark brand={v.brand} className="h-3 w-3" />
-                        <span className="truncate text-[11px] text-muted-foreground">
-                          {v.nome}
-                        </span>
+                        <span className="truncate text-[11px] text-muted-foreground">{v.nome}</span>
                       </span>
                     </button>
                   );
                 })}
-
               </div>
               {!veiculo && (
                 <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
@@ -837,8 +823,6 @@ function EntregaSheet({
               )}
             </div>
           </div>
-
-
         </div>
 
         <div className="-mx-4 flex shrink-0 gap-2 border-t border-border/60 bg-background px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-mx-6 sm:px-6">
@@ -862,4 +846,3 @@ function EntregaSheet({
     </Sheet>
   );
 }
-

@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import {
   Activity,
   BrainCircuit,
-
   Gauge,
   LayoutDashboard,
   CalendarRange,
@@ -476,7 +475,6 @@ export const sections: MenuSection[] = [
         icon: ChartPie,
         keywords: ["power bi", "painel", "dashboard", "gráfico", "kpi", "exportar", "conector"],
       },
-
     ],
   },
 

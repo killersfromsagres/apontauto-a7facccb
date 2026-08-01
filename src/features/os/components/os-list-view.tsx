@@ -1,9 +1,5 @@
 import * as React from "react";
-import { 
-  Loader2, 
-  Search, 
-  RefreshCw,
-} from "lucide-react";
+import { Loader2, Search, RefreshCw } from "lucide-react";
 import { OSMobileCard } from "../components/os-mobile-card";
 import { OSFiltersMobile } from "../components/os-filters-mobile";
 import { OSPageHeader } from "../components/os-page-header";
@@ -31,19 +27,20 @@ export function OSListView({
   onRefresh,
   onAdd,
   onOSAction,
-  isOnline = true
+  isOnline = true,
 }: OSListViewProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [viewMode, setViewMode] = React.useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
 
   const filteredList = React.useMemo(() => {
     if (!searchQuery) return osList;
     const q = searchQuery.toLowerCase();
-    return osList.filter(os => 
-      os.numero.toLowerCase().includes(q) ||
-      os.descricao.toLowerCase().includes(q) ||
-      os.local.toLowerCase().includes(q) ||
-      os.equipe.toLowerCase().includes(q)
+    return osList.filter(
+      (os) =>
+        os.numero.toLowerCase().includes(q) ||
+        os.descricao.toLowerCase().includes(q) ||
+        os.local.toLowerCase().includes(q) ||
+        os.equipe.toLowerCase().includes(q),
     );
   }, [osList, searchQuery]);
 
@@ -54,14 +51,16 @@ export function OSListView({
           <Loader2 className="h-10 w-10 text-primary animate-spin" />
           <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
         </div>
-        <p className="text-sm text-muted-foreground animate-pulse">Carregando ordens de serviço...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">
+          Carregando ordens de serviço...
+        </p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <OSPageHeader 
+      <OSPageHeader
         title={title}
         subtitle={subtitle}
         onAdd={onAdd}
@@ -72,22 +71,21 @@ export function OSListView({
       />
 
       <div className="px-4 py-3 bg-background/50 sticky top-[92px] z-20 backdrop-blur-sm border-b border-white/5">
-        <OSFiltersMobile 
-          onFilterChange={() => {}} 
-          onSearchChange={setSearchQuery} 
-        />
+        <OSFiltersMobile onFilterChange={() => {}} onSearchChange={setSearchQuery} />
       </div>
 
       <ScrollArea className="flex-1 px-4 py-4">
         {filteredList.length > 0 ? (
-          <div className={cn(
-            "grid gap-4 pb-24",
-            viewMode === 'grid' ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"
-          )}>
+          <div
+            className={cn(
+              "grid gap-4 pb-24",
+              viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1",
+            )}
+          >
             {filteredList.map((os, idx) => (
-              <OSMobileCard 
-                key={os.id} 
-                os={os} 
+              <OSMobileCard
+                key={os.id}
+                os={os}
                 onAction={onOSAction}
                 className="animate-in fade-in slide-in-from-bottom-4 duration-500"
                 style={{ animationDelay: `${idx * 50}ms` }}

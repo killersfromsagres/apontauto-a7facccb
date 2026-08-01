@@ -145,7 +145,10 @@ function Secao({
 export function GestaoView() {
   const qc = useQueryClient();
   const { isAdmin, loading: loadingAdmin } = useIsAdmin();
-  const { allowed: canRead, isLoading: loadingRead } = useCanAccessModule("gestao-executiva", "read");
+  const { allowed: canRead, isLoading: loadingRead } = useCanAccessModule(
+    "gestao-executiva",
+    "read",
+  );
   const { allowed: canCreate } = useCanAccessModule("gestao-executiva", "create");
   const { allowed: canExport } = useCanAccessModule("gestao-executiva", "export");
 
@@ -390,21 +393,44 @@ export function GestaoView() {
             </Button>
             {podeExportar && (
               <>
-                <Button variant="outline" className="min-h-11" disabled={!d} onClick={() => exportar("pdf")}>
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={!d}
+                  onClick={() => exportar("pdf")}
+                >
                   PDF
                 </Button>
-                <Button variant="outline" className="min-h-11" disabled={!d} onClick={() => exportar("xlsx")}>
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={!d}
+                  onClick={() => exportar("xlsx")}
+                >
                   Excel
                 </Button>
-                <Button variant="outline" className="min-h-11" disabled={!d} onClick={() => exportar("csv")}>
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={!d}
+                  onClick={() => exportar("csv")}
+                >
                   CSV
                 </Button>
               </>
             )}
-            <Button variant="outline" className="min-h-11" onClick={() => setPersonalizar((v) => !v)}>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setPersonalizar((v) => !v)}
+            >
               <Sliders className="mr-2 h-4 w-4" /> Personalizar
             </Button>
-            <Button variant="outline" className="min-h-11" onClick={() => setApresentacao((v) => !v)}>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={() => setApresentacao((v) => !v)}
+            >
               <Maximize2 className="mr-2 h-4 w-4" /> {apresentacao ? "Sair" : "Apresentação"}
             </Button>
           </div>
@@ -465,21 +491,35 @@ export function GestaoView() {
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <Chip ativo={!filtros.modulo} onClick={() => setFiltros((f) => ({ ...f, modulo: null }))}>
+            <Chip
+              ativo={!filtros.modulo}
+              onClick={() => setFiltros((f) => ({ ...f, modulo: null }))}
+            >
               Todos os módulos
             </Chip>
             {MODULOS.map((m) => (
-              <Chip key={m} ativo={filtros.modulo === m} onClick={() => setFiltros((f) => ({ ...f, modulo: m }))}>
+              <Chip
+                key={m}
+                ativo={filtros.modulo === m}
+                onClick={() => setFiltros((f) => ({ ...f, modulo: m }))}
+              >
                 {m}
               </Chip>
             ))}
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <Chip ativo={!filtros.status} onClick={() => setFiltros((f) => ({ ...f, status: null }))}>
+            <Chip
+              ativo={!filtros.status}
+              onClick={() => setFiltros((f) => ({ ...f, status: null }))}
+            >
               Todos os status
             </Chip>
             {STATUS_CANONICOS.map((s) => (
-              <Chip key={s} ativo={filtros.status === s} onClick={() => setFiltros((f) => ({ ...f, status: s }))}>
+              <Chip
+                key={s}
+                ativo={filtros.status === s}
+                onClick={() => setFiltros((f) => ({ ...f, status: s }))}
+              >
                 {s}
               </Chip>
             ))}
@@ -665,7 +705,9 @@ export function GestaoView() {
                   icon={Gauge}
                   label="Cumprimento de SLA"
                   valor={slaPct === null ? "—" : `${slaPct}%`}
-                  tone={slaPct !== null && slaPct >= 90 ? "bom" : slaPct !== null ? "atencao" : "neutro"}
+                  tone={
+                    slaPct !== null && slaPct >= 90 ? "bom" : slaPct !== null ? "atencao" : "neutro"
+                  }
                   tooltip="Percentual das OS concluídas no período que respeitaram o prazo registrado."
                   carregando={carregando}
                   erro={erro}
@@ -857,9 +899,30 @@ export function GestaoView() {
                     <YAxis tick={{ fontSize: 11 }} />
                     <RTooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="criadas" name="Abertas" stroke="#22d3ee" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="concluidas" name="Concluídas" stroke="#34d399" strokeWidth={2} dot={false} />
-                    <Line type="monotone" dataKey="canceladas" name="Canceladas" stroke="#f87171" strokeWidth={2} dot={false} />
+                    <Line
+                      type="monotone"
+                      dataKey="criadas"
+                      name="Abertas"
+                      stroke="#22d3ee"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="concluidas"
+                      name="Concluídas"
+                      stroke="#34d399"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="canceladas"
+                      name="Canceladas"
+                      stroke="#f87171"
+                      strokeWidth={2}
+                      dot={false}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -951,7 +1014,14 @@ export function GestaoView() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={d?.os_equipes ?? []}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                      <XAxis dataKey="equipe" tick={{ fontSize: 10 }} interval={0} angle={-20} height={56} textAnchor="end" />
+                      <XAxis
+                        dataKey="equipe"
+                        tick={{ fontSize: 10 }}
+                        interval={0}
+                        angle={-20}
+                        height={56}
+                        textAnchor="end"
+                      />
                       <YAxis tick={{ fontSize: 11 }} />
                       <RTooltip />
                       <Bar dataKey="abertas" name="Abertas" fill="#22d3ee" radius={[6, 6, 0, 0]} />
@@ -976,7 +1046,9 @@ export function GestaoView() {
 
             <Secao
               titulo={`Ordens consolidadas (${num(os.length)})`}
-              acao={<span className="text-xs text-muted-foreground">{filtrosLegenda(filtros)}</span>}
+              acao={
+                <span className="text-xs text-muted-foreground">{filtrosLegenda(filtros)}</span>
+              }
             >
               {consolidada.isLoading ? (
                 <Skeleton className="h-56 w-full" />
@@ -1023,7 +1095,9 @@ export function GestaoView() {
                               </Badge>
                             </td>
                             <td className="p-2 text-xs">
-                              {o.prazo_sla ? new Date(o.prazo_sla).toLocaleDateString("pt-BR") : "—"}
+                              {o.prazo_sla
+                                ? new Date(o.prazo_sla).toLocaleDateString("pt-BR")
+                                : "—"}
                             </td>
                           </tr>
                         ))}
@@ -1048,8 +1122,9 @@ export function GestaoView() {
                         </div>
                         <p className="mt-1 line-clamp-2 text-sm">{o.descricao ?? "—"}</p>
                         <p className="mt-1 text-[11px] text-muted-foreground">
-                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "Local não informado"} ·{" "}
-                          {o.equipe}
+                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") ||
+                            "Local não informado"}{" "}
+                          · {o.equipe}
                         </p>
                       </div>
                     ))}
@@ -1064,7 +1139,10 @@ export function GestaoView() {
               ) : (
                 <ul className="space-y-1 text-sm">
                   {(d?.os_reincidentes ?? []).map((r) => (
-                    <li key={r.ativo} className="flex justify-between gap-3 border-b border-border/30 py-1">
+                    <li
+                      key={r.ativo}
+                      className="flex justify-between gap-3 border-b border-border/30 py-1"
+                    >
                       <span className="truncate">{r.ativo}</span>
                       <span className="text-muted-foreground">{num(r.ocorrencias)} OS</span>
                     </li>
@@ -1130,14 +1208,70 @@ export function GestaoView() {
           {/* FROTA */}
           <TabsContent value="frota" className="space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={Truck} label="Frota total" valor={num(d?.frota.total)} tooltip="Veículos cadastrados." carregando={carregando} />
-              <KpiCard icon={BadgeCheck} label="Disponíveis" valor={num(d?.frota.disponiveis)} tone="bom" tooltip="Veículos aptos à operação." carregando={carregando} />
-              <KpiCard icon={Lock} label="Bloqueados" valor={num(d?.frota.bloqueados)} tone={d?.frota.bloqueados ? "critico" : "bom"} tooltip="Veículos impedidos de rodar." carregando={carregando} />
-              <KpiCard icon={Wrench} label="Em manutenção" valor={num(d?.frota.manutencao)} tooltip="Veículos em oficina." carregando={carregando} />
-              <KpiCard icon={ClipboardList} label="Checklists" valor={num(d?.frota.checklists)} atual={d?.frota.checklists} anterior={d?.frota.checklists_ant} tooltip="Checklists realizados no período." carregando={carregando} />
-              <KpiCard icon={AlertTriangle} label="Reprovados" valor={num(d?.frota.reprovados)} tone={d?.frota.reprovados ? "atencao" : "bom"} tooltip="Checklists com itens reprovados." carregando={carregando} />
-              <KpiCard icon={Fuel} label="Custo" valor={brl(d?.frota.custo)} atual={d?.frota.custo} anterior={d?.frota.custo_ant} inverso tooltip="Custo de abastecimento no período." carregando={carregando} />
-              <KpiCard icon={Gauge} label="Litros" valor={num(d?.frota.litros)} tooltip="Litros abastecidos no período." carregando={carregando} />
+              <KpiCard
+                icon={Truck}
+                label="Frota total"
+                valor={num(d?.frota.total)}
+                tooltip="Veículos cadastrados."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={BadgeCheck}
+                label="Disponíveis"
+                valor={num(d?.frota.disponiveis)}
+                tone="bom"
+                tooltip="Veículos aptos à operação."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Lock}
+                label="Bloqueados"
+                valor={num(d?.frota.bloqueados)}
+                tone={d?.frota.bloqueados ? "critico" : "bom"}
+                tooltip="Veículos impedidos de rodar."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Wrench}
+                label="Em manutenção"
+                valor={num(d?.frota.manutencao)}
+                tooltip="Veículos em oficina."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={ClipboardList}
+                label="Checklists"
+                valor={num(d?.frota.checklists)}
+                atual={d?.frota.checklists}
+                anterior={d?.frota.checklists_ant}
+                tooltip="Checklists realizados no período."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={AlertTriangle}
+                label="Reprovados"
+                valor={num(d?.frota.reprovados)}
+                tone={d?.frota.reprovados ? "atencao" : "bom"}
+                tooltip="Checklists com itens reprovados."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Fuel}
+                label="Custo"
+                valor={brl(d?.frota.custo)}
+                atual={d?.frota.custo}
+                anterior={d?.frota.custo_ant}
+                inverso
+                tooltip="Custo de abastecimento no período."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Gauge}
+                label="Litros"
+                valor={num(d?.frota.litros)}
+                tooltip="Litros abastecidos no período."
+                carregando={carregando}
+              />
             </div>
             <Secao
               titulo="Ações rápidas de frota"
@@ -1158,13 +1292,63 @@ export function GestaoView() {
           {/* ÁGUA */}
           <TabsContent value="agua" className="space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={Droplets} label="Entregas" valor={num(d?.agua.entregas)} atual={d?.agua.entregas} anterior={d?.agua.entregas_ant} tooltip="Entregas registradas no período." carregando={carregando} />
-              <KpiCard icon={Package} label="Bags entregues" valor={num(d?.agua.bags)} atual={d?.agua.bags} anterior={d?.agua.bags_ant} tooltip="Total de bags entregues." carregando={carregando} />
-              <KpiCard icon={Clock} label="Pendentes" valor={num(d?.agua.pendentes)} tone={d?.agua.pendentes ? "atencao" : "bom"} tooltip="Pontos programados sem conclusão." carregando={carregando} />
-              <KpiCard icon={AlertTriangle} label="Sem evidência" valor={num(d?.agua.sem_evidencia)} tone={d?.agua.sem_evidencia ? "critico" : "bom"} tooltip="Entregas sem foto anexada." carregando={carregando} />
-              <KpiCard icon={Wrench} label="Bebedouros com falha" valor={num(d?.agua.bebedouros_nok)} tone={d?.agua.bebedouros_nok ? "atencao" : "bom"} tooltip="Apontamentos de bebedouro fora de operação." carregando={carregando} />
-              <KpiCard icon={Droplets} label="Filtros vencidos" valor={num(d?.filtros.vencidos)} tone={d?.filtros.vencidos ? "critico" : "bom"} tooltip="Filtros com troca vencida." carregando={carregando} />
-              <KpiCard icon={CalendarClock} label="Filtros a vencer" valor={num(d?.filtros.proximos_30)} tooltip="Filtros com troca nos próximos 30 dias." carregando={carregando} />
+              <KpiCard
+                icon={Droplets}
+                label="Entregas"
+                valor={num(d?.agua.entregas)}
+                atual={d?.agua.entregas}
+                anterior={d?.agua.entregas_ant}
+                tooltip="Entregas registradas no período."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Package}
+                label="Bags entregues"
+                valor={num(d?.agua.bags)}
+                atual={d?.agua.bags}
+                anterior={d?.agua.bags_ant}
+                tooltip="Total de bags entregues."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Clock}
+                label="Pendentes"
+                valor={num(d?.agua.pendentes)}
+                tone={d?.agua.pendentes ? "atencao" : "bom"}
+                tooltip="Pontos programados sem conclusão."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={AlertTriangle}
+                label="Sem evidência"
+                valor={num(d?.agua.sem_evidencia)}
+                tone={d?.agua.sem_evidencia ? "critico" : "bom"}
+                tooltip="Entregas sem foto anexada."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Wrench}
+                label="Bebedouros com falha"
+                valor={num(d?.agua.bebedouros_nok)}
+                tone={d?.agua.bebedouros_nok ? "atencao" : "bom"}
+                tooltip="Apontamentos de bebedouro fora de operação."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Droplets}
+                label="Filtros vencidos"
+                valor={num(d?.filtros.vencidos)}
+                tone={d?.filtros.vencidos ? "critico" : "bom"}
+                tooltip="Filtros com troca vencida."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={CalendarClock}
+                label="Filtros a vencer"
+                valor={num(d?.filtros.proximos_30)}
+                tooltip="Filtros com troca nos próximos 30 dias."
+                carregando={carregando}
+              />
             </div>
             <Secao
               titulo="Ações rápidas de água"
@@ -1184,10 +1368,38 @@ export function GestaoView() {
           {/* MATERIAIS */}
           <TabsContent value="materiais" className="space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={Package} label="Solicitações pendentes" valor={num(d?.materiais.pendentes)} tone={d?.materiais.pendentes ? "atencao" : "bom"} tooltip="Solicitações de material aguardando tratativa." carregando={carregando} />
-              <KpiCard icon={TrendingUp} label="Solicitações no período" valor={num(d?.materiais.periodo)} atual={d?.materiais.periodo} anterior={d?.materiais.periodo_ant} tooltip="Volume de solicitações no período." carregando={carregando} />
-              <KpiCard icon={Wrench} label="Peças aguardando aprovação" valor={num(d?.pecas.aguardando)} tone={d?.pecas.aguardando ? "atencao" : "bom"} tooltip="Peças pedidas em campo pendentes de decisão." carregando={carregando} />
-              <KpiCard icon={AlertTriangle} label="Problemas reportados" valor={num(d?.pecas.problemas)} tooltip="Problemas de campo aguardando decisão." carregando={carregando} />
+              <KpiCard
+                icon={Package}
+                label="Solicitações pendentes"
+                valor={num(d?.materiais.pendentes)}
+                tone={d?.materiais.pendentes ? "atencao" : "bom"}
+                tooltip="Solicitações de material aguardando tratativa."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={TrendingUp}
+                label="Solicitações no período"
+                valor={num(d?.materiais.periodo)}
+                atual={d?.materiais.periodo}
+                anterior={d?.materiais.periodo_ant}
+                tooltip="Volume de solicitações no período."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Wrench}
+                label="Peças aguardando aprovação"
+                valor={num(d?.pecas.aguardando)}
+                tone={d?.pecas.aguardando ? "atencao" : "bom"}
+                tooltip="Peças pedidas em campo pendentes de decisão."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={AlertTriangle}
+                label="Problemas reportados"
+                valor={num(d?.pecas.problemas)}
+                tooltip="Problemas de campo aguardando decisão."
+                carregando={carregando}
+              />
             </div>
             <Secao
               titulo="Risco de paralisação"
@@ -1208,13 +1420,59 @@ export function GestaoView() {
           {/* CONFORMIDADE */}
           <TabsContent value="conformidade" className="space-y-4">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <KpiCard icon={Scale} label="Itens legais vencidos" valor={num(d?.legal.vencidos)} tone={d?.legal.vencidos ? "critico" : "bom"} tooltip="Obrigações legais fora do prazo." carregando={carregando} />
-              <KpiCard icon={CalendarClock} label="Itens a vencer (30d)" valor={num(d?.legal.proximos_30)} tooltip="Obrigações legais próximas do vencimento." carregando={carregando} />
-              <KpiCard icon={ShieldCheck} label="ASO vencidos" valor={num(d?.sst.aso_vencidos)} tone={d?.sst.aso_vencidos ? "critico" : "bom"} tooltip="Exames ocupacionais vencidos." carregando={carregando} />
-              <KpiCard icon={ShieldCheck} label="ASO a vencer (30d)" valor={num(d?.sst.aso_proximos_30)} tooltip="Exames a vencer nos próximos 30 dias." carregando={carregando} />
-              <KpiCard icon={Activity} label="PT ativas" valor={num(d?.taludes.pt_ativas)} tooltip="Permissões de trabalho liberadas ou em andamento." carregando={carregando} />
-              <KpiCard icon={Clock} label="PT aguardando" valor={num(d?.taludes.pt_aguardando)} tone={d?.taludes.pt_aguardando ? "atencao" : "bom"} tooltip="Permissões aguardando análise ou liberação." carregando={carregando} />
-              <KpiCard icon={AlertTriangle} label="PT suspensas" valor={num(d?.taludes.pt_suspensas)} tone={d?.taludes.pt_suspensas ? "atencao" : "bom"} tooltip="Trabalhos suspensos, geralmente por chuva." carregando={carregando} />
+              <KpiCard
+                icon={Scale}
+                label="Itens legais vencidos"
+                valor={num(d?.legal.vencidos)}
+                tone={d?.legal.vencidos ? "critico" : "bom"}
+                tooltip="Obrigações legais fora do prazo."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={CalendarClock}
+                label="Itens a vencer (30d)"
+                valor={num(d?.legal.proximos_30)}
+                tooltip="Obrigações legais próximas do vencimento."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={ShieldCheck}
+                label="ASO vencidos"
+                valor={num(d?.sst.aso_vencidos)}
+                tone={d?.sst.aso_vencidos ? "critico" : "bom"}
+                tooltip="Exames ocupacionais vencidos."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={ShieldCheck}
+                label="ASO a vencer (30d)"
+                valor={num(d?.sst.aso_proximos_30)}
+                tooltip="Exames a vencer nos próximos 30 dias."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Activity}
+                label="PT ativas"
+                valor={num(d?.taludes.pt_ativas)}
+                tooltip="Permissões de trabalho liberadas ou em andamento."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={Clock}
+                label="PT aguardando"
+                valor={num(d?.taludes.pt_aguardando)}
+                tone={d?.taludes.pt_aguardando ? "atencao" : "bom"}
+                tooltip="Permissões aguardando análise ou liberação."
+                carregando={carregando}
+              />
+              <KpiCard
+                icon={AlertTriangle}
+                label="PT suspensas"
+                valor={num(d?.taludes.pt_suspensas)}
+                tone={d?.taludes.pt_suspensas ? "atencao" : "bom"}
+                tooltip="Trabalhos suspensos, geralmente por chuva."
+                carregando={carregando}
+              />
             </div>
             <Secao
               titulo="Clima e taludes"

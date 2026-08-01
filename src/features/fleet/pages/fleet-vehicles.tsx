@@ -46,7 +46,10 @@ const EMPTY: VehicleInput = {
 
 export function FleetVehicles() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["fleet", "vehicles"], queryFn: listFleetVehicles });
+  const { data, isLoading } = useQuery({
+    queryKey: ["fleet", "vehicles"],
+    queryFn: listFleetVehicles,
+  });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FleetVehicle | null>(null);
   const [form, setForm] = useState<VehicleInput>(EMPTY);
@@ -123,7 +126,10 @@ export function FleetVehicles() {
         />
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="tap-press h-11 shadow-elegant hover:shadow-glow sm:ml-auto" onClick={startNew}>
+            <Button
+              className="tap-press h-11 shadow-elegant hover:shadow-glow sm:ml-auto"
+              onClick={startNew}
+            >
               <Plus className="mr-2 h-4 w-4" /> Novo veículo
             </Button>
           </DialogTrigger>
@@ -195,7 +201,10 @@ export function FleetVehicles() {
                   inputMode="numeric"
                   value={String(form.current_odometer_km)}
                   onChange={(e) =>
-                    setForm({ ...form, current_odometer_km: Number(e.target.value.replace(/\D/g, "")) })
+                    setForm({
+                      ...form,
+                      current_odometer_km: Number(e.target.value.replace(/\D/g, "")),
+                    })
                   }
                 />
               </Field>
@@ -240,7 +249,6 @@ export function FleetVehicles() {
               style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
               className="fleet-in space-y-3"
             >
-
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="flex items-center gap-1.5 truncate font-display text-base font-semibold">

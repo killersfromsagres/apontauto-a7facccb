@@ -21,7 +21,7 @@ import type { TabelaResultado } from "./spec-runner";
 import type { Dataset, Spec } from "./types";
 
 const sheetName = (name: string, used: Set<string>) => {
-  let base = name.replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || "Aba";
+  const base = name.replace(/[\\/*?:[\]]/g, " ").slice(0, 28) || "Aba";
   let out = base;
   let i = 2;
   while (used.has(out.toLowerCase())) out = `${base.slice(0, 25)} ${i++}`;
@@ -201,7 +201,6 @@ export async function buildPptx(
     }));
 
   for (const slide of [...spec.slides, ...slidesExtras]) {
-
     const s = pptx.addSlide();
     s.addText(slide.titulo, {
       x: 0.6,
@@ -213,7 +212,14 @@ export async function buildPptx(
       color: HEX_NAVY,
     });
     if (slide.subtitulo) {
-      s.addText(slide.subtitulo, { x: 0.6, y: 1.05, w: 8.8, h: 0.4, fontSize: 14, color: "64748B" });
+      s.addText(slide.subtitulo, {
+        x: 0.6,
+        y: 1.05,
+        w: 8.8,
+        h: 0.4,
+        fontSize: 14,
+        color: "64748B",
+      });
     }
 
     const tabela = slide.tabelaId ? byId.get(slide.tabelaId) : undefined;
@@ -307,15 +313,8 @@ const RGB_ELECTRIC: [number, number, number] = [29, 78, 216];
 const RGB_MUTED: [number, number, number] = [100, 116, 139];
 
 /** Relatório executivo em PDF (A4 retrato) com capa, KPIs e todas as análises. */
-export async function buildPdf(
-  spec: Spec,
-  tabelas: TabelaResultado[],
-  ds: Dataset,
-): Promise<Blob> {
-  const [{ jsPDF }, autoTableMod] = await Promise.all([
-    import("jspdf"),
-    import("jspdf-autotable"),
-  ]);
+export async function buildPdf(spec: Spec, tabelas: TabelaResultado[], ds: Dataset): Promise<Blob> {
+  const [{ jsPDF }, autoTableMod] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
   const autoTable = (autoTableMod.default ?? autoTableMod) as unknown as (
     doc: unknown,
     options: Record<string, unknown>,

@@ -20,9 +20,15 @@ import {
   MoreVertical,
   Check,
   CheckCircle2,
-  GripVertical
+  GripVertical,
 } from "lucide-react";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Badge } from "@/components/ui/badge";
 
 import { GlassCard } from "@/components/glass-card";
@@ -464,7 +470,7 @@ export function WeeklyWaterPlanner() {
                               <ChevronDown className="h-4 w-4" />
                             </Button>
                           </div>
-                          
+
                           <div className="flex items-center gap-1">
                             <ExcecaoDialog
                               pontoId={l.ponto_id}
@@ -472,10 +478,15 @@ export function WeeklyWaterPlanner() {
                               rotulo={p ? pontoLabel(p) : ""}
                               onDone={invalidar}
                             />
-                            
+
                             <Drawer>
                               <DrawerTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Mais opções">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  aria-label="Mais opções"
+                                >
                                   <MoreVertical className="h-4 w-4" />
                                 </Button>
                               </DrawerTrigger>
@@ -489,14 +500,18 @@ export function WeeklyWaterPlanner() {
                                       <Info className="h-5 w-5" />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-bold truncate">{p ? pontoLabel(p) : '—'}</p>
-                                      <p className="text-xs text-muted-foreground">{l.bags} bag(s) · {TURNO_LABEL[l.turno]}</p>
+                                      <p className="text-sm font-bold truncate">
+                                        {p ? pontoLabel(p) : "—"}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {l.bags} bag(s) · {TURNO_LABEL[l.turno]}
+                                      </p>
                                     </div>
                                   </div>
-                                  
+
                                   <div className="grid grid-cols-2 gap-2">
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       className="h-12 flex flex-col gap-0.5"
                                       onClick={() => mover(d.dia, l.id, -1)}
                                       disabled={idx === 0}
@@ -504,27 +519,36 @@ export function WeeklyWaterPlanner() {
                                       <ChevronUp className="h-4 w-4" />
                                       <span className="text-[10px] uppercase font-bold">Subir</span>
                                     </Button>
-                                    <Button 
-                                      variant="outline" 
+                                    <Button
+                                      variant="outline"
                                       className="h-12 flex flex-col gap-0.5"
                                       onClick={() => mover(d.dia, l.id, 1)}
                                       disabled={idx === lista.length - 1}
                                     >
                                       <ChevronDown className="h-4 w-4" />
-                                      <span className="text-[10px] uppercase font-bold">Descer</span>
+                                      <span className="text-[10px] uppercase font-bold">
+                                        Descer
+                                      </span>
                                     </Button>
                                   </div>
 
                                   <div className="space-y-2 pt-2">
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Mover para outro dia</p>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                                      Mover para outro dia
+                                    </p>
                                     <div className="grid grid-cols-4 gap-2">
-                                      {DIAS.map(diaOption => (
+                                      {DIAS.map((diaOption) => (
                                         <Button
                                           key={diaOption.dia}
-                                          variant={l.dia_semana === diaOption.dia ? "default" : "secondary"}
+                                          variant={
+                                            l.dia_semana === diaOption.dia ? "default" : "secondary"
+                                          }
                                           className="h-10 text-xs"
                                           onClick={() => {
-                                            editar.mutate({ id: l.id, patch: { dia_semana: diaOption.dia } });
+                                            editar.mutate({
+                                              id: l.id,
+                                              patch: { dia_semana: diaOption.dia },
+                                            });
                                           }}
                                         >
                                           {diaOption.label.slice(0, 3)}
@@ -533,8 +557,8 @@ export function WeeklyWaterPlanner() {
                                     </div>
                                   </div>
 
-                                  <Button 
-                                    variant="destructive" 
+                                  <Button
+                                    variant="destructive"
                                     className="w-full h-12 mt-4"
                                     onClick={() => {
                                       if (confirm("Remover esta parada da programação?")) {

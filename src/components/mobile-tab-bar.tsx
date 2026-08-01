@@ -102,12 +102,7 @@ function TabLink({
         active ? "text-primary" : "text-muted-foreground",
       )}
     >
-      {active && (
-        <span
-          aria-hidden
-          className="absolute top-0 h-0.5 w-6 rounded-full bg-primary"
-        />
-      )}
+      {active && <span aria-hidden className="absolute top-0 h-0.5 w-6 rounded-full bg-primary" />}
       {icon}
       <span className="max-w-full truncate">{label}</span>
     </div>
@@ -116,11 +111,7 @@ function TabLink({
   return (
     <li className="flex-1">
       {onClick ? (
-        <button
-          type="button"
-          onClick={onClick}
-          className="w-full focus-visible:outline-none"
-        >
+        <button type="button" onClick={onClick} className="w-full focus-visible:outline-none">
           {content}
         </button>
       ) : (

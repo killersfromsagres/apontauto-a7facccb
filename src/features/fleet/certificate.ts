@@ -176,17 +176,35 @@ export async function generateChecklistCertificate({
       ["Marca / Modelo:", vehicle ? vehicleTitle(vehicle) : "—", 0.58],
     ],
     [
-      ["KM inicial:", isSaida ? `${Number(checklist.odometer_km).toLocaleString("pt-BR")} km` : "—", 0.42],
-      ["KM final:", isSaida ? "—" : `${Number(checklist.odometer_km).toLocaleString("pt-BR")} km`, 0.58],
+      [
+        "KM inicial:",
+        isSaida ? `${Number(checklist.odometer_km).toLocaleString("pt-BR")} km` : "—",
+        0.42,
+      ],
+      [
+        "KM final:",
+        isSaida ? "—" : `${Number(checklist.odometer_km).toLocaleString("pt-BR")} km`,
+        0.58,
+      ],
     ],
-    [["Itinerário / Destino:", checklist.notes ? "Conforme observações" : "Rota operacional interna", 1]],
+    [
+      [
+        "Itinerário / Destino:",
+        checklist.notes ? "Conforme observações" : "Rota operacional interna",
+        1,
+      ],
+    ],
     [
       ["Horário de saída:", isSaida ? hSaida : "—", 0.42],
       ["Horário de chegada:", isSaida ? "—" : hSaida, 0.58],
     ],
     [
       ["Responsável pela inspeção:", checklist.driver_name, 0.62],
-      ["Combustível:", checklist.fuel_level_pct == null ? "—" : `${checklist.fuel_level_pct}%`, 0.38],
+      [
+        "Combustível:",
+        checklist.fuel_level_pct == null ? "—" : `${checklist.fuel_level_pct}%`,
+        0.38,
+      ],
     ],
   ];
   rows.forEach((cells) => {
@@ -217,7 +235,9 @@ export async function generateChecklistCertificate({
   const legendW = 52;
   doc.line(W - M - legendW, y, W - M - legendW, y + artH);
 
-  const art = vehicleArt(`${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`);
+  const art = vehicleArt(
+    `${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`,
+  );
   const artData = await toDataUrl(art.url);
   if (artData) {
     const availW = CW - legendW - 8;
@@ -268,7 +288,10 @@ export async function generateChecklistCertificate({
   doc.setFontSize(6.6);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
   doc.text(
-    doc.splitTextToSize("Marque os locais das avarias usando a legenda. Detalhe nas observações.", legendW - 8),
+    doc.splitTextToSize(
+      "Marque os locais das avarias usando a legenda. Detalhe nas observações.",
+      legendW - 8,
+    ),
     lx,
     y + 47,
   );

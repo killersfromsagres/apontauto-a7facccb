@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 interface RouteDraft {
   id: string;
@@ -19,15 +19,15 @@ export const useWaterRouteDrafts = create<RouteState>()(
   persist(
     (set, get) => ({
       drafts: {},
-      setDraft: (id, data) => 
+      setDraft: (id, data) =>
         set((state) => ({
           drafts: {
             ...state.drafts,
-            [id]: { id, data, updatedAt: Date.now() }
-          }
+            [id]: { id, data, updatedAt: Date.now() },
+          },
         })),
       getDraft: (id) => get().drafts[id],
-      removeDraft: (id) => 
+      removeDraft: (id) =>
         set((state) => {
           const newDrafts = { ...state.drafts };
           delete newDrafts[id];
@@ -36,8 +36,8 @@ export const useWaterRouteDrafts = create<RouteState>()(
       clearDrafts: () => set({ drafts: {} }),
     }),
     {
-      name: 'water-route-drafts-storage',
+      name: "water-route-drafts-storage",
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+    },
+  ),
 );

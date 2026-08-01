@@ -1,14 +1,14 @@
 import * as React from "react";
-import { 
-  MoreVertical, 
-  MapPin, 
-  Users, 
-  Clock, 
+import {
+  MoreVertical,
+  MapPin,
+  Users,
+  Clock,
   AlertTriangle,
   Camera,
   Package,
   History,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/glass-card";
@@ -59,8 +59,8 @@ export function OSMobileCard({ os, onAction, className, style }: OSMobileCardPro
   const slaProgress = 65; // Mock for visual representation
 
   return (
-    <GlassCard 
-      className={cn("p-4 space-y-4 active:scale-[0.98] transition-transform", className)} 
+    <GlassCard
+      className={cn("p-4 space-y-4 active:scale-[0.98] transition-transform", className)}
       style={style}
       onClick={() => {
         // Implementação do clique no card para ver detalhes
@@ -71,30 +71,59 @@ export function OSMobileCard({ os, onAction, className, style }: OSMobileCardPro
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-muted-foreground">#{os.numero}</span>
-            <Badge variant="outline" className={cn("text-[10px] uppercase px-1.5 py-0", getStatusColor(os.status))}>
+            <Badge
+              variant="outline"
+              className={cn("text-[10px] uppercase px-1.5 py-0", getStatusColor(os.status))}
+            >
               {os.status.replace("_", " ")}
             </Badge>
           </div>
           <h3 className="font-semibold text-sm leading-tight line-clamp-2">{os.descricao}</h3>
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2" onClick={(e) => e.stopPropagation()} aria-label="Mais opções">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 -mr-2"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Mais opções"
+            >
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("start", os); }}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction?.("start", os);
+              }}
+            >
               <CheckCircle2 className="mr-2 h-4 w-4" /> Iniciar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("photo", os); }}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction?.("photo", os);
+              }}
+            >
               <Camera className="mr-2 h-4 w-4" /> Adicionar Foto
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("parts", os); }}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction?.("parts", os);
+              }}
+            >
               <Package className="mr-2 h-4 w-4" /> Registrar Peça
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onAction?.("history", os); }}>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAction?.("history", os);
+              }}
+            >
               <History className="mr-2 h-4 w-4" /> Abrir Histórico
             </DropdownMenuItem>
           </DropdownMenuContent>

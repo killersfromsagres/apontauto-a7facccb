@@ -99,8 +99,8 @@ export function EvidenceGallery() {
 
     // Prioridade 0: Fila local (Upload pendente)
     for (const f of (fotosDb.data as any)?.itens || []) {
-       // Se o item estiver na fila local (FotosFilaItem), mostramos com tag PENDENTE
-       // Nota: useFilaFotosAgua fornece a fila em tempo real
+      // Se o item estiver na fila local (FotosFilaItem), mostramos com tag PENDENTE
+      // Nota: useFilaFotosAgua fornece a fila em tempo real
     }
 
     for (const f of (fotosDb.data as any)?.itens || (fotosDb.data as any) || []) {
@@ -121,7 +121,7 @@ export function EvidenceGallery() {
         status: v?.status ?? (f.filtro_solicitacao_id ? "filtro" : "—"),
         tipo: f.filtro_solicitacao_id ? "filtro" : f.tipo,
         rotaId: f.rota_id ?? v?.rota_id ?? null,
-        origem: f.origem || 'imgbb'
+        origem: f.origem || "imgbb",
       });
       vistos.add(f.image_url);
     }
@@ -146,7 +146,7 @@ export function EvidenceGallery() {
           status: v.status,
           tipo: "entrega",
           rotaId: v.rota_id ?? null,
-          origem: 'imgbb'
+          origem: "imgbb",
         });
       }
     }
@@ -341,15 +341,16 @@ export function EvidenceGallery() {
                     aria-label={`Selecionar evidência de ${f.nome}`}
                   />
                 </div>
-                <Button 
-                  size="icon" 
-                  variant="secondary" 
+                <Button
+                  size="icon"
+                  variant="secondary"
                   className="h-6 w-6 bg-background/80 backdrop-blur"
                   onClick={(e) => {
                     e.preventDefault();
                     setZoomUrl(f.url);
                   }}
-                 aria-label="Aproximar">
+                  aria-label="Aproximar"
+                >
                   <ZoomIn className="h-3 w-3" />
                 </Button>
               </div>
@@ -361,11 +362,16 @@ export function EvidenceGallery() {
                 </div>
               )}
 
-              <a href={f.url} target="_blank" rel="noreferrer" onClick={(e) => {
-                if (e.metaKey || e.ctrlKey) return;
-                e.preventDefault();
-                setZoomUrl(f.url);
-              }}>
+              <a
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => {
+                  if (e.metaKey || e.ctrlKey) return;
+                  e.preventDefault();
+                  setZoomUrl(f.url);
+                }}
+              >
                 <div className="aspect-square overflow-hidden bg-muted/30">
                   <img
                     src={f.thumb || f.url}
@@ -378,8 +384,13 @@ export function EvidenceGallery() {
                 <div className="space-y-0.5 p-2.5">
                   <div className="flex items-center justify-between gap-1">
                     <p className="truncate text-xs font-medium">{f.nome}</p>
-                    {f.tipo === 'filtro' && (
-                      <Badge variant="outline" className="h-4 px-1 text-[9px] uppercase border-sky-500/50 text-sky-500 bg-sky-500/5">Filtro</Badge>
+                    {f.tipo === "filtro" && (
+                      <Badge
+                        variant="outline"
+                        className="h-4 px-1 text-[9px] uppercase border-sky-500/50 text-sky-500 bg-sky-500/5"
+                      >
+                        Filtro
+                      </Badge>
                     )}
                   </div>
                   <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
@@ -419,39 +430,41 @@ export function EvidenceGallery() {
       />
 
       {zoomUrl && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
           onClick={() => setZoomUrl(null)}
         >
           <div className="relative max-h-full max-w-5xl overflow-hidden rounded-2xl bg-card">
             <div className="absolute right-4 top-4 z-10 flex gap-2">
-              <Button 
-                size="icon" 
-                variant="secondary" 
+              <Button
+                size="icon"
+                variant="secondary"
                 className="rounded-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  window.open(zoomUrl, '_blank');
+                  window.open(zoomUrl, "_blank");
                 }}
-               aria-label="Baixar">
+                aria-label="Baixar"
+              >
                 <Download className="h-5 w-5" />
               </Button>
-              <Button 
-                size="icon" 
-                variant="secondary" 
+              <Button
+                size="icon"
+                variant="secondary"
                 className="rounded-full"
                 onClick={(e) => {
                   e.stopPropagation();
                   setZoomUrl(null);
                 }}
-               aria-label="Fechar">
+                aria-label="Fechar"
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <img 
-              src={zoomUrl} 
-              alt="Zoom" 
-              className="max-h-[85vh] w-auto object-contain" 
+            <img
+              src={zoomUrl}
+              alt="Zoom"
+              className="max-h-[85vh] w-auto object-contain"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

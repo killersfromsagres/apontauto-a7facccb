@@ -2940,7 +2940,8 @@ function PriorityConfigDialog({
                       variant="ghost"
                       className="col-span-1"
                       onClick={() => removePredio(i)}
-                     aria-label="Excluir">
+                      aria-label="Excluir"
+                    >
                       <Trash2 className="h-3.5 w-3.5 text-red-500" />
                     </Button>
                   </div>
@@ -2990,7 +2991,8 @@ function PriorityConfigDialog({
                         variant="ghost"
                         className="col-span-1"
                         onClick={() => removeRule(i)}
-                       aria-label="Excluir">
+                        aria-label="Excluir"
+                      >
                         <Trash2 className="h-3.5 w-3.5 text-red-500" />
                       </Button>
                     </div>
@@ -3813,7 +3815,12 @@ function RevisaoPanel({
                     />
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => onDeleteRule(r.id)} aria-label="Excluir">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteRule(r.id)}
+                      aria-label="Excluir"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -3879,7 +3886,12 @@ function RevisaoPanel({
                     />
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedLoc(r.id)} aria-label="Excluir">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteLearnedLoc(r.id)}
+                      aria-label="Excluir"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -3937,7 +3949,12 @@ function RevisaoPanel({
                     />
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => onDeleteLearnedTeam(r.id)} aria-label="Excluir">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteLearnedTeam(r.id)}
+                      aria-label="Excluir"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TableCell>

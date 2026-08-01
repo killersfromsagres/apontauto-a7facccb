@@ -99,10 +99,7 @@ export function FleetHistory() {
               <GlassCard
                 key={c.id}
                 style={{ ["--i" as string]: Math.min(i, 8) } as CSSProperties}
-                className={cn(
-                  "fleet-in space-y-3",
-                  open && "border-primary/40 shadow-elegant",
-                )}
+                className={cn("fleet-in space-y-3", open && "border-primary/40 shadow-elegant")}
               >
                 <button
                   type="button"
@@ -143,7 +140,10 @@ export function FleetHistory() {
                           <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                             {item.label}
                           </span>
-                          <Badge variant="outline" className={cn("shrink-0", STATUS_TONE[item.status])}>
+                          <Badge
+                            variant="outline"
+                            className={cn("shrink-0", STATUS_TONE[item.status])}
+                          >
                             {STATUS_LABEL[item.status]}
                           </Badge>
                         </div>
@@ -167,7 +167,6 @@ export function FleetHistory() {
                               key={p.storage_path}
                               className="photo-tile group overflow-hidden rounded-xl border border-border/60 bg-muted/30"
                             >
-
                               {url ? (
                                 <a href={url} target="_blank" rel="noreferrer">
                                   <img
@@ -176,7 +175,6 @@ export function FleetHistory() {
                                     loading="lazy"
                                     className="h-28 w-full object-cover transition-transform duration-500 group-hover:scale-105"
                                   />
-
                                 </a>
                               ) : (
                                 <div className="flex h-28 w-full items-center justify-center text-muted-foreground">
@@ -197,16 +195,14 @@ export function FleetHistory() {
                     <Button
                       type="button"
                       className="tap-press h-11 w-full shadow-elegant hover:shadow-glow"
-
                       disabled={certifyingId === c.id}
                       onClick={async () => {
                         setCertifyingId(c.id);
                         try {
                           // Import dinâmico: jsPDF + as artes dos veículos (~1 MB)
                           // só entram na rede quando o usuário gera o certificado.
-                          const { generateChecklistCertificate } = await import(
-                            "@/features/fleet/certificate"
-                          );
+                          const { generateChecklistCertificate } =
+                            await import("@/features/fleet/certificate");
                           await generateChecklistCertificate({
                             checklist: c,
                             vehicle: v,
@@ -231,7 +227,6 @@ export function FleetHistory() {
                       )}
                       Gerar certificado em PDF
                     </Button>
-
                   </div>
                 )}
               </GlassCard>

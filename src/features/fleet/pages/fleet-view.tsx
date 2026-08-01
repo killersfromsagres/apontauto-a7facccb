@@ -52,7 +52,6 @@ export function FleetView() {
           <FleetVehicles />
         </TabsContent>
       </Tabs>
-
     </PageShell>
   );
 }

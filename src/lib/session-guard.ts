@@ -45,7 +45,10 @@ function isRevokedSessionError(err: unknown): boolean {
     return true;
   }
   // Fallback restrito: status 400/401 vindo do endpoint de token.
-  if ((anyErr.status === 400 || anyErr.status === 401) && /refresh token|invalid grant|session/i.test(anyErr.message ?? "")) {
+  if (
+    (anyErr.status === 400 || anyErr.status === 401) &&
+    /refresh token|invalid grant|session/i.test(anyErr.message ?? "")
+  ) {
     return true;
   }
   return false;

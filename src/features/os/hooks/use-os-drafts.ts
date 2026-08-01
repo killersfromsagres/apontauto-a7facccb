@@ -28,6 +28,6 @@ export const useOSDraftStore = create<OSDraftState>()(
     }),
     {
       name: "os-drafts-storage",
-    }
-  )
+    },
+  ),
 );

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
  */
 export function useSyncStatus() {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
+    typeof navigator !== "undefined" ? navigator.onLine : true,
   );
   const [pendingCount, setPendingCount] = useState(0);
 
