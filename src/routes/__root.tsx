@@ -3,10 +3,15 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
+
   useRouter,
   HeadContent,
   Scripts,
+  rootRouteWithContext,
 } from "@tanstack/react-router";
+
+export const rootRouteImport = rootRouteWithContext;
+
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
