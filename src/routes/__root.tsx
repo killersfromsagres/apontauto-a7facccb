@@ -203,10 +203,16 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        {/* Camada de Performance e Mobile: Lazy-load do LoadingScreen */}
         <LoadingScreen />
         <OfflineBanner />
-        <Outlet />
-        <Toaster richColors position="top-right" />
+        
+        {/* Outlet principal envolto em suspense para rotas com lazy loading (Item 7.4) */}
+        <div className="flex min-h-dvh flex-col transition-opacity duration-300">
+          <Outlet />
+        </div>
+        
+        <Toaster richColors position="top-right" closeButton />
       </ThemeProvider>
     </QueryClientProvider>
   );
