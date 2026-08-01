@@ -18,11 +18,11 @@ export async function fetchGestaoOverview(dias: number): Promise<GestaoOverviewV
 export async function fetchOsConsolidada(f: GestaoFiltros): Promise<OsConsolidada[]> {
   const { data, error } = await supabase.rpc("gestao_os_consolidada", {
     p_dias: f.dias,
-    p_modulo: f.modulo,
-    p_equipe: f.equipe,
-    p_predio: f.predio,
-    p_status: f.status,
-    p_criticidade: f.criticidade,
+    p_modulo: f.modulo ?? undefined,
+    p_equipe: f.equipe ?? undefined,
+    p_predio: f.predio ?? undefined,
+    p_status: f.status ?? undefined,
+    p_criticidade: f.criticidade ?? undefined,
     p_limit: 800,
   });
   if (error) throw error;
