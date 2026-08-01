@@ -376,6 +376,7 @@ export function GestaoView() {
 
   return (
     <div className={apresentacao ? "fixed inset-0 z-50 overflow-auto bg-background" : undefined}>
+      {dialogo}
       <PageShell
         eyebrow="Visão executiva"
         title="Centro de Gestão"
