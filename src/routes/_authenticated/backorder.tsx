@@ -279,7 +279,7 @@ function BackorderPage() {
       const { data, error } = await supabase
         .from("backorder_os")
         .select("*")
-        .order("finalizado", { ascending: true })
+        .order("finalizado", { ascending: true }).order("os", { ascending: true })
         .order("data_solicitacao", { ascending: true })
         .range(from, from + PAGE - 1);
       if (error) throw error;
