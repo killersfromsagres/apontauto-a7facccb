@@ -7,7 +7,9 @@
 
 import { readBackorderWorkbook, type BackorderRow, type AssetImportRow } from "./reader";
 import { setDynamicRules, type DynamicRule, type Categoria } from "./classify";
-import { CATEGORIA_TO_EQUIPE } from "./classify";
+import { CATEGORIA_TO_EQUIPE, classifyBackorder } from "./classify";
+import type { StatusCat } from "./status";
+
 import { classifyTeamByText } from "./team-classifier";
 import {
   applyLearnedToResolved,
