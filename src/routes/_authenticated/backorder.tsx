@@ -247,14 +247,33 @@ function BackorderPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("backorder_os")
-      .select("*")
-      .order("data_solicitacao", { ascending: true });
-    if (error) toast.error("Falha ao carregar backorder");
-    setRows((data as BOSRow[]) ?? []);
-    setLoading(false);
+    // Carga paginada: bases com dezenas de milhares de OS não cabem em uma
+    // única resposta do PostgREST e travavam a tela.
+    const PAGE = 1000;
+    const MAX = 60_000;
+    const all: BOSRow[] = [];
+    try {
+      for (let from = 0; from < MAX; from += PAGE) {
+        const { data, error } = await supabase
+          .from("backorder_os")
+          .select("*")
+          .order("finalizado", { ascending: true })
+          .order("data_solicitacao", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        const page = (data as BOSRow[]) ?? [];
+        all.push(...page);
+        if (page.length < PAGE) break;
+      }
+      setRows(all);
+    } catch {
+      toast.error("Falha ao carregar backorder");
+      setRows(all);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
 
   const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
   const loadAssets = useCallback(async () => {
