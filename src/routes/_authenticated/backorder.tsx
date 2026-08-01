@@ -492,6 +492,8 @@ function BackorderPage() {
           type: "run",
           file,
           assetsMap,
+          assetRecords,
+
           dynamicRules: rulesDB
             .filter((r) => r.ativo)
             .map((r) => ({
