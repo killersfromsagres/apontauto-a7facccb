@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/glass-card";
+import { useIncrementalList } from "@/hooks/use-incremental-list";
 import { STATUS_CATS, STATUS_COLOR, STATUS_LABEL, type StatusCat } from "@/lib/backorder/status";
 
 export interface StatusBoardRow {
@@ -24,7 +25,7 @@ const fmtDate = (iso: string) => {
 };
 
 /** Quadro por status detalhado da coluna G — otimizado para mobile. */
-export function StatusBoard({
+export const StatusBoard = memo(function StatusBoard({
   rows,
   onSelect,
 }: {
@@ -33,6 +34,13 @@ export function StatusBoard({
 }) {
   const [cat, setCat] = useState<StatusCat | "todos">("todos");
   const [q, setQ] = useState("");
+  const [busca, setBusca] = useState("");
+
+  // Debounce: filtrar milhares de OS a cada tecla travava o campo no celular.
+  useEffect(() => {
+    const t = setTimeout(() => setBusca(q), 220);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const counts = useMemo(() => {
     const m = {} as Record<string, number>;
@@ -41,7 +49,7 @@ export function StatusBoard({
   }, [rows]);
 
   const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
+    const s = busca.trim().toLowerCase();
     return rows
       .filter((r) => (cat === "todos" ? true : r.statusCat === cat))
       .filter((r) =>
@@ -53,7 +61,9 @@ export function StatusBoard({
             r.predio.toLowerCase().includes(s),
       )
       .sort((a, b) => +new Date(b.data_solicitacao) - +new Date(a.data_solicitacao));
-  }, [rows, cat, q]);
+  }, [rows, cat, busca]);
+
+  const { visible, hasMore, sentinelRef, shown, total } = useIncrementalList(list, 60);
 
   return (
     <div className="space-y-3">
@@ -106,38 +116,49 @@ export function StatusBoard({
           </p>
         </GlassCard>
       ) : (
-        <div className="grid max-h-[60vh] gap-2 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((r) => (
-            <button
-              key={r.os}
-              type="button"
-              onClick={() => onSelect?.(r.os)}
-              className="rounded-2xl border bg-card/60 p-3 text-left transition active:scale-[0.99] hover:border-primary/40"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
-                <Badge
-                  className="shrink-0 text-[10px] text-white"
-                  style={{ background: STATUS_COLOR[r.statusCat] }}
+        <>
+          <p className="text-xs text-muted-foreground">
+            Mostrando {shown} de {total} chamados
+          </p>
+          <div className="max-h-[60vh] overflow-y-auto pr-2">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {visible.map((r) => (
+                <button
+                  key={r.os}
+                  type="button"
+                  onClick={() => onSelect?.(r.os)}
+                  className="rounded-2xl border bg-card/60 p-3 text-left transition active:scale-[0.99] hover:border-primary/40"
                 >
-                  {STATUS_LABEL[r.statusCat]}
-                </Badge>
-              </div>
-              <p className="mt-1 line-clamp-2 text-sm font-medium">{r.nome || "Sem descrição"}</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
-                {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") || "Local não informado"}
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                <Badge variant="outline" className="text-[10px]">
-                  {r.equipe || "Sem equipe"}
-                </Badge>
-                <span className="truncate">{r.outros || "Solicitante não informado"}</span>
-                <span className="ml-auto">{fmtDate(r.data_solicitacao)}</span>
-              </div>
-            </button>
-          ))}
-        </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="font-mono text-xs text-muted-foreground">{r.os}</span>
+                    <Badge
+                      className="shrink-0 text-[10px] text-white"
+                      style={{ background: STATUS_COLOR[r.statusCat] }}
+                    >
+                      {STATUS_LABEL[r.statusCat]}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm font-medium">
+                    {r.nome || "Sem descrição"}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {[r.predio, r.andar, r.espaco].filter(Boolean).join(" · ") ||
+                      "Local não informado"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                    <Badge variant="outline" className="text-[10px]">
+                      {r.equipe || "Sem equipe"}
+                    </Badge>
+                    <span className="truncate">{r.outros || "Solicitante não informado"}</span>
+                    <span className="ml-auto">{fmtDate(r.data_solicitacao)}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {hasMore && <div ref={sentinelRef} className="h-8" aria-hidden />}
+          </div>
+        </>
       )}
     </div>
   );
-}
+});
