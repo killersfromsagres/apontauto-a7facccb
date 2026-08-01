@@ -251,32 +251,52 @@ function BackorderPage() {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    // Carga paginada: bases com dezenas de milhares de OS não cabem em uma
-    // única resposta do PostgREST e travavam a tela.
-    const PAGE = 1000;
-    const MAX = 60_000;
+    // Carga paginada e paralela: bases com dezenas de milhares de OS não cabem
+    // em uma única resposta do PostgREST. A primeira página já é renderizada e
+    // o restante chega em lotes concorrentes, sem travar a tela.
+    const PAGE = 2000;
+    const CONCURRENCY = 6;
+    const MAX = 300_000;
+    const fetchPage = async (from: number) => {
+      const { data, error } = await supabase
+        .from("backorder_os")
+        .select("*")
+        .order("finalizado", { ascending: true })
+        .order("data_solicitacao", { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      return (data as BOSRow[]) ?? [];
+    };
     const all: BOSRow[] = [];
     try {
-      for (let from = 0; from < MAX; from += PAGE) {
-        const { data, error } = await supabase
-          .from("backorder_os")
-          .select("*")
-          .order("finalizado", { ascending: true })
-          .order("data_solicitacao", { ascending: true })
-          .range(from, from + PAGE - 1);
-        if (error) throw error;
-        const page = (data as BOSRow[]) ?? [];
-        all.push(...page);
-        if (page.length < PAGE) break;
+      const first = await fetchPage(0);
+      all.push(...first);
+      setRows([...all]);
+      setLoading(false);
+      if (first.length === PAGE) {
+        let from = PAGE;
+        let done = false;
+        while (!done && from < MAX) {
+          const offsets = Array.from({ length: CONCURRENCY }, (_, i) => from + i * PAGE).filter(
+            (o) => o < MAX,
+          );
+          const pages = await Promise.all(offsets.map(fetchPage));
+          for (const p of pages) {
+            all.push(...p);
+            if (p.length < PAGE) done = true;
+          }
+          from += CONCURRENCY * PAGE;
+          setRows([...all]);
+        }
       }
-      setRows(all);
     } catch {
       toast.error("Falha ao carregar backorder");
-      setRows(all);
+      setRows([...all]);
     } finally {
       setLoading(false);
     }
   }, []);
+
 
 
   const [assetsMap, setAssetsMap] = useState<AssetsMap>(() => makeAssetsMap([]));
