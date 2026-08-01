@@ -57,6 +57,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClimaOperacional } from "./clima-operacional";
 import { supabase } from "@/integrations/supabase/client";
 import { useCanAccessModule } from "@/hooks/use-can-access-module";
 import { useIsAdmin } from "@/hooks/use-is-admin";
