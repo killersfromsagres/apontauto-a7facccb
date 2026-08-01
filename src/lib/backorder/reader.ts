@@ -264,16 +264,21 @@ export async function readBackorderWorkbook(
       "ORDEM DE SERVICO",
     );
     if (!os) continue;
-    const descricao = pick(
-      r,
-      "DESCRIÇÃO OS",
-      "DESCRICAO OS",
-      "DESCRICAO DA OS",
-      "DESCRIÇÃO DA OS",
-      "DESCRIÇÃO",
-      "DESCRICAO",
-      "NOME",
-    );
+    // COLUNA B — descrição real do chamado (nunca a coluna C, que traz a equipe).
+    const descricao =
+      colAt(r, 1) ||
+      pick(
+        r,
+        "DESCRIÇÃO OS",
+        "DESCRICAO OS",
+        "DESCRICAO DA OS",
+        "DESCRIÇÃO DA OS",
+        "DESCRIÇÃO",
+        "DESCRICAO",
+        "NOME",
+      );
+    // COLUNA C — equipe sugerida pela planilha (usada só como pista).
+    const equipeHint = colAt(r, 2);
     const categoriaOrig = pick(r, "CATEGORIA");
     const servico = pick(r, "SERVIÇO", "SERVICO", "TAREFA EXECUTADA");
     const ativo = pick(
@@ -287,11 +292,11 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    // Prioridade absoluta para a coluna G (estado da OS na planilha oficial).
-    const statusG = statusHeaderG ? String(r[statusHeaderG] ?? "").trim() : "";
+    // COLUNA G — estado da OS na planilha oficial.
     const status =
-      statusG ||
+      colAt(r, 6) ||
       pick(
+
         r,
         "STATUS RESUMIDO",
         "STATUS",
