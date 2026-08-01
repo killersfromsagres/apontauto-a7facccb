@@ -217,27 +217,41 @@ export async function readBackorderWorkbook(
 
   const sheetName = pickBackorderSheet(wb);
   const sheet = wb.Sheets[sheetName];
-  const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
 
-  // A planilha oficial traz o estado da OS (Concluída / Cancelada / etc.) na
-  // COLUNA G. Guardamos o nome do cabeçalho dessa coluna para lê-la
-  // diretamente, sem depender de o título ser "Status".
-  const statusHeaderG = (() => {
-    try {
-      const ref = sheet?.["!ref"];
-      if (!ref) return "";
-      const range = XLSX.utils.decode_range(ref);
-      const addr = XLSX.utils.encode_cell({ r: range.s.r, c: range.s.c + 6 });
-      const cell = sheet[addr];
-      return cell ? String(cell.w ?? cell.v ?? "").trim() : "";
-    } catch {
-      return "";
-    }
-  })();
+  // Leitura posicional: a planilha oficial usa colunas fixas —
+  // B = descrição do chamado, C = equipe sugerida, E = solicitante,
+  // G = status da OS. Montamos os objetos manualmente para manter
+  // tanto o acesso por cabeçalho (pick) quanto o acesso por índice.
+  const COLS = Symbol.for("bo.cols");
+  const aoa = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: "" });
+  const notEmpty = (arr: unknown[]) =>
+    Array.isArray(arr) && arr.some((c) => String(c ?? "").trim() !== "");
+  const headerIdx = Math.max(
+    0,
+    aoa.findIndex((r) => notEmpty(r)),
+  );
+  const header = (aoa[headerIdx] ?? []).map((h, i) => String(h ?? "").trim() || `COL${i}`);
+  const raw: Record<string, unknown>[] = aoa
+    .slice(headerIdx + 1)
+    .filter(notEmpty)
+    .map((arr) => {
+      const obj: Record<string, unknown> = {};
+      header.forEach((h, i) => {
+        if (h && obj[h] === undefined) obj[h] = arr[i] ?? "";
+      });
+      Object.defineProperty(obj, COLS, { value: arr, enumerable: false });
+      return obj;
+    });
+
+  const colAt = (r: Record<string, unknown>, i: number) => {
+    const arr = (r as unknown as Record<symbol, unknown[]>)[COLS];
+    return String(arr?.[i] ?? "").trim();
+  };
 
   const out: BackorderRow[] = [];
 
   for (const r of raw) {
+
     const os = pick(
       r,
       "OS",
