@@ -100,6 +100,9 @@ const FILTROS_PADRAO: GestaoFiltros = {
   criticidade: null,
 };
 
+/** Referência estável para listas vazias (evita recomputar memos a cada render). */
+const EMPTY_OS: OsConsolidada[] = [];
+
 function Chip({
   ativo,
   onClick,
