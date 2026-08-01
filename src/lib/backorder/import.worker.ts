@@ -38,6 +38,7 @@ export interface ImportPayloadRow {
   origem_predio_andar_espaco: string;
   origem_equipe: string;
   status_origem: string;
+  status_cat: StatusCat;
   finalizado: boolean;
   cancelado: boolean;
   data_conclusao: string | null;
@@ -109,8 +110,15 @@ ctx.onmessage = async (ev: MessageEvent<ImportRunMessage>) => {
       const applied = applyLearnedToResolved(learnedIdx, r.ativo, tree, r.atividade);
       const override = overrideMap.get(r.os) as Categoria | undefined;
       const textResult = classifyTeamByText(r.nome ?? "");
-
-      const atividadeFinal: Categoria = override ?? (textResult.equipe as Categoria);
+      // A coluna C traz a equipe sugerida pela planilha — nem sempre correta.
+      // Usamos como desempate quando a descrição (coluna B) é ambígua.
+      const hint = r.equipe_hint
+        ? classifyBackorder({ descricao: "", categoria: r.equipe_hint, servico: "" })
+        : "Outros";
+      const porTexto = textResult.equipe as Categoria;
+      const atividadeFinal: Categoria =
+        override ??
+        ((textResult.ambiguo || porTexto === "Outros") && hint !== "Outros" ? hint : porTexto);
       const equipeFinal = CATEGORIA_TO_EQUIPE[atividadeFinal];
 
       const res = hasGraph && r.ativo ? resolveAsset(graph, r.ativo) : null;
@@ -148,11 +156,19 @@ ctx.onmessage = async (ev: MessageEvent<ImportRunMessage>) => {
         criticidade: r.criticidade ?? "",
         revisao_manual: r.finalizado
           ? false
-          : (!predio && !andar && !espaco && !override) || (!override && textResult.ambiguo),
+          : (!predio && !andar && !espaco && !override) ||
+            (!override && textResult.ambiguo && hint === "Outros"),
         origem_predio_andar_espaco: origemLocal,
 
-        origem_equipe: override ? "regra_aprendida" : textResult.ambiguo ? "pendente" : "regra_local",
+        origem_equipe: override
+          ? "regra_aprendida"
+          : textResult.ambiguo && hint !== "Outros"
+            ? "coluna_c"
+            : textResult.ambiguo
+              ? "pendente"
+              : "regra_local",
         status_origem: r.status_origem,
+        status_cat: r.status_cat,
         finalizado: r.finalizado,
         cancelado: r.cancelado,
         data_conclusao: r.data_conclusao,
