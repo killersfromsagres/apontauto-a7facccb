@@ -6934,6 +6934,21 @@ export type Database = {
       audit_redact: { Args: { payload: Json }; Returns: Json }
       backorder_bulk_upsert: { Args: { p_rows: Json }; Returns: Json }
       backorder_clear_all: { Args: never; Returns: number }
+      backorder_dashboard_filtros: { Args: never; Returns: Json }
+      backorder_dashboard_stats: {
+        Args: {
+          p_ano?: number
+          p_categoria?: string
+          p_criticidade?: string
+          p_dias?: number
+          p_equipe?: string
+          p_predio?: string
+          p_row_limit?: number
+          p_solicitante?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
       can_access_backorder: {
         Args: { required_action?: string }
         Returns: boolean
