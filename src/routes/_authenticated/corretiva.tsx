@@ -121,6 +121,9 @@ function CorretivaPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [mesFiltro, setMesFiltro] = useState<string>("08");
+  const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
+
+
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -188,6 +191,8 @@ function CorretivaPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
+      const prev = isPreventiva(o.tipo);
+      if (aba === "preventiva" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (mesFiltro !== "todos") {
         const dateStr = o.data_criacao || o.updated_at;
@@ -204,7 +209,8 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
-  }, [osList, search, equipe, mesFiltro]);
+  }, [osList, search, equipe, mesFiltro, aba]);
+
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
