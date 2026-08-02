@@ -154,11 +154,7 @@ export async function runCopilot({ messages, supabase }: RunArgs) {
 
 /* ------------------------------ Execução ------------------------------ */
 
-type AdminClient = Awaited<
-  ReturnType<typeof import("@/integrations/supabase/client.server").default>
-> extends never
-  ? any
-  : any;
+type AdminClient = any;
 
 async function adminClient(): Promise<AdminClient> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
