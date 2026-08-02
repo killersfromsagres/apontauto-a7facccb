@@ -435,8 +435,10 @@ function AuthPage() {
             <p className="mt-8 text-center text-[10px] uppercase tracking-[0.2em] text-slate-600">
               Sistema verificado · Acesso auditado
             </p>
+            </div>
           </div>
         </div>
+
 
       </main>
 
