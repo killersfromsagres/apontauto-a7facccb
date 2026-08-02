@@ -1,33 +1,13 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/")({
-  component: LandingPage,
+  beforeLoad: async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      throw redirect({ to: "/gestao", replace: true });
+    }
+    throw redirect({ to: "/auth", replace: true });
+  },
+  component: () => null,
 });
-
-function LandingPage() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) return null;
-
-  if (session) {
-    return <Navigate to="/gestao" replace />;
-  }
-
-  return <Navigate to="/auth" replace />;
-}
