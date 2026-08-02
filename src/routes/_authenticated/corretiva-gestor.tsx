@@ -210,7 +210,7 @@ function CorretivaGestor() {
 
   return (
     <PageShell
-      title="Corretiva — Gestão"
+      title="Programação — Gestão"
       description="Importe OS por planilha, acompanhe fotos, peças e problemas sinalizados pelo campo."
       actions={
         <>
