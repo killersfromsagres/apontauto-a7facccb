@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmptyState, ErrorState, SkeletonState } from "@/components/pcm";
+import { ChartSkeleton, EmptyState, ErrorState, SkeletonState } from "@/components/pcm";
 import { QuickAccessStrip } from "./quick-access-strip";
 import { CanceladosPanel } from "./cancelados-panel";
 import { AvaliacaoEmailCard } from "@/components/backorder/avaliacao-email-card";
