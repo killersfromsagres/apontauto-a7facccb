@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { AlertTriangle, BarChart3, CheckCircle2, Clock, Timer, XCircle } from "lucide-react";
 import { KpiCard } from "@/components/pcm";
 import type { DashStats } from "@/lib/dashboard-chamados/server-stats";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 
-export function DashboardKpis({
+export const DashboardKpis = memo(function DashboardKpis({
   stats,
   lastUpdate,
   loading,
@@ -72,4 +73,4 @@ export function DashboardKpis({
       />
     </div>
   );
-}
+});

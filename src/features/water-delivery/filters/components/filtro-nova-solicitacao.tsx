@@ -354,7 +354,7 @@ export function FiltroNovaSolicitacao({ ativoInicial, onCriada }: Props) {
       </div>
 
       {fotoUrl && (
-        <img
+        <img loading="lazy" decoding="async"
           src={fotoUrl}
           alt="Foto anexada à solicitação"
           className="h-28 w-full rounded-2xl border border-border/50 object-cover"

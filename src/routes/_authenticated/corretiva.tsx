@@ -535,5 +535,5 @@ function LocalImage({ blobKey }: { blobKey: string }) {
     });
   }, [blobKey]);
   if (!src) return <div className="w-full h-full flex items-center justify-center"><Loader2 className="animate-spin text-muted-foreground/20" /></div>;
-  return <img src={src} className="w-full h-full object-cover" alt="Evidência" />;
+  return <img loading="lazy" decoding="async" src={src} className="w-full h-full object-cover" alt="Evidência" />;
 }

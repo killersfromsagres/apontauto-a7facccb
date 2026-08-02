@@ -576,7 +576,7 @@ export function FiltroDetalheDialog({
                         )}
                       >
                         {url ? (
-                          <img
+                          <img loading="lazy" decoding="async"
                             src={url}
                             alt={`Foto ${k}`}
                             className="h-16 w-full rounded-xl object-cover"

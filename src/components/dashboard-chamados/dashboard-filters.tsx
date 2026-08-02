@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Filter } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ function FilterSelect({
   );
 }
 
-export function DashboardFilters({
+export const DashboardFilters = memo(function DashboardFilters({
   filters,
   setFilters,
   uniques,
@@ -160,4 +161,4 @@ export function DashboardFilters({
       </div>
     </GlassCard>
   );
-}
+});

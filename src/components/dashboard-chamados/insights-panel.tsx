@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { AlertTriangle, CheckCircle2, Info, Sparkles } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import type { computeDashboardStats } from "@/lib/dashboard-chamados/insights";
@@ -54,7 +55,7 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-export function InsightsPanel({ insights }: { insights: Insight[] }) {
+export const InsightsPanel = memo(function InsightsPanel({ insights }: { insights: Insight[] }) {
   if (insights.length === 0) return null;
   return (
     <GlassCard delay={0.2}>
@@ -76,4 +77,4 @@ export function InsightsPanel({ insights }: { insights: Insight[] }) {
       </div>
     </GlassCard>
   );
-}
+});

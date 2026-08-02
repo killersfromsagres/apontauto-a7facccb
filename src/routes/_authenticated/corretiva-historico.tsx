@@ -475,7 +475,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                   <PenLine className="h-4 w-4" /> Rubrica do solicitante
                 </h4>
                 <div className="rounded-2xl border border-white/10 bg-white p-3">
-                  <img src={os.assinatura_url} alt="Rubrica do solicitante" className="max-h-32" />
+                  <img loading="lazy" decoding="async" src={os.assinatura_url} alt="Rubrica do solicitante" className="max-h-32" />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {os.assinatura_nome ? `${os.assinatura_nome} · ` : ""}

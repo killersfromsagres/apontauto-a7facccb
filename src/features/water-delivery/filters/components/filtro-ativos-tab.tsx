@@ -100,7 +100,7 @@ function QrFiltro({ token, rotulo }: { token: string; rotulo: string }) {
           </DialogHeader>
           <div className="flex flex-col items-center gap-3">
             {png ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={png}
                 alt="QR Code do filtro"
                 className="h-56 w-56 rounded-xl bg-white p-2"
@@ -577,7 +577,7 @@ export function FiltroAtivosTab({ podeEscrever }: Props) {
                 {form.foto_url ? "Trocar foto de referência" : "Foto de referência"}
               </Button>
               {form.foto_url && (
-                <img
+                <img loading="lazy" decoding="async"
                   src={form.foto_url}
                   alt="Foto de referência do filtro"
                   className="mt-2 h-28 w-full rounded-2xl border border-border/50 object-cover"

@@ -617,7 +617,7 @@ function EntregaSheet({
                     key={n.id}
                     className="relative aspect-square overflow-hidden rounded-xl border border-primary/40"
                   >
-                    <img src={n.url} alt="Nova evidência" className="h-full w-full object-cover" />
+                    <img loading="lazy" decoding="async" src={n.url} alt="Nova evidência" className="h-full w-full object-cover" />
                     <button
                       type="button"
                       aria-label="Remover foto"

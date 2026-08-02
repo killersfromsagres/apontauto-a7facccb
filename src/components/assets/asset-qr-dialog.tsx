@@ -56,7 +56,7 @@ export function AssetQrDialog({
           </DialogHeader>
           <div className="flex flex-col items-center gap-3">
             {png ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={png}
                 alt={`QR Code do ativo ${code}`}
                 className="h-56 w-56 rounded-xl bg-white p-2"

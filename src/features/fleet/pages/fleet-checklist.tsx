@@ -344,7 +344,7 @@ export function FleetChecklist() {
                 )}
               >
                 {cover ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={cover.preview}
                     alt={c.label}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -393,7 +393,7 @@ export function FleetChecklist() {
                   key={p.id}
                   className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted/30"
                 >
-                  <img src={p.preview} alt={p.category} className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={p.preview} alt={p.category} className="h-full w-full object-cover" />
                   <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-1 bg-black/45 px-1.5 py-1 text-[10px] text-white">
                     <span className="truncate">
                       {PHOTO_CATEGORIES.find((c) => c.key === p.category)?.label ?? p.category}
