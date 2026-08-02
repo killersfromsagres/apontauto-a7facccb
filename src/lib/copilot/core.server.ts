@@ -131,7 +131,7 @@ export async function runCopilot({ messages, supabase }: RunArgs) {
     execute: async ({ tipo, resumo, params }) => {
       const limpos = Object.fromEntries(
         Object.entries(params).filter(([, v]) => v !== null && v !== undefined),
-      );
+      ) as AcaoProposta["params"];
       const acao: AcaoProposta = {
         id: `${tipo}-${acoes.length}-${Date.now()}`,
         tipo,

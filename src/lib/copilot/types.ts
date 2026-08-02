@@ -8,11 +8,13 @@ export type AcaoTipo =
   | "atualizar_status_os"
   | "limpar_tabela";
 
+export type AcaoParams = Record<string, string | number | boolean | string[]>;
+
 export interface AcaoProposta {
   id: string;
   tipo: AcaoTipo;
   resumo: string;
-  params: Record<string, unknown>;
+  params: AcaoParams;
   perigosa: boolean;
 }
 
