@@ -7020,6 +7020,7 @@ export type Database = {
     Functions: {
       agua_can: { Args: { required_action?: string }; Returns: boolean }
       agua_escopo_restrito: { Args: never; Returns: boolean }
+      agua_exec_can: { Args: { required_action?: string }; Returns: boolean }
       agua_filtro_escopo_restrito: { Args: never; Returns: boolean }
       agua_gerar_rotas: {
         Args: { p_data?: string; p_origem?: string }
