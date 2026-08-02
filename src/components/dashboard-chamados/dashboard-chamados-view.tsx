@@ -347,7 +347,7 @@ export function DashboardChamadosView() {
             <Suspense
               fallback={
                 <GlassCard>
-                  <SkeletonState rows={3} />
+                  <ChartSkeleton height={300} />
                 </GlassCard>
               }
             >
