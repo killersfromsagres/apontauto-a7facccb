@@ -358,7 +358,8 @@ export const sections: MenuSection[] = [
         ],
       },
       {
-        key: "abastecimento",
+        key: "agua-execucao",
+        aliases: ["abastecimento", "abastecimento-agua"],
         title: "Entrega de Água",
         short: "Água",
         url: "/abastecimento/agua",
@@ -561,6 +562,8 @@ export function menuKeysForPath(pathname: string): string[] | null {
 /** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
 const RESTRICTED_KEYS = [
   "abastecimento",
+  "abastecimento-agua",
+  "agua-execucao",
   "frota-checklist",
   "frota-historico",
   "frota-gestao",
