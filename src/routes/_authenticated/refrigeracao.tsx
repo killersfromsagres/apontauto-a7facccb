@@ -22,7 +22,20 @@ import {
   Copy,
   ExternalLink,
   ImageIcon,
+  Trash2,
 } from "lucide-react";
+import { clearOsTable } from "@/lib/os-management.functions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -57,6 +70,19 @@ import {
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
+import { clearOsTable } from "@/lib/os-management.functions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 import {
   EQUIPES_REFRIGERACAO,
@@ -300,6 +326,40 @@ function RefrigeracaoPage() {
             <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
             Sincronizar
           </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Limpar Chamados
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação removerá permanentemente todas as Ordens de Serviço de Refrigeração da base de dados (inclusive fotos e peças vinculadas). Use isso para preparar a nova programação mensal.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={async () => {
+                    try {
+                      await clearOsTable({ data: { module: "refrigeracao" } });
+                      toast.success("Tabela limpa com sucesso");
+                      window.location.reload();
+                    } catch (e: any) {
+                      toast.error("Erro ao limpar: " + e.message);
+                    }
+                  }}
+                >
+                  Confirmar Limpeza
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       }
     >
