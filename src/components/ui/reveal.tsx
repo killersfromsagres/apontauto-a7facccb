@@ -52,14 +52,15 @@ export interface RevealProps extends React.HTMLAttributes<HTMLDivElement> {
 
 /** Wrapper de fade-in suave ao rolar. Respeita `prefers-reduced-motion`. */
 export const Reveal = React.forwardRef<HTMLDivElement, RevealProps>(
-  ({ className, delay = 0, repeat = false, as: Tag = "div", style, children, ...props }, forwardedRef) => {
+  ({ className, delay = 0, repeat = false, as = "div", style, children, ...props }, forwardedRef) => {
+    const Tag = as as React.ElementType;
     const { ref, revealed } = useReveal<HTMLDivElement>({ once: !repeat });
 
     React.useImperativeHandle(forwardedRef, () => ref.current as HTMLDivElement);
 
     return (
       <Tag
-        ref={ref}
+        ref={ref as React.Ref<HTMLDivElement>}
         data-revealed={revealed ? "true" : "false"}
         className={cn("reveal", className)}
         style={{ ...style, ["--reveal-delay" as string]: `${delay}ms` }}
