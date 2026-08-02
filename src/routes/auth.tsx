@@ -1,7 +1,17 @@
 import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Lock, Eye, EyeOff, UserRound, ShieldCheck, Loader2, X } from "lucide-react";
+import {
+  Lock,
+  Eye,
+  EyeOff,
+  UserRound,
+  ShieldCheck,
+  Loader2,
+  X,
+  ChevronDown,
+  ArrowRight,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -212,169 +222,188 @@ function AuthPage() {
         </section>
 
         {/* Card de login */}
-        <div
-          className={`relative mx-auto w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] backdrop-blur-xl sm:p-8 ${
-            shake ? "auth-shake" : ""
-          }`}
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
-          }}
-        >
+        <div className="relative mx-auto w-full max-w-md">
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+            className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#4F8CFF]/10 blur-[100px]"
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-[#52E5FF]/10 blur-[100px]"
           />
 
-          <div className="auth-logo-in mb-6 flex flex-col items-center lg:items-start">
-            <img
-              src={logo.url}
-              alt="Apont Auto"
-              className="h-14 w-auto object-contain lg:hidden"
-              draggable={false}
+          <div
+            className={`relative z-10 rounded-3xl border border-white/10 bg-[#0D1422]/60 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8 ${
+              shake ? "auth-shake" : ""
+            }`}
+          >
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
             />
-            <h1 className="mt-3 text-center font-display text-xl font-semibold tracking-tight text-white lg:mt-0 lg:text-left">
-              Acesso ao sistema
-            </h1>
-            <p className="mt-1 text-center text-sm text-white/55 lg:text-left">
-              Entre com suas credenciais corporativas.
-            </p>
-          </div>
 
-          <form onSubmit={submit} className="space-y-4" noValidate>
-            <div>
-              <div className="auth-field">
-                <UserRound className="auth-icon" size={18} />
-                <input
-                  id="email"
-                  type="text"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
-                  }}
-                  placeholder=" "
-                  className="auth-input"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  enterKeyHint="next"
-                  aria-invalid={Boolean(fieldErrors.email)}
-                  aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                />
-                <label htmlFor="email" className="auth-label">
+            <div className="auth-logo-in mb-8 flex flex-col items-center text-center">
+              <img
+                src={logo.url}
+                alt="Apont Auto"
+                className="h-14 w-auto object-contain lg:hidden"
+                draggable={false}
+              />
+              <h1 className="mt-3 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl lg:mt-0">
+                Acesso ao sistema
+              </h1>
+              <p className="mt-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                Portal operacional
+              </p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-6" noValidate>
+              <div>
+                <label htmlFor="email" className="auth-field-label">
                   Usuário
                 </label>
+                <div className="auth-field">
+                  <UserRound className="auth-icon" size={18} />
+                  <input
+                    id="email"
+                    type="text"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: undefined }));
+                    }}
+                    placeholder="usuario@empresa.com"
+                    className="auth-input"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="next"
+                    aria-invalid={Boolean(fieldErrors.email)}
+                    aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                  />
+                </div>
+                {fieldErrors.email && (
+                  <p id="email-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
-              {fieldErrors.email && (
-                <p id="email-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
-                  {fieldErrors.email}
-                </p>
-              )}
-            </div>
 
-            <div>
-              <div className="auth-field">
-                <Lock className="auth-icon" size={18} />
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (fieldErrors.password)
-                      setFieldErrors((p) => ({ ...p, password: undefined }));
-                  }}
-                  placeholder=" "
-                  className="auth-input pr-11"
-                  autoComplete="current-password"
-                  enterKeyHint="go"
-                  aria-invalid={Boolean(fieldErrors.password)}
-                  aria-describedby={fieldErrors.password ? "password-error" : undefined}
-                />
-                <label htmlFor="password" className="auth-label">
+              <div>
+                <label htmlFor="password" className="auth-field-label">
                   Senha
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="auth-eye"
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                <div className="auth-field">
+                  <Lock className="auth-icon" size={18} />
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password)
+                        setFieldErrors((p) => ({ ...p, password: undefined }));
+                    }}
+                    placeholder="••••••••"
+                    className="auth-input pr-11"
+                    autoComplete="current-password"
+                    enterKeyHint="go"
+                    aria-invalid={Boolean(fieldErrors.password)}
+                    aria-describedby={fieldErrors.password ? "password-error" : undefined}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="auth-eye"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {fieldErrors.password && (
+                  <p id="password-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
-              {fieldErrors.password && (
-                <p id="password-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
-                  {fieldErrors.password}
-                </p>
-              )}
-            </div>
 
-            <div>
-              <div className="flex items-start gap-3 text-xs text-white/70">
-                <input
-                  id="terms"
-                  type="checkbox"
-                  className="auth-checkbox mt-0.5"
-                  checked={acceptTerms}
-                  onChange={(e) => {
-                    setAcceptTerms(e.target.checked);
-                    if (e.target.checked) setFieldErrors((p) => ({ ...p, terms: undefined }));
-                  }}
-                  aria-invalid={Boolean(fieldErrors.terms)}
-                  aria-describedby={fieldErrors.terms ? "terms-error" : undefined}
-                />
-                <label htmlFor="terms" className="cursor-pointer leading-relaxed">
-                  Li e aceito os{" "}
-                  <a
-                    href="/termos"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-sky-300 hover:underline"
-                  >
-                    Termos de Uso
-                  </a>{" "}
-                  e a{" "}
-                  <a
-                    href="/privacidade"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-sky-300 hover:underline"
-                  >
-                    Política de Privacidade
-                  </a>
-                  .{" "}
+              <div className="space-y-4 pt-1">
+                <div className="flex items-start gap-3 text-xs leading-tight text-slate-400">
+                  <input
+                    id="terms"
+                    type="checkbox"
+                    className="auth-checkbox mt-0.5 shrink-0"
+                    checked={acceptTerms}
+                    onChange={(e) => {
+                      setAcceptTerms(e.target.checked);
+                      if (e.target.checked) setFieldErrors((p) => ({ ...p, terms: undefined }));
+                    }}
+                    aria-invalid={Boolean(fieldErrors.terms)}
+                    aria-describedby={fieldErrors.terms ? "terms-error" : undefined}
+                  />
+                  <label htmlFor="terms" className="cursor-pointer leading-relaxed">
+                    Li e aceito os{" "}
+                    <a
+                      href="/termos"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-white decoration-[#4F8CFF] underline-offset-2 hover:underline"
+                    >
+                      Termos de Uso
+                    </a>{" "}
+                    e a{" "}
+                    <a
+                      href="/privacidade"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-white decoration-[#4F8CFF] underline-offset-2 hover:underline"
+                    >
+                      Política de Privacidade
+                    </a>
+                    .
+                  </label>
+                </div>
+                {fieldErrors.terms && (
+                  <p id="terms-error" role="alert" className="pl-1 text-xs text-rose-300">
+                    {fieldErrors.terms}
+                  </p>
+                )}
+
+                <div className="text-center">
                   <button
                     type="button"
                     onClick={() => setTermsOpen(true)}
-                    className="text-white/50 underline underline-offset-2 hover:text-white/80"
+                    className="inline-flex items-center justify-center gap-1 text-xs font-semibold text-slate-400 transition-colors hover:text-white"
                   >
-                    Ver resumo
+                    Ver resumo dos termos
+                    <ChevronDown size={14} aria-hidden />
                   </button>
-                </label>
+                </div>
               </div>
-              {fieldErrors.terms && (
-                <p id="terms-error" role="alert" className="mt-1.5 pl-1 text-xs text-rose-300">
-                  {fieldErrors.terms}
-                </p>
-              )}
-            </div>
 
-            <button type="submit" className="auth-btn" disabled={loading}>
-              {loading ? (
-                <span className="dots inline-flex items-center justify-center text-white">
-                  <span />
-                  <span />
-                  <span />
-                </span>
-              ) : (
-                "Entrar"
-              )}
-            </button>
-          </form>
+              <button type="submit" className="auth-btn" disabled={loading}>
+                {loading ? (
+                  <span className="dots inline-flex items-center justify-center text-white">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                ) : (
+                  <>
+                    Entrar
+                    <ArrowRight size={18} aria-hidden />
+                  </>
+                )}
+              </button>
+            </form>
+
+            <p className="mt-8 text-center text-[10px] uppercase tracking-[0.2em] text-slate-600">
+              Sistema verificado · Acesso auditado
+            </p>
+          </div>
         </div>
+
       </main>
 
       <footer className="absolute inset-x-0 bottom-4 z-10 px-4 text-center">
