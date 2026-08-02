@@ -7018,6 +7018,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_readonly_query: { Args: { _sql: string }; Returns: Json }
       agua_can: { Args: { required_action?: string }; Returns: boolean }
       agua_escopo_restrito: { Args: never; Returns: boolean }
       agua_exec_can: { Args: { required_action?: string }; Returns: boolean }
