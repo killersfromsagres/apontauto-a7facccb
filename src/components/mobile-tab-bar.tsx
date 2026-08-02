@@ -68,13 +68,13 @@ export const MobileTabBar = memo(function MobileTabBar() {
             onClick={toggleSidebar}
             aria-label="Abrir menu de módulos"
             aria-expanded={openMobile}
-            className={cn(
-              "flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium transition-all active:scale-95",
-              openMobile ? "text-primary" : "text-muted-foreground",
-            )}
+            className={cn("imenu__item", openMobile && "is-active")}
           >
-            <LayoutGrid className="h-5 w-5" strokeWidth={1.8} />
-            <span className="max-w-full truncate">Menu</span>
+            <span className="imenu__icon">
+              <LayoutGrid className="h-5 w-5" strokeWidth={1.8} />
+            </span>
+            <span className="imenu__label">Menu</span>
+            <span aria-hidden className="imenu__line" />
           </button>
         </li>
       </ul>
@@ -96,15 +96,10 @@ function TabLink({
   onClick?: () => void;
 }) {
   const content = (
-    <div
-      className={cn(
-        "relative flex min-h-[3.25rem] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-1 text-[10px] font-medium transition-all active:scale-95",
-        active ? "text-primary" : "text-muted-foreground",
-      )}
-    >
-      {active && <span aria-hidden className="absolute top-0 h-0.5 w-6 rounded-full bg-primary" />}
-      {icon}
-      <span className="max-w-full truncate">{label}</span>
+    <div className={cn("imenu__item", active && "is-active")}>
+      <span className="imenu__icon">{icon}</span>
+      <span className="imenu__label">{label}</span>
+      <span aria-hidden className="imenu__line" />
     </div>
   );
 
@@ -122,3 +117,4 @@ function TabLink({
     </li>
   );
 }
+

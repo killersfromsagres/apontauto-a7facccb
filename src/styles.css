@@ -895,7 +895,7 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
     90deg,
     transparent 0%,
     hsl(var(--primary) / 0.35) 20%,
-    hsl(var(--primary)) 50%,
+    var(--primary) 50%,
     hsl(var(--accent)) 75%,
     transparent 100%
   );
@@ -931,7 +931,7 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 
 /* Mascote de Manutenção — técnico com capacete, chave inglesa e engrenagem */
 .mascot {
-  --m-primary: hsl(var(--primary));
+  --m-primary: var(--primary);
   --m-accent: hsl(var(--accent));
   --m-glow: hsl(var(--primary) / 0.55);
   --m-hat: #f5a524;          /* amarelo capacete */
@@ -2390,4 +2390,50 @@ main:focus:not(:focus-visible) {
 @media (prefers-reduced-motion: reduce) {
   .reveal, .reveal[data-revealed="true"] { opacity: 1; animation: none; transform: none; }
   .hover-scale:hover, .hover-raise:hover { transform: none; }
+}
+
+/* ── Menu inferior mobile interativo ─────────────────────────────── */
+.imenu__item {
+  position: relative;
+  display: flex;
+  min-height: 3.25rem;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  border-radius: 1rem;
+  padding: 0.25rem;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  transition: color 260ms ease, background-color 260ms ease, transform 200ms ease;
+}
+.imenu__item:active { transform: scale(0.94); }
+.imenu__item.is-active {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, transparent);
+}
+.imenu__item.is-active .imenu__icon { animation: imenuBounce 620ms ease; }
+.imenu__label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.imenu__line {
+  display: block;
+  height: 2px;
+  width: 0;
+  border-radius: 9999px;
+  background: var(--primary);
+  transition: width 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.imenu__item.is-active .imenu__line { width: 1.5rem; }
+
+@keyframes imenuBounce {
+  0%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-0.3em); }
+  40% { transform: translateY(0); }
+  60% { transform: translateY(-0.1em); }
+  80% { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .imenu__item.is-active .imenu__icon { animation: none; }
+  .imenu__line { transition: none; }
 }
