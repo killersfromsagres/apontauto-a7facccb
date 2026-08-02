@@ -24,7 +24,7 @@ export interface CopilotMensagem {
 export interface CopilotConsulta {
   sql: string;
   linhas: number;
-  amostra: unknown[];
+  amostraJson: string;
 }
 
 export interface CopilotResposta {

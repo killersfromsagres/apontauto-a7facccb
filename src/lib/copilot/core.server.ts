@@ -92,7 +92,11 @@ export async function runCopilot({ messages, supabase }: RunArgs) {
       const { data, error } = await supabase.rpc("admin_readonly_query", { _sql: sql });
       if (error) return { erro: error.message };
       const rows = Array.isArray(data) ? data : [];
-      consultas.push({ sql, linhas: rows.length, amostra: rows.slice(0, 20) });
+      consultas.push({
+        sql,
+        linhas: rows.length,
+        amostraJson: JSON.stringify(rows.slice(0, 20)),
+      });
       const payload = JSON.stringify(rows).slice(0, 20000);
       return { linhas: rows.length, dados: payload };
     },
