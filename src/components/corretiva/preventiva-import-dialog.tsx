@@ -14,20 +14,43 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { equipeStyles } from "@/lib/corretiva/equipe";
+import { useIsOwner } from "@/hooks/use-is-owner";
 import {
   lerPreventivaFile,
-  contarPorEquipe,
+  lerCorretivaFile,
   EQUIPES_PREVENTIVA,
   type PreventivaRow,
+  type CorretivaRow,
 } from "@/lib/corretiva/preventiva-import";
 
-export function PreventivaImportDialog({ onDone }: { onDone: () => void }) {
+type Row = PreventivaRow | CorretivaRow;
+type Mode = "preventiva" | "corretiva";
+
+function contar(rows: Row[]): Array<[string, number]> {
+  const map = new Map<string, number>();
+  for (const r of rows) map.set(r.equipe, (map.get(r.equipe) ?? 0) + 1);
+  return [...map.entries()].sort((a, b) => b[1] - a[1]);
+}
+
+export function PreventivaImportDialog({
+  onDone,
+  mode = "preventiva",
+}: {
+  onDone: () => void;
+  mode?: Mode;
+}) {
+  const { isOwner } = useIsOwner();
   const [open, setOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [rows, setRows] = useState<PreventivaRow[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [fileName, setFileName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Importação em massa é exclusiva do proprietário do sistema.
+  if (!isOwner) return null;
+
+  const label = mode === "corretiva" ? "corretivas" : "preventivas";
 
   const onFile = async (f: File | null) => {
     setRows([]);
@@ -35,9 +58,9 @@ export function PreventivaImportDialog({ onDone }: { onDone: () => void }) {
     if (!f) return;
     setParsing(true);
     try {
-      const parsed = await lerPreventivaFile(f);
+      const parsed = mode === "corretiva" ? await lerCorretivaFile(f) : await lerPreventivaFile(f);
       if (parsed.length === 0) toast.warning("Nenhuma linha válida encontrada.");
-      else toast.success(`${parsed.length} preventivas separadas automaticamente por equipe.`);
+      else toast.success(`${parsed.length} ${label} separadas automaticamente por equipe.`);
       setRows(parsed);
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao ler planilha");
@@ -54,31 +77,41 @@ export function PreventivaImportDialog({ onDone }: { onDone: () => void }) {
       .upsert(rows as any, { onConflict: "numero_os", count: "exact" });
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(`${count ?? rows.length} preventivas importadas.`);
+    toast.success(`${count ?? rows.length} ${label} importadas.`);
     setOpen(false);
     setRows([]);
     setFileName("");
     onDone();
   };
 
-  const counts = contarPorEquipe(rows);
+  const counts = contar(rows);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          <Upload className="mr-2 h-4 w-4" /> Importar preventivas
+          <Upload className="mr-2 h-4 w-4" /> Importar {label}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Importar planilha de preventivas (.xlsx)</DialogTitle>
+          <DialogTitle>Importar planilha de {label} (.xlsx)</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            O sistema separa automaticamente cada OS entre <strong>Chaveiro</strong>,{" "}
-            <strong>Civil</strong>, <strong>Hidráulica</strong> e <strong>Elétrica</strong>. Depois
-            de importar, o colaborador conclui a preventiva anexando a foto de evidência.
+            {mode === "corretiva" ? (
+              <>
+                O sistema separa automaticamente cada OS pela equipe responsável (Chaveiro, Civil,
+                Hidráulica, Elétrica, Pintura e Refrigeração). Depois de importar, o colaborador
+                conclui a OS anexando a foto de evidência.
+              </>
+            ) : (
+              <>
+                O sistema separa automaticamente cada OS entre <strong>Chaveiro</strong>,{" "}
+                <strong>Civil</strong>, <strong>Hidráulica</strong> e <strong>Elétrica</strong>.
+                Depois de importar, o colaborador conclui a preventiva anexando a foto de evidência.
+              </>
+            )}
           </p>
 
           <Input
@@ -103,9 +136,14 @@ export function PreventivaImportDialog({ onDone }: { onDone: () => void }) {
                 <Badge variant="secondary">{rows.length} OS</Badge>
               </div>
               <div className="flex flex-wrap gap-2">
-                {EQUIPES_PREVENTIVA.map((e) => (
+                {(mode === "preventiva"
+                  ? EQUIPES_PREVENTIVA.map(
+                      (e) => [e, rows.filter((r) => r.equipe === e).length] as [string, number],
+                    )
+                  : counts
+                ).map(([e, n]) => (
                   <Badge key={e} variant="outline" className={equipeStyles(e).badge}>
-                    {e}: {counts[e]}
+                    {e}: {n}
                   </Badge>
                 ))}
               </div>
@@ -131,7 +169,7 @@ export function PreventivaImportDialog({ onDone }: { onDone: () => void }) {
 
           <Button className="w-full h-11" onClick={importar} disabled={saving || rows.length === 0}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Importar {rows.length > 0 ? `${rows.length} preventivas` : ""}
+            Importar {rows.length > 0 ? `${rows.length} ${label}` : ""}
           </Button>
         </div>
       </DialogContent>
