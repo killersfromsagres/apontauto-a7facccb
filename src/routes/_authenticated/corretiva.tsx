@@ -225,9 +225,11 @@ function CorretivaPage() {
       description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
       actions={
         <div className="flex items-center gap-2">
-          {aba === "preventiva" && (
-            <PreventivaImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
-          )}
+          <PreventivaImportDialog
+            mode={aba === "preventiva" ? "preventiva" : "corretiva"}
+            onDone={() => refreshOsFromServer().catch(() => {})}
+          />
+
           <Badge variant={online ? "outline" : "destructive"} className="gap-1.5 py-1 px-2">
             {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
             {online ? "Online" : "Offline"}
