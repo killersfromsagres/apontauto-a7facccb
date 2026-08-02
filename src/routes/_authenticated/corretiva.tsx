@@ -16,7 +16,9 @@ import {
   ArrowLeft,
   Trash2,
   Calendar,
+  MoreVertical,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
 import {
   AlertDialog,
@@ -68,6 +70,20 @@ import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
 });
+
+/**
+ * Cores fluorescentes por equipe de corretiva:
+ * Hidráulica → laranja fluorescente
+ * Civil → verde água fluorescente
+ * Chaveiro → roxo fluorescente
+ * Elétrica → verde fluorescente
+ * Pintura → rosa fluorescente
+ * Refrigeração → azul bebê fluorescente (corretiva, não preventiva)
+ */
+function getTeamStyles(equipe: string | null | undefined) {
+  const styles = equipeStyles(equipe);
+  return styles;
+}
 
 const OS_COLUMNS =
   "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, data_criacao";
@@ -297,23 +313,27 @@ function CorretivaPage() {
             <div className="space-y-2">
               {filtered.map((o) => {
                 const isDone = (o.status ?? "").toLowerCase() === "concluida";
-                const styles = equipeStyles(o.equipe);
+                const styles = getTeamStyles(o.equipe);
+                const rowCls = isDone 
+                  ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+                  : styles.row;
+
                 return (
                   <button
                     key={o.id}
                     onClick={() => setSelectedId(o.id)}
-                    className={`w-full flex items-start gap-3 p-4 rounded-xl text-left border transition-all active:scale-[0.98] ${isDone ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-white/5 border-white/10 hover:border-white/20'}`}
+                    className={`w-full flex items-start gap-3 p-4 rounded-xl text-left transition-all active:scale-[0.98] ${rowCls}`}
                   >
-                    <div className={`mt-1 h-3 w-3 rounded-full shrink-0 ${isDone ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : styles.dot}`} />
+                    <div className={`mt-1.5 h-3 w-3 rounded-full shrink-0 ${isDone ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : styles.dot}`} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-mono font-bold text-white/90">OS {o.numero_os}</span>
+                        <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
                         {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">CONCLUÍDA</Badge>}
                       </div>
                       <h3 className="text-sm font-medium text-white/80 line-clamp-1">{o.nome_os}</h3>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{o.predio} · {o.andar} · {o.local}</p>
                       <div className="mt-2 flex items-center gap-2">
-                        <Badge variant="outline" className={`text-[10px] py-0 px-2 ${styles.badge}`}>{o.equipe || "Sem Equipe"}</Badge>
+                        <Badge variant="outline" className={cn("text-[10px] py-0 px-2", styles.badge)}>{o.equipe || "Sem Equipe"}</Badge>
                         <span className="text-[10px] text-muted-foreground">{o.ativo}</span>
                       </div>
                     </div>
