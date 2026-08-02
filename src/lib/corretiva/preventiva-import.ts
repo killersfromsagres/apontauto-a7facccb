@@ -63,6 +63,25 @@ export async function lerPreventivaFile(file: File): Promise<PreventivaRow[]> {
   }));
 }
 
+export const TIPO_CORRETIVA = "Corretiva";
+
+export type CorretivaRow = CorretivaOsImport & { tipo: string; equipe: string };
+
+/**
+ * Importação de OS de CORRETIVA: mantém todas as equipes possíveis
+ * (inclusive Pintura e Refrigeração), usando a equipe da planilha quando
+ * informada e a classificação automática por texto como fallback.
+ */
+export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
+  const rows = await readCorretivaOsFile(file);
+  return rows.map((r) => ({
+    ...r,
+    tipo: TIPO_CORRETIVA,
+    equipe: (r.equipe && r.equipe.trim()) || classificarEquipeOs(r).equipe,
+  }));
+}
+
+
 export function contarPorEquipe(rows: PreventivaRow[]): Record<EquipePreventiva, number> {
   const out = { Chaveiro: 0, Civil: 0, Hidráulica: 0, Elétrica: 0 } as Record<
     EquipePreventiva,
