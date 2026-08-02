@@ -702,11 +702,22 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
   outline: none;
 }
-.auth-input::placeholder { color: transparent; }
+.auth-input::placeholder { color: rgba(148,163,184,0.55); }
 .auth-input:focus {
   border-color: rgba(79, 140, 255, 0.75);
   background: rgba(255,255,255,0.06);
-  box-shadow: none;
+  box-shadow: 0 0 0 3px rgba(79,140,255,0.14);
+}
+
+/* Rótulo fixo acima do campo (direção "Premium liquid glass") */
+.auth-field-label {
+  display: block;
+  margin: 0 0 6px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.9);
 }
 .auth-input:-webkit-autofill {
   -webkit-text-fill-color: #f8fafc;
@@ -768,6 +779,12 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
   background-position: -150% 0, 0 0;
   border: 1px solid rgba(255,255,255,0.12);
   box-shadow: 0 10px 30px -12px rgba(79, 140, 255, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 220ms ease, filter 180ms ease;
 }
@@ -782,8 +799,8 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 
 .auth-checkbox {
   appearance: none;
-  width: 16px; height: 16px;
-  border-radius: 4px;
+  width: 20px; height: 20px;
+  border-radius: 6px;
   border: 1px solid rgba(255,255,255,0.25);
   background: rgba(255,255,255,0.04);
   display: inline-grid; place-content: center;
@@ -797,7 +814,7 @@ img, svg, video, canvas { max-width: 100%; height: auto; }
 }
 .auth-checkbox:checked::after {
   content: "";
-  width: 4px; height: 8px;
+  width: 5px; height: 9px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
