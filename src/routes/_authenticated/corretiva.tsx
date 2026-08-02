@@ -66,6 +66,8 @@ import { compressImage } from "@/lib/corretiva/image";
 import { syncPending } from "@/lib/corretiva/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } from "@/lib/corretiva/equipe";
+import { isPreventiva } from "@/lib/corretiva/preventiva-import";
+import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
