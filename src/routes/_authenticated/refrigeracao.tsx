@@ -70,19 +70,6 @@ import {
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
-import { clearOsTable } from "@/lib/os-management.functions";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
 
 import {
   EQUIPES_REFRIGERACAO,
