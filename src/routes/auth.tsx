@@ -113,10 +113,24 @@ function AuthPage() {
     toast.info("Reconexão automática cancelada.");
   };
 
+  // Efeito 3D: o card acompanha suavemente o cursor (desativado no toque).
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const handleTilt = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ x: -py * 10, y: px * 10 });
+  };
+  const resetTilt = () => setTilt({ x: 0, y: 0 });
+  const tiltStyle = {
+    transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
+  } as React.CSSProperties;
+
   const triggerShake = () => {
     setShake(true);
     window.setTimeout(() => setShake(false), 500);
   };
+
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
