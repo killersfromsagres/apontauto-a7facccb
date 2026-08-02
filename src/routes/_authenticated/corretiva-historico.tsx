@@ -132,7 +132,7 @@ function HistoricoPage() {
 
   return (
     <PageShell
-      title={aba === "preventiva" ? "Histórico de OS — Preventiva" : "Histórico de OS — Corretiva"}
+      title={aba === "preventiva" ? "Histórico de OS — Preventiva" : "Histórico de OS — Programação"}
       description="Ordens de serviço concluídas e canceladas."
     >
       <GlassCard className="p-4">

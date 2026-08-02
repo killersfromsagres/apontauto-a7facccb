@@ -221,7 +221,7 @@ function CorretivaPage() {
 
   return (
     <PageShell
-      title={aba === "preventiva" ? "Manutenção Preventiva" : "Manutenção Corretiva"}
+      title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
       description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
       actions={
         <div className="flex items-center gap-2">
