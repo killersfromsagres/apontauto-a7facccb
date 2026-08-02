@@ -507,3 +507,93 @@ export const provisionControleUser = createServerFn({ method: "POST" })
     // A senha temporária é exibida uma única vez para o administrador.
     return { ok: true, created, login, email, tempPassword: password };
   });
+
+/**
+ * Provisiona (cria ou atualiza) um login operacional restrito a módulos
+ * específicos com ações limitadas. Somente administradores podem executar.
+ * A senha é definida pelo administrador no momento da chamada — nunca
+ * fica gravada no código.
+ */
+export const provisionScopedUser = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .validator((input: unknown) => {
+    const { login, password, fullName, modules, actions } = (input ?? {}) as Record<
+      string,
+      unknown
+    >;
+    if (typeof login !== "string" || !LOGIN_RE.test(login.trim().toLowerCase())) {
+      throw new Error("Login inválido.");
+    }
+    if (typeof password !== "string" || password.length < 6) {
+      throw new Error("A senha deve ter pelo menos 6 caracteres.");
+    }
+    if (!Array.isArray(modules) || modules.length === 0) {
+      throw new Error("Informe ao menos um módulo.");
+    }
+    return {
+      login: login.trim().toLowerCase(),
+      password,
+      fullName: typeof fullName === "string" ? fullName.trim() : login,
+      modules: modules.map(String),
+      actions: Array.isArray(actions) ? actions.map(String) : ["read", "create", "update"],
+    };
+  })
+  .handler(async ({ data, context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    const email = loginToEmail(data.login);
+    const metadata = { login: data.login, full_name: data.fullName };
+
+    const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    if (listErr) throw new Error(listErr.message);
+
+    let user = list.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    let created = false;
+
+    if (!user) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: data.password,
+        email_confirm: true,
+        user_metadata: metadata,
+      });
+      if (error) throw new Error(error.message);
+      user = res.user!;
+      created = true;
+    } else {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        password: data.password,
+        email_confirm: true,
+        ban_duration: "none",
+        user_metadata: metadata,
+      } as any);
+      if (error) throw new Error(error.message);
+    }
+
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert({ id: user.id, full_name: data.fullName, allowed_menus: data.modules } as any, {
+        onConflict: "id",
+      });
+    if (profErr) throw new Error(profErr.message);
+
+    await supabaseAdmin.from("user_module_access").delete().eq("user_id", user.id);
+    const { error: umaErr } = await supabaseAdmin.from("user_module_access").insert(
+      data.modules.map((module_key) => ({
+        user_id: user!.id,
+        module_key,
+        actions: data.actions,
+        granted_by: context.userId,
+      })),
+    );
+    if (umaErr) throw new Error(umaErr.message);
+
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
+    await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
+
+    return { ok: true, created, login: data.login, email, modules: data.modules };
+  });
