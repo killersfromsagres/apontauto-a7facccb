@@ -37,6 +37,7 @@ import {
   Sparkles,
   BrainCircuit,
   ChevronDown,
+  Calendar,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -131,6 +132,7 @@ import {
   type Categoria,
   type DynamicRule,
 } from "@/lib/backorder/classify";
+import { distributeBackorderToField } from "@/lib/backorder-distribution.functions";
 import { AvaliacaoEmailCard } from "@/components/backorder/avaliacao-email-card";
 import { StatusBoard } from "@/components/backorder/status-board";
 import {
@@ -230,10 +232,15 @@ function BackorderPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("tabela");
   // Exibe a planilha inteira por padrão; o ano continua disponível como filtro.
-  const anoAtual = new Date().getFullYear();
+  const now = new Date();
+  const anoAtual = now.getFullYear();
+  const mesAtual = (now.getMonth() + 1).toString().padStart(2, "0");
   const [ano, setAno] = useState<string>("todos");
+  const [mes, setMes] = useState<string>("todos");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
+  const [solicitanteFilter, setSolicitanteFilter] = useState<string>("");
+  const [mesFiltro, setMesFiltro] = useState<string>("todos");
   const [filterCat, setFilterCat] = useState<string>("__all__");
   const [importing, setImporting] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -398,18 +405,35 @@ function BackorderPage() {
     return Array.from(set).sort((a, b) => b - a);
   }, [rows, anoAtual]);
 
-  /** Base do módulo: por padrão só o ano corrente. */
-  const rowsAno = useMemo(
-    () =>
-      ano === "todos"
-        ? rows
-        : rows.filter((r) => String(new Date(r.data_solicitacao).getFullYear()) === ano),
-    [rows, ano],
-  );
+  const solicitantesDisponiveis = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of rows) {
+      if (r.outros) set.add(r.outros.trim());
+    }
+    return Array.from(set).sort();
+  }, [rows]);
+
+  /** Base do módulo: filtragem por ano, mês e solicitante. */
+  const rowsFiltradas = useMemo(() => {
+    return rows.filter((r) => {
+      if (!r.data_solicitacao) return false;
+      const d = new Date(r.data_solicitacao);
+      if (isNaN(d.getTime())) return false;
+      
+      const matchesMes = mesFiltro === "todos" || String(d.getMonth() + 1).padStart(2, "0") === mesFiltro;
+      const matchesSolicitante =
+        !solicitanteFilter || (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
+      
+      // Filtro de ano atual conforme solicitado anteriormente
+      const matchesAno = String(d.getFullYear()) === String(new Date().getFullYear());
+      
+      return matchesMes && matchesSolicitante && matchesAno;
+    });
+  }, [rows, mesFiltro, solicitanteFilter]);
 
   const statusRows = useMemo(
     () =>
-      rowsAno.map((r) => ({
+      rowsFiltradas.map((r) => ({
         os: r.os,
         nome: r.nome,
         equipe: r.equipe,
@@ -421,24 +445,24 @@ function BackorderPage() {
         status_origem: r.status_origem,
         statusCat: catOf(r),
       })),
-    [rowsAno, catOf],
+    [rowsFiltradas, catOf],
   );
 
   const abertas = useMemo(
-    () => rowsAno.filter((r) => isStatusAberto(catOf(r)) && !r.finalizado && !r.cancelado),
-    [rowsAno, catOf],
+    () => rowsFiltradas.filter((r) => isStatusAberto(catOf(r)) && !r.finalizado && !r.cancelado),
+    [rowsFiltradas, catOf],
   );
   const finalizadas = useMemo(
-    () => rowsAno.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r))),
-    [rowsAno, catOf],
+    () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r))),
+    [rowsFiltradas, catOf],
   );
   const cancelados = useMemo(
-    () => rowsAno.filter((r) => ["cancelado", "nao_executada"].includes(catOf(r))),
-    [rowsAno, catOf],
+    () => rowsFiltradas.filter((r) => ["cancelado", "nao_executada"].includes(catOf(r))),
+    [rowsFiltradas, catOf],
   );
   const aguardandoAprovacao = useMemo(
-    () => rowsAno.filter((r) => catOf(r) === "aguardando_aprovacao"),
-    [rowsAno, catOf],
+    () => rowsFiltradas.filter((r) => catOf(r) === "aguardando_aprovacao"),
+    [rowsFiltradas, catOf],
   );
   const avaliacaoRows = useMemo(
     () =>
@@ -1682,22 +1706,145 @@ function BackorderPage() {
     >
       <Tabs value={tab} onValueChange={setTab} className="w-full">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Select value={ano} onValueChange={setAno}>
-            <SelectTrigger className="h-11 w-full sm:w-44">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              {anosDisponiveis.map((a) => (
-                <SelectItem key={a} value={String(a)}>
-                  {a === anoAtual ? `${a} (ano atual)` : a}
-                </SelectItem>
-              ))}
-              <SelectItem value="todos">Todos os anos</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
+            <Select value={ano} onValueChange={setAno}>
+              <SelectTrigger className="h-11 w-full sm:w-32">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {anosDisponiveis.map((a) => (
+                  <SelectItem key={a} value={String(a)}>
+                    {a}
+                  </SelectItem>
+                ))}
+                <SelectItem value="todos">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={mes} onValueChange={setMes}>
+              <SelectTrigger className="h-11 w-full sm:w-40">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os meses</SelectItem>
+                <SelectItem value="01">Janeiro</SelectItem>
+                <SelectItem value="02">Fevereiro</SelectItem>
+                <SelectItem value="03">Março</SelectItem>
+                <SelectItem value="04">Abril</SelectItem>
+                <SelectItem value="05">Maio</SelectItem>
+                <SelectItem value="06">Junho</SelectItem>
+                <SelectItem value="07">Julho</SelectItem>
+                <SelectItem value="08">Agosto</SelectItem>
+                <SelectItem value="09">Setembro</SelectItem>
+                <SelectItem value="10">Outubro</SelectItem>
+                <SelectItem value="11">Novembro</SelectItem>
+                <SelectItem value="12">Dezembro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={solicitanteFilter} onValueChange={setSolicitanteFilter}>
+              <SelectTrigger className="h-11 w-full sm:w-64">
+                <SelectValue placeholder="Solicitante" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os solicitantes</SelectItem>
+                {solicitantesDisponiveis.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Badge variant="outline" className="h-9 px-3">
-            {rowsAno.length.toLocaleString("pt-BR")} OS na base
+            {rowsFiltradas.length.toLocaleString("pt-BR")} OS na base
           </Badge>
+        </div>
+
+        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-4 shadow-sm backdrop-blur-md">
+          <div className="flex flex-1 flex-col gap-1.5 min-w-[200px]">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              Mês de Referência
+            </Label>
+            <Select value={mesFiltro} onValueChange={setMesFiltro}>
+              <SelectTrigger className="h-10 border-white/10 bg-white/5 text-sm">
+                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Selecione o mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Meses</SelectItem>
+                <SelectItem value="01">Janeiro</SelectItem>
+                <SelectItem value="02">Fevereiro</SelectItem>
+                <SelectItem value="03">Março</SelectItem>
+                <SelectItem value="04">Abril</SelectItem>
+                <SelectItem value="05">Maio</SelectItem>
+                <SelectItem value="06">Junho</SelectItem>
+                <SelectItem value="07">Julho</SelectItem>
+                <SelectItem value="08">Agosto</SelectItem>
+                <SelectItem value="09">Setembro</SelectItem>
+                <SelectItem value="10">Outubro</SelectItem>
+                <SelectItem value="11">Novembro</SelectItem>
+                <SelectItem value="12">Dezembro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-1 flex-col gap-1.5 min-w-[200px]">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              Solicitante
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Filtrar por nome..."
+                value={solicitanteFilter}
+                onChange={(e) => setSolicitanteFilter(e.target.value)}
+                className="h-10 border-white/10 bg-white/5 pl-9 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 justify-end">
+            <Label className="text-[10px] font-bold uppercase tracking-wider text-transparent select-none">Ações</Label>
+            <Button
+              variant="outline"
+              className="h-10 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary font-semibold"
+              onClick={async () => {
+                if (rowsFiltradas.length === 0) {
+                  toast.error("Nenhuma OS filtrada para distribuir");
+                  return;
+                }
+                toast.promise(
+                  distributeBackorderToField({
+                    data: {
+                      osList: rowsFiltradas.map((r) => ({
+                        os: r.os,
+                        nome: r.nome,
+                        ativo: r.ativo,
+                        predio: r.predio,
+                        andar: r.andar,
+                        espaco: r.espaco,
+                        equipe: r.equipe,
+                        data_solicitacao: r.data_solicitacao,
+                        outros: r.outros,
+                        status_origem: r.status_origem || "",
+                      })),
+                    },
+                  }),
+                  {
+                    loading: "Distribuindo chamados para as equipes...",
+                    success: (res: any) =>
+                      `Sucesso! ${res.refrig} OS para Refrigeração e ${res.corretiva} para Corretiva.`,
+                    error: "Falha na distribuição",
+                  }
+                );
+              }}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Enviar para Campo
+            </Button>
+          </div>
         </div>
 
         <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-1">

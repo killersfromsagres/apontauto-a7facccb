@@ -17,6 +17,7 @@ interface OSListViewProps {
   onAdd?: () => void;
   onOSAction?: (action: string, os: OSBase) => void;
   isOnline?: boolean;
+  headerActions?: React.ReactNode;
 }
 
 export function OSListView({
@@ -28,6 +29,7 @@ export function OSListView({
   onAdd,
   onOSAction,
   isOnline = true,
+  headerActions,
 }: OSListViewProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
@@ -68,6 +70,7 @@ export function OSListView({
         totalItems={filteredList.length}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        headerActions={headerActions}
       />
 
       <div className="px-4 py-3 bg-background/50 sticky top-[92px] z-20 backdrop-blur-sm border-b border-white/5">

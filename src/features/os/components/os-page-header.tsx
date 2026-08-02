@@ -24,6 +24,7 @@ interface OSPageHeaderProps {
   totalItems?: number;
   viewMode?: "grid" | "list";
   onViewModeChange?: (mode: "grid" | "list") => void;
+  headerActions?: React.ReactNode;
 }
 
 export function OSPageHeader({
@@ -34,6 +35,7 @@ export function OSPageHeader({
   totalItems = 0,
   viewMode = "grid",
   onViewModeChange,
+  headerActions,
 }: OSPageHeaderProps) {
   const navigate = useNavigate();
 
@@ -77,6 +79,8 @@ export function OSPageHeader({
                 <WifiOff className="h-2.5 w-2.5" /> OFFLINE
               </Badge>
             )}
+            
+            {headerActions}
 
             {onAdd && (
               <Button

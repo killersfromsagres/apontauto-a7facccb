@@ -22,7 +22,20 @@ import {
   Copy,
   ExternalLink,
   ImageIcon,
+  Trash2,
 } from "lucide-react";
+import { clearOsTable } from "@/lib/os-management.functions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -91,6 +104,16 @@ function equipeStyles(equipe: string | null | undefined): {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+  
+  // Azul bebê florescente conforme solicitado para corretivas
+  if (n.includes("refrigeracao"))
+    return {
+      row: "border-l-4 border-[#89CFF0] bg-[#89CFF0]/10 hover:bg-[#89CFF0]/20 dark:bg-[#89CFF0]/10 dark:hover:bg-[#89CFF0]/20",
+      dot: "bg-[#89CFF0] shadow-[0_0_8px_#89CFF0]",
+      badge:
+        "bg-[#89CFF0]/20 text-[#89CFF0] border-[#89CFF0]/40 font-bold",
+    };
+    
   if (n === "refrigeracao 1")
     return {
       row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
@@ -98,13 +121,7 @@ function equipeStyles(equipe: string | null | undefined): {
       badge:
         "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
     };
-  if (n === "refrigeracao 2")
-    return {
-      row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
-      dot: "bg-teal-400",
-      badge:
-        "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-500/40",
-    };
+
   if (n === "refrigeracao 3")
     return {
       row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
@@ -300,6 +317,40 @@ function RefrigeracaoPage() {
             <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
             Sincronizar
           </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
+                <Trash2 className="mr-2 h-4 w-4" />
+                Limpar Chamados
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação removerá permanentemente todas as Ordens de Serviço de Refrigeração da base de dados (inclusive fotos e peças vinculadas). Use isso para preparar a nova programação mensal.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={async () => {
+                    try {
+                      await clearOsTable({ data: { module: "refrigeracao" } });
+                      toast.success("Tabela limpa com sucesso");
+                      window.location.reload();
+                    } catch (e: any) {
+                      toast.error("Erro ao limpar: " + e.message);
+                    }
+                  }}
+                >
+                  Confirmar Limpeza
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       }
     >
