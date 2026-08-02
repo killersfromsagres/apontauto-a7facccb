@@ -562,6 +562,8 @@ export function menuKeysForPath(pathname: string): string[] | null {
 /** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
 const RESTRICTED_KEYS = [
   "abastecimento",
+  "abastecimento-agua",
+  "agua-execucao",
   "frota-checklist",
   "frota-historico",
   "frota-gestao",
