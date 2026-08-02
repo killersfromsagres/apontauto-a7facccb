@@ -2207,3 +2207,132 @@ main:focus:not(:focus-visible) {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * Reforma Visual v2 — hierarquia tipográfica, ritmo de 8px,
+ * sombras sutis, raios consistentes e micro-animações.
+ * ──────────────────────────────────────────────────────────────── */
+:root {
+  /* Escala de espaçamento 8px (com meio-passo de 4px) */
+  --space-0-5: 0.25rem; /* 4 */
+  --space-1: 0.5rem;    /* 8 */
+  --space-2: 1rem;      /* 16 */
+  --space-3: 1.5rem;    /* 24 */
+  --space-4: 2rem;      /* 32 */
+  --space-5: 2.5rem;    /* 40 */
+  --space-6: 3rem;      /* 48 */
+  --space-8: 4rem;      /* 64 */
+
+  /* Sombras sutis em escala (neutras, sem tingimento) */
+  --shadow-xs: 0 1px 2px -1px color-mix(in srgb, black 8%, transparent);
+  --shadow-sm-2: 0 1px 2px -1px color-mix(in srgb, black 8%, transparent),
+                 0 2px 8px -4px color-mix(in srgb, black 8%, transparent);
+  --shadow-md-2: 0 2px 4px -2px color-mix(in srgb, black 10%, transparent),
+                 0 10px 24px -10px color-mix(in srgb, black 12%, transparent);
+}
+.dark {
+  --shadow-xs: 0 1px 2px -1px color-mix(in srgb, black 55%, transparent);
+  --shadow-sm-2: 0 1px 2px -1px color-mix(in srgb, black 55%, transparent),
+                 0 4px 14px -8px color-mix(in srgb, black 60%, transparent);
+  --shadow-md-2: 0 2px 6px -2px color-mix(in srgb, black 55%, transparent),
+                 0 16px 36px -16px color-mix(in srgb, black 65%, transparent);
+}
+
+/* Hierarquia tipográfica base — títulos calmos, corpo legível */
+@layer base {
+  h1 { font-size: clamp(1.625rem, 1.2rem + 1.4vw, 2.25rem); line-height: 1.12; font-weight: 700; letter-spacing: -0.028em; }
+  h2 { font-size: clamp(1.25rem, 1.05rem + 0.8vw, 1.625rem); line-height: 1.18; font-weight: 650; letter-spacing: -0.022em; }
+  h3 { font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem); line-height: 1.25; font-weight: 600; letter-spacing: -0.018em; }
+  h4 { font-size: 1rem; line-height: 1.35; font-weight: 600; letter-spacing: -0.012em; }
+  p  { line-height: 1.6; }
+  small { line-height: 1.5; }
+}
+
+@utility text-display {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 1.4rem + 2.2vw, 3rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+@utility text-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
+  font-weight: 680;
+  line-height: 1.15;
+  letter-spacing: -0.028em;
+}
+@utility text-section {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+@utility text-subtitle {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--color-muted-foreground);
+}
+@utility text-body {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+@utility text-caption {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-muted-foreground);
+}
+
+/* Ritmo vertical/horizontal em múltiplos de 8px */
+@utility stack-1 { display: flex; flex-direction: column; gap: var(--space-1); }
+@utility stack-2 { display: flex; flex-direction: column; gap: var(--space-2); }
+@utility stack-3 { display: flex; flex-direction: column; gap: var(--space-3); }
+@utility stack-4 { display: flex; flex-direction: column; gap: var(--space-4); }
+@utility section-y { padding-block: var(--space-3); }
+@utility section-y-lg { padding-block: var(--space-5); }
+@utility page-x { padding-inline: var(--space-2); }
+
+/* Sombras sutis utilitárias */
+@utility shadow-xs { box-shadow: var(--shadow-xs); }
+@utility shadow-subtle { box-shadow: var(--shadow-sm-2); }
+@utility shadow-raised { box-shadow: var(--shadow-md-2); }
+
+/* Micro-animações — hover/scale/press */
+@utility hover-scale {
+  transition: transform var(--motion-base) var(--motion-ease),
+              box-shadow var(--motion-base) var(--motion-ease),
+              filter var(--motion-base) var(--motion-ease);
+  &:hover { transform: scale(1.02); }
+  &:active { transform: scale(0.985); }
+}
+@utility hover-raise {
+  transition: transform var(--motion-base) var(--motion-ease),
+              box-shadow var(--motion-base) var(--motion-ease),
+              border-color var(--motion-base) var(--motion-ease);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md-2);
+    border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  }
+  &:active { transform: translateY(0); }
+}
+
+/* Fade-in ao entrar na viewport (ver <Reveal /> e useReveal) */
+@keyframes reveal-fade-up {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.reveal {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+.reveal[data-revealed="true"] {
+  animation: reveal-fade-up 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal[data-revealed="true"] { opacity: 1; animation: none; transform: none; }
+  .hover-scale:hover, .hover-raise:hover { transform: none; }
+}
