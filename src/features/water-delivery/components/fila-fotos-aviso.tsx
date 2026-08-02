@@ -43,7 +43,7 @@ export function FilaFotosAviso({ className }: { className?: string }) {
         {itens.map((i) => (
           <div key={i.id} className="relative">
             {i.thumb ? (
-              <img
+              <img loading="lazy" decoding="async"
                 src={i.thumb}
                 alt="Evidência na fila"
                 className="h-14 w-14 rounded-lg border border-amber-500/40 object-cover opacity-80"

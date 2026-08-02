@@ -1087,7 +1087,7 @@ function OsDetail({
                 key={p.id}
                 className="group relative aspect-square overflow-hidden rounded-md border"
               >
-                <img src={p.url} className="h-full w-full object-cover" alt="preview" />
+                <img loading="lazy" decoding="async" src={p.url} className="h-full w-full object-cover" alt="preview" />
                 <div className="absolute right-1 top-1 flex gap-1">
                   <a
                     href={p.url}

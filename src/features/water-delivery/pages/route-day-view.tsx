@@ -433,7 +433,7 @@ function ParadaCard({
           </div>
 
           {ponto.imagem_url && (
-            <img
+            <img loading="lazy" decoding="async"
               src={ponto.imagem_url}
               alt={`Referência de ${pontoLabel(ponto)}`}
               className="h-28 w-full rounded-xl border border-border/60 object-cover"
@@ -512,7 +512,7 @@ function ParadaCard({
                 <div className="flex flex-wrap gap-2">
                   {visita.fotos.map((url) => (
                     <a key={url} href={url} target="_blank" rel="noreferrer">
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={url}
                         alt="Evidência"
                         className="h-16 w-16 rounded-lg border border-border/60 object-cover"

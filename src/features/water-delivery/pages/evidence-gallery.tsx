@@ -461,7 +461,7 @@ export function EvidenceGallery() {
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <img
+            <img loading="lazy" decoding="async"
               src={zoomUrl}
               alt="Zoom"
               className="max-h-[85vh] w-auto object-contain"

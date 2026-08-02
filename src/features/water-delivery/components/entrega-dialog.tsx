@@ -385,7 +385,7 @@ export function EntregaDialog({
             <div className="flex flex-wrap gap-2">
               {fotos.map((url) => (
                 <div key={url} className="relative">
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={url}
                     alt="Evidência da entrega"
                     className="h-20 w-20 rounded-xl border border-border/60 object-cover"

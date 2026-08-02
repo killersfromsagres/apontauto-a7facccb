@@ -323,7 +323,7 @@ function UploadMapDialog({
           </div>
           {preview && (
             <div className="overflow-hidden rounded-xl border bg-muted">
-              <img
+              <img loading="lazy" decoding="async"
                 src={preview}
                 alt="Pré-visualização"
                 className="max-h-64 w-full object-contain"

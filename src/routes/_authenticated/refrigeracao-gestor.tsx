@@ -758,7 +758,7 @@ function FotosGrid({
             <div className="aspect-square bg-muted">
               {url ? (
                 <a href={url} target="_blank" rel="noreferrer">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <img loading="lazy" decoding="async" src={url} alt="" className="h-full w-full object-cover" />
                 </a>
               ) : (
                 <div className="flex h-full items-center justify-center text-xs text-muted-foreground">

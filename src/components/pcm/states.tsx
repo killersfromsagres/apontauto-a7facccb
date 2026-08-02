@@ -95,3 +95,70 @@ export function SkeletonState({ rows = 4, className }: { rows?: number; classNam
     </div>
   );
 }
+
+/** Skeleton de gráfico — fallback padrão para charts carregados sob demanda. */
+export function ChartSkeleton({ height = 280, className }: { height?: number; className?: string }) {
+  return (
+    <div
+      className={cn("rounded-2xl border border-border/40 p-4", className)}
+      style={{ height }}
+      aria-busy="true"
+    >
+      <Skeleton className="h-3.5 w-40" />
+      <div className="mt-4 flex h-[calc(100%-2.5rem)] items-end gap-2">
+        {[55, 80, 40, 95, 65, 75, 35, 88, 50, 70].map((h, i) => (
+          <Skeleton key={i} className="flex-1 rounded-t-md" style={{ height: `${h}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Skeleton tabular — mantém a altura estável e evita CLS durante o fetch. */
+export function TableSkeleton({
+  rows = 8,
+  columns = 5,
+  className,
+}: {
+  rows?: number;
+  columns?: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("overflow-hidden rounded-2xl border border-border/40", className)}
+      aria-busy="true"
+    >
+      <div className="flex gap-3 border-b border-border/40 bg-muted/20 p-3">
+        {Array.from({ length: columns }).map((_, i) => (
+          <Skeleton key={i} className="h-3 flex-1" />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, r) => (
+        <div key={r} className="flex gap-3 border-b border-border/20 p-3 last:border-b-0">
+          {Array.from({ length: columns }).map((_, c) => (
+            <Skeleton key={c} className="h-3.5 flex-1" />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Skeleton de grade de KPIs. */
+export function KpiGridSkeleton({ items = 4, className }: { items?: number; className?: string }) {
+  return (
+    <div
+      className={cn("grid grid-cols-2 gap-3 lg:grid-cols-4", className)}
+      aria-busy="true"
+    >
+      {Array.from({ length: items }).map((_, i) => (
+        <div key={i} className="space-y-3 rounded-2xl border border-border/40 p-4">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="h-7 w-24" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+}

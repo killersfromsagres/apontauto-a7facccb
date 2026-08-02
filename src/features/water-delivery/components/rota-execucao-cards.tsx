@@ -35,7 +35,7 @@ function FotoCarga({
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
         {url && (
-          <img
+          <img loading="lazy" decoding="async"
             src={url}
             alt={label}
             className="h-16 w-16 rounded-xl border border-border/60 object-cover"

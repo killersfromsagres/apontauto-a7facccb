@@ -639,7 +639,7 @@ export function PolygonEditor({
           className="absolute inset-0 origin-top-left"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
         >
-          <img
+          <img loading="lazy" decoding="async"
             src={imageUrl}
             alt="Mapa de taludes"
             draggable={false}
