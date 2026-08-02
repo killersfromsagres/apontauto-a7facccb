@@ -222,7 +222,7 @@ function AuthPage() {
         </section>
 
         {/* Card de login */}
-        <div className="relative mx-auto w-full max-w-md">
+        <div className="auth-card-scene relative mx-auto w-full max-w-md">
           <div
             aria-hidden
             className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#4F8CFF]/10 blur-[100px]"
@@ -233,14 +233,48 @@ function AuthPage() {
           />
 
           <div
-            className={`relative z-10 rounded-3xl border border-white/10 bg-[#0D1422]/60 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8 ${
-              shake ? "auth-shake" : ""
-            }`}
+            className="auth-card-tilt group relative"
+            style={tiltStyle}
+            onMouseMove={handleTilt}
+            onMouseLeave={resetTilt}
           >
+            {/* Feixes de luz percorrendo a borda */}
+            <div aria-hidden className="auth-beams">
+              <span className="auth-beam auth-beam-h auth-beam-top" />
+              <span className="auth-beam auth-beam-h auth-beam-bottom" />
+              <span className="auth-beam auth-beam-v auth-beam-right" />
+              <span className="auth-beam auth-beam-v auth-beam-left" />
+              <span className="auth-corner left-0 top-0" />
+              <span className="auth-corner right-0 top-0" />
+              <span className="auth-corner bottom-0 right-0" />
+              <span className="auth-corner bottom-0 left-0" />
+            </div>
+
+            {/* Halo do card no hover */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              className="pointer-events-none absolute -inset-px rounded-3xl bg-gradient-to-r from-white/5 via-white/15 to-white/5 opacity-0 transition-opacity duration-500 group-hover:opacity-70"
             />
+
+            <div
+              className={`relative z-10 rounded-3xl border border-white/10 bg-[#0D1422]/60 p-6 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl sm:p-8 ${
+                shake ? "auth-shake" : ""
+              }`}
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 rounded-3xl opacity-[0.04]"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(135deg, white 0.5px, transparent 0.5px), linear-gradient(45deg, white 0.5px, transparent 0.5px)",
+                  backgroundSize: "30px 30px",
+                }}
+              />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              />
+
 
             <div className="auth-logo-in mb-8 flex flex-col items-center text-center">
               <img
