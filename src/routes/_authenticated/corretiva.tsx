@@ -280,6 +280,27 @@ function CorretivaPage() {
     >
       {!selected ? (
         <GlassCard className="p-4">
+          <div className="mb-4 inline-flex rounded-xl border border-white/10 bg-white/5 p-1">
+            {([
+              { k: "corretiva", label: "Corretivas" },
+              { k: "preventiva", label: "Preventivas" },
+            ] as const).map((t) => (
+              <button
+                key={t.k}
+                type="button"
+                onClick={() => setAba(t.k)}
+                className={cn(
+                  "min-h-11 rounded-lg px-4 text-sm font-medium transition-all",
+                  aba === t.k
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1">
               <div className="relative">
