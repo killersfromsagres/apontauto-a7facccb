@@ -42,6 +42,7 @@ import {
   Search,
   Star,
   PlusCircle,
+  Sparkles,
 } from "lucide-react";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
