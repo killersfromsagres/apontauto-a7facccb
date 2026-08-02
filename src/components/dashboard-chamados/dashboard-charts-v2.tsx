@@ -1,3 +1,4 @@
+import { memo } from "react";
 import {
   Area,
   AreaChart,
@@ -51,7 +52,7 @@ function ChartCard({
   );
 }
 
-export default function DashboardChartsV2({ stats }: { stats: V2Stats }) {
+function DashboardChartsV2({ stats }: { stats: V2Stats }) {
   const statusData = STATUS_CATS.map((c) => ({
     name: STATUS_LABEL[c],
     value: stats.porStatus[c] ?? 0,
@@ -215,3 +216,5 @@ export default function DashboardChartsV2({ stats }: { stats: V2Stats }) {
     </div>
   );
 }
+
+export default memo(DashboardChartsV2);

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { GlassCard } from "@/components/glass-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -11,7 +12,7 @@ const fmt = (iso: string | null) => {
 };
 
 /** Histórico de chamados cancelados / não executados. */
-export function CanceladosPanel({ rows }: { rows: V2Cancelado[] }) {
+export const CanceladosPanel = memo(function CanceladosPanel({ rows }: { rows: V2Cancelado[] }) {
   if (rows.length === 0) {
     return (
       <GlassCard>
@@ -76,4 +77,4 @@ export function CanceladosPanel({ rows }: { rows: V2Cancelado[] }) {
       </ScrollArea>
     </GlassCard>
   );
-}
+});

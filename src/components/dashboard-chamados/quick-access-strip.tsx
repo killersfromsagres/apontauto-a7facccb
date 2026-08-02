@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
@@ -72,7 +73,7 @@ const quickModules = [
   },
 ] as const;
 
-export function QuickAccessStrip() {
+export const QuickAccessStrip = memo(function QuickAccessStrip() {
   const { access } = useMyAccess();
   const visible = quickModules.filter(
     (m) => access.isAdmin || !access.allowed || access.allowed.includes(m.key),
@@ -108,4 +109,4 @@ export function QuickAccessStrip() {
       </div>
     </GlassCard>
   );
-}
+});
