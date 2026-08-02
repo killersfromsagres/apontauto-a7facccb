@@ -50,6 +50,7 @@ import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
+import { Route as AuthenticatedCopilotoRouteImport } from './routes/_authenticated/copiloto'
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
@@ -314,6 +315,11 @@ const AuthenticatedCorretivaRoute = AuthenticatedCorretivaRouteImport.update({
   path: '/corretiva',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCopilotoRoute = AuthenticatedCopilotoRouteImport.update({
+  id: '/copiloto',
+  path: '/copiloto',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedControleMateriaisRoute =
   AuthenticatedControleMateriaisRouteImport.update({
     id: '/controle-materiais',
@@ -560,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
+  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -641,6 +648,7 @@ export interface FileRoutesByTo {
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
+  '/copiloto': typeof AuthenticatedCopilotoRoute
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -723,6 +731,7 @@ export interface FileRoutesById {
   '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
+  '/_authenticated/copiloto': typeof AuthenticatedCopilotoRoute
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
@@ -806,6 +815,7 @@ export interface FileRouteTypes {
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
+    | '/copiloto'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
@@ -887,6 +897,7 @@ export interface FileRouteTypes {
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
+    | '/copiloto'
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
@@ -968,6 +979,7 @@ export interface FileRouteTypes {
     | '/_authenticated/confiabilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
+    | '/_authenticated/copiloto'
     | '/_authenticated/corretiva'
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
@@ -1344,6 +1356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCorretivaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/copiloto': {
+      id: '/_authenticated/copiloto'
+      path: '/copiloto'
+      fullPath: '/copiloto'
+      preLoaderRoute: typeof AuthenticatedCopilotoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/controle-materiais': {
       id: '/_authenticated/controle-materiais'
       path: '/controle-materiais'
@@ -1696,6 +1715,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
+  AuthenticatedCopilotoRoute: typeof AuthenticatedCopilotoRoute
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
@@ -1744,6 +1764,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
+  AuthenticatedCopilotoRoute: AuthenticatedCopilotoRoute,
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
