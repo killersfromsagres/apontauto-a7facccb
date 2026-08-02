@@ -413,7 +413,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
-        <OsPhotosButton osId={os.id} module="corretiva" variant="outline" size="sm" />
+        <OsPhotosButton osId={os.id} modulo="corretiva" variant="outline" size="sm" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
