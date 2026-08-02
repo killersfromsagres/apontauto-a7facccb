@@ -66,6 +66,8 @@ import { compressImage } from "@/lib/corretiva/image";
 import { syncPending } from "@/lib/corretiva/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } from "@/lib/corretiva/equipe";
+import { isPreventiva } from "@/lib/corretiva/preventiva-import";
+import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
@@ -119,6 +121,9 @@ function CorretivaPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [mesFiltro, setMesFiltro] = useState<string>("08");
+  const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
+
+
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -186,6 +191,8 @@ function CorretivaPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
+      const prev = isPreventiva(o.tipo);
+      if (aba === "preventiva" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (mesFiltro !== "todos") {
         const dateStr = o.data_criacao || o.updated_at;
@@ -202,7 +209,8 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
-  }, [osList, search, equipe, mesFiltro]);
+  }, [osList, search, equipe, mesFiltro, aba]);
+
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
@@ -213,10 +221,13 @@ function CorretivaPage() {
 
   return (
     <PageShell
-      title="Manutenção Corretiva"
+      title={aba === "preventiva" ? "Manutenção Preventiva" : "Manutenção Corretiva"}
       description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
       actions={
         <div className="flex items-center gap-2">
+          {aba === "preventiva" && (
+            <PreventivaImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+          )}
           <Badge variant={online ? "outline" : "destructive"} className="gap-1.5 py-1 px-2">
             {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
             {online ? "Online" : "Offline"}
@@ -269,6 +280,27 @@ function CorretivaPage() {
     >
       {!selected ? (
         <GlassCard className="p-4">
+          <div className="mb-4 inline-flex rounded-xl border border-white/10 bg-white/5 p-1">
+            {([
+              { k: "corretiva", label: "Corretivas" },
+              { k: "preventiva", label: "Preventivas" },
+            ] as const).map((t) => (
+              <button
+                key={t.k}
+                type="button"
+                onClick={() => setAba(t.k)}
+                className={cn(
+                  "min-h-11 rounded-lg px-4 text-sm font-medium transition-all",
+                  aba === t.k
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
             <div className="flex-1">
               <div className="relative">

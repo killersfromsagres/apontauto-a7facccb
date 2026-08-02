@@ -36,6 +36,8 @@ import {
   type EquipeFiltro,
 } from "@/lib/corretiva/equipe";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
+import { isPreventiva } from "@/lib/corretiva/preventiva-import";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/corretiva-historico")({
   component: HistoricoPage,
@@ -56,6 +58,7 @@ type OsRow = {
   assinatura_nome: string | null;
   assinatura_em: string | null;
   status: string;
+  tipo: string | null;
   fim: string | null;
   updated_at: string;
 };
@@ -82,6 +85,7 @@ function HistoricoPage() {
   const [open, setOpen] = useState<OsRow | null>(null);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [equipes, setEquipes] = useState<string[]>([]);
+  const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -103,7 +107,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, fim, updated_at",
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at",
         )
         .in("status", ["concluida", "cancelada"])
         .order("updated_at", { ascending: false })
@@ -116,20 +120,42 @@ function HistoricoPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((o) => {
+      const prev = isPreventiva(o.tipo);
+      if (aba === "preventiva" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (!q) return true;
       return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.predio, o.local]
         .filter(Boolean)
         .some((v) => (v as string).toLowerCase().includes(q));
     });
-  }, [rows, search, equipe]);
+  }, [rows, search, equipe, aba]);
 
   return (
     <PageShell
-      title="Histórico de OS — Corretiva"
+      title={aba === "preventiva" ? "Histórico de OS — Preventiva" : "Histórico de OS — Corretiva"}
       description="Ordens de serviço concluídas e canceladas."
     >
       <GlassCard className="p-4">
+        <div className="mb-3 inline-flex rounded-xl border border-border/50 bg-muted/40 p-1">
+          {([
+            { k: "corretiva", label: "Corretivas" },
+            { k: "preventiva", label: "Preventivas" },
+          ] as const).map((t) => (
+            <button
+              key={t.k}
+              type="button"
+              onClick={() => setAba(t.k)}
+              className={cn(
+                "min-h-11 rounded-lg px-4 text-sm font-medium transition-all",
+                aba === t.k
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2 sm:min-w-[240px]">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
