@@ -66,6 +66,7 @@ import { compressImage } from "@/lib/corretiva/image";
 import { syncPending } from "@/lib/corretiva/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } from "@/lib/corretiva/equipe";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
@@ -109,6 +110,7 @@ function useOnlineStatus() {
 
 function CorretivaPage() {
   const online = useOnlineStatus();
+  const { isAdmin } = useIsAdmin();
   const [osList, setOsList] = useState<OsCacheRow[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -229,37 +231,39 @@ function CorretivaPage() {
             Sincronizar
           </Button>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Limpar Chamados
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar chamados?</AlertDialogTitle>
-                <AlertDialogDescription>Esta ação removerá permanentemente as OS de corretiva da base de dados.</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={async () => {
-                    try {
-                      await clearOsTable({ data: { module: "corretiva" } });
-                      toast.success("Tabela limpa");
-                      window.location.reload();
-                    } catch (e: any) {
-                      toast.error("Erro ao limpar");
-                    }
-                  }}
-                >
-                  Confirmar
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Limpar Chamados
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar chamados?</AlertDialogTitle>
+                  <AlertDialogDescription>Esta ação removerá permanentemente as OS de corretiva da base de dados.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={async () => {
+                      try {
+                        await clearOsTable({ data: { module: "corretiva" } });
+                        toast.success("Tabela limpa");
+                        window.location.reload();
+                      } catch (e: any) {
+                        toast.error("Erro ao limpar");
+                      }
+                    }}
+                  >
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
       }
     >
