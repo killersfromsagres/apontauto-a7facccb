@@ -444,6 +444,14 @@ export const sections: MenuSection[] = [
     icon: ChartColumn,
     items: [
       {
+        key: "copiloto",
+        title: "Copiloto Admin (IA)",
+        short: "Copiloto",
+        url: "/copiloto",
+        icon: Sparkles,
+        keywords: ["ia", "chat", "admin", "copiloto", "assistente", "consulta", "sql"],
+      },
+      {
         key: "agente-ia",
         title: "Agente de Documentos (IA)",
         short: "Agente IA",
