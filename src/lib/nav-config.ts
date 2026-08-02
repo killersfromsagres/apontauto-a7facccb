@@ -358,7 +358,8 @@ export const sections: MenuSection[] = [
         ],
       },
       {
-        key: "abastecimento",
+        key: "agua-execucao",
+        aliases: ["abastecimento", "abastecimento-agua"],
         title: "Entrega de Água",
         short: "Água",
         url: "/abastecimento/agua",
