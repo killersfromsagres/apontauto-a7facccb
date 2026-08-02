@@ -35,7 +35,7 @@ function KpiCardImpl({
   const Wrapper = onClick ? "button" : "div";
 
   return (
-    <GlassCard variant="block" className={cn("p-4 sm:p-5", className)}>
+    <GlassCard variant="block" className={cn("hover-raise p-4 sm:p-6", className)}>
       <Wrapper
         type={onClick ? "button" : undefined}
         onClick={onClick}

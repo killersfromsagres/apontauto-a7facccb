@@ -21,8 +21,9 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <header
+      data-revealed="true"
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "reveal flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >
@@ -34,12 +35,12 @@ export function PageHeader({
         ) : null}
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            <p className="text-eyebrow">
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="truncate text-xl font-semibold tracking-tight sm:text-2xl">{title}</h1>
-          {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
+          <h1 className="text-title truncate">{title}</h1>
+          {description ? <p className="text-subtitle mt-1">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
@@ -62,8 +63,8 @@ export function ModuleHeader({
   return (
     <div className={cn("flex flex-wrap items-center justify-between gap-2", className)}>
       <div className="min-w-0">
-        <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-        {description ? <p className="text-xs text-muted-foreground">{description}</p> : null}
+        <h2 className="text-section">{title}</h2>
+        {description ? <p className="text-caption">{description}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </div>
