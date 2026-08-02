@@ -29,10 +29,5 @@ function LandingPage() {
     return <Navigate to="/gestao" replace />;
   }
 
-  if (!session) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  return null;
+  return <Navigate to="/auth" replace />;
 }
-
