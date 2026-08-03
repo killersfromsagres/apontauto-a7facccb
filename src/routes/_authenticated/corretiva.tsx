@@ -69,6 +69,22 @@ import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } 
 import { isPreventiva } from "@/lib/corretiva/preventiva-import";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  SEMANA_INICIAL,
+  fetchLiberacoes,
+  intervaloSemana,
+  semanaDaOs,
+  semanaKey,
+  setLiberacao,
+} from "@/lib/corretiva/semanas";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
