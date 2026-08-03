@@ -3,6 +3,9 @@
 //   Ordem de Serviço · Nome OS · Prédio · Andar · Local · Tipo · Equipe
 //   Data SLA · Data Programada · Início · Fim · Ativo · Equipamento
 
+import { autoAssignEquipes } from "./auto-equipe";
+
+
 export type RefrigOsImport = {
   numero_os: string;
   nome_os: string | null;
@@ -157,5 +160,6 @@ export async function readRefrigOsFile(file: File): Promise<RefrigOsImport[]> {
   // Dedup por numero_os (mantém a última ocorrência)
   const map = new Map<string, RefrigOsImport>();
   for (const r of out) map.set(r.numero_os, r);
-  return Array.from(map.values());
+  // Separa automaticamente entre as 3 equipes de Refrigeração
+  return autoAssignEquipes(Array.from(map.values()));
 }
