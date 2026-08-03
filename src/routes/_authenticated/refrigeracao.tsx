@@ -72,7 +72,7 @@ import { syncPending } from "@/lib/refrigeracao/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { RefrigImportDialog } from "@/components/refrigeracao/refrig-import-dialog";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { FixedSizeList as List } from "react-window";
+import { List } from "react-window";
 import { AutoSizer } from "react-virtualized-auto-sizer";
 
 import {
