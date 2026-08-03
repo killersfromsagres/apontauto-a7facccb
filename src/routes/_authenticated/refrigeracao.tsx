@@ -70,6 +70,10 @@ import {
 import { compressImage } from "@/lib/refrigeracao/image";
 import { syncPending } from "@/lib/refrigeracao/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
+import { RefrigImportDialog } from "@/components/refrigeracao/refrig-import-dialog";
+import { useIsOwner } from "@/hooks/use-is-owner";
+import { FixedSizeList as List } from "react-window";
+import AutoSizer from "react-virtualized-auto-sizer";
 
 import {
   EQUIPES_REFRIGERACAO,
@@ -172,6 +176,7 @@ async function getSyncFailureMessage(result: SyncResultLike): Promise<string> {
 
 function RefrigeracaoPage() {
   const online = useOnlineStatus();
+  const { isOwner } = useIsOwner();
   const [osList, setOsList] = useState<OsCacheRow[]>([]);
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -307,6 +312,9 @@ function RefrigeracaoPage() {
       description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
       actions={
         <>
+          {isOwner && (
+            <RefrigImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+          )}
           <StatusChip online={online} syncing={syncing} pending={pending} />
           <Button
             size="sm"
@@ -440,89 +448,89 @@ function RefrigeracaoPage() {
                 : "Nenhuma OS encontrada para essa busca."}
             </div>
           ) : (
-            <ul className="divide-y divide-border/50">
-              {filtered.map((o) => {
-                const st = equipeStyles(o.equipe);
-                const isDone = (o.status ?? "").toLowerCase() === "concluida";
-                const rowCls = isDone
-                  ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-                  : st.row;
-                return (
-                  <li key={o.id}>
-                    <div
-                      className={`flex w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(o.id)}
-                        className="flex min-w-0 flex-1 items-start gap-3 text-left"
-                      >
-                        {isDone ? (
-                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span
-                              className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
+            <div className="h-[600px] w-full min-h-[400px]">
+              <AutoSizer>
+                {({ height, width }) => (
+                  <List
+                    height={height}
+                    itemCount={filtered.length}
+                    itemSize={110}
+                    width={width}
+                    className="divide-y divide-border/50 scrollbar-thin"
+                  >
+                    {({ index, style }) => {
+                      const o = filtered[index];
+                      const st = equipeStyles(o.equipe);
+                      const isDone = (o.status ?? "").toLowerCase() === "concluida";
+                      const rowCls = isDone
+                        ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+                        : st.row;
+                      return (
+                        <div style={style} key={o.id} className="p-1">
+                          <div
+                            className={`flex h-full w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setSelectedId(o.id)}
+                              className="flex min-w-0 flex-1 items-start gap-3 text-left"
                             >
-                              OS {o.numero_os}
-                            </span>
-                            {isDone ? (
-                              <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-                                <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-[10px]">
-                                {o.status}
-                              </Badge>
-                            )}
-                            {o.equipe && (
-                              <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                                <span
-                                  className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
-                                />
-                                {o.equipe}
-                              </Badge>
-                            )}
-                            {o.tipo && (
-                              <Badge variant="secondary" className="text-[10px]">
-                                {o.tipo}
-                              </Badge>
-                            )}
-                            {!o.patrimonio && !isDone && (
-                              <Badge
-                                variant="outline"
-                                className="border-amber-500/40 text-[10px] text-amber-600"
-                              >
-                                sem patrimônio
-                              </Badge>
-                            )}
-                          </div>
-                          {o.nome_os && (
-                            <div
-                              className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
-                            >
-                              {o.nome_os}
+                              {isDone ? (
+                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                              ) : (
+                                <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span
+                                    className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
+                                  >
+                                    OS {o.numero_os}
+                                  </span>
+                                  {isDone ? (
+                                    <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+                                      <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[10px]">
+                                      {o.status}
+                                    </Badge>
+                                  )}
+                                  {o.equipe && (
+                                    <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
+                                      <span
+                                        className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                                      />
+                                      {o.equipe}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {o.nome_os && (
+                                  <div
+                                    className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
+                                  >
+                                    {o.nome_os}
+                                  </div>
+                                )}
+                                <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                                  {o.equipamento} · Ativo {o.ativo}
+                                </div>
+                                <div className="truncate text-xs text-muted-foreground/80">
+                                  {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
+                                </div>
+                              </div>
+                            </button>
+                            <div className="shrink-0 self-center">
+                              <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
                             </div>
-                          )}
-                          <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                            {o.equipamento} · Ativo {o.ativo}
-                          </div>
-                          <div className="truncate text-xs text-muted-foreground/80">
-                            {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                           </div>
                         </div>
-                      </button>
-                      <div className="shrink-0 self-center">
-                        <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+                      );
+                    }}
+                  </List>
+                )}
+              </AutoSizer>
+            </div>
           )}
         </GlassCard>
       ) : (
