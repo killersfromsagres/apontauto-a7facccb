@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   lerPreventivaFile,
   lerCorretivaFile,
@@ -40,6 +41,7 @@ export function PreventivaImportDialog({
   mode?: Mode;
 }) {
   const { isOwner } = useIsOwner();
+  const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -47,8 +49,8 @@ export function PreventivaImportDialog({
   const [fileName, setFileName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Importação em massa é exclusiva do proprietário do sistema.
-  if (!isOwner) return null;
+  // Importação em massa: proprietário ou administradores. RLS continua sendo a proteção real.
+  if (!isOwner && !isAdmin) return null;
 
   const label = mode === "corretiva" ? "corretivas" : "preventivas";
 
