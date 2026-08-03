@@ -138,6 +138,27 @@ function CorretivaPage() {
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [mesFiltro, setMesFiltro] = useState<string>("08");
   const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
+  /** "atual" = semana 32 em diante · "todas" · "AAAA-SS" para uma semana específica. */
+  const [semanaFiltro, setSemanaFiltro] = useState<string>("atual");
+  const [liberadas, setLiberadas] = useState<Record<string, boolean>>({});
+  const [savingSemana, setSavingSemana] = useState<string | null>(null);
+
+  const carregarLiberacoes = async () => {
+    try {
+      const rows = await fetchLiberacoes();
+      setLiberadas(
+        Object.fromEntries(rows.map((r) => [semanaKey(r.ano, r.semana), r.liberada])),
+      );
+    } catch {
+      /* offline: mantém o cache em memória */
+    }
+  };
+
+  useEffect(() => {
+    carregarLiberacoes();
+  }, []);
+
+
 
 
 
