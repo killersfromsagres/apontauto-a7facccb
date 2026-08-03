@@ -1845,9 +1845,12 @@ body {
  * Responsividade global — safeguards para todos os dispositivos
  * ──────────────────────────────────────────────────────────────── */
 @layer base {
-  html, body, #root {
+  html {
     max-width: 100vw;
     overflow-x: clip;
+  }
+  body, #root {
+    max-width: 100vw;
   }
   /* Mídias sempre fluidas */
   img, video, canvas, svg, iframe {
@@ -2217,8 +2220,7 @@ main:focus:not(:focus-visible) {
 
 /* Zoom de 200% e reflow (WCAG 1.4.10): nada pode exigir rolagem horizontal */
 @media (max-width: 640px), (max-height: 480px) {
-  html,
-  body {
+  html {
     overflow-x: hidden;
   }
   .container,
