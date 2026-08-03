@@ -4448,6 +4448,39 @@ export type Database = {
         }
         Relationships: []
       }
+      programacao_semanas: {
+        Row: {
+          ano: number
+          created_at: string
+          id: string
+          liberada: boolean
+          liberada_em: string | null
+          liberada_por: string | null
+          semana: number
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          id?: string
+          liberada?: boolean
+          liberada_em?: string | null
+          liberada_por?: string | null
+          semana: number
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          id?: string
+          liberada?: boolean
+          liberada_em?: string | null
+          liberada_por?: string | null
+          semana?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rca_actions: {
         Row: {
           acao: string
