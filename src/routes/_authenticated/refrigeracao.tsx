@@ -450,7 +450,7 @@ function RefrigeracaoPage() {
           ) : (
             <div className="h-[600px] w-full min-h-[400px]">
               <AutoSizer>
-                {({ height, width }) => (
+                {({ height, width }: { height: number; width: number }) => (
                   <List
                     height={height}
                     itemCount={filtered.length}
@@ -458,7 +458,7 @@ function RefrigeracaoPage() {
                     width={width}
                     className="divide-y divide-border/50 scrollbar-thin"
                   >
-                    {({ index, style }) => {
+                    {({ index, style }: { index: number; style: React.CSSProperties }) => {
                       const o = filtered[index];
                       const st = equipeStyles(o.equipe);
                       const isDone = (o.status ?? "").toLowerCase() === "concluida";
