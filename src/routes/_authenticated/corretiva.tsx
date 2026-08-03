@@ -314,6 +314,79 @@ function CorretivaPage() {
             onDone={() => refreshOsFromServer().catch(() => {})}
           />
 
+          {isAdmin && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Liberar semana
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Liberação da programação por semana</DialogTitle>
+                  <DialogDescription>
+                    A partir da semana {SEMANA_INICIAL}. Colaboradores só visualizam e executam
+                    as OS das semanas liberadas.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+                  {semanasDisponiveis.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      Nenhuma semana encontrada na programação atual.
+                    </p>
+                  ) : (
+                    semanasDisponiveis.map((s) => {
+                      const ativa = !!liberadas[s.key];
+                      return (
+                        <div
+                          key={s.key}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold">
+                              Semana {s.semana}/{s.ano}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {intervaloSemana(s.ano, s.semana)} · {s.total} OS
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                ativa
+                                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                                  : "border-amber-500/30 bg-amber-500/15 text-amber-400",
+                              )}
+                            >
+                              {ativa ? "Liberada" : "Bloqueada"}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant={ativa ? "outline" : "default"}
+                              disabled={savingSemana === s.key}
+                              onClick={() => toggleSemana(s.ano, s.semana, !ativa)}
+                            >
+                              {savingSemana === s.key ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : ativa ? (
+                                "Bloquear"
+                              ) : (
+                                "Liberar"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+
 
           <Badge variant={online ? "outline" : "destructive"} className="gap-1.5 py-1 px-2">
             {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
