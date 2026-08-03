@@ -72,8 +72,7 @@ import { syncPending } from "@/lib/refrigeracao/sync";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { RefrigImportDialog } from "@/components/refrigeracao/refrig-import-dialog";
 import { useIsOwner } from "@/hooks/use-is-owner";
-import { List } from "react-window";
-import { AutoSizer } from "react-virtualized-auto-sizer";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import {
   EQUIPES_REFRIGERACAO,
@@ -185,6 +184,8 @@ function RefrigeracaoPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [tipoFiltro, setTipoFiltro] = useState<"todas" | "preventiva" | "corretiva">("todas");
+
+  const parentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -298,6 +299,13 @@ function RefrigeracaoPage() {
       return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
   }, [osList, search, equipe, tipoFiltro]);
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 110,
+    overscan: 5,
+  });
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
 
@@ -448,88 +456,106 @@ function RefrigeracaoPage() {
                 : "Nenhuma OS encontrada para essa busca."}
             </div>
           ) : (
-            <div className="h-[600px] w-full min-h-[400px]">
-              <AutoSizer>
-                {({ height, width }: { height: number; width: number }) => (
-                  <List
-                    height={height}
-                    itemCount={filtered.length}
-                    itemSize={110}
-                    width={width}
-                    className="divide-y divide-border/50 scrollbar-thin"
-                  >
-                    {({ index, style }: { index: number; style: React.CSSProperties }) => {
-                      const o = filtered[index];
-                      const st = equipeStyles(o.equipe);
-                      const isDone = (o.status ?? "").toLowerCase() === "concluida";
-                      const rowCls = isDone
-                        ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-                        : st.row;
-                      return (
-                        <div style={style} key={o.id} className="p-1">
-                          <div
-                            className={`flex h-full w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setSelectedId(o.id)}
-                              className="flex min-w-0 flex-1 items-start gap-3 text-left"
-                            >
+            <div
+              ref={parentRef}
+              className="h-[600px] w-full overflow-auto scrollbar-thin"
+              style={{
+                contain: "strict",
+              }}
+            >
+              <div
+                style={{
+                  height: `${virtualizer.getTotalSize()}px`,
+                  width: "100%",
+                  position: "relative",
+                }}
+              >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const o = filtered[virtualRow.index];
+                  const st = equipeStyles(o.equipe);
+                  const isDone = (o.status ?? "").toLowerCase() === "concluida";
+                  const rowCls = isDone
+                    ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+                    : st.row;
+                  return (
+                    <div
+                      key={o.id}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className="p-1"
+                    >
+                      <div
+                        className={`flex h-full w-full min-w-0 items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedId(o.id)}
+                          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                        >
+                          {isDone ? (
+                            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span
+                                className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
+                              >
+                                OS {o.numero_os}
+                              </span>
                               {isDone ? (
-                                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                                <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
+                                  <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
+                                </Badge>
                               ) : (
-                                <Snowflake className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                                <Badge variant="outline" className="text-[10px]">
+                                  {o.status}
+                                </Badge>
                               )}
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
+                              {o.equipe && (
+                                <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
                                   <span
-                                    className={`font-mono text-sm font-semibold ${isDone ? "text-emerald-800 dark:text-emerald-300" : ""}`}
-                                  >
-                                    OS {o.numero_os}
-                                  </span>
-                                  {isDone ? (
-                                    <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-                                      <CheckCircle2 className="mr-1 h-3 w-3" /> Concluída
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-[10px]">
-                                      {o.status}
-                                    </Badge>
-                                  )}
-                                  {o.equipe && (
-                                    <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                                      <span
-                                        className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
-                                      />
-                                      {o.equipe}
-                                    </Badge>
-                                  )}
-                                </div>
-                                {o.nome_os && (
-                                  <div
-                                    className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
-                                  >
-                                    {o.nome_os}
-                                  </div>
-                                )}
-                                <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                                  {o.equipamento} · Ativo {o.ativo}
-                                </div>
-                                <div className="truncate text-xs text-muted-foreground/80">
-                                  {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                                </div>
+                                    className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
+                                  />
+                                  {o.equipe}
+                                </Badge>
+                              )}
+                              {o.tipo && (
+                                <Badge variant="secondary" className="text-[10px]">
+                                  {o.tipo}
+                                </Badge>
+                              )}
+                            </div>
+                            {o.nome_os && (
+                              <div
+                                className={`mt-0.5 truncate text-sm font-medium ${isDone ? "text-emerald-900/80 dark:text-emerald-200/90" : ""}`}
+                              >
+                                {o.nome_os}
                               </div>
-                            </button>
-                            <div className="shrink-0 self-center">
-                              <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
+                            )}
+                            <div className="mt-0.5 truncate text-sm text-muted-foreground">
+                              {o.equipamento} · Ativo {o.ativo}
+                            </div>
+                            <div className="truncate text-xs text-muted-foreground/80">
+                              {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
                             </div>
                           </div>
+                        </button>
+                        <div className="shrink-0 self-center">
+                          <OsPhotosButton osId={o.id} numeroOs={o.numero_os} />
                         </div>
-                      );
-                    }}
-                  </List>
-                )}
-              </AutoSizer>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </GlassCard>
