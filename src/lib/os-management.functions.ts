@@ -37,7 +37,9 @@ export const clearOsTable = createServerFn({ method: "POST" })
       .neq("id", "00000000-0000-0000-0000-000000000000");
 
     if (data.keepCompleted) {
-      query = query.not("status", "ilike", "conclu%");
+      // `status` é um enum no Postgres: comparação textual (ilike) não existe
+      // para esse tipo, então filtramos pelo valor exato do enum.
+      query = query.neq("status", "concluida");
     }
 
     const { error, count } = await query;
