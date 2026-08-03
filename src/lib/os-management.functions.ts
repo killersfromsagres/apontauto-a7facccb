@@ -13,6 +13,8 @@ export const clearOsTable = createServerFn({ method: "POST" })
     z
       .object({
         module: z.enum(["refrigeracao", "corretiva"]),
+        // Preserva o histórico: não apaga OS já concluídas
+        keepCompleted: z.boolean().optional().default(false),
       })
       .parse(data),
   )
@@ -29,14 +31,20 @@ export const clearOsTable = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const table = data.module === "refrigeracao" ? "refrigeracao_os" : "corretiva_os";
 
-    const { error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from(table)
-      .delete()
+      .delete({ count: "exact" })
       .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (data.keepCompleted) {
+      query = query.not("status", "ilike", "conclu%");
+    }
+
+    const { error, count } = await query;
 
     if (error) {
       throw new Error(`Failed to clear ${data.module} OS: ${error.message}`);
     }
 
-    return { success: true };
+    return { success: true, deleted: count ?? 0 };
   });

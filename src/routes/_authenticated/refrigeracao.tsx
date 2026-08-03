@@ -343,9 +343,11 @@ function RefrigeracaoPage() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Limpar todos os chamados?</AlertDialogTitle>
+                <AlertDialogTitle>Limpar chamados pendentes?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Esta ação removerá permanentemente todas as Ordens de Serviço de Refrigeração da base de dados (inclusive fotos e peças vinculadas). Use isso para preparar a nova programação mensal.
+                  Serão removidas apenas as OS que <strong>não estão concluídas</strong>. Todo o
+                  histórico de OS concluídas (com fotos e peças) será preservado. Use isso para
+                  preparar a nova programação mensal.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -354,8 +356,12 @@ function RefrigeracaoPage() {
                   className="bg-red-600 hover:bg-red-700"
                   onClick={async () => {
                     try {
-                      await clearOsTable({ data: { module: "refrigeracao" } });
-                      toast.success("Tabela limpa com sucesso");
+                      const res = await clearOsTable({
+                        data: { module: "refrigeracao", keepCompleted: true },
+                      });
+                      toast.success(
+                        `${res.deleted} chamados pendentes removidos. Histórico preservado.`,
+                      );
                       window.location.reload();
                     } catch (e: any) {
                       toast.error("Erro ao limpar: " + e.message);
