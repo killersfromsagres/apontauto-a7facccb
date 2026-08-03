@@ -586,15 +586,17 @@ iframe[src*="lovable.dev/badge"] {
 /* NEXUS-PRO:WATERMARK-HIDE:END */
 
 /* Global responsive guardrails — evita overflow horizontal em qualquer viewport.
-   Usamos `clip` (não `hidden`) para não forçar `overflow-y: auto` no body,
-   o que quebraria a rolagem touch em iOS/Android movendo o scroller do html
-   para o body. */
+   IMPORTANTE: o `overflow-x` fica SÓ no <html>. Se aplicado também no <body>,
+   o navegador transforma o body em um contêiner de rolagem próprio (clip em um
+   eixo faz o outro virar `auto`), o conteúdo fica preso dentro dele e a rolagem
+   por toque no mobile deixa de funcionar. */
 html {
   overflow-x: clip;
   overscroll-behavior-x: none;
 }
 body {
-  overflow-x: clip;
+  overflow-x: visible;
+  overflow-y: visible;
   overscroll-behavior-x: none;
 }
 img, svg, video, canvas { max-width: 100%; height: auto; }
