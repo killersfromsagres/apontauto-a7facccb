@@ -487,6 +487,21 @@ function CorretivaPage() {
                   ))}
                 </SelectContent>
               </Select>
+              <Select value={semanaFiltro} onValueChange={setSemanaFiltro}>
+                <SelectTrigger className="h-11 w-[190px] bg-white/5 border-white/10">
+                  <SelectValue placeholder="Semana" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="atual">Semana {SEMANA_INICIAL} em diante</SelectItem>
+                  <SelectItem value="todas">Todas as semanas</SelectItem>
+                  {semanasDisponiveis.map((s) => (
+                    <SelectItem key={s.key} value={s.key}>
+                      Semana {s.semana} · {intervaloSemana(s.ano, s.semana)}
+                      {liberadas[s.key] ? " ✓" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
                 <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10">
                   <SelectValue placeholder="Equipe" />
