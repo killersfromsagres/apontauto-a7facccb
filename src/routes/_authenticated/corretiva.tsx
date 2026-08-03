@@ -225,12 +225,40 @@ function CorretivaPage() {
     return () => window.clearInterval(iv);
   }, []);
 
+  /** Semanas ISO presentes na base (>= semana 32), com contagem de OS. */
+  const semanasDisponiveis = useMemo(() => {
+    const map = new Map<string, { ano: number; semana: number; total: number }>();
+    for (const o of osList) {
+      const s = semanaDaOs(o as any);
+      if (!s) continue;
+      if (s.semana < SEMANA_INICIAL) continue;
+      const key = semanaKey(s.ano, s.semana);
+      const cur = map.get(key);
+      if (cur) cur.total += 1;
+      else map.set(key, { ano: s.ano, semana: s.semana, total: 1 });
+    }
+    return Array.from(map.entries())
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [osList]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
       const prev = isPreventiva(o.tipo);
       if (aba === "preventiva" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
+
+      const s = semanaDaOs(o as any);
+      const key = s ? semanaKey(s.ano, s.semana) : null;
+      if (semanaFiltro === "atual") {
+        if (!s || s.semana < SEMANA_INICIAL) return false;
+      } else if (semanaFiltro !== "todas") {
+        if (key !== semanaFiltro) return false;
+      }
+      // Colaboradores só enxergam semanas liberadas pelo gestor.
+      if (!isAdmin && key && s && s.semana >= SEMANA_INICIAL && !liberadas[key]) return false;
+
       if (mesFiltro !== "todos") {
         const dateStr = o.data_criacao || o.updated_at;
         const date = dateStr ? new Date(dateStr) : null;
@@ -246,7 +274,22 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
-  }, [osList, search, equipe, mesFiltro, aba]);
+  }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
+
+  const toggleSemana = async (ano: number, semana: number, valor: boolean) => {
+    const key = semanaKey(ano, semana);
+    setSavingSemana(key);
+    try {
+      await setLiberacao(ano, semana, valor);
+      setLiberadas((prev) => ({ ...prev, [key]: valor }));
+      toast.success(valor ? `Semana ${semana} liberada` : `Semana ${semana} bloqueada`);
+    } catch {
+      toast.error("Não foi possível atualizar a liberação.");
+    } finally {
+      setSavingSemana(null);
+    }
+  };
+
 
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
