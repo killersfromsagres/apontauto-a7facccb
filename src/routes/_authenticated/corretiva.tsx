@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Trash2,
   Calendar,
+  Lock,
   MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,22 @@ import { loadEquipe, saveEquipe, matchEquipe, equipeStyles, type EquipeFiltro } 
 import { isPreventiva } from "@/lib/corretiva/preventiva-import";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  SEMANA_INICIAL,
+  fetchLiberacoes,
+  intervaloSemana,
+  semanaDaOs,
+  semanaKey,
+  setLiberacao,
+} from "@/lib/corretiva/semanas";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
@@ -122,6 +139,27 @@ function CorretivaPage() {
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [mesFiltro, setMesFiltro] = useState<string>("08");
   const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
+  /** "atual" = semana 32 em diante · "todas" · "AAAA-SS" para uma semana específica. */
+  const [semanaFiltro, setSemanaFiltro] = useState<string>("atual");
+  const [liberadas, setLiberadas] = useState<Record<string, boolean>>({});
+  const [savingSemana, setSavingSemana] = useState<string | null>(null);
+
+  const carregarLiberacoes = async () => {
+    try {
+      const rows = await fetchLiberacoes();
+      setLiberadas(
+        Object.fromEntries(rows.map((r) => [semanaKey(r.ano, r.semana), r.liberada])),
+      );
+    } catch {
+      /* offline: mantém o cache em memória */
+    }
+  };
+
+  useEffect(() => {
+    carregarLiberacoes();
+  }, []);
+
+
 
 
 
@@ -188,12 +226,40 @@ function CorretivaPage() {
     return () => window.clearInterval(iv);
   }, []);
 
+  /** Semanas ISO presentes na base (>= semana 32), com contagem de OS. */
+  const semanasDisponiveis = useMemo(() => {
+    const map = new Map<string, { ano: number; semana: number; total: number }>();
+    for (const o of osList) {
+      const s = semanaDaOs(o as any);
+      if (!s) continue;
+      if (s.semana < SEMANA_INICIAL) continue;
+      const key = semanaKey(s.ano, s.semana);
+      const cur = map.get(key);
+      if (cur) cur.total += 1;
+      else map.set(key, { ano: s.ano, semana: s.semana, total: 1 });
+    }
+    return Array.from(map.entries())
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [osList]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
       const prev = isPreventiva(o.tipo);
       if (aba === "preventiva" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
+
+      const s = semanaDaOs(o as any);
+      const key = s ? semanaKey(s.ano, s.semana) : null;
+      if (semanaFiltro === "atual") {
+        if (!s || s.semana < SEMANA_INICIAL) return false;
+      } else if (semanaFiltro !== "todas") {
+        if (key !== semanaFiltro) return false;
+      }
+      // Colaboradores só enxergam semanas liberadas pelo gestor.
+      if (!isAdmin && key && s && s.semana >= SEMANA_INICIAL && !liberadas[key]) return false;
+
       if (mesFiltro !== "todos") {
         const dateStr = o.data_criacao || o.updated_at;
         const date = dateStr ? new Date(dateStr) : null;
@@ -209,7 +275,22 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
-  }, [osList, search, equipe, mesFiltro, aba]);
+  }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
+
+  const toggleSemana = async (ano: number, semana: number, valor: boolean) => {
+    const key = semanaKey(ano, semana);
+    setSavingSemana(key);
+    try {
+      await setLiberacao(ano, semana, valor);
+      setLiberadas((prev) => ({ ...prev, [key]: valor }));
+      toast.success(valor ? `Semana ${semana} liberada` : `Semana ${semana} bloqueada`);
+    } catch {
+      toast.error("Não foi possível atualizar a liberação.");
+    } finally {
+      setSavingSemana(null);
+    }
+  };
+
 
 
   const selected = osList.find((o) => o.id === selectedId) ?? null;
@@ -233,6 +314,79 @@ function CorretivaPage() {
             mode="preventiva"
             onDone={() => refreshOsFromServer().catch(() => {})}
           />
+
+          {isAdmin && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Liberar semana
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Liberação da programação por semana</DialogTitle>
+                  <DialogDescription>
+                    A partir da semana {SEMANA_INICIAL}. Colaboradores só visualizam e executam
+                    as OS das semanas liberadas.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+                  {semanasDisponiveis.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-muted-foreground">
+                      Nenhuma semana encontrada na programação atual.
+                    </p>
+                  ) : (
+                    semanasDisponiveis.map((s) => {
+                      const ativa = !!liberadas[s.key];
+                      return (
+                        <div
+                          key={s.key}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold">
+                              Semana {s.semana}/{s.ano}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {intervaloSemana(s.ano, s.semana)} · {s.total} OS
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px]",
+                                ativa
+                                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                                  : "border-amber-500/30 bg-amber-500/15 text-amber-400",
+                              )}
+                            >
+                              {ativa ? "Liberada" : "Bloqueada"}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant={ativa ? "outline" : "default"}
+                              disabled={savingSemana === s.key}
+                              onClick={() => toggleSemana(s.ano, s.semana, !ativa)}
+                            >
+                              {savingSemana === s.key ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : ativa ? (
+                                "Bloquear"
+                              ) : (
+                                "Liberar"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
 
           <Badge variant={online ? "outline" : "destructive"} className="gap-1.5 py-1 px-2">
@@ -330,6 +484,21 @@ function CorretivaPage() {
                   <SelectItem value="todos">Todos os meses</SelectItem>
                   {["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(m => (
                     <SelectItem key={m} value={m}>Mês {m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={semanaFiltro} onValueChange={setSemanaFiltro}>
+                <SelectTrigger className="h-11 w-[190px] bg-white/5 border-white/10">
+                  <SelectValue placeholder="Semana" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="atual">Semana {SEMANA_INICIAL} em diante</SelectItem>
+                  <SelectItem value="todas">Todas as semanas</SelectItem>
+                  {semanasDisponiveis.map((s) => (
+                    <SelectItem key={s.key} value={s.key}>
+                      Semana {s.semana} · {intervaloSemana(s.ano, s.semana)}
+                      {liberadas[s.key] ? " ✓" : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
