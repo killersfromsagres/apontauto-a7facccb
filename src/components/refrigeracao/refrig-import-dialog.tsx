@@ -127,6 +127,23 @@ export function RefrigImportDialog({ onDone }: { onDone: () => void }) {
                 <span className="truncate">{fileName}</span>
                 <Badge variant="secondary">{rows.length} registros</Badge>
               </div>
+              {mode === "import" && (
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(
+                    rows.reduce<Record<string, number>>((acc, r) => {
+                      const k = r.equipe ?? "Sem equipe";
+                      acc[k] = (acc[k] ?? 0) + 1;
+                      return acc;
+                    }, {}),
+                  )
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([equipe, qtd]) => (
+                      <Badge key={equipe} variant="outline">
+                        {equipe}: {qtd}
+                      </Badge>
+                    ))}
+                </div>
+              )}
             </div>
           )}
 
