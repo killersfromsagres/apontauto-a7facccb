@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Trash2,
   Calendar,
+  Lock,
   MoreVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
