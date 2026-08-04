@@ -10,6 +10,8 @@ import { Reveal } from "@/components/ui/reveal";
 import { Progress } from "@/components/ui/progress";
 import sherwinLogo from "@/assets/sherwin-williams.png.asset.json";
 import gpsLogo from "@/assets/grupo-gps.png.asset.json";
+import templateAsset from "@/assets/template-gps.xlsx.asset.json";
+
 
 export const Route = createFileRoute("/_authenticated/programacao-gps")({
   component: ProgramacaoGpsPage,
