@@ -495,7 +495,7 @@ function CorretivaPage() {
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">Nenhuma OS encontrada.</div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 stagger-grid">
               {filtered.map((o) => {
                 const isDone = (o.status ?? "").toLowerCase() === "concluida";
                 const styles = getTeamStyles(o.equipe);
