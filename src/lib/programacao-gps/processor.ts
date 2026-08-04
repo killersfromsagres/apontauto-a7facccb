@@ -141,10 +141,23 @@ export async function generateGpsFiles(
       ext: { width: 140, height: 45 }
     });
 
-    // Header info (Team name) - usually there's a cell for this
-    // Let's assume cell B5 or similar
-    worksheet.getCell('B5').value = `PROGRAMAÇÃO DE SERVIÇOS - ${team.toUpperCase()}`;
-    worksheet.getCell('B5').font = { bold: true, size: 14 };
+    // Header for the data table (row 1)
+    const headerRow = worksheet.getRow(1);
+    headerRow.values = ["OS", "Descrição do Chamado", "Prédio", "Andar", "Espaço", "DATA", "Equipe", "Solicitante"];
+    headerRow.font = { bold: true };
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFE0E0E0' }
+      };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
 
     let currentRow = 2; 
     teamRecords.forEach(rec => {
