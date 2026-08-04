@@ -557,15 +557,6 @@ function CorretivaPage() {
               </div>
             </div>
           </div>
-                  {/* As equipes de corretiva são dinâmicas, aqui usamos as principais para o filtro rápido */}
-                  {["Civil", "Eletrica", "Hidraulica", "Chaveiro", "Pintura", "Refrigeracao"].map(e => (
-                    <SelectItem key={e} value={e}>{e}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           {loadingList ? (
             <div className="p-12 text-center text-muted-foreground"><Loader2 className="mx-auto mb-2 animate-spin" /> Carregando…</div>
           ) : filtered.length === 0 ? (
