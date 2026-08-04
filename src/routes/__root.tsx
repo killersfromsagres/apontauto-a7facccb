@@ -182,7 +182,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
 
-      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="próximos passos faça isso primeiro: Revisar as páginas de dashboards para garantir que os gráficos estejam utilizando as novas variáveis --chart-X. , segundo passo isso: Ajustar a intensidade do blur caso o contraste do texto em dispositivos mobile precise de reforço. , terceiro passo isso: Implementar transições de entrada (staggered entrance) nos novos cards.">
+      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="prossiga para os proximos passos: Realizar a auditoria de contraste nas rotas mobile. , segundo passo: Verificar a aplicação das variáveis de cores neon nos componentes de Recharts. , terceiro passo: Aplicar o utilitário animate-card-rise nos grids de dashboard.">
         {children}
         <Scripts />
       </body>
