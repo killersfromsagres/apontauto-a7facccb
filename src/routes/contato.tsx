@@ -51,7 +51,7 @@ function ContatoPage() {
       </div>
       <h2>Responsável</h2>
       <p>
-        <strong>Gabriel Vitor</strong> — desenvolvedor e responsável pela operação do sistema.
+        <strong>@oferrolgarcia</strong> — desenvolvedor e responsável pela operação do sistema.
       </p>
       <h2>Prazo de resposta</h2>
       <p>Respondemos em até 5 dias úteis. Solicitações relacionadas à LGPD são priorizadas.</p>
