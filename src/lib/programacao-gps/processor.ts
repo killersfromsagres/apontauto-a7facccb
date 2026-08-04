@@ -75,12 +75,12 @@ export async function processPcmAtivosFile(file: File): Promise<GpsRecord[]> {
   return records;
 }
 
-export async function generateGpsFiles(records: GpsRecord[]): Promise<Map<string, Blob>> {
+export async function generateGpsFiles(records: GpsRecord[], templateAsset: { url: string }): Promise<Map<string, Blob>> {
   const files = new Map<string, Blob>();
   const teams = ["Chaveiro", "Civil", "Hidráulica", "Elétrica", "Refrigeração", "Pintura", "Outros"];
   
-  // Load template
-  const templateResponse = await fetch("/mnt/user-uploads/TEMPLATE_GRUPO_GPS.xlsx");
+  // Load template from the asset URL
+  const templateResponse = await fetch(templateAsset.url);
   const templateBuffer = await templateResponse.arrayBuffer();
 
   for (const team of teams) {
@@ -91,25 +91,38 @@ export async function generateGpsFiles(records: GpsRecord[]): Promise<Map<string
     await workbook.xlsx.load(templateBuffer);
     const worksheet = workbook.worksheets[0];
 
-    // Filling logic
+    // Filling logic: User requested:
     // Column C: Prédio
     // Column D: Andar
     // Column E: Local
     // Column F: Data/Hora Solicitação
     // Column G: Solicitante
-    // Assuming start row is 11 (common for these templates with headers)
-    // We should try to find where the headers end or just use a safe start.
-    // Based on "GPS" style, it's often a form-like layout.
     
-    let currentRow = 11; 
+    // We insert rows to avoid overwriting existing formatting if possible, 
+    // or just start at a fixed row. Templates usually have headers.
+    let currentRow = 11; // Standard starting point for GPS-style forms
+    
     teamRecords.forEach(rec => {
       worksheet.getCell(`C${currentRow}`).value = rec.predio;
       worksheet.getCell(`D${currentRow}`).value = rec.andar;
       worksheet.getCell(`E${currentRow}`).value = rec.local;
       worksheet.getCell(`F${currentRow}`).value = rec.dataHora;
       worksheet.getCell(`G${currentRow}`).value = rec.solicitante;
-      // Also might need activity description? User didn't specify column for it in GPS template, 
-      // but usually it's there. Let's stick to requested columns.
+      // Also description for the team to know what to do
+      worksheet.getCell(`B${currentRow}`).value = rec.descricao;
+      
+      // Basic styling for the new row
+      ["B", "C", "D", "E", "F", "G"].forEach(col => {
+        const cell = worksheet.getCell(`${col}${currentRow}`);
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+      });
+      
       currentRow++;
     });
 
@@ -119,4 +132,5 @@ export async function generateGpsFiles(records: GpsRecord[]): Promise<Map<string
 
   return files;
 }
+
 
