@@ -51,7 +51,14 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
   fim: ["fim", "datafim", "dtfim", "termino", "conclusao"],
   ativo: ["ativo", "tag", "codigoativo"],
   equipamento: ["equipamento", "descricaoequip", "descequipamento"],
-  solicitante: ["solicitante", "nomedosolicitante", "requisitante", "nomesolicitante"],
+  solicitante: [
+    "solicitante",
+    "nomedosolicitante",
+    "requisitante",
+    "nomesolicitante",
+    "denominacaodosolicitante",
+    "denominacaosolicitante",
+  ],
   data_criacao: ["datadacriacao", "datacriacao", "criadaem", "dataabertura", "dataabertaem"],
 };
 

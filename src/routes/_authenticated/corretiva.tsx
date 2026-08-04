@@ -583,7 +583,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         kind: "status",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { status: "concluida", fim: new Date().toISOString(), nome_solicitante: draft.nomeSolicitante },
+        payload: { status: "concluida", fim: new Date().toISOString(), assinatura_nome: draft.assinaturaNome },
         createdAt: Date.now(),
         attempts: 0
       });
@@ -694,15 +694,15 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
 
         <div className="space-y-6">
           <GlassCard className="p-6">
-            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Solicitante</h2>
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Confirmar Solicitante</h2>
             <div className="space-y-2">
-              <Label htmlFor="nome_solicitante">Nome do Solicitante</Label>
+              <Label htmlFor="assinatura_nome">Nome de quem solicitou/recebeu</Label>
               <Input
-                id="nome_solicitante"
-                placeholder="Quem solicitou o serviço?"
+                id="assinatura_nome"
+                placeholder="Ex: João Silva"
                 className="bg-white/5"
-                value={draft?.nomeSolicitante || ""}
-                onChange={(e) => saveDraft({ ...draft, nomeSolicitante: e.target.value })}
+                value={draft?.assinaturaNome || ""}
+                onChange={(e) => saveDraft({ ...draft, assinaturaNome: e.target.value })}
                 disabled={isDone}
               />
             </div>
