@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { generateVehicleCertificate, downloadUint8Array } from "@/lib/frota/certificate-generator";
 
 import fiorinoAsset from "@/assets/fiorino-sketch.png.asset.json";
 import logoAsset from "@/assets/in-haus-logo.png.asset.json";
