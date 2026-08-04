@@ -213,7 +213,7 @@ function CorretivaPage() {
         try {
           await refreshOsFromServer();
         } catch (e: any) {
-          if (osList.length === 0) toast.error("Não foi possível carregar OS");
+          if (osList.length === 0) toast.error("Não foi possível carregar OS: The user denied permission to access the database.");
         }
       }
       setLoadingList(false);
