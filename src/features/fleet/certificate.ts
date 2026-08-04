@@ -97,17 +97,17 @@ export async function generateChecklistCertificate({
   doc.line(M + 40, y, M + 40, y + headH);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(17);
+  doc.setFontSize(16); // Reduzido levemente para evitar serrilhado
   doc.setTextColor(INK.r, INK.g, INK.b);
-  doc.text("CHECK LIST DE VEÍCULO", M + 46, y + 11);
+  doc.text("CHECK LIST DE VEÍCULO", M + 44, y + 11);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
-  doc.text("Certificado de Inspeção Veicular", M + 46, y + 17);
+  doc.text("Certificado de Inspeção Veicular", M + 44, y + 17);
   doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
-  doc.setLineWidth(0.6);
-  doc.line(M + 46, y + 19.5, M + 82, y + 19.5);
-  doc.setLineWidth(0.25);
+  doc.setLineWidth(0.4);
+  doc.line(M + 44, y + 19.5, M + 80, y + 19.5);
+  doc.setLineWidth(0.2); // Linhas mais finas e precisas
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
 
   // caixa DATA (preenchida com a data real)
@@ -155,7 +155,7 @@ export async function generateChecklistCertificate({
     doc.text(label.toUpperCase(), x + 2.5, ry + 5.6);
     const lw = doc.getTextWidth(label.toUpperCase());
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.6);
+    doc.setFontSize(8); // Reduzido para garantir alinhamento nas linhas
     doc.setTextColor(INK.r, INK.g, INK.b);
     const maxW = w - lw - 7;
     let v = value || "—";
@@ -240,20 +240,21 @@ export async function generateChecklistCertificate({
   );
   const artData = await toDataUrl(art.url);
   if (artData) {
-    const availW = CW - legendW - 8;
-    const availH = artH - 10;
-    const imgW = Math.min(availW, availH * (4 / 3));
-    const imgH = imgW * (3 / 4);
+    const availW = CW - legendW - 4;
+    const availH = artH - 6;
+    // Aumentado o tamanho da imagem do carro (de 10 para 6 de margem vertical)
+    const imgW = Math.min(availW, availH * (16 / 9)); 
+    const imgH = imgW * (9 / 16);
     try {
       doc.addImage(
         artData,
         "PNG",
-        M + 4 + (availW - imgW) / 2,
-        y + 3,
+        M + 2 + (availW - imgW) / 2,
+        y + 2,
         imgW,
         imgH,
         undefined,
-        "FAST",
+        "FAST"
       );
     } catch {
       /* ilustração opcional */
