@@ -182,7 +182,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
 
-      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="prossiga para os proximos passos: Realizar a auditoria de contraste nas rotas mobile. , segundo passo: Verificar a aplicação das variáveis de cores neon nos componentes de Recharts. , terceiro passo: Aplicar o utilitário animate-card-rise nos grids de dashboard.">
+      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="prossiga para os próximos passos: Analisar src/components/dashboard/ em busca de gráficos para aplicar as novas cores neon. , segundo passo: Inserir a classe animate-card-rise nos contêineres de card das rotas principais. , terceiro passo: Validar a legibilidade dos textos sobre o novo glass-surface em telas pequenas.">
         {children}
         <Scripts />
       </body>
