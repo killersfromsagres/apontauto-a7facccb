@@ -63,7 +63,7 @@ export async function generateVehicleCertificate(
   // ser usadas em formulários desse tipo (cabeçalho e corpo).
   
   // Cabeçalho / Protocolo
-  firstPage.drawText(`PROTOCOLO: ${checklist.protocol}`, { x: 400, y: height - 50, size: 8, font: fontBold, color: textColor });
+  firstPage.drawText(`PROTOCOLO: ${(checklist as any).protocol || 'N/A'}`, { x: 400, y: height - 50, size: 8, font: fontBold, color: textColor });
   
   // Bloco de Identificação do Veículo
   firstPage.drawText(vehicle.plate || 'N/A', { x: 135, y: height - 165, size: 14, font: fontBold }); // Placa Centralizada
@@ -104,7 +104,7 @@ export async function generateVehicleCertificate(
   }
 
   // Protocolo no rodapé para rastreabilidade
-  firstPage.drawText(`Autenticação: ${checklist.protocol}`, { x: 50, y: 30, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
+  firstPage.drawText(`Autenticação: ${(checklist as any).protocol || 'N/A'}`, { x: 50, y: 30, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
 
 
   // Salvar o PDF
