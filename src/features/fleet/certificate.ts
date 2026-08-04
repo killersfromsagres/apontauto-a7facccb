@@ -79,16 +79,9 @@ export async function generateChecklistCertificate({
   ) {
     try {
       const pdfBytes = await generateVehicleCertificate(
-        // @ts-ignore - Adaptação de tipos para o gerador especializado
-        {
-          ...checklist,
-          protocol: certificateCode(checklist),
-          submitted_at: checklist.created_at,
-          integrity_score: checklist.overall_status === "ok" ? 100 : 80, // Simplificação para o score no template
-        },
-        // @ts-ignore
+        checklist,
         vehicle,
-        checklist.driver_name
+        certificateCode(checklist)
       );
 
       const code = certificateCode(checklist);
