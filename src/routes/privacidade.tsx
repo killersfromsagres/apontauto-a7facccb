@@ -82,7 +82,7 @@ function PrivacidadePage() {
 
       <h2>8. Contato do responsável</h2>
       <p>
-        Encarregado pelo tratamento: <strong>@oferrolgarcia</strong> — gabrielvlp33@gmail.com.
+        Encarregado pelo tratamento: <strong>@oferrolgarcia</strong>.
       </p>
     </LegalLayout>
   );

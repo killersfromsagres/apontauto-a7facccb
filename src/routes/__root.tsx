@@ -160,7 +160,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           founder: { "@type": "Person", name: "@oferrolgarcia" },
           contactPoint: {
             "@type": "ContactPoint",
-            email: "gabrielvlp33@gmail.com",
             contactType: "customer support",
             areaServed: "BR",
             availableLanguage: ["Portuguese"],
