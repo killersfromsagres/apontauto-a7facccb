@@ -21,16 +21,7 @@ import { STATUS_CATS, STATUS_COLOR, STATUS_LABEL } from "@/lib/backorder/status"
 import type { V2Stats } from "@/lib/dashboard-chamados/stats-v2";
 
 const AXIS = { fontSize: 11 };
-const PALETTE = [
-  "#06B6D4",
-  "#10B981",
-  "#8B5CF6",
-  "#F59E0B",
-  "#EF4444",
-  "#3B82F6",
-  "#EC4899",
-  "#14B8A6",
-];
+const PALETTE = NEON_PALETTE;
 
 function ChartCard({
   title,
