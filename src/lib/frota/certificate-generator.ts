@@ -76,10 +76,11 @@ export async function generateVehicleCertificate(
   const infoFields = [
     { label: 'CONDUTOR:', value: driverName || 'Não informado' },
     { label: 'DATA:', value: dateStr },
-    { label: 'ODÔMETRO:', value: `${checklist.odometer_km?.toLocaleString('pt-BR')} KM` },
-    { label: 'STATUS GERAL:', value: checklist.overall_status?.toUpperCase() },
-    { label: 'PONTUAÇÃO:', value: `${checklist.integrity_score}%` },
-    { label: 'LOCALIDADE:', value: checklist.location || 'Base São Bernardo' },
+    { label: 'ODÔMETRO:', value: `${(checklist as any).odometer_km?.toLocaleString('pt-BR')} KM` },
+    { label: 'STATUS GERAL:', value: (checklist.overall_status || 'N/A').toUpperCase() },
+    { label: 'PONTUAÇÃO:', value: (checklist as any).integrity_score ? `${(checklist as any).integrity_score}%` : '—' },
+    { label: 'LOCALIDADE:', value: (checklist as any).location || 'Base São Bernardo' },
+
   ];
 
   infoFields.forEach((f, i) => {
