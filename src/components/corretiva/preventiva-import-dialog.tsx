@@ -15,6 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+
 import {
   lerPreventivaFile,
   lerCorretivaFile,
