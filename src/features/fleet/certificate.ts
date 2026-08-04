@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import { generateVehicleCertificate, downloadUint8Array } from "@/lib/frota/certificate-generator";
 
 import fiorinoAsset from "@/assets/fiorino-sketch.png.asset.json";
 import logoAsset from "@/assets/in-haus-logo.png.asset.json";
@@ -64,6 +65,41 @@ export async function generateChecklistCertificate({
   vehicle,
   photos = [],
 }: CertificateInput): Promise<void> {
+  const model = (vehicle?.model || "").toLowerCase();
+  const prefix = (vehicle?.prefix || "").toLowerCase();
+
+  // Se for um dos veículos que tem template PDF dedicado (água, máscara ou saveiro)
+  if (
+    model.includes("água") ||
+    model.includes("máscara") ||
+    model.includes("saveiro") ||
+    prefix.includes("água") ||
+    prefix.includes("máscara") ||
+    prefix.includes("saveiro")
+  ) {
+    try {
+      const pdfBytes = await generateVehicleCertificate(
+        // @ts-ignore - Adaptação de tipos para o gerador especializado
+        {
+          ...checklist,
+          protocol: certificateCode(checklist),
+          submitted_at: checklist.created_at,
+          integrity_score: checklist.overall_status === "ok" ? 100 : 80, // Simplificação para o score no template
+        },
+        // @ts-ignore
+        vehicle,
+        checklist.driver_name
+      );
+
+      const code = certificateCode(checklist);
+      downloadUint8Array(pdfBytes, `certificado-${code}.pdf`);
+      return;
+    } catch (err) {
+      console.error("Erro ao gerar certificado via template PDF:", err);
+      // Fallback para o gerador legiado caso o template falhe
+    }
+  }
+
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   const W = 210;
   const M = 12;
