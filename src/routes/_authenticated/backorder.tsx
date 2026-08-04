@@ -2915,7 +2915,7 @@ function Dashboard({
                 <XAxis dataKey="name" fontSize={11} />
                 <YAxis fontSize={11} allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="value" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="value" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

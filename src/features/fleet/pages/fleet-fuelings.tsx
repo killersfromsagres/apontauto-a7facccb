@@ -2,8 +2,6 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Fuel, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useIsAdmin } from "@/hooks/use-is-admin";
-
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -48,9 +46,7 @@ const EMPTY = (): FuelingInput => ({
 
 export function FleetFuelings() {
   const qc = useQueryClient();
-  const { isAdmin } = useIsAdmin();
   const vehiclesQ = useQuery({ queryKey: ["fleet", "vehicles"], queryFn: listFleetVehicles });
-
   const fuelingsQ = useQuery({ queryKey: ["fleet", "fuelings"], queryFn: () => listFuelings() });
 
   const [open, setOpen] = useState(false);
@@ -257,18 +253,15 @@ export function FleetFuelings() {
                   <span className="text-xs tabular-nums text-muted-foreground">
                     {r.liters ? `${brl(r.total_cost / r.liters)}/L` : ""}
                   </span>
-                  {isAdmin && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="tap-press h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      aria-label="Excluir"
-                      onClick={() => remove.mutate(r.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="tap-press h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Excluir"
+                    onClick={() => remove.mutate(r.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </GlassCard>
             );

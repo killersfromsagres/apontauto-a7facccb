@@ -1796,7 +1796,6 @@ export type Database = {
           ordem: number
           ponto_id: string
           recebido_por: string | null
-          recorrente: boolean | null
           responsavel: string | null
           rota_id: string | null
           status: Database["public"]["Enums"]["agua_visita_status"]
@@ -1832,7 +1831,6 @@ export type Database = {
           ordem?: number
           ponto_id: string
           recebido_por?: string | null
-          recorrente?: boolean | null
           responsavel?: string | null
           rota_id?: string | null
           status?: Database["public"]["Enums"]["agua_visita_status"]
@@ -1868,7 +1866,6 @@ export type Database = {
           ordem?: number
           ponto_id?: string
           recebido_por?: string | null
-          recorrente?: boolean | null
           responsavel?: string | null
           rota_id?: string | null
           status?: Database["public"]["Enums"]["agua_visita_status"]
@@ -7313,7 +7310,6 @@ export type Database = {
         Args: { p_minutes?: number }
         Returns: number
       }
-      reset_weekly_water_deliveries: { Args: never; Returns: undefined }
       retry_pointing_job: {
         Args: { p_job_id: string }
         Returns: {

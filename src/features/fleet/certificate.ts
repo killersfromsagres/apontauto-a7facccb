@@ -71,15 +71,14 @@ export async function generateChecklistCertificate({
   const code = certificateCode(checklist);
   const created = new Date(checklist.created_at);
 
-  doc.setLineWidth(0.15);
-
+  doc.setLineWidth(0.25);
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
 
   /* ---------- moldura geral ---------- */
   doc.setDrawColor(60, 64, 70);
   doc.setLineWidth(0.6);
   doc.rect(M - 4, 8, CW + 8, 281, "S");
-  doc.setLineWidth(0.15);
+  doc.setLineWidth(0.25);
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
 
   /* ---------- cabeçalho ---------- */
@@ -98,19 +97,18 @@ export async function generateChecklistCertificate({
   doc.line(M + 40, y, M + 40, y + headH);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(16); // Reduzido levemente para evitar serrilhado
+  doc.setFontSize(17);
   doc.setTextColor(INK.r, INK.g, INK.b);
-  doc.text("CHECK LIST DE VEÍCULO", M + 44, y + 11);
+  doc.text("CHECK LIST DE VEÍCULO", M + 46, y + 11);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
+  doc.setFontSize(9);
   doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);
-  doc.text("Certificado de Inspeção Veicular", M + 44, y + 17);
+  doc.text("Certificado de Inspeção Veicular", M + 46, y + 17);
   doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
-  doc.setLineWidth(0.4);
-  doc.line(M + 44, y + 19.5, M + 80, y + 19.5);
-  doc.setLineWidth(0.12); // Linhas ultra-finas para evitar borrões
+  doc.setLineWidth(0.6);
+  doc.line(M + 46, y + 19.5, M + 82, y + 19.5);
+  doc.setLineWidth(0.25);
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
-
 
   // caixa DATA (preenchida com a data real)
   const dateX = W - M - 46;
@@ -150,16 +148,14 @@ export async function generateChecklistCertificate({
   y += avisoH + 3;
   const rowH = 8.6;
   const field = (x: number, w: number, ry: number, label: string, value: string) => {
-    doc.setLineWidth(0.12);
     doc.rect(x, ry, w, rowH, "S");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
-
     doc.setTextColor(HEAD.r, HEAD.g, HEAD.b);
     doc.text(label.toUpperCase(), x + 2.5, ry + 5.6);
     const lw = doc.getTextWidth(label.toUpperCase());
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8); // Reduzido para garantir alinhamento nas linhas
+    doc.setFontSize(8.6);
     doc.setTextColor(INK.r, INK.g, INK.b);
     const maxW = w - lw - 7;
     let v = value || "—";
@@ -235,33 +231,29 @@ export async function generateChecklistCertificate({
   y += bandH;
   const artH = 56;
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
-  doc.setLineWidth(0.12);
   doc.rect(M, y, CW, artH, "S");
   const legendW = 52;
   doc.line(W - M - legendW, y, W - M - legendW, y + artH);
-
-
 
   const art = vehicleArt(
     `${vehicle?.brand ?? ""} ${vehicle?.model ?? ""} ${vehicle?.version ?? ""}`,
   );
   const artData = await toDataUrl(art.url);
   if (artData) {
-    const availW = CW - legendW - 4;
-    const availH = artH - 6;
-    // Aumentado o tamanho da imagem do carro (de 10 para 6 de margem vertical)
-    const imgW = Math.min(availW, availH * (16 / 9)); 
-    const imgH = imgW * (9 / 16);
+    const availW = CW - legendW - 8;
+    const availH = artH - 10;
+    const imgW = Math.min(availW, availH * (4 / 3));
+    const imgH = imgW * (3 / 4);
     try {
       doc.addImage(
         artData,
         "PNG",
-        M + 2 + (availW - imgW) / 2,
-        y + 2,
+        M + 4 + (availW - imgW) / 2,
+        y + 3,
         imgW,
         imgH,
         undefined,
-        "FAST"
+        "FAST",
       );
     } catch {
       /* ilustração opcional */
@@ -327,14 +319,12 @@ export async function generateChecklistCertificate({
   const irH = 7;
   items.forEach((item, i) => {
     const ry = y + i * irH;
-    doc.setLineWidth(0.12);
+    doc.setDrawColor(LINE.r, LINE.g, LINE.b);
     doc.rect(M, ry, CW, irH, "S");
     doc.line(M + 10, ry, M + 10, ry + irH);
     doc.line(colOk, ry, colOk, ry + irH);
     doc.line(colNok, ry, colNok, ry + irH);
     doc.line(colObs, ry, colObs, ry + irH);
-
-
 
     doc.setFontSize(7.6);
     doc.setTextColor(GRAY.r, GRAY.g, GRAY.b);

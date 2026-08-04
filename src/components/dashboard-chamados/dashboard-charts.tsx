@@ -19,13 +19,23 @@ import {
 import { Building2, CalendarRange, TrendingUp, Users } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import type { DashStats } from "@/lib/dashboard-chamados/server-stats";
-import { CHART_STATUS, NEON_PALETTE } from "@/lib/charts/palette";
 
-const CHART_COLORS = NEON_PALETTE;
+const CHART_COLORS = [
+  "oklch(0.62 0.19 256)",
+  "oklch(0.696 0.17 162.48)",
+  "oklch(0.75 0.18 60)",
+  "oklch(0.7 0.2 25)",
+  "oklch(0.65 0.22 305)",
+  "oklch(0.72 0.16 195)",
+  "oklch(0.68 0.18 130)",
+  "oklch(0.7 0.2 340)",
+  "oklch(0.75 0.15 90)",
+  "oklch(0.6 0.18 220)",
+];
 
-const COLOR_CONC = CHART_STATUS.concluido;
-const COLOR_CANC = CHART_STATUS.cancelado;
-const COLOR_ABERTO = CHART_STATUS.aberto;
+const COLOR_CONC = "oklch(0.696 0.17 162.48)";
+const COLOR_CANC = "oklch(0.7 0.2 25)";
+const COLOR_ABERTO = "oklch(0.75 0.18 60)";
 
 const TOOLTIP_STYLE = {
   background: "var(--popover)",

@@ -172,17 +172,13 @@ export function PolygonEditor({
       if (!snap) return clampPoint(out);
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
-      
-      // Sensibilidade de snap reduzida de 8px para 6px para evitar "saltos" indesejados
-      const snapThreshold = 6;
-
       for (const poly of polygons) {
         if (!poly.visible) continue;
         if (poly.id === excludeId) continue;
         const pts = geometryOf(poly);
         pts.forEach((v) => {
           const d = Math.hypot((v.x - p.x) * per.x, (v.y - p.y) * per.y);
-          if (d < snapThreshold && (!best || d < best.d)) best = { d, pt: v };
+          if (d < 8 && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
@@ -405,13 +401,6 @@ export function PolygonEditor({
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
       const per = pxPerPercent();
-      
-      // Se for o primeiro clique, adiciona o ponto sem snap agressivo para evitar deslocamento inicial
-      if (draft.length === 0) {
-        setDraft([p]);
-        return;
-      }
-
       if (draft.length >= 3) {
         const first = draft[0];
         const d = Math.hypot((first.x - p.x) * per.x, (first.y - p.y) * per.y);
@@ -702,7 +691,7 @@ export function PolygonEditor({
                       y={c.y}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fontSize={Math.max(1.0, 1.8 / zoom)}
+                      fontSize={Math.max(1.4, 2.6 / zoom)}
                       fontWeight={800}
                       fill="#fde047"
                       stroke="#0f172a"
@@ -720,7 +709,7 @@ export function PolygonEditor({
                           key={i}
                           cx={p.x}
                           cy={p.y}
-                          r={0.45 / zoom}
+                          r={0.9 / zoom}
                           fill="#ffffff"
                           stroke={poly.color}
                           strokeWidth={0.35 / zoom}
@@ -754,7 +743,7 @@ export function PolygonEditor({
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={(i === 0 ? 0.8 : 0.4) / zoom}
+                    r={(i === 0 ? 1.3 : 0.85) / zoom}
                     fill={i === 0 ? "#22c55e" : "#ffffff"}
                     stroke="#0ea5e9"
                     strokeWidth={0.3 / zoom}

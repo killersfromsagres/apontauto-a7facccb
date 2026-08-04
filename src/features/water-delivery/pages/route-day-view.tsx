@@ -128,7 +128,6 @@ export function RouteDayView() {
   const grupos = useMemo(() => {
     const mapa = new Map<string, { v: Visita; p: Ponto }[]>();
     lista.forEach((item) => {
-      // Agrupamento unificado por prédio conforme solicitado
       const chave = item.p.predio || "Sem prédio";
       mapa.set(chave, [...(mapa.get(chave) ?? []), item]);
     });
@@ -147,9 +146,7 @@ export function RouteDayView() {
     rota.data?.bags_carregadas != null ? rota.data.bags_carregadas - kpis.bags : null;
 
   const dia = diaSemanaISO(data);
-  // Removida a restrição de "segunda a sexta" para permitir entregas em qualquer dia
-  const diaUtil = true; 
-
+  const diaUtil = dia <= 5;
   const proxima = lista.find((r) => !STATUS_FINALIZADO.includes(r.v.status));
   const recarregar = () => {
     void qc.invalidateQueries({ queryKey: ["agua", "visitas", data] });
