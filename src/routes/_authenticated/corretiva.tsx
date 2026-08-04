@@ -475,33 +475,6 @@ function CorretivaPage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={mesFiltro} onValueChange={setMesFiltro}>
-                <SelectTrigger className="h-11 w-[140px] bg-white/5 border-white/10">
-                  <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <SelectValue placeholder="Mês" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os meses</SelectItem>
-                  {["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(m => (
-                    <SelectItem key={m} value={m}>Mês {m}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={semanaFiltro} onValueChange={setSemanaFiltro}>
-                <SelectTrigger className="h-11 w-[190px] bg-white/5 border-white/10">
-                  <SelectValue placeholder="Semana" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="atual">Semana {SEMANA_INICIAL} em diante</SelectItem>
-                  <SelectItem value="todas">Todas as semanas</SelectItem>
-                  {semanasDisponiveis.map((s) => (
-                    <SelectItem key={s.key} value={s.key}>
-                      Semana {s.semana} · {intervaloSemana(s.ano, s.semana)}
-                      {liberadas[s.key] ? " ✓" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
                 <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10">
                   <SelectValue placeholder="Equipe" />
