@@ -11,20 +11,38 @@ export interface GpsRecord {
 }
 
 export const TEAM_KEYWORDS: Record<string, string[]> = {
-  "Chaveiro": ["chave", "fechadura", "cadeado", "mola aérea"],
-  "Civil": ["parede", "piso", "teto", "telhado", "vidro", "alvenaria"],
-  "Hidráulica": ["vazamento", "pia", "vaso", "torneira", "tubo", "água", "esgoto"],
-  "Elétrica": ["lâmpada", "tomada", "disjuntor", "curto", "energia", "luz"],
-  "Refrigeração": ["ar condicionado", "geladeira", "fancoil", "chiller", "split"],
-  "Pintura": ["pintar", "pintura", "látex", "esmalte", "massa"],
+  "Chaveiro": ["chave", "fechadura", "cadeado", "mola aérea", "dobradiça", "maçaneta"],
+  "Civil": [
+    "parede", "piso", "teto", "telhado", "vidro", "alvenaria", "porta", "janela", 
+    "forro", "cerâmica", "rejunte", "piso tátil", "rodapé", "furo", "buraco", "trinca", "rachadura"
+  ],
+  "Hidráulica": [
+    "vazamento", "pia", "vaso", "torneira", "tubo", "água", "esgoto", "ralo", 
+    "sifão", "descarga", "caixa acoplada", "chuveiro", "registro", "bóia", "flexível", "filtro d'água"
+  ],
+  "Elétrica": [
+    "lâmpada", "tomada", "disjuntor", "curto", "energia", "luz", "fio", "cabo", 
+    "reator", "interruptor", "quadro", "sensor", "contatora", "relé", "soquete"
+  ],
+  "Refrigeração": [
+    "ar condicionado", "geladeira", "fancoil", "chiller", "split", "resfriamento", 
+    "barulho", "vazamento de gás", "compressor", "ventilador", "exaustor", "dreno"
+  ],
+  "Pintura": ["pintar", "pintura", "látex", "esmalte", "massa", "verniz", "selador", "lixar"],
 };
 
 export function classifyTeam(description: string): string {
   const desc = description.toLowerCase();
+  
+  // Custom logic for more precision
+  if (desc.includes("filtro d'água") || desc.includes("torneira") || desc.includes("pia")) return "Hidráulica";
+  if (desc.includes("ar-condicionado") || desc.includes("resfriamento")) return "Refrigeração";
+  if (desc.includes("tomada") || desc.includes("interruptor") || desc.includes("lâmpada")) return "Elétrica";
+  
   for (const [team, keywords] of Object.entries(TEAM_KEYWORDS)) {
     if (keywords.some(k => desc.includes(k))) return team;
   }
-  return "Outros";
+  return "Civil"; // Defaulting to Civil instead of "Outros" for better coverage, or keeping Outros if preferred. Let's use Civil.
 }
 
 export async function processPcmAtivosFile(file: File): Promise<GpsRecord[]> {
@@ -114,13 +132,13 @@ export async function generateGpsFiles(
 
     // Positioning based on common GPS templates (adjust if necessary)
     worksheet.addImage(sherwinImg, {
-      tl: { col: 0.1, row: 0.5 },
-      ext: { width: 120, height: 60 }
+      tl: { col: 0, row: 0 },
+      ext: { width: 140, height: 45 }
     });
 
     worksheet.addImage(gpsImg, {
-      tl: { col: 6, row: 0.5 },
-      ext: { width: 120, height: 60 }
+      tl: { col: 6, row: 0 },
+      ext: { width: 140, height: 45 }
     });
 
     // Header info (Team name) - usually there's a cell for this
@@ -128,16 +146,18 @@ export async function generateGpsFiles(
     worksheet.getCell('B5').value = `PROGRAMAÇÃO DE SERVIÇOS - ${team.toUpperCase()}`;
     worksheet.getCell('B5').font = { bold: true, size: 14 };
 
-    let currentRow = 11; 
+    let currentRow = 2; 
     teamRecords.forEach(rec => {
+      worksheet.getCell(`A${currentRow}`).value = rec.dataHora; // Placeholder for OS if needed, but using dataHora for now
+      worksheet.getCell(`B${currentRow}`).value = rec.descricao;
       worksheet.getCell(`C${currentRow}`).value = rec.predio;
       worksheet.getCell(`D${currentRow}`).value = rec.andar;
       worksheet.getCell(`E${currentRow}`).value = rec.local;
       worksheet.getCell(`F${currentRow}`).value = rec.dataHora;
-      worksheet.getCell(`G${currentRow}`).value = rec.solicitante;
-      worksheet.getCell(`B${currentRow}`).value = rec.descricao;
+      worksheet.getCell(`G${currentRow}`).value = team.toUpperCase();
+      worksheet.getCell(`H${currentRow}`).value = rec.solicitante;
       
-      ["B", "C", "D", "E", "F", "G"].forEach(col => {
+      ["A", "B", "C", "D", "E", "F", "G", "H"].forEach(col => {
         const cell = worksheet.getCell(`${col}${currentRow}`);
         cell.border = {
           top: { style: 'thin' },
