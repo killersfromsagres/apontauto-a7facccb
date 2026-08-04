@@ -234,6 +234,18 @@
   }
 
   body {
+    &::after {
+      content: attr(data-user);
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--muted-foreground);
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 9999;
+    }
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-feature-settings: "ss01", "cv11";
