@@ -173,6 +173,15 @@ export const sections: MenuSection[] = [
     icon: Wrench,
     items: [
       {
+        key: "programacao-gps",
+        title: "Programação GPS",
+        short: "GPS",
+        url: "/programacao-gps",
+        icon: FileSpreadsheet,
+        keywords: ["gps", "corretiva", "backorder", "gerar", "planilha"],
+      },
+
+      {
         key: "backorder",
         title: "Backorder de Corretivas",
         short: "Backorder",
