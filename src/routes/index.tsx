@@ -31,19 +31,16 @@ export const Route = createFileRoute("/")({
 
     // `null` = acesso total (admin/proprietário).
     if (!allowed || allowed.length === 0) {
-      throw redirect({ to: "/gestao", replace: true });
+      throw redirect({ to: "/", replace: true });
     }
 
     const allowedSet = new Set(allowed);
-    if (allowedSet.has("gestao-executiva")) {
-      throw redirect({ to: "/gestao", replace: true });
-    }
-
+    
     const first = allMenuItems.find((item) =>
       [item.key, ...(item.aliases ?? [])].some((k) => allowedSet.has(k)),
     );
 
-    throw redirect({ to: first?.url ?? "/gestao", replace: true });
+    throw redirect({ to: first?.url ?? "/", replace: true });
   },
   component: () => null,
 });

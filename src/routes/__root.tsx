@@ -182,7 +182,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
 
-      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="prossiga">
+      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="remova completamente a parte de centro de gestão">
         {children}
         <Scripts />
       </body>
