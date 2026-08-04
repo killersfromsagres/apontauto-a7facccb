@@ -583,7 +583,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         kind: "status",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { status: "concluida", fim: new Date().toISOString() },
+        payload: { status: "concluida", fim: new Date().toISOString(), assinatura_nome: draft.assinaturaNome },
         createdAt: Date.now(),
         attempts: 0
       });
