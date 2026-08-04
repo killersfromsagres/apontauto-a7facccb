@@ -157,7 +157,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           logo: "https://apontauto.online/apontauto-logo.png",
           description:
             "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
-          founder: { "@type": "Person", name: "Gabriel Vitor" },
+          founder: { "@type": "Person", name: "@oferrolgarcia" },
           contactPoint: {
             "@type": "ContactPoint",
             email: "gabrielvlp33@gmail.com",
