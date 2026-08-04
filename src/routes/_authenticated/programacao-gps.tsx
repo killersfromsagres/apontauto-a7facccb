@@ -124,8 +124,12 @@ function ProgramacaoGpsPage() {
         <div className="lg:col-span-5">
           <Reveal delay={100}>
             <GlassCard className="p-8 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all duration-500 group overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                <img src={excelIconUrl} alt="Excel" className="w-24 h-24" />
+              <div className="absolute top-0 right-0 p-4 opacity-40 group-hover:opacity-60 transition-all duration-500 group-hover:scale-110">
+                <img 
+                  src={excelIconUrl} 
+                  alt="Excel" 
+                  className="w-16 h-16 drop-shadow-[0_0_15px_rgba(125,249,255,0.8)] filter saturate-[1.5] brightness-[1.2]" 
+                />
               </div>
               
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
