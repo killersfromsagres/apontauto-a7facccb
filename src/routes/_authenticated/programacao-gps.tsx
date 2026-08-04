@@ -51,8 +51,12 @@ function ProgramacaoGpsPage() {
       setRecords(data);
       setProgress(50);
       
-      const files = await generateGpsFiles(data, templateAsset);
+      const files = await generateGpsFiles(data, templateAsset, {
+        sherwin: sherwinLogo.url,
+        gps: gpsLogo.url
+      });
       setGeneratedFiles(files);
+
 
       
       setProgress(100);
