@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import sherwinLogo from "@/assets/sherwin-williams.png.asset.json";
 import gpsLogo from "@/assets/grupo-gps.png.asset.json";
 import templateAsset from "@/assets/template-gps.xlsx.asset.json";
+import excelIconAsset from "@/assets/excel-icon.png.asset.json";
 
 
 export const Route = createFileRoute("/_authenticated/programacao-gps")({
@@ -115,8 +116,8 @@ function ProgramacaoGpsPage() {
         <div className="lg:col-span-5">
           <Reveal delay={100}>
             <GlassCard className="p-8 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all duration-500 group overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Sparkles className="w-24 h-24 text-primary" />
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+                <img src={excelIconAsset.url} alt="Excel" className="w-24 h-24" />
               </div>
               
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -128,7 +129,7 @@ function ProgramacaoGpsPage() {
 
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 hover:bg-white/5 transition-all duration-300 group/drop"
+                className="border-2 border-dashed border-white/10 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer hover:border-[#7DF9FF]/50 hover:bg-[#7DF9FF]/5 transition-all duration-300 group/drop"
               >
                 <input 
                   type="file" 
@@ -137,11 +138,11 @@ function ProgramacaoGpsPage() {
                   onChange={handleFileUpload}
                   accept=".xlsx, .xls"
                 />
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 group-hover/drop:scale-110 transition-transform duration-500 shadow-glow">
+                <div className="w-16 h-16 bg-[#7DF9FF]/20 rounded-full flex items-center justify-center mb-4 group-hover/drop:scale-110 transition-transform duration-500 shadow-[0_0_20px_rgba(125,249,255,0.4)]">
                   {isProcessing ? (
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <Loader2 className="w-8 h-8 text-[#7DF9FF] animate-spin" />
                   ) : (
-                    <Upload className="w-8 h-8 text-primary" />
+                    <Upload className="w-8 h-8 text-[#7DF9FF]" />
                   )}
                 </div>
                 <p className="font-medium text-lg">Clique ou arraste o arquivo</p>
@@ -198,16 +199,17 @@ function ProgramacaoGpsPage() {
                   {Array.from(generatedFiles.entries()).map(([team, blob]) => (
                     <div 
                       key={team}
-                      className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-primary/30 transition-all group animate-card-rise"
+                      className="p-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-[#39FF14]/30 transition-all group animate-card-rise relative overflow-hidden"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="p-2 bg-primary/20 rounded-lg">
-                          <CheckCircle2 className="w-5 h-5 text-primary" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#39FF14]/0 to-[#39FF14]/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                      <div className="flex items-start justify-between mb-3 relative z-10">
+                        <div className="p-2 bg-[#39FF14]/20 rounded-lg shadow-[0_0_10px_rgba(57,255,20,0.2)] group-hover:shadow-[0_0_20px_rgba(57,255,20,0.4)] transition-all">
+                          <CheckCircle2 className="w-5 h-5 text-[#39FF14]" />
                         </div>
                         <Button 
                           size="icon" 
                           variant="ghost" 
-                          className="h-8 w-8 rounded-full hover:bg-primary/20 text-primary"
+                          className="h-8 w-8 rounded-full hover:bg-[#39FF14]/20 text-[#39FF14] transition-colors"
                           onClick={() => downloadFile(team, blob)}
                         >
                           <Download className="w-4 h-4" />
