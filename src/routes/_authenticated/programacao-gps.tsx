@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import sherwinLogo from "@/assets/sherwin-williams.png.asset.json";
 import gpsLogo from "@/assets/grupo-gps.png.asset.json";
 import templateAsset from "@/assets/template-gps.xlsx.asset.json";
-import excelIconAsset from "@/assets/excel-icon.png.asset.json";
+const excelIconUrl = "https://img.icons8.com/color/144/microsoft-excel-2019--v1.png";
 
 
 export const Route = createFileRoute("/_authenticated/programacao-gps")({
@@ -27,15 +27,23 @@ function ProgramacaoGpsPage() {
 
   const playSound = (type: "success" | "processing") => {
     try {
+      // Use different CDN for better reliability
       const audio = new Audio(
         type === "success" 
-          ? "https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8b18a8d05.mp3?filename=success-1-6297.mp3" 
-          : "https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c36727.mp3?filename=processing-1-6298.mp3"
+          ? "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3" 
+          : "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"
       );
-      audio.volume = 0.3;
-      audio.play();
+      audio.volume = 0.4;
+      
+      // Ensure it's ready to play
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.warn("Autoplay was prevented or audio failed:", error);
+        });
+      }
     } catch (e) {
-      console.warn("Audio playback failed", e);
+      console.warn("Audio initialization failed", e);
     }
   };
 
@@ -117,7 +125,7 @@ function ProgramacaoGpsPage() {
           <Reveal delay={100}>
             <GlassCard className="p-8 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all duration-500 group overflow-hidden relative">
               <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-                <img src={excelIconAsset.url} alt="Excel" className="w-24 h-24" />
+                <img src={excelIconUrl} alt="Excel" className="w-24 h-24" />
               </div>
               
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
