@@ -18,6 +18,7 @@ import {
   Calendar,
   Lock,
   MoreVertical,
+  FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
