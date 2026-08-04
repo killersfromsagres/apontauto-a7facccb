@@ -60,15 +60,6 @@ export const MobileTabBar = memo(function MobileTabBar() {
       });
     }
 
-    // Gestão para quem tem permissão
-    if (canAccess("gestao-executiva")) {
-      tabs.push({
-        to: "/gestao",
-        label: "Gestão",
-        icon: <Crown className="h-5 w-5" strokeWidth={1.8} />,
-        active: isActive("/gestao"),
-      });
-    }
 
     return tabs;
   }, [access, currentPath]);

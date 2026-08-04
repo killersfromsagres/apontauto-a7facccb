@@ -110,14 +110,6 @@ export const sections: MenuSection[] = [
         icon: Gauge,
         keywords: ["home", "início", "kpi"],
       },
-      {
-        key: "gestao-executiva",
-        title: "Centro de Gestão",
-        short: "Gestão",
-        url: "/gestao",
-        icon: Crown,
-        keywords: ["executivo", "gestor", "indicadores", "riscos", "plano de ação", "consolidado"],
-      },
     ],
   },
   {
