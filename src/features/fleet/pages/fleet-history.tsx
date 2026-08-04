@@ -76,12 +76,46 @@ export function FleetHistory() {
 
   return (
     <div className="space-y-4">
-      <Input
-        className="h-11 sm:max-w-xs"
-        placeholder="Buscar por veículo ou condutor"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Input
+          className="h-11 sm:max-w-xs"
+          placeholder="Buscar por veículo ou condutor"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        
+        {filtered.length > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="h-11 gap-2 shadow-elegant sm:h-9"
+            onClick={async () => {
+              const { generateChecklistCertificate } = await import("@/features/fleet/certificate");
+              toast.info(`Iniciando geração de ${filtered.length} certificados...`);
+              
+              for (const c of filtered) {
+                const v = vehicleById[c.vehicle_id];
+                const photos = photosByChecklist[c.id] ?? [];
+                try {
+                  await generateChecklistCertificate({
+                    checklist: c,
+                    vehicle: v,
+                    photos: photos
+                      .map((p) => ({ category: p.category, url: urls[p.storage_path] }))
+                      .filter((p) => p.url),
+                  });
+                } catch (e) {
+                  console.error(`Erro no certificado ${c.id}:`, e);
+                }
+              }
+              toast.success("Processamento concluído.");
+            }}
+          >
+            <Award className="h-4 w-4" />
+            Baixar Certificados ({filtered.length})
+          </Button>
+        )}
+      </div>
 
       {checklistsQ.isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando histórico…</p>
