@@ -70,12 +70,14 @@ export async function generateChecklistCertificate({
 
   // Se for um dos veículos que tem template PDF dedicado (água, máscara ou saveiro)
   if (
+    vehicle && (
     model.includes("água") ||
     model.includes("máscara") ||
     model.includes("saveiro") ||
     prefix.includes("água") ||
     prefix.includes("máscara") ||
     prefix.includes("saveiro")
+    )
   ) {
     try {
       const pdfBytes = await generateVehicleCertificate(
@@ -89,7 +91,7 @@ export async function generateChecklistCertificate({
       return;
     } catch (err) {
       console.error("Erro ao gerar certificado via template PDF:", err);
-      // Fallback para o gerador legiado caso o template falhe
+      // Fallback para o gerador legado caso o template falhe
     }
   }
 
