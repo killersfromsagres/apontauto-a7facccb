@@ -583,7 +583,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         kind: "status",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { status: "concluida", fim: new Date().toISOString() },
+        payload: { status: "concluida", fim: new Date().toISOString(), nome_solicitante: draft.nomeSolicitante },
         createdAt: Date.now(),
         attempts: 0
       });
@@ -693,6 +693,21 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         </div>
 
         <div className="space-y-6">
+          <GlassCard className="p-6">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Solicitante</h2>
+            <div className="space-y-2">
+              <Label htmlFor="nome_solicitante">Nome do Solicitante</Label>
+              <Input
+                id="nome_solicitante"
+                placeholder="Quem solicitou o serviço?"
+                className="bg-white/5"
+                value={draft?.nomeSolicitante || ""}
+                onChange={(e) => saveDraft({ ...draft, nomeSolicitante: e.target.value })}
+                disabled={isDone}
+              />
+            </div>
+          </GlassCard>
+
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Peças e Materiais</h2>
             <p className="text-xs text-muted-foreground mb-4 italic">*Funcionalidade de rascunho em desenvolvimento para Corretiva</p>

@@ -177,6 +177,7 @@ export type OsDraft = {
   /** Rubrica do solicitante (dataURL PNG) e nome de quem assinou. */
   assinatura?: string | null;
   assinaturaNome?: string;
+  nomeSolicitante?: string;
   updatedAt: number;
 };
 
