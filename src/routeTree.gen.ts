@@ -31,6 +31,7 @@ import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
 import { Route as AuthenticatedQualidadeDadosRouteImport } from './routes/_authenticated/qualidade-dados'
+import { Route as AuthenticatedProgramacaoGpsRouteImport } from './routes/_authenticated/programacao-gps'
 import { Route as AuthenticatedProgramacaoCapacidadeRouteImport } from './routes/_authenticated/programacao-capacidade'
 import { Route as AuthenticatedProgramacaoRouteImport } from './routes/_authenticated/programacao'
 import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authenticated/preventiva-ac'
@@ -206,6 +207,12 @@ const AuthenticatedQualidadeDadosRoute =
   AuthenticatedQualidadeDadosRouteImport.update({
     id: '/qualidade-dados',
     path: '/qualidade-dados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProgramacaoGpsRoute =
+  AuthenticatedProgramacaoGpsRouteImport.update({
+    id: '/programacao-gps',
+    path: '/programacao-gps',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedProgramacaoCapacidadeRoute =
@@ -586,6 +593,7 @@ export interface FileRoutesByFullPath {
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
@@ -668,6 +676,7 @@ export interface FileRoutesByTo {
   '/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/programacao': typeof AuthenticatedProgramacaoRoute
   '/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
@@ -751,6 +760,7 @@ export interface FileRoutesById {
   '/_authenticated/preventiva-ac': typeof AuthenticatedPreventivaAcRoute
   '/_authenticated/programacao': typeof AuthenticatedProgramacaoRoute
   '/_authenticated/programacao-capacidade': typeof AuthenticatedProgramacaoCapacidadeRoute
+  '/_authenticated/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/_authenticated/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
@@ -835,6 +845,7 @@ export interface FileRouteTypes {
     | '/preventiva-ac'
     | '/programacao'
     | '/programacao-capacidade'
+    | '/programacao-gps'
     | '/qualidade-dados'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
@@ -917,6 +928,7 @@ export interface FileRouteTypes {
     | '/preventiva-ac'
     | '/programacao'
     | '/programacao-capacidade'
+    | '/programacao-gps'
     | '/qualidade-dados'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
@@ -999,6 +1011,7 @@ export interface FileRouteTypes {
     | '/_authenticated/preventiva-ac'
     | '/_authenticated/programacao'
     | '/_authenticated/programacao-capacidade'
+    | '/_authenticated/programacao-gps'
     | '/_authenticated/qualidade-dados'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
@@ -1221,6 +1234,13 @@ declare module '@tanstack/react-router' {
       path: '/qualidade-dados'
       fullPath: '/qualidade-dados'
       preLoaderRoute: typeof AuthenticatedQualidadeDadosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/programacao-gps': {
+      id: '/_authenticated/programacao-gps'
+      path: '/programacao-gps'
+      fullPath: '/programacao-gps'
+      preLoaderRoute: typeof AuthenticatedProgramacaoGpsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/programacao-capacidade': {
@@ -1735,6 +1755,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPreventivaAcRoute: typeof AuthenticatedPreventivaAcRoute
   AuthenticatedProgramacaoRoute: typeof AuthenticatedProgramacaoRoute
   AuthenticatedProgramacaoCapacidadeRoute: typeof AuthenticatedProgramacaoCapacidadeRoute
+  AuthenticatedProgramacaoGpsRoute: typeof AuthenticatedProgramacaoGpsRoute
   AuthenticatedQualidadeDadosRoute: typeof AuthenticatedQualidadeDadosRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
@@ -1786,6 +1807,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramacaoRoute: AuthenticatedProgramacaoRoute,
   AuthenticatedProgramacaoCapacidadeRoute:
     AuthenticatedProgramacaoCapacidadeRoute,
+  AuthenticatedProgramacaoGpsRoute: AuthenticatedProgramacaoGpsRoute,
   AuthenticatedQualidadeDadosRoute: AuthenticatedQualidadeDadosRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
