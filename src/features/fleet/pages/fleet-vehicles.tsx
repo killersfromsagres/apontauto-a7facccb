@@ -2,6 +2,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ const EMPTY: VehicleInput = {
 
 export function FleetVehicles() {
   const qc = useQueryClient();
+  const { isAdmin } = useIsAdmin();
   const { data, isLoading } = useQuery({
     queryKey: ["fleet", "vehicles"],
     queryFn: listFleetVehicles,
@@ -124,7 +127,9 @@ export function FleetVehicles() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <Dialog open={open} onOpenChange={setOpen}>
+        {isAdmin && (
+          <Dialog open={open} onOpenChange={setOpen}>
+
           <DialogTrigger asChild>
             <Button
               className="tap-press h-11 shadow-elegant hover:shadow-glow sm:ml-auto"
@@ -232,7 +237,9 @@ export function FleetVehicles() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        )}
+
       </div>
 
       {isLoading ? (
@@ -264,9 +271,12 @@ export function FleetVehicles() {
                 <span>{Number(v.current_odometer_km).toLocaleString("pt-BR")} km</span>
                 <span className="capitalize">{v.fuel_type}</span>
               </div>
-              <Button variant="outline" className="h-10 w-full" onClick={() => startEdit(v)}>
-                Editar
-              </Button>
+              {isAdmin && (
+                <Button variant="outline" className="h-10 w-full" onClick={() => startEdit(v)}>
+                  Editar
+                </Button>
+              )}
+
             </GlassCard>
           ))}
         </div>

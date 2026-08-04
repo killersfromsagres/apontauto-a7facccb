@@ -1,8 +1,9 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Home, Crown, Bell, PlusCircle } from "lucide-react";
+import { LayoutGrid, Home, Crown, Bell, PlusCircle, Droplets, Fuel } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
-import { useVisibleSections } from "@/lib/nav-config";
+import { sections } from "@/lib/nav-config";
+import { useMyAccess } from "@/hooks/use-my-access";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,14 +14,64 @@ import { cn } from "@/lib/utils";
 export const MobileTabBar = memo(function MobileTabBar() {
   const { isMobile, openMobile, toggleSidebar } = useSidebar();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { canAccess, loading } = useVisibleSections();
+  const { access, loading } = useMyAccess();
 
   if (!isMobile || loading) return null;
 
   const isActive = (url: string) =>
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
-  const hasGestao = canAccess("gestao-executiva");
+  const canAccess = (key: string) => {
+    if (access.isAdmin) return true;
+    return access.allowed?.includes(key);
+  };
+
+  // Ícones dinâmicos com base nas permissões
+  const dynamicTabs = useMemo(() => {
+    const tabs = [];
+
+    // Prioridade 1: Água (para quem tem acesso a abastecimento)
+    if (canAccess("agua-execucao") || canAccess("abastecimento")) {
+      tabs.push({
+        to: "/abastecimento/agua",
+        label: "Água",
+        icon: <Droplets className="h-5 w-5" strokeWidth={1.8} />,
+        active: isActive("/abastecimento/agua"),
+      });
+    }
+
+    // Prioridade 2: Frota (para quem tem acesso a frota)
+    if (canAccess("abastecimento") || canAccess("frota")) {
+      tabs.push({
+        to: "/frota",
+        label: "Frota",
+        icon: <Fuel className="h-5 w-5" strokeWidth={1.8} />,
+        active: isActive("/frota"),
+      });
+    }
+
+    // Se o usuário não tiver nem água nem frota, mantém o Início padrão
+    if (tabs.length === 0) {
+      tabs.push({
+        to: "/",
+        label: "Início",
+        icon: <Home className="h-5 w-5" strokeWidth={1.8} />,
+        active: isActive("/"),
+      });
+    }
+
+    // Gestão para quem tem permissão
+    if (canAccess("gestao-executiva")) {
+      tabs.push({
+        to: "/gestao",
+        label: "Gestão",
+        icon: <Crown className="h-5 w-5" strokeWidth={1.8} />,
+        active: isActive("/gestao"),
+      });
+    }
+
+    return tabs;
+  }, [access, currentPath]);
 
   return (
     <nav
@@ -29,28 +80,22 @@ export const MobileTabBar = memo(function MobileTabBar() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/40 bg-background/80 pb-[max(env(safe-area-inset-bottom),0.5rem)] backdrop-blur-xl md:hidden"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pt-1.5">
-        <TabLink
-          to="/"
-          label="Início"
-          active={isActive("/")}
-          icon={<Home className="h-5 w-5" strokeWidth={1.8} />}
-        />
-
-        {hasGestao && (
+        {dynamicTabs.map((tab) => (
           <TabLink
-            to="/gestao"
-            label="Gestão"
-            active={isActive("/gestao")}
-            icon={<Crown className="h-5 w-5" strokeWidth={1.8} />}
+            key={tab.to}
+            to={tab.to}
+            label={tab.label}
+            active={tab.active}
+            icon={tab.icon}
           />
-        )}
+        ))}
 
         <TabLink
           to="#"
           label="Ações"
           active={false}
           onClick={() => {
-            /* TODO: Abrir Drawer de Ações Rápidas */
+            /* Drawer de Ações Rápidas */
           }}
           icon={<PlusCircle className="h-5 w-5" strokeWidth={1.8} />}
         />
