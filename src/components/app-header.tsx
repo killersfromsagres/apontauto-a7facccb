@@ -48,7 +48,7 @@ export function AppHeader() {
   // Papel do banco é a fonte de verdade (nunca e-mail fixo no código).
   const { isAdmin } = useIsAdmin();
   const title = isAdmin ? "Planejador de Manutenção" : "Colaborador";
-  const displayName = isAdmin ? "Dev Gabriel Vitor" : (fullName ?? email ?? "");
+  const displayName = isAdmin ? "@oferrolgarcia" : (fullName ?? email ?? "");
 
   const signOut = async () => {
     try {
