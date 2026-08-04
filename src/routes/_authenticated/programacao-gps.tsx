@@ -84,8 +84,9 @@ function ProgramacaoGpsPage() {
 
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen app-bg grain">
-      <Reveal direction="down">
+      <Reveal>
         <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
+
           <div className="flex items-center gap-4">
             <div className="p-3 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glow">
               <FileSpreadsheet className="w-8 h-8 text-primary animate-pulse" />
