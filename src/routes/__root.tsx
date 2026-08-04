@@ -182,7 +182,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
 
-      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="em primeiro passo faça isso: Iniciar a implementação dos cards de vidro líquido 3D conforme a imagem. , em segundo passo faça isso: Aplicar o novo esquema de cores neon roxo/azul nos gráficos de performance. em terceiro passo faça isso: Configurar as superfícies de vidro fosco (glassmorphism) nos dashboards principais.">
+      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]" data-user="próximos passos faça isso primeiro: Revisar as páginas de dashboards para garantir que os gráficos estejam utilizando as novas variáveis --chart-X. , segundo passo isso: Ajustar a intensidade do blur caso o contraste do texto em dispositivos mobile precise de reforço. , terceiro passo isso: Implementar transições de entrada (staggered entrance) nos novos cards.">
         {children}
         <Scripts />
       </body>
