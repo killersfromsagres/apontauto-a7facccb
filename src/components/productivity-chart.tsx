@@ -26,12 +26,12 @@ function ProductivityChart() {
       <AreaChart data={data}>
         <defs>
           <linearGradient id="gConc" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="oklch(0.696 0.17 162.48)" stopOpacity={0.6} />
-            <stop offset="100%" stopColor="oklch(0.696 0.17 162.48)" stopOpacity={0} />
+            <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.6} />
+            <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="gProg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="oklch(0.62 0.19 256)" stopOpacity={0.5} />
-            <stop offset="100%" stopColor="oklch(0.62 0.19 256)" stopOpacity={0} />
+            <stop offset="0%" stopColor="var(--chart-2)" stopOpacity={0.5} />
+            <stop offset="100%" stopColor="var(--chart-2)" stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
