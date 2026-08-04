@@ -51,34 +51,60 @@ export async function generateVehicleCertificate(
   const firstPage = pages[0];
   const { width, height } = firstPage.getSize();
   
-  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const fontSize = 12;
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontSize = 10;
   const textColor = rgb(0.1, 0.1, 0.1);
 
   const dateStr = new Date(checklist.submitted_at).toLocaleDateString('pt-BR');
   
-  // Coordenadas aproximadas para preenchimento. 
-  // Em um cenário real, estas coordenadas seriam calibradas conforme o layout do PDF original.
-  const fields = [
-    { text: checklist.protocol, x: 450, y: height - 100 }, // Topo Direita (Protocolo)
-    { text: vehicle.plate || 'N/A', x: 150, y: height - 250 }, // Placa
-    { text: `${vehicle.brand} ${vehicle.model} ${vehicle.version || ''}`, x: 150, y: height - 270 }, // Modelo
-    { text: driverName || 'Não informado', x: 150, y: height - 290 }, // Condutor
-    { text: dateStr, x: 150, y: height - 310 }, // Data
-    { text: checklist.overall_status.toUpperCase(), x: 150, y: height - 330 }, // Status
-    { text: `${checklist.integrity_score}%`, x: 150, y: height - 350 }, // Pontuação
-    { text: checklist.location || 'Base', x: 150, y: height - 370 }, // Local
+  // Mapeamento de campos baseado no layout esperado dos certificados fornecidos.
+  // Como não temos as coordenadas exatas, definimos posições que costumam 
+  // ser usadas em formulários desse tipo (cabeçalho e corpo).
+  
+  // Cabeçalho / Protocolo
+  firstPage.drawText(`PROTOCOLO: ${checklist.protocol}`, { x: 400, y: height - 50, size: 8, font: fontBold, color: textColor });
+  
+  // Bloco de Identificação do Veículo
+  firstPage.drawText(vehicle.plate || 'N/A', { x: 135, y: height - 165, size: 14, font: fontBold }); // Placa Centralizada
+  firstPage.drawText(`${vehicle.brand} ${vehicle.model}`, { x: 135, y: height - 185, size: 12, font }); 
+  
+  // Bloco de Dados do Checklist
+  const startY = height - 240;
+  const lineHeight = 18;
+  
+  const infoFields = [
+    { label: 'CONDUTOR:', value: driverName || 'Não informado' },
+    { label: 'DATA:', value: dateStr },
+    { label: 'ODÔMETRO:', value: `${checklist.odometer_km?.toLocaleString('pt-BR')} KM` },
+    { label: 'STATUS GERAL:', value: checklist.overall_status?.toUpperCase() },
+    { label: 'PONTUAÇÃO:', value: `${checklist.integrity_score}%` },
+    { label: 'LOCALIDADE:', value: checklist.location || 'Base São Bernardo' },
   ];
 
-  for (const field of fields) {
-    firstPage.drawText(field.text, {
-      x: field.x,
-      y: field.y,
-      size: fontSize,
-      font,
-      color: textColor,
+  infoFields.forEach((f, i) => {
+    const y = startY - (i * lineHeight);
+    firstPage.drawText(f.label, { x: 80, y, size: fontSize, font: fontBold });
+    firstPage.drawText(f.value, { x: 200, y, size: fontSize, font });
+  });
+
+  // Se houver observações, imprimir no rodapé ou área dedicada
+  if (checklist.notes) {
+    firstPage.drawText('OBSERVAÇÕES:', { x: 80, y: startY - (infoFields.length * lineHeight) - 10, size: fontSize, font: fontBold });
+    const notesLines = checklist.notes.match(/.{1,80}/g) || [];
+    notesLines.slice(0, 3).forEach((line, i) => {
+      firstPage.drawText(line, { 
+        x: 80, 
+        y: startY - (infoFields.length * lineHeight) - 25 - (i * 12), 
+        size: 9, 
+        font 
+      });
     });
   }
+
+  // Protocolo no rodapé para rastreabilidade
+  firstPage.drawText(`Autenticação: ${checklist.protocol}`, { x: 50, y: 30, size: 7, font, color: rgb(0.5, 0.5, 0.5) });
+
 
   // Salvar o PDF
   return await pdfDoc.save();
