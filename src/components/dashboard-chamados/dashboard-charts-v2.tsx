@@ -144,7 +144,7 @@ function DashboardChartsV2({ stats }: { stats: V2Stats }) {
               type="monotone"
               dataKey="taxa"
               name="Taxa de conclusão"
-              stroke="#8B5CF6"
+              stroke="var(--chart-1)"
               strokeWidth={2}
               dot={false}
             />

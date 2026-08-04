@@ -48,14 +48,14 @@ function ProductivityChart() {
         <Area
           type="monotone"
           dataKey="programadas"
-          stroke="oklch(0.62 0.19 256)"
+          stroke="var(--chart-2)"
           fill="url(#gProg)"
           strokeWidth={2}
         />
         <Area
           type="monotone"
           dataKey="concluidas"
-          stroke="oklch(0.696 0.17 162.48)"
+          stroke="var(--chart-1)"
           fill="url(#gConc)"
           strokeWidth={2}
         />
