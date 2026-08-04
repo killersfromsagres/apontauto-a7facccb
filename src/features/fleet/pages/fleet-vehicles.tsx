@@ -2,6 +2,8 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
