@@ -383,7 +383,7 @@ export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
       faltando.map((p) => ({
         ponto_id: p.ponto_id,
         data: dataISO,
-        dia_semana: dia,
+        dia_semana: p.dia_semana, // Usa o dia da semana da programação
         status: "pendente",
         bags_previstas: p.bags,
       })),
