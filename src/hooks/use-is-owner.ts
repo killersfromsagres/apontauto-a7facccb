@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-/** E-mail do proprietário do sistema — único autorizado a importar planilhas. */
+/** E-mail do proprietário do sistema. */
 export const OWNER_EMAIL = "gabrielvlp33@gmail.com";
 
 /**
- * Verdadeiro apenas para o proprietário (`OWNER_EMAIL`).
- * Usado para esconder ações de importação em massa. A proteção real
- * continua nas políticas do banco (RLS) — isto é apenas a camada de UI.
+ * Verdadeiro para o proprietário (`OWNER_EMAIL`) **e** para qualquer usuário
+ * com papel `admin`. Administradores não têm restrições de UI — a proteção
+ * real continua nas políticas do banco (RLS).
  */
 export function useIsOwner() {
   const [isOwner, setIsOwner] = useState(false);
@@ -15,17 +15,33 @@ export function useIsOwner() {
 
   useEffect(() => {
     let active = true;
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        if (!active) return;
-        const email = (data.user?.email ?? "").trim().toLowerCase();
-        setIsOwner(email === OWNER_EMAIL);
-      })
-      .catch(() => {})
-      .finally(() => {
+
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data.user;
+        if (!user) return;
+
+        const email = (user.email ?? "").trim().toLowerCase();
+        if (email === OWNER_EMAIL) {
+          if (active) setIsOwner(true);
+          return;
+        }
+
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin");
+
+        if (active) setIsOwner((roles ?? []).length > 0);
+      } catch {
+        /* mantém falso em caso de falha */
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    })();
+
     return () => {
       active = false;
     };
