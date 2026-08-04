@@ -94,8 +94,8 @@ function uuid() {
 }
 
 /**
- * Cores por equipe para destaque visual na lista de atuações.
- * Refrigeração 1: azul claro · Refrigeração 2: verde água · Refrigeração 3: rosa claro
+ * Cores por equipe de refrigeração (fluorescentes):
+ * Refrigeração 1 → azul bebê · Refrigeração 2 → verde fluorescente · Refrigeração 3 → rosa fluorescente
  */
 function equipeStyles(equipe: string | null | undefined): {
   row: string;
@@ -107,37 +107,40 @@ function equipeStyles(equipe: string | null | undefined): {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
-  
-  // Azul bebê florescente conforme solicitado para corretivas
-  if (n.includes("refrigeracao"))
+
+  // Refrigeração 1 — azul bebê fluorescente
+  if (n.includes("1"))
     return {
-      row: "border-l-4 border-[#89CFF0] bg-[#89CFF0]/10 hover:bg-[#89CFF0]/20 dark:bg-[#89CFF0]/10 dark:hover:bg-[#89CFF0]/20",
-      dot: "bg-[#89CFF0] shadow-[0_0_8px_#89CFF0]",
-      badge:
-        "bg-[#89CFF0]/20 text-[#89CFF0] border-[#89CFF0]/40 font-bold",
-    };
-    
-  if (n === "refrigeracao 1")
-    return {
-      row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/10 dark:hover:bg-sky-500/20",
-      dot: "bg-sky-400",
-      badge:
-        "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-500/20 dark:text-sky-200 dark:border-sky-500/40",
+      row: "border-l-4 border-[#89CFF0] bg-[#89CFF0]/10 hover:bg-[#89CFF0]/20",
+      dot: "bg-[#89CFF0] shadow-[0_0_8px_2px_rgba(137,207,240,0.9)]",
+      badge: "bg-[#89CFF0]/20 text-sky-800 border-[#89CFF0]/50 font-semibold dark:text-[#89CFF0]",
     };
 
-  if (n === "refrigeracao 3")
+  // Refrigeração 2 — verde fluorescente
+  if (n.includes("2"))
     return {
-      row: "border-l-4 border-pink-300 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
-      dot: "bg-pink-300",
+      row: "border-l-4 border-lime-400 bg-lime-50/70 hover:bg-lime-100/70 dark:bg-lime-500/10 dark:hover:bg-lime-500/20",
+      dot: "bg-lime-400 shadow-[0_0_8px_2px_rgba(163,230,53,0.9)]",
       badge:
-        "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-500/40",
+        "bg-lime-100 text-lime-800 border-lime-300 font-semibold dark:bg-lime-500/20 dark:text-lime-200 dark:border-lime-400/50",
     };
+
+  // Refrigeração 3 — rosa fluorescente
+  if (n.includes("3"))
+    return {
+      row: "border-l-4 border-pink-400 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
+      dot: "bg-pink-400 shadow-[0_0_8px_2px_rgba(244,114,182,0.9)]",
+      badge:
+        "bg-pink-100 text-pink-800 border-pink-300 font-semibold dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-400/50",
+    };
+
   return {
     row: "border-l-4 border-transparent hover:bg-accent/60",
     dot: "bg-muted-foreground/40",
     badge: "",
   };
 }
+
 
 function useOnlineStatus() {
   const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);

@@ -305,7 +305,7 @@ function CorretivaPage() {
       title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
       description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <PreventivaImportDialog
             mode="corretiva"
             onDone={() => refreshOsFromServer().catch(() => {})}

@@ -15,6 +15,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { useIsOwner } from "@/hooks/use-is-owner";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+
 import {
   lerPreventivaFile,
   lerCorretivaFile,
@@ -40,6 +42,7 @@ export function PreventivaImportDialog({
   mode?: Mode;
 }) {
   const { isOwner } = useIsOwner();
+  const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -47,10 +50,11 @@ export function PreventivaImportDialog({
   const [fileName, setFileName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Importação em massa é exclusiva do proprietário do sistema (OWNER_EMAIL).
-  if (!isOwner) return null;
+  // Importação em massa é restrita ao proprietário e a administradores.
+  if (!isOwner && !isAdmin) return null;
 
-  const label = mode === "corretiva" ? "corretivas" : "preventivas";
+  const label = mode === "corretiva" ? "corretivas/backorder" : "preventivas";
+
 
   const onFile = async (f: File | null) => {
     setRows([]);
@@ -89,11 +93,11 @@ export function PreventivaImportDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" className="h-11 w-full sm:w-auto">
           <Upload className="mr-2 h-4 w-4" /> Importar {label}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl w-[calc(100vw-1.5rem)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Importar planilha de {label} (.xlsx)</DialogTitle>
         </DialogHeader>
