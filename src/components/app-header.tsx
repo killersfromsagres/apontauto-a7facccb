@@ -86,7 +86,7 @@ export function AppHeader() {
           </h1>
           {isAdmin ? (
             <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
-              &lt;/&gt; Dev <span className="shine-text font-semibold">Gabriel Vitor</span>
+              &lt;/&gt; Dev <span className="shine-text font-semibold">@oferrolgarcia</span>
             </p>
           ) : displayName ? (
             <p className="hidden truncate font-mono text-[10px] uppercase tracking-[0.2em] text-white sm:block">
