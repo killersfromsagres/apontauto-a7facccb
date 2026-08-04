@@ -46,7 +46,7 @@ function SobrePage() {
       </ul>
       <h2>Responsável</h2>
       <p>
-        Desenvolvido e mantido por <strong>@oferrolgarcia</strong>. Para dúvidas, sugestões ou
+        Desenvolvido e mantido por <strong>Gabriel Vitor</strong>. Para dúvidas, sugestões ou
         solicitações de acesso, utilize a <a href="/contato">página de contato</a>.
       </p>
     </LegalLayout>

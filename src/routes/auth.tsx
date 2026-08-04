@@ -458,7 +458,7 @@ function AuthPage() {
 
       <footer className="absolute inset-x-0 bottom-4 z-10 px-4 text-center">
         <p className="text-xs tracking-wide text-white/45">
-          Dev by: <span className="shine-text font-semibold">@oferrolgarcia</span>
+          Dev by: <span className="shine-text font-semibold">Gabriel Vitor</span>
         </p>
         <nav className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[11px] text-white/35">
           <a href="/sobre" className="hover:text-white/70">

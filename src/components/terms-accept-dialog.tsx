@@ -36,7 +36,7 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         O <strong>Apont Auto</strong> é um sistema corporativo de apontamento e planejamento de
-        manutenção industrial, <strong>desenvolvido por @oferrolgarcia</strong> e disponibilizado
+        manutenção industrial, <strong>desenvolvido por Gabriel Vitor</strong> e disponibilizado
         exclusivamente aos colaboradores previamente cadastrados pelo administrador.
       </p>
     ),
@@ -122,7 +122,7 @@ const SECTIONS: Section[] = [
     body: (
       <p>
         O sistema é fornecido "no estado em que se encontra" pelo desenvolvedor{" "}
-        <strong>@oferrolgarcia</strong>. Não nos responsabilizamos por perdas indiretas decorrentes
+        <strong>Gabriel Vitor</strong>. Não nos responsabilizamos por perdas indiretas decorrentes
         de indisponibilidade temporária ou uso indevido pelo usuário.
       </p>
     ),

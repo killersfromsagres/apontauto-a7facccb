@@ -55,7 +55,7 @@ function TermosPage() {
       <h2>4. Propriedade intelectual</h2>
       <p>
         Todo o código, layout, marca e conteúdo do Apont Auto são de titularidade de
-        <strong> @oferrolgarcia</strong>, protegidos pelas leis de direitos autorais e propriedade
+        <strong> Gabriel Vitor</strong>, protegidos pelas leis de direitos autorais e propriedade
         intelectual.
       </p>
 
