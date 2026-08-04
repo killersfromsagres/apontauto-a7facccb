@@ -88,7 +88,7 @@ export async function generateVehicleCertificate(
  * Função utilitária para download do certificado gerado.
  */
 export function downloadUint8Array(data: Uint8Array, filename: string) {
-  const blob = new Blob([data], { type: 'application/pdf' });
+  const blob = new Blob([data as any], { type: 'application/pdf' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
