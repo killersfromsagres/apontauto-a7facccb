@@ -143,7 +143,7 @@ export async function generateGpsFiles(
 
     // Header for the data table (row 1)
     const headerRow = worksheet.getRow(1);
-    headerRow.values = ["OS", "Descrição do Chamado", "Prédio", "Andar", "Espaço", "DATA", "Equipe", "Solicitante"];
+    headerRow.values = ["OS", "Descrição do Chamado", "Prédio", "Andar", "Espaço", "DATA", "Solicitante", "Equipe"];
     headerRow.font = { bold: true };
     headerRow.eachCell((cell) => {
       cell.fill = {
@@ -169,8 +169,8 @@ export async function generateGpsFiles(
       worksheet.getCell(`D${currentRow}`).value = rec.andar;
       worksheet.getCell(`E${currentRow}`).value = rec.local;
       worksheet.getCell(`F${currentRow}`).value = rec.dataHora;
-      worksheet.getCell(`G${currentRow}`).value = team.toUpperCase();
-      worksheet.getCell(`H${currentRow}`).value = rec.solicitante;
+      worksheet.getCell(`G${currentRow}`).value = rec.solicitante;
+      worksheet.getCell(`H${currentRow}`).value = team.toUpperCase();
       
       ["A", "B", "C", "D", "E", "F", "G", "H"].forEach(col => {
         const cell = worksheet.getCell(`${col}${currentRow}`);
