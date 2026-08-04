@@ -462,25 +462,101 @@ function CorretivaPage() {
             ))}
           </div>
 
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Buscar OS, ativo, local…"
-                  className="pl-9 h-11 text-base"
-                />
+          <div className="mb-4 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar OS, ativo, local…"
+                    className="pl-9 h-11 text-base"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
+                  <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10">
+                    <SelectValue placeholder="Equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas Equipes</SelectItem>
+                    <SelectItem value="Chaveiro">Chaveiro</SelectItem>
+                    <SelectItem value="Civil">Civil</SelectItem>
+                    <SelectItem value="Hidráulica">Hidráulica</SelectItem>
+                    <SelectItem value="Elétrica">Elétrica</SelectItem>
+                    <SelectItem value="Pintura">Pintura</SelectItem>
+                    <SelectItem value="Refrigeração">Refrigeração</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
-                <SelectTrigger className="h-11 w-[160px] bg-white/5 border-white/10">
-                  <SelectValue placeholder="Equipe" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas Equipes</SelectItem>
+
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  Filtrar Planilha por Solicitante
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Filtre os dados exibindo apenas as linhas onde a coluna "Denominação do Solicitante" (coluna E) corresponde a um valor específico.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Select
+                  value={search === "" ? "todos" : search}
+                  onValueChange={(v) => setSearch(v === "todos" ? "" : v)}
+                >
+                  <SelectTrigger className="h-10 w-full sm:w-[300px] bg-white/5 border-white/10">
+                    <SelectValue placeholder="Selecionar Solicitante (Coluna E)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Solicitantes</SelectItem>
+                    {[
+                      "GEOVANA BARBOSA SILVA",
+                      "BEATRIZ GRAZIANO QUEIROZ",
+                      "FERNANDA PASCUAL HERNANDEZ",
+                      "JHUAN HENRIQUE LUZ DIAS",
+                      "ANGELICA ARAUJO SOUSA",
+                      "RICARDO CARRIEL DE SOUZA",
+                      "DOUGLAS LUIZ FERREIRA",
+                      "THIAGO FERNANDES PRETE",
+                      "JONATHAN ZOCOLER SILVESTRE SILVESTRE",
+                      "MURILO MENDONCA SILVA",
+                      "DANILO GOMES",
+                      "JULIA AMENT AGUIAR",
+                      "ANA CAROLINA CLEMENTINO ROCHA PIRES",
+                      "PAULA CARDIA PRADO",
+                      "ANDREIA ARRUDA DE ALBUQUERQUE",
+                      "CAROLINA SALES DUARTE",
+                      "NELSON FRANCISCO DA SILVA",
+                      "EDUARDA LOIOLA ARRUDA",
+                      "VINICIUS ABREU CARVALHO",
+                      "CAROLINE RODRIGUES DE LANA",
+                      "RODRIGO DE SOUZA ARANTES",
+                      "MARCOS VINICIUS DOS SANTOS",
+                      "ALEXIA SOUSA ALVES",
+                      "WILLIAM TEIXEIRA DA SILVA"
+                    ].map((name) => (
+                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {search && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSearch("")}
+                    className="h-10 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="mr-2 h-3 w-3" /> Limpar Filtro
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
                   {/* As equipes de corretiva são dinâmicas, aqui usamos as principais para o filtro rápido */}
                   {["Civil", "Eletrica", "Hidraulica", "Chaveiro", "Pintura", "Refrigeracao"].map(e => (
                     <SelectItem key={e} value={e}>{e}</SelectItem>
