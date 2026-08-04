@@ -48,7 +48,7 @@ export function AppHeader() {
   // Papel do banco é a fonte de verdade (nunca e-mail fixo no código).
   const { isAdmin } = useIsAdmin();
   const title = isAdmin ? "Planejador de Manutenção" : "Colaborador";
-  const displayName = isAdmin ? "@oferrolgarcia" : (fullName ?? email ?? "");
+  const displayName = isAdmin ? "Gabriel Vitor" : (fullName ?? email ?? "");
 
   const signOut = async () => {
     try {
@@ -86,7 +86,7 @@ export function AppHeader() {
           </h1>
           {isAdmin ? (
             <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
-              &lt;/&gt; Dev <span className="shine-text font-semibold">@oferrolgarcia</span>
+              &lt;/&gt; Dev <span className="shine-text font-semibold">Gabriel Vitor</span>
             </p>
           ) : displayName ? (
             <p className="hidden truncate font-mono text-[10px] uppercase tracking-[0.2em] text-white sm:block">
