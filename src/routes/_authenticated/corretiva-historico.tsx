@@ -61,6 +61,7 @@ type OsRow = {
   tipo: string | null;
   fim: string | null;
   updated_at: string;
+  solicitante: string | null;
 };
 type Foto = {
   id: string;
@@ -107,7 +108,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at",
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante",
         )
         .in("status", ["concluida", "cancelada"])
         .order("updated_at", { ascending: false })
@@ -375,6 +376,14 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
         <DialogHeader>
           <DialogTitle className="text-base sm:text-lg">OS {os?.numero_os}</DialogTitle>
         </DialogHeader>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-muted/30 border border-border/50 text-[13px]">
+          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Prédio</span> {os?.predio || "—"}</div>
+          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Andar</span> {os?.andar || "—"}</div>
+          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Local</span> {os?.local || "—"}</div>
+          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Solicitante</span> {os?.solicitante || "—"}</div>
+        </div>
+
         {os?.nome_os && (
           <div className="max-h-40 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-white/5 p-3 text-sm leading-snug whitespace-pre-wrap break-words">
             {os.nome_os}
