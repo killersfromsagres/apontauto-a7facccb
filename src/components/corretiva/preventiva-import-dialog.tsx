@@ -42,6 +42,7 @@ export function PreventivaImportDialog({
   mode?: Mode;
 }) {
   const { isOwner } = useIsOwner();
+  const { isAdmin } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,10 +50,11 @@ export function PreventivaImportDialog({
   const [fileName, setFileName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Importação em massa é exclusiva do proprietário do sistema (OWNER_EMAIL).
-  if (!isOwner) return null;
+  // Importação em massa é restrita ao proprietário e a administradores.
+  if (!isOwner && !isAdmin) return null;
 
-  const label = mode === "corretiva" ? "corretivas" : "preventivas";
+  const label = mode === "corretiva" ? "corretivas/backorder" : "preventivas";
+
 
   const onFile = async (f: File | null) => {
     setRows([]);
