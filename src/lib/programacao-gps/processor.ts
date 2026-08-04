@@ -160,8 +160,10 @@ export async function generateGpsFiles(
     });
 
     let currentRow = 2; 
+    worksheet.getRow(1).height = 40; // Space for logos
+    
     teamRecords.forEach(rec => {
-      worksheet.getCell(`A${currentRow}`).value = rec.dataHora; // Placeholder for OS if needed, but using dataHora for now
+      worksheet.getCell(`A${currentRow}`).value = ""; // OS placeholder
       worksheet.getCell(`B${currentRow}`).value = rec.descricao;
       worksheet.getCell(`C${currentRow}`).value = rec.predio;
       worksheet.getCell(`D${currentRow}`).value = rec.andar;
