@@ -36,6 +36,7 @@ export type OsCacheRow = {
   status: string;
   updated_at: string;
   solicitante?: string | null;
+  nome_solicitante?: string | null;
   data_criacao?: string | null;
 };
 

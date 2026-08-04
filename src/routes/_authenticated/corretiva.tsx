@@ -638,11 +638,17 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90">{os.ativo}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90">{os.equipamento}</p></div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 truncate">{os.ativo}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90 truncate">{os.equipamento}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo || "N/A"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Prédio</Label><p className="text-sm font-medium text-white/90">{os.predio || "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Andar</Label><p className="text-sm font-medium text-white/90">{os.andar || "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Local</Label><p className="text-sm font-medium text-white/90 truncate">{os.local || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString() : 'N/A'}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 truncate">{os.solicitante || "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString() : '—'}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString() : '—'}</p></div>
             </div>
           </GlassCard>
 

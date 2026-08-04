@@ -61,6 +61,7 @@ type OsRow = {
   tipo: string | null;
   fim: string | null;
   updated_at: string;
+  solicitante: string | null;
 };
 type Foto = {
   id: string;
@@ -107,7 +108,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at",
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante",
         )
         .in("status", ["concluida", "cancelada"])
         .order("updated_at", { ascending: false })
