@@ -51,8 +51,9 @@ function ProgramacaoGpsPage() {
       setRecords(data);
       setProgress(50);
       
-      const files = await generateGpsFiles(data);
+      const files = await generateGpsFiles(data, templateAsset);
       setGeneratedFiles(files);
+
       
       setProgress(100);
       playSound("success");
