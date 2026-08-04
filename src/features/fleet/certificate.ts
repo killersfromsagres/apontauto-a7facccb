@@ -70,25 +70,20 @@ export async function generateChecklistCertificate({
 
   // Se for um dos veículos que tem template PDF dedicado (água, máscara ou saveiro)
   if (
+    vehicle && (
     model.includes("água") ||
     model.includes("máscara") ||
     model.includes("saveiro") ||
     prefix.includes("água") ||
     prefix.includes("máscara") ||
     prefix.includes("saveiro")
+    )
   ) {
     try {
       const pdfBytes = await generateVehicleCertificate(
-        // @ts-ignore - Adaptação de tipos para o gerador especializado
-        {
-          ...checklist,
-          protocol: certificateCode(checklist),
-          submitted_at: checklist.created_at,
-          integrity_score: checklist.overall_status === "ok" ? 100 : 80, // Simplificação para o score no template
-        },
-        // @ts-ignore
+        checklist,
         vehicle,
-        checklist.driver_name
+        certificateCode(checklist)
       );
 
       const code = certificateCode(checklist);
@@ -96,7 +91,7 @@ export async function generateChecklistCertificate({
       return;
     } catch (err) {
       console.error("Erro ao gerar certificado via template PDF:", err);
-      // Fallback para o gerador legiado caso o template falhe
+      // Fallback para o gerador legado caso o template falhe
     }
   }
 
