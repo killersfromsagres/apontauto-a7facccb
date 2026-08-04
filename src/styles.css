@@ -423,6 +423,56 @@
   }
 }
 
+/* Reforço de contraste em telas pequenas.
+   Blur pesado + fill muito translúcido reduz a legibilidade no mobile
+   (e custa GPU). Aumentamos a opacidade do fill e reduzimos o raio do blur. */
+@media (max-width: 640px) {
+  .glass-surface,
+  .dark .glass-surface {
+    background: color-mix(in oklch, var(--card) 88%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .glass-block,
+  .dark .glass-block {
+    background: color-mix(in oklch, var(--card) 84%, transparent);
+    backdrop-filter: blur(16px) saturate(130%);
+  }
+  .glass-pill {
+    background: color-mix(in oklch, var(--card) 80%, transparent);
+    backdrop-filter: blur(12px);
+  }
+}
+
+/* Fallback para navegadores sem suporte a backdrop-filter */
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-surface,
+  .glass-block,
+  .glass-pill {
+    background: var(--card);
+  }
+}
+
+/* Entrada escalonada para grids de cards.
+   Aplique em um container: cada filho direto anima com atraso incremental. */
+@utility stagger-grid {
+  & > * {
+    animation: card-rise-in var(--motion-slow) var(--motion-ease) both;
+  }
+  & > *:nth-child(1) { animation-delay: 0ms; }
+  & > *:nth-child(2) { animation-delay: 45ms; }
+  & > *:nth-child(3) { animation-delay: 90ms; }
+  & > *:nth-child(4) { animation-delay: 135ms; }
+  & > *:nth-child(5) { animation-delay: 180ms; }
+  & > *:nth-child(6) { animation-delay: 225ms; }
+  & > *:nth-child(7) { animation-delay: 270ms; }
+  & > *:nth-child(n + 8) { animation-delay: 300ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stagger-grid > * { animation: none !important; }
+}
+
+
+
 /* Botão pílula de vidro (igual aos botões da referência) */
 @utility glass-pill {
   border-radius: 9999px;

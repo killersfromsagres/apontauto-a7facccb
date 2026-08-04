@@ -210,7 +210,7 @@ function HistoricoPage() {
             Nenhuma OS encontrada.
           </div>
         ) : (
-          <ul className="divide-y divide-border/50">
+          <ul className="divide-y divide-border/50 stagger-grid">
             {filtered.map((o) => {
               const cancelada = o.status === "cancelada";
               const Icon = cancelada ? XCircle : CheckCircle2;
