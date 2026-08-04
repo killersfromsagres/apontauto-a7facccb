@@ -19,6 +19,7 @@ import {
 import { Building2, CalendarRange, TrendingUp, Users } from "lucide-react";
 import { GlassCard } from "@/components/glass-card";
 import type { DashStats } from "@/lib/dashboard-chamados/server-stats";
+import { CHART_STATUS, NEON_PALETTE } from "@/lib/charts/palette";
 
 const CHART_COLORS = NEON_PALETTE;
 
