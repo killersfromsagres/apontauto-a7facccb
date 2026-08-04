@@ -85,21 +85,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "format-detection", content: "telephone=no" },
-      { title: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { title: "PCM · Planejador de Manutenção — Dev @oferrolgarcia" },
       {
         name: "description",
-        content: "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Sistema de Apontamento by: @oferrolgarcia",
       },
-      { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { name: "author", content: "Dev @oferrolgarcia" },
+      { property: "og:title", content: "PCM · Planejador de Manutenção — Dev @oferrolgarcia" },
       {
         property: "og:description",
-        content: "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Sistema de Apontamento by: @oferrolgarcia",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
-      { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
+      { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev @oferrolgarcia" },
+      { name: "twitter:description", content: "Sistema de Apontamento by: @oferrolgarcia" },
       {
         property: "og:image",
         content:
@@ -157,7 +157,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           logo: "https://apontauto.online/apontauto-logo.png",
           description:
             "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
-          founder: { "@type": "Person", name: "Gabriel Vitor" },
+          founder: { "@type": "Person", name: "@oferrolgarcia" },
           contactPoint: {
             "@type": "ContactPoint",
             email: "gabrielvlp33@gmail.com",
