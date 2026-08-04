@@ -103,7 +103,7 @@ function ProgramacaoGpsPage() {
             </div>
           </div>
           
-          <div className="flex items-center gap-6 p-4 glass-surface rounded-2xl border border-white/10">
+          <div className="hidden items-center gap-6 p-4 glass-surface rounded-2xl border border-white/10">
             <img src={sherwinLogo.url} alt="Sherwin Williams" className="h-10 object-contain brightness-0 invert opacity-80" />
             <div className="w-px h-8 bg-white/10" />
             <img src={gpsLogo.url} alt="Grupo GPS" className="h-10 object-contain brightness-0 invert opacity-80" />
