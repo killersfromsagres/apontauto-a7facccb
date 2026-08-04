@@ -75,13 +75,22 @@ export async function processPcmAtivosFile(file: File): Promise<GpsRecord[]> {
   return records;
 }
 
-export async function generateGpsFiles(records: GpsRecord[], templateAsset: { url: string }): Promise<Map<string, Blob>> {
+export async function generateGpsFiles(
+  records: GpsRecord[], 
+  templateAsset: { url: string },
+  logos: { sherwin: string; gps: string }
+): Promise<Map<string, Blob>> {
   const files = new Map<string, Blob>();
   const teams = ["Chaveiro", "Civil", "Hidráulica", "Elétrica", "Refrigeração", "Pintura", "Outros"];
   
-  // Load template from the asset URL
   const templateResponse = await fetch(templateAsset.url);
   const templateBuffer = await templateResponse.arrayBuffer();
+
+  const sherwinResponse = await fetch(logos.sherwin);
+  const sherwinBuffer = await sherwinResponse.arrayBuffer();
+  
+  const gpsResponse = await fetch(logos.gps);
+  const gpsBuffer = await gpsResponse.arrayBuffer();
 
   for (const team of teams) {
     const teamRecords = records.filter(r => r.equipe === team);
@@ -91,27 +100,43 @@ export async function generateGpsFiles(records: GpsRecord[], templateAsset: { ur
     await workbook.xlsx.load(templateBuffer);
     const worksheet = workbook.worksheets[0];
 
-    // Filling logic: User requested:
-    // Column C: Prédio
-    // Column D: Andar
-    // Column E: Local
-    // Column F: Data/Hora Solicitação
-    // Column G: Solicitante
+    // Add logos (ensure they are in the same position as the model)
+    // Typically Column A/B for one and Column G/H for another
+    const sherwinImg = workbook.addImage({
+      buffer: sherwinBuffer,
+      extension: 'png',
+    });
     
-    // We insert rows to avoid overwriting existing formatting if possible, 
-    // or just start at a fixed row. Templates usually have headers.
-    let currentRow = 11; // Standard starting point for GPS-style forms
-    
+    const gpsImg = workbook.addImage({
+      buffer: gpsBuffer,
+      extension: 'png',
+    });
+
+    // Positioning based on common GPS templates (adjust if necessary)
+    worksheet.addImage(sherwinImg, {
+      tl: { col: 0.1, row: 0.5 },
+      ext: { width: 120, height: 60 }
+    });
+
+    worksheet.addImage(gpsImg, {
+      tl: { col: 6, row: 0.5 },
+      ext: { width: 120, height: 60 }
+    });
+
+    // Header info (Team name) - usually there's a cell for this
+    // Let's assume cell B5 or similar
+    worksheet.getCell('B5').value = `PROGRAMAÇÃO DE SERVIÇOS - ${team.toUpperCase()}`;
+    worksheet.getCell('B5').font = { bold: true, size: 14 };
+
+    let currentRow = 11; 
     teamRecords.forEach(rec => {
       worksheet.getCell(`C${currentRow}`).value = rec.predio;
       worksheet.getCell(`D${currentRow}`).value = rec.andar;
       worksheet.getCell(`E${currentRow}`).value = rec.local;
       worksheet.getCell(`F${currentRow}`).value = rec.dataHora;
       worksheet.getCell(`G${currentRow}`).value = rec.solicitante;
-      // Also description for the team to know what to do
       worksheet.getCell(`B${currentRow}`).value = rec.descricao;
       
-      // Basic styling for the new row
       ["B", "C", "D", "E", "F", "G"].forEach(col => {
         const cell = worksheet.getCell(`${col}${currentRow}`);
         cell.border = {
@@ -132,5 +157,6 @@ export async function generateGpsFiles(records: GpsRecord[], templateAsset: { ur
 
   return files;
 }
+
 
 
