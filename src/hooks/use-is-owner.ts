@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /** E-mail do proprietário do sistema. */
-export const OWNER_EMAIL = "gabrielvlp33@gmail.com"; // Keep for internal ID but hide from UI
+export const OWNER_EMAIL = "gabrielvlp33@gmail.com";
 
 /**
  * Verdadeiro para o proprietário (`OWNER_EMAIL`) **e** para qualquer usuário

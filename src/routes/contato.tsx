@@ -28,13 +28,16 @@ function ContatoPage() {
         privacidade, utilize os canais abaixo.
       </p>
       <div className="not-prose mt-6 grid gap-3 sm:grid-cols-2">
-        <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-4 transition hover:border-primary/40 hover:bg-card">
+        <a
+          href="mailto:gabrielvlp33@gmail.com"
+          className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-4 transition hover:border-primary/40 hover:bg-card"
+        >
           <Mail className="h-5 w-5 text-primary" />
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">E-mail</p>
-            <p className="font-medium">Suporte @oferrolgarcia</p>
+            <p className="font-medium">gabrielvlp33@gmail.com</p>
           </div>
-        </div>
+        </a>
         <a
           href="https://apontauto.online"
           className="flex items-center gap-3 rounded-lg border border-border/60 bg-card/40 p-4 transition hover:border-primary/40 hover:bg-card"
