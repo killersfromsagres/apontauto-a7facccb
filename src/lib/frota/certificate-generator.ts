@@ -48,16 +48,16 @@ export async function generateVehicleCertificate(
   // Mapeamento preciso para A4 (595x842)
   // Máscaras para limpar o texto antigo do template (retângulos brancos)
   const masks = [
-    { x: 380, y: height - 55, w: 100, h: 15 }, // Protocolo topo
-    { x: 440, y: height - 100, w: 120, h: 25 }, // Data topo
-    { x: 100, y: height - 220, w: 450, h: 15 }, // Linha 1: Motorista/Setor
-    { x: 100, y: height - 250, w: 450, h: 15 }, // Linha 2: Placa/Modelo
-    { x: 100, y: height - 278, w: 450, h: 15 }, // Linha 3: KM
-    { x: 100, y: height - 306, w: 450, h: 15 }, // Linha 4: Horário
-    { x: 150, y: height - 335, w: 400, h: 15 }, // Linha 5: Responsável/Combustível
-    { x: 80, y: height - 555, w: 100, h: 12 }, // Placa pequena
-    { x: 580, y: height - 850, w: 150, h: 260 }, // Coluna Checklist checkboxes
-    { x: 100, y: 100, w: 450, h: 15 }, // Assinaturas nomes
+    { x: 380, y: height - 55, w: 120, h: 20 }, // Protocolo topo
+    { x: 440, y: height - 105, w: 130, h: 30 }, // Data topo
+    { x: 100, y: height - 222, w: 470, h: 18 }, // Linha 1: Motorista/Setor
+    { x: 100, y: height - 250, w: 470, h: 18 }, // Linha 2: Placa/Modelo
+    { x: 100, y: height - 278, w: 470, h: 18 }, // Linha 3: KM
+    { x: 100, y: height - 306, w: 470, h: 18 }, // Linha 4: Horário
+    { x: 150, y: height - 335, w: 420, h: 18 }, // Linha 5: Responsável/Combustível
+    { x: 80, y: height - 555, w: 150, h: 15 }, // Placa pequena e legenda
+    { x: 350, y: height - 845, w: 150, h: 265 }, // Área dos checkboxes
+    { x: 100, y: 100, w: 470, h: 20 }, // Assinaturas nomes
   ];
 
   masks.forEach(m => {
