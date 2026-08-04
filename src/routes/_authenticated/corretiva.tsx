@@ -137,10 +137,10 @@ function CorretivaPage() {
   const [syncing, setSyncing] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
-  const [mesFiltro, setMesFiltro] = useState<string>("08");
+  const [mesFiltro, setMesFiltro] = useState<string>("todos");
   const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
   /** "atual" = semana 32 em diante · "todas" · "AAAA-SS" para uma semana específica. */
-  const [semanaFiltro, setSemanaFiltro] = useState<string>("atual");
+  const [semanaFiltro, setSemanaFiltro] = useState<string>("todas");
   const [liberadas, setLiberadas] = useState<Record<string, boolean>>({});
   const [savingSemana, setSavingSemana] = useState<string | null>(null);
 
