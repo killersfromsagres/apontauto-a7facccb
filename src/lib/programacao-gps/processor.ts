@@ -11,38 +11,49 @@ export interface GpsRecord {
 }
 
 export const TEAM_KEYWORDS: Record<string, string[]> = {
-  "Chaveiro": ["chave", "fechadura", "cadeado", "mola aérea", "dobradiça", "maçaneta"],
+  "Chaveiro": ["chave", "fechadura", "cadeado", "mola aérea", "dobradiça", "maçaneta", "miolo"],
   "Civil": [
     "parede", "piso", "teto", "telhado", "vidro", "alvenaria", "porta", "janela", 
-    "forro", "cerâmica", "rejunte", "piso tátil", "rodapé", "furo", "buraco", "trinca", "rachadura"
+    "forro", "cerâmica", "rejunte", "piso tátil", "rodapé", "furo", "buraco", "trinca", "rachadura",
+    "divisória", "drywall", "gesso", "persiana", "carpet", "marcenaria", "batente"
   ],
   "Hidráulica": [
     "vazamento", "pia", "vaso", "torneira", "tubo", "água", "esgoto", "ralo", 
-    "sifão", "descarga", "caixa acoplada", "chuveiro", "registro", "bóia", "flexível", "filtro d'água"
+    "sifão", "descarga", "caixa acoplada", "chuveiro", "registro", "bóia", "flexível", "filtro d'água",
+    "bebedouro", "mictório", "bucha", "encanamento", "sanitário"
   ],
   "Elétrica": [
     "lâmpada", "tomada", "disjuntor", "curto", "energia", "luz", "fio", "cabo", 
-    "reator", "interruptor", "quadro", "sensor", "contatora", "relé", "soquete"
+    "reator", "interruptor", "quadro", "sensor", "contatora", "relé", "soquete",
+    "iluminação", "refletor", "estabilizador", "nobreak", "trifásico", "reator"
   ],
   "Refrigeração": [
     "ar condicionado", "geladeira", "fancoil", "chiller", "split", "resfriamento", 
-    "barulho", "vazamento de gás", "compressor", "ventilador", "exaustor", "dreno"
+    "barulho", "vazamento de gás", "compressor", "ventilador", "exaustor", "dreno",
+    "ar-condicionado", "climatização", "gelando", "quente", "evaporadora", "condensadora"
   ],
-  "Pintura": ["pintar", "pintura", "látex", "esmalte", "massa", "verniz", "selador", "lixar"],
+  "Pintura": ["pintar", "pintura", "látex", "esmalte", "massa", "verniz", "selador", "lixar", "retoc", "tinta"],
 };
 
 export function classifyTeam(description: string): string {
   const desc = description.toLowerCase();
   
-  // Custom logic for more precision
-  if (desc.includes("filtro d'água") || desc.includes("torneira") || desc.includes("pia")) return "Hidráulica";
-  if (desc.includes("ar-condicionado") || desc.includes("resfriamento")) return "Refrigeração";
-  if (desc.includes("tomada") || desc.includes("interruptor") || desc.includes("lâmpada")) return "Elétrica";
+  // High-priority specific terms for precision
+  if (desc.includes("filtro d'água") || desc.includes("bebedouro") || desc.includes("vazamento de água")) return "Hidráulica";
+  if (desc.includes("ar-condicionado") || desc.includes(" split ") || desc.includes("fancoil")) return "Refrigeração";
+  if (desc.includes("curto-circuito") || desc.includes("disjuntor caiu") || desc.includes("sem energia")) return "Elétrica";
+  if (desc.includes("fechadura") || desc.includes("chave quebrada")) return "Chaveiro";
+  if (desc.includes("pintar") || desc.includes("tinta")) return "Pintura";
   
-  for (const [team, keywords] of Object.entries(TEAM_KEYWORDS)) {
+  // Check keywords in priority order
+  const priorityOrder = ["Refrigeração", "Elétrica", "Hidráulica", "Chaveiro", "Pintura", "Civil"];
+  
+  for (const team of priorityOrder) {
+    const keywords = TEAM_KEYWORDS[team];
     if (keywords.some(k => desc.includes(k))) return team;
   }
-  return "Civil"; // Defaulting to Civil instead of "Outros" for better coverage, or keeping Outros if preferred. Let's use Civil.
+  
+  return "Civil"; 
 }
 
 export async function processPcmAtivosFile(file: File): Promise<GpsRecord[]> {
