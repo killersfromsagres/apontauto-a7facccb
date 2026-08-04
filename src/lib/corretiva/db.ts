@@ -36,7 +36,6 @@ export type OsCacheRow = {
   status: string;
   updated_at: string;
   solicitante?: string | null;
-  nome_solicitante?: string | null;
   data_criacao?: string | null;
 };
 
@@ -177,7 +176,6 @@ export type OsDraft = {
   /** Rubrica do solicitante (dataURL PNG) e nome de quem assinou. */
   assinatura?: string | null;
   assinaturaNome?: string;
-  nomeSolicitante?: string;
   updatedAt: number;
 };
 

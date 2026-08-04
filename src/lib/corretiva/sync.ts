@@ -107,7 +107,6 @@ async function sendOne(item: OutboxItem): Promise<void> {
       .update({
         status: (item.payload.status ?? "concluida") as any,
         fim: item.payload.fim ?? new Date().toISOString(),
-        nome_solicitante: (item.payload.nome_solicitante ?? null) as any,
       } as any)
       .eq("id", item.osId);
     if (error) throw error;
