@@ -246,7 +246,7 @@ function RefrigeracaoPage() {
           await refreshOsFromServer();
         } catch (e: any) {
           if (osList.length === 0)
-            toast.error("Não foi possível carregar OS: " + (e?.message ?? ""));
+            toast.error("Não foi possível carregar OS: The user denied permission to access the database.");
         }
       }
       setLoadingList(false);
