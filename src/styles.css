@@ -190,11 +190,11 @@
   --input: oklch(1 0 0 / 14%);
   --ring: #4F8CFF;
 
-  --chart-1: #4F8CFF;
-  --chart-2: #52E5FF;
-  --chart-3: #8B5CF6;
-  --chart-4: oklch(0.72 0.15 163);
-  --chart-5: oklch(0.80 0.16 78);
+  --chart-1: #8B5CF6; /* Neon Purple */
+  --chart-2: #4F8CFF; /* Neon Blue */
+  --chart-3: #52E5FF; /* Cyan Glow */
+  --chart-4: #D946EF; /* Fuschia */
+  --chart-5: #F472B6; /* Pink */
 
   --sidebar: #080D16;
   --sidebar-foreground: oklch(0.90 0.012 256);
