@@ -169,8 +169,9 @@ export async function listPontos(): Promise<Ponto[]> {
   const { data, error } = await db
     .from("agua_pontos")
     .select(PONTO_FIELDS)
-    .order("ordem")
-    .order("predio");
+    .eq("ativo", true)
+    .order("predio")
+    .order("ordem");
   if (error) throw error;
   return (data ?? []) as Ponto[];
 }
@@ -371,9 +372,9 @@ export async function desfazerLote(loteId: string): Promise<void> {
 
 /** Cria (se faltar) as visitas do dia a partir da programação e devolve todas. */
 export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
-  const dia = diaSemanaISO(dataISO);
   const [prog, existentes] = await Promise.all([listProgramacao(), listVisitas(dataISO, dataISO)]);
-  const doDia = prog.filter((p) => p.dia_semana === dia);
+  const doDia = prog; // Removida restrição de dia_semana para mostrar todas juntas
+
   const jaTem = new Set(existentes.map((v) => v.ponto_id));
   const faltando = doDia.filter((p) => !jaTem.has(p.ponto_id));
 
@@ -382,7 +383,7 @@ export async function garantirVisitasDoDia(dataISO: string): Promise<Visita[]> {
       faltando.map((p) => ({
         ponto_id: p.ponto_id,
         data: dataISO,
-        dia_semana: dia,
+        dia_semana: p.dia_semana, // Usa o dia da semana da programação
         status: "pendente",
         bags_previstas: p.bags,
       })),
