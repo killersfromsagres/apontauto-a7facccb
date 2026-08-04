@@ -108,8 +108,9 @@ export async function generateChecklistCertificate({
   doc.setDrawColor(ORANGE.r, ORANGE.g, ORANGE.b);
   doc.setLineWidth(0.4);
   doc.line(M + 44, y + 19.5, M + 80, y + 19.5);
-  doc.setLineWidth(0.15); // Linhas ultra-finas para evitar borrões
+  doc.setLineWidth(0.12); // Linhas ultra-finas para evitar borrões
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
+
 
   // caixa DATA (preenchida com a data real)
   const dateX = W - M - 46;
@@ -149,9 +150,11 @@ export async function generateChecklistCertificate({
   y += avisoH + 3;
   const rowH = 8.6;
   const field = (x: number, w: number, ry: number, label: string, value: string) => {
+    doc.setLineWidth(0.12);
     doc.rect(x, ry, w, rowH, "S");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
+
     doc.setTextColor(HEAD.r, HEAD.g, HEAD.b);
     doc.text(label.toUpperCase(), x + 2.5, ry + 5.6);
     const lw = doc.getTextWidth(label.toUpperCase());
@@ -232,10 +235,11 @@ export async function generateChecklistCertificate({
   y += bandH;
   const artH = 56;
   doc.setDrawColor(LINE.r, LINE.g, LINE.b);
-  doc.setLineWidth(0.15);
+  doc.setLineWidth(0.12);
   doc.rect(M, y, CW, artH, "S");
   const legendW = 52;
   doc.line(W - M - legendW, y, W - M - legendW, y + artH);
+
 
 
   const art = vehicleArt(
@@ -323,12 +327,13 @@ export async function generateChecklistCertificate({
   const irH = 7;
   items.forEach((item, i) => {
     const ry = y + i * irH;
-    doc.setLineWidth(0.15);
+    doc.setLineWidth(0.12);
     doc.rect(M, ry, CW, irH, "S");
     doc.line(M + 10, ry, M + 10, ry + irH);
     doc.line(colOk, ry, colOk, ry + irH);
     doc.line(colNok, ry, colNok, ry + irH);
     doc.line(colObs, ry, colObs, ry + irH);
+
 
 
     doc.setFontSize(7.6);
