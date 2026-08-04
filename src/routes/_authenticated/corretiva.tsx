@@ -106,7 +106,7 @@ function getTeamStyles(equipe: string | null | undefined) {
 }
 
 const OS_COLUMNS =
-  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, nome_solicitante, data_criacao";
+  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, data_criacao";
 
 function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -647,7 +647,6 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               <div><Label className="text-[10px] uppercase text-muted-foreground">Local</Label><p className="text-sm font-medium text-white/90 truncate">{os.local || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 truncate">{os.solicitante || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Nome do Solicitante</Label><p className="text-sm font-medium text-white/90 truncate">{os.nome_solicitante || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString() : '—'}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString() : '—'}</p></div>
             </div>

@@ -62,7 +62,6 @@ type OsRow = {
   fim: string | null;
   updated_at: string;
   solicitante: string | null;
-  nome_solicitante: string | null;
 };
 type Foto = {
   id: string;
@@ -109,7 +108,7 @@ function HistoricoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante, nome_solicitante",
+          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante",
         )
         .in("status", ["concluida", "cancelada"])
         .order("updated_at", { ascending: false })
@@ -382,7 +381,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Prédio</span> {os?.predio || "—"}</div>
           <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Andar</span> {os?.andar || "—"}</div>
           <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Local</span> {os?.local || "—"}</div>
-          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Solicitante</span> {os?.nome_solicitante || os?.solicitante || "—"}</div>
+          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Solicitante</span> {os?.solicitante || "—"}</div>
         </div>
 
         {os?.nome_os && (
