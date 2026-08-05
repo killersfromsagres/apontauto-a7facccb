@@ -335,8 +335,9 @@ function BackorderPage() {
         cursor = page[page.length - 1]!.os;
       }
       setRows(sortForView(all));
-    } catch {
-      toast.error("Falha ao carregar backorder");
+    } catch (err: any) {
+      console.error("Erro ao carregar backorder:", err);
+      toast.error("Falha ao carregar backorder: " + (err.message || "Erro desconhecido"));
       setRows(sortForView(all));
     } finally {
       setLoading(false);
@@ -606,12 +607,14 @@ function BackorderPage() {
             resolve(m);
             worker.terminate();
           } else if (m.type === "error") {
-            reject(new Error(m.message));
+            console.error("Worker error message:", m.message);
+            reject(new Error(m.message || "Erro interno no processamento"));
             worker.terminate();
           }
         };
         worker.onerror = (e) => {
-          reject(new Error(e.message || "Falha no processamento da planilha"));
+          console.error("Worker error event:", e);
+          reject(new Error("Falha técnica no processamento da planilha (Worker Error)"));
           worker.terminate();
         };
         worker.postMessage({
