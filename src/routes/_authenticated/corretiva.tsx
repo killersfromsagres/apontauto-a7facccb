@@ -720,6 +720,36 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         });
       }
 
+      // 3. Queue Pieces/Materials
+      if (draft.pecas?.length) {
+        for (const p of draft.pecas) {
+          await outboxAdd({
+            id: uuid(),
+            kind: "peca",
+            osId: os.id,
+            numeroOs: os.numero_os,
+            payload: { ...p },
+            createdAt: Date.now(),
+            attempts: 0
+          });
+        }
+      }
+
+      // 4. Queue Problems/Diagnosis
+      if (draft.problemas?.length) {
+        for (const pr of draft.problemas) {
+          await outboxAdd({
+            id: uuid(),
+            kind: "problema",
+            osId: os.id,
+            numeroOs: os.numero_os,
+            payload: { ...pr },
+            createdAt: Date.now(),
+            attempts: 0
+          });
+        }
+      }
+
       onUpdate({ status: "concluida" });
       await draftDelete(os.id);
       toast.success("OS enviada para sincronização!");
