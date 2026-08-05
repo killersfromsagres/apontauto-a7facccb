@@ -130,6 +130,7 @@ export const sections: MenuSection[] = [
       },
     ],
   },
+  {
     kind: "group",
     key: "backorder-v2-grp",
     title: "Gestão de Backorders e OS",
