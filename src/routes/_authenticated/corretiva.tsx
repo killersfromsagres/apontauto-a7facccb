@@ -449,6 +449,16 @@ function CorretivaPage() {
 
       {!selected ? (
         <GlassCard className="flex flex-col gap-4 p-4">
+          {isAdmin && (
+            <div className="flex items-center justify-between px-1 mb-1">
+              <h2 className="text-sm font-semibold text-primary flex items-center gap-2">
+                <Settings2 className="h-4 w-4" /> Gestão Administrativa
+              </h2>
+              <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+                Acesso Total
+              </Badge>
+            </div>
+          )}
           <div className="inline-flex w-full overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 sm:w-auto">
 
             {([
