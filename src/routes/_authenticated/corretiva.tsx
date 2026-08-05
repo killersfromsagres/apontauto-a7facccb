@@ -307,24 +307,24 @@ function CorretivaPage() {
       description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
       actions={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <PreventivaImportDialog
-            mode="corretiva"
-            onDone={() => refreshOsFromServer().catch(() => {})}
-          />
-          <PreventivaImportDialog
-            mode="preventiva"
-            onDone={() => refreshOsFromServer().catch(() => {})}
-          />
-
-
           {isAdmin && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline" className="gap-2">
-                  <Lock className="h-4 w-4" />
-                  Liberar semana
-                </Button>
-              </DialogTrigger>
+            <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
+              <PreventivaImportDialog
+                mode="corretiva"
+                onDone={() => refreshOsFromServer().catch(() => {})}
+              />
+              <PreventivaImportDialog
+                mode="preventiva"
+                onDone={() => refreshOsFromServer().catch(() => {})}
+              />
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="h-11 flex-1 gap-2 sm:h-9 sm:flex-none">
+                    <Lock className="h-4 w-4" />
+                    <span className="sm:inline">Liberar</span>
+                  </Button>
+                </DialogTrigger>
+
               <DialogContent className="max-w-lg">
                 <DialogHeader>
                   <DialogTitle>Liberação da programação por semana</DialogTitle>
