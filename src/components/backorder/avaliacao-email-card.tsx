@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { Copy, Check, Mail, Users } from "lucide-react";
+import { Copy, Check, Mail, Users, FileDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/glass-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -13,6 +14,8 @@ import {
   nomesInline,
   type SolicitanteResumo,
 } from "@/lib/backorder/avaliacao-email";
+import { generateAvaliacaoPDF } from "@/lib/backorder/avaliacao-pdf";
+import { downloadBlob } from "@/lib/download";
 
 interface Props {
   /** Chamados concluídos + aguardando aprovação. */
@@ -50,8 +53,27 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 export function AvaliacaoEmailCard({ rows, ano, resumo }: Props) {
   const solicitantes = useMemo(() => resumo ?? agruparSolicitantes(rows), [resumo, rows]);
   const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
-  const assunto = assuntoEmail(ano, totalOs);
-  const corpo = useMemo(() => corpoEmail({ solicitantes, ano }), [solicitantes, ano]);
+  const assunto = assuntoEmail(ano);
+  const corpo = useMemo(() => corpoEmail({}), []);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExportPDF() {
+    setExporting(true);
+    try {
+      const blob = await generateAvaliacaoPDF({
+        titulo: "Gestão Predial - Apont Auto",
+        resumo: solicitantes,
+        ano
+      });
+      downloadBlob(blob, `Relatorio_Avaliacao_${ano}.xlsx`);
+      toast.success("Relatório gerado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao gerar relatório");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (solicitantes.length === 0) {
     return (
@@ -65,54 +87,75 @@ export function AvaliacaoEmailCard({ rows, ano, resumo }: Props) {
 
   return (
     <GlassCard className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Mail className="h-4 w-4 text-primary" aria-hidden />
-        <h3 className="text-sm font-semibold">Cobrança de avaliação no Prisma</h3>
-        <Badge variant="secondary" className="ml-auto">
-          {solicitantes.length} solicitante(s) · {totalOs.toLocaleString("pt-BR")} OS
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" aria-hidden />
+          <h3 className="text-sm font-bold uppercase tracking-wider">Cobrança de avaliação no Prisma</h3>
+        </div>
+        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          {solicitantes.length} solicitantes · {totalOs} OS pendentes
         </Badge>
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Users className="h-3.5 w-3.5" aria-hidden /> Solicitantes (coluna E, sem repetição)
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div>
+            <div className="mb-2 flex items-center justify-between text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+              <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Lista de Solicitantes</span>
+              <CopyButton text={nomesInline(solicitantes)} label="Copiar Nomes (Destinatários)" />
+            </div>
+            <ScrollArea className="h-48 rounded-xl border border-white/10 bg-white/5">
+              <ul className="divide-y divide-white/5">
+                {solicitantes.map((s) => (
+                  <li key={s.nome} className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors">
+                    <span className="truncate text-xs font-medium">{s.nome}</span>
+                    <div className="flex items-center gap-1.5">
+                      {s.aguardando > 0 && <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/20 text-[9px]">{s.aguardando} AGUARD.</Badge>}
+                      <Badge variant="secondary" className="text-[10px]">{s.total} OS</Badge>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </div>
         </div>
-        <ScrollArea className="max-h-56 rounded-xl border">
-          <ul className="divide-y">
-            {solicitantes.map((s) => (
-              <li key={s.nome} className="flex items-center justify-between gap-3 px-3 py-2">
-                <span className="truncate text-sm">{s.nome}</span>
-                <span className="flex shrink-0 items-center gap-1">
-                  {s.aguardando > 0 && (
-                    <Badge className="bg-amber-500 text-white">{s.aguardando} aguard.</Badge>
-                  )}
-                  <Badge variant="secondary">{s.total}</Badge>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
+
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1.5 block">Assunto do E-mail</label>
+              <div className="flex gap-2">
+                <Input readOnly value={assunto} className="bg-white/5 border-white/10 text-xs h-9" />
+                <CopyButton text={assunto} label="Copiar" />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mb-1.5 block">Corpo da Mensagem (Cordial)</label>
+              <Textarea readOnly value={corpo} rows={8} className="bg-white/5 border-white/10 text-xs leading-relaxed resize-none" />
+              <div className="mt-2 flex gap-2">
+                <CopyButton text={corpo} label="Copiar Corpo do E-mail" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-xs font-medium text-muted-foreground">Assunto</label>
-        <Textarea readOnly value={assunto} rows={2} className="resize-none text-sm" />
-        <label className="text-xs font-medium text-muted-foreground">Corpo do e-mail</label>
-        <Textarea readOnly value={corpo} rows={14} className="text-sm leading-relaxed" />
-      </div>
-
-      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <CopyButton text={nomesInline(solicitantes)} label="Copiar nomes" />
-        <CopyButton text={assunto} label="Copiar assunto" />
-        <CopyButton text={corpo} label="Copiar e-mail" />
+      <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-white/10">
         <Button
-          size="sm"
-          className="min-h-11 sm:min-h-9"
+          variant="secondary"
+          className="h-10 px-6 font-bold uppercase tracking-widest text-[10px]"
+          onClick={handleExportPDF}
+          disabled={exporting}
+        >
+          {exporting ? "Gerando..." : <><FileDown className="mr-2 h-4 w-4" /> Gerar Relatório (XLSX/PDF)</>}
+        </Button>
+        <Button
+          className="h-10 px-6 font-bold uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
           onClick={() => {
             window.location.href = `mailto:?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
           }}
         >
-          <Mail className="mr-2 h-4 w-4" /> Abrir no e-mail
+          <Mail className="mr-2 h-4 w-4" /> Abrir no Outlook/E-mail
         </Button>
       </div>
     </GlassCard>

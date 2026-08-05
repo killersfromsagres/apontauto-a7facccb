@@ -11,6 +11,12 @@ export interface SolicitanteResumo {
 
 const CAP_EXCECOES = new Set(["de", "da", "do", "das", "dos", "e"]);
 
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
+}
+
 /** "MARIA DA SILVA" → "Maria da Silva" */
 export function prettyNome(raw: string): string {
   const t = (raw ?? "").trim();
@@ -48,43 +54,31 @@ export interface EmailOptions {
   prazoDias?: number;
 }
 
-/** Lista "Nome (n chamados)" pronta para colar no corpo/destinatários. */
-export function listaSolicitantes(s: SolicitanteResumo[]): string {
-  return s
-    .map((x) => `• ${x.nome} — ${x.total} chamado${x.total > 1 ? "s" : ""} para avaliar`)
-    .join("\n");
-}
-
-export function assuntoEmail(ano: number | string, total: number): string {
-  return `Avaliação de chamados concluídos — ${total} OS pendentes de validação (${ano})`;
+export function assuntoEmail(ano: number | string): string {
+  return `Solicitação de Avaliação - Chamados Concluídos (${ano})`;
 }
 
 export function corpoEmail({
-  solicitantes,
-  ano,
-  remetente = "Equipe de Gestão Predial — Apont Auto",
-  prazoDias = 5,
-}: EmailOptions): string {
-  const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
-  return `Prezado(a),
+  remetente = "Gestão Predial — Apont Auto",
+}: Partial<EmailOptions>): string {
+  return `Prezados,
 
-Espero que este e-mail o(a) encontre bem.
+Gostaríamos de solicitar a gentileza de sua colaboração na avaliação dos chamados realizados sob sua solicitação no sistema Prisma.
 
-Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço (OS) sob sua solicitação que foram concluídas ou aguardam aprovação.
+Sua avaliação é fundamental para que possamos mensurar a qualidade dos serviços prestados e buscar a melhoria contínua de nossos processos.
 
-Sua validação é essencial para a qualidade da nossa Gestão Predial. Por gentileza, poderia avaliar os chamados abaixo?
+Anexo a este e-mail, enviamos um relatório detalhado com a soma dos chamados pendentes para cada solicitante.
 
-${listaSolicitantes(solicitantes)}
+Poderiam, por favor, acessar o sistema e realizar a avaliação dos itens listados?
 
-Basta acessar o sistema e confirmar a execução. Sua nota nos ajuda a melhorar continuamente.
-
-Agradecemos a parceria.
+Agradecemos imensamente pela parceria e disponibilidade.
 
 Atenciosamente,
+
 ${remetente}`;
 }
 
-/** Somente os nomes, separados por "; " — útil para colar no campo Para/Cc. */
+/** Somente os nomes, separados por ", " — útil para colar no campo Para/Cc. */
 export function nomesInline(s: SolicitanteResumo[]): string {
-  return s.map((x) => `${x.nome} (${x.total})`).join("; ");
+  return s.map((x) => x.nome).join(", ");
 }
