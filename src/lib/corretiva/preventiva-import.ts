@@ -74,11 +74,15 @@ export type CorretivaRow = CorretivaOsImport & { tipo: string; equipe: string };
  */
 export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
   const rows = await readCorretivaOsFile(file);
-  return rows.map((r) => ({
-    ...r,
-    tipo: TIPO_CORRETIVA,
-    equipe: (r.equipe && r.equipe.trim()) || classificarEquipeOs(r).equipe,
-  }));
+  return rows.map((r) => {
+    // A equipe vinda da planilha tem precedência se for reconhecida
+    const equipeFinal = (r.equipe && r.equipe.trim()) || classificarEquipeOs(r).equipe;
+    return {
+      ...r,
+      tipo: TIPO_CORRETIVA,
+      equipe: equipeFinal,
+    };
+  });
 }
 
 

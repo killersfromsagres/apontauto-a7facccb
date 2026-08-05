@@ -19,6 +19,8 @@ import {
   Lock,
   MoreVertical,
   FileSpreadsheet,
+  Settings2,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
@@ -447,6 +449,16 @@ function CorretivaPage() {
 
       {!selected ? (
         <GlassCard className="flex flex-col gap-4 p-4">
+          {isAdmin && (
+            <div className="flex items-center justify-between px-1 mb-1">
+              <h2 className="text-sm font-semibold text-primary flex items-center gap-2">
+                <Settings2 className="h-4 w-4" /> Gestão Administrativa
+              </h2>
+              <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+                Acesso Total
+              </Badge>
+            </div>
+          )}
           <div className="inline-flex w-full overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 sm:w-auto">
 
             {([
@@ -614,6 +626,7 @@ function CorretivaPage() {
 }
 
 function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => void; onUpdate: (p: Partial<OsCacheRow>) => void }) {
+  const { isAdmin } = useIsAdmin();
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const isDone = os.status === "concluida";
@@ -730,6 +743,73 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString("pt-BR") : "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString("pt-BR") : "—"}</p></div>
             </div>
+
+            {isAdmin && (
+              <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <div className="w-full mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-tight text-primary/70">
+                    Ações Administrativas
+                  </p>
+                </div>
+                
+                <Select
+                  value={os.equipe || ""}
+                  onValueChange={async (novaEquipe) => {
+                    if (!navigator.onLine) return toast.error("Offline: Não é possível reclassificar agora.");
+                    try {
+                      const { error } = await supabase
+                        .from("corretiva_os")
+                        .update({ equipe: novaEquipe })
+                        .eq("id", os.id);
+                      if (error) throw error;
+                      onUpdate({ equipe: novaEquipe });
+                      toast.success(`OS reclassificada para ${novaEquipe}`);
+                    } catch {
+                      toast.error("Erro ao reclassificar");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <Settings2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs">Reclassificar Equipe</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Hidráulica", "Elétrica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  className="h-10 flex-1 gap-2 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 text-xs"
+                  onClick={async () => {
+                    if (!navigator.onLine) return toast.error("Offline: Não é possível finalizar agora.");
+                    try {
+                      const { error } = await supabase
+                        .from("corretiva_os")
+                        .update({ 
+                          status: "concluida",
+                          fim: new Date().toISOString(),
+                          assinatura_nome: "Finalizado pelo Admin (Sem foto)"
+                        } as any)
+                        .eq("id", os.id);
+                      if (error) throw error;
+                      onUpdate({ status: "concluida" });
+                      toast.success("OS finalizada administrativamente.");
+                      onBack();
+                    } catch {
+                      toast.error("Erro ao finalizar OS");
+                    }
+                  }}
+                >
+                  <Zap className="h-3.5 w-3.5 text-emerald-400" />
+                  Finalizar sem foto
+                </Button>
+              </div>
+            )}
           </GlassCard>
 
           <GlassCard className="p-6">
@@ -786,6 +866,73 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                 disabled={isDone}
               />
             </div>
+            
+            {isAdmin && (
+              <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <div className="w-full mb-1">
+                  <p className="text-[10px] font-bold uppercase tracking-tight text-primary/70">
+                    Ações Administrativas
+                  </p>
+                </div>
+                
+                <Select
+                  value={os.equipe || ""}
+                  onValueChange={async (novaEquipe) => {
+                    if (!navigator.onLine) return toast.error("Offline: Não é possível reclassificar agora.");
+                    try {
+                      const { error } = await supabase
+                        .from("corretiva_os")
+                        .update({ equipe: novaEquipe })
+                        .eq("id", os.id);
+                      if (error) throw error;
+                      onUpdate({ equipe: novaEquipe });
+                      toast.success(`OS reclassificada para ${novaEquipe}`);
+                    } catch {
+                      toast.error("Erro ao reclassificar");
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
+                    <div className="flex items-center gap-2">
+                      <Settings2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-xs">Reclassificar Equipe</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Hidráulica", "Elétrica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  className="h-10 flex-1 gap-2 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 text-xs"
+                  onClick={async () => {
+                    if (!navigator.onLine) return toast.error("Offline: Não é possível finalizar agora.");
+                    try {
+                      const { error } = await supabase
+                        .from("corretiva_os")
+                        .update({ 
+                          status: "concluida",
+                          fim: new Date().toISOString(),
+                          assinatura_nome: "Finalizado pelo Admin (Sem foto)"
+                        } as any)
+                        .eq("id", os.id);
+                      if (error) throw error;
+                      onUpdate({ status: "concluida" });
+                      toast.success("OS finalizada administrativamente.");
+                      onBack();
+                    } catch {
+                      toast.error("Erro ao finalizar OS");
+                    }
+                  }}
+                >
+                  <Zap className="h-3.5 w-3.5 text-emerald-400" />
+                  Finalizar sem foto
+                </Button>
+              </div>
+            )}
           </GlassCard>
 
           <GlassCard className="p-6">

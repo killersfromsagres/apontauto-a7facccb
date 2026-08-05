@@ -170,6 +170,7 @@ const RULES: Rule[] = [
       "lampada",
       "lampada queimada",
       "trocar lampada",
+      "substituir lampada",
       "luminaria",
       "refletor",
       "spot",
@@ -178,6 +179,9 @@ const RULES: Rule[] = [
       "iluminacao queimada",
       "tomada",
       "tomada queimada",
+      "troca de tomada",
+      "substituir tomada",
+      "instalar tomada",
       "interruptor",
       "disjuntor",
       "quadro eletrico",
@@ -190,7 +194,10 @@ const RULES: Rule[] = [
       "chuveiro eletrico",
       "chuveiro nao aquece",
       "chuveiro queimado",
+      "trocar chuveiro",
+      "substituir chuveiro",
       "resistencia do chuveiro",
+      "reator",
     ],
   },
   {
@@ -205,7 +212,6 @@ const RULES: Rule[] = [
       "ponto de energia",
       "ponto eletrico",
       "aterramento",
-      "reator",
       "antena",
       "hdmi",
       "tv sem sinal",
@@ -390,7 +396,7 @@ const HIDR_LOCK = [
 ];
 
 /** "chuveiro eletrico" (aparelho) vs "chuveiro" (peça hidráulica). */
-const CHUVEIRO_ELETRICO_RE = /\bchuveiro\s*(eletrico|nao\s*aquece|queimado|frio|resistencia)/;
+const CHUVEIRO_ELETRICO_RE = /\bchuveiro\s*(eletrico|nao\s*aquece|queimado|frio|resistencia|troca|substituir)/;
 const CHUVEIRO_HIDR_RE = /\bchuveiro\s*(vazando|pingando|canopla|registro|manopla)/;
 
 export interface TeamClassificationResult {

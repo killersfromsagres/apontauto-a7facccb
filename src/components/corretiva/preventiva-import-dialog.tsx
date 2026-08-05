@@ -76,12 +76,20 @@ export function PreventivaImportDialog({
   const importar = async () => {
     if (rows.length === 0) return toast.warning("Escolha uma planilha válida.");
     setSaving(true);
+    
+    // Para evitar duplicados ao importar, usamos upsert com 'onConflict: numero_os'.
+    // O requisito é que se a OS já estiver em aberto no sistema, ela seja ATUALIZADA (sincronizada)
+    // sem criar uma nova linha. O upsert do Supabase cuida disso nativamente.
     const { error, count } = await supabase
       .from("corretiva_os")
-      .upsert(rows as any, { onConflict: "numero_os", count: "exact" });
+      .upsert(
+        rows.map(r => ({ ...r, updated_at: new Date().toISOString() })) as any, 
+        { onConflict: "numero_os", count: "exact" }
+      );
+      
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success(`${count ?? rows.length} ${label} importadas.`);
+    toast.success(`${count ?? rows.length} ${label} processadas (sem duplicidade).`);
     setOpen(false);
     setRows([]);
     setFileName("");
