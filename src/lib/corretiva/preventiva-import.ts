@@ -3,9 +3,11 @@
 // automática às 4 equipes de preventiva: Chaveiro, Civil, Hidráulica e Elétrica.
 
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
-import { classificarEquipeOs } from "@/lib/corretiva/auto-equipe";
+import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
+import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
+export const TIPO_BACKORDER = "Backorder";
 
 export const EQUIPES_PREVENTIVA = ["Chaveiro", "Civil", "Hidráulica", "Elétrica"] as const;
 export type EquipePreventiva = (typeof EQUIPES_PREVENTIVA)[number];
@@ -74,12 +76,41 @@ export type CorretivaRow = CorretivaOsImport & { tipo: string; equipe: string };
  */
 export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
   const rows = await readCorretivaOsFile(file);
+  
+  // 1. Verificar se a aba Backorder está vazia no banco
+  const { count: backorderCount } = await supabase
+    .from("corretiva_os")
+    .select("*", { count: 'exact', head: true })
+    .eq("tipo", "Backorder");
+
+  // 2. Se vazio, marcar todas as novas importações como Backorder automaticamente
+  const autoBackorder = backorderCount === 0;
+
   return rows.map((r) => {
     // A equipe vinda da planilha tem precedência se for reconhecida
     const equipeFinal = (r.equipe && r.equipe.trim()) || classificarEquipeOs(r).equipe;
+    
+    // Regra: se autoBackorder, o tipo vira "Backorder"
+    let tipoFinal = TIPO_CORRETIVA;
+    if (autoBackorder) {
+      tipoFinal = "Backorder";
+    } else if (r.tipo) {
+      // Tentar reconhecer "Backorder" ou "Corretiva" se vier na planilha
+      const t = r.tipo.toLowerCase();
+      if (t.includes("back") || t.includes("atras")) tipoFinal = "Backorder";
+    }
+
+    // Identificação de atrasos (aprox 35 dias)
+    // Se a data de criação for mais antiga que 30-35 dias, sugere Backorder
+    if (tipoFinal === TIPO_CORRETIVA && r.data_criacao) {
+      const criacao = new Date(r.data_criacao);
+      const diffDays = (new Date().getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 30) tipoFinal = "Backorder";
+    }
+
     return {
       ...r,
-      tipo: TIPO_CORRETIVA,
+      tipo: tipoFinal,
       equipe: equipeFinal,
     };
   });

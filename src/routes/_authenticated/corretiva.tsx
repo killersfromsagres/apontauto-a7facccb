@@ -249,8 +249,18 @@ function CorretivaPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
-      const prev = isPreventiva(o.tipo);
-      if (aba === "preventiva" ? !prev : prev) return false;
+      const isBackorder = o.tipo === "Backorder";
+      const isPreventivaAba = isPreventiva(o.tipo);
+      
+      // Ajuste de abas: 
+      // Se aba for 'preventiva', mostramos OS do tipo 'Backorder' ou 'Preventiva'
+      // Se aba for 'corretiva', mostramos OS do tipo 'Corretiva'
+      if (aba === "preventiva") {
+        if (!isBackorder && !isPreventivaAba) return false;
+      } else {
+        if (isBackorder || isPreventivaAba) return false;
+      }
+
       if (!matchEquipe(o.equipe, equipe)) return false;
 
       const s = semanaDaOs(o as any);
@@ -277,7 +287,12 @@ function CorretivaPage() {
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
       );
-    }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
+    }).sort((a, b) => {
+      // Ordenação: priorizar data de criação para identificar atrasos
+      const da = a.data_criacao ? new Date(a.data_criacao).getTime() : 0;
+      const db = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
+      return da - db || a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
+    });
   }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
 
   const toggleSemana = async (ano: number, semana: number, valor: boolean) => {
@@ -606,7 +621,21 @@ function CorretivaPage() {
                     <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
+                          {(() => {
+                            if (!o.data_criacao) return null;
+                            const diff = (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24);
+                            if (diff >= 30) {
+                              return (
+                                <Badge variant="destructive" className="animate-pulse bg-red-600 hover:bg-red-700 text-[10px] h-4 px-1.5 py-0 border-none">
+                                  {Math.floor(diff)}d atraso
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
                         {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">CONCLUÍDA</Badge>}
                       </div>
                       <h3 className="text-sm font-medium text-white/80 line-clamp-1">{o.nome_os}</h3>

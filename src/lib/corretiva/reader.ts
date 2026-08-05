@@ -30,7 +30,7 @@ const norm = (s: unknown) =>
     .replace(/[^a-z0-9]+/g, "");
 
 const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
-  numero_os: ["ordemdeservico", "os", "numeroos", "nos", "ordemservico"],
+  numero_os: ["ordemdeservico", "os", "numeroos", "nos", "ordemservico", "chamado"],
   nome_os: [
     "nomeos",
     "nome",
@@ -39,17 +39,19 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
     "descricaodaatividade",
     "descricaoatividade",
     "atividade",
+    "descricaodaos",
+    "descricaodoatendimento",
   ],
-  predio: ["predio", "edificio"],
+  predio: ["predio", "edificio", "area", "predioarea"],
   andar: ["andar", "pavimento"],
-  local: ["local", "localizacao", "sala", "ambiente"],
+  local: ["local", "localizacao", "sala", "ambiente", "espaco"],
   tipo: ["tipo", "tipoos", "tipomanutencao"],
   equipe: ["equipe", "time", "responsavel"],
-  data_sla: ["datasla", "sla", "prazosla"],
+  data_sla: ["datasla", "sla", "prazosla", "terminosla", "datalimite"],
   data_programada: ["dataprogramada", "programada", "dataprevista"],
   inicio: ["inicio", "datainicio", "dtinicio"],
-  fim: ["fim", "datafim", "dtfim", "termino", "conclusao"],
-  ativo: ["ativo", "tag", "codigoativo"],
+  fim: ["fim", "datafim", "dtfim", "termino", "conclusao", "dataencerramento", "datafechamento"],
+  ativo: ["ativo", "tag", "codigoativo", "codigodoativo"],
   equipamento: ["equipamento", "descricaoequip", "descequipamento"],
   solicitante: [
     "solicitante",
@@ -59,7 +61,16 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
     "denominacaodosolicitante",
     "denominacaosolicitante",
   ],
-  data_criacao: ["datadacriacao", "datacriacao", "criadaem", "dataabertura", "dataabertaem"],
+  data_criacao: [
+    "datadacriacao",
+    "datacriacao",
+    "criadaem",
+    "dataabertura",
+    "dataabertaem",
+    "datasolicitacao",
+    "datahorasolicitacao",
+    "abertura",
+  ],
 };
 
 function excelSerialToDate(n: number): Date | null {
