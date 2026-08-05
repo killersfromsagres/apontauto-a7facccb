@@ -29,8 +29,15 @@ export function PageShell({
     }
   };
 
+  const online = typeof navigator !== "undefined" ? navigator.onLine : true;
+
   return (
     <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8">
+      {!online && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive px-4 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-destructive-foreground animate-in slide-in-from-top duration-300">
+          Modo Offline Ativo — Sincronização em pausa
+        </div>
+      )}
       {/* Cabeçalho Compacto Mobile */}
       <div className="relative flex min-w-0 flex-col gap-2 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-6">
         <div className="flex min-w-0 flex-1 items-start gap-3">
