@@ -806,7 +806,7 @@ function OsDetail({
       draftPut(draft)
         .then(() => setDraftSavedAt(draft.updatedAt))
         .catch(() => {});
-    }, 400);
+    }, 1000); // Rascunho salvo a cada 1s se houver alterações
     return () => clearTimeout(t);
   }, [previews, pecas, problemas, draftLoaded, os.id]);
 
