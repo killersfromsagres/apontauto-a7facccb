@@ -322,14 +322,14 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALACAO",
     );
     // COLUNA D/E — solicitante e centro de custo
-    const solicitanteVal = pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE") || colAt(r, 3);
-    const centroCusto = pick(r, "CENTRO DE CUSTO", "CC") || colAt(r, 4);
+    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE");
+    const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC");
     
-    // COLUNA F — data de abertura (heurística inteligente via pick e fallback posicional)
-    const aberturaVal = pick(r, "DATA ABERTURA", "DATA HORA SOLICITACAO", "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "ABERTURA", "DATA SOLICITACAO") || colAt(r, 5);
+    // COLUNA F — data de abertura
+    const aberturaVal = colAt(r, 5) || pick(r, "DATA ABERTURA", "DATA HORA SOLICITACAO", "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "ABERTURA", "DATA SOLICITACAO");
     
     // COLUNA G — status
-    const statusVal = pick(r, "STATUS", "SITUACAO") || colAt(r, 6);
+    const statusVal = colAt(r, 6) || pick(r, "STATUS", "SITUACAO");
 
     const conclusao = pick(
       r,

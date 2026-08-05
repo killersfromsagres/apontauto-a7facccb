@@ -1519,7 +1519,7 @@ function BackorderPage() {
   return (
     <PageShell
       title="Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)"
-      description="O objetivo deste projeto é criar um sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente."
+      description="Gerenciamento robusto de OS com classificação inteligente por equipe e fluxo automatizado de avaliação para clientes."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
