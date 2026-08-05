@@ -39,6 +39,10 @@ import {
   ChevronDown,
   Calendar,
   Filter,
+  Mail,
+  Copy,
+  Check,
+} from "lucide-react";
 } from "lucide-react";
 import {
   AlertDialog,
