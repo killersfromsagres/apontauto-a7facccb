@@ -200,17 +200,17 @@ interface BOSRow {
   predio: string;
   andar: string;
   espaco: string;
-  centro_custo?: string;
+  centro_custo: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
   termino_sla: string | null;
   data_solicitacao: string;
   outros: string;
-  criticidade?: string;
+  criticidade: string;
   finalizado: boolean;
-  cancelado?: boolean;
-  status_origem?: string;
+  cancelado: boolean;
+  status_origem: string;
   status_cat?: StatusCat;
   data_conclusao?: string | null;
   data_finalizacao: string | null;
@@ -1292,7 +1292,7 @@ function BackorderPage() {
       predio: r.predio,
       andar: r.andar,
       espaco: r.espaco,
-      centro_custo: r.centro_custo,
+      centro_custo: r.centro_custo || "",
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
@@ -3645,8 +3645,11 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-1 line-clamp-2 text-sm font-medium" title={r.nome}>
                         {r.nome || "—"}
                       </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
+                      <div className="mt-0.5 text-xs text-muted-foreground flex flex-wrap gap-x-2">
+                        <span>{r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}</span>
+                        {r.centro_custo && (
+                          <span className="text-primary/70 font-medium">CC: {r.centro_custo}</span>
+                        )}
                       </div>
                       <div className="mt-1 flex flex-col gap-1.5">
                         {r.outros && (
