@@ -84,6 +84,7 @@ export function MenuInicialView() {
             trend="+7.36%"
             icon={<Zap className="h-5 w-5 text-primary-glow" />}
             chartColor="#4F8CFF"
+            className="glass-block"
           />
           <KpiMonitorCard
             title="CHAMADOS ABERTOS"
@@ -91,6 +92,7 @@ export function MenuInicialView() {
             trend="-12%"
             icon={<Activity className="h-5 w-5 text-[#52E5FF]" />}
             chartColor="#52E5FF"
+            className="glass-block"
           />
           <KpiMonitorCard
             title="TOTAL CONCLUÍDOS"
@@ -98,6 +100,7 @@ export function MenuInicialView() {
             trend="+15%"
             icon={<TrendingUp className="h-5 w-5 text-[#34d399]" />}
             chartColor="#34d399"
+            className="glass-block"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
@@ -105,12 +108,13 @@ export function MenuInicialView() {
             trend="-5.4%"
             icon={<BarChart3 className="h-5 w-5 text-[#8B5CF6]" />}
             chartColor="#8B5CF6"
+            className="glass-block"
           />
         </div>
 
         {/* MONITORAMENTO PRINCIPAL */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px]">
+          <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px] glass-surface card-sheen">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-sm font-semibold tracking-wider text-muted-foreground">VOLUME DE CHAMADOS (MENSAL)</h3>
@@ -154,7 +158,7 @@ export function MenuInicialView() {
             </div>
           </GlassCard>
 
-          <GlassCard className="flex flex-col">
+          <GlassCard className="flex flex-col glass-surface card-sheen">
             <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">DISTRIBUIÇÃO POR STATUS</h3>
             <div className="flex-1 flex items-center justify-center">
               <ResponsiveContainer width="100%" height={250}>
@@ -191,7 +195,7 @@ export function MenuInicialView() {
         </div>
 
         {/* ÚLTIMOS EVENTOS / LOGS */}
-        <GlassCard>
+        <GlassCard className="glass-surface">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold tracking-wider text-muted-foreground">ATIVIDADE DO SISTEMA</h3>
             <Clock className="h-4 w-4 text-muted-foreground" />
