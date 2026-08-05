@@ -3752,6 +3752,13 @@ function BackorderDetailDialog({
                   onChange={(e) => patch("espaco", e.target.value)}
                 />
               </FieldBlock>
+              <FieldBlock label="Data de Abertura" className="sm:col-span-2">
+                <Input
+                  type="date"
+                  value={merged.data_solicitacao ? new Date(merged.data_solicitacao).toISOString().split('T')[0] : ""}
+                  onChange={(e) => patch("data_solicitacao", new Date(e.target.value).toISOString())}
+                />
+              </FieldBlock>
               <FieldBlock label="Nome do Solicitante" className="sm:col-span-1">
                 <Input
                   value={merged.outros ?? ""}
