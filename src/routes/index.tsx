@@ -13,7 +13,7 @@ export const Route = createFileRoute("/")({
     } = await supabase.auth.getSession();
 
     if (!session) {
-      throw redirect({ to: "/auth", replace: true });
+      return redirect({ to: "/auth", replace: true });
     }
   },
   component: RedirectToHome,
@@ -23,7 +23,7 @@ function RedirectToHome() {
   const navigate = useNavigate();
   
   useLayoutEffect(() => {
-    navigate({ to: "/_authenticated/dashboard", replace: true });
+    void navigate({ to: "/_authenticated/dashboard", replace: true });
   }, [navigate]);
 
   return null;
