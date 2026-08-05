@@ -116,6 +116,21 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "institucional-grp",
+    title: "Institucional",
+    icon: Users,
+    items: [
+      {
+        key: "organograma",
+        title: "Organograma",
+        short: "Time",
+        url: "/organograma",
+        icon: Users,
+        keywords: ["equipe", "colaboradores", "hierarquia", "contato", "time"],
+      },
+    ],
+  },
+    kind: "group",
     key: "backorder-v2-grp",
     title: "Gestão de Backorders e OS",
     icon: ListChecks,
