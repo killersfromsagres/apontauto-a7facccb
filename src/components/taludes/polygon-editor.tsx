@@ -773,8 +773,8 @@ export function PolygonEditor({
                       x2={b.x}
                       y2={b.y}
                       stroke="#f59e0b"
-                      strokeWidth={0.4 / zoom}
-                      strokeDasharray={`${1.2 / zoom} ${0.8 / zoom}`}
+                      strokeWidth={1.2 / zoom}
+                      strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
                     />
                   );
                 })()}
