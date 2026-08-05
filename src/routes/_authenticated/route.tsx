@@ -64,7 +64,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/${fallback}`;
+      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/_authenticated/dashboard" : `/_authenticated/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
