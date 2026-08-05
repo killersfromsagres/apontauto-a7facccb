@@ -514,9 +514,12 @@ function CorretivaPage() {
               <button
                 key={t.k}
                 type="button"
-                onClick={() => setAba(t.k)}
+                onClick={() => {
+                  if (aba === t.k) return;
+                  setAba(t.k);
+                }}
                 className={cn(
-                  "flex-1 min-h-11 rounded-lg px-4 text-sm font-medium transition-all sm:flex-none",
+                  "flex-1 min-h-11 rounded-lg px-4 text-sm font-medium transition-colors sm:flex-none",
                   aba === t.k
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
