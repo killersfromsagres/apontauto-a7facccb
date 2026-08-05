@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
 // Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
 // com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
 function pathKeys(pathname: string): string[] | null {
-  if (pathname === "/" || pathname === "") return ["menu-inicial", "dashboard"];
+  if (pathname === "/" || pathname === "" || pathname === "/_authenticated/dashboard") return ["menu-inicial", "dashboard"];
   return menuKeysForPath(pathname);
 }
 
