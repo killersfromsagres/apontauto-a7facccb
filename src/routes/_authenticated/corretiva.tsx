@@ -306,6 +306,8 @@ function CorretivaPage() {
       title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
       description={aba === "preventiva" ? "Controle de preventivas agendadas por semana." : "Gestão de corretivas e backorder."}
       backButton
+      backUrl="/"
+
 
 
       actions={
