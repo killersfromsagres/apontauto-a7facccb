@@ -85,21 +85,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "format-detection", content: "telephone=no" },
-      { title: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { title: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
       {
         name: "description",
-        content: "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual).",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
+      { property: "og:title", content: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
       {
         property: "og:description",
-        content: "Sistema de Apontamento by: Gabriel Vitor",
+        content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual).",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "PCM · Planejador de Manutenção — Dev Gabriel Vitor" },
-      { name: "twitter:description", content: "Sistema de Apontamento by: Gabriel Vitor" },
+      { name: "twitter:title", content: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
+      { name: "twitter:description", content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual)." },
       {
         property: "og:image",
         content:
