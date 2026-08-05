@@ -21,6 +21,7 @@ import {
   FileSpreadsheet,
   Settings2,
   Zap,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
@@ -434,6 +435,15 @@ function CorretivaPage() {
           )}
 
           <div className="flex flex-1 items-center gap-2 sm:flex-none">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 flex-1 gap-2 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 sm:h-9 sm:flex-none"
+              onClick={() => window.location.href = '/corretiva-historico'}
+            >
+              <ScrollText className="h-4 w-4" />
+              <span>Histórico</span>
+            </Button>
             <Badge variant={online ? "outline" : "destructive"} className="h-11 px-2.5 sm:h-9">
               {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
             </Badge>
@@ -787,7 +797,18 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
-        <OsPhotosButton osId={os.id} modulo="corretiva" variant="outline" size="sm" />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 h-9 border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+            onClick={() => window.location.href = '/corretiva-historico'}
+          >
+            <ScrollText className="h-4 w-4" />
+            <span className="hidden sm:inline">Histórico</span>
+          </Button>
+          <OsPhotosButton osId={os.id} modulo="corretiva" variant="outline" size="sm" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
