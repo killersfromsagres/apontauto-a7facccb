@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
 import {
@@ -148,17 +150,18 @@ function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
 }
 
 function ProgramacaoPage() {
+  const { isAdmin } = useIsAdmin();
   const { confirmar, dialogo } = useConfirm();
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
     REFRIG: null,
     ELETRICA: null,
   });
+  const [osInputFile, setOsInputFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
-  // Tempo por OS (minutos). Intervalo permitido: 30 (00:30) ou 60 (01:00).
   const [tempoPorOS, setTempoPorOS] = useState<Record<SlotId, 30 | 60>>({
     CCH: 60,
     REFRIG: 60,
@@ -356,14 +359,20 @@ function ProgramacaoPage() {
 
   return (
     <PageShell
-      title="Programação Semanal"
-      description="Anexe um arquivo por equipe (Civil/Chaveiro/Hidráulica é unificado) e gere as programações semanais até o fim do mês."
+      title="Programação"
+      description="Gestão de programações semanais e manutenção preventiva."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")}>
+          {isAdmin && (
+            <>
+              <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
+              <PreventivaImportDialog mode="preventiva" onDone={() => {}} />
+            </>
+          )}
+          <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")} className="h-11 sm:h-9">
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Template GPS
           </Button>
-          <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)}>
+          <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)} className="h-11 sm:h-9">
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Template Sherwin
           </Button>
         </div>
