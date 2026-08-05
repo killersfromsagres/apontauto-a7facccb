@@ -2239,6 +2239,7 @@ export type Database = {
           centro_custo: string | null
           criado_em: string
           criticidade: string
+          data_abertura: string | null
           data_conclusao: string | null
           data_finalizacao: string | null
           data_solicitacao: string
@@ -2270,6 +2271,7 @@ export type Database = {
           centro_custo?: string | null
           criado_em?: string
           criticidade?: string
+          data_abertura?: string | null
           data_conclusao?: string | null
           data_finalizacao?: string | null
           data_solicitacao: string
@@ -2301,6 +2303,7 @@ export type Database = {
           centro_custo?: string | null
           criado_em?: string
           criticidade?: string
+          data_abertura?: string | null
           data_conclusao?: string | null
           data_finalizacao?: string | null
           data_solicitacao?: string

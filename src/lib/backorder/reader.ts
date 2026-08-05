@@ -16,7 +16,9 @@ export interface BackorderRow {
   /** Texto da COLUNA C — sugestão de equipe vinda da planilha (nem sempre correta). */
   equipe_hint: string;
   termino_sla: string | null;
-  data_solicitacao: string; // ISO
+  data_abertura: string | null; // ISO - Data real da planilha
+  data_solicitacao: string; // ISO - Data usada para lógica interna (SLA)
+
   outros: string; // Solicitante (COLUNA E)
   centro_custo: string;
   criticidade: string; // Criticidade original da OS
@@ -322,14 +324,27 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALACAO",
     );
     // COLUNA D/E — solicitante e centro de custo
-    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE");
+    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE", "NOME DO SOLICITANTE");
     const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC") || "";
     
-    // COLUNA F — data de abertura
-    const aberturaVal = colAt(r, 5) || pick(r, "DATA ABERTURA", "DATA HORA SOLICITACAO", "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "ABERTURA", "DATA SOLICITACAO");
+    // COLUNA F — data de abertura (Pode estar em F ou em colunas com nomes específicos)
+    const aberturaHeuristica = pick(
+      r,
+      "DATA ABERTURA",
+      "DATA HORA SOLICITACAO",
+      "DATA/HORA ABERTURA",
+      "DATA HORA ABERTURA",
+      "ABERTURA",
+      "DATA SOLICITACAO",
+      "DATA/HORA SOLICITAÇÃO",
+      "DATA DA SOLICITACAO",
+      "DATA DA SOLICITAÇÃO"
+    );
+    const aberturaVal = colAt(r, 5) || aberturaHeuristica;
     
     // COLUNA G — status
-    const statusVal = colAt(r, 6) || pick(r, "STATUS", "SITUACAO");
+    const statusVal = colAt(r, 6) || pick(r, "STATUS", "SITUACAO", "STATUS DA OS");
+
 
     const conclusao = pick(
       r,
@@ -404,6 +419,7 @@ export async function readBackorderWorkbook(
     const espaco = tree.espaco || sheetEspaco;
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
 
+    const dataAberturaISO = parseDateISO(aberturaVal);
     const dataConclusao = parseDateISO(conclusao);
     const statusCat = toStatusCat(statusVal);
     const cancelado = isCancelado(statusCat);
@@ -422,7 +438,8 @@ export async function readBackorderWorkbook(
       equipe: CATEGORIA_TO_EQUIPE[atividade],
       equipe_hint: equipeHint,
       termino_sla: parseDateISO(sla),
-      data_solicitacao: parseDateISO(aberturaVal) ?? new Date().toISOString(),
+      data_abertura: dataAberturaISO,
+      data_solicitacao: dataAberturaISO ?? new Date().toISOString(),
       outros: solicitanteVal,
       criticidade,
       finalizado,
@@ -432,6 +449,7 @@ export async function readBackorderWorkbook(
       status_cat: statusCat,
       revisao_manual,
     });
+
   }
 
   return { rows: out, embeddedAssets, sheetName };

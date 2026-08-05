@@ -206,7 +206,8 @@ interface BOSRow {
   atividade_manual: boolean;
   equipe: string;
   termino_sla: string | null;
-  data_solicitacao: string;
+  data_abertura: string | null; // Data original da planilha
+  data_solicitacao: string; // Data para cálculo de SLA
   outros: string;
   criticidade: string;
   finalizado: boolean;
@@ -221,6 +222,7 @@ interface BOSRow {
   prioridade_nivel?: number;
   revisao_manual?: boolean;
 }
+
 
 const TARGET_PCT_DEFAULT = 5;
 
@@ -300,8 +302,9 @@ function BackorderPage() {
     // Colunas explícitas: reduz o payload de rede (~20% menor que `select *`).
     const COLS =
       "os,nome,ativo,predio,andar,espaco,atividade,atividade_manual,equipe,termino_sla," +
-      "data_solicitacao,outros,centro_custo,criticidade,finalizado,cancelado,status_origem,status_cat," +
+      "data_abertura,data_solicitacao,outros,centro_custo,criticidade,finalizado,cancelado,status_origem,status_cat," +
       "data_conclusao,data_finalizacao,is_prioridade,motivo_prioridade,prioridade_nivel,revisao_manual";
+
 
     const fetchAfter = async (cursor: string | null) => {
       let q = supabase.from("backorder_os").select(COLS).order("os", { ascending: true }).limit(PAGE);
@@ -1314,7 +1317,9 @@ function BackorderPage() {
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
+      data_abertura: r.data_abertura,
       data_solicitacao: r.data_solicitacao,
+
       outros: r.outros,
       criticidade: r.criticidade ?? "",
       finalizado: false,
@@ -2190,6 +2195,7 @@ function TableView({
               <TableHead className="min-w-[180px] whitespace-nowrap">Espaço</TableHead>
               <TableHead className="w-[230px] whitespace-nowrap">Atividade</TableHead>
               <TableHead className="w-[110px] whitespace-nowrap">Data Abertura</TableHead>
+
               <TableHead className="w-[150px] whitespace-nowrap">Equipe</TableHead>
               <TableHead className="min-w-[190px] whitespace-nowrap">Solicitante</TableHead>
               <TableHead className="w-[150px] whitespace-nowrap">Centro Custo</TableHead>
@@ -2317,8 +2323,9 @@ function TableView({
                       </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-xs">
-                      {r.termino_sla ? new Date(r.termino_sla).toLocaleDateString("pt-BR") : "—"}
+                      {r.data_abertura ? new Date(r.data_abertura).toLocaleDateString("pt-BR") : "—"}
                     </TableCell>
+
                     <TableCell className="whitespace-nowrap text-xs">
                       <span
                         className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium"
@@ -3824,10 +3831,11 @@ function BackorderDetailDialog({
               <FieldBlock label="Data de Abertura" className="sm:col-span-2">
                 <Input
                   type="date"
-                  value={merged.data_solicitacao ? new Date(merged.data_solicitacao).toISOString().split('T')[0] : ""}
-                  onChange={(e) => patch("data_solicitacao", new Date(e.target.value).toISOString())}
+                  value={merged.data_abertura ? new Date(merged.data_abertura).toISOString().split('T')[0] : ""}
+                  onChange={(e) => patch("data_abertura", new Date(e.target.value).toISOString())}
                 />
               </FieldBlock>
+
               <FieldBlock label="Nome do Solicitante" className="sm:col-span-1">
                 <Input
                   value={merged.outros ?? ""}
