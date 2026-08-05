@@ -926,7 +926,9 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                     try {
                       const { error } = await supabase
                         .from("corretiva_os")
-                        .update({ material_status: novoStatus })
+                        .update({ 
+                          material_status: novoStatus 
+                        } as any)
                         .eq("id", os.id);
                       if (error) throw error;
                       onUpdate({ material_status: novoStatus });
