@@ -673,6 +673,15 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
     draftGet(os.id).then((d) => setDraft(d || { osId: os.id, fotos: [], pecas: [], problemas: [], updatedAt: Date.now() }));
   }, [os.id]);
 
+  useEffect(() => {
+    if (draft && !isDone) {
+      const iv = setInterval(() => {
+        draftPut({ ...draft, updatedAt: Date.now() });
+      }, 5000); // Autosave every 5s if modified
+      return () => clearInterval(iv);
+    }
+  }, [draft, isDone]);
+
   const saveDraft = async (newDraft: any) => {
     const d = { ...newDraft, updatedAt: Date.now() };
     setDraft(d);
