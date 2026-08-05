@@ -63,8 +63,13 @@ export interface PolygonEditorProps {
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 20;
-const CLOSE_SNAP_PX = 20;
-const VERTEX_RADIUS_PX = 0.5;
+/** Tolerância (px de tela) para fechar o polígono clicando no primeiro ponto. */
+const CLOSE_SNAP_PX = 18;
+/** Tolerância (px de tela) do ímã em vértices vizinhos. */
+const SNAP_SCREEN_PX = 10;
+/** Tamanho fixo (px de tela) das alças de vértice. */
+const HANDLE_PX = 13;
+
 
 interface HistoryEntry {
   id: string;
@@ -96,6 +101,27 @@ export function PolygonEditor({
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [calDraft, setCalDraft] = useState<Point[]>([]);
+  const [vpSize, setVpSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const measure = () => setVpSize({ w: vp.clientWidth, h: vp.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(vp);
+    return () => ro.disconnect();
+  }, []);
+
+  /** Converte um ponto (%) para coordenada em px dentro do viewport. */
+  const screenOf = useCallback(
+    (p: Point) => ({
+      left: offset.x + (p.x / 100) * vpSize.w * zoom,
+      top: offset.y + (p.y / 100) * vpSize.h * zoom,
+    }),
+    [offset.x, offset.y, vpSize.w, vpSize.h, zoom],
+  );
+
 
   // working geometry (permite edição fluida antes do commit)
   const [working, setWorking] = useState<Record<string, Point[]>>({});
@@ -166,37 +192,38 @@ export function PolygonEditor({
     return { x: rect.width / 100, y: rect.height / 100 };
   }, []);
 
+  /** Distância entre dois pontos (%) medida em pixels reais de tela. */
+  const screenDistance = useCallback(
+    (a: Point, b: Point) => {
+      const per = pxPerPercent();
+      return Math.hypot((a.x - b.x) * per.x, (a.y - b.y) * per.y);
+    },
+    [pxPerPercent],
+  );
+
   /**
    * Aproximação assistida. Nunca aproxima de vértices do próprio polígono
-   * em edição (isso fazia o ponto "saltar" para o vizinho).
+   * em edição (isso fazia o ponto "saltar" para o vizinho). A tolerância é
+   * medida em pixels reais de tela, então não muda com o zoom.
    */
   const applySnap = useCallback(
     (p: Point, excludeId?: string): Point => {
-      let out = grid ? snapToGrid(p, 1) : p;
+      const out = grid ? snapToGrid(p, 1) : p;
       if (!snap) return clampPoint(out);
-      const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
-      // Precisamos considerar o zoom para que a distância de "grude" seja consistente em pixels de tela
-      const snapThreshold = (CLOSE_SNAP_PX * 0.4) / zoom; 
-      
       for (const poly of polygons) {
         if (!poly.visible) continue;
         if (poly.id === excludeId) continue;
-        const pts = geometryOf(poly);
-        pts.forEach((v) => {
-          // Distância em porcentagem convertida para pixels de viewport (considerando zoom)
-          const dx = (v.x - p.x) * per.x * zoom;
-          const dy = (v.y - p.y) * per.y * zoom;
-          const d = Math.hypot(dx, dy);
-          // Usamos CLOSE_SNAP_PX diretamente para comparação em pixels de tela
-          if (d < (CLOSE_SNAP_PX * 0.5) && (!best || d < best.d)) best = { d, pt: v };
-        });
+        for (const v of geometryOf(poly)) {
+          const d = screenDistance(v, p);
+          if (d <= SNAP_SCREEN_PX && (!best || d < best.d)) best = { d, pt: v };
+        }
       }
-      if (best) out = { ...(best as { pt: Point }).pt };
-      return clampPoint(out);
+      return clampPoint(best ? { ...best.pt } : out);
     },
-    [grid, snap, polygons, geometryOf, pxPerPercent, zoom],
+    [grid, snap, polygons, geometryOf, screenDistance],
   );
+
 
   /* -------------------------------- histórico ------------------------------- */
 
@@ -411,18 +438,14 @@ export function PolygonEditor({
     // clique simples no palco
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
-      const per = pxPerPercent();
-      if (draft.length >= 3) {
-        const first = draft[0];
-        const d = Math.hypot((first.x - p.x) * per.x, (first.y - p.y) * per.y);
-        if (d <= (CLOSE_SNAP_PX * 0.4)) {
-          commitDraft(draft);
-          return;
-        }
+      if (draft.length >= 3 && screenDistance(draft[0], p) <= CLOSE_SNAP_PX) {
+        commitDraft(draft);
+        return;
       }
       setDraft((d) => [...d, applySnap(p)]);
       return;
     }
+
     if (tool === "calibrate") {
       const next = [...calDraft, p];
       if (next.length === 2) {
@@ -513,6 +536,11 @@ export function PolygonEditor({
   /* --------------------------------- render --------------------------------- */
 
   const selected = polygons.find((p) => p.id === selectedId) ?? null;
+  const selectedPolyForHandles: { poly: EditorPolygon; pts: Point[] }[] =
+    selected && selected.visible && !selected.locked && tool === "edit"
+      ? [{ poly: selected, pts: geometryOf(selected) }]
+      : [];
+
   const draftInvalid = useMemo(() => draft.length >= 3 && !validatePolygon(draft).ok, [draft]);
 
   const cursor = isPanning()
@@ -665,8 +693,24 @@ export function PolygonEditor({
               <g opacity={0.25}>
                 {Array.from({ length: 19 }, (_, i) => (i + 1) * 5).map((v) => (
                   <g key={v}>
-                    <line x1={v} y1={0} x2={v} y2={100} stroke="#7dd3fc" strokeWidth={0.08} />
-                    <line x1={0} y1={v} x2={100} y2={v} stroke="#7dd3fc" strokeWidth={0.08} />
+                    <line
+                      x1={v}
+                      y1={0}
+                      x2={v}
+                      y2={100}
+                      stroke="#7dd3fc"
+                      strokeWidth={1}
+                      vectorEffect="non-scaling-stroke"
+                    />
+                    <line
+                      x1={0}
+                      y1={v}
+                      x2={100}
+                      y2={v}
+                      stroke="#7dd3fc"
+                      strokeWidth={1}
+                      vectorEffect="non-scaling-stroke"
+                    />
                   </g>
                 ))}
               </g>
@@ -678,116 +722,144 @@ export function PolygonEditor({
                 const pts = geometryOf(poly);
                 if (pts.length < 2) return null;
                 const isSel = poly.id === selectedId;
-                const c = centroid(pts);
                 return (
-                  <g key={poly.id}>
-                    <polygon
-                      points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
-                      fill={poly.color}
-                      fillOpacity={isSel ? Math.min(0.65, poly.opacity + 0.15) : poly.opacity}
-                      stroke={poly.color}
-                      strokeWidth={(isSel ? 1.5 : 1) / zoom}
-                      strokeLinejoin="round"
-                      style={{
-                        cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
-                      }}
-                      onPointerDown={(e) => startPolyDrag(e, poly)}
-                      onDoubleClick={(e) => {
-                        if (tool !== "edit" || poly.locked) return;
-                        addVertexOnEdge(poly, toPercent(e.clientX, e.clientY));
-                      }}
-                    />
-                    <text
-                      x={c.x}
-                      y={c.y}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={Math.max(1.4, 2.6 / zoom)}
-                      fontWeight={800}
-                      fill="#fde047"
-                      stroke="#0f172a"
-                      strokeWidth={0.5 / zoom}
-                      paintOrder="stroke"
-                      className="pointer-events-none"
-                    >
-                      {poly.label}
-                    </text>
-                    {isSel &&
-                      tool === "edit" &&
-                      !poly.locked &&
-                      pts.map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={p.x}
-                          cy={p.y}
-                          r={VERTEX_RADIUS_PX / zoom}
-                          fill="#ffffff"
-                          stroke={poly.color}
-                          strokeWidth={0.4 / zoom}
-
-                          style={{ cursor: "grab" }}
-                          onPointerDown={(e) => startVertexDrag(e, poly, i)}
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            removeVertex(poly, i);
-                          }}
-                        />
-                      ))}
-                  </g>
+                  <polygon
+                    key={poly.id}
+                    points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
+                    fill={poly.color}
+                    fillOpacity={isSel ? Math.min(0.65, poly.opacity + 0.15) : poly.opacity}
+                    stroke={poly.color}
+                    strokeWidth={isSel ? 3 : 2}
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                    style={{
+                      cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
+                    }}
+                    onPointerDown={(e) => startPolyDrag(e, poly)}
+                    onDoubleClick={(e) => {
+                      if (tool !== "edit" || poly.locked) return;
+                      addVertexOnEdge(poly, toPercent(e.clientX, e.clientY));
+                    }}
+                  />
                 );
               })}
 
             {/* rascunho de desenho */}
             {draft.length > 0 && (
-              <g>
-                <polyline
-                  points={[...draft, ...(hoverPoint ? [hoverPoint] : [])]
-                    .map((p) => `${p.x},${p.y}`)
-                    .join(" ")}
-                  fill={draft.length > 2 ? "#0ea5e9" : "none"}
-                  fillOpacity={0.2}
-                  stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}
-                  strokeWidth={1.5 / zoom}
-                  strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
-                />
-                {draft.map((p, i) => (
-                  <circle
-                    key={i}
-                    cx={p.x}
-                    cy={p.y}
-                    r={(i === 0 ? VERTEX_RADIUS_PX * 2.5 : VERTEX_RADIUS_PX) / zoom}
-                    fill={i === 0 ? "#22c55e" : "#ffffff"}
-                    stroke="#0ea5e9"
-                    strokeWidth={0.4 / zoom}
-
-                  />
-                ))}
-              </g>
+              <polyline
+                points={[...draft, ...(hoverPoint ? [hoverPoint] : [])]
+                  .map((p) => `${p.x},${p.y}`)
+                  .join(" ")}
+                fill={draft.length > 2 ? "#0ea5e9" : "none"}
+                fillOpacity={0.2}
+                stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+                className="pointer-events-none"
+              />
             )}
 
             {/* calibração */}
-            {(calDraft.length > 0 || calibration) && (
-              <g>
-                {(() => {
-                  const a = calDraft[0] ?? calibration?.a;
-                  const b = calDraft[1] ?? (calDraft.length === 1 ? hoverPoint : calibration?.b);
-                  if (!a || !b) return null;
-                  return (
-                    <line
-                      x1={a.x}
-                      y1={a.y}
-                      x2={b.x}
-                      y2={b.y}
-                      stroke="#f59e0b"
-                      strokeWidth={1.2 / zoom}
-                      strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
-                    />
-                  );
-                })()}
-              </g>
-            )}
+            {(() => {
+              const a = calDraft[0] ?? calibration?.a;
+              const b = calDraft[1] ?? (calDraft.length === 1 ? hoverPoint : calibration?.b);
+              if (!a || !b) return null;
+              return (
+                <line
+                  x1={a.x}
+                  y1={a.y}
+                  x2={b.x}
+                  y2={b.y}
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="6 4"
+                  vectorEffect="non-scaling-stroke"
+                  className="pointer-events-none"
+                />
+              );
+            })()}
           </svg>
         </div>
+
+        {/* Camada de alças e rótulos — fora do stage escalado: tamanho fixo em px de tela */}
+        <div className="pointer-events-none absolute inset-0">
+          {polygons
+            .filter((p) => p.visible && p.points.length >= 3)
+            .map((poly) => {
+              const c = centroid(geometryOf(poly));
+              const s = screenOf(c);
+              return (
+                <span
+                  key={`lbl-${poly.id}`}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[13px] font-extrabold text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                  style={{ left: s.left, top: s.top }}
+                >
+                  {poly.label}
+                </span>
+              );
+            })}
+
+          {selectedPolyForHandles?.map(({ poly, pts }) =>
+            pts.map((p, i) => {
+              const s = screenOf(p);
+              const dragging =
+                dragRef.current?.kind === "vertex" &&
+                dragRef.current.id === poly.id &&
+                dragRef.current.index === i;
+              return (
+                <button
+                  type="button"
+                  key={`${poly.id}-${i}`}
+                  aria-label={`Vértice ${i + 1}`}
+                  className={cn(
+                    "pointer-events-auto absolute rounded-full border-2 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform",
+                    dragging ? "scale-125" : "hover:scale-110",
+                  )}
+                  style={{
+                    left: s.left,
+                    top: s.top,
+                    width: HANDLE_PX,
+                    height: HANDLE_PX,
+                    marginLeft: -HANDLE_PX / 2,
+                    marginTop: -HANDLE_PX / 2,
+                    borderColor: poly.color,
+                    cursor: "grab",
+                    touchAction: "none",
+                  }}
+                  onPointerDown={(e) => startVertexDrag(e, poly, i)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    removeVertex(poly, i);
+                  }}
+                />
+              );
+            }),
+          )}
+
+          {draft.map((p, i) => {
+            const s = screenOf(p);
+            const size = i === 0 ? HANDLE_PX + 6 : HANDLE_PX - 2;
+            return (
+              <span
+                key={`draft-${i}`}
+                className="absolute rounded-full border-2 shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+                style={{
+                  left: s.left,
+                  top: s.top,
+                  width: size,
+                  height: size,
+                  marginLeft: -size / 2,
+                  marginTop: -size / 2,
+                  background: i === 0 ? "#22c55e" : "#ffffff",
+                  borderColor: "#0ea5e9",
+                }}
+              />
+            );
+          })}
+        </div>
+
 
         {/* indicador de zoom / minimapa */}
         {zoom > 1.05 && (
