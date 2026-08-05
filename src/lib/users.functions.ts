@@ -442,6 +442,8 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
     const login = "encarregados";
     const password = "20252026";
     const email = loginToEmail(login);
+    // Log for debugging (will be visible in server logs if monitored)
+    console.log(`[Provision] Provisioning user: ${login} (${email})`);
     const fullName = "Encarregados";
     const metadata = { login, full_name: fullName };
     const modules = [
@@ -487,6 +489,8 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
         ban_duration: "none",
         user_metadata: metadata,
       } as any);
+      // Force update of password even if metadata didn't change to ensure 20252026 is active
+      console.log(`[Provision] Updating password for existing user: ${user.id}`);
       if (error) throw new Error(error.message);
     }
 
