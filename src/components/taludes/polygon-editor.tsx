@@ -101,6 +101,27 @@ export function PolygonEditor({
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [calDraft, setCalDraft] = useState<Point[]>([]);
+  const [vpSize, setVpSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const measure = () => setVpSize({ w: vp.clientWidth, h: vp.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(vp);
+    return () => ro.disconnect();
+  }, []);
+
+  /** Converte um ponto (%) para coordenada em px dentro do viewport. */
+  const screenOf = useCallback(
+    (p: Point) => ({
+      left: offset.x + (p.x / 100) * vpSize.w * zoom,
+      top: offset.y + (p.y / 100) * vpSize.h * zoom,
+    }),
+    [offset.x, offset.y, vpSize.w, vpSize.h, zoom],
+  );
+
 
   // working geometry (permite edição fluida antes do commit)
   const [working, setWorking] = useState<Record<string, Point[]>>({});
