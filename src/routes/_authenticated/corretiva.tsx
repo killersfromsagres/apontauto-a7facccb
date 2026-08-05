@@ -914,15 +914,104 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Peças e Materiais</h2>
-            <p className="text-xs text-muted-foreground mb-4 italic">*Funcionalidade de rascunho em desenvolvimento para Corretiva</p>
-            {!isDone && (
-              <Button variant="outline" className="w-full border-dashed" disabled>Adicionar Item</Button>
-            )}
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <p className="text-xs text-muted-foreground">Adicione peças necessárias para o serviço.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newDraft = { ...draft, pecas: [...(draft.pecas || []), { id: uuid(), descricao: "", quantidade: "1", urgencia: "media", observacao: "" }] };
+                  saveDraft(newDraft);
+                }}
+                disabled={isDone}
+              >
+                <Package className="mr-2 h-4 w-4" /> Adicionar
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              {draft?.pecas?.map((p: any, idx: number) => (
+                <div key={p.id} className="rounded-md border border-white/10 bg-white/5 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Item #{idx + 1}</span>
+                    {!isDone && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          const newDraft = { ...draft, pecas: draft.pecas.filter((x: any) => x.id !== p.id) };
+                          saveDraft(newDraft);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Input
+                      placeholder="Descrição da peça"
+                      value={p.descricao}
+                      onChange={(e) => {
+                        const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, descricao: e.target.value } : x) };
+                        saveDraft(newDraft);
+                      }}
+                      disabled={isDone}
+                      className="h-9 bg-white/5 text-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Qtd"
+                        value={p.quantidade}
+                        onChange={(e) => {
+                          const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, quantidade: e.target.value } : x) };
+                          saveDraft(newDraft);
+                        }}
+                        disabled={isDone}
+                        className="h-9 bg-white/5 text-sm"
+                      />
+                      <Select
+                        value={p.urgencia}
+                        onValueChange={(v) => {
+                          const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, urgencia: v } : x) };
+                          saveDraft(newDraft);
+                        }}
+                        disabled={isDone}
+                      >
+                        <SelectTrigger className="h-9 bg-white/5 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="baixa">Baixa</SelectItem>
+                          <SelectItem value="media">Média</SelectItem>
+                          <SelectItem value="alta">Alta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!draft?.pecas || draft.pecas.length === 0) && (
+                <p className="text-[10px] text-center text-muted-foreground py-2">Nenhuma peça solicitada.</p>
+              )}
+            </div>
           </GlassCard>
 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><AlertTriangle className="h-5 w-5 text-primary" /> Diagnóstico</h2>
-            <Textarea placeholder="Descreva os problemas encontrados ou observações técnicas..." className="min-h-[120px] bg-white/5" disabled={isDone} />
+            <Textarea 
+              placeholder="Descreva os problemas encontrados ou observações técnicas..." 
+              className="min-h-[120px] bg-white/5" 
+              value={draft?.problemas?.[0]?.descricao || ""}
+              onChange={(e) => {
+                const newDraft = { ...draft, problemas: [{ id: draft.problemas?.[0]?.id || uuid(), descricao: e.target.value, gravidade: "falha" }] };
+                saveDraft(newDraft);
+              }}
+              disabled={isDone} 
+            />
           </GlassCard>
 
           {!isDone && (
