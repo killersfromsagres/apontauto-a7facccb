@@ -44,17 +44,18 @@ function AccessGuard() {
 
   useEffect(() => {
     if (loading) return;
-    if (access.isAdmin) return; // admin acessa tudo
 
     const keys = pathKeys(pathname);
     if (!keys) return;
 
     // Rota exclusiva de admin
-    if (keys.includes("usuarios")) {
+    if (keys.includes("usuarios") && !access.isAdmin) {
       toast.error("Área restrita a administradores.");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/_authenticated/dashboard", replace: true });
       return;
     }
+
+    if (access.isAdmin) return; // admin acessa tudo após o check de "usuarios"
 
     // Sem restrição customizada → acesso total.
     if (!access.allowed) return;
@@ -64,7 +65,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/${fallback}`;
+      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/_authenticated/dashboard" : `/_authenticated/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
