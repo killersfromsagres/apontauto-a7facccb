@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { 
   Activity, 
   TrendingUp, 
@@ -22,7 +24,7 @@ import {
 } from "recharts";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
-import { fetchGestaoOverview } from "@/features/gestao/queries";
+import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 
@@ -41,6 +43,13 @@ export function MenuInicialView() {
     queryKey: ["menu-inicial", "overview"],
     queryFn: () => fetchGestaoOverview(30),
     refetchInterval: 30000, // Atualização a cada 30s para "tempo real"
+  });
+
+  const { data: recentEvents } = useQuery({
+    queryKey: ["menu-inicial", "recent-events"],
+    queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
+    select: (data) => data.slice(0, 5),
+    refetchInterval: 60000,
   });
 
   const chartData = overview?.os_mensal?.map(item => ({
@@ -188,20 +197,26 @@ export function MenuInicialView() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="space-y-4">
-             {[1,2,3].map(i => (
-               <div key={i} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                 <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                     <Zap className="h-4 w-4 text-primary" />
-                   </div>
-                   <div>
-                     <p className="text-sm font-medium">OS #12{i}45 Atualizada</p>
-                     <p className="text-[10px] text-muted-foreground uppercase">Manutenção Preventiva · Há {i*5} min</p>
-                   </div>
-                 </div>
-                 <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-               </div>
-             ))}
+            {recentEvents && recentEvents.length > 0 ? (
+              recentEvents.map((os) => (
+                <div key={os.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Zap className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">OS #{os.numero_os || os.id.slice(0, 8)}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">
+                        {os.descricao?.slice(0, 40)}... · {os.criado_em ? formatDistanceToNow(new Date(os.criado_em), { addSuffix: true, locale: ptBR }) : 'Recentemente'}
+                      </p>
+                    </div>
+                  </div>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-4">Nenhuma atividade recente encontrada.</p>
+            )}
           </div>
         </GlassCard>
       </div>
