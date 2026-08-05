@@ -30,8 +30,8 @@ export type OsCacheRow = {
   data_programada: string | null;
   inicio: string | null;
   fim: string | null;
-  ativo: string | null;
-  equipamento: string | null;
+  ativo: string;
+  equipamento: string;
   patrimonio: string | null;
   status: string;
   updated_at: string;

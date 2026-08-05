@@ -15,8 +15,8 @@ export type CorretivaOsImport = {
   data_programada: string | null;
   inicio: string | null;
   fim: string | null;
-  ativo: string | null;
-  equipamento: string | null;
+  ativo: string;
+  equipamento: string;
   solicitante: string | null;
   data_criacao: string | null;
 };
@@ -189,8 +189,8 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
       data_programada: rec.data_programada ?? null,
       inicio: rec.inicio ?? null,
       fim: rec.fim ?? null,
-      ativo: ativo || null,
-      equipamento: equipamento || null,
+      ativo: ativo || "—",
+      equipamento: equipamento || "—",
       solicitante: rec.solicitante ?? null,
       data_criacao: rec.data_criacao ?? null,
     });
