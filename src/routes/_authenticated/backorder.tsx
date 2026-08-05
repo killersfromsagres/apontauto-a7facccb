@@ -3568,12 +3568,20 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
                       </div>
-                      {r.outros && (
-                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span className="line-clamp-1">{r.outros}</span>
-                        </div>
-                      )}
+                      <div className="mt-1 flex flex-col gap-1">
+                        {r.outros && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span className="line-clamp-1">{r.outros}</span>
+                          </div>
+                        )}
+                        {r.centro_custo && (
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground opacity-80">
+                            <Database className="h-3 w-3" />
+                            <span className="line-clamp-1">{r.centro_custo}</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
                         Clique para editar
                       </div>
@@ -3665,7 +3673,7 @@ function BackorderDetailDialog({
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest opacity-90">
-                <ClipboardList className="h-3.5 w-3.5" /> Backorder · {row.atividade}
+                <ClipboardList className="h-3.5 w-3.5" /> Ordem de Serviço · {row.atividade}
               </div>
               <DialogHeader className="space-y-1 text-left">
                 <DialogTitle className="text-lg font-semibold leading-tight text-white">
