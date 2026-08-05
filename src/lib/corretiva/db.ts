@@ -6,17 +6,6 @@ const DB_VERSION = 3;
 
 export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio" | "status" | "assinatura";
 
-export type OutboxItem = {
-  id: string;
-  kind: OutboxKind;
-  osId: string;
-  numeroOs: string;
-  payload: any;
-  createdAt: number;
-  attempts: number;
-  lastError?: string;
-};
-
 export type OsCacheRow = {
   id: string;
   numero_os: string;
@@ -30,7 +19,7 @@ export type OsCacheRow = {
   data_programada: string | null;
   inicio: string | null;
   fim: string | null;
-  ativo: string;
+  ativo: string | null;
   equipamento: string | null;
   patrimonio: string | null;
   status: string;
