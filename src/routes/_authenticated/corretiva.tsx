@@ -830,6 +830,16 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo === "Backorder" ? "Backorder" : "Corretiva"}</p></div>
+              {os.material_status && (
+                <div className="md:col-span-1">
+                  <Label className="text-[10px] uppercase text-muted-foreground">Material</Label>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse text-[10px] font-bold py-0.5">
+                      MATERIAL SOLICITADO
+                    </Badge>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isAdmin && (
