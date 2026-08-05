@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CentralInteligenciaView } from "@/features/inteligencia-pcm/components/central-inteligencia-view";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Menu Inicial — Apont Auto" },
