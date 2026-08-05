@@ -4103,7 +4103,6 @@ export type Database = {
         }
         Relationships: []
       }
-      organograma: {
         Row: {
           cargo: string
           created_at: string
@@ -4136,10 +4135,8 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organograma_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
-            referencedRelation: "organograma"
             referencedColumns: ["id"]
           },
         ]

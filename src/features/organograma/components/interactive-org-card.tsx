@@ -4,7 +4,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Mail, Briefcase } from "lucide-react";
-import { OrgNode } from "@/features/organograma/types";
 
 interface InteractiveOrgCardProps extends React.HTMLAttributes<HTMLDivElement> {
   node: OrgNode;
