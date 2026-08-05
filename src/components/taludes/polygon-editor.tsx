@@ -536,6 +536,11 @@ export function PolygonEditor({
   /* --------------------------------- render --------------------------------- */
 
   const selected = polygons.find((p) => p.id === selectedId) ?? null;
+  const selectedPolyForHandles: { poly: EditorPolygon; pts: Point[] }[] =
+    selected && selected.visible && !selected.locked && tool === "edit"
+      ? [{ poly: selected, pts: geometryOf(selected) }]
+      : [];
+
   const draftInvalid = useMemo(() => draft.length >= 3 && !validatePolygon(draft).ok, [draft]);
 
   const cursor = isPanning()
