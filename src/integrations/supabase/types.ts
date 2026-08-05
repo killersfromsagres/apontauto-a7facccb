@@ -4109,6 +4109,39 @@ export type Database = {
         }
         Relationships: []
       }
+      organizational_members: {
+        Row: {
+          color: string
+          created_at: string | null
+          display_order: number
+          id: string
+          level: number
+          name: string
+          photo_url: string | null
+          role: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          level?: number
+          name: string
+          photo_url?: string | null
+          role: string
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          display_order?: number
+          id?: string
+          level?: number
+          name?: string
+          photo_url?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
       organograma: {
         Row: {
           cargo: string

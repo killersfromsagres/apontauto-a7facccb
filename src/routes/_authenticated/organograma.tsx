@@ -2,15 +2,18 @@ import { createFileRoute } from '@tanstack/react-router';
 import OrganizationalChart from '@/components/ui/organizational-chart';
 import { PageShell } from '@/components/page-shell';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_authenticated/organograma')({
   component: OrganogramaPage,
 });
 
 function OrganogramaPage() {
-  // Check admin status for the "Add photo" buttons
+  const queryClient = useQueryClient();
   const { data: session } = useQuery({
     queryKey: ['session'],
     queryFn: async () => {
@@ -20,8 +23,26 @@ function OrganogramaPage() {
   });
 
   const isAdmin = session?.user?.user_metadata?.role === 'admin' || 
-                  session?.user?.email === 'admin@admin.com' ||
-                  session?.user?.id === 'e48a7b45-1c3a-4416-8c43-238497676646'; // Example admin ID check if needed
+                  session?.user?.email === 'admin@admin.com';
+
+  const addMemberMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('organizational_members')
+        .insert({
+          name: 'Novo Membro',
+          role: 'Cargo',
+          level: 4,
+          color: '#6366f1',
+          display_order: 99
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizational_members'] });
+      toast.success("Novo membro adicionado!");
+    }
+  });
 
   return (
     <PageShell 
@@ -38,9 +59,18 @@ function OrganogramaPage() {
             background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.03), transparent)'
           }}
         >
-          <div className="mb-12 text-center">
+          <div className="mb-12 flex flex-col items-center">
             <h2 className="text-4xl font-black text-white mb-3 tracking-tighter uppercase">ORGANIZATIONAL CHART</h2>
-            <div className="w-24 h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 mx-auto rounded-full" />
+            <div className="w-24 h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-6" />
+            
+            {isAdmin && (
+              <Button 
+                onClick={() => addMemberMutation.mutate()}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/10"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+              </Button>
+            )}
           </div>
 
           <OrganizationalChart isAdmin={isAdmin} />
