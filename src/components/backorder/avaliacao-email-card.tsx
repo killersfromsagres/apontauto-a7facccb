@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Copy, Check, Mail, Users, FileDown } from "lucide-react";
+import { Copy, Check, Mail, Users, FileDown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/glass-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import confetti from "canvas-confetti";
 import {
   agruparSolicitantes,
   assuntoEmail,
