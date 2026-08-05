@@ -101,7 +101,7 @@ export function CentralInteligenciaView() {
 
   return (
     <PageShell
-      title="Central de Inteligência PCM"
+      title="Menu Inicial"
       eyebrow="Operação Premium em Tempo Real"
       description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >

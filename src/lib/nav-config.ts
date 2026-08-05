@@ -104,19 +104,11 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "menu-inicial",
-        title: "Central de Inteligência PCM",
-        short: "PCM",
-        url: "/_authenticated/central-inteligencia",
-        icon: BrainCircuit,
-        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
-      },
-      {
-        key: "menu-inicial-legado",
         title: "Menu Inicial",
         short: "Início",
         url: "/_authenticated/dashboard",
-        icon: Gauge,
-        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
+        icon: BrainCircuit,
+        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
       },
       {
         key: "organograma",
