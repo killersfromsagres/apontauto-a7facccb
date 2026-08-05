@@ -7,6 +7,7 @@ import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equ
 import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
+export const TIPO_BACKORDER = "Backorder";
 
 export const EQUIPES_PREVENTIVA = ["Chaveiro", "Civil", "Hidráulica", "Elétrica"] as const;
 export type EquipePreventiva = (typeof EQUIPES_PREVENTIVA)[number];
