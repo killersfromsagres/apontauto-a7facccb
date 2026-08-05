@@ -245,9 +245,7 @@ function BackorderPage() {
   // Exibe a planilha inteira por padrão; o ano continua disponível como filtro.
   const now = new Date();
   const anoAtual = now.getFullYear();
-  const mesAtual = (now.getMonth() + 1).toString().padStart(2, "0");
   const [ano, setAno] = useState<string>("todos");
-  const [mes, setMes] = useState<string>("todos");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [solicitanteFilter, setSolicitanteFilter] = useState<string>("");
