@@ -333,7 +333,7 @@ function CorretivaPage() {
   return (
     <PageShell
       title={aba === "preventiva" ? "Backorder — Campo" : "Programação — Campo"}
-      description={aba === "preventiva" ? "Controle de backorder agendado por semana." : "Gestão de corretivas e backorder."}
+      description={aba === "preventiva" ? "Controle de backorder agendado." : "Gestão de corretivas e backorder."}
       backButton
       backUrl="/"
       onBack={selectedId ? () => setSelectedId(null) : undefined}
