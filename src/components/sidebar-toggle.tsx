@@ -19,7 +19,7 @@ export function SidebarToggle({ className }: { className?: string }) {
       aria-expanded={isOpen}
       aria-controls="app-sidebar"
       className={cn(
-        "group relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+        "group relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl z-50",
         "border border-border/60 bg-background/40 backdrop-blur-md",
         "text-foreground/80 transition-all duration-300 ease-out",
         "hover:-translate-y-[1px] hover:border-primary/60 hover:text-foreground hover:shadow-[0_4px_18px_-6px_hsl(var(--primary)/0.45)]",
@@ -27,6 +27,7 @@ export function SidebarToggle({ className }: { className?: string }) {
         "active:scale-95",
         className,
       )}
+
     >
       {/* halo suave no hover */}
       <span

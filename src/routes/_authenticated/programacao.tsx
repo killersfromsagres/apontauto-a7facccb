@@ -285,7 +285,9 @@ function ProgramacaoPage() {
             slot: slot.id,
             slotLabel: slot.label,
             totalOS: totalSemana,
+            solicitante: "", // Solicitante info preserved if available
           };
+
           out.push(item);
           try {
             await saveHistorico({
