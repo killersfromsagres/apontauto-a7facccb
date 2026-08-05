@@ -581,27 +581,31 @@ export function canSeeMenuItem(
   // Módulos restritos: negação por padrão (nunca liberados por
   // `allowed_menus = null` do sistema legado). Espelha a lista de
   // `can_access_module` no banco.
+  if (isAdmin) return true;
+  
+  // Módulos restritos: negação por padrão (nunca liberados por
+  // `allowed_menus = null` do sistema legado). Espelha a lista de
+  // `can_access_module` no banco.
   if (isRestrictedModule(key)) {
-    return isAdmin || (allowed?.includes(key) ?? false);
+    return allowed?.includes(key) ?? false;
   }
   if (key === "pesquisa") return true;
   if (key === "favoritos") return true;
   if (key === "notificacoes") return true;
   if (key === "dashboard") return true; // Garante visibilidade do Menu Inicial
-  if (key === "imagens") return isAdmin;
-  if (key === "configuracoes") return isAdmin;
-  if (key === "refrigeracao-gestor") return isAdmin || (allowed?.includes("refrigeracao-gestor") ?? false);
-  if (key === "corretiva-gestor") return isAdmin || (allowed?.includes("corretiva-gestor") ?? false);
-  if (key === "assets-catalog") return isAdmin;
-  if (key.startsWith("assets-")) return isAdmin;
+  
+  if (key === "imagens") return false; // isAdmin já retornou true acima
+  if (key === "configuracoes") return false;
+  if (key === "refrigeracao-gestor") return allowed?.includes("refrigeracao-gestor") ?? false;
+  if (key === "corretiva-gestor") return allowed?.includes("corretiva-gestor") ?? false;
+  if (key === "assets-catalog") return false;
+  if (key.startsWith("assets-")) return false;
 
   // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
   if (key.startsWith("refrigeracao")) {
     const isClimatizacao = allowed?.includes("climatizacao");
     if (isClimatizacao) return true;
   }
-
-  if (isAdmin) return true;
   // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
   if (!allowed) return false;
   return itemKeys(item).some((k) => allowed.includes(k));
