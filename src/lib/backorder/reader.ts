@@ -91,7 +91,7 @@ function parseDateISO(v: string): string | null {
  *  colunas de Ativo + Descrição/Nome + OS). Cai para a primeira caso
  *  nenhuma bata os critérios. Ignora abas do tipo "ativos" (base de
  *  hierarquia) e planilhas resumo do tipo "plano". */
-function pickBackorderSheet(wb: any): string {
+function pickBackorderSheet(wb: any, XLSX: any): string {
   const names: string[] = wb.SheetNames;
   let best = names[0];
   let bestScore = -1;
