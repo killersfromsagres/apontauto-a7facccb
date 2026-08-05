@@ -13,7 +13,8 @@ import {
   CloudSun,
   CloudRain,
   Thermometer,
-  Wind
+  Wind,
+  Cloud
 } from "lucide-react";
 import { 
   Area, 
@@ -250,6 +251,8 @@ export function MenuInicialView() {
               <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Status Taludes & Clima</h3>
               {weatherStatus?.detected ? (
                 <CloudRain className="h-4 w-4 text-rose-400 animate-pulse" />
+              ) : weatherStatus?.label?.toLowerCase().includes("nublado") ? (
+                <Cloud className="h-4 w-4 text-blue-300" />
               ) : (
                 <CloudSun className="h-4 w-4 text-emerald-400" />
               )}
