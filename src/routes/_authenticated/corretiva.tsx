@@ -109,7 +109,7 @@ function getTeamStyles(equipe: string | null | undefined) {
 }
 
 const OS_COLUMNS =
-  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, data_criacao";
+  "id, numero_os, nome_os, predio, andar, local, tipo, equipe, data_sla, data_programada, inicio, fim, ativo, equipamento, patrimonio, status, updated_at, solicitante, data_criacao, material_status";
 
 function uuid() {
   return (crypto as any).randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -638,6 +638,11 @@ function CorretivaPage() {
                           })()}
                         </div>
                         {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">CONCLUÍDA</Badge>}
+                        {o.material_status === "solicitado" && (
+                          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] font-bold animate-pulse px-1.5 h-4">
+                            MATERIAL SOLICITADO
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="text-sm font-medium text-white/80 line-clamp-1">{o.nome_os}</h3>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{o.predio} · {o.andar} · {o.local}</p>
@@ -830,6 +835,16 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo === "Backorder" ? "Backorder" : "Corretiva"}</p></div>
+              {os.material_status && (
+                <div className="md:col-span-1">
+                  <Label className="text-[10px] uppercase text-muted-foreground">Material</Label>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse text-[10px] font-bold py-0.5">
+                      MATERIAL SOLICITADO
+                    </Badge>
+                  </div>
+                </div>
+              )}
             </div>
 
             {isAdmin && (
@@ -895,6 +910,36 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                 >
                   <Zap className="h-3.5 w-3.5 text-emerald-400" />
                   Finalizar sem foto
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-10 flex-1 gap-2 text-xs transition-all duration-300",
+                    os.material_status === "solicitado"
+                      ? "bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                      : "border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30"
+                  )}
+                  onClick={async () => {
+                    if (!navigator.onLine) return toast.error("Offline: Não é possível alterar agora.");
+                    const novoStatus = os.material_status === "solicitado" ? null : "solicitado";
+                    try {
+                      const { error } = await supabase
+                        .from("corretiva_os")
+                        .update({ 
+                          material_status: novoStatus 
+                        } as any)
+                        .eq("id", os.id);
+                      if (error) throw error;
+                      onUpdate({ material_status: novoStatus });
+                      toast.success(novoStatus ? "Material marcado como solicitado" : "Etiqueta de material removida");
+                    } catch {
+                      toast.error("Erro ao atualizar status de material");
+                    }
+                  }}
+                >
+                  <Package className={cn("h-3.5 w-3.5", os.material_status === "solicitado" ? "animate-bounce" : "")} />
+                  {os.material_status === "solicitado" ? "Remover Material" : "Solicitar Material"}
                 </Button>
               </div>
             )}
