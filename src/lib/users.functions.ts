@@ -489,6 +489,8 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
         ban_duration: "none",
         user_metadata: metadata,
       } as any);
+      // Force update of password even if metadata didn't change to ensure 20252026 is active
+      console.log(`[Provision] Updating password for existing user: ${user.id}`);
       if (error) throw new Error(error.message);
     }
 
