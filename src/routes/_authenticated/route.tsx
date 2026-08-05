@@ -36,6 +36,7 @@ function pathKeys(pathname: string): string[] | null {
     pathname === "/" || 
     pathname === "" || 
     pathname === "/dashboard" || 
+    pathname === "/dashboard/" ||
     pathname === "/_authenticated/dashboard" ||
     pathname === "/_authenticated/dashboard/";
 
