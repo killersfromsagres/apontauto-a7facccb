@@ -154,11 +154,11 @@ function ProgramacaoPage() {
     REFRIG: null,
     ELETRICA: null,
   });
+  const [osInputFile, setOsInputFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
   const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
-  // Tempo por OS (minutos). Intervalo permitido: 30 (00:30) ou 60 (01:00).
   const [tempoPorOS, setTempoPorOS] = useState<Record<SlotId, 30 | 60>>({
     CCH: 60,
     REFRIG: 60,
