@@ -106,39 +106,86 @@ export function CentralInteligenciaView() {
       description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >
       <div className="space-y-6">
-        {/* GRID DE KPIS COM EFEITO GLOW */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* LINHA 1: KPIs OPERACIONAIS CRÍTICOS */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <KpiMonitorCard
             title="SLA GLOBAL"
             value={overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%"}
-            trend="+7.36%"
-            icon={<Zap className="h-5 w-5 text-primary-glow" />}
+            trend="+2.4%"
+            icon={<Zap className="h-5 w-5 text-[#4F8CFF] drop-shadow-[0_0_8px_rgba(79,140,255,0.5)]" />}
             chartColor="#4F8CFF"
-            className="glass-block"
+            description="Eficiência de atendimento"
           />
           <KpiMonitorCard
-            title="CHAMADOS ABERTOS"
-            value={overview?.os.abertas.toString() || "0"}
-            trend="-12%"
-            icon={<Activity className="h-5 w-5 text-[#52E5FF]" />}
+            title="BACKORDER ATIVO"
+            value={overview?.os.backlog.toString() || "0"}
+            trend="+5.2%"
+            icon={<ClipboardList className="h-5 w-5 text-[#52E5FF]" />}
             chartColor="#52E5FF"
-            className="glass-block"
+            description="Chamados em espera"
           />
           <KpiMonitorCard
-            title="TOTAL CONCLUÍDOS"
-            value={overview?.os.concluidas.toString() || "0"}
-            trend="+15%"
-            icon={<TrendingUp className="h-5 w-5 text-[#34d399]" />}
-            chartColor="#34d399"
-            className="glass-block"
+            title="CORRETIVAS MÊS"
+            value={overview?.os.criadas.toString() || "0"}
+            trend="-1.8%"
+            icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />}
+            chartColor="#8B5CF6"
+            description="Volume de solicitações"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
             value={`${mttrGlobal.toFixed(1)}h`}
-            trend="-5.4%"
-            icon={<BarChart3 className="h-5 w-5 text-[#8B5CF6]" />}
-            chartColor="#8B5CF6"
-            className="glass-block"
+            trend="-12%"
+            icon={<Clock className="h-5 w-5 text-[#34d399]" />}
+            chartColor="#34d399"
+            description="Tempo médio de reparo"
+          />
+          <KpiMonitorCard
+            title="CRITICAL ALERT"
+            value={overview?.os.criticas.toString() || "0"}
+            trend="+0"
+            icon={<AlertTriangle className={cn("h-5 w-5", (overview?.os.criticas || 0) > 0 ? "text-rose-500 animate-pulse" : "text-muted-foreground")} />}
+            chartColor="#f87171"
+            description="OS de alta prioridade"
+          />
+        </div>
+
+        {/* LINHA 2: GESTÃO DE RECURSOS E MATERIAIS */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <KpiMonitorCard
+            title="PEÇAS PENDENTES"
+            value={overview?.pecas.aguardando.toString() || "0"}
+            icon={<PackageOpen className="h-5 w-5 text-amber-400" />}
+            chartColor="#fbbf24"
+            description="Aguardando suprimentos"
+          />
+          <KpiMonitorCard
+            title="SOLICITAÇÕES MATERIAIS"
+            value={overview?.materiais.pendentes.toString() || "0"}
+            icon={<Boxes className="h-5 w-5 text-blue-400" />}
+            chartColor="#60a5fa"
+            description="Pedidos em aberto"
+          />
+          <KpiMonitorCard
+            title="FILTROS VENCIDOS"
+            value={overview?.filtros.vencidos.toString() || "0"}
+            icon={<Droplets className="h-5 w-5 text-rose-400" />}
+            chartColor="#f87171"
+            description="Trocas obrigatórias"
+          />
+          <KpiMonitorCard
+            title="ITENS LEGAIS"
+            value={overview?.legal.vencidos.toString() || "0"}
+            icon={<ShieldCheck className="h-5 w-5 text-emerald-400" />}
+            chartColor="#34d399"
+            description="Conformidade e normas"
+          />
+          <KpiMonitorCard
+            title="DISP. FROTA"
+            value={overview ? `${Math.round((overview.frota.disponiveis / (overview.frota.total || 1)) * 100)}%` : "0%"}
+            icon={<Fuel className="h-5 w-5 text-indigo-400" />}
+            chartColor="#818cf8"
+            description="Veículos operacionais"
           />
         </div>
 
