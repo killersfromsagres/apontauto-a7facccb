@@ -40,8 +40,10 @@ import {
   setUserRole,
   setUserAllowedMenus,
   MENU_KEYS,
+  provisionEncarregadosUser,
   type MenuKey,
 } from "@/lib/users.functions";
+
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
