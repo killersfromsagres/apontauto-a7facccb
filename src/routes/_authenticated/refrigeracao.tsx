@@ -1006,9 +1006,15 @@ function OsDetail({
           <ReadOnly label="Ativo" value={os.ativo} />
           <ReadOnly label="Equipamento" value={os.equipamento} />
           <ReadOnly label="Tipo" value={os.tipo ?? "—"} />
+        </div>
+        
+        <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
           <ReadOnly label="Prédio" value={os.predio ?? "—"} />
           <ReadOnly label="Andar" value={os.andar ?? "—"} />
           <ReadOnly label="Local" value={os.local ?? "—"} />
+        </div>
+
+        <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
           <ReadOnly label="Equipe" value={os.equipe ?? "—"} />
           <ReadOnly label="Data SLA" value={fmtDate(os.data_sla)} />
           <ReadOnly label="Data programada" value={fmtDate(os.data_programada)} />
@@ -1545,8 +1551,10 @@ function HostedPhotoLinksCard({
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <Label>{label}</Label>
-      <div className="mt-1 min-w-0 overflow-hidden rounded-md border bg-muted/40 px-3 py-2 text-sm break-words [overflow-wrap:anywhere]">
+      <Label className="text-[10px] uppercase text-muted-foreground/70 tracking-wider">
+        {label}
+      </Label>
+      <div className="mt-1 min-w-0 overflow-hidden rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/90 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/[0.08] break-words [overflow-wrap:anywhere]">
         {value}
       </div>
     </div>

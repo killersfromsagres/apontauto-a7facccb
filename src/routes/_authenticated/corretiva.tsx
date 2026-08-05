@@ -712,17 +712,23 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 truncate">{os.ativo}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90 truncate">{os.equipamento}</p></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 break-words">{os.ativo}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90 break-words">{os.equipamento}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo || "N/A"}</p></div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Prédio</Label><p className="text-sm font-medium text-white/90">{os.predio || "—"}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Andar</Label><p className="text-sm font-medium text-white/90">{os.andar || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Local</Label><p className="text-sm font-medium text-white/90 truncate">{os.local || "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Local</Label><p className="text-sm font-medium text-white/90 break-words">{os.local || "—"}</p></div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 truncate">{os.solicitante || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString() : '—'}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString() : '—'}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString("pt-BR") : "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString("pt-BR") : "—"}</p></div>
             </div>
           </GlassCard>
 
@@ -770,11 +776,11 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Confirmar Solicitante</h2>
             <div className="space-y-2">
-              <Label htmlFor="assinatura_nome">Nome de quem solicitou/recebeu</Label>
+              <Label htmlFor="assinatura_nome">Nome completo do solicitante</Label>
               <Input
                 id="assinatura_nome"
-                placeholder="Ex: João Silva"
-                className="bg-white/5"
+                placeholder="Ex: João da Silva Santos"
+                className="h-12 bg-white/5 text-base"
                 value={draft?.assinaturaNome || ""}
                 onChange={(e) => saveDraft({ ...draft, assinaturaNome: e.target.value })}
                 disabled={isDone}

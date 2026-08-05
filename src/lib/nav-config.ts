@@ -535,6 +535,7 @@ const RESTRICTED_KEYS = [
   "observabilidade",
   "confiabilidade",
   "gestao-executiva",
+  "planejamento-grp",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
@@ -608,6 +609,15 @@ export function canSeeMenuItem(
   }
   // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
   if (!allowed) return false;
+
+  // Oculta Planejamento PCM para o login de manutenção
+  const isManutencao = allowed.includes("manutencao");
+  if (isManutencao) {
+    if (["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key)) {
+      return false;
+    }
+  }
+
   return itemKeys(item).some((k) => allowed.includes(k));
 }
 
@@ -625,6 +635,10 @@ export function useVisibleSections() {
       if (s.kind === "item") {
         if (canSee(s.item)) out.push(s);
       } else {
+        // Regra específica para o login de manutenção: oculta o grupo de Planejamento PCM
+        const isManutencao = allowed?.includes("manutencao");
+        if (isManutencao && s.key === "planejamento-grp") continue;
+
         const items = s.items.filter(canSee);
         if (items.length > 0) out.push({ ...s, items });
       }
