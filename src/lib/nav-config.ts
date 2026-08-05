@@ -612,9 +612,10 @@ export function canSeeMenuItem(
 
   // Oculta Planejamento PCM para o login de manutenção
   const isManutencao = allowed.includes("manutencao");
-  if (isManutencao && item.url.includes("planejamento-grp") || 
-      (isManutencao && ["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key))) {
-    return false;
+  if (isManutencao) {
+    if (["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key)) {
+      return false;
+    }
   }
 
   return itemKeys(item).some((k) => allowed.includes(k));
