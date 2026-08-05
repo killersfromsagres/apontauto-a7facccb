@@ -78,7 +78,8 @@ export function CentralInteligenciaView() {
 
   const chartData = overview?.os_mensal?.map(item => ({
     name: item.mes,
-    value: item.criadas
+    value: item.criadas,
+    concluidas: item.concluidas || 0
   })) || [];
 
   const statusData = overview?.os_status 
@@ -99,9 +100,10 @@ export function CentralInteligenciaView() {
   const tmaGlobal = overview?.os.tma_horas || 0;
   const mttrGlobal = overview?.os.mttr_horas || 0;
 
+
   return (
     <PageShell
-      title="Central de Inteligência PCM"
+      title="Menu Inicial"
       eyebrow="Operação Premium em Tempo Real"
       description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >
@@ -210,6 +212,10 @@ export function CentralInteligenciaView() {
                       <stop offset="5%" stopColor="#4F8CFF" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#4F8CFF" stopOpacity={0}/>
                     </linearGradient>
+                    <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
+                    </linearGradient>
                   </defs>
                   <Tooltip 
                     contentStyle={{ 
@@ -223,6 +229,7 @@ export function CentralInteligenciaView() {
                   <Area 
                     type="monotone" 
                     dataKey="value" 
+                    name="Criadas"
                     stroke="#4F8CFF" 
                     strokeWidth={3}
                     fillOpacity={1} 
@@ -230,7 +237,19 @@ export function CentralInteligenciaView() {
                     dot={{ r: 4, fill: "#52E5FF", strokeWidth: 2, stroke: "#05070C" }}
                     activeDot={{ r: 6, fill: "#fff" }}
                   />
+                  <Area 
+                    type="monotone" 
+                    dataKey="concluidas" 
+                    name="Concluídas"
+                    stroke="#34d399" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorConcluidas)" 
+                    dot={{ r: 4, fill: "#34d399", strokeWidth: 2, stroke: "#05070C" }}
+                    activeDot={{ r: 6, fill: "#fff" }}
+                  />
                 </AreaChart>
+
               </ResponsiveContainer>
             </div>
           </GlassCard>

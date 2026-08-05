@@ -104,19 +104,11 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "menu-inicial",
-        title: "Central de Inteligência PCM",
-        short: "PCM",
-        url: "/_authenticated/central-inteligencia",
-        icon: BrainCircuit,
-        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
-      },
-      {
-        key: "menu-inicial-legado",
         title: "Menu Inicial",
         short: "Início",
         url: "/_authenticated/dashboard",
-        icon: Gauge,
-        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
+        icon: BrainCircuit,
+        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
       },
       {
         key: "organograma",
@@ -643,8 +635,8 @@ export function canSeeMenuItem(
   if (key === "notificacoes") return true;
   if (key === "imagens") return isAdmin;
   if (key === "configuracoes") return isAdmin;
-  if (key === "refrigeracao-gestor") return isAdmin;
-  if (key === "corretiva-gestor") return isAdmin;
+  if (key === "refrigeracao-gestor") return isAdmin || (allowed?.includes("refrigeracao-gestor") ?? false);
+  if (key === "corretiva-gestor") return isAdmin || (allowed?.includes("corretiva-gestor") ?? false);
   if (key === "assets-catalog") return isAdmin;
   if (key.startsWith("assets-")) return isAdmin;
   if (isAdmin) return true;
