@@ -1930,6 +1930,7 @@ function BackorderPage() {
             <FinalizadosView
               rows={aguardandoAprovacao}
               onReabrir={(r) => toggleFinalizado(r, false)}
+              isAprovacao
             />
           </div>
         </TabsContent>
@@ -2440,9 +2441,11 @@ function TeamSummaryStrip({
 const FinalizadosView = memo(function FinalizadosView({
   rows,
   onReabrir,
+  isAprovacao = false,
 }: {
   rows: BOSRow[];
   onReabrir: (r: BOSRow) => void;
+  isAprovacao?: boolean;
 }) {
   const { visible, hasMore, sentinelRef, shown, total } = useIncrementalList(rows, 60);
   return (
@@ -2456,9 +2459,9 @@ const FinalizadosView = memo(function FinalizadosView({
             <TableRow>
               <TableHead>OS</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Prédio</TableHead>
+              <TableHead>Solicitante</TableHead>
               <TableHead>Atividade</TableHead>
-              <TableHead>Concluído em</TableHead>
+              <TableHead>Data</TableHead>
               <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
@@ -2474,17 +2477,30 @@ const FinalizadosView = memo(function FinalizadosView({
                 <TableRow key={r.os}>
                   <TableCell className="font-mono text-xs">{r.os}</TableCell>
                   <TableCell className="max-w-[360px] truncate">{r.nome}</TableCell>
-                  <TableCell className="text-xs">{r.predio}</TableCell>
+                  <TableCell className="text-xs truncate max-w-[150px]">{r.outros}</TableCell>
                   <TableCell className="text-xs">{r.atividade}</TableCell>
                   <TableCell className="text-xs">
-                    {r.data_finalizacao
-                      ? new Date(r.data_finalizacao).toLocaleString("pt-BR")
-                      : "—"}
+                    {isAprovacao
+                      ? r.data_solicitacao
+                        ? new Date(r.data_solicitacao).toLocaleDateString("pt-BR")
+                        : "—"
+                      : r.data_finalizacao
+                        ? new Date(r.data_finalizacao).toLocaleString("pt-BR")
+                        : "—"}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => onReabrir(r)}>
-                      <RefreshCw className="mr-1 h-3 w-3" /> Reabrir
-                    </Button>
+                    <div className="flex gap-2">
+                      {isAprovacao && (
+                        <AvaliacaoEmailButton
+                          os={r.os}
+                          solicitante={r.outros}
+                          atividade={r.nome}
+                        />
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => onReabrir(r)}>
+                        <RefreshCw className="mr-1 h-3 w-3" /> Reabrir
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
