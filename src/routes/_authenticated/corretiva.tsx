@@ -304,7 +304,8 @@ function CorretivaPage() {
   return (
     <PageShell
       title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
-      description="Gestão de Campo — otimizado para mobile com evidências fotográficas."
+      description={aba === "preventiva" ? "Controle de preventivas agendadas por semana." : "Gestão de corretivas e backorder."}
+
       actions={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {isAdmin && (
@@ -441,8 +442,9 @@ function CorretivaPage() {
     >
 
       {!selected ? (
-        <GlassCard className="p-4">
-          <div className="mb-4 inline-flex rounded-xl border border-white/10 bg-white/5 p-1">
+        <GlassCard className="flex flex-col gap-4 p-4">
+          <div className="inline-flex w-full overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 sm:w-auto">
+
             {([
               { k: "corretiva", label: "Corretivas" },
               { k: "preventiva", label: "Preventivas" },
@@ -452,7 +454,7 @@ function CorretivaPage() {
                 type="button"
                 onClick={() => setAba(t.k)}
                 className={cn(
-                  "min-h-11 rounded-lg px-4 text-sm font-medium transition-all",
+                  "flex-1 min-h-11 rounded-lg px-4 text-sm font-medium transition-all sm:flex-none",
                   aba === t.k
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",

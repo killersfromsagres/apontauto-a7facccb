@@ -320,7 +320,7 @@ function RefrigeracaoPage() {
   return (
     <PageShell
       title="Refrigeração"
-      description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
+      description="Manutenção de AC — funciona offline. Sincronização automática."
       actions={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {isOwner && (
@@ -966,7 +966,8 @@ function OsDetail({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-background/80 backdrop-blur-md pb-2">
+
         <Button
           variant="outline"
           size="lg"
