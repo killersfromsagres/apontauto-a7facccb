@@ -1932,6 +1932,12 @@ function BackorderPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="reabertas">
+          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <FinalizadosView rows={reabertas} onReabrir={(r) => toggleFinalizado(r, false)} />
+          </div>
+        </TabsContent>
+
         <TabsContent value="cancelados">
           <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
             <FinalizadosView rows={cancelados} onReabrir={(r) => toggleFinalizado(r, false)} />
