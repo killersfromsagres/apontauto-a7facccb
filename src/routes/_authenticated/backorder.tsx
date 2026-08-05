@@ -1930,7 +1930,7 @@ function BackorderPage() {
         <TabsContent value="finalizados" className="space-y-4">
           <AvaliacaoEmailCard rows={avaliacaoRows} ano={ano === "todos" ? "todos os anos" : ano} />
           <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
-            <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
+            <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} isAprovacao />
           </div>
         </TabsContent>
 
