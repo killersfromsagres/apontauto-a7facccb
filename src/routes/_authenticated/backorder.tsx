@@ -613,7 +613,8 @@ function BackorderPage() {
           }
         };
         worker.onerror = (e) => {
-          reject(new Error(e.message || "Falha no processamento da planilha"));
+          console.error("Worker error event:", e);
+          reject(new Error("Falha técnica no processamento da planilha (Worker Error)"));
           worker.terminate();
         };
         worker.postMessage({
