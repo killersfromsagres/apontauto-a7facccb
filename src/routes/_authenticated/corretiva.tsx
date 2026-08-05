@@ -324,6 +324,7 @@ function CorretivaPage() {
       description={aba === "preventiva" ? "Controle de backorder agendado por semana." : "Gestão de corretivas e backorder."}
       backButton
       backUrl="/"
+      onBack={selectedId ? () => setSelectedId(null) : undefined}
 
 
 
