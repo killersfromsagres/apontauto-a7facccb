@@ -776,11 +776,11 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Confirmar Solicitante</h2>
             <div className="space-y-2">
-              <Label htmlFor="assinatura_nome">Nome de quem solicitou/recebeu</Label>
+              <Label htmlFor="assinatura_nome">Nome completo do solicitante</Label>
               <Input
                 id="assinatura_nome"
-                placeholder="Ex: João Silva"
-                className="bg-white/5"
+                placeholder="Ex: João da Silva Santos"
+                className="h-12 bg-white/5 text-base"
                 value={draft?.assinaturaNome || ""}
                 onChange={(e) => saveDraft({ ...draft, assinaturaNome: e.target.value })}
                 disabled={isDone}
