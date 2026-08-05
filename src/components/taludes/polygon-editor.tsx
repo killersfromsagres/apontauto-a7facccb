@@ -174,7 +174,7 @@ export function PolygonEditor({
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
       // Precisamos considerar o zoom para que a distância de "grude" seja consistente em pixels de tela
-      const snapThreshold = CLOSE_SNAP_PX / zoom; 
+      const snapThreshold = (CLOSE_SNAP_PX * 0.4) / zoom; 
       
       for (const poly of polygons) {
         if (!poly.visible) continue;
