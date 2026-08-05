@@ -18,6 +18,7 @@ export interface BackorderRow {
   termino_sla: string | null;
   data_solicitacao: string; // ISO
   outros: string; // Solicitante (COLUNA E)
+  centro_custo?: string;
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   /** OS cancelada / recusada na origem. */
