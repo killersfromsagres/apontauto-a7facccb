@@ -469,10 +469,6 @@ function BackorderPage() {
     () => rowsFiltradas.filter((r) => catOf(r) === "aguardando_aprovacao"),
     [rowsFiltradas, catOf],
   );
-  const reabertas = useMemo(
-    () => rowsFiltradas.filter((r) => r.status_origem?.toLowerCase().includes("reaberta")),
-    [rowsFiltradas],
-  );
   const avaliacaoRows = useMemo(
     () =>
       [...finalizadas, ...aguardandoAprovacao].map((r) => ({
