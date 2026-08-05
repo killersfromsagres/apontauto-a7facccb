@@ -51,40 +51,38 @@ export interface EmailOptions {
 /** Lista "Nome (n chamados)" pronta para colar no corpo/destinatários. */
 export function listaSolicitantes(s: SolicitanteResumo[]): string {
   return s
-    .map((x) => `• ${x.nome} — ${x.total} chamado${x.total > 1 ? "s" : ""} para avaliar`)
+    .map((x) => `• ${x.nome}: ${x.total} chamado${x.total > 1 ? "s" : ""}`)
     .join("\n");
 }
 
 export function assuntoEmail(ano: number | string, total: number): string {
-  return `Avaliação de chamados concluídos — ${total} OS pendentes de validação (${ano})`;
+  return `Avaliação de chamados concluídos — Gestão Predial Apont Auto (${ano})`;
 }
 
 export function corpoEmail({
   solicitantes,
   ano,
-  remetente = "Equipe de Gestão Predial — Apont Auto",
-  prazoDias = 5,
+  remetente = "Gestão Predial — Apont Auto",
 }: EmailOptions): string {
   const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
-  return `Prezado(a),
+  return `Prezados,
 
-Espero que este e-mail o(a) encontre bem.
+Gostaríamos de solicitar a gentileza de sua colaboração na avaliação dos chamados realizados sob sua solicitação no sistema Prisma.
 
-Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço (OS) sob sua solicitação que foram concluídas ou aguardam aprovação.
+Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço concluídas que aguardam sua validação final. Sua avaliação é fundamental para que possamos mensurar a qualidade dos serviços prestados e buscar a melhoria contínua de nossos processos.
 
-Sua validação é essencial para a qualidade da nossa Gestão Predial. Por gentileza, poderia avaliar os chamados abaixo?
+Anexo a este e-mail, enviamos um relatório detalhado com a soma dos chamados pendentes para cada solicitante.
 
-${listaSolicitantes(solicitantes)}
+Poderiam, por favor, acessar o sistema e realizar a avaliação dos itens listados?
 
-Basta acessar o sistema e confirmar a execução. Sua nota nos ajuda a melhorar continuamente.
-
-Agradecemos a parceria.
+Agradecemos imensamente pela parceria e disponibilidade.
 
 Atenciosamente,
+
 ${remetente}`;
 }
 
-/** Somente os nomes, separados por "; " — útil para colar no campo Para/Cc. */
+/** Somente os nomes, separados por ", " — útil para colar no campo Para/Cc. */
 export function nomesInline(s: SolicitanteResumo[]): string {
-  return s.map((x) => `${x.nome} (${x.total})`).join("; ");
+  return s.map((x) => x.nome).join(", ");
 }
