@@ -80,6 +80,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "refrigeracao-historico": "Refrigeração — Histórico",
 
   configuracoes: "Configurações",
+  organograma: "Organograma",
 };
 
 function UsuariosPage() {
