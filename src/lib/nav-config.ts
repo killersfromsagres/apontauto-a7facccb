@@ -103,7 +103,7 @@ export const sections: MenuSection[] = [
     icon: LayoutDashboard,
     items: [
       {
-        key: "menu-inicial",
+        key: "dashboard",
         title: "Menu Inicial",
         short: "Início",
         url: "/_authenticated/dashboard",

@@ -30,7 +30,7 @@ export const MobileTabBar = memo(function MobileTabBar() {
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pt-1.5">
         <TabLink
-          to="/"
+          to="/_authenticated/dashboard"
           label="Início"
           active={isActive("/")}
           icon={<Home className="h-5 w-5" strokeWidth={1.8} />}
