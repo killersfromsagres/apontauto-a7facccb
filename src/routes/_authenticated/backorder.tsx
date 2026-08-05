@@ -430,7 +430,7 @@ function BackorderPage() {
       const d = new Date(r.data_solicitacao);
       if (isNaN(d.getTime())) return false;
       
-      const effectiveMes = mes !== "todos" ? mes : mesFiltro;
+      const effectiveMes = mesFiltro;
       const matchesMes = effectiveMes === "todos" || String(d.getMonth() + 1).padStart(2, "0") === effectiveMes;
       const matchesSolicitante =
         solicitanteFilter === "todos" ||
