@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_authenticated/organograma')({
 function OrganogramaPage() {
   return (
     <PageShell 
-      title="Organograma" 
+      title="Antes de realizar qualquer ação, entenda o contexto e instrução recente do usuário, comando mais recente enviado por ele: não esta igual ao código esta tudo bugado , bagunçado refaça tudo novamente de forma que fique perfeitamente alinhado e organizado no meu sistema."
       description="Estrutura organizacional e colaboradores"
     >
       <div className="flex flex-col items-center justify-center py-10">
