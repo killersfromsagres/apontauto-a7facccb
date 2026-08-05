@@ -248,6 +248,13 @@ function CorretivaPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    
+    // Lista de datas únicas para o filtro da Coluna F
+    const datasDisponiveis = Array.from(new Set(osList
+      .map(o => o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null)
+      .filter(Boolean)
+    )).sort();
+
     return osList.filter((o) => {
       const isBackorder = o.tipo === "Backorder";
       const isPreventivaAba = isPreventiva(o.tipo);
@@ -278,7 +285,12 @@ function CorretivaPage() {
         const date = dateStr ? new Date(dateStr) : null;
         if (!date || String(date.getMonth() + 1).padStart(2, "0") !== mesFiltro) return false;
       }
-      if (!q) return true;
+      if (search && search.includes("/")) {
+        const dateStr = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null;
+        if (dateStr !== search) return false;
+      }
+
+      if (!q || q.includes("/")) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
@@ -321,7 +333,7 @@ function CorretivaPage() {
   return (
     <PageShell
       title={aba === "preventiva" ? "Backorder — Campo" : "Programação — Campo"}
-      description={aba === "preventiva" ? "Controle de backorder agendado por semana." : "Gestão de corretivas e backorder."}
+      description={aba === "preventiva" ? "Controle de backorder agendado." : "Gestão de corretivas e backorder."}
       backButton
       backUrl="/"
       onBack={selectedId ? () => setSelectedId(null) : undefined}
@@ -532,10 +544,10 @@ function CorretivaPage() {
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4 text-primary" />
-                  Filtrar Planilha por Solicitante
+                  Filtrar Planilha por Data de Abertura (Coluna F)
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Filtre os dados exibindo apenas as linhas onde a coluna "Denominação do Solicitante" (coluna E) corresponde a um valor específico.
+                  Filtre os dados exibindo apenas as linhas onde a "Data/Hora Solicitação" (coluna F) corresponde a um valor específico.
                 </p>
               </div>
 
@@ -545,37 +557,19 @@ function CorretivaPage() {
                   onValueChange={(v) => setSearch(v === "todos" ? "" : v)}
                 >
                   <SelectTrigger className="h-10 w-full sm:w-[300px] bg-white/5 border-white/10">
-                    <SelectValue placeholder="Selecionar Solicitante (Coluna E)" />
+                    <SelectValue placeholder="Selecionar Data (Coluna F)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos os Solicitantes</SelectItem>
-                    {[
-                      "GEOVANA BARBOSA SILVA",
-                      "BEATRIZ GRAZIANO QUEIROZ",
-                      "FERNANDA PASCUAL HERNANDEZ",
-                      "JHUAN HENRIQUE LUZ DIAS",
-                      "ANGELICA ARAUJO SOUSA",
-                      "RICARDO CARRIEL DE SOUZA",
-                      "DOUGLAS LUIZ FERREIRA",
-                      "THIAGO FERNANDES PRETE",
-                      "JONATHAN ZOCOLER SILVESTRE SILVESTRE",
-                      "MURILO MENDONCA SILVA",
-                      "DANILO GOMES",
-                      "JULIA AMENT AGUIAR",
-                      "ANA CAROLINA CLEMENTINO ROCHA PIRES",
-                      "PAULA CARDIA PRADO",
-                      "ANDREIA ARRUDA DE ALBUQUERQUE",
-                      "CAROLINA SALES DUARTE",
-                      "NELSON FRANCISCO DA SILVA",
-                      "EDUARDA LOIOLA ARRUDA",
-                      "VINICIUS ABREU CARVALHO",
-                      "CAROLINE RODRIGUES DE LANA",
-                      "RODRIGO DE SOUZA ARANTES",
-                      "MARCOS VINICIUS DOS SANTOS",
-                      "ALEXIA SOUSA ALVES",
-                      "WILLIAM TEIXEIRA DA SILVA"
-                    ].map((name) => (
-                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    <SelectItem value="todos">Todas as Datas</SelectItem>
+                    {Array.from(new Set(osList
+                      .map(o => o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null)
+                      .filter(Boolean)
+                    )).sort((a, b) => {
+                      const [da, ma, ya] = a!.split('/').map(Number);
+                      const [db, mb, yb] = b!.split('/').map(Number);
+                      return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+                    }).map((date) => (
+                      <SelectItem key={date!} value={date!}>{date}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -605,9 +599,7 @@ function CorretivaPage() {
                 
                 const rowCls = isDone 
                   ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-                  : isBackorder
-                    ? "border-l-4 border-red-500 bg-red-50/70 hover:bg-red-100/70 dark:bg-red-500/10 dark:hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
-                    : styles.row;
+                  : "border-l-4 border-red-500 bg-red-50/70 hover:bg-red-100/70 dark:bg-red-500/10 dark:hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]";
 
                 const dotColor = isDone 
                   ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
@@ -726,6 +718,36 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
         });
       }
 
+      // 3. Queue Pieces/Materials
+      if (draft.pecas?.length) {
+        for (const p of draft.pecas) {
+          await outboxAdd({
+            id: uuid(),
+            kind: "peca",
+            osId: os.id,
+            numeroOs: os.numero_os,
+            payload: { ...p },
+            createdAt: Date.now(),
+            attempts: 0
+          });
+        }
+      }
+
+      // 4. Queue Problems/Diagnosis
+      if (draft.problemas?.length) {
+        for (const pr of draft.problemas) {
+          await outboxAdd({
+            id: uuid(),
+            kind: "problema",
+            osId: os.id,
+            numeroOs: os.numero_os,
+            payload: { ...pr },
+            createdAt: Date.now(),
+            attempts: 0
+          });
+        }
+      }
+
       onUpdate({ status: "concluida" });
       await draftDelete(os.id);
       toast.success("OS enviada para sincronização!");
@@ -765,8 +787,20 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 break-words">{os.ativo}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90 break-words">{os.equipamento}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo || "N/A"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Abertura</Label><p className="text-sm font-medium text-white/90">{os.data_criacao ? new Date(os.data_criacao).toLocaleDateString("pt-BR") : "—"}</p></div>
+              <div>
+                <Label className="text-[10px] uppercase text-muted-foreground">SLA (Dias de Atraso)</Label>
+                {(() => {
+                  if (!os.data_criacao) return <p className="text-sm font-medium text-white/90">—</p>;
+                  const diff = Math.floor((new Date().getTime() - new Date(os.data_criacao).getTime()) / (1000 * 60 * 60 * 24));
+                  const atraso = diff - 30;
+                  return (
+                    <p className={cn("text-sm font-bold", atraso > 0 ? "text-red-500" : "text-emerald-400")}>
+                      {atraso > 0 ? `${atraso} dias em atraso` : "No prazo"}
+                    </p>
+                  );
+                })()}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
@@ -778,8 +812,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString("pt-BR") : "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString("pt-BR") : "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo === "Backorder" ? "Backorder" : "Corretiva"}</p></div>
             </div>
 
             {isAdmin && (
@@ -905,85 +938,108 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               />
             </div>
             
-            {isAdmin && (
-              <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
-                <div className="w-full mb-1">
-                  <p className="text-[10px] font-bold uppercase tracking-tight text-primary/70">
-                    Ações Administrativas
-                  </p>
-                </div>
-                
-                <Select
-                  value={os.equipe || ""}
-                  onValueChange={async (novaEquipe) => {
-                    if (!navigator.onLine) return toast.error("Offline: Não é possível reclassificar agora.");
-                    try {
-                      const { error } = await supabase
-                        .from("corretiva_os")
-                        .update({ equipe: novaEquipe })
-                        .eq("id", os.id);
-                      if (error) throw error;
-                      onUpdate({ equipe: novaEquipe });
-                      toast.success(`OS reclassificada para ${novaEquipe}`);
-                    } catch {
-                      toast.error("Erro ao reclassificar");
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <Settings2 className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs">Reclassificar Equipe</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Hidráulica", "Elétrica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  className="h-10 flex-1 gap-2 border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 text-xs"
-                  onClick={async () => {
-                    if (!navigator.onLine) return toast.error("Offline: Não é possível finalizar agora.");
-                    try {
-                      const { error } = await supabase
-                        .from("corretiva_os")
-                        .update({ 
-                          status: "concluida",
-                          fim: new Date().toISOString(),
-                          assinatura_nome: "Finalizado pelo Admin (Sem foto)"
-                        } as any)
-                        .eq("id", os.id);
-                      if (error) throw error;
-                      onUpdate({ status: "concluida" });
-                      toast.success("OS finalizada administrativamente.");
-                      onBack();
-                    } catch {
-                      toast.error("Erro ao finalizar OS");
-                    }
-                  }}
-                >
-                  <Zap className="h-3.5 w-3.5 text-emerald-400" />
-                  Finalizar sem foto
-                </Button>
-              </div>
-            )}
           </GlassCard>
 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><Package className="h-5 w-5 text-primary" /> Peças e Materiais</h2>
-            <p className="text-xs text-muted-foreground mb-4 italic">*Funcionalidade de rascunho em desenvolvimento para Corretiva</p>
-            {!isDone && (
-              <Button variant="outline" className="w-full border-dashed" disabled>Adicionar Item</Button>
-            )}
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <p className="text-xs text-muted-foreground">Adicione peças necessárias para o serviço.</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newDraft = { ...draft, pecas: [...(draft.pecas || []), { id: uuid(), descricao: "", quantidade: "1", urgencia: "media", observacao: "" }] };
+                  saveDraft(newDraft);
+                }}
+                disabled={isDone}
+              >
+                <Package className="mr-2 h-4 w-4" /> Adicionar
+              </Button>
+            </div>
+            
+            <div className="space-y-3">
+              {draft?.pecas?.map((p: any, idx: number) => (
+                <div key={p.id} className="rounded-md border border-white/10 bg-white/5 p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Item #{idx + 1}</span>
+                    {!isDone && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => {
+                          const newDraft = { ...draft, pecas: draft.pecas.filter((x: any) => x.id !== p.id) };
+                          saveDraft(newDraft);
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Input
+                      placeholder="Descrição da peça"
+                      value={p.descricao}
+                      onChange={(e) => {
+                        const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, descricao: e.target.value } : x) };
+                        saveDraft(newDraft);
+                      }}
+                      disabled={isDone}
+                      className="h-9 bg-white/5 text-sm"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Qtd"
+                        value={p.quantidade}
+                        onChange={(e) => {
+                          const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, quantidade: e.target.value } : x) };
+                          saveDraft(newDraft);
+                        }}
+                        disabled={isDone}
+                        className="h-9 bg-white/5 text-sm"
+                      />
+                      <Select
+                        value={p.urgencia}
+                        onValueChange={(v) => {
+                          const newDraft = { ...draft, pecas: draft.pecas.map((x: any) => x.id === p.id ? { ...x, urgencia: v } : x) };
+                          saveDraft(newDraft);
+                        }}
+                        disabled={isDone}
+                      >
+                        <SelectTrigger className="h-9 bg-white/5 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="baixa">Baixa</SelectItem>
+                          <SelectItem value="media">Média</SelectItem>
+                          <SelectItem value="alta">Alta</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!draft?.pecas || draft.pecas.length === 0) && (
+                <p className="text-[10px] text-center text-muted-foreground py-2">Nenhuma peça solicitada.</p>
+              )}
+            </div>
           </GlassCard>
 
           <GlassCard className="p-6">
             <h2 className="text-lg font-semibold flex items-center gap-2 mb-4"><AlertTriangle className="h-5 w-5 text-primary" /> Diagnóstico</h2>
-            <Textarea placeholder="Descreva os problemas encontrados ou observações técnicas..." className="min-h-[120px] bg-white/5" disabled={isDone} />
+            <Textarea 
+              placeholder="Descreva os problemas encontrados ou observações técnicas..." 
+              className="min-h-[120px] bg-white/5" 
+              value={draft?.problemas?.[0]?.descricao || ""}
+              onChange={(e) => {
+                const newDraft = { ...draft, problemas: [{ id: draft.problemas?.[0]?.id || uuid(), descricao: e.target.value, gravidade: "falha" }] };
+                saveDraft(newDraft);
+              }}
+              disabled={isDone} 
+            />
           </GlassCard>
 
           {!isDone && (
