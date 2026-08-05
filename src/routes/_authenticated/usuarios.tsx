@@ -44,7 +44,7 @@ import {
 } from "@/lib/users.functions";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
 });
 
