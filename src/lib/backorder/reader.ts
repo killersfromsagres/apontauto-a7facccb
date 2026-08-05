@@ -304,9 +304,8 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    // COLUNA G — estado da OS na planilha oficial.
     // COLUNA D/E — solicitante e centro de custo
-    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "SOLICITANTE");
+    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE");
     const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC");
     
     // COLUNA F — data de abertura
