@@ -109,32 +109,41 @@ const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ 
 
 export const MENU_KEYS = [
   "dashboard",
-  "programacao",
-  "backorder",
-  "lavanderia",
-  "preventiva",
-  "corretiva",
-  "corretiva-historico",
-  "corretiva-gestor",
-  "taludes",
+  "programacao-gps",
+  "backlog-inteligente",
+  "capacidade",
   "apontamentos",
-  "painel-legal",
   "refrigeracao",
-  "refrigeracao-gestor",
-  "controle-materiais",
-  "base-ativos",
-  "inteligencia-ativos",
-  "assets-fill",
-  "assets-catalog",
-  "assets-history",
-  "assets-unmatched",
-  "dashboard-chamados",
-  "clima-tempo",
-  "preventiva-ac",
-  "seguranca-trabalho",
-  "corretiva-pecas-status",
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
+  "programacao",
+  "corretiva",
+  "corretiva-pecas-status",
+  "corretiva-historico",
+  "assets-fill",
+  "assets-catalog",
+  "assets-unmatched",
+  "assets-history",
+  "confiabilidade",
+  "taludes",
+  "taludes-pt",
+  "clima-tempo",
+  "abastecimento",
+  "agua-execucao",
+  "solicitacao-materiais",
+  "controle-materiais",
+  "lavanderia",
+  "seguranca-trabalho",
+  "painel-legal",
+  "auditoria",
+  "observabilidade",
+  "copiloto",
+  "agente-ia",
+  "bi-studio",
+  "notificacoes",
+  "notificacoes-admin",
+  "qualidade-dados",
+  "imagens",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
@@ -244,9 +253,22 @@ export const createAppUser = createServerFn({ method: "POST" })
   .validator(validateCreate)
   .handler(async ({ data, context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    throw new Error("Criação de novos usuários está desativada neste sistema.");
+    const supabaseAdmin = await createUsersAdminClient();
 
-    return { id: "", login: data.login, role: data.role };
+    const email = loginToEmail(data.login);
+    const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password: data.password,
+      email_confirm: true,
+      user_metadata: { login: data.login, full_name: data.fullName },
+    });
+
+    if (error) throw new Error(error.message);
+
+    const user = res.user!;
+    await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: data.role });
+
+    return { id: user.id, login: data.login, role: data.role };
   });
 
 /**
