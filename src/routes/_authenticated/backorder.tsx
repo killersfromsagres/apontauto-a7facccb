@@ -335,8 +335,9 @@ function BackorderPage() {
         cursor = page[page.length - 1]!.os;
       }
       setRows(sortForView(all));
-    } catch {
-      toast.error("Falha ao carregar backorder");
+    } catch (err: any) {
+      console.error("Erro ao carregar backorder:", err);
+      toast.error("Falha ao carregar backorder: " + (err.message || "Erro desconhecido"));
       setRows(sortForView(all));
     } finally {
       setLoading(false);
