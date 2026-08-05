@@ -460,6 +460,22 @@ export const sections: MenuSection[] = [
 
   {
     kind: "group",
+    key: "avaliacao-grp",
+    title: "Satisfação e Qualidade",
+    icon: Star,
+    items: [
+      {
+        key: "avaliacao-chamados",
+        title: "Avaliação de Chamados",
+        short: "Avaliação",
+        url: "/avaliacao-chamados",
+        icon: MessageSquareCheck,
+        keywords: ["satisfação", "qualidade", "email", "feedback", "solicitante"],
+      },
+    ],
+  },
+  {
+    kind: "group",
     key: "admin-grp",
     title: "Administração",
     icon: Cog,
