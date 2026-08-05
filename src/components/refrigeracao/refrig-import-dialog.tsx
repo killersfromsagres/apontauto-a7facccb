@@ -81,10 +81,11 @@ export function RefrigImportDialog({ onDone }: { onDone: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" className="h-11 w-full sm:w-auto">
           <Upload className="mr-2 h-4 w-4" /> Importar Planilha
         </Button>
       </DialogTrigger>
+
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Importar/Atualizar Refrigeração (.xlsx)</DialogTitle>
