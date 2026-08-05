@@ -30,18 +30,16 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
-// Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
-// com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
 function pathKeys(pathname: string): string[] | null {
   // O dashboard é a rota raiz da aplicação autenticada, acessível a todos.
-  if (
-    pathname === "/" ||
-    pathname === "" ||
-    pathname === "/dashboard" ||
-    pathname === "/_authenticated/dashboard"
-  ) {
-    return null;
-  }
+  const isDashboard = 
+    pathname === "/" || 
+    pathname === "" || 
+    pathname === "/dashboard" || 
+    pathname === "/_authenticated/dashboard" ||
+    pathname === "/_authenticated/dashboard/";
+
+  if (isDashboard) return null;
   return menuKeysForPath(pathname);
 }
 
