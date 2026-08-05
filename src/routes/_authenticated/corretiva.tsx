@@ -324,122 +324,121 @@ function CorretivaPage() {
                     <span className="sm:inline">Liberar</span>
                   </Button>
                 </DialogTrigger>
-
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Liberação da programação por semana</DialogTitle>
-                  <DialogDescription>
-                    A partir da semana {SEMANA_INICIAL}. Colaboradores só visualizam e executam
-                    as OS das semanas liberadas.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-                  {semanasDisponiveis.length === 0 ? (
-                    <p className="py-6 text-center text-sm text-muted-foreground">
-                      Nenhuma semana encontrada na programação atual.
-                    </p>
-                  ) : (
-                    semanasDisponiveis.map((s) => {
-                      const ativa = !!liberadas[s.key];
-                      return (
-                        <div
-                          key={s.key}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold">
-                              Semana {s.semana}/{s.ano}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {intervaloSemana(s.ano, s.semana)} · {s.total} OS
-                            </p>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Liberação da programação por semana</DialogTitle>
+                    <DialogDescription>
+                      A partir da semana {SEMANA_INICIAL}. Colaboradores só visualizam e executam
+                      as OS das semanas liberadas.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+                    {semanasDisponiveis.length === 0 ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">
+                        Nenhuma semana encontrada na programação atual.
+                      </p>
+                    ) : (
+                      semanasDisponiveis.map((s) => {
+                        const ativa = !!liberadas[s.key];
+                        return (
+                          <div
+                            key={s.key}
+                            className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-3"
+                          >
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold">
+                                Semana {s.semana}/{s.ano}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {intervaloSemana(s.ano, s.semana)} · {s.total} OS
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-[10px]",
+                                  ativa
+                                    ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
+                                    : "border-amber-500/30 bg-amber-500/15 text-amber-400",
+                                )}
+                              >
+                                {ativa ? "Liberada" : "Bloqueada"}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant={ativa ? "outline" : "default"}
+                                disabled={savingSemana === s.key}
+                                onClick={() => toggleSemana(s.ano, s.semana, !ativa)}
+                              >
+                                {savingSemana === s.key ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : ativa ? (
+                                  "Bloquear"
+                                ) : (
+                                  "Liberar"
+                                )}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-[10px]",
-                                ativa
-                                  ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-400"
-                                  : "border-amber-500/30 bg-amber-500/15 text-amber-400",
-                              )}
-                            >
-                              {ativa ? "Liberada" : "Bloqueada"}
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant={ativa ? "outline" : "default"}
-                              disabled={savingSemana === s.key}
-                              onClick={() => toggleSemana(s.ano, s.semana, !ativa)}
-                            >
-                              {savingSemana === s.key ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : ativa ? (
-                                "Bloquear"
-                              ) : (
-                                "Liberar"
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
+                        );
+                      })
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
 
-
-          <Badge variant={online ? "outline" : "destructive"} className="gap-1.5 py-1 px-2">
-            {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
-            {online ? "Online" : "Offline"}
-          </Badge>
-          {pending > 0 && (
-            <Badge variant="secondary" className="gap-1.5 py-1 px-2 bg-amber-500/20 text-amber-500 border-amber-500/20">
-              <RefreshCw className={`h-3 w-3 ${syncing ? "animate-spin" : ""}`} />
-              {pending} pendente(s)
+          <div className="flex flex-1 items-center gap-2 sm:flex-none">
+            <Badge variant={online ? "outline" : "destructive"} className="h-11 px-2.5 sm:h-9">
+              {online ? <Wifi className="h-3 w-3 text-emerald-500" /> : <WifiOff className="h-3 w-3" />}
             </Badge>
-          )}
-          <Button size="sm" variant="outline" onClick={() => doSync(false)} disabled={syncing || !online}>
-            Sincronizar
-          </Button>
-
-          {isAdmin && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Limpar Chamados
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Limpar chamados?</AlertDialogTitle>
-                  <AlertDialogDescription>Esta ação removerá permanentemente as OS de corretiva da base de dados.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-red-600 hover:bg-red-700"
-                    onClick={async () => {
-                      try {
-                        await clearOsTable({ data: { module: "corretiva" } });
-                        toast.success("Tabela limpa");
-                        window.location.reload();
-                      } catch (e: any) {
-                        toast.error("Erro ao limpar");
-                      }
-                    }}
-                  >
-                    Confirmar
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 flex-1 sm:h-9 sm:flex-none"
+              onClick={() => doSync(false)}
+              disabled={syncing || !online}
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+            </Button>
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="destructive" className="h-11 bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 px-3 sm:h-9">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Limpar chamados?</AlertDialogTitle>
+                    <AlertDialogDescription>Esta ação removerá permanentemente as OS de corretiva da base de dados.</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={async () => {
+                        try {
+                          await clearOsTable({ data: { module: "corretiva" } });
+                          toast.success("Tabela limpa");
+                          window.location.reload();
+                        } catch (e: any) {
+                          toast.error("Erro ao limpar");
+                        }
+                      }}
+                    >
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
       }
+
     >
       {!selected ? (
         <GlassCard className="p-4">
