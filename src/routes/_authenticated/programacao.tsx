@@ -360,10 +360,16 @@ function ProgramacaoPage() {
       description="Gestão de programações semanais e manutenção preventiva."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")}>
+          {isAdmin && (
+            <>
+              <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
+              <PreventivaImportDialog mode="preventiva" onDone={() => {}} />
+            </>
+          )}
+          <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")} className="h-11 sm:h-9">
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Template GPS
           </Button>
-          <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)}>
+          <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)} className="h-11 sm:h-9">
             <FileSpreadsheet className="mr-2 h-4 w-4" /> Template Sherwin
           </Button>
         </div>
