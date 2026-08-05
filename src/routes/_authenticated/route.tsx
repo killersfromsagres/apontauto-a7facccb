@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/auth" });
+    if (!data.session) return redirect({ to: "/auth" });
     return { user: data.session.user };
   },
   component: AuthenticatedLayout,
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
 // Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
 // com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
 function pathKeys(pathname: string): string[] | null {
-  if (pathname === "/" || pathname === "") return ["menu-inicial", "dashboard"];
+  if (pathname === "/" || pathname === "" || pathname === "/dashboard" || pathname === "/_authenticated/dashboard") return ["menu-inicial", "dashboard"];
   return menuKeysForPath(pathname);
 }
 
@@ -157,7 +157,18 @@ function AuthenticatedLayout() {
             tabIndex={-1}
             className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
           >
-            {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
+            {canRender ? (
+              <Outlet />
+            ) : (
+              <>
+                {/* Fallback component handles redirection or shows restricted message */}
+                <AccessFallback loading={loading} noMenus={noMenus} />
+                {/* DEBUG INFO: if you see this, the route exists but AccessGuard or canRenderPath rejected it */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="hidden">Path: {pathname}, loading: {String(loading)}, canRender: {String(canRender)}</div>
+                )}
+              </>
+            )}
           </main>
           <MobileTabBar />
           <ForcePasswordChange />
