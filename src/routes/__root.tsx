@@ -85,21 +85,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "format-detection", content: "telephone=no" },
-      { title: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
+      { title: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
       {
         name: "description",
-        content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual).",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
+      { property: "og:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
       {
         property: "og:description",
-        content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual).",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "# Sistema de Backorders e Gestão de Ordens de Serviço (OS)" },
-      { name: "twitter:description", content: "Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual)." },
+      { name: "twitter:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
+      { name: "twitter:description", content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem." },
       {
         property: "og:image",
         content:
