@@ -607,7 +607,8 @@ function BackorderPage() {
             resolve(m);
             worker.terminate();
           } else if (m.type === "error") {
-            reject(new Error(m.message));
+            console.error("Worker error message:", m.message);
+            reject(new Error(m.message || "Erro interno no processamento"));
             worker.terminate();
           }
         };
