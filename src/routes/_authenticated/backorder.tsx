@@ -3568,11 +3568,6 @@ const BackorderPanel = memo(function BackorderPanel({
                           />
                           {r.atividade}
                         </Badge>
-                            color: CATEGORIA_COLOR[r.atividade as Categoria] ?? "#64748B",
-                          }}
-                        >
-                          {r.atividade}
-                        </Badge>
                       </div>
                       <div className="mt-1 line-clamp-2 text-sm font-medium" title={r.nome}>
                         {r.nome || "—"}
