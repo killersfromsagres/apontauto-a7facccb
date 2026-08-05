@@ -116,22 +116,6 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
-    key: "backorder-grp",
-    title: "Gestão de Backorders e OS",
-    icon: ListChecks,
-    items: [
-      {
-        key: "backorder",
-        title: "Backorders e OS",
-        short: "Backorder",
-        url: "/backorder",
-        icon: PackageX,
-        keywords: ["backorder", "os", "histórico", "chamados", "pendência"],
-      },
-    ],
-  },
-  {
-    kind: "group",
     key: "planejamento-grp",
     title: "Planejamento PCM",
     icon: CalendarRange,
