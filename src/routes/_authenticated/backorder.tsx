@@ -1516,7 +1516,7 @@ function BackorderPage() {
   return (
     <PageShell
       title="Gestão de Backorders e OS"
-      description="crie uma seção exclusiva para gestão de backorders que eu solicitei pra você fazer um modo separado"
+      description="não está parecendo a data de abertura , preciso que melhore o sistema para ele captar automaticamente a coluna pois as vezes possa não estar na coluna F , então crie o sistema inteligente no qual ele irá automaticamente identificar na planilha a data de abertura."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
