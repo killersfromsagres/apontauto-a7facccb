@@ -190,6 +190,7 @@ interface BOSRow {
   predio: string;
   andar: string;
   espaco: string;
+  centro_custo?: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
@@ -459,6 +460,10 @@ function BackorderPage() {
   const cancelados = useMemo(
     () => rowsFiltradas.filter((r) => ["cancelado", "nao_executada"].includes(catOf(r))),
     [rowsFiltradas, catOf],
+  );
+  const reabertas = useMemo(
+    () => rowsFiltradas.filter((r) => r.status_origem?.toLowerCase().includes("reaberta")),
+    [rowsFiltradas],
   );
   const aguardandoAprovacao = useMemo(
     () => rowsFiltradas.filter((r) => catOf(r) === "aguardando_aprovacao"),
