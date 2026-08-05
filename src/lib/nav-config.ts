@@ -110,6 +110,14 @@ export const sections: MenuSection[] = [
         icon: Gauge,
         keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
       },
+      {
+        key: "organograma",
+        title: "Organograma",
+        short: "Time",
+        url: "/organograma",
+        icon: Users,
+        keywords: ["equipe", "hierarquia", "membros", "gestão", "time", "setores"],
+      },
     ],
   },
   {
