@@ -9,12 +9,16 @@ export function PageShell({
   eyebrow,
   children,
   actions,
+  backButton = false,
+  backUrl = "/",
 }: {
   title: string;
   description?: string;
   eyebrow?: string;
   children: ReactNode;
   actions?: ReactNode;
+  backButton?: boolean;
+  backUrl?: string;
 }) {
   return (
     <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8">
