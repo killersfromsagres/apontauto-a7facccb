@@ -122,7 +122,7 @@ function UsuariosPage() {
 
   return (
     <PageShell
-      title={`Antes de realizar qualquer ação, entenda o contexto e instrução recente do usuário, comando mais recente enviado por ele: em Gerenciamento de Usuários para Admin está dando erro e não consigo gerenciar os usuários "Falha ao carregar usuários: Configuração administrativa do backend indisponível."`}
+      title={`Antes de realizar qualquer ação, entenda o contexto e instrução recente do usuário, comando mais recente enviado por ele: o login manutenção não aparece para eu gerenciar , e ao selecionar as permissões os campos  estão bugados preciso que tenha um sistema para fechar e abrir automaticamente este campo.`}
       description="Seção administrativa para criação de contas, definição de logins e gerenciamento granular de permissões de acesso."
     >
       <div className="mb-6">
