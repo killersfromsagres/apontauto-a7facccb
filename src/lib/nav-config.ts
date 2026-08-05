@@ -106,7 +106,7 @@ export const sections: MenuSection[] = [
         key: "dashboard",
         title: "Menu Inicial",
         short: "Início",
-        url: "/_authenticated/dashboard",
+        url: "/",
         icon: BrainCircuit,
         keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
       },
