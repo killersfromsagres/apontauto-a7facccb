@@ -123,9 +123,9 @@ export function OrganogramaView() {
     if (children.length === 0) return null;
 
     return (
-      <div className={cn("flex flex-col gap-4", level > 0 && "ml-8 border-l border-white/10 pl-8 py-2")}>
+      <div className={cn("flex flex-wrap items-start gap-8", level > 0 && "ml-12 border-l border-white/10 pl-12 py-6")}>
         {children.map(node => (
-          <div key={node.id} className="space-y-4">
+          <div key={node.id} className="flex flex-col gap-8">
             <InteractiveOrgCard 
               node={node} 
               canEdit={canEdit} 
