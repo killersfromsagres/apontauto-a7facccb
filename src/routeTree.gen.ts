@@ -44,8 +44,9 @@ import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authent
 import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenticated/materiais-os'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
+import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedFrotaRouteImport } from './routes/_authenticated/frota'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
@@ -282,16 +283,22 @@ const AuthenticatedImagensRoute = AuthenticatedImagensRouteImport.update({
   path: '/imagens',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
+  id: '/gestao',
+  path: '/gestao',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedFrotaRoute = AuthenticatedFrotaRouteImport.update({
   id: '/frota',
   path: '/frota',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedDashboardChamadosRoute =
+  AuthenticatedDashboardChamadosRouteImport.update({
+    id: '/dashboard-chamados',
+    path: '/dashboard-chamados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCorretivaPecasStatusRoute =
   AuthenticatedCorretivaPecasStatusRouteImport.update({
     id: '/corretiva-pecas-status',
@@ -571,8 +578,9 @@ export interface FileRoutesByFullPath {
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/frota': typeof AuthenticatedFrotaRoute
+  '/gestao': typeof AuthenticatedGestaoRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -653,8 +661,9 @@ export interface FileRoutesByTo {
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/frota': typeof AuthenticatedFrotaRoute
+  '/gestao': typeof AuthenticatedGestaoRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -736,8 +745,9 @@ export interface FileRoutesById {
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
   '/_authenticated/frota': typeof AuthenticatedFrotaRoute
+  '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/materiais-os': typeof AuthenticatedMateriaisOsRoute
@@ -820,8 +830,9 @@ export interface FileRouteTypes {
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
-    | '/dashboard'
+    | '/dashboard-chamados'
     | '/frota'
+    | '/gestao'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
@@ -902,8 +913,9 @@ export interface FileRouteTypes {
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
-    | '/dashboard'
+    | '/dashboard-chamados'
     | '/frota'
+    | '/gestao'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
@@ -984,8 +996,9 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
     | '/_authenticated/corretiva-pecas-status'
-    | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard-chamados'
     | '/_authenticated/frota'
+    | '/_authenticated/gestao'
     | '/_authenticated/imagens'
     | '/_authenticated/lavanderia'
     | '/_authenticated/materiais-os'
@@ -1314,6 +1327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImagensRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/gestao': {
+      id: '/_authenticated/gestao'
+      path: '/gestao'
+      fullPath: '/gestao'
+      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/frota': {
       id: '/_authenticated/frota'
       path: '/frota'
@@ -1321,11 +1341,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFrotaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+    '/_authenticated/dashboard-chamados': {
+      id: '/_authenticated/dashboard-chamados'
+      path: '/dashboard-chamados'
+      fullPath: '/dashboard-chamados'
+      preLoaderRoute: typeof AuthenticatedDashboardChamadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/corretiva-pecas-status': {
@@ -1720,8 +1740,9 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
   AuthenticatedFrotaRoute: typeof AuthenticatedFrotaRoute
+  AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedMateriaisOsRoute: typeof AuthenticatedMateriaisOsRoute
@@ -1770,8 +1791,9 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
   AuthenticatedCorretivaPecasStatusRoute:
     AuthenticatedCorretivaPecasStatusRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
   AuthenticatedFrotaRoute: AuthenticatedFrotaRoute,
+  AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedMateriaisOsRoute: AuthenticatedMateriaisOsRoute,

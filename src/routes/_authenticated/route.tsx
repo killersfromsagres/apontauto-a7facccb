@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
 // Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
 // com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
 function pathKeys(pathname: string): string[] | null {
-  if (pathname === "/" || pathname === "") return ["menu-inicial", "dashboard"];
+  if (pathname === "/" || pathname === "") return ["dashboard"];
   return menuKeysForPath(pathname);
 }
 
@@ -64,7 +64,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/${fallback}`;
+      const target = fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
