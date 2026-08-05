@@ -1774,21 +1774,6 @@ function BackorderPage() {
             </Select>
           </div>
 
-          <div className="flex flex-1 flex-col gap-1.5 min-w-[200px]">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-              Solicitante
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Filtrar por nome..."
-                value={solicitanteFilter}
-                onChange={(e) => setSolicitanteFilter(e.target.value)}
-                className="h-10 border-white/10 bg-white/5 pl-9 text-sm"
-              />
-            </div>
-          </div>
-
           <div className="flex flex-col gap-1.5 justify-end">
             <Label className="text-[10px] font-bold uppercase tracking-wider text-transparent select-none">Ações</Label>
             <Button
