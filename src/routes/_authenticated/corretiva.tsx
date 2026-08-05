@@ -626,8 +626,14 @@ function CorretivaPage() {
                 return (
                   <button
                     key={o.id}
-                    onClick={() => setSelectedId(o.id)}
-                    className={`w-full flex items-start gap-3 p-4 rounded-xl text-left transition-all active:scale-[0.98] ${rowCls}`}
+                    onClick={() => {
+                      if (selectedId === o.id) return;
+                      setSelectedId(o.id);
+                    }}
+                    className={cn(
+                      "w-full flex items-start gap-3 p-4 rounded-xl text-left transition-colors",
+                      rowCls
+                    )}
                   >
                     <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
                     <div className="flex-1 min-w-0">
