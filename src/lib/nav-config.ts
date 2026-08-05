@@ -36,6 +36,7 @@ import {
   SearchX,
   BellRing,
   Megaphone,
+  MessageSquareCheck,
   type LucideIcon,
   ImageIcon,
   Crown,
@@ -460,6 +461,22 @@ export const sections: MenuSection[] = [
 
   {
     kind: "group",
+    key: "avaliacao-grp",
+    title: "Satisfação e Qualidade",
+    icon: Star,
+    items: [
+      {
+        key: "avaliacao-chamados",
+        title: "Avaliação de Chamados",
+        short: "Avaliação",
+        url: "/avaliacao-chamados",
+        icon: MessageSquareCheck,
+        keywords: ["satisfação", "qualidade", "email", "feedback", "solicitante"],
+      },
+    ],
+  },
+  {
+    kind: "group",
     key: "admin-grp",
     title: "Administração",
     icon: Cog,
@@ -549,6 +566,7 @@ export function menuKeysForPath(pathname: string): string[] | null {
 /** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
 const RESTRICTED_KEYS = [
   "abastecimento",
+  "avaliacao-chamados",
   "abastecimento-agua",
   "agua-execucao",
   "frota-checklist",

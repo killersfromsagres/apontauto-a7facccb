@@ -109,6 +109,7 @@ const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ 
 
 export const MENU_KEYS = [
   "dashboard",
+  "avaliacao-chamados",
   "programacao-gps",
   "backlog-inteligente",
   "capacidade",
