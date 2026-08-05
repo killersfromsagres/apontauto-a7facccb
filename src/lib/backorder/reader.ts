@@ -101,13 +101,14 @@ function pickBackorderSheet(wb: any, XLSX: any): string {
     if (sn.startsWith("PLANO")) continue;
     const ws = wb.Sheets[n];
     if (!ws || !ws["!ref"]) continue;
-    const flat = norm(JSON.stringify(ws).slice(0, 4000));
+    const wsData = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: "" }).slice(0, 10);
+    const flat = norm(JSON.stringify(wsData));
     let score = 0;
     if (flat.includes("ATIVO")) score += 2;
-    if (flat.includes("DESCRICAO OS") || flat.includes("DESCRICAO DA OS")) score += 3;
-    if (flat.includes("NUMERO OS") || flat.includes("NUMERO DA OS") || flat.includes('"OS"'))
+    if (flat.includes("DESCRICAO OS") || flat.includes("DESCRICAO DA OS") || flat.includes("DESCRICAO")) score += 3;
+    if (flat.includes("NUMERO OS") || flat.includes("NUMERO DA OS") || flat.includes("OS"))
       score += 2;
-    if (flat.includes("SOLICITANTE")) score += 1;
+    if (flat.includes("SOLICITANTE") || flat.includes("DENOMINACAO DO SOLICITANTE")) score += 1;
     if (flat.includes("CRITICIDADE")) score += 1;
     if (flat.includes("STATUS")) score += 1;
     if (score > bestScore) {
