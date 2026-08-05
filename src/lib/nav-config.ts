@@ -117,7 +117,7 @@ export const sections: MenuSection[] = [
   {
     kind: "group",
     key: "backorder-grp",
-    title: "Gestão de Backorders",
+    title: "Gestão de Backorders e OS",
     icon: ListChecks,
     items: [
       {
