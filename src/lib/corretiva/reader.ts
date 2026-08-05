@@ -15,8 +15,8 @@ export type CorretivaOsImport = {
   data_programada: string | null;
   inicio: string | null;
   fim: string | null;
-  ativo: string;
-  equipamento: string;
+  ativo: string | null;
+  equipamento: string | null;
   solicitante: string | null;
   data_criacao: string | null;
 };
