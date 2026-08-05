@@ -488,6 +488,7 @@ function BackorderPage() {
         os: r.os,
         solicitante: r.outros,
         statusCat: catOf(r) as string,
+        atividade: r.nome,
       })),
     [finalizadas, aguardandoAprovacao, catOf],
   );
