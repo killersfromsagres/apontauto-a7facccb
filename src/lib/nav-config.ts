@@ -535,6 +535,7 @@ const RESTRICTED_KEYS = [
   "observabilidade",
   "confiabilidade",
   "gestao-executiva",
+  "planejamento-grp",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
