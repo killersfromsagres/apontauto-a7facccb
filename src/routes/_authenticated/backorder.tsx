@@ -2375,6 +2375,50 @@ function TableView({
   );
 }
 
+function AvaliacaoEmailButton({
+  os,
+  solicitante,
+  atividade,
+}: {
+  os: string;
+  solicitante: string;
+  atividade: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const ano = new Date().getFullYear();
+
+  const handleCopy = () => {
+    const resumo: SolicitanteResumo = {
+      nome: solicitante,
+      total: 1,
+      concluidos: 1,
+      aguardando: 0,
+      oss: [os],
+    };
+    const texto = corpoEmail({ solicitantes: [resumo], ano });
+    navigator.clipboard.writeText(texto);
+    setCopied(true);
+    toast.success("E-mail copiado para a área de transferência!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <Check className="mr-1 h-3 w-3" />
+      ) : (
+        <Mail className="mr-1 h-3 w-3" />
+      )}
+      {copied ? "Copiado" : "E-mail"}
+    </Button>
+  );
+}
+
 function TeamSummaryStrip({
   rows,
   filterCat,
