@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Copy, Check, Mail, Users, FileDown } from "lucide-react";
+import { Copy, Check, Mail, Users, FileDown, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { GlassCard } from "@/components/glass-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import confetti from "canvas-confetti";
 import {
   agruparSolicitantes,
   assuntoEmail,
@@ -65,11 +66,20 @@ export function AvaliacaoEmailCard({ rows, ano, resumo }: Props) {
         resumo: solicitantes,
         ano
       });
-      downloadBlob(blob, `Relatorio_Avaliacao_${ano}.xlsx`);
-      toast.success("Relatório gerado com sucesso!");
+      
+      downloadBlob(blob, `Relatorio_Avaliacao_${ano}.pdf`);
+      
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#0F172A', '#3B82F6', '#FFFFFF']
+      });
+
+      toast.success("Relatório PDF executivo gerado com sucesso!");
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao gerar relatório");
+      toast.error("Erro ao gerar relatório PDF");
     } finally {
       setExporting(false);
     }
@@ -147,7 +157,7 @@ export function AvaliacaoEmailCard({ rows, ano, resumo }: Props) {
           onClick={handleExportPDF}
           disabled={exporting}
         >
-          {exporting ? "Gerando..." : <><FileDown className="mr-2 h-4 w-4" /> Gerar Relatório (XLSX/PDF)</>}
+          {exporting ? "Gerando..." : <><Sparkles className="mr-2 h-4 w-4" /> Gerar Relatório Executivo (PDF)</>}
         </Button>
         <Button
           className="h-10 px-6 font-bold uppercase tracking-widest text-[10px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
