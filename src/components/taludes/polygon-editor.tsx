@@ -753,7 +753,8 @@ export function PolygonEditor({
                     r={(i === 0 ? VERTEX_RADIUS_PX * 2.5 : VERTEX_RADIUS_PX) / zoom}
                     fill={i === 0 ? "#22c55e" : "#ffffff"}
                     stroke="#0ea5e9"
-                    strokeWidth={1.2 / zoom}
+                    strokeWidth={0.4 / zoom}
+
                   />
                 ))}
               </g>
