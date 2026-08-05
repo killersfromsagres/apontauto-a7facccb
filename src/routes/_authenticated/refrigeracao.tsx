@@ -322,20 +322,27 @@ function RefrigeracaoPage() {
       title="Refrigeração"
       description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
       actions={
-        <>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {isOwner && (
-            <RefrigImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+            <div className="flex-1 sm:flex-none w-full sm:w-auto">
+              <RefrigImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+            </div>
           )}
-          <StatusChip online={online} syncing={syncing} pending={pending} />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => doSync(false)}
-            disabled={syncing || !online}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            Sincronizar
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-none w-full sm:w-auto">
+            <StatusChip online={online} syncing={syncing} pending={pending} />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 flex-1 sm:flex-none sm:w-auto"
+              onClick={() => doSync(false)}
+              disabled={syncing || !online}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              Sincronizar
+            </Button>
+          </div>
+        </div>
+
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
