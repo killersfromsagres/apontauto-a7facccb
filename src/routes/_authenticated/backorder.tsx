@@ -1860,6 +1860,10 @@ function BackorderPage() {
               Aguardando aprovação
               <Badge className="ml-2 bg-amber-500 text-white">{aguardandoAprovacao.length}</Badge>
             </TabsTrigger>
+            <TabsTrigger value="reabertas" className="min-h-11">
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Reabertas
+              <Badge className="ml-2 bg-purple-500 text-white">{reabertas.length}</Badge>
+            </TabsTrigger>
             <TabsTrigger value="cancelados" className="min-h-11">
               Cancelados
               <Badge variant="secondary" className="ml-2">
