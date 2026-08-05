@@ -25,18 +25,20 @@ export function PageShell({
       {/* Cabeçalho Compacto Mobile */}
       <div className="relative flex min-w-0 flex-col gap-2 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-6">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="md:hidden pt-0.5 shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10"
-              asChild
-            >
-              <a href="/">
-                <ArrowLeft className="h-4 w-4" />
-              </a>
-            </Button>
-          </div>
+          {(backButton || true) && (
+            <div className="pt-0.5 shrink-0 md:pt-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 sm:h-10 sm:w-10"
+                asChild
+              >
+                <a href={backUrl}>
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                </a>
+              </Button>
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             {eyebrow && (
               <div className="text-[10px] font-bold uppercase tracking-widest text-primary/80 sm:text-xs mb-1.5 sm:mb-2">
