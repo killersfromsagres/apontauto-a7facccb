@@ -63,8 +63,13 @@ export interface PolygonEditorProps {
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 20;
-const CLOSE_SNAP_PX = 20;
-const VERTEX_RADIUS_PX = 0.5;
+/** Tolerância (px de tela) para fechar o polígono clicando no primeiro ponto. */
+const CLOSE_SNAP_PX = 18;
+/** Tolerância (px de tela) do ímã em vértices vizinhos. */
+const SNAP_SCREEN_PX = 10;
+/** Tamanho fixo (px de tela) das alças de vértice. */
+const HANDLE_PX = 13;
+
 
 interface HistoryEntry {
   id: string;
