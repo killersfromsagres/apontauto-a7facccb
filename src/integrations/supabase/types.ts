@@ -7350,6 +7350,10 @@ export type Database = {
         Returns: boolean
       }
       pcm_fill_metrics: { Args: never; Returns: Json }
+      provision_encarregados_login: {
+        Args: { _admin_id: string; _password: string }
+        Returns: Json
+      }
       requeue_stale_pointing_jobs: {
         Args: { p_minutes?: number }
         Returns: number
