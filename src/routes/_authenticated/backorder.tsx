@@ -467,7 +467,7 @@ function BackorderPage() {
     [rowsFiltradas, catOf],
   );
   const finalizadas = useMemo(
-    () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r))),
+    () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r)) || r.finalizado),
     [rowsFiltradas, catOf],
   );
   const cancelados = useMemo(
