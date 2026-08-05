@@ -70,13 +70,6 @@ export function OrganogramaView() {
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: useServerFn(deleteOrgMember),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organograma"] });
-      toast.success("Membro removido");
-    }
-  });
 
   const handleOpenAdd = (parentId: string | null = null) => {
     if (!canEdit) return;
