@@ -66,22 +66,21 @@ export function corpoEmail({
   prazoDias = 5,
 }: EmailOptions): string {
   const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
-  const totalPessoas = solicitantes.length;
-  return `Prezados(as),
+  return `Prezado(a),
 
-Espero que este e-mail os encontre bem.
+Espero que este e-mail o(a) encontre bem.
 
-Gostaria de solicitar a sua colaboração para a finalização de um ciclo importante em nossa operação. Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço sob sua responsabilidade (ou solicitadas por sua área) que já foram concluídas ou aguardam aprovação no sistema.
+Gostaríamos de solicitar sua gentil colaboração para a finalização de um ciclo importante em nossa operação de Gestão Predial. Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço sob sua responsabilidade (ou solicitadas por sua área) que já foram devidamente concluídas ou aguardam sua aprovação formal no sistema.
 
-A sua avaliação é fundamental para assegurarmos a qualidade do atendimento prestado e para que possamos encerrar formalmente estes chamados, mantendo nossos indicadores de performance atualizados e precisos.
+Sua avaliação e validação são fundamentais para assegurarmos a excelência no atendimento prestado e para que possamos encerrar formalmente estes processos, garantindo a precisão de nossos indicadores de performance.
 
-Poderia, por gentileza, dedicar alguns minutos para realizar a avaliação dos chamados listados abaixo?
+Poderia, por gentileza, dedicar um breve momento para realizar a avaliação dos chamados listados abaixo?
 
 ${listaSolicitantes(solicitantes)}
 
-Este procedimento é rápido e pode ser feito diretamente no sistema Prisma. Caso encontre qualquer divergência ou o serviço não tenha atendido plenamente à sua necessidade, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com prioridade.
+Este procedimento é simples e pode ser realizado diretamente no sistema Prisma. Caso haja qualquer divergência ou o serviço não tenha atendido plenamente às expectativas, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com a devida prioridade.
 
-Agradecemos antecipadamente pelo apoio e pela parceria de sempre.
+Agradecemos antecipadamente por sua parceria e apoio contínuo.
 
 Atenciosamente,
 ${remetente}`;
