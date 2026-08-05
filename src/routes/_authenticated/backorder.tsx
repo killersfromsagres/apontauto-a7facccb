@@ -1515,8 +1515,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="# Sistema de Backorders e Gestão de Ordens de Serviço (OS)"
-      description="Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual)."
+      title="Gestão de Backorders e OS"
+      description="crie uma seção exclusiva para gestão de backorders que eu solicitei pra você fazer um modo separado"
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
