@@ -189,7 +189,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
       data_programada: rec.data_programada ?? null,
       inicio: rec.inicio ?? null,
       fim: rec.fim ?? null,
-      ativo: ativo || "—",
+      ativo: ativo || null,
       equipamento: equipamento || null,
       solicitante: rec.solicitante ?? null,
       data_criacao: rec.data_criacao ?? null,

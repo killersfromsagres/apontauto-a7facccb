@@ -293,7 +293,7 @@ function CorretivaPage() {
       if (!q || q.includes("/")) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
-        o.ativo.toLowerCase().includes(q) ||
+        (o.ativo ?? "").toLowerCase().includes(q) ||
         (o.equipamento ?? "").toLowerCase().includes(q) ||
         (o.nome_os ?? "").toLowerCase().includes(q) ||
         (o.predio ?? "").toLowerCase().includes(q) ||

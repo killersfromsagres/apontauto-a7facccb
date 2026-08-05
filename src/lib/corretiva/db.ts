@@ -6,6 +6,17 @@ const DB_VERSION = 3;
 
 export type OutboxKind = "foto" | "peca" | "problema" | "patrimonio" | "status" | "assinatura";
 
+export type OutboxItem = {
+  id: string;
+  kind: OutboxKind;
+  osId: string;
+  numeroOs: string;
+  payload: any;
+  createdAt: number;
+  attempts: number;
+  lastError?: string;
+};
+
 export type OsCacheRow = {
   id: string;
   numero_os: string;
