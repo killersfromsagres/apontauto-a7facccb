@@ -249,8 +249,18 @@ function CorretivaPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return osList.filter((o) => {
-      const prev = isPreventiva(o.tipo);
-      if (aba === "preventiva" ? !prev : prev) return false;
+      const isBackorder = o.tipo === "Backorder";
+      const isPreventivaAba = isPreventiva(o.tipo);
+      
+      // Ajuste de abas: 
+      // Se aba for 'preventiva', mostramos OS do tipo 'Backorder' ou 'Preventiva'
+      // Se aba for 'corretiva', mostramos OS do tipo 'Corretiva'
+      if (aba === "preventiva") {
+        if (!isBackorder && !isPreventivaAba) return false;
+      } else {
+        if (isBackorder || isPreventivaAba) return false;
+      }
+
       if (!matchEquipe(o.equipe, equipe)) return false;
 
       const s = semanaDaOs(o as any);
@@ -277,7 +287,12 @@ function CorretivaPage() {
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)
       );
-    }).sort((a, b) => a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true }));
+    }).sort((a, b) => {
+      // Ordenação: priorizar data de criação para identificar atrasos
+      const da = a.data_criacao ? new Date(a.data_criacao).getTime() : 0;
+      const db = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
+      return da - db || a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
+    });
   }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
 
   const toggleSemana = async (ano: number, semana: number, valor: boolean) => {
