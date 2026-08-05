@@ -719,7 +719,7 @@ export function PolygonEditor({
                           r={VERTEX_RADIUS_PX / zoom}
                           fill="#ffffff"
                           stroke={poly.color}
-                          strokeWidth={0.35 / zoom}
+                          strokeWidth={1.2 / zoom}
                           style={{ cursor: "grab" }}
                           onPointerDown={(e) => startVertexDrag(e, poly, i)}
                           onDoubleClick={(e) => {
