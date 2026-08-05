@@ -1519,8 +1519,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)"
-      description="Gerenciamento robusto de OS com classificação inteligente por equipe e fluxo automatizado de avaliação para clientes."
+      title="Sistema de Gerenciamento de Backorders e OS"
+      description="Implemente e gerencie planilhas de histórico com inteligência de classificação, filtros modernos e fluxo de avaliação corporativa."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
