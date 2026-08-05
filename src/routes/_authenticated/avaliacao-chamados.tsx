@@ -52,6 +52,7 @@ type ConcluidoOS = {
   ativo: string | null;
   status: string;
   origem: 'corretiva' | 'backorder';
+  centro_custo?: string | null;
 };
 
 type SolicitanteGroup = {
@@ -62,7 +63,7 @@ type SolicitanteGroup = {
 };
 
 function AvaliacaoChamadosPage() {
-  const [mes, setMes] = useState<string>(new Date().getMonth().toString());
+  const [mes, setMes] = useState<string>("todos"); // Alterado para "todos" por padrão para mostrar todos os chamados inicialmente
   const [ano, setAno] = useState<string>(new Date().getFullYear().toString());
   const [search, setSearch] = useState("");
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
@@ -70,28 +71,44 @@ function AvaliacaoChamadosPage() {
   const { data: chamados = [], isLoading } = useQuery({
     queryKey: ["chamados-concluidos-unificado", mes, ano],
     queryFn: async () => {
-      const firstDay = new Date(parseInt(ano), parseInt(mes), 1);
-      const lastDay = new Date(parseInt(ano), parseInt(mes) + 1, 0, 23, 59, 59);
+      const firstDay = mes === "todos" 
+        ? new Date(parseInt(ano), 0, 1)
+        : new Date(parseInt(ano), parseInt(mes), 1);
+      const lastDay = mes === "todos"
+        ? new Date(parseInt(ano), 11, 31, 23, 59, 59)
+        : new Date(parseInt(ano), parseInt(mes) + 1, 0, 23, 59, 59);
 
       // Busca OS de Corretiva Finalizadas
-      const { data: corretivas, error: errCorretiva } = await supabase
+      let corretivaQuery = supabase
         .from("corretiva_os")
         .select("*")
-        .eq("status", "concluida")
-        .gte("fim", firstDay.toISOString())
-        .lte("fim", lastDay.toISOString());
+        .eq("status", "concluida");
+      
+      if (mes !== "todos" || ano) {
+        corretivaQuery = corretivaQuery
+          .gte("fim", firstDay.toISOString())
+          .lte("fim", lastDay.toISOString());
+      }
+
+      const { data: corretivas, error: errCorretiva } = await corretivaQuery;
 
       if (errCorretiva) throw errCorretiva;
 
       // Busca OS de Backorder Finalizadas
       // Nota: No backorder, consideramos status_cat in (concluido, fechado, validado, aguardando_aprovacao)
       // Usamos a coluna data_conclusao para o filtro de tempo
-      const { data: backorders, error: errBackorder } = await supabase
+      let backorderQuery = supabase
         .from("backorder_os")
-        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat")
-        .in("status_cat", ["concluido", "fechado", "validado", "aguardando_aprovacao"])
-        .gte("data_conclusao", firstDay.toISOString())
-        .lte("data_conclusao", lastDay.toISOString());
+        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo")
+        .in("status_cat", ["concluido", "fechado", "validado", "aguardando_aprovacao"]);
+
+      if (mes !== "todos" || ano) {
+        backorderQuery = backorderQuery
+          .gte("data_conclusao", firstDay.toISOString())
+          .lte("data_conclusao", lastDay.toISOString());
+      }
+
+      const { data: backorders, error: errBackorder } = await backorderQuery;
 
       if (errBackorder) throw errBackorder;
 
@@ -122,7 +139,8 @@ function AvaliacaoChamadosPage() {
           local: b.espaco,
           ativo: b.ativo,
           status: b.status_cat,
-          origem: 'backorder' as const
+          origem: 'backorder' as const,
+          centro_custo: b.centro_custo
         }))
       ];
 
@@ -209,6 +227,7 @@ function AvaliacaoChamadosPage() {
                   <SelectValue placeholder="Mês" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="todos">Todos os Meses</SelectItem>
                   {["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"].map((m, i) => (
                     <SelectItem key={i} value={i.toString()}>{m}</SelectItem>
                   ))}

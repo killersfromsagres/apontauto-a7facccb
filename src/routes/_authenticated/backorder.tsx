@@ -488,6 +488,7 @@ function BackorderPage() {
           solicitante: r.outros,
           statusCat: catOf(r) as string,
           atividade: r.nome,
+          centro_custo: r.centro_custo,
         })),
     [finalizadas, aguardandoAprovacao, catOf],
   );
