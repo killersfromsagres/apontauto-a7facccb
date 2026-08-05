@@ -248,6 +248,13 @@ function CorretivaPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    
+    // Lista de datas únicas para o filtro da Coluna F
+    const datasDisponiveis = Array.from(new Set(osList
+      .map(o => o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null)
+      .filter(Boolean)
+    )).sort();
+
     return osList.filter((o) => {
       const isBackorder = o.tipo === "Backorder";
       const isPreventivaAba = isPreventiva(o.tipo);
@@ -532,7 +539,7 @@ function CorretivaPage() {
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold flex items-center gap-2">
                   <FileSpreadsheet className="h-4 w-4 text-primary" />
-                  Filtrar Planilha por Solicitante
+                  Filtrar Planilha por Data de Abertura (Coluna F)
                 </h3>
                 <p className="text-xs text-muted-foreground">
                   Filtre os dados exibindo apenas as linhas onde a coluna "Denominação do Solicitante" (coluna E) corresponde a um valor específico.
@@ -545,37 +552,19 @@ function CorretivaPage() {
                   onValueChange={(v) => setSearch(v === "todos" ? "" : v)}
                 >
                   <SelectTrigger className="h-10 w-full sm:w-[300px] bg-white/5 border-white/10">
-                    <SelectValue placeholder="Selecionar Solicitante (Coluna E)" />
+                    <SelectValue placeholder="Selecionar Data (Coluna F)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos os Solicitantes</SelectItem>
-                    {[
-                      "GEOVANA BARBOSA SILVA",
-                      "BEATRIZ GRAZIANO QUEIROZ",
-                      "FERNANDA PASCUAL HERNANDEZ",
-                      "JHUAN HENRIQUE LUZ DIAS",
-                      "ANGELICA ARAUJO SOUSA",
-                      "RICARDO CARRIEL DE SOUZA",
-                      "DOUGLAS LUIZ FERREIRA",
-                      "THIAGO FERNANDES PRETE",
-                      "JONATHAN ZOCOLER SILVESTRE SILVESTRE",
-                      "MURILO MENDONCA SILVA",
-                      "DANILO GOMES",
-                      "JULIA AMENT AGUIAR",
-                      "ANA CAROLINA CLEMENTINO ROCHA PIRES",
-                      "PAULA CARDIA PRADO",
-                      "ANDREIA ARRUDA DE ALBUQUERQUE",
-                      "CAROLINA SALES DUARTE",
-                      "NELSON FRANCISCO DA SILVA",
-                      "EDUARDA LOIOLA ARRUDA",
-                      "VINICIUS ABREU CARVALHO",
-                      "CAROLINE RODRIGUES DE LANA",
-                      "RODRIGO DE SOUZA ARANTES",
-                      "MARCOS VINICIUS DOS SANTOS",
-                      "ALEXIA SOUSA ALVES",
-                      "WILLIAM TEIXEIRA DA SILVA"
-                    ].map((name) => (
-                      <SelectItem key={name} value={name}>{name}</SelectItem>
+                    <SelectItem value="todos">Todas as Datas</SelectItem>
+                    {Array.from(new Set(osList
+                      .map(o => o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null)
+                      .filter(Boolean)
+                    )).sort((a, b) => {
+                      const [da, ma, ya] = a!.split('/').map(Number);
+                      const [db, mb, yb] = b!.split('/').map(Number);
+                      return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+                    }).map((date) => (
+                      <SelectItem key={date!} value={date!}>{date}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -765,8 +754,20 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 break-words">{os.ativo}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipamento</Label><p className="text-sm font-medium text-white/90 break-words">{os.equipamento}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo || "N/A"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Abertura</Label><p className="text-sm font-medium text-white/90">{os.data_criacao ? new Date(os.data_criacao).toLocaleDateString("pt-BR") : "—"}</p></div>
+              <div>
+                <Label className="text-[10px] uppercase text-muted-foreground">SLA (Dias de Atraso)</Label>
+                {(() => {
+                  if (!os.data_criacao) return <p className="text-sm font-medium text-white/90">—</p>;
+                  const diff = Math.floor((new Date().getTime() - new Date(os.data_criacao).getTime()) / (1000 * 60 * 60 * 24));
+                  const atraso = diff - 30;
+                  return (
+                    <p className={cn("text-sm font-bold", atraso > 0 ? "text-red-500" : "text-emerald-400")}>
+                      {atraso > 0 ? `${atraso} dias em atraso` : "No prazo"}
+                    </p>
+                  );
+                })()}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
@@ -778,8 +779,7 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
               <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
               <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">SLA</Label><p className="text-sm font-medium text-white/90">{os.data_sla ? new Date(os.data_sla).toLocaleDateString("pt-BR") : "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Programada</Label><p className="text-sm font-medium text-white/90">{os.data_programada ? new Date(os.data_programada).toLocaleDateString("pt-BR") : "—"}</p></div>
+              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo === "Backorder" ? "Backorder" : "Corretiva"}</p></div>
             </div>
 
             {isAdmin && (
