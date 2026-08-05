@@ -4103,47 +4103,6 @@ export type Database = {
         }
         Relationships: []
       }
-      organograma: {
-        Row: {
-          cargo: string
-          created_at: string
-          email: string | null
-          foto_url: string | null
-          id: string
-          nome: string
-          parent_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          cargo: string
-          created_at?: string
-          email?: string | null
-          foto_url?: string | null
-          id?: string
-          nome: string
-          parent_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          cargo?: string
-          created_at?: string
-          email?: string | null
-          foto_url?: string | null
-          id?: string
-          nome?: string
-          parent_id?: string | null
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organograma_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "organograma"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       pcm_permissions: {
         Row: {
           action: string

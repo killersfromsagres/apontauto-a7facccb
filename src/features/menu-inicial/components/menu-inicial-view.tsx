@@ -13,17 +13,7 @@ import {
   CloudSun,
   CloudRain,
   Thermometer,
-  Wind,
-  Cloud,
-  AlertTriangle,
-  ClipboardList,
-  Wrench,
-  Droplets,
-  PackageOpen,
-  Fuel,
-  ShieldCheck,
-  Package,
-  Boxes
+  Wind
 } from "lucide-react";
 import { 
   Area, 
@@ -44,14 +34,12 @@ import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queri
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useWeather } from "@/hooks/use-weather";
-import { detectRain } from "@/lib/weather/open-meteo";
+import { detectRain, weatherCodeInfo } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
-import { KpiMonitorCard } from "./kpi-monitor-card";
 
 const CORES = ["#4F8CFF", "#52E5FF", "#8B5CF6", "#34d399", "#f59e0b", "#f87171"];
 
-
-export function CentralInteligenciaView() {
+export function MenuInicialView() {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +49,7 @@ export function CentralInteligenciaView() {
   }, []);
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
-    queryKey: ["gestao", "overview", 30],
+    queryKey: ["menu-inicial", "overview"],
     queryFn: () => fetchGestaoOverview(30),
     refetchInterval: 30000,
   });
@@ -70,7 +58,7 @@ export function CentralInteligenciaView() {
   const weatherStatus = weather ? detectRain(weather) : null;
 
   const { data: recentEvents } = useQuery({
-    queryKey: ["gestao", "os-recente"],
+    queryKey: ["menu-inicial", "recent-events"],
     queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
     select: (data) => data.slice(0, 5),
     refetchInterval: 60000,
@@ -78,8 +66,7 @@ export function CentralInteligenciaView() {
 
   const chartData = overview?.os_mensal?.map(item => ({
     name: item.mes,
-    value: item.criadas,
-    concluidas: item.concluidas || 0
+    value: item.criadas
   })) || [];
 
   const statusData = overview?.os_status 
@@ -100,94 +87,46 @@ export function CentralInteligenciaView() {
   const tmaGlobal = overview?.os.tma_horas || 0;
   const mttrGlobal = overview?.os.mttr_horas || 0;
 
-
   return (
     <PageShell
       title="Menu Inicial"
-      eyebrow="Operação Premium em Tempo Real"
-      description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
+      eyebrow="Monitoramento em Tempo Real"
+      description={`Olá, ${userName}. Acompanhe o status da operação agora.`}
     >
       <div className="space-y-6">
-        {/* LINHA 1: KPIs OPERACIONAIS CRÍTICOS */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {/* GRID DE KPIS COM EFEITO GLOW */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KpiMonitorCard
             title="SLA GLOBAL"
             value={overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%"}
-            trend="+2.4%"
-            icon={<Zap className="h-5 w-5 text-[#4F8CFF] drop-shadow-[0_0_8px_rgba(79,140,255,0.5)]" />}
+            trend="+7.36%"
+            icon={<Zap className="h-5 w-5 text-primary-glow" />}
             chartColor="#4F8CFF"
-            description="Eficiência de atendimento"
+            className="glass-block"
           />
           <KpiMonitorCard
-            title="BACKORDER ATIVO"
-            value={overview?.os.backlog.toString() || "0"}
-            trend="+5.2%"
-            icon={<ClipboardList className="h-5 w-5 text-[#52E5FF]" />}
+            title="CHAMADOS ABERTOS"
+            value={overview?.os.abertas.toString() || "0"}
+            trend="-12%"
+            icon={<Activity className="h-5 w-5 text-[#52E5FF]" />}
             chartColor="#52E5FF"
-            description="Chamados em espera"
+            className="glass-block"
           />
           <KpiMonitorCard
-            title="CORRETIVAS MÊS"
-            value={overview?.os.criadas.toString() || "0"}
-            trend="-1.8%"
-            icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />}
-            chartColor="#8B5CF6"
-            description="Volume de solicitações"
+            title="TOTAL CONCLUÍDOS"
+            value={overview?.os.concluidas.toString() || "0"}
+            trend="+15%"
+            icon={<TrendingUp className="h-5 w-5 text-[#34d399]" />}
+            chartColor="#34d399"
+            className="glass-block"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
             value={`${mttrGlobal.toFixed(1)}h`}
-            trend="-12%"
-            icon={<Clock className="h-5 w-5 text-[#34d399]" />}
-            chartColor="#34d399"
-            description="Tempo médio de reparo"
-          />
-          <KpiMonitorCard
-            title="CRITICAL ALERT"
-            value={overview?.os.criticas.toString() || "0"}
-            trend="+0"
-            icon={<AlertTriangle className={cn("h-5 w-5", (overview?.os.criticas || 0) > 0 ? "text-rose-500 animate-pulse" : "text-muted-foreground")} />}
-            chartColor="#f87171"
-            description="OS de alta prioridade"
-          />
-        </div>
-
-        {/* LINHA 2: GESTÃO DE RECURSOS E MATERIAIS */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <KpiMonitorCard
-            title="PEÇAS PENDENTES"
-            value={overview?.pecas.aguardando.toString() || "0"}
-            icon={<PackageOpen className="h-5 w-5 text-amber-400" />}
-            chartColor="#fbbf24"
-            description="Aguardando suprimentos"
-          />
-          <KpiMonitorCard
-            title="SOLICITAÇÕES MATERIAIS"
-            value={overview?.materiais.pendentes.toString() || "0"}
-            icon={<Boxes className="h-5 w-5 text-blue-400" />}
-            chartColor="#60a5fa"
-            description="Pedidos em aberto"
-          />
-          <KpiMonitorCard
-            title="FILTROS VENCIDOS"
-            value={overview?.filtros.vencidos.toString() || "0"}
-            icon={<Droplets className="h-5 w-5 text-rose-400" />}
-            chartColor="#f87171"
-            description="Trocas obrigatórias"
-          />
-          <KpiMonitorCard
-            title="ITENS LEGAIS"
-            value={overview?.legal.vencidos.toString() || "0"}
-            icon={<ShieldCheck className="h-5 w-5 text-emerald-400" />}
-            chartColor="#34d399"
-            description="Conformidade e normas"
-          />
-          <KpiMonitorCard
-            title="DISP. FROTA"
-            value={overview ? `${Math.round((overview.frota.disponiveis / (overview.frota.total || 1)) * 100)}%` : "0%"}
-            icon={<Fuel className="h-5 w-5 text-indigo-400" />}
-            chartColor="#818cf8"
-            description="Veículos operacionais"
+            trend="-5.4%"
+            icon={<BarChart3 className="h-5 w-5 text-[#8B5CF6]" />}
+            chartColor="#8B5CF6"
+            className="glass-block"
           />
         </div>
 
@@ -212,10 +151,6 @@ export function CentralInteligenciaView() {
                       <stop offset="5%" stopColor="#4F8CFF" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#4F8CFF" stopOpacity={0}/>
                     </linearGradient>
-                    <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
-                    </linearGradient>
                   </defs>
                   <Tooltip 
                     contentStyle={{ 
@@ -229,7 +164,6 @@ export function CentralInteligenciaView() {
                   <Area 
                     type="monotone" 
                     dataKey="value" 
-                    name="Criadas"
                     stroke="#4F8CFF" 
                     strokeWidth={3}
                     fillOpacity={1} 
@@ -237,19 +171,7 @@ export function CentralInteligenciaView() {
                     dot={{ r: 4, fill: "#52E5FF", strokeWidth: 2, stroke: "#05070C" }}
                     activeDot={{ r: 6, fill: "#fff" }}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="concluidas" 
-                    name="Concluídas"
-                    stroke="#34d399" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorConcluidas)" 
-                    dot={{ r: 4, fill: "#34d399", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff" }}
-                  />
                 </AreaChart>
-
               </ResponsiveContainer>
             </div>
           </GlassCard>
@@ -328,8 +250,6 @@ export function CentralInteligenciaView() {
               <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Status Taludes & Clima</h3>
               {weatherStatus?.detected ? (
                 <CloudRain className="h-4 w-4 text-rose-400 animate-pulse" />
-              ) : weatherStatus?.label?.toLowerCase().includes("nublado") ? (
-                <Cloud className="h-4 w-4 text-blue-300" />
               ) : (
                 <CloudSun className="h-4 w-4 text-emerald-400" />
               )}
@@ -418,5 +338,39 @@ export function CentralInteligenciaView() {
   );
 }
 
-// KpiMonitorCard removido daqui pois agora é importado de ./kpi-monitor-card
-
+function KpiMonitorCard({ title, value, trend, icon, chartColor, className }: { 
+  title: string; 
+  value: string; 
+  trend: string; 
+  icon: React.ReactNode;
+  chartColor: string;
+  className?: string;
+}) {
+  return (
+    <GlassCard className={`relative overflow-hidden group hover:border-primary/50 transition-colors card-sheen ${className || ""}`}>
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</span>
+        {icon}
+      </div>
+      <div className="text-3xl font-bold mb-1 tabular-nums">{value}</div>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-[11px] font-semibold ${trend.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
+          {trend}
+        </span>
+        <span className="text-[10px] text-muted-foreground">vs último mês</span>
+      </div>
+      
+      {/* Mini sparkline fake effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
+        <div 
+          className="h-full transition-all duration-1000" 
+          style={{ 
+            width: '65%', 
+            backgroundColor: chartColor,
+            boxShadow: `0 0 10px ${chartColor}`
+          }} 
+        />
+      </div>
+    </GlassCard>
+  );
+}

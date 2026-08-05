@@ -135,7 +135,6 @@ export const MENU_KEYS = [
   "corretiva-pecas-status",
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
-  "organograma",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
