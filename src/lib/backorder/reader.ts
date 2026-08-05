@@ -230,7 +230,7 @@ export async function readBackorderWorkbook(
       ])
     : assets;
 
-  const sheetName = pickBackorderSheet(wb);
+  const sheetName = pickBackorderSheet(wb, XLSX);
   const sheet = wb.Sheets[sheetName];
 
   // Leitura posicional: a planilha oficial usa colunas fixas —
