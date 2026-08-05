@@ -1317,7 +1317,9 @@ function BackorderPage() {
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
+      data_abertura: r.data_abertura,
       data_solicitacao: r.data_solicitacao,
+
       outros: r.outros,
       criticidade: r.criticidade ?? "",
       finalizado: false,
