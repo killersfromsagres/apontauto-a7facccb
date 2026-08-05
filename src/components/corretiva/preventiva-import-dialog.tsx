@@ -26,7 +26,7 @@ import {
 } from "@/lib/corretiva/preventiva-import";
 
 type Row = PreventivaRow | CorretivaRow;
-type Mode = "preventiva" | "corretiva";
+type Mode = "backorder" | "corretiva";
 
 function contar(rows: Row[]): Array<[string, number]> {
   const map = new Map<string, number>();
@@ -36,7 +36,7 @@ function contar(rows: Row[]): Array<[string, number]> {
 
 export function PreventivaImportDialog({
   onDone,
-  mode = "preventiva",
+  mode = "backorder",
 }: {
   onDone: () => void;
   mode?: Mode;
@@ -53,7 +53,7 @@ export function PreventivaImportDialog({
   // Importação em massa é restrita ao proprietário e a administradores.
   if (!isOwner && !isAdmin) return null;
 
-  const label = mode === "corretiva" ? "corretivas/backorder" : "preventivas";
+  const label = mode === "corretiva" ? "corretivas/backorder" : "backorder";
 
 
   const onFile = async (f: File | null) => {
@@ -105,7 +105,7 @@ export function PreventivaImportDialog({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="h-11 flex-1 sm:h-9 sm:flex-none">
           <Upload className="mr-2 h-4 w-4" />
-          <span className="sm:inline">Planilha {mode === "corretiva" ? "Corretiva" : "Preventiva"}</span>
+          <span className="sm:inline">Planilha {mode === "corretiva" ? "Corretiva" : "Backorder"}</span>
         </Button>
 
 
@@ -126,7 +126,7 @@ export function PreventivaImportDialog({
               <>
                 O sistema separa automaticamente cada OS entre <strong>Chaveiro</strong>,{" "}
                 <strong>Civil</strong>, <strong>Hidráulica</strong> e <strong>Elétrica</strong>.
-                Depois de importar, o colaborador conclui a preventiva anexando a foto de evidência.
+                Depois de importar, o colaborador conclui o backorder anexando a foto de evidência.
               </>
             )}
           </p>
@@ -153,7 +153,7 @@ export function PreventivaImportDialog({
                 <Badge variant="secondary">{rows.length} OS</Badge>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(mode === "preventiva"
+                {(mode === "backorder"
                   ? EQUIPES_PREVENTIVA.map(
                       (e) => [e, rows.filter((r) => r.equipe === e).length] as [string, number],
                     )

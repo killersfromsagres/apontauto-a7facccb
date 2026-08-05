@@ -185,7 +185,7 @@ export const sections: MenuSection[] = [
         short: "Prog.",
         url: "/programacao",
         icon: CalendarDays,
-        keywords: ["semanal", "preventiva", "agendamento"],
+        keywords: ["semanal", "preventiva", "backorder", "agendamento"],
       },
       {
         key: "corretiva",

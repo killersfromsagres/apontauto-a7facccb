@@ -337,7 +337,7 @@ function CorretivaPage() {
                 onDone={() => refreshOsFromServer().catch(() => {})}
               />
               <PreventivaImportDialog
-                mode="preventiva"
+                mode="backorder"
                 onDone={() => refreshOsFromServer().catch(() => {})}
               />
               <Dialog>
