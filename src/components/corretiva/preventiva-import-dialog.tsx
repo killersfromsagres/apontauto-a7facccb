@@ -26,7 +26,7 @@ import {
 } from "@/lib/corretiva/preventiva-import";
 
 type Row = PreventivaRow | CorretivaRow;
-type Mode = "preventiva" | "corretiva";
+type Mode = "backorder" | "corretiva";
 
 function contar(rows: Row[]): Array<[string, number]> {
   const map = new Map<string, number>();
@@ -36,7 +36,7 @@ function contar(rows: Row[]): Array<[string, number]> {
 
 export function PreventivaImportDialog({
   onDone,
-  mode = "preventiva",
+  mode = "backorder",
 }: {
   onDone: () => void;
   mode?: Mode;
@@ -126,7 +126,7 @@ export function PreventivaImportDialog({
               <>
                 O sistema separa automaticamente cada OS entre <strong>Chaveiro</strong>,{" "}
                 <strong>Civil</strong>, <strong>Hidráulica</strong> e <strong>Elétrica</strong>.
-                Depois de importar, o colaborador conclui a preventiva anexando a foto de evidência.
+                Depois de importar, o colaborador conclui o backorder anexando a foto de evidência.
               </>
             )}
           </p>
