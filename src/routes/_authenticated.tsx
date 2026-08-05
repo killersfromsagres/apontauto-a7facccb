@@ -37,8 +37,8 @@ function pathKeys(pathname: string): string[] | null {
     pathname === "" || 
     pathname === "/dashboard" || 
     pathname === "/dashboard/" ||
-    pathname === "/_authenticated/dashboard" ||
-    pathname === "/_authenticated/dashboard/";
+    pathname === "/_authenticated" ||
+    pathname === "/_authenticated/";
 
   if (isDashboard) return null;
   return menuKeysForPath(pathname);
@@ -58,7 +58,7 @@ function AccessGuard() {
     // Rota exclusiva de admin
     if (keys.includes("usuarios") && !access.isAdmin) {
       toast.error("Área restrita a administradores.");
-      navigate({ to: "/_authenticated/dashboard", replace: true });
+      navigate({ to: "/", replace: true });
       return;
     }
 
@@ -72,7 +72,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/_authenticated/dashboard" : `/_authenticated/${fallback}`;
+      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/_authenticated/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }

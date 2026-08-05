@@ -76,7 +76,7 @@ function AuthPage() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (session && event === "SIGNED_IN") {
         // Se veio de fluxo automático, navega direto; senão o diálogo trata.
-        if (!pendingCreds.current) navigate({ to: "/_authenticated/dashboard" });
+        if (!pendingCreds.current) navigate({ to: "/" });
       }
     });
     return () => sub.subscription.unsubscribe();
@@ -99,7 +99,7 @@ function AuthPage() {
       if (!error && data.user) {
         touchCredentials();
         toast.success("Sessão restaurada.");
-        navigate({ to: "/_authenticated/dashboard" });
+        navigate({ to: "/" });
       } else {
         void supabase.auth.signOut({ scope: "local" }).catch(() => {});
         setAutoLogin(false);
@@ -185,7 +185,7 @@ function AuthPage() {
     }
     pendingCreds.current = null;
     setAskSave(false);
-    navigate({ to: "/_authenticated/dashboard" });
+    navigate({ to: "/" });
   };
 
   const forgotPassword = async () => {
