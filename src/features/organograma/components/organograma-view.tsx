@@ -108,13 +108,8 @@ export function OrganogramaView() {
     }
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: useServerFn(deleteOrgMember),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organograma"] });
-      toast.success("Membro removido");
-    }
-  });
+  // Removido deleteMutation duplicado que causava erro de build
+
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate({ data: { id } });
