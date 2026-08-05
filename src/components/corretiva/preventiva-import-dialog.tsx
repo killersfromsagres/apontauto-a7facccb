@@ -53,7 +53,7 @@ export function PreventivaImportDialog({
   // Importação em massa é restrita ao proprietário e a administradores.
   if (!isOwner && !isAdmin) return null;
 
-  const label = mode === "corretiva" ? "corretivas/backorder" : "preventivas";
+  const label = mode === "corretiva" ? "corretivas/backorder" : "backorder";
 
 
   const onFile = async (f: File | null) => {
@@ -105,7 +105,7 @@ export function PreventivaImportDialog({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="h-11 flex-1 sm:h-9 sm:flex-none">
           <Upload className="mr-2 h-4 w-4" />
-          <span className="sm:inline">Planilha {mode === "corretiva" ? "Corretiva" : "Preventiva"}</span>
+          <span className="sm:inline">Planilha {mode === "corretiva" ? "Corretiva" : "Backorder"}</span>
         </Button>
 
 
