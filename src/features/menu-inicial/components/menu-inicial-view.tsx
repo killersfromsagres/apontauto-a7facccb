@@ -75,7 +75,7 @@ export function MenuInicialView() {
           />
           <KpiMonitorCard
             title="CHAMADOS ABERTOS"
-            value={overview?.os.pendentes.toString() || "0"}
+            value={overview?.os.abertas.toString() || "0"}
             trend="-12%"
             icon={<Activity className="h-5 w-5 text-[#52E5FF]" />}
             chartColor="#52E5FF"
@@ -135,7 +135,7 @@ export function MenuInicialView() {
                     fillOpacity={1} 
                     fill="url(#colorValue)" 
                     dot={{ r: 4, fill: "#52E5FF", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff", shadow: "0 0 20px #4F8CFF" }}
+                    activeDot={{ r: 6, fill: "#fff" }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
