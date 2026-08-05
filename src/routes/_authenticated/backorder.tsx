@@ -1518,8 +1518,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Gestão de Backorders e OS"
-      description="não está parecendo a data de abertura , preciso que melhore o sistema para ele captar automaticamente a coluna pois as vezes possa não estar na coluna F , então crie o sistema inteligente no qual ele irá automaticamente identificar na planilha a data de abertura."
+      title="Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)"
+      description="Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
