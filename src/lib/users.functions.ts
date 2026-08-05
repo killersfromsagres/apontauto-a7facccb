@@ -442,6 +442,8 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
     const login = "encarregados";
     const password = "20252026";
     const email = loginToEmail(login);
+    // Log for debugging (will be visible in server logs if monitored)
+    console.log(`[Provision] Provisioning user: ${login} (${email})`);
     const fullName = "Encarregados";
     const metadata = { login, full_name: fullName };
     const modules = [
