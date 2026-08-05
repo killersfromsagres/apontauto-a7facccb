@@ -9,7 +9,7 @@
 
 import type { Categoria } from "./classify";
 
-export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica" | "Pintura";
+export type Equipe = "Chaveiro" | "Civil" | "Refrigeração" | "Hidráulica" | "Elétrica" | "Pintura" | "Limpeza";
 
 export const EQUIPES: readonly Equipe[] = [
   "Chaveiro",
@@ -18,6 +18,7 @@ export const EQUIPES: readonly Equipe[] = [
   "Hidráulica",
   "Elétrica",
   "Pintura",
+  "Limpeza",
 ] as const;
 
 export const EQUIPE_COR: Record<Equipe, string> = {
@@ -27,6 +28,7 @@ export const EQUIPE_COR: Record<Equipe, string> = {
   Hidráulica: "#3B82F6",
   Elétrica: "#F59E0B",
   Pintura: "#EC4899",
+  Limpeza: "#22D3EE", // Azul Fluorescente para Limpeza
 };
 
 const norm = (v: unknown) =>
@@ -364,6 +366,25 @@ const RULES: Rule[] = [
     peso: 2,
     termos: ["organizar", "instalar quadro", "quadro de aviso", "placa"],
   },
+  // ---------------- Limpeza / Gerenciamento ----------------
+  {
+    equipe: "Limpeza",
+    peso: 5,
+    termos: [
+      "limpeza",
+      "higienizacao",
+      "orcamento",
+      "compra",
+      "compras",
+      "cotacao",
+      "solicitar orcamento",
+      "pedir orcamento",
+      "aguardando orcamento",
+      "gerenciamento",
+      "atividade de limpeza",
+      "conservacao",
+    ],
+  },
 ];
 
 /** Termos que forçam Refrigeração mesmo quando aparecem em contexto elétrico
@@ -427,6 +448,7 @@ export function classifyTeamByText(nome: string): TeamClassificationResult {
     Hidráulica: 0,
     Elétrica: 0,
     Pintura: 0,
+    Limpeza: 0,
   };
 
   for (const rule of RULES) {

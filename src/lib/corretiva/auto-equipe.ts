@@ -21,6 +21,7 @@ const CANON: Record<Equipe, string[]> = {
   Chaveiro: ["chaveiro", "serralheria"],
   Pintura: ["pintura", "pintor"],
   Refrigeração: ["refrigeracao", "climatizacao", "ar condicionado"],
+  Limpeza: ["limpeza", "conservacao", "gerenciamento", "orcamento", "compra"],
 };
 
 export type ClassificacaoOs = {
