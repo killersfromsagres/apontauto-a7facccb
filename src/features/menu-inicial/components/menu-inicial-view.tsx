@@ -43,19 +43,22 @@ export function MenuInicialView() {
     refetchInterval: 30000, // Atualização a cada 30s para "tempo real"
   });
 
-  const chartData = [
-    { name: "Jan", value: 400 },
-    { name: "Fev", value: 300 },
-    { name: "Mar", value: 600 },
-    { name: "Abr", value: 800 },
-    { name: "Mai", value: 500 },
-    { name: "Jun", value: 900 },
-    { name: "Jul", value: 1100 },
-  ];
+  const chartData = overview?.os_mensal?.map(item => ({
+    name: item.mes,
+    value: item.criadas
+  })) || [];
 
   const statusData = overview?.os_status 
-    ? Object.entries(overview.os_status).map(([name, value]) => ({ name, value: Number(value) }))
+    ? Object.entries(overview.os_status)
+        .map(([name, value]) => ({ 
+          name: name.charAt(0).toUpperCase() + name.slice(1), 
+          value: Number(value) 
+        }))
+        .sort((a, b) => b.value - a.value)
     : [];
+
+  const tmaGlobal = overview?.os.tma_horas || 0;
+  const mttrGlobal = overview?.os.mttr_horas || 0;
 
   return (
     <PageShell
@@ -88,9 +91,9 @@ export function MenuInicialView() {
             chartColor="#34d399"
           />
           <KpiMonitorCard
-            title="EFICIÊNCIA"
-            value="94.2%"
-            trend="+2.1%"
+            title="MTTR MÉDIO"
+            value={`${mttrGlobal.toFixed(1)}h`}
+            trend="-5.4%"
             icon={<BarChart3 className="h-5 w-5 text-[#8B5CF6]" />}
             chartColor="#8B5CF6"
           />
@@ -101,8 +104,8 @@ export function MenuInicialView() {
           <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px]">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-sm font-semibold tracking-wider text-muted-foreground">FLUXO OPERACIONAL</h3>
-                <div className="text-2xl font-bold text-white">$23,094.57</div>
+                <h3 className="text-sm font-semibold tracking-wider text-muted-foreground">VOLUME DE CHAMADOS (MENSAL)</h3>
+                <div className="text-2xl font-bold text-white">{overview?.os.criadas || 0} Criados</div>
               </div>
               <div className="flex gap-2">
                 <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/20">Real Time</span>
@@ -143,7 +146,7 @@ export function MenuInicialView() {
           </GlassCard>
 
           <GlassCard className="flex flex-col">
-            <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">STATUS DISTRIBUTION</h3>
+            <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">DISTRIBUIÇÃO POR STATUS</h3>
             <div className="flex-1 flex items-center justify-center">
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={statusData}>
