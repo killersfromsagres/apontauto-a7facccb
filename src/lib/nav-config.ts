@@ -106,7 +106,7 @@ export const sections: MenuSection[] = [
         key: "menu-inicial",
         title: "Menu Inicial",
         short: "Início",
-        url: "/dashboard",
+        url: "/_authenticated/dashboard",
         icon: Gauge,
         keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
       },
