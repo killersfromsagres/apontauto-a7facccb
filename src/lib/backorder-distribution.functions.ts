@@ -17,6 +17,7 @@ export const distributeBackorderToField = createServerFn({ method: "POST" })
             equipe: z.string(),
             data_solicitacao: z.string(),
             outros: z.string(),
+            centro_custo: z.string().optional(),
             status_origem: z.string(),
           }),
         ),
