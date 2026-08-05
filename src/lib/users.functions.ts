@@ -436,12 +436,82 @@ async function syncModuleAccess(
 export const provisionEncarregadosUser = createServerFn({ method: "POST" })
   .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase.rpc("provision_encarregados_login", {
-      _admin_id: context.userId,
-      _password: "20252026",
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    const login = "encarregados";
+    const password = "20252026";
+    const email = loginToEmail(login);
+    const fullName = "Encarregados";
+    const metadata = { login, full_name: fullName };
+    const modules = [
+      "dashboard",
+      "programacao-gps",
+      "backlog-inteligente",
+      "capacidade",
+      "apontamentos",
+      "refrigeracao",
+      "refrigeracao-pecas-status",
+      "refrigeracao-historico",
+      "programacao",
+      "corretiva",
+      "corretiva-pecas-status",
+      "corretiva-historico",
+      "abastecimento",
+      "agua-execucao",
+    ];
+
+    const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
     });
-    if (error) throw new Error(error.message);
-    return data as { ok: boolean; email: string };
+    if (listErr) throw new Error(listErr.message);
+
+    let user = list.users.find((u) => (u.email ?? "").toLowerCase() === email);
+    let created = false;
+
+    if (!user) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: metadata,
+      });
+      if (error) throw new Error(error.message);
+      user = res.user!;
+      created = true;
+    } else {
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        password,
+        email_confirm: true,
+        ban_duration: "none",
+        user_metadata: metadata,
+      } as any);
+      if (error) throw new Error(error.message);
+    }
+
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert({ id: user.id, full_name: fullName, allowed_menus: modules } as any, {
+        onConflict: "id",
+      });
+    if (profErr) throw new Error(profErr.message);
+
+    await supabaseAdmin.from("user_module_access").delete().eq("user_id", user.id);
+    const { error: umaErr } = await supabaseAdmin.from("user_module_access").insert(
+      modules.map((module_key) => ({
+        user_id: user!.id,
+        module_key,
+        actions: ["read"],
+        granted_by: context.userId,
+      })),
+    );
+    if (umaErr) throw new Error(umaErr.message);
+
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", user.id);
+    await supabaseAdmin.from("user_roles").insert({ user_id: user.id, role: "user" });
+
+    return { ok: true, created, login, email };
   });
 
 
