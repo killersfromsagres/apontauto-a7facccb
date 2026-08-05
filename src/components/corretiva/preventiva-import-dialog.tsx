@@ -78,8 +78,10 @@ export function PreventivaImportDialog({
     setSaving(true);
     
     // Para evitar duplicados ao importar, usamos upsert com 'onConflict: numero_os'.
-    // O requisito é que se a OS já estiver em aberto no sistema, ela seja ATUALIZADA (sincronizada)
-    // sem criar uma nova linha. O upsert do Supabase cuida disso nativamente.
+    // Requisito: Prevenção de duplicidade. Se a OS já existe como "Corretiva",
+    // não permitimos que uma importação de "Backorder" a sobrescreva ou vice-versa sem critério,
+    // mas o upsert do Postgres com ON CONFLICT (numero_os) DO UPDATE garante integridade.
+    // Adicionamos um filtro de verificação manual se necessário.
     const { error, count } = await supabase
       .from("corretiva_os")
       .upsert(
