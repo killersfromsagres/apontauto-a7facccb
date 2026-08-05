@@ -106,7 +106,7 @@ export const sections: MenuSection[] = [
         key: "menu-inicial",
         title: "Menu Inicial",
         short: "Início",
-        url: "/",
+        url: "/dashboard",
         icon: Gauge,
         keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
       },
@@ -469,14 +469,6 @@ export const sections: MenuSection[] = [
           "planilha",
           "apresentação",
         ],
-      },
-      {
-        key: "dashboard-chamados",
-        title: "Dashboard de Chamados",
-        short: "Chamados",
-        url: "/dashboard-chamados",
-        icon: ChartColumn,
-        keywords: ["indicadores", "equipes", "bi", "gráficos", "análise"],
       },
       {
         key: "bi-studio",
