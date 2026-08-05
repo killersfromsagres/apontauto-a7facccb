@@ -38,15 +38,15 @@ import { Route as AuthenticatedPreventivaAcRouteImport } from './routes/_authent
 import { Route as AuthenticatedPreventivaRouteImport } from './routes/_authenticated/preventiva'
 import { Route as AuthenticatedPainelLegalRouteImport } from './routes/_authenticated/painel-legal'
 import { Route as AuthenticatedOutrosRouteImport } from './routes/_authenticated/outros'
+import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenticated/organograma'
 import { Route as AuthenticatedObservabilidadeRouteImport } from './routes/_authenticated/observabilidade'
 import { Route as AuthenticatedNotificacoesAdminRouteImport } from './routes/_authenticated/notificacoes-admin'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
 import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenticated/materiais-os'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
-import { Route as AuthenticatedGestaoRouteImport } from './routes/_authenticated/gestao'
 import { Route as AuthenticatedFrotaRouteImport } from './routes/_authenticated/frota'
-import { Route as AuthenticatedDashboardChamadosRouteImport } from './routes/_authenticated/dashboard-chamados'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
@@ -249,6 +249,12 @@ const AuthenticatedOutrosRoute = AuthenticatedOutrosRouteImport.update({
   path: '/outros',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedOrganogramaRoute =
+  AuthenticatedOrganogramaRouteImport.update({
+    id: '/organograma',
+    path: '/organograma',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedObservabilidadeRoute =
   AuthenticatedObservabilidadeRouteImport.update({
     id: '/observabilidade',
@@ -283,22 +289,16 @@ const AuthenticatedImagensRoute = AuthenticatedImagensRouteImport.update({
   path: '/imagens',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedGestaoRoute = AuthenticatedGestaoRouteImport.update({
-  id: '/gestao',
-  path: '/gestao',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedFrotaRoute = AuthenticatedFrotaRouteImport.update({
   id: '/frota',
   path: '/frota',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardChamadosRoute =
-  AuthenticatedDashboardChamadosRouteImport.update({
-    id: '/dashboard-chamados',
-    path: '/dashboard-chamados',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCorretivaPecasStatusRoute =
   AuthenticatedCorretivaPecasStatusRouteImport.update({
     id: '/corretiva-pecas-status',
@@ -578,15 +578,15 @@ export interface FileRoutesByFullPath {
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/frota': typeof AuthenticatedFrotaRoute
-  '/gestao': typeof AuthenticatedGestaoRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/observabilidade': typeof AuthenticatedObservabilidadeRoute
+  '/organograma': typeof AuthenticatedOrganogramaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -661,15 +661,15 @@ export interface FileRoutesByTo {
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/frota': typeof AuthenticatedFrotaRoute
-  '/gestao': typeof AuthenticatedGestaoRoute
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/observabilidade': typeof AuthenticatedObservabilidadeRoute
+  '/organograma': typeof AuthenticatedOrganogramaRoute
   '/outros': typeof AuthenticatedOutrosRoute
   '/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/preventiva': typeof AuthenticatedPreventivaRoute
@@ -745,15 +745,15 @@ export interface FileRoutesById {
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
-  '/_authenticated/dashboard-chamados': typeof AuthenticatedDashboardChamadosRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/frota': typeof AuthenticatedFrotaRoute
-  '/_authenticated/gestao': typeof AuthenticatedGestaoRoute
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/materiais-os': typeof AuthenticatedMateriaisOsRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/_authenticated/observabilidade': typeof AuthenticatedObservabilidadeRoute
+  '/_authenticated/organograma': typeof AuthenticatedOrganogramaRoute
   '/_authenticated/outros': typeof AuthenticatedOutrosRoute
   '/_authenticated/painel-legal': typeof AuthenticatedPainelLegalRoute
   '/_authenticated/preventiva': typeof AuthenticatedPreventivaRoute
@@ -830,15 +830,15 @@ export interface FileRouteTypes {
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
-    | '/dashboard-chamados'
+    | '/dashboard'
     | '/frota'
-    | '/gestao'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/observabilidade'
+    | '/organograma'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -913,15 +913,15 @@ export interface FileRouteTypes {
     | '/corretiva-gestor'
     | '/corretiva-historico'
     | '/corretiva-pecas-status'
-    | '/dashboard-chamados'
+    | '/dashboard'
     | '/frota'
-    | '/gestao'
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/observabilidade'
+    | '/organograma'
     | '/outros'
     | '/painel-legal'
     | '/preventiva'
@@ -996,15 +996,15 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
     | '/_authenticated/corretiva-pecas-status'
-    | '/_authenticated/dashboard-chamados'
+    | '/_authenticated/dashboard'
     | '/_authenticated/frota'
-    | '/_authenticated/gestao'
     | '/_authenticated/imagens'
     | '/_authenticated/lavanderia'
     | '/_authenticated/materiais-os'
     | '/_authenticated/notificacoes'
     | '/_authenticated/notificacoes-admin'
     | '/_authenticated/observabilidade'
+    | '/_authenticated/organograma'
     | '/_authenticated/outros'
     | '/_authenticated/painel-legal'
     | '/_authenticated/preventiva'
@@ -1285,6 +1285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOutrosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/organograma': {
+      id: '/_authenticated/organograma'
+      path: '/organograma'
+      fullPath: '/organograma'
+      preLoaderRoute: typeof AuthenticatedOrganogramaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/observabilidade': {
       id: '/_authenticated/observabilidade'
       path: '/observabilidade'
@@ -1327,13 +1334,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedImagensRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/gestao': {
-      id: '/_authenticated/gestao'
-      path: '/gestao'
-      fullPath: '/gestao'
-      preLoaderRoute: typeof AuthenticatedGestaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/frota': {
       id: '/_authenticated/frota'
       path: '/frota'
@@ -1341,11 +1341,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFrotaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard-chamados': {
-      id: '/_authenticated/dashboard-chamados'
-      path: '/dashboard-chamados'
-      fullPath: '/dashboard-chamados'
-      preLoaderRoute: typeof AuthenticatedDashboardChamadosRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/corretiva-pecas-status': {
@@ -1740,15 +1740,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
-  AuthenticatedDashboardChamadosRoute: typeof AuthenticatedDashboardChamadosRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFrotaRoute: typeof AuthenticatedFrotaRoute
-  AuthenticatedGestaoRoute: typeof AuthenticatedGestaoRoute
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedMateriaisOsRoute: typeof AuthenticatedMateriaisOsRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedNotificacoesAdminRoute: typeof AuthenticatedNotificacoesAdminRoute
   AuthenticatedObservabilidadeRoute: typeof AuthenticatedObservabilidadeRoute
+  AuthenticatedOrganogramaRoute: typeof AuthenticatedOrganogramaRoute
   AuthenticatedOutrosRoute: typeof AuthenticatedOutrosRoute
   AuthenticatedPainelLegalRoute: typeof AuthenticatedPainelLegalRoute
   AuthenticatedPreventivaRoute: typeof AuthenticatedPreventivaRoute
@@ -1791,15 +1791,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
   AuthenticatedCorretivaPecasStatusRoute:
     AuthenticatedCorretivaPecasStatusRoute,
-  AuthenticatedDashboardChamadosRoute: AuthenticatedDashboardChamadosRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFrotaRoute: AuthenticatedFrotaRoute,
-  AuthenticatedGestaoRoute: AuthenticatedGestaoRoute,
   AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedMateriaisOsRoute: AuthenticatedMateriaisOsRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedNotificacoesAdminRoute: AuthenticatedNotificacoesAdminRoute,
   AuthenticatedObservabilidadeRoute: AuthenticatedObservabilidadeRoute,
+  AuthenticatedOrganogramaRoute: AuthenticatedOrganogramaRoute,
   AuthenticatedOutrosRoute: AuthenticatedOutrosRoute,
   AuthenticatedPainelLegalRoute: AuthenticatedPainelLegalRoute,
   AuthenticatedPreventivaRoute: AuthenticatedPreventivaRoute,

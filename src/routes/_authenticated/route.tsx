@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) throw redirect({ to: "/auth" });
+    if (!data.session) return redirect({ to: "/auth" });
     return { user: data.session.user };
   },
   component: AuthenticatedLayout,
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated")({
 // Resolve as chaves de menu que liberam um pathname. Mantém compatibilidade
 // com as chaves antigas de `allowed_menus` através dos aliases do nav-config.
 function pathKeys(pathname: string): string[] | null {
-  if (pathname === "/" || pathname === "") return ["dashboard"];
+  if (pathname === "/" || pathname === "" || pathname === "/dashboard" || pathname === "/_authenticated/dashboard") return null;
   return menuKeysForPath(pathname);
 }
 
@@ -44,17 +44,18 @@ function AccessGuard() {
 
   useEffect(() => {
     if (loading) return;
-    if (access.isAdmin) return; // admin acessa tudo
 
     const keys = pathKeys(pathname);
     if (!keys) return;
 
     // Rota exclusiva de admin
-    if (keys.includes("usuarios")) {
+    if (keys.includes("usuarios") && !access.isAdmin) {
       toast.error("Área restrita a administradores.");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/_authenticated/dashboard", replace: true });
       return;
     }
+
+    if (access.isAdmin) return; // admin acessa tudo após o check de "usuarios"
 
     // Sem restrição customizada → acesso total.
     if (!access.allowed) return;
@@ -64,7 +65,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target = fallback === "dashboard" || !fallback ? "/" : `/${fallback}`;
+      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/_authenticated/dashboard" : `/_authenticated/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
@@ -156,7 +157,18 @@ function AuthenticatedLayout() {
             tabIndex={-1}
             className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
           >
-            {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
+            {canRender ? (
+              <Outlet />
+            ) : (
+              <>
+                {/* Fallback component handles redirection or shows restricted message */}
+                <AccessFallback loading={loading} noMenus={noMenus} />
+                {/* DEBUG INFO: if you see this, the route exists but AccessGuard or canRenderPath rejected it */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="hidden">Path: {pathname}, loading: {String(loading)}, canRender: {String(canRender)}</div>
+                )}
+              </>
+            )}
           </main>
           <MobileTabBar />
           <ForcePasswordChange />

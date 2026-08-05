@@ -103,20 +103,20 @@ export const sections: MenuSection[] = [
     icon: LayoutDashboard,
     items: [
       {
-        key: "dashboard",
-        title: "Home Operacional",
+        key: "menu-inicial",
+        title: "Menu Inicial",
         short: "Início",
-        url: "/",
-        icon: Gauge,
-        keywords: ["home", "início", "kpi"],
+        url: "/_authenticated/dashboard",
+        icon: BrainCircuit,
+        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
       },
       {
-        key: "gestao-executiva",
-        title: "Centro de Gestão",
-        short: "Gestão",
-        url: "/gestao",
-        icon: Crown,
-        keywords: ["executivo", "gestor", "indicadores", "riscos", "plano de ação", "consolidado"],
+        key: "organograma",
+        title: "Organograma",
+        short: "Time",
+        url: "/_authenticated/organograma",
+        icon: Users,
+        keywords: ["equipe", "hierarquia", "membros", "gestão", "time", "setores"],
       },
     ],
   },
@@ -479,14 +479,6 @@ export const sections: MenuSection[] = [
         ],
       },
       {
-        key: "dashboard-chamados",
-        title: "Dashboard de Chamados",
-        short: "Chamados",
-        url: "/dashboard-chamados",
-        icon: ChartColumn,
-        keywords: ["indicadores", "equipes", "bi", "gráficos", "análise"],
-      },
-      {
         key: "bi-studio",
         title: "BI Studio",
         short: "BI",
@@ -557,7 +549,7 @@ export const itemKeys = (item: MenuItem) => [item.key, ...(item.aliases ?? [])];
 /** Encontra o item de menu que corresponde a um pathname (prefixo mais longo). */
 export function menuItemForPath(pathname: string): MenuItem | null {
   if (pathname === "/" || pathname === "") {
-    return allMenuItems.find((i) => i.url === "/") ?? null;
+    return allMenuItems.find((i) => i.url === "/dashboard" || i.url === "/_authenticated/dashboard") ?? null;
   }
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
@@ -643,8 +635,8 @@ export function canSeeMenuItem(
   if (key === "notificacoes") return true;
   if (key === "imagens") return isAdmin;
   if (key === "configuracoes") return isAdmin;
-  if (key === "refrigeracao-gestor") return isAdmin;
-  if (key === "corretiva-gestor") return isAdmin;
+  if (key === "refrigeracao-gestor") return isAdmin || (allowed?.includes("refrigeracao-gestor") ?? false);
+  if (key === "corretiva-gestor") return isAdmin || (allowed?.includes("corretiva-gestor") ?? false);
   if (key === "assets-catalog") return isAdmin;
   if (key.startsWith("assets-")) return isAdmin;
   if (isAdmin) return true;
