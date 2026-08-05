@@ -484,12 +484,14 @@ function BackorderPage() {
   );
   const avaliacaoRows = useMemo(
     () =>
-      [...finalizadas, ...aguardandoAprovacao].map((r) => ({
-        os: r.os,
-        solicitante: r.outros,
-        statusCat: catOf(r) as string,
-        atividade: r.nome,
-      })),
+      [...finalizadas, ...aguardandoAprovacao]
+        .filter(r => r.finalizado || ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r)))
+        .map((r) => ({
+          os: r.os,
+          solicitante: r.outros,
+          statusCat: catOf(r) as string,
+          atividade: r.nome,
+        })),
     [finalizadas, aguardandoAprovacao, catOf],
   );
 
@@ -3561,14 +3563,18 @@ const BackorderPanel = memo(function BackorderPanel({
   } = useIncrementalList(ordered, 60);
 
   return (
-    <GlassCard className="border-2 border-red-500/40 bg-red-500/5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-red-500" />
-          <h3 className="text-sm font-bold uppercase tracking-wider">
-            Lista de Backorders (Atendimento Mobile)
-          </h3>
-          <Badge className="bg-red-500 text-white">{ordered.length}</Badge>
+    <GlassCard className="border-2 border-primary/20 bg-primary/5 shadow-2xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/20 p-2 rounded-xl">
+            <ClipboardList className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary">
+              Fluxo de Backorders
+            </h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Gestão Operacional · {ordered.length} Registros</p>
+          </div>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
