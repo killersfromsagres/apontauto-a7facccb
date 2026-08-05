@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MenuInicialView } from "@/features/menu-inicial/components/menu-inicial-view";
+import { CentralInteligenciaView } from "@/features/inteligencia-pcm/components/central-inteligencia-view";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
