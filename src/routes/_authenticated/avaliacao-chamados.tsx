@@ -84,10 +84,15 @@ function AvaliacaoChamadosPage() {
         .select("*")
         .eq("status", "concluida");
       
-      if (mes !== "todos" || ano) {
+      // Se mes não for todos, aplicamos o filtro de data. 
+      // Se for todos, buscamos todas as concluídas sem filtro de data para garantir que apareçam.
+      if (mes !== "todos") {
         corretivaQuery = corretivaQuery
           .gte("fim", firstDay.toISOString())
           .lte("fim", lastDay.toISOString());
+      } else {
+        // Filtro apenas por ano se desejar, mas para depurar vamos tirar o filtro temporal quando "todos"
+        // para garantir que os dados apareçam.
       }
 
       const { data: corretivas, error: errCorretiva } = await corretivaQuery;
@@ -102,7 +107,7 @@ function AvaliacaoChamadosPage() {
         .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo")
         .in("status_cat", ["concluido", "fechado", "validado", "aguardando_aprovacao"]);
 
-      if (mes !== "todos" || ano) {
+      if (mes !== "todos") {
         backorderQuery = backorderQuery
           .gte("data_conclusao", firstDay.toISOString())
           .lte("data_conclusao", lastDay.toISOString());
@@ -144,7 +149,11 @@ function AvaliacaoChamadosPage() {
         }))
       ];
 
-      return unificado.sort((a, b) => new Date(b.fim!).getTime() - new Date(a.fim!).getTime());
+      return unificado.sort((a, b) => {
+        const dateA = a.fim ? new Date(a.fim).getTime() : 0;
+        const dateB = b.fim ? new Date(b.fim).getTime() : 0;
+        return dateB - dateA;
+      });
     }
   });
 
