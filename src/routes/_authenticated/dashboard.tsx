@@ -11,5 +11,5 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       },
     ],
   }),
-  component: MenuInicialView,
+  component: CentralInteligenciaView,
 });
