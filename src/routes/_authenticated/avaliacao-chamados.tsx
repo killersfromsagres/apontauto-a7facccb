@@ -123,7 +123,7 @@ function AvaliacaoChamadosPage() {
           numero_os: c.numero_os,
           nome_os: c.nome_os,
           solicitante: c.solicitante,
-          fim: c.fim,
+          fim: c.fim || c.criado_em, // Fallback para data de criação se fim for nulo
           equipe: c.equipe,
           predio: c.predio,
           andar: c.andar,
@@ -137,7 +137,7 @@ function AvaliacaoChamadosPage() {
           numero_os: b.os,
           nome_os: b.nome,
           solicitante: b.outros,
-          fim: b.data_conclusao,
+          fim: b.data_conclusao || b.data_finalizacao, // Fallback para data_finalizacao
           equipe: b.equipe,
           predio: b.predio,
           andar: b.andar,
