@@ -183,7 +183,6 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
 
       <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]">
-        <div className="sr-only" aria-hidden="true">[anexo]</div>
         {children}
         <Scripts />
       </body>
