@@ -113,7 +113,11 @@ function UsuariosPage() {
       title="Usuários"
       description="Crie, gerencie e configure permissões de acesso dos usuários do sistema."
     >
+      <div className="mb-6">
+        <ProvisionEncarregadosButton />
+      </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+
         <CreateUserCard />
         <UsersListCard />
       </div>
