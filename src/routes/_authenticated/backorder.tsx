@@ -403,6 +403,11 @@ function BackorderPage() {
     void loadClassifierRules();
     void loadLearnedRules();
     void refresh();
+
+    const iv = window.setInterval(() => {
+      if (navigator.onLine) refresh();
+    }, 60_000); // Backorder refreshes every 1 min if online
+    return () => window.clearInterval(iv);
   }, [loadConfig, loadAssets, loadClassifierRules, loadLearnedRules, refresh]);
 
   const catOf = useCallback(

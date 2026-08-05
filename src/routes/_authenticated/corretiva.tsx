@@ -225,8 +225,16 @@ function CorretivaPage() {
     })();
     const iv = window.setInterval(() => {
       if (navigator.onLine) doSync(true);
-    }, 30_000);
-    return () => window.clearInterval(iv);
+    }, 10_000); // Sincronização agressiva a cada 10s
+    const onOnline = () => { if (navigator.onLine) doSync(true); };
+    const onFocus = () => { if (navigator.onLine) doSync(true); };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(iv);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   /** Semanas ISO presentes na base (>= semana 32), com contagem de OS. */
@@ -664,6 +672,15 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
   useEffect(() => {
     draftGet(os.id).then((d) => setDraft(d || { osId: os.id, fotos: [], pecas: [], problemas: [], updatedAt: Date.now() }));
   }, [os.id]);
+
+  useEffect(() => {
+    if (draft && !isDone) {
+      const iv = setInterval(() => {
+        draftPut({ ...draft, updatedAt: Date.now() });
+      }, 5000); // Autosave every 5s if modified
+      return () => clearInterval(iv);
+    }
+  }, [draft, isDone]);
 
   const saveDraft = async (newDraft: any) => {
     const d = { ...newDraft, updatedAt: Date.now() };
