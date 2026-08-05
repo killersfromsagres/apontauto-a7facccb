@@ -25,9 +25,6 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getOrgData, addOrgMember, updateOrgMember, deleteOrgMember } from "@/lib/organograma/org.functions";
-import { checkOrgEditPermission } from "@/lib/organograma/auth.functions";
-import { type OrgNode } from "@/features/organograma/types";
 import { cn } from "@/lib/utils";
 import { InteractiveOrgCard } from "./interactive-org-card";
 
@@ -43,12 +40,10 @@ export function OrganogramaView() {
   const [formData, setFormData] = useState({ nome: "", cargo: "", email: "", foto_url: "" });
 
   const { data: nodes = [], isLoading } = useQuery({
-    queryKey: ["organograma"],
     queryFn: () => fetchOrg(),
   });
 
   const { data: perm } = useQuery({
-    queryKey: ["organograma-perm"],
     queryFn: () => checkPerm(),
   });
 
@@ -57,7 +52,6 @@ export function OrganogramaView() {
   const addMutation = useMutation({
     mutationFn: useServerFn(addOrgMember),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organograma"] });
       setIsDialogOpen(false);
       toast.success("Membro adicionado");
     }
@@ -66,7 +60,6 @@ export function OrganogramaView() {
   const editMutation = useMutation({
     mutationFn: useServerFn(updateOrgMember),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organograma"] });
       setIsDialogOpen(false);
       toast.success("Membro atualizado");
     }
@@ -109,7 +102,6 @@ export function OrganogramaView() {
   const deleteMutation = useMutation({
     mutationFn: useServerFn(deleteOrgMember),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["organograma"] });
       toast.success("Membro removido");
     }
   });
@@ -154,7 +146,6 @@ export function OrganogramaView() {
       {!canEdit && (
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center gap-3">
           <ShieldAlert className="h-5 w-5" />
-          <p className="text-sm">Apenas usuários autorizados podem editar o organograma.</p>
         </div>
       )}
 

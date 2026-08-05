@@ -110,14 +110,6 @@ export const sections: MenuSection[] = [
         icon: BrainCircuit,
         keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
       },
-      {
-        key: "organograma",
-        title: "Organograma",
-        short: "Time",
-        url: "/_authenticated/organograma",
-        icon: Users,
-        keywords: ["equipe", "hierarquia", "membros", "gestão", "time", "setores"],
-      },
     ],
   },
   {

@@ -2,7 +2,6 @@ import { createServerFn, createMiddleware } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { type OrgMemberInput, type OrgNode } from "@/features/organograma/types";
 
 const requireAuth = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const url = process.env.SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
@@ -32,7 +31,6 @@ export const getOrgData = createServerFn({ method: "GET" })
   .middleware([requireAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
-      .from("organograma")
       .select("*")
       .order("created_at", { ascending: true });
 
@@ -45,7 +43,6 @@ export const addOrgMember = createServerFn({ method: "POST" })
   .validator((d: OrgMemberInput) => d)
   .handler(async ({ data, context }) => {
     const { data: inserted, error } = await context.supabase
-      .from("organograma")
       .insert(data)
       .select()
       .single();
@@ -59,7 +56,6 @@ export const updateOrgMember = createServerFn({ method: "POST" })
   .validator((d: { id: string; patch: Partial<OrgMemberInput> }) => d)
   .handler(async ({ data, context }) => {
     const { data: updated, error } = await context.supabase
-      .from("organograma")
       .update(data.patch)
       .eq("id", data.id)
       .select()
@@ -74,7 +70,6 @@ export const deleteOrgMember = createServerFn({ method: "POST" })
   .validator((d: { id: string }) => d)
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
-      .from("organograma")
       .delete()
       .eq("id", data.id);
 
