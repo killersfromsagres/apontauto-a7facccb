@@ -1917,7 +1917,7 @@ function BackorderPage() {
         </TabsContent>
 
         <TabsContent value="backorder">
-          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+          <div className="max-h-[75vh] overflow-y-auto pr-2">
             <BackorderPanel
               rows={backorderAbertas}
               onSelect={setSelectedBackorder}
@@ -3647,15 +3647,15 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
                       </div>
-                      <div className="mt-1 flex flex-col gap-1">
+                      <div className="mt-1 flex flex-col gap-1.5">
                         {r.outros && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            <span className="line-clamp-1">{r.outros}</span>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/90">
+                            <User className="h-3.5 w-3.5" />
+                            <span className="font-medium line-clamp-1">{r.outros}</span>
                           </div>
                         )}
                         {r.centro_custo && (
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground opacity-80">
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground opacity-70">
                             <Database className="h-3 w-3" />
                             <span className="line-clamp-1">{r.centro_custo}</span>
                           </div>
