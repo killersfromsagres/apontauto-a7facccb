@@ -29,21 +29,11 @@ export const Route = createFileRoute("/")({
       allowed = null;
     }
 
-    // `null` = acesso total (admin/proprietário).
-    if (!allowed || allowed.length === 0) {
-      throw redirect({ to: "/gestao", replace: true });
-    }
-
-    const allowedSet = new Set(allowed);
-    if (allowedSet.has("gestao-executiva")) {
-      throw redirect({ to: "/gestao", replace: true });
-    }
-
-    const first = allMenuItems.find((item) =>
-      [item.key, ...(item.aliases ?? [])].some((k) => allowedSet.has(k)),
-    );
-
-    throw redirect({ to: first?.url ?? "/gestao", replace: true });
+    // Redireciona para o novo Menu Inicial (rota raiz)
+    throw redirect({ to: "/", replace: true });
+  },
+  component: () => null,
+});
   },
   component: () => null,
 });

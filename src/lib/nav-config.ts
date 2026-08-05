@@ -103,20 +103,12 @@ export const sections: MenuSection[] = [
     icon: LayoutDashboard,
     items: [
       {
-        key: "dashboard",
-        title: "Home Operacional",
+        key: "menu-inicial",
+        title: "Menu Inicial",
         short: "Início",
         url: "/",
         icon: Gauge,
-        keywords: ["home", "início", "kpi"],
-      },
-      {
-        key: "gestao-executiva",
-        title: "Centro de Gestão",
-        short: "Gestão",
-        url: "/gestao",
-        icon: Crown,
-        keywords: ["executivo", "gestor", "indicadores", "riscos", "plano de ação", "consolidado"],
+        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores"],
       },
     ],
   },
