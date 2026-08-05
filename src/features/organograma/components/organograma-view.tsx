@@ -126,7 +126,7 @@ export function OrganogramaView() {
       <div className={cn("flex flex-col gap-4", level > 0 && "ml-8 border-l border-white/10 pl-8 py-2")}>
         {children.map(node => (
           <div key={node.id} className="space-y-4">
-            <OrgCard 
+            <InteractiveOrgCard 
               node={node} 
               canEdit={canEdit} 
               onEdit={() => handleOpenEdit(node)}
@@ -238,53 +238,6 @@ export function OrganogramaView() {
   );
 }
 
-function OrgCard({ node, canEdit, onEdit, onAdd, onDelete }: { 
-  node: OrgNode; 
-  canEdit: boolean;
-  onEdit: () => void;
-  onAdd: () => void;
-  onDelete: () => void;
-}) {
-  return (
-    <GlassCard className="max-w-md relative group hover:border-primary/50 transition-all card-sheen p-0 overflow-hidden">
-      <div className="p-4 flex items-center gap-4">
-        <Avatar className="h-14 w-14 border-2 border-primary/20 p-0.5 bg-primary/5">
-          <AvatarImage src={node.foto_url} alt={node.nome} className="object-cover" />
-          <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
-            {node.nome.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h4 className="font-bold text-lg text-white truncate">{node.nome}</h4>
-            {node.email === "admin" && (
-              <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold uppercase tracking-tighter">
-                TEAM
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground truncate">{node.cargo}</p>
-          {node.email && <p className="text-[11px] text-muted-foreground/60 truncate mt-0.5">{node.email}</p>}
-        </div>
-
-        {canEdit && (
-          <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={onAdd} title="Adicionar Subordinado">
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-white/70 hover:bg-white/10" onClick={onEdit} title="Editar">
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-400 hover:bg-rose-400/10" onClick={onDelete} title="Excluir">
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        )}
-      </div>
-    </GlassCard>
-  );
-}
 
 function Users({ className }: { className?: string }) {
   return (
