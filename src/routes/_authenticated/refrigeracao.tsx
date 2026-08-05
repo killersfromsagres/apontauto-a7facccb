@@ -1551,8 +1551,10 @@ function HostedPhotoLinksCard({
 function ReadOnly({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <Label>{label}</Label>
-      <div className="mt-1 min-w-0 overflow-hidden rounded-md border bg-muted/40 px-3 py-2 text-sm break-words [overflow-wrap:anywhere]">
+      <Label className="text-[10px] uppercase text-muted-foreground/70 tracking-wider">
+        {label}
+      </Label>
+      <div className="mt-1 min-w-0 overflow-hidden rounded-xl border border-white/5 bg-white/5 px-3 py-2.5 text-sm font-medium text-white/90 shadow-sm backdrop-blur-sm transition-colors hover:bg-white/[0.08] break-words [overflow-wrap:anywhere]">
         {value}
       </div>
     </div>
