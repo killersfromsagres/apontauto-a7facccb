@@ -104,7 +104,9 @@ interface GeneratedFile {
   slot: SlotId;
   slotLabel: string;
   totalOS: number;
+  solicitante?: string;
 }
+
 
 const TITULO_PADRAO = "SHERWIN WILLIAMS / DEMARCHI";
 
