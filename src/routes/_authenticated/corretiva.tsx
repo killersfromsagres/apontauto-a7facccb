@@ -514,9 +514,12 @@ function CorretivaPage() {
               <button
                 key={t.k}
                 type="button"
-                onClick={() => setAba(t.k)}
+                onClick={() => {
+                  if (aba === t.k) return;
+                  setAba(t.k);
+                }}
                 className={cn(
-                  "flex-1 min-h-11 rounded-lg px-4 text-sm font-medium transition-all sm:flex-none",
+                  "flex-1 min-h-11 rounded-lg px-4 text-sm font-medium transition-colors sm:flex-none",
                   aba === t.k
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
@@ -626,8 +629,14 @@ function CorretivaPage() {
                 return (
                   <button
                     key={o.id}
-                    onClick={() => setSelectedId(o.id)}
-                    className={`w-full flex items-start gap-3 p-4 rounded-xl text-left transition-all active:scale-[0.98] ${rowCls}`}
+                    onClick={() => {
+                      if (selectedId === o.id) return;
+                      setSelectedId(o.id);
+                    }}
+                    className={cn(
+                      "w-full flex items-start gap-3 p-4 rounded-xl text-left transition-colors",
+                      rowCls
+                    )}
                   >
                     <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
                     <div className="flex-1 min-w-0">
