@@ -305,8 +305,8 @@ function CorretivaPage() {
 
   return (
     <PageShell
-      title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
-      description={aba === "preventiva" ? "Controle de preventivas agendadas por semana." : "Gestão de corretivas e backorder."}
+      title={aba === "preventiva" ? "Backorder — Campo" : "Programação — Campo"}
+      description={aba === "preventiva" ? "Controle de backorder agendado por semana." : "Gestão de corretivas e backorder."}
       backButton
       backUrl="/"
 
@@ -463,7 +463,7 @@ function CorretivaPage() {
 
             {([
               { k: "corretiva", label: "Corretivas" },
-              { k: "preventiva", label: "Preventivas" },
+              { k: "preventiva", label: "Backorder" },
             ] as const).map((t) => (
               <button
                 key={t.k}
@@ -595,7 +595,7 @@ function CorretivaPage() {
                     onClick={() => setSelectedId(o.id)}
                     className={`w-full flex items-start gap-3 p-4 rounded-xl text-left transition-all active:scale-[0.98] ${rowCls}`}
                   >
-                    <div className={`mt-1.5 h-3 w-3 rounded-full shrink-0 ${isDone ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' : styles.dot}`} />
+                    <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>

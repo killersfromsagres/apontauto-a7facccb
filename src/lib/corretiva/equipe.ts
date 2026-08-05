@@ -97,5 +97,11 @@ export function equipeStyles(equipe: string | null | undefined): EquipeStyles {
   if (n.includes("hidraul")) return STYLES.hidraulica;
   if (n.includes("refrig") || n.includes("ar condicionado") || n.includes("climatiza"))
     return STYLES.refrigeracao;
+  if (n.includes("limpeza") || n.includes("higien") || n.includes("conserva") || n.includes("orcamento") || n.includes("compra") || n.includes("gerencia"))
+    return {
+      row: "border-l-4 border-cyan-400 bg-cyan-50/70 hover:bg-cyan-100/70 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20",
+      dot: "bg-cyan-400 shadow-[0_0_8px_2px_rgba(34,211,238,0.85)]",
+      badge: "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-200 dark:border-cyan-400/50"
+    };
   return NEUTRAL;
 }
