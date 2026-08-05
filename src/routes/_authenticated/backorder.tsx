@@ -148,6 +148,12 @@ import {
   isAberto as isStatusAberto,
   type StatusCat,
 } from "@/lib/backorder/status";
+import { 
+  corpoEmail, 
+  assuntoEmail, 
+  prettyNome, 
+  type SolicitanteResumo 
+} from "@/lib/backorder/avaliacao-email";
 
 import {
   classifyTeamByText,
