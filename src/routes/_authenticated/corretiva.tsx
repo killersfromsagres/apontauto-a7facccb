@@ -547,7 +547,7 @@ function CorretivaPage() {
                   Filtrar Planilha por Data de Abertura (Coluna F)
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Filtre os dados exibindo apenas as linhas onde a coluna "Denominação do Solicitante" (coluna E) corresponde a um valor específico.
+                  Filtre os dados exibindo apenas as linhas onde a "Data/Hora Solicitação" (coluna F) corresponde a um valor específico.
                 </p>
               </div>
 
