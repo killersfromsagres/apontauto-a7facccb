@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Home, Crown, Bell, PlusCircle } from "lucide-react";
+import { LayoutGrid, Home, Crown, Bell, PlusCircle, Wrench, Thermometer, CalendarDays } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useVisibleSections } from "@/lib/nav-config";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export const MobileTabBar = memo(function MobileTabBar() {
   const { isMobile, openMobile, toggleSidebar } = useSidebar();
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { canAccess, loading } = useVisibleSections();
+  const { canAccess, quickItems, loading } = useVisibleSections();
 
   if (!isMobile || loading) return null;
 
@@ -36,31 +36,15 @@ export const MobileTabBar = memo(function MobileTabBar() {
           icon={<Home className="h-5 w-5" strokeWidth={1.8} />}
         />
 
-        {hasGestao && (
+        {quickItems.map((item) => (
           <TabLink
-            to="/gestao"
-            label="Gestão"
-            active={isActive("/gestao")}
-            icon={<Crown className="h-5 w-5" strokeWidth={1.8} />}
+            key={item.key}
+            to={item.url}
+            label={item.short || item.title}
+            active={isActive(item.url)}
+            icon={<item.icon className="h-5 w-5" strokeWidth={1.8} />}
           />
-        )}
-
-        <TabLink
-          to="#"
-          label="Ações"
-          active={false}
-          onClick={() => {
-            /* TODO: Abrir Drawer de Ações Rápidas */
-          }}
-          icon={<PlusCircle className="h-5 w-5" strokeWidth={1.8} />}
-        />
-
-        <TabLink
-          to="/notificacoes"
-          label="Avisos"
-          active={isActive("/notificacoes")}
-          icon={<Bell className="h-5 w-5" strokeWidth={1.8} />}
-        />
+        ))}
 
         <li className="flex-1">
           <button
@@ -81,6 +65,7 @@ export const MobileTabBar = memo(function MobileTabBar() {
     </nav>
   );
 });
+
 
 function TabLink({
   to,
