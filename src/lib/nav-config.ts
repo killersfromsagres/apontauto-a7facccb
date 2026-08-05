@@ -581,9 +581,10 @@ const RESTRICTED_KEYS = [
 const QUICK_KEYS = [
   "corretiva",
   "refrigeracao",
-  "assets-fill",
   "programacao",
+  "gestao-executiva",
   "backorder",
+  "assets-fill",
   "seguranca-trabalho",
   "lavanderia",
   "preventiva-ac",
@@ -594,6 +595,7 @@ const QUICK_KEYS = [
   "confiabilidade",
   "qualidade-dados",
   "materiais-os",
+
 ];
 
 /**

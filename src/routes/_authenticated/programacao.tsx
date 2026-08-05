@@ -104,7 +104,9 @@ interface GeneratedFile {
   slot: SlotId;
   slotLabel: string;
   totalOS: number;
+  solicitante?: string;
 }
+
 
 const TITULO_PADRAO = "SHERWIN WILLIAMS / DEMARCHI";
 
@@ -285,7 +287,9 @@ function ProgramacaoPage() {
             slot: slot.id,
             slotLabel: slot.label,
             totalOS: totalSemana,
+            solicitante: "", // Solicitante info preserved if available
           };
+
           out.push(item);
           try {
             await saveHistorico({

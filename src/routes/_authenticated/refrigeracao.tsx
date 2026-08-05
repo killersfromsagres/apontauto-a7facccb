@@ -320,64 +320,68 @@ function RefrigeracaoPage() {
   return (
     <PageShell
       title="Refrigeração"
-      description="Manutenção de Ar Condicionado — funciona offline. Salve seus dados; sincronizamos automaticamente quando houver internet."
+      description="Manutenção de AC — funciona offline. Sincronização automática."
       actions={
-        <>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {isOwner && (
-            <RefrigImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+            <div className="flex-1 sm:flex-none w-full sm:w-auto">
+              <RefrigImportDialog onDone={() => refreshOsFromServer().catch(() => {})} />
+            </div>
           )}
-          <StatusChip online={online} syncing={syncing} pending={pending} />
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => doSync(false)}
-            disabled={syncing || !online}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            Sincronizar
-          </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Limpar Chamados
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Limpar chamados pendentes?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Serão removidas apenas as OS que <strong>não estão concluídas</strong>. Todo o
-                  histórico de OS concluídas (com fotos e peças) será preservado. Use isso para
-                  preparar a nova programação mensal.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={async () => {
-                    try {
-                      const res = await clearOsTable({
-                        data: { module: "refrigeracao", keepCompleted: true },
-                      });
-                      toast.success(
-                        `${res.deleted} chamados pendentes removidos. Histórico preservado.`,
-                      );
-                      window.location.reload();
-                    } catch (e: any) {
-                      toast.error("Erro ao limpar: " + e.message);
-                    }
-                  }}
-                >
-                  Confirmar Limpeza
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
+          <div className="flex flex-wrap items-center gap-2 flex-1 sm:flex-none w-full sm:w-auto">
+            <StatusChip online={online} syncing={syncing} pending={pending} />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-11 flex-1 sm:flex-none sm:w-auto"
+              onClick={() => doSync(false)}
+              disabled={syncing || !online}
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              Sincronizar
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" className="bg-red-500/10 text-red-500 border-red-500/20 hover:bg-red-500/20 h-11 px-3">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Limpar chamados pendentes?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Serão removidas apenas as OS que <strong>não estão concluídas</strong>. Todo o
+                    histórico de OS concluídas (com fotos e peças) será preservado. Use isso para
+                    preparar a nova programação mensal.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={async () => {
+                      try {
+                        const res = await clearOsTable({
+                          data: { module: "refrigeracao", keepCompleted: true },
+                        });
+                        toast.success(
+                          `${res.deleted} chamados pendentes removidos. Histórico preservado.`,
+                        );
+                        window.location.reload();
+                      } catch (e: any) {
+                        toast.error("Erro ao limpar: " + e.message);
+                      }
+                    }}
+                  >
+                    Confirmar Limpeza
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       }
+
     >
       {!selected ? (
         <GlassCard className="p-4">
@@ -962,7 +966,8 @@ function OsDetail({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sticky top-0 z-10 bg-background/80 backdrop-blur-md pb-2">
+
         <Button
           variant="outline"
           size="lg"
