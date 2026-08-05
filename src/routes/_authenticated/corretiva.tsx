@@ -623,7 +623,7 @@ function CorretivaPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
-                          <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
+                          <span className={`text-lg font-mono font-black tracking-tight ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white'}`}>OS {o.numero_os}</span>
                           {(() => {
                             if (!o.data_criacao) return null;
                             const diff = (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24);
