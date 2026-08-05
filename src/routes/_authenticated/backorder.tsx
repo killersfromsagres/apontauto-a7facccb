@@ -1149,10 +1149,6 @@ function BackorderPage() {
   }
 
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
-    // Se o "ativo" mudar e nenhum override manual for enviado para
-    // predio/andar/espaço, tenta inferir: (1) regra aprendida por ativo,
-    // (2) fallback árvore (assets_ref). Nunca sobrescreve valores enviados
-    // no patch.
     const next: Partial<BOSRow> = { ...patch };
     if (
       patch.ativo !== undefined &&
@@ -1190,14 +1186,7 @@ function BackorderPage() {
         .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
     }
 
-    // ── Aprendizado automático a partir de correções manuais ───────────
     const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
-
-    // Local aprendido: toda vez que o usuário editar manualmente prédio/
-    // andar/ambiente registramos a associação Ativo → Área. Assim a
-    // próxima OS do mesmo ativo já vem preenchida e a "Classificação
-    // de Equipes" nunca sobrescreve o local salvo (a regra aprendida
-    // vence a árvore em applyLearnedToResolved).
     const locChanged =
       (next.predio !== undefined && next.predio !== r.predio) ||
       (next.andar !== undefined && next.andar !== r.andar) ||
@@ -1218,7 +1207,6 @@ function BackorderPage() {
         ativo: true,
       });
       if (!lerr) {
-        // Aplica em cascata a outros chamados com o mesmo ativo
         const { data: siblings } = await supabase
           .from("backorder_os")
           .select("os")
@@ -1245,7 +1233,6 @@ function BackorderPage() {
       }
     }
 
-    // Equipe aprendida por ativo
     if (patch.atividade && patch.atividade !== r.atividade && ativoKey) {
       const { data: user } = await supabase.auth.getUser();
       await supabase.from("regras_aprendidas_equipe").insert({
@@ -1258,7 +1245,6 @@ function BackorderPage() {
       void loadLearnedRules();
     }
 
-    // Marca chamado como resolvido (sai da revisão) quando local + equipe estão preenchidos
     const nowHasLoc = !!(willBePredio || willBeAndar || willBeEspaco);
     if (r.revisao_manual && nowHasLoc) {
       await supabase
