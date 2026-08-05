@@ -19,14 +19,24 @@ import { useMyAccess } from "@/hooks/use-my-access";
 import { menuKeysForPath } from "@/lib/nav-config";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
+import { CentralInteligenciaView } from "@/features/inteligencia-pcm/components/central-inteligencia-view";
 
-export const Route = createFileRoute("/_authenticated")({
+export const Route = createFileRoute("/_authenticated/")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) return redirect({ to: "/auth" });
     return { user: data.session.user };
   },
+  head: () => ({
+    meta: [
+      { title: "Menu Inicial — Apont Auto" },
+      {
+        name: "description",
+        content: "Painel operacional e executivo unificado com monitoramento em tempo real.",
+      },
+    ],
+  }),
   component: AuthenticatedLayout,
 });
 
@@ -149,6 +159,12 @@ function AuthenticatedLayout() {
   const noMenus =
     !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
 
+  // No TanStack Router, se acessamos a rota raiz de um grupo /_authenticated,
+  // o Outlet renderizará o conteúdo da rota index se ela existir no mesmo nível.
+  // Como agora este arquivo É a rota index (/_authenticated/), se o path for "/",
+  // renderizamos o CentralInteligenciaView diretamente em vez de outro Outlet.
+  const isIndex = pathname === "/" || pathname === "" || pathname === "/_authenticated" || pathname === "/_authenticated/";
+
   return (
     <SidebarProvider>
       <div className="flex min-h-dvh w-full app-bg">
@@ -165,15 +181,10 @@ function AuthenticatedLayout() {
             className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
           >
             {canRender ? (
-              <Outlet />
+              isIndex ? <CentralInteligenciaView /> : <Outlet />
             ) : (
               <>
-                {/* Fallback component handles redirection or shows restricted message */}
                 <AccessFallback loading={loading} noMenus={noMenus} />
-                {/* DEBUG INFO: if you see this, the route exists but AccessGuard or canRenderPath rejected it */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="hidden">Path: {pathname}, loading: {String(loading)}, canRender: {String(canRender)}</div>
-                )}
               </>
             )}
           </main>
