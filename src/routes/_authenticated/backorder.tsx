@@ -245,9 +245,7 @@ function BackorderPage() {
   // Exibe a planilha inteira por padrão; o ano continua disponível como filtro.
   const now = new Date();
   const anoAtual = now.getFullYear();
-  const mesAtual = (now.getMonth() + 1).toString().padStart(2, "0");
   const [ano, setAno] = useState<string>("todos");
-  const [mes, setMes] = useState<string>("todos");
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [solicitanteFilter, setSolicitanteFilter] = useState<string>("");
@@ -432,7 +430,7 @@ function BackorderPage() {
       const d = new Date(r.data_solicitacao);
       if (isNaN(d.getTime())) return false;
       
-      const effectiveMes = mes !== "todos" ? mes : mesFiltro;
+      const effectiveMes = mesFiltro;
       const matchesMes = effectiveMes === "todos" || String(d.getMonth() + 1).padStart(2, "0") === effectiveMes;
       const matchesSolicitante =
         solicitanteFilter === "todos" ||
@@ -1728,27 +1726,6 @@ function BackorderPage() {
               </SelectContent>
             </Select>
 
-            <Select value={mes} onValueChange={setMes}>
-              <SelectTrigger className="h-11 w-full sm:w-40">
-                <SelectValue placeholder="Mês" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os meses</SelectItem>
-                <SelectItem value="01">Janeiro</SelectItem>
-                <SelectItem value="02">Fevereiro</SelectItem>
-                <SelectItem value="03">Março</SelectItem>
-                <SelectItem value="04">Abril</SelectItem>
-                <SelectItem value="05">Maio</SelectItem>
-                <SelectItem value="06">Junho</SelectItem>
-                <SelectItem value="07">Julho</SelectItem>
-                <SelectItem value="08">Agosto</SelectItem>
-                <SelectItem value="09">Setembro</SelectItem>
-                <SelectItem value="10">Outubro</SelectItem>
-                <SelectItem value="11">Novembro</SelectItem>
-                <SelectItem value="12">Dezembro</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select value={solicitanteFilter} onValueChange={setSolicitanteFilter}>
               <SelectTrigger className="h-11 w-full sm:w-64">
                 <SelectValue placeholder="Solicitante" />
@@ -1795,21 +1772,6 @@ function BackorderPage() {
                 <SelectItem value="12">Dezembro</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="flex flex-1 flex-col gap-1.5 min-w-[200px]">
-            <Label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
-              Solicitante
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Filtrar por nome..."
-                value={solicitanteFilter}
-                onChange={(e) => setSolicitanteFilter(e.target.value)}
-                className="h-10 border-white/10 bg-white/5 pl-9 text-sm"
-              />
-            </div>
           </div>
 
           <div className="flex flex-col gap-1.5 justify-end">
