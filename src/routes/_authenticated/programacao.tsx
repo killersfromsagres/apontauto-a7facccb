@@ -366,7 +366,7 @@ function ProgramacaoPage() {
           {isAdmin && (
             <>
               <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
-              <PreventivaImportDialog mode="preventiva" onDone={() => {}} />
+              <PreventivaImportDialog mode="backorder" onDone={() => {}} />
             </>
           )}
           <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")} className="h-11 sm:h-9">

@@ -153,7 +153,7 @@ export function PreventivaImportDialog({
                 <Badge variant="secondary">{rows.length} OS</Badge>
               </div>
               <div className="flex flex-wrap gap-2">
-                {(mode === "preventiva"
+                {(mode === "backorder"
                   ? EQUIPES_PREVENTIVA.map(
                       (e) => [e, rows.filter((r) => r.equipe === e).length] as [string, number],
                     )
