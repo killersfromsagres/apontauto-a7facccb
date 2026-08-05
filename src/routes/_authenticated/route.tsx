@@ -52,7 +52,7 @@ function AccessGuard() {
     // Rota exclusiva de admin
     if (keys.includes("usuarios")) {
       toast.error("Área restrita a administradores.");
-      navigate({ to: "/", replace: true });
+      navigate({ to: "/_authenticated/dashboard", replace: true });
       return;
     }
 
