@@ -152,8 +152,8 @@ export function PolygonEditor({
     const rect = stageRef.current?.getBoundingClientRect();
     if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     return clampPoint({
-      x: ((clientX - rect.left) / rect.width) * 100,
-      y: ((clientY - rect.top) / rect.height) * 100,
+      x: ((clientX - rect.left) / (rect.width || 1)) * 100,
+      y: ((clientY - rect.top) / (rect.height || 1)) * 100,
     });
   }, []);
 
