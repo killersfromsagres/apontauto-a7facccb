@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
+import { useIsAdmin } from "@/hooks/use-is-admin";
 
 import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
 import {
@@ -148,6 +150,7 @@ function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
 }
 
 function ProgramacaoPage() {
+  const { isAdmin } = useIsAdmin();
   const { confirmar, dialogo } = useConfirm();
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
