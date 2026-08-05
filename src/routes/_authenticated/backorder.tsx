@@ -422,11 +422,13 @@ function BackorderPage() {
       const d = new Date(r.data_solicitacao);
       if (isNaN(d.getTime())) return false;
       
-      const matchesMes = mesFiltro === "todos" || String(d.getMonth() + 1).padStart(2, "0") === mesFiltro;
+      const effectiveMes = mes !== "todos" ? mes : mesFiltro;
+      const matchesMes = effectiveMes === "todos" || String(d.getMonth() + 1).padStart(2, "0") === effectiveMes;
       const matchesSolicitante =
-        !solicitanteFilter || (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
+        solicitanteFilter === "todos" ||
+        !solicitanteFilter ||
+        (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
       
-      // Filtro de ano atual conforme solicitado anteriormente
       const matchesAno = ano === "todos" || String(d.getFullYear()) === String(ano);
       
       return matchesMes && matchesSolicitante && matchesAno;
