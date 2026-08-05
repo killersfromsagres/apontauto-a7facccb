@@ -261,7 +261,7 @@ function RefrigeracaoPage() {
     window.addEventListener("focus", focus);
     const iv = window.setInterval(() => {
       if (navigator.onLine) doSync(true);
-    }, 30_000);
+    }, 15_000); // Reduzido para 15s para sincronização mais rápida
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("focus", focus);

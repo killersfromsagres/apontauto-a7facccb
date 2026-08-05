@@ -225,8 +225,16 @@ function CorretivaPage() {
     })();
     const iv = window.setInterval(() => {
       if (navigator.onLine) doSync(true);
-    }, 30_000);
-    return () => window.clearInterval(iv);
+    }, 15_000); // Reduzido para 15s para sincronização mais rápida
+    const onOnline = () => doSync(true);
+    const onFocus = () => { if (navigator.onLine) doSync(true); };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(iv);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   /** Semanas ISO presentes na base (>= semana 32), com contagem de OS. */
