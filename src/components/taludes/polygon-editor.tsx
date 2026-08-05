@@ -185,7 +185,7 @@ export function PolygonEditor({
           const dx = (v.x - p.x) * per.x * zoom;
           const dy = (v.y - p.y) * per.y * zoom;
           const d = Math.hypot(dx, dy);
-          if (d < CLOSE_SNAP_PX && (!best || d < best.d)) best = { d, pt: v };
+          if (d < snapThreshold * zoom && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
