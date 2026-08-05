@@ -1,5 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useLayoutEffect } from "react";
 
 /**
  * Rota raiz: redireciona para a home autenticada ou para o login.
@@ -19,11 +20,11 @@ export const Route = createFileRoute("/")({
 });
 
 function RedirectToHome() {
-  const { navigate } = Route.useRouter();
+  const navigate = useNavigate();
   
-  Route.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     navigate({ to: "/_authenticated/", replace: true });
-  }, []);
+  }, [navigate]);
 
   return null;
 }
