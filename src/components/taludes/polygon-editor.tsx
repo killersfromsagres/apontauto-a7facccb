@@ -411,7 +411,7 @@ export function PolygonEditor({
       if (draft.length >= 3) {
         const first = draft[0];
         const d = Math.hypot((first.x - p.x) * per.x, (first.y - p.y) * per.y);
-        if (d <= CLOSE_SNAP_PX) {
+        if (d <= (CLOSE_SNAP_PX * 0.4)) {
           commitDraft(draft);
           return;
         }
