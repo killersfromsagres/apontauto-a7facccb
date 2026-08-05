@@ -633,6 +633,10 @@ export function useVisibleSections() {
       if (s.kind === "item") {
         if (canSee(s.item)) out.push(s);
       } else {
+        // Regra específica para o login de manutenção: oculta o grupo de Planejamento PCM
+        const isManutencao = allowed?.includes("manutencao");
+        if (isManutencao && s.key === "planejamento-grp") continue;
+
         const items = s.items.filter(canSee);
         if (items.length > 0) out.push({ ...s, items });
       }
