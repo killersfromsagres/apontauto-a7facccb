@@ -1,9 +1,8 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { MenuInicialView } from "@/features/menu-inicial/components/menu-inicial-view";
 
 /**
- * Rota raiz: decide o destino conforme a sessão do usuário.
+ * Rota raiz: redireciona para a home autenticada ou para o login.
  */
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -16,14 +15,15 @@ export const Route = createFileRoute("/")({
       throw redirect({ to: "/auth", replace: true });
     }
   },
-  head: () => ({
-    meta: [
-      { title: "Menu Inicial — Apont Auto" },
-      {
-        name: "description",
-        content: "Painel operacional e executivo unificado com monitoramento em tempo real.",
-      },
-    ],
-  }),
-  component: MenuInicialView,
+  component: RedirectToHome,
 });
+
+function RedirectToHome() {
+  const { navigate } = Route.useRouter();
+  
+  Route.useLayoutEffect(() => {
+    navigate({ to: "/_authenticated/", replace: true });
+  }, []);
+
+  return null;
+}
