@@ -115,6 +115,22 @@ function pickBackorderSheet(wb: any): string {
       best = n;
     }
   }
+  if (bestScore <= 0) {
+    // Se nenhuma aba parece ser de backorder, tenta achar a maior aba que não seja Ativos
+    let maxRows = -1;
+    for (const n of names) {
+      const sn = norm(n);
+      if (sn === "ATIVOS" || sn === "ATIVO") continue;
+      const ws = wb.Sheets[n];
+      if (!ws || !ws["!ref"]) continue;
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      const rowCount = range.e.r - range.s.r;
+      if (rowCount > maxRows) {
+        maxRows = rowCount;
+        best = n;
+      }
+    }
+  }
   return best;
 }
 
