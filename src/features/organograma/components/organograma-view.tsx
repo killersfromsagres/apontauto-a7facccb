@@ -29,6 +29,8 @@ import { getOrgData, addOrgMember, updateOrgMember, deleteOrgMember } from "@/li
 import { checkOrgEditPermission } from "@/lib/organograma/auth.functions";
 import { type OrgNode } from "@/features/organograma/types";
 import { cn } from "@/lib/utils";
+import { InteractiveOrgCard } from "./interactive-org-card";
+
 
 export function OrganogramaView() {
   const qc = useQueryClient();
