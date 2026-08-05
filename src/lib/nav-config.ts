@@ -36,6 +36,7 @@ import {
   SearchX,
   BellRing,
   Megaphone,
+  MessageSquareCheck,
   type LucideIcon,
   ImageIcon,
   Crown,
