@@ -64,7 +64,7 @@ export interface PolygonEditorProps {
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 20;
 const CLOSE_SNAP_PX = 20;
-const VERTEX_RADIUS_PX = 1.2;
+const VERTEX_RADIUS_PX = 0.5;
 
 interface HistoryEntry {
   id: string;
