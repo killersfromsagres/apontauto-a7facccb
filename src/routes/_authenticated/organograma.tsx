@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import OrbitCarousel from '@/components/ui/orbiting-carousel-with-animated-icons';
-import { PageShell } from '@/components/layout/page-shell';
+import { PageShell } from '@/components/page-shell';
 import { Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
