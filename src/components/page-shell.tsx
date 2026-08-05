@@ -11,6 +11,7 @@ export function PageShell({
   actions,
   backButton = false,
   backUrl = "/",
+  onBack,
 }: {
   title: string;
   description?: string;
@@ -19,7 +20,15 @@ export function PageShell({
   actions?: ReactNode;
   backButton?: boolean;
   backUrl?: string;
+  onBack?: () => void;
 }) {
+  const handleBack = (e: React.MouseEvent) => {
+    if (onBack) {
+      e.preventDefault();
+      onBack();
+    }
+  };
+
   return (
     <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8">
       {/* Cabeçalho Compacto Mobile */}
@@ -31,11 +40,16 @@ export function PageShell({
                 variant="ghost"
                 size="icon"
                 className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 sm:h-10 sm:w-10"
-                asChild
+                onClick={onBack ? handleBack : undefined}
+                asChild={!onBack}
               >
-                <a href={backUrl}>
+                {onBack ? (
                   <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                </a>
+                ) : (
+                  <a href={backUrl}>
+                    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </a>
+                )}
               </Button>
             </div>
           )}
