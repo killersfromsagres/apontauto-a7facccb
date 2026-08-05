@@ -309,10 +309,18 @@ export const listAppUsers = createServerFn({ method: "GET" })
 
     return {
       users: authList.users.map((u) => {
-        const email = u.email ?? "";
-        const login =
-          (u.user_metadata as any)?.login ??
-          (email.endsWith(`@${LOGIN_DOMAIN}`) ? email.split("@")[0] : email);
+        const email = (u.email ?? "").toLowerCase();
+        let login = (u.user_metadata as any)?.login;
+
+        // Fallback robusto para logins históricos ou provisionados via auth
+        if (!login) {
+          if (email.endsWith(`@${LOGIN_DOMAIN}`)) {
+            login = email.split("@")[0];
+          } else {
+            login = email;
+          }
+        }
+
         const prof = profMap.get(u.id);
         const role = roleMap.get(u.id) ?? ("user" as Role);
         return {
