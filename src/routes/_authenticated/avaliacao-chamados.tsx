@@ -81,7 +81,7 @@ function AvaliacaoChamadosPage() {
       // Busca OS de Corretiva Finalizadas
       let corretivaQuery = supabase
         .from("corretiva_os")
-        .select("*")
+        .select("id,numero_os,nome_os,solicitante,fim,equipe,predio,andar,local,ativo,status,created_at")
         .eq("status", "concluida");
       
       // Se mes não for todos, aplicamos o filtro de data. 
@@ -90,9 +90,6 @@ function AvaliacaoChamadosPage() {
         corretivaQuery = corretivaQuery
           .gte("fim", firstDay.toISOString())
           .lte("fim", lastDay.toISOString());
-      } else {
-        // Filtro apenas por ano se desejar, mas para depurar vamos tirar o filtro temporal quando "todos"
-        // para garantir que os dados apareçam.
       }
 
       const { data: corretivas, error: errCorretiva } = await corretivaQuery;
@@ -104,7 +101,7 @@ function AvaliacaoChamadosPage() {
       // Usamos a coluna data_conclusao para o filtro de tempo
       let backorderQuery = supabase
         .from("backorder_os")
-        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo")
+        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo,data_finalizacao")
         .in("status_cat", ["concluido", "fechado", "validado", "aguardando_aprovacao"]);
 
       if (mes !== "todos") {
@@ -123,7 +120,7 @@ function AvaliacaoChamadosPage() {
           numero_os: c.numero_os,
           nome_os: c.nome_os,
           solicitante: c.solicitante,
-          fim: c.fim || c.criado_em, // Fallback para data de criação se fim for nulo
+          fim: c.fim || (c as any).created_at, // Fallback para data de criação se fim for nulo
           equipe: c.equipe,
           predio: c.predio,
           andar: c.andar,
@@ -137,7 +134,7 @@ function AvaliacaoChamadosPage() {
           numero_os: b.os,
           nome_os: b.nome,
           solicitante: b.outros,
-          fim: b.data_conclusao || b.data_finalizacao, // Fallback para data_finalizacao
+          fim: b.data_conclusao || (b as any).data_finalizacao, // Fallback para data_finalizacao
           equipe: b.equipe,
           predio: b.predio,
           andar: b.andar,
