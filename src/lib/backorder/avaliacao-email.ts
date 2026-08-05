@@ -11,6 +11,12 @@ export interface SolicitanteResumo {
 
 const CAP_EXCECOES = new Set(["de", "da", "do", "das", "dos", "e"]);
 
+export function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("pt-BR");
+}
+
 /** "MARIA DA SILVA" → "Maria da Silva" */
 export function prettyNome(raw: string): string {
   const t = (raw ?? "").trim();
@@ -48,28 +54,18 @@ export interface EmailOptions {
   prazoDias?: number;
 }
 
-/** Lista "Nome (n chamados)" pronta para colar no corpo/destinatários. */
-export function listaSolicitantes(s: SolicitanteResumo[]): string {
-  return s
-    .map((x) => `• ${x.nome}: ${x.total} chamado${x.total > 1 ? "s" : ""}`)
-    .join("\n");
-}
-
-export function assuntoEmail(ano: number | string, total: number): string {
-  return `Avaliação de chamados concluídos — Gestão Predial Apont Auto (${ano})`;
+export function assuntoEmail(ano: number | string): string {
+  return `Solicitação de Avaliação - Chamados Concluídos (${ano})`;
 }
 
 export function corpoEmail({
-  solicitantes,
-  ano,
   remetente = "Gestão Predial — Apont Auto",
-}: EmailOptions): string {
-  const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
+}: Partial<EmailOptions>): string {
   return `Prezados,
 
 Gostaríamos de solicitar a gentileza de sua colaboração na avaliação dos chamados realizados sob sua solicitação no sistema Prisma.
 
-Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço concluídas que aguardam sua validação final. Sua avaliação é fundamental para que possamos mensurar a qualidade dos serviços prestados e buscar a melhoria contínua de nossos processos.
+Sua avaliação é fundamental para que possamos mensurar a qualidade dos serviços prestados e buscar a melhoria contínua de nossos processos.
 
 Anexo a este e-mail, enviamos um relatório detalhado com a soma dos chamados pendentes para cada solicitante.
 
