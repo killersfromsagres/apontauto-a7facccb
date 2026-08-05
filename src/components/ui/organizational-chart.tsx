@@ -123,7 +123,14 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                   className="relative p-1.5 rounded-full border-[3px] shadow-2xl mb-5 transition-all duration-300 hover:scale-110 z-10"
                   style={{ borderColor: member.color, boxShadow: `0 0 20px ${member.color}33` }}
                 >
-                  <div className="w-28 h-28 rounded-full overflow-hidden bg-white/5 backdrop-blur-md relative group">
+                  <div className="w-28 h-28 rounded-full overflow-hidden bg-white/5 backdrop-blur-md relative group cursor-pointer"
+                    onClick={() => {
+                      if (isAdmin) {
+                        setEditingMember(member);
+                        setIsDialogOpen(true);
+                      }
+                    }}
+                  >
                     {member.photo_url ? (
                       <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
@@ -134,24 +141,10 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                     
                     {isAdmin && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
-                        <label className="cursor-pointer p-2 hover:bg-white/20 rounded-full transition-colors">
-                          <Plus className="text-white" size={20} />
-                          <input 
-                            type="file" 
-                            className="hidden" 
-                            accept="image/*"
-                            onChange={(e) => handleUploadPhoto(member.id, e)}
-                          />
-                        </label>
-                        <button 
-                          onClick={() => {
-                            setEditingMember(member);
-                            setIsDialogOpen(true);
-                          }}
-                          className="p-2 hover:bg-white/20 rounded-full transition-colors"
-                        >
-                          <Edit2 className="text-white" size={20} />
-                        </button>
+                        <div className="flex flex-col items-center gap-2">
+                          <Edit2 className="text-white" size={24} />
+                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Editar Perfil</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -181,6 +174,31 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
             <DialogTitle>Editar Membro</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex flex-col items-center justify-center mb-4">
+              <div 
+                className="w-24 h-24 rounded-full border-4 overflow-hidden bg-white/5 relative group cursor-pointer mb-2"
+                style={{ borderColor: editingMember?.color || '#6366f1' }}
+              >
+                {editingMember?.photo_url ? (
+                  <img src={editingMember.photo_url} alt={editingMember.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/10">
+                    <Camera size={24} />
+                  </div>
+                )}
+                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Plus className="text-white" size={20} />
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => editingMember && handleUploadPhoto(editingMember.id, e)}
+                  />
+                </label>
+              </div>
+              <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Clique para alterar foto</p>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="name">Nome</Label>
               <Input

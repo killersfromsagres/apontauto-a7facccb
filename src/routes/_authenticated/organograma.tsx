@@ -60,7 +60,7 @@ function OrganogramaPage() {
           }}
         >
           <div className="mb-12 flex flex-col items-center">
-            <h2 className="text-4xl font-black text-white mb-3 tracking-tighter uppercase">ORGANIZATIONAL CHART</h2>
+            <h2 className="text-4xl font-black text-white mb-3 tracking-tighter uppercase">Organograma Demarchi</h2>
             <div className="w-24 h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-6" />
             
             {isAdmin && (
