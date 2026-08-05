@@ -85,8 +85,8 @@ export async function generateAvaliacaoPDF(input: {
     head: [["SOLICITANTE", "CONCLUÍDOS", "AGUARD. APROV.", "TOTAL PENDENTE"]],
     body: tableData,
     theme: "striped",
-    headStyles: {
-      fillColor: primaryColor,
+  headStyles: {
+      fillColor: primaryColor as [number, number, number],
       textColor: [255, 255, 255],
       fontSize: 9,
       fontStyle: "bold",
