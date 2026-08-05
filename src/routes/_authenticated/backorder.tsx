@@ -485,7 +485,6 @@ function BackorderPage() {
   const avaliacaoRows = useMemo(
     () =>
       [...finalizadas, ...aguardandoAprovacao]
-        .filter(r => r.finalizado || ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r)))
         .map((r) => ({
           os: r.os,
           solicitante: r.outros,
@@ -1521,8 +1520,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Sistema de Gerenciamento de Backorders e OS"
-      description="Implemente e gerencie planilhas de histórico com inteligência de classificação, filtros modernos e fluxo de avaliação corporativa."
+      title="Sistema de Backorders e Gestão de OS — Apont Auto"
+      description="Centro de comando moderno para gestão de pendências, com classificação inteligente, indicadores de centro de custo e integração com fluxo de qualidade."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
