@@ -480,6 +480,14 @@ export const sections: MenuSection[] = [
         keywords: ["fotos", "imgbb", "storage", "espaço", "migrar", "limpeza"],
       },
       {
+        key: "usuarios",
+        title: "Gerenciamento de Usuários",
+        short: "Usuários",
+        url: "/usuarios",
+        icon: Users,
+        keywords: ["permissões", "acesso", "senha", "login", "admin", "contas"],
+      },
+      {
         key: "configuracoes",
         title: "Configurações",
         short: "Config.",
