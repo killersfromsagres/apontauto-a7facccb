@@ -352,39 +352,5 @@ export function CentralInteligenciaView() {
   );
 }
 
-function KpiMonitorCard({ title, value, trend, icon, chartColor, className }: { 
-  title: string; 
-  value: string; 
-  trend: string; 
-  icon: React.ReactNode;
-  chartColor: string;
-  className?: string;
-}) {
-  return (
-    <GlassCard className={`relative overflow-hidden group hover:border-primary/50 transition-colors card-sheen ${className || ""}`}>
-      <div className="flex justify-between items-start mb-2">
-        <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</span>
-        {icon}
-      </div>
-      <div className="text-3xl font-bold mb-1 tabular-nums">{value}</div>
-      <div className="flex items-center gap-1.5">
-        <span className={`text-[11px] font-semibold ${trend.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {trend}
-        </span>
-        <span className="text-[10px] text-muted-foreground">vs último mês</span>
-      </div>
-      
-      {/* Mini sparkline fake effect */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5">
-        <div 
-          className="h-full transition-all duration-1000" 
-          style={{ 
-            width: '65%', 
-            backgroundColor: chartColor,
-            boxShadow: `0 0 10px ${chartColor}`
-          }} 
-        />
-      </div>
-    </GlassCard>
-  );
-}
+// KpiMonitorCard removido daqui pois agora é importado de ./kpi-monitor-card
+
