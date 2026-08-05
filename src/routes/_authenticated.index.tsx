@@ -72,7 +72,7 @@ function AccessGuard() {
       return;
     }
 
-    if (access.isAdmin) return; // admin acessa tudo após o check de "usuarios"
+    if (access.isAdmin || access.allowed?.includes("climatizacao")) return; // admin e climatizacao acessam tudo sem restrições de menu (climatizacao foca em refrigeração no menu lateral)
 
     // Sem restrição customizada → acesso total.
     if (!access.allowed) return;
