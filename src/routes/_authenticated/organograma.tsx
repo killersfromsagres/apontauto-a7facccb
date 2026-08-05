@@ -12,8 +12,7 @@ function OrganogramaPage() {
   return (
     <PageShell 
       title="Organograma" 
-      subtitle="Estrutura organizacional e colaboradores"
-      icon={Users}
+      description="Estrutura organizacional e colaboradores"
     >
       <div className="flex flex-col items-center justify-center py-10">
         <motion.div
