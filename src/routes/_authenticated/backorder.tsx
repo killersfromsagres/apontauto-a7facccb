@@ -469,6 +469,10 @@ function BackorderPage() {
     () => rowsFiltradas.filter((r) => catOf(r) === "aguardando_aprovacao"),
     [rowsFiltradas, catOf],
   );
+  const reabertas = useMemo(
+    () => rowsFiltradas.filter((r) => r.status_origem?.toLowerCase().includes("reaberta")),
+    [rowsFiltradas],
+  );
   const avaliacaoRows = useMemo(
     () =>
       [...finalizadas, ...aguardandoAprovacao].map((r) => ({
@@ -1112,8 +1116,6 @@ function BackorderPage() {
               .update({
                 atividade: p.atividade,
                 equipe: p.equipe,
-                // Marca como automática (não-manual) — a menos que o usuário
-                // tenha forçado sobrescrever a manual: nesse caso vira auto de novo.
                 atividade_manual: false,
                 revisao_manual: p.ambiguo,
                 origem_equipe: p.ambiguo ? "pendente" : "regra_local",
@@ -1292,6 +1294,7 @@ function BackorderPage() {
       predio: r.predio,
       andar: r.andar,
       espaco: r.espaco,
+      centro_custo: r.centro_custo,
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
