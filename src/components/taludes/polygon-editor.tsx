@@ -61,9 +61,10 @@ export interface PolygonEditorProps {
   className?: string;
 }
 
-const MIN_ZOOM = 0.4;
-const MAX_ZOOM = 12;
-const CLOSE_SNAP_PX = 14;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 20;
+const CLOSE_SNAP_PX = 20;
+const VERTEX_RADIUS_PX = 6;
 
 interface HistoryEntry {
   id: string;
@@ -151,8 +152,8 @@ export function PolygonEditor({
     const rect = stageRef.current?.getBoundingClientRect();
     if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     return clampPoint({
-      x: ((clientX - rect.left) / rect.width) * 100,
-      y: ((clientY - rect.top) / rect.height) * 100,
+      x: ((clientX - rect.left) / (rect.width || 1)) * 100,
+      y: ((clientY - rect.top) / (rect.height || 1)) * 100,
     });
   }, []);
 
@@ -172,19 +173,25 @@ export function PolygonEditor({
       if (!snap) return clampPoint(out);
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
+      // Precisamos considerar o zoom para que a distância de "grude" seja consistente em pixels de tela
+      const snapThreshold = CLOSE_SNAP_PX / zoom; 
+      
       for (const poly of polygons) {
         if (!poly.visible) continue;
         if (poly.id === excludeId) continue;
         const pts = geometryOf(poly);
         pts.forEach((v) => {
-          const d = Math.hypot((v.x - p.x) * per.x, (v.y - p.y) * per.y);
-          if (d < 8 && (!best || d < best.d)) best = { d, pt: v };
+          // Distância em porcentagem convertida para pixels de viewport (considerando zoom)
+          const dx = (v.x - p.x) * per.x * zoom;
+          const dy = (v.y - p.y) * per.y * zoom;
+          const d = Math.hypot(dx, dy);
+          if (d < CLOSE_SNAP_PX && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
       return clampPoint(out);
     },
-    [grid, snap, polygons, geometryOf, pxPerPercent],
+    [grid, snap, polygons, geometryOf, pxPerPercent, zoom],
   );
 
   /* -------------------------------- histórico ------------------------------- */
@@ -675,7 +682,7 @@ export function PolygonEditor({
                       fill={poly.color}
                       fillOpacity={isSel ? Math.min(0.65, poly.opacity + 0.15) : poly.opacity}
                       stroke={poly.color}
-                      strokeWidth={(isSel ? 0.45 : 0.3) / zoom}
+                      strokeWidth={(isSel ? 1.5 : 1) / zoom}
                       strokeLinejoin="round"
                       style={{
                         cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
@@ -709,10 +716,10 @@ export function PolygonEditor({
                           key={i}
                           cx={p.x}
                           cy={p.y}
-                          r={0.9 / zoom}
+                          r={VERTEX_RADIUS_PX / zoom}
                           fill="#ffffff"
                           stroke={poly.color}
-                          strokeWidth={0.35 / zoom}
+                          strokeWidth={1.2 / zoom}
                           style={{ cursor: "grab" }}
                           onPointerDown={(e) => startVertexDrag(e, poly, i)}
                           onDoubleClick={(e) => {
@@ -735,18 +742,18 @@ export function PolygonEditor({
                   fill={draft.length > 2 ? "#0ea5e9" : "none"}
                   fillOpacity={0.2}
                   stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}
-                  strokeWidth={0.35 / zoom}
-                  strokeDasharray={`${1 / zoom} ${0.7 / zoom}`}
+                  strokeWidth={1.5 / zoom}
+                  strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
                 />
                 {draft.map((p, i) => (
                   <circle
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={(i === 0 ? 1.3 : 0.85) / zoom}
+                    r={(i === 0 ? VERTEX_RADIUS_PX * 1.5 : VERTEX_RADIUS_PX) / zoom}
                     fill={i === 0 ? "#22c55e" : "#ffffff"}
                     stroke="#0ea5e9"
-                    strokeWidth={0.3 / zoom}
+                    strokeWidth={1.2 / zoom}
                   />
                 ))}
               </g>
@@ -766,8 +773,8 @@ export function PolygonEditor({
                       x2={b.x}
                       y2={b.y}
                       stroke="#f59e0b"
-                      strokeWidth={0.4 / zoom}
-                      strokeDasharray={`${1.2 / zoom} ${0.8 / zoom}`}
+                      strokeWidth={1.2 / zoom}
+                      strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
                     />
                   );
                 })()}
