@@ -716,7 +716,7 @@ export function PolygonEditor({
                           key={i}
                           cx={p.x}
                           cy={p.y}
-                          r={0.9 / zoom}
+                          r={VERTEX_RADIUS_PX / zoom}
                           fill="#ffffff"
                           stroke={poly.color}
                           strokeWidth={0.35 / zoom}
