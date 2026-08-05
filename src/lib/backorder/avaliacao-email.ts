@@ -70,17 +70,15 @@ export function corpoEmail({
 
 Espero que este e-mail o(a) encontre bem.
 
-Gostaríamos de solicitar sua gentil colaboração para a finalização de um ciclo importante em nossa operação de Gestão Predial. Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço sob sua responsabilidade (ou solicitadas por sua área) que já foram devidamente concluídas ou aguardam sua aprovação formal no sistema.
+Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço (OS) sob sua solicitação que foram concluídas ou aguardam aprovação.
 
-Sua avaliação e validação são fundamentais para assegurarmos a excelência no atendimento prestado e para que possamos encerrar formalmente estes processos, garantindo a precisão de nossos indicadores de performance.
-
-Poderia, por gentileza, dedicar um breve momento para realizar a avaliação dos chamados listados abaixo?
+Sua validação é essencial para a qualidade da nossa Gestão Predial. Por gentileza, poderia avaliar os chamados abaixo?
 
 ${listaSolicitantes(solicitantes)}
 
-Este procedimento é simples e pode ser realizado diretamente no sistema. Caso haja qualquer divergência ou o serviço não tenha atendido plenamente às expectativas, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com a devida prioridade.
+Basta acessar o sistema e confirmar a execução. Sua nota nos ajuda a melhorar continuamente.
 
-Agradecemos antecipadamente por sua parceria e apoio contínuo.
+Agradecemos a parceria.
 
 Atenciosamente,
 ${remetente}`;

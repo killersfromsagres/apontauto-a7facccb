@@ -467,7 +467,7 @@ function BackorderPage() {
     [rowsFiltradas, catOf],
   );
   const finalizadas = useMemo(
-    () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r))),
+    () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r)) || r.finalizado),
     [rowsFiltradas, catOf],
   );
   const cancelados = useMemo(
@@ -488,6 +488,7 @@ function BackorderPage() {
         os: r.os,
         solicitante: r.outros,
         statusCat: catOf(r) as string,
+        atividade: r.nome,
       })),
     [finalizadas, aguardandoAprovacao, catOf],
   );
@@ -1518,8 +1519,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)"
-      description="O objetivo deste projeto é criar um sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente."
+      title="Sistema de Gerenciamento de Backorders e OS"
+      description="Implemente e gerencie planilhas de histórico com inteligência de classificação, filtros modernos e fluxo de avaliação corporativa."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
@@ -1917,7 +1918,7 @@ function BackorderPage() {
         </TabsContent>
 
         <TabsContent value="backorder">
-          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+          <div className="max-h-[75vh] overflow-y-auto pr-2">
             <BackorderPanel
               rows={backorderAbertas}
               onSelect={setSelectedBackorder}
@@ -1929,7 +1930,7 @@ function BackorderPage() {
         <TabsContent value="finalizados" className="space-y-4">
           <AvaliacaoEmailCard rows={avaliacaoRows} ano={ano === "todos" ? "todos os anos" : ano} />
           <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
-            <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} />
+            <FinalizadosView rows={finalizadas} onReabrir={(r) => toggleFinalizado(r, false)} isAprovacao />
           </div>
         </TabsContent>
 
@@ -3560,14 +3561,14 @@ const BackorderPanel = memo(function BackorderPanel({
   } = useIncrementalList(ordered, 60);
 
   return (
-    <GlassCard className="border-2 border-orange-500/40 bg-orange-500/5">
+    <GlassCard className="border-2 border-red-500/40 bg-red-500/5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-orange-500" />
+          <ClipboardList className="h-5 w-5 text-red-500" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            # Sistema de Backorders e Gestão de Ordens de Serviço (OS)
+            Lista de Backorders (Atendimento Mobile)
           </h3>
-          <Badge className="bg-orange-500 text-white">{ordered.length}</Badge>
+          <Badge className="bg-red-500 text-white">{ordered.length}</Badge>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -3587,7 +3588,7 @@ const BackorderPanel = memo(function BackorderPanel({
         </div>
       ) : (
         <PriorityScroller total={ordered.length}>
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
             {visibleCards.map((r) => {
               const dias = daysBetween(r.data_solicitacao);
               const nivelClass =
@@ -3614,7 +3615,7 @@ const BackorderPanel = memo(function BackorderPanel({
                       onSelect(r);
                     }
                   }}
-                  className={`priority-card group animate-fade-in flex max-h-[220px] flex-col rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/60 ${nivelClass}`}
+                  className={`priority-card group animate-fade-in flex flex-col rounded-xl border p-4 shadow-lg backdrop-blur-md transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-500/60 ${nivelClass}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-1 flex-col">
@@ -3647,15 +3648,15 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
                       </div>
-                      <div className="mt-1 flex flex-col gap-1">
+                      <div className="mt-1 flex flex-col gap-1.5">
                         {r.outros && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <User className="h-3 w-3" />
-                            <span className="line-clamp-1">{r.outros}</span>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/90">
+                            <User className="h-3.5 w-3.5" />
+                            <span className="font-medium line-clamp-1">{r.outros}</span>
                           </div>
                         )}
                         {r.centro_custo && (
-                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground opacity-80">
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground opacity-70">
                             <Database className="h-3 w-3" />
                             <span className="line-clamp-1">{r.centro_custo}</span>
                           </div>
