@@ -103,7 +103,7 @@ export const sections: MenuSection[] = [
     icon: LayoutDashboard,
     items: [
       {
-        key: "menu-inicial",
+        key: "dashboard",
         title: "Menu Inicial",
         short: "Início",
         url: "/_authenticated/dashboard",
@@ -633,6 +633,7 @@ export function canSeeMenuItem(
   if (key === "pesquisa") return true;
   if (key === "favoritos") return true;
   if (key === "notificacoes") return true;
+  if (key === "dashboard") return true; // Garante visibilidade do Menu Inicial
   if (key === "imagens") return isAdmin;
   if (key === "configuracoes") return isAdmin;
   if (key === "refrigeracao-gestor") return isAdmin || (allowed?.includes("refrigeracao-gestor") ?? false);
