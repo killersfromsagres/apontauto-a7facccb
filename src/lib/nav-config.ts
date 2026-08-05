@@ -594,6 +594,13 @@ export function canSeeMenuItem(
   if (key === "corretiva-gestor") return isAdmin || (allowed?.includes("corretiva-gestor") ?? false);
   if (key === "assets-catalog") return isAdmin;
   if (key.startsWith("assets-")) return isAdmin;
+
+  // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
+  if (key.startsWith("refrigeracao")) {
+    const isClimatizacao = allowed?.includes("climatizacao");
+    if (isClimatizacao) return true;
+  }
+
   if (isAdmin) return true;
   // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
   if (!allowed) return false;
