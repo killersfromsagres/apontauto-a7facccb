@@ -122,7 +122,7 @@ export const sections: MenuSection[] = [
         key: "organograma",
         title: "Organograma",
         short: "Time",
-        url: "/organograma",
+        url: "/_authenticated/organograma",
         icon: Users,
         keywords: ["equipe", "hierarquia", "membros", "gestão", "time", "setores"],
       },

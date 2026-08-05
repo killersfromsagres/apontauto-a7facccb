@@ -73,7 +73,7 @@ export function InteractiveOrgCard({
           <img
             src={node.foto_url}
             alt={node.nome}
-            className="h-full w-full object-cover opacity-60 mix-blend-overlay grayscale group-hover:grayscale-0 transition-all duration-700"
+            className="h-full w-full object-cover opacity-80 mix-blend-normal group-hover:scale-110 transition-all duration-700"
           />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/20 to-blue-900/40 opacity-40" />
