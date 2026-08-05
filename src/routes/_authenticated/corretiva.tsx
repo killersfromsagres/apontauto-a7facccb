@@ -585,9 +585,17 @@ function CorretivaPage() {
               {filtered.map((o) => {
                 const isDone = (o.status ?? "").toLowerCase() === "concluida";
                 const styles = getTeamStyles(o.equipe);
+                const isBackorder = aba === "preventiva";
+                
                 const rowCls = isDone 
                   ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-                  : styles.row;
+                  : isBackorder
+                    ? "border-l-4 border-red-500 bg-red-50/70 hover:bg-red-100/70 dark:bg-red-500/10 dark:hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]"
+                    : styles.row;
+
+                const dotColor = isDone 
+                  ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
+                  : styles.dot;
 
                 return (
                   <button
