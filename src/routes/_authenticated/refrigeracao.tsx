@@ -261,7 +261,7 @@ function RefrigeracaoPage() {
     window.addEventListener("focus", focus);
     const iv = window.setInterval(() => {
       if (navigator.onLine) doSync(true);
-    }, 15_000); // Reduzido para 15s para sincronização mais rápida
+    }, 10_000); // Sincronização agressiva a cada 10s
     return () => {
       window.removeEventListener("online", on);
       window.removeEventListener("focus", focus);
@@ -595,19 +595,19 @@ function StatusChip({
   pending: number;
 }) {
   const cls = !online
-    ? "bg-amber-500/15 text-amber-600 border-amber-500/30"
+    ? "bg-amber-500/15 text-amber-600 border-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.2)]"
     : syncing
-      ? "bg-sky-500/15 text-sky-600 border-sky-500/30"
+      ? "bg-sky-500/15 text-sky-600 border-sky-500/30 animate-pulse"
       : pending > 0
-        ? "bg-orange-500/15 text-orange-600 border-orange-500/30"
-        : "bg-emerald-500/15 text-emerald-600 border-emerald-500/30";
+        ? "bg-orange-500/15 text-orange-600 border-orange-500/30 shadow-[0_0_10px_rgba(249,115,22,0.2)]"
+        : "bg-emerald-500/15 text-emerald-600 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.1)]";
   const Icon = !online ? WifiOff : syncing ? Loader2 : pending > 0 ? RefreshCw : Wifi;
   const label = !online
-    ? `Offline${pending > 0 ? ` · ${pending} pendente(s)` : ""}`
+    ? `Offline${pending > 0 ? ` · ${pending} pendentes` : " — Local"}`
     : syncing
-      ? "Sincronizando…"
+      ? "Sincronizando..."
       : pending > 0
-        ? `${pending} pendente(s)`
+        ? `${pending} pendentes`
         : "Sincronizado";
   return (
     <span

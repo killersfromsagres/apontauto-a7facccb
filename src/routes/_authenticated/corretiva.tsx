@@ -225,8 +225,8 @@ function CorretivaPage() {
     })();
     const iv = window.setInterval(() => {
       if (navigator.onLine) doSync(true);
-    }, 15_000); // Reduzido para 15s para sincronização mais rápida
-    const onOnline = () => doSync(true);
+    }, 10_000); // Sincronização agressiva a cada 10s
+    const onOnline = () => { if (navigator.onLine) doSync(true); };
     const onFocus = () => { if (navigator.onLine) doSync(true); };
     window.addEventListener("online", onOnline);
     window.addEventListener("focus", onFocus);
