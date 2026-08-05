@@ -608,6 +608,14 @@ export function canSeeMenuItem(
   }
   // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
   if (!allowed) return false;
+
+  // Oculta Planejamento PCM para o login de manutenção
+  const isManutencao = allowed.includes("manutencao");
+  if (isManutencao && item.url.includes("planejamento-grp") || 
+      (isManutencao && ["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key))) {
+    return false;
+  }
+
   return itemKeys(item).some((k) => allowed.includes(k));
 }
 
