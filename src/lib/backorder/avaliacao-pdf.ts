@@ -1,4 +1,4 @@
-import { SolicitanteResumo, fmtDate } from "./avaliacao-email";
+import { SolicitanteResumo } from "./avaliacao-email";
 
 export async function generateAvaliacaoPDF(input: {
   titulo: string;
@@ -22,15 +22,13 @@ export async function generateAvaliacaoPDF(input: {
 
   ws.columns = COLUMNS.map(c => ({ key: c.key, width: c.width }));
 
-  // Cores
-  const TITLE_BG = "FF0F172A"; // Slate 900
-  const HEADER_BG = "FF1E293B"; // Slate 800
+  const TITLE_BG = "FF0F172A";
+  const HEADER_BG = "FF1E293B";
   const WHITE = "FFFFFFFF";
   const TEXT_DARK = "FF0F172A";
   const BORDER_COLOR = "FFCBD5E1";
   const ROW_ALT_BG = "FFF8FAFC";
 
-  // Título
   ws.mergeCells(1, 1, 1, COLUMNS.length);
   const titleCell = ws.getCell(1, 1);
   titleCell.value = `${input.titulo} - RELATÓRIO DE AVALIAÇÃO (${input.ano})`;
@@ -39,7 +37,6 @@ export async function generateAvaliacaoPDF(input: {
   titleCell.alignment = { vertical: "middle", horizontal: "center" };
   ws.getRow(1).height = 45;
 
-  // Cabeçalho
   const headRow = ws.getRow(2);
   COLUMNS.forEach((c, i) => {
     const cell = headRow.getCell(i + 1);
@@ -56,19 +53,14 @@ export async function generateAvaliacaoPDF(input: {
   });
   headRow.height = 30;
 
-  // Dados
   input.resumo.forEach((r, idx) => {
-    const row = ws.addRow({
-      nome: r.nome,
-      concluidos: r.concluidos,
-      aguardando: r.aguardando,
-      total: r.total
-    });
+    const rowData = [r.nome, r.concluidos, r.aguardando, r.total];
+    const row = ws.addRow(rowData);
 
     const isAlt = idx % 2 === 1;
-    row.eachCell((cell) => {
+    row.eachCell((cell, colNumber) => {
       cell.font = { name: "Segoe UI", size: 10, color: { argb: TEXT_DARK } };
-      cell.alignment = { vertical: "middle", horizontal: cell.column === 1 ? "left" : "center" };
+      cell.alignment = { vertical: "middle", horizontal: colNumber === 1 ? "left" : "center" };
       cell.border = {
         bottom: { style: "thin", color: { argb: BORDER_COLOR } }
       };
@@ -79,18 +71,18 @@ export async function generateAvaliacaoPDF(input: {
     row.height = 25;
   });
 
-  // Totais no final
-  const totalRow = ws.addRow({
-    nome: "TOTAL GERAL",
-    concluidos: input.resumo.reduce((a, b) => a + b.concluidos, 0),
-    aguardando: input.resumo.reduce((a, b) => a + b.aguardando, 0),
-    total: input.resumo.reduce((a, b) => a + b.total, 0)
-  });
+  const totals = [
+    "TOTAL GERAL",
+    input.resumo.reduce((a, b) => a + b.concluidos, 0),
+    input.resumo.reduce((a, b) => a + b.aguardando, 0),
+    input.resumo.reduce((a, b) => a + b.total, 0)
+  ];
+  const totalRow = ws.addRow(totals);
   
-  totalRow.eachCell((cell) => {
+  totalRow.eachCell((cell, colNumber) => {
     cell.font = { name: "Segoe UI", bold: true, size: 11, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: HEADER_BG } };
-    cell.alignment = { vertical: "middle", horizontal: cell.column === 1 ? "left" : "center" };
+    cell.alignment = { vertical: "middle", horizontal: colNumber === 1 ? "left" : "center" };
   });
   totalRow.height = 30;
 
