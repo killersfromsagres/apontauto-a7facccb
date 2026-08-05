@@ -192,6 +192,7 @@ interface BOSRow {
   andar: string;
   espaco: string;
   centro_custo?: string;
+  data_abertura: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
@@ -292,7 +293,7 @@ function BackorderPage() {
     // Colunas explícitas: reduz o payload de rede (~20% menor que `select *`).
     const COLS =
       "os,nome,ativo,predio,andar,espaco,atividade,atividade_manual,equipe,termino_sla," +
-      "data_solicitacao,outros,criticidade,finalizado,cancelado,status_origem,status_cat," +
+      "data_solicitacao,outros,centro_custo,criticidade,finalizado,cancelado,status_origem,status_cat," +
       "data_conclusao,data_finalizacao,is_prioridade,motivo_prioridade,prioridade_nivel,revisao_manual";
 
     const fetchAfter = async (cursor: string | null) => {
@@ -2191,9 +2192,10 @@ function TableView({
               <TableHead className="w-[130px] whitespace-nowrap">Andar</TableHead>
               <TableHead className="min-w-[180px] whitespace-nowrap">Espaço</TableHead>
               <TableHead className="w-[230px] whitespace-nowrap">Atividade</TableHead>
-              <TableHead className="w-[110px] whitespace-nowrap">Data</TableHead>
+              <TableHead className="w-[110px] whitespace-nowrap">Data Abertura</TableHead>
               <TableHead className="w-[150px] whitespace-nowrap">Equipe</TableHead>
               <TableHead className="min-w-[190px] whitespace-nowrap">Solicitante</TableHead>
+              <TableHead className="w-[150px] whitespace-nowrap">Centro Custo</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">Dias</TableHead>
             </TableRow>
           </TableHeader>
@@ -2340,6 +2342,9 @@ function TableView({
                     </TableCell>
                     <TableCell className="max-w-[220px] truncate text-xs" title={r.outros}>
                       {r.outros}
+                    </TableCell>
+                    <TableCell className="max-w-[150px] truncate text-xs" title={r.centro_custo}>
+                      {r.centro_custo}
                     </TableCell>
                     <TableCell>
                       <Badge
