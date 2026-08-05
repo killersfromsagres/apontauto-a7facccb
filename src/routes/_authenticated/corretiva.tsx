@@ -305,6 +305,8 @@ function CorretivaPage() {
     <PageShell
       title={aba === "preventiva" ? "Manutenção Preventiva" : "Programação — Campo"}
       description={aba === "preventiva" ? "Controle de preventivas agendadas por semana." : "Gestão de corretivas e backorder."}
+      backButton
+
 
       actions={
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
