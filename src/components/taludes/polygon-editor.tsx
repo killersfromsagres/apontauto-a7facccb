@@ -417,18 +417,14 @@ export function PolygonEditor({
     // clique simples no palco
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
-      const per = pxPerPercent();
-      if (draft.length >= 3) {
-        const first = draft[0];
-        const d = Math.hypot((first.x - p.x) * per.x, (first.y - p.y) * per.y);
-        if (d <= (CLOSE_SNAP_PX * 0.4)) {
-          commitDraft(draft);
-          return;
-        }
+      if (draft.length >= 3 && screenDistance(draft[0], p) <= CLOSE_SNAP_PX) {
+        commitDraft(draft);
+        return;
       }
       setDraft((d) => [...d, applySnap(p)]);
       return;
     }
+
     if (tool === "calibrate") {
       const next = [...calDraft, p];
       if (next.length === 2) {
