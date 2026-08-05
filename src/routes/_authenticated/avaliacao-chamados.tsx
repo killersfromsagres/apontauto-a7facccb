@@ -81,10 +81,12 @@ function AvaliacaoChamadosPage() {
       // Busca OS de Corretiva Finalizadas
       let corretivaQuery = supabase
         .from("corretiva_os")
-        .select("*")
+        .select("id,numero_os,nome_os,solicitante,fim,equipe,predio,andar,local,ativo,status,created_at")
         .eq("status", "concluida");
       
-      if (mes !== "todos" || ano) {
+      // Se mes não for todos, aplicamos o filtro de data. 
+      // Se for todos, buscamos todas as concluídas sem filtro de data para garantir que apareçam.
+      if (mes !== "todos") {
         corretivaQuery = corretivaQuery
           .gte("fim", firstDay.toISOString())
           .lte("fim", lastDay.toISOString());
@@ -99,10 +101,10 @@ function AvaliacaoChamadosPage() {
       // Usamos a coluna data_conclusao para o filtro de tempo
       let backorderQuery = supabase
         .from("backorder_os")
-        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo")
+        .select("os,nome,outros,data_conclusao,equipe,predio,andar,espaco,ativo,status_cat,centro_custo,data_finalizacao")
         .in("status_cat", ["concluido", "fechado", "validado", "aguardando_aprovacao"]);
 
-      if (mes !== "todos" || ano) {
+      if (mes !== "todos") {
         backorderQuery = backorderQuery
           .gte("data_conclusao", firstDay.toISOString())
           .lte("data_conclusao", lastDay.toISOString());
@@ -118,7 +120,7 @@ function AvaliacaoChamadosPage() {
           numero_os: c.numero_os,
           nome_os: c.nome_os,
           solicitante: c.solicitante,
-          fim: c.fim,
+          fim: c.fim || (c as any).created_at, // Fallback para data de criação se fim for nulo
           equipe: c.equipe,
           predio: c.predio,
           andar: c.andar,
@@ -132,7 +134,7 @@ function AvaliacaoChamadosPage() {
           numero_os: b.os,
           nome_os: b.nome,
           solicitante: b.outros,
-          fim: b.data_conclusao,
+          fim: b.data_conclusao || (b as any).data_finalizacao, // Fallback para data_finalizacao
           equipe: b.equipe,
           predio: b.predio,
           andar: b.andar,
@@ -144,7 +146,11 @@ function AvaliacaoChamadosPage() {
         }))
       ];
 
-      return unificado.sort((a, b) => new Date(b.fim!).getTime() - new Date(a.fim!).getTime());
+      return unificado.sort((a, b) => {
+        const dateA = a.fim ? new Date(a.fim).getTime() : 0;
+        const dateB = b.fim ? new Date(b.fim).getTime() : 0;
+        return dateB - dateA;
+      });
     }
   });
 
