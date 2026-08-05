@@ -157,7 +157,18 @@ function AuthenticatedLayout() {
             tabIndex={-1}
             className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
           >
-            {canRender ? <Outlet /> : <AccessFallback loading={loading} noMenus={noMenus} />}
+            {canRender ? (
+              <Outlet />
+            ) : (
+              <>
+                {/* Fallback component handles redirection or shows restricted message */}
+                <AccessFallback loading={loading} noMenus={noMenus} />
+                {/* DEBUG INFO: if you see this, the route exists but AccessGuard or canRenderPath rejected it */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="hidden">Path: {pathname}, loading: {String(loading)}, canRender: {String(canRender)}</div>
+                )}
+              </>
+            )}
           </main>
           <MobileTabBar />
           <ForcePasswordChange />
