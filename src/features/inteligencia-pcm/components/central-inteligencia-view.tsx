@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 
 const CORES = ["#4F8CFF", "#52E5FF", "#8B5CF6", "#34d399", "#f59e0b", "#f87171"];
 
-export function MenuInicialView() {
+export function CentralInteligenciaView() {
   const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,7 +50,7 @@ export function MenuInicialView() {
   }, []);
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
-    queryKey: ["menu-inicial", "overview"],
+    queryKey: ["gestao", "overview", 30],
     queryFn: () => fetchGestaoOverview(30),
     refetchInterval: 30000,
   });
@@ -59,7 +59,7 @@ export function MenuInicialView() {
   const weatherStatus = weather ? detectRain(weather) : null;
 
   const { data: recentEvents } = useQuery({
-    queryKey: ["menu-inicial", "recent-events"],
+    queryKey: ["gestao", "os-recente"],
     queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
     select: (data) => data.slice(0, 5),
     refetchInterval: 60000,
@@ -90,9 +90,9 @@ export function MenuInicialView() {
 
   return (
     <PageShell
-      title="Menu Inicial"
-      eyebrow="Monitoramento em Tempo Real"
-      description={`Olá, ${userName}. Acompanhe o status da operação agora.`}
+      title="Central de Inteligência PCM"
+      eyebrow="Operação Premium em Tempo Real"
+      description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >
       <div className="space-y-6">
         {/* GRID DE KPIS COM EFEITO GLOW */}
