@@ -14,7 +14,16 @@ import {
   CloudRain,
   Thermometer,
   Wind,
-  Cloud
+  Cloud,
+  AlertTriangle,
+  ClipboardList,
+  Wrench,
+  Droplets,
+  PackageOpen,
+  Fuel,
+  ShieldCheck,
+  Package,
+  Boxes
 } from "lucide-react";
 import { 
   Area, 
@@ -35,10 +44,12 @@ import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queri
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { useWeather } from "@/hooks/use-weather";
-import { detectRain, weatherCodeInfo } from "@/lib/weather/open-meteo";
+import { detectRain } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
+import { KpiMonitorCard } from "./kpi-monitor-card";
 
 const CORES = ["#4F8CFF", "#52E5FF", "#8B5CF6", "#34d399", "#f59e0b", "#f87171"];
+
 
 export function CentralInteligenciaView() {
   const [userName, setUserName] = useState<string | null>(null);
