@@ -64,7 +64,7 @@ export interface PolygonEditorProps {
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 20;
 const CLOSE_SNAP_PX = 20;
-const VERTEX_RADIUS_PX = 1.2;
+const VERTEX_RADIUS_PX = 0.5;
 
 interface HistoryEntry {
   id: string;
@@ -149,11 +149,14 @@ export function PolygonEditor({
   /* ------------------------------ coordenadas ------------------------------ */
 
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
-    const rect = stageRef.current?.getBoundingClientRect();
-    if (!rect || rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    const stage = stageRef.current;
+    if (!stage) return { x: 0, y: 0 };
+    const rect = stage.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    
     return clampPoint({
-      x: ((clientX - rect.left) / (rect.width || 1)) * 100,
-      y: ((clientY - rect.top) / (rect.height || 1)) * 100,
+      x: ((clientX - rect.left) / rect.width) * 100,
+      y: ((clientY - rect.top) / rect.height) * 100,
     });
   }, []);
 
@@ -185,7 +188,8 @@ export function PolygonEditor({
           const dx = (v.x - p.x) * per.x * zoom;
           const dy = (v.y - p.y) * per.y * zoom;
           const d = Math.hypot(dx, dy);
-          if (d < snapThreshold * zoom && (!best || d < best.d)) best = { d, pt: v };
+          // Usamos CLOSE_SNAP_PX diretamente para comparação em pixels de tela
+          if (d < (CLOSE_SNAP_PX * 0.5) && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
