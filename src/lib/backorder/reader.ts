@@ -18,7 +18,7 @@ export interface BackorderRow {
   termino_sla: string | null;
   data_solicitacao: string; // ISO
   outros: string; // Solicitante (COLUNA E)
-  centro_custo?: string;
+  centro_custo: string;
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   /** OS cancelada / recusada na origem. */
@@ -323,7 +323,7 @@ export async function readBackorderWorkbook(
     );
     // COLUNA D/E — solicitante e centro de custo
     const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE");
-    const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC");
+    const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC") || "";
     
     // COLUNA F — data de abertura
     const aberturaVal = colAt(r, 5) || pick(r, "DATA ABERTURA", "DATA HORA SOLICITACAO", "DATA/HORA ABERTURA", "DATA HORA ABERTURA", "ABERTURA", "DATA SOLICITACAO");

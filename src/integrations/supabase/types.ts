@@ -2236,6 +2236,7 @@ export type Database = {
           ativo: string
           atualizado_em: string
           cancelado: boolean
+          centro_custo: string | null
           criado_em: string
           criticidade: string
           data_conclusao: string | null
@@ -2266,6 +2267,7 @@ export type Database = {
           ativo?: string
           atualizado_em?: string
           cancelado?: boolean
+          centro_custo?: string | null
           criado_em?: string
           criticidade?: string
           data_conclusao?: string | null
@@ -2296,6 +2298,7 @@ export type Database = {
           ativo?: string
           atualizado_em?: string
           cancelado?: boolean
+          centro_custo?: string | null
           criado_em?: string
           criticidade?: string
           data_conclusao?: string | null

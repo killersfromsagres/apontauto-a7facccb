@@ -200,17 +200,17 @@ interface BOSRow {
   predio: string;
   andar: string;
   espaco: string;
-  centro_custo?: string;
+  centro_custo: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
   termino_sla: string | null;
   data_solicitacao: string;
   outros: string;
-  criticidade?: string;
+  criticidade: string;
   finalizado: boolean;
-  cancelado?: boolean;
-  status_origem?: string;
+  cancelado: boolean;
+  status_origem: string;
   status_cat?: StatusCat;
   data_conclusao?: string | null;
   data_finalizacao: string | null;
@@ -484,12 +484,13 @@ function BackorderPage() {
   );
   const avaliacaoRows = useMemo(
     () =>
-      [...finalizadas, ...aguardandoAprovacao].map((r) => ({
-        os: r.os,
-        solicitante: r.outros,
-        statusCat: catOf(r) as string,
-        atividade: r.nome,
-      })),
+      [...finalizadas, ...aguardandoAprovacao]
+        .map((r) => ({
+          os: r.os,
+          solicitante: r.outros,
+          statusCat: catOf(r) as string,
+          atividade: r.nome,
+        })),
     [finalizadas, aguardandoAprovacao, catOf],
   );
 
@@ -1292,7 +1293,7 @@ function BackorderPage() {
       predio: r.predio,
       andar: r.andar,
       espaco: r.espaco,
-      centro_custo: r.centro_custo,
+      centro_custo: r.centro_custo || "",
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
@@ -1519,8 +1520,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Sistema de Gerenciamento de Backorders e OS"
-      description="Implemente e gerencie planilhas de histórico com inteligência de classificação, filtros modernos e fluxo de avaliação corporativa."
+      title="Sistema de Backorders e Gestão de OS — Apont Auto"
+      description="Centro de comando moderno para gestão de pendências, com classificação inteligente, indicadores de centro de custo e integração com fluxo de qualidade."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
@@ -3561,14 +3562,18 @@ const BackorderPanel = memo(function BackorderPanel({
   } = useIncrementalList(ordered, 60);
 
   return (
-    <GlassCard className="border-2 border-red-500/40 bg-red-500/5">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-red-500" />
-          <h3 className="text-sm font-bold uppercase tracking-wider">
-            Lista de Backorders (Atendimento Mobile)
-          </h3>
-          <Badge className="bg-red-500 text-white">{ordered.length}</Badge>
+    <GlassCard className="border-2 border-primary/20 bg-primary/5 shadow-2xl">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/20 p-2 rounded-xl">
+            <ClipboardList className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-widest text-primary">
+              Fluxo de Backorders
+            </h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tighter">Gestão Operacional · {ordered.length} Registros</p>
+          </div>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -3645,8 +3650,11 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-1 line-clamp-2 text-sm font-medium" title={r.nome}>
                         {r.nome || "—"}
                       </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
+                      <div className="mt-0.5 text-xs text-muted-foreground flex flex-wrap gap-x-2">
+                        <span>{r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}</span>
+                        {r.centro_custo && (
+                          <span className="text-primary/70 font-medium">CC: {r.centro_custo}</span>
+                        )}
                       </div>
                       <div className="mt-1 flex flex-col gap-1.5">
                         {r.outros && (
