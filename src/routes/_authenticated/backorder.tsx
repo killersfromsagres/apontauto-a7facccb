@@ -1852,13 +1852,13 @@ function BackorderPage() {
               <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="finalizados" className="min-h-11">
-              Concluídos
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Concluídos
               <Badge variant="secondary" className="ml-2">
                 {finalizadas.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="aprovacao" className="min-h-11">
-              Aguardando aprovação
+              <Filter className="mr-1.5 h-3.5 w-3.5" /> Aguardando aprovação
               <Badge className="ml-2 bg-amber-500 text-white">{aguardandoAprovacao.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="reabertas" className="min-h-11">
@@ -1866,7 +1866,7 @@ function BackorderPage() {
               <Badge className="ml-2 bg-purple-500 text-white">{reabertas.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="cancelados" className="min-h-11">
-              Cancelados
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Cancelados
               <Badge variant="secondary" className="ml-2">
                 {cancelados.length}
               </Badge>
