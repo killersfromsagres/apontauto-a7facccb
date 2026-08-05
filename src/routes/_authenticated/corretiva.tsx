@@ -285,11 +285,16 @@ function CorretivaPage() {
         const date = dateStr ? new Date(dateStr) : null;
         if (!date || String(date.getMonth() + 1).padStart(2, "0") !== mesFiltro) return false;
       }
-      if (!q) return true;
+      if (search && search.includes("/")) {
+        const dateStr = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString('pt-BR') : null;
+        if (dateStr !== search) return false;
+      }
+
+      if (!q || q.includes("/")) return true;
       return (
         o.numero_os.toLowerCase().includes(q) ||
         o.ativo.toLowerCase().includes(q) ||
-        o.equipamento.toLowerCase().includes(q) ||
+        (o.equipamento ?? "").toLowerCase().includes(q) ||
         (o.nome_os ?? "").toLowerCase().includes(q) ||
         (o.predio ?? "").toLowerCase().includes(q) ||
         (o.local ?? "").toLowerCase().includes(q)

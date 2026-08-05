@@ -31,8 +31,7 @@ export type OsCacheRow = {
   inicio: string | null;
   fim: string | null;
   ativo: string;
-  /** @deprecated Removido do visual por solicitação do usuário */
-  equipamento?: string;
+  equipamento: string | null;
   patrimonio: string | null;
   status: string;
   updated_at: string;
