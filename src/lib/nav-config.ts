@@ -595,10 +595,10 @@ export function canSeeMenuItem(
   if (key === "assets-catalog") return isAdmin;
   if (key.startsWith("assets-")) return isAdmin;
 
-  // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
+  // Adiciona permissão total para o login de climatizacao e admin nos módulos de refrigeração
   if (key.startsWith("refrigeracao")) {
     const isClimatizacao = allowed?.includes("climatizacao");
-    if (isClimatizacao) return true;
+    if (isAdmin || isClimatizacao) return true;
   }
 
   if (isAdmin) return true;
