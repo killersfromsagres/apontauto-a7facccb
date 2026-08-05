@@ -64,7 +64,7 @@ export interface PolygonEditorProps {
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 20;
 const CLOSE_SNAP_PX = 20;
-const VERTEX_RADIUS_PX = 6;
+const VERTEX_RADIUS_PX = 1.2;
 
 interface HistoryEntry {
   id: string;
@@ -174,7 +174,7 @@ export function PolygonEditor({
       const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
       // Precisamos considerar o zoom para que a distância de "grude" seja consistente em pixels de tela
-      const snapThreshold = CLOSE_SNAP_PX / zoom; 
+      const snapThreshold = (CLOSE_SNAP_PX * 0.4) / zoom; 
       
       for (const poly of polygons) {
         if (!poly.visible) continue;
@@ -185,7 +185,7 @@ export function PolygonEditor({
           const dx = (v.x - p.x) * per.x * zoom;
           const dy = (v.y - p.y) * per.y * zoom;
           const d = Math.hypot(dx, dy);
-          if (d < CLOSE_SNAP_PX && (!best || d < best.d)) best = { d, pt: v };
+          if (d < snapThreshold * zoom && (!best || d < best.d)) best = { d, pt: v };
         });
       }
       if (best) out = { ...(best as { pt: Point }).pt };
@@ -411,7 +411,7 @@ export function PolygonEditor({
       if (draft.length >= 3) {
         const first = draft[0];
         const d = Math.hypot((first.x - p.x) * per.x, (first.y - p.y) * per.y);
-        if (d <= CLOSE_SNAP_PX) {
+        if (d <= (CLOSE_SNAP_PX * 0.4)) {
           commitDraft(draft);
           return;
         }
@@ -719,7 +719,8 @@ export function PolygonEditor({
                           r={VERTEX_RADIUS_PX / zoom}
                           fill="#ffffff"
                           stroke={poly.color}
-                          strokeWidth={1.2 / zoom}
+                          strokeWidth={0.4 / zoom}
+
                           style={{ cursor: "grab" }}
                           onPointerDown={(e) => startVertexDrag(e, poly, i)}
                           onDoubleClick={(e) => {
@@ -750,10 +751,11 @@ export function PolygonEditor({
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={(i === 0 ? VERTEX_RADIUS_PX * 1.5 : VERTEX_RADIUS_PX) / zoom}
+                    r={(i === 0 ? VERTEX_RADIUS_PX * 2.5 : VERTEX_RADIUS_PX) / zoom}
                     fill={i === 0 ? "#22c55e" : "#ffffff"}
                     stroke="#0ea5e9"
-                    strokeWidth={1.2 / zoom}
+                    strokeWidth={0.4 / zoom}
+
                   />
                 ))}
               </g>
