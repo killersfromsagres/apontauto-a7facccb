@@ -3,7 +3,8 @@
 // automática às 4 equipes de preventiva: Chaveiro, Civil, Hidráulica e Elétrica.
 
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
-import { classificarEquipeOs } from "@/lib/corretiva/auto-equipe";
+import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
+import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
 
