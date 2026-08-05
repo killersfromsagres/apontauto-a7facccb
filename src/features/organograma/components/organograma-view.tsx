@@ -102,10 +102,22 @@ export function OrganogramaView() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (dialogMode === "add") {
-      addMutation.mutate({ ...formData, parent_id: selectedNode?.id || null });
+      addMutation.mutate({ data: { ...formData, parent_id: selectedNode?.id || null } });
     } else if (selectedNode) {
-      editMutation.mutate({ id: selectedNode.id, patch: formData });
+      editMutation.mutate({ data: { id: selectedNode.id, patch: formData } });
     }
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: useServerFn(deleteOrgMember),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["organograma"] });
+      toast.success("Membro removido");
+    }
+  });
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate({ data: { id } });
   };
 
   const renderTree = (parentId: string | null = null, level = 0) => {
@@ -121,7 +133,7 @@ export function OrganogramaView() {
               canEdit={canEdit} 
               onEdit={() => handleOpenEdit(node)}
               onAdd={() => handleOpenAdd(node.id)}
-              onDelete={() => deleteMutation.mutate({ id: node.id })}
+              onDelete={() => handleDelete(node.id)}
             />
             {renderTree(node.id, level + 1)}
           </div>
