@@ -444,8 +444,23 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
     return data as { ok: boolean; email: string };
   });
 
+/**
+ * Provisiona o login dedicado aos encarregados.
+ */
+export const provisionEncarregadosUser = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase.rpc("provision_encarregados_login", {
+      _admin_id: context.userId,
+      _password: "20252026",
+    });
+    if (error) throw new Error(error.message);
+    return data as { ok: boolean; email: string };
+  });
+
 /** Gera uma senha temporária forte no servidor (nunca fixa, nunca em código). */
 function generateTempPassword(length = 16): string {
+
 
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*";
   const bytes = new Uint32Array(length);
