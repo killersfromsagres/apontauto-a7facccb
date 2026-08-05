@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createLazyFileRoute } from "@tanstack/react-router";
 import { MenuInicialView } from "@/features/menu-inicial/components/menu-inicial-view";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createLazyFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
       { title: "Menu Inicial — Apont Auto" },
