@@ -144,6 +144,7 @@ export const MENU_KEYS = [
   "notificacoes-admin",
   "qualidade-dados",
   "imagens",
+  "usuarios",
   "configuracoes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];

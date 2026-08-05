@@ -89,6 +89,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "notificacoes-admin": "Administração de Avisos",
   "qualidade-dados": "Qualidade de Dados",
   imagens: "Imagens e Armazenamento",
+  usuarios: "Gerenciamento de Usuários",
   configuracoes: "Configurações",
 };
 
@@ -120,8 +121,8 @@ function UsuariosPage() {
 
   return (
     <PageShell
-      title="Usuários"
-      description="Crie, gerencie e configure permissões de acesso dos usuários do sistema."
+      title="Gerenciamento de Usuários para Admin"
+      description="Seção administrativa para criação de contas, definição de logins e gerenciamento granular de permissões de acesso."
     >
       <div className="mb-6">
         <ProvisionEncarregadosButton />
