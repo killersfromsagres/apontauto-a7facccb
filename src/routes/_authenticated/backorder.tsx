@@ -192,7 +192,6 @@ interface BOSRow {
   andar: string;
   espaco: string;
   centro_custo?: string;
-  data_solicitacao: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
