@@ -427,7 +427,7 @@ function BackorderPage() {
         !solicitanteFilter || (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
       
       // Filtro de ano atual conforme solicitado anteriormente
-      const matchesAno = String(d.getFullYear()) === String(new Date().getFullYear());
+      const matchesAno = ano === "todos" || String(d.getFullYear()) === String(ano);
       
       return matchesMes && matchesSolicitante && matchesAno;
     });
