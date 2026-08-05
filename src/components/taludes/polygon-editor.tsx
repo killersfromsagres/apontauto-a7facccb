@@ -750,10 +750,10 @@ export function PolygonEditor({
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={(i === 0 ? 1.3 : 0.85) / zoom}
+                    r={(i === 0 ? VERTEX_RADIUS_PX * 1.5 : VERTEX_RADIUS_PX) / zoom}
                     fill={i === 0 ? "#22c55e" : "#ffffff"}
                     stroke="#0ea5e9"
-                    strokeWidth={0.3 / zoom}
+                    strokeWidth={1.2 / zoom}
                   />
                 ))}
               </g>
