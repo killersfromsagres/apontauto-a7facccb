@@ -742,8 +742,8 @@ export function PolygonEditor({
                   fill={draft.length > 2 ? "#0ea5e9" : "none"}
                   fillOpacity={0.2}
                   stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}
-                  strokeWidth={0.35 / zoom}
-                  strokeDasharray={`${1 / zoom} ${0.7 / zoom}`}
+                  strokeWidth={1.5 / zoom}
+                  strokeDasharray={`${2 / zoom} ${1.5 / zoom}`}
                 />
                 {draft.map((p, i) => (
                   <circle
