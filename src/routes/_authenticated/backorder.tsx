@@ -39,6 +39,9 @@ import {
   ChevronDown,
   Calendar,
   Filter,
+  Mail,
+  Copy,
+  Check,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -144,6 +147,12 @@ import {
   isAberto as isStatusAberto,
   type StatusCat,
 } from "@/lib/backorder/status";
+import { 
+  corpoEmail, 
+  assuntoEmail, 
+  prettyNome, 
+  type SolicitanteResumo 
+} from "@/lib/backorder/avaliacao-email";
 
 import {
   classifyTeamByText,
@@ -292,7 +301,7 @@ function BackorderPage() {
     // Colunas explícitas: reduz o payload de rede (~20% menor que `select *`).
     const COLS =
       "os,nome,ativo,predio,andar,espaco,atividade,atividade_manual,equipe,termino_sla," +
-      "data_solicitacao,outros,criticidade,finalizado,cancelado,status_origem,status_cat," +
+      "data_solicitacao,outros,centro_custo,criticidade,finalizado,cancelado,status_origem,status_cat," +
       "data_conclusao,data_finalizacao,is_prioridade,motivo_prioridade,prioridade_nivel,revisao_manual";
 
     const fetchAfter = async (cursor: string | null) => {
@@ -422,12 +431,14 @@ function BackorderPage() {
       const d = new Date(r.data_solicitacao);
       if (isNaN(d.getTime())) return false;
       
-      const matchesMes = mesFiltro === "todos" || String(d.getMonth() + 1).padStart(2, "0") === mesFiltro;
+      const effectiveMes = mes !== "todos" ? mes : mesFiltro;
+      const matchesMes = effectiveMes === "todos" || String(d.getMonth() + 1).padStart(2, "0") === effectiveMes;
       const matchesSolicitante =
-        !solicitanteFilter || (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
+        solicitanteFilter === "todos" ||
+        !solicitanteFilter ||
+        (r.outros ?? "").toLowerCase().includes(solicitanteFilter.toLowerCase());
       
-      // Filtro de ano atual conforme solicitado anteriormente
-      const matchesAno = String(d.getFullYear()) === String(new Date().getFullYear());
+      const matchesAno = ano === "todos" || String(d.getFullYear()) === String(ano);
       
       return matchesMes && matchesSolicitante && matchesAno;
     });
@@ -1504,8 +1515,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Backorder de Corretivas"
-      description="OS corretivas em aberto há mais de 30 dias. Importe a planilha para sincronizar a base e acompanhe o fechamento das pendências."
+      title="# Sistema de Backorders e Gestão de Ordens de Serviço (OS)"
+      description="Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual)."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
@@ -1851,13 +1862,13 @@ function BackorderPage() {
               <Badge className="ml-2 bg-orange-500 text-white">{backorderAbertas.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="finalizados" className="min-h-11">
-              Concluídos
+              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Concluídos
               <Badge variant="secondary" className="ml-2">
                 {finalizadas.length}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="aprovacao" className="min-h-11">
-              Aguardando aprovação
+              <Filter className="mr-1.5 h-3.5 w-3.5" /> Aguardando aprovação
               <Badge className="ml-2 bg-amber-500 text-white">{aguardandoAprovacao.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="reabertas" className="min-h-11">
@@ -1865,7 +1876,7 @@ function BackorderPage() {
               <Badge className="ml-2 bg-purple-500 text-white">{reabertas.length}</Badge>
             </TabsTrigger>
             <TabsTrigger value="cancelados" className="min-h-11">
-              Cancelados
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Cancelados
               <Badge variant="secondary" className="ml-2">
                 {cancelados.length}
               </Badge>
@@ -1928,6 +1939,7 @@ function BackorderPage() {
             <FinalizadosView
               rows={aguardandoAprovacao}
               onReabrir={(r) => toggleFinalizado(r, false)}
+              isAprovacao
             />
           </div>
         </TabsContent>
@@ -2191,9 +2203,10 @@ function TableView({
               <TableHead className="w-[130px] whitespace-nowrap">Andar</TableHead>
               <TableHead className="min-w-[180px] whitespace-nowrap">Espaço</TableHead>
               <TableHead className="w-[230px] whitespace-nowrap">Atividade</TableHead>
-              <TableHead className="w-[110px] whitespace-nowrap">Data</TableHead>
+              <TableHead className="w-[110px] whitespace-nowrap">Data Abertura</TableHead>
               <TableHead className="w-[150px] whitespace-nowrap">Equipe</TableHead>
               <TableHead className="min-w-[190px] whitespace-nowrap">Solicitante</TableHead>
+              <TableHead className="w-[150px] whitespace-nowrap">Centro Custo</TableHead>
               <TableHead className="w-[80px] whitespace-nowrap">Dias</TableHead>
             </TableRow>
           </TableHeader>
@@ -2341,6 +2354,9 @@ function TableView({
                     <TableCell className="max-w-[220px] truncate text-xs" title={r.outros}>
                       {r.outros}
                     </TableCell>
+                    <TableCell className="max-w-[150px] truncate text-xs" title={r.centro_custo}>
+                      {r.centro_custo}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant="secondary"
@@ -2365,6 +2381,50 @@ function TableView({
         </Table>
       </div>
     </GlassCard>
+  );
+}
+
+function AvaliacaoEmailButton({
+  os,
+  solicitante,
+  atividade,
+}: {
+  os: string;
+  solicitante: string;
+  atividade: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const ano = new Date().getFullYear();
+
+  const handleCopy = () => {
+    const resumo: SolicitanteResumo = {
+      nome: solicitante,
+      total: 1,
+      concluidos: 1,
+      aguardando: 0,
+      oss: [os],
+    };
+    const texto = corpoEmail({ solicitantes: [resumo], ano });
+    navigator.clipboard.writeText(texto);
+    setCopied(true);
+    toast.success("E-mail copiado para a área de transferência!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 border-primary/20 bg-primary/5 text-primary hover:bg-primary/10"
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <Check className="mr-1 h-3 w-3" />
+      ) : (
+        <Mail className="mr-1 h-3 w-3" />
+      )}
+      {copied ? "Copiado" : "E-mail"}
+    </Button>
   );
 }
 
@@ -2434,9 +2494,11 @@ function TeamSummaryStrip({
 const FinalizadosView = memo(function FinalizadosView({
   rows,
   onReabrir,
+  isAprovacao = false,
 }: {
   rows: BOSRow[];
   onReabrir: (r: BOSRow) => void;
+  isAprovacao?: boolean;
 }) {
   const { visible, hasMore, sentinelRef, shown, total } = useIncrementalList(rows, 60);
   return (
@@ -2450,9 +2512,9 @@ const FinalizadosView = memo(function FinalizadosView({
             <TableRow>
               <TableHead>OS</TableHead>
               <TableHead>Nome</TableHead>
-              <TableHead>Prédio</TableHead>
+              <TableHead>Solicitante</TableHead>
               <TableHead>Atividade</TableHead>
-              <TableHead>Concluído em</TableHead>
+              <TableHead>Data</TableHead>
               <TableHead className="w-24" />
             </TableRow>
           </TableHeader>
@@ -2468,17 +2530,30 @@ const FinalizadosView = memo(function FinalizadosView({
                 <TableRow key={r.os}>
                   <TableCell className="font-mono text-xs">{r.os}</TableCell>
                   <TableCell className="max-w-[360px] truncate">{r.nome}</TableCell>
-                  <TableCell className="text-xs">{r.predio}</TableCell>
+                  <TableCell className="text-xs truncate max-w-[150px]">{r.outros}</TableCell>
                   <TableCell className="text-xs">{r.atividade}</TableCell>
                   <TableCell className="text-xs">
-                    {r.data_finalizacao
-                      ? new Date(r.data_finalizacao).toLocaleString("pt-BR")
-                      : "—"}
+                    {isAprovacao
+                      ? r.data_solicitacao
+                        ? new Date(r.data_solicitacao).toLocaleDateString("pt-BR")
+                        : "—"
+                      : r.data_finalizacao
+                        ? new Date(r.data_finalizacao).toLocaleString("pt-BR")
+                        : "—"}
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => onReabrir(r)}>
-                      <RefreshCw className="mr-1 h-3 w-3" /> Reabrir
-                    </Button>
+                    <div className="flex gap-2">
+                      {isAprovacao && (
+                        <AvaliacaoEmailButton
+                          os={r.os}
+                          solicitante={r.outros}
+                          atividade={r.nome}
+                        />
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => onReabrir(r)}>
+                        <RefreshCw className="mr-1 h-3 w-3" /> Reabrir
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -3487,7 +3562,7 @@ const BackorderPanel = memo(function BackorderPanel({
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-orange-500" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Backorder — OS em aberto há mais de 30 dias
+            # Sistema de Backorders e Gestão de Ordens de Serviço (OS)
           </h3>
           <Badge className="bg-orange-500 text-white">{ordered.length}</Badge>
         </div>
@@ -3554,6 +3629,12 @@ const BackorderPanel = memo(function BackorderPanel({
                             color: CATEGORIA_COLOR[r.atividade as Categoria] ?? "#64748B",
                           }}
                         >
+                          <span
+                            className="mr-1 h-1.5 w-1.5 rounded-full"
+                            style={{
+                              background: CATEGORIA_COLOR[r.atividade as Categoria] ?? "#64748B",
+                            }}
+                          />
                           {r.atividade}
                         </Badge>
                       </div>
@@ -3563,12 +3644,20 @@ const BackorderPanel = memo(function BackorderPanel({
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {r.predio || "—"} · {r.andar || "—"} · {r.espaco || "—"}
                       </div>
-                      {r.outros && (
-                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span className="line-clamp-1">{r.outros}</span>
-                        </div>
-                      )}
+                      <div className="mt-1 flex flex-col gap-1">
+                        {r.outros && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span className="line-clamp-1">{r.outros}</span>
+                          </div>
+                        )}
+                        {r.centro_custo && (
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground opacity-80">
+                            <Database className="h-3 w-3" />
+                            <span className="line-clamp-1">{r.centro_custo}</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground/70">
                         Clique para editar
                       </div>
@@ -3660,7 +3749,7 @@ function BackorderDetailDialog({
           <div className="relative flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest opacity-90">
-                <ClipboardList className="h-3.5 w-3.5" /> Backorder · {row.atividade}
+                <ClipboardList className="h-3.5 w-3.5" /> Ordem de Serviço · {row.atividade}
               </div>
               <DialogHeader className="space-y-1 text-left">
                 <DialogTitle className="text-lg font-semibold leading-tight text-white">
@@ -3739,11 +3828,25 @@ function BackorderDetailDialog({
                   onChange={(e) => patch("espaco", e.target.value)}
                 />
               </FieldBlock>
-              <FieldBlock label="Solicitante" className="sm:col-span-2">
+              <FieldBlock label="Data de Abertura" className="sm:col-span-2">
+                <Input
+                  type="date"
+                  value={merged.data_solicitacao ? new Date(merged.data_solicitacao).toISOString().split('T')[0] : ""}
+                  onChange={(e) => patch("data_solicitacao", new Date(e.target.value).toISOString())}
+                />
+              </FieldBlock>
+              <FieldBlock label="Nome do Solicitante" className="sm:col-span-1">
                 <Input
                   value={merged.outros ?? ""}
                   onChange={(e) => patch("outros", e.target.value)}
                   placeholder="Nome de quem abriu o chamado"
+                />
+              </FieldBlock>
+              <FieldBlock label="Centro de Custo" className="sm:col-span-1">
+                <Input
+                  value={merged.centro_custo ?? ""}
+                  onChange={(e) => patch("centro_custo", e.target.value)}
+                  placeholder="Centro de Custo"
                 />
               </FieldBlock>
             </div>

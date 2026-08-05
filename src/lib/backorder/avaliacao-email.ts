@@ -56,7 +56,7 @@ export function listaSolicitantes(s: SolicitanteResumo[]): string {
 }
 
 export function assuntoEmail(ano: number | string, total: number): string {
-  return `Avaliação de chamados concluídos no Prisma — ${total} OS pendentes de validação (${ano})`;
+  return `Avaliação de chamados concluídos — ${total} OS pendentes de validação (${ano})`;
 }
 
 export function corpoEmail({
@@ -78,7 +78,7 @@ Poderia, por gentileza, dedicar um breve momento para realizar a avaliação dos
 
 ${listaSolicitantes(solicitantes)}
 
-Este procedimento é simples e pode ser realizado diretamente no sistema Prisma. Caso haja qualquer divergência ou o serviço não tenha atendido plenamente às expectativas, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com a devida prioridade.
+Este procedimento é simples e pode ser realizado diretamente no sistema. Caso haja qualquer divergência ou o serviço não tenha atendido plenamente às expectativas, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com a devida prioridade.
 
 Agradecemos antecipadamente por sua parceria e apoio contínuo.
 
