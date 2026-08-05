@@ -352,17 +352,6 @@ export async function readBackorderWorkbook(
       "DATA PREVISTA MÁXIMA",
     );
 
-    // COLUNA E — solicitante na planilha oficial; cabeçalho é fallback para
-    // versões exportadas com ordem diferente.
-    const solicitante =
-      colAt(r, 4) ||
-      pick(
-        r,
-        "DENOMINAÇÃO DO SOLICITANTE",
-        "DENOMINACAO DO SOLICITANTE",
-        "SOLICITANTE",
-        "NOME DO SOLICITANTE",
-      );
     const criticidade = pick(
       r,
       "CRITICIDADE",
@@ -399,7 +388,7 @@ export async function readBackorderWorkbook(
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
 
     const dataConclusao = parseDateISO(conclusao);
-    const statusCat = toStatusCat(status);
+    const statusCat = toStatusCat(statusVal);
     const cancelado = isCancelado(statusCat);
     const finalizado = cancelado || isConcluido(statusCat);
     const revisao_manual = !finalizado && ((!!ativo && !found) || atividade === "Outros");
@@ -411,17 +400,18 @@ export async function readBackorderWorkbook(
       predio,
       andar,
       espaco,
+      centro_custo: centroCusto,
       atividade,
       equipe: CATEGORIA_TO_EQUIPE[atividade],
       equipe_hint: equipeHint,
       termino_sla: parseDateISO(sla),
-      data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
-      outros: solicitante,
+      data_solicitacao: parseDateISO(aberturaVal) ?? new Date().toISOString(),
+      outros: solicitanteVal,
       criticidade,
       finalizado,
       cancelado,
       data_conclusao: dataConclusao,
-      status_origem: status,
+      status_origem: statusVal,
       status_cat: statusCat,
       revisao_manual,
     });
