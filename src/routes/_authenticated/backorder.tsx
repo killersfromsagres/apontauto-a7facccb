@@ -3487,7 +3487,7 @@ const BackorderPanel = memo(function BackorderPanel({
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-orange-500" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            Backorder — OS em aberto há mais de 30 dias
+            # Sistema de Backorders e Gestão de Ordens de Serviço (OS)
           </h3>
           <Badge className="bg-orange-500 text-white">{ordered.length}</Badge>
         </div>
@@ -3739,11 +3739,18 @@ function BackorderDetailDialog({
                   onChange={(e) => patch("espaco", e.target.value)}
                 />
               </FieldBlock>
-              <FieldBlock label="Solicitante" className="sm:col-span-2">
+              <FieldBlock label="Nome do Solicitante" className="sm:col-span-1">
                 <Input
                   value={merged.outros ?? ""}
                   onChange={(e) => patch("outros", e.target.value)}
                   placeholder="Nome de quem abriu o chamado"
+                />
+              </FieldBlock>
+              <FieldBlock label="Centro de Custo" className="sm:col-span-1">
+                <Input
+                  value={merged.centro_custo ?? ""}
+                  onChange={(e) => patch("centro_custo", e.target.value)}
+                  placeholder="Centro de Custo"
                 />
               </FieldBlock>
             </div>
