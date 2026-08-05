@@ -62,32 +62,25 @@ export function assuntoEmail(ano: number | string, total: number): string {
 export function corpoEmail({
   solicitantes,
   ano,
-  remetente = "Equipe de Manutenção Predial — PCM",
+  remetente = "Equipe de Gestão Predial — Apont Auto",
   prazoDias = 5,
 }: EmailOptions): string {
   const totalOs = solicitantes.reduce((a, b) => a + b.total, 0);
-  const totalPessoas = solicitantes.length;
-  return `Prezados(as),
+  return `Prezado(a),
 
-Esperamos que estejam bem.
+Espero que este e-mail o(a) encontre bem.
 
-Realizamos o levantamento das ordens de serviço de manutenção corretiva registradas em ${ano} que já foram executadas e encontram-se concluídas ou aguardando aprovação no sistema Prisma. No momento, constam ${totalOs.toLocaleString("pt-BR")} chamado(s) distribuídos entre ${totalPessoas} solicitante(s) pendentes de avaliação.
+Gostaríamos de solicitar sua gentil colaboração para a finalização de um ciclo importante em nossa operação de Gestão Predial. Identificamos que existem ${totalOs.toLocaleString("pt-BR")} ordens de serviço sob sua responsabilidade (ou solicitadas por sua área) que já foram devidamente concluídas ou aguardam sua aprovação formal no sistema.
 
-A avaliação do chamado é a etapa final do fluxo: ela confirma que o serviço foi entregue conforme o solicitado, encerra formalmente a ordem de serviço e permite que os indicadores de atendimento e de SLA reflitam a realidade da operação. Enquanto a validação não é registrada, a OS permanece em aberto no sistema, o que impacta diretamente nossos relatórios gerenciais.
+Sua avaliação e validação são fundamentais para assegurarmos a excelência no atendimento prestado e para que possamos encerrar formalmente estes processos, garantindo a precisão de nossos indicadores de performance.
 
-Solicitamos, por gentileza, que cada solicitante acesse o Prisma e realize a avaliação dos chamados listados abaixo no prazo de ${prazoDias} dias úteis:
+Poderia, por gentileza, dedicar um breve momento para realizar a avaliação dos chamados listados abaixo?
 
 ${listaSolicitantes(solicitantes)}
 
-Como avaliar:
-1. Acesse o sistema Prisma com seu login corporativo.
-2. Localize a ordem de serviço em "Minhas solicitações" / "Chamados concluídos".
-3. Confira o serviço executado e registre a avaliação (nota e comentário, quando aplicável).
-4. Confirme para encerrar o chamado.
+Este procedimento é simples e pode ser realizado diretamente no sistema Prisma. Caso haja qualquer divergência ou o serviço não tenha atendido plenamente às expectativas, por favor, utilize o campo de comentários ou nos responda diretamente para que possamos atuar com a devida prioridade.
 
-Caso algum serviço não tenha sido concluído de forma satisfatória, pedimos que registre a observação na própria avaliação ou responda a este e-mail: reabriremos o atendimento com prioridade.
-
-Agradecemos antecipadamente pela colaboração — ela é essencial para a qualidade das informações e para a melhoria contínua dos nossos serviços.
+Agradecemos antecipadamente por sua parceria e apoio contínuo.
 
 Atenciosamente,
 ${remetente}`;

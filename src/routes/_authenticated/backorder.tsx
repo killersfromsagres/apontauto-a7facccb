@@ -38,6 +38,7 @@ import {
   BrainCircuit,
   ChevronDown,
   Calendar,
+  Filter,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -190,6 +191,7 @@ interface BOSRow {
   predio: string;
   andar: string;
   espaco: string;
+  centro_custo?: string;
   atividade: string;
   atividade_manual: boolean;
   equipe: string;
@@ -459,6 +461,10 @@ function BackorderPage() {
   const cancelados = useMemo(
     () => rowsFiltradas.filter((r) => ["cancelado", "nao_executada"].includes(catOf(r))),
     [rowsFiltradas, catOf],
+  );
+  const reabertas = useMemo(
+    () => rowsFiltradas.filter((r) => r.status_origem?.toLowerCase().includes("reaberta")),
+    [rowsFiltradas],
   );
   const aguardandoAprovacao = useMemo(
     () => rowsFiltradas.filter((r) => catOf(r) === "aguardando_aprovacao"),
@@ -1107,8 +1113,6 @@ function BackorderPage() {
               .update({
                 atividade: p.atividade,
                 equipe: p.equipe,
-                // Marca como automática (não-manual) — a menos que o usuário
-                // tenha forçado sobrescrever a manual: nesse caso vira auto de novo.
                 atividade_manual: false,
                 revisao_manual: p.ambiguo,
                 origem_equipe: p.ambiguo ? "pendente" : "regra_local",
@@ -1146,10 +1150,6 @@ function BackorderPage() {
   }
 
   async function updateRow(r: BOSRow, patch: Partial<BOSRow>) {
-    // Se o "ativo" mudar e nenhum override manual for enviado para
-    // predio/andar/espaço, tenta inferir: (1) regra aprendida por ativo,
-    // (2) fallback árvore (assets_ref). Nunca sobrescreve valores enviados
-    // no patch.
     const next: Partial<BOSRow> = { ...patch };
     if (
       patch.ativo !== undefined &&
@@ -1187,14 +1187,7 @@ function BackorderPage() {
         .upsert({ os: r.os, atividade: patch.atividade }, { onConflict: "os" });
     }
 
-    // ── Aprendizado automático a partir de correções manuais ───────────
     const ativoKey = (patch.ativo ?? r.ativo)?.trim().toUpperCase() ?? "";
-
-    // Local aprendido: toda vez que o usuário editar manualmente prédio/
-    // andar/ambiente registramos a associação Ativo → Área. Assim a
-    // próxima OS do mesmo ativo já vem preenchida e a "Classificação
-    // de Equipes" nunca sobrescreve o local salvo (a regra aprendida
-    // vence a árvore em applyLearnedToResolved).
     const locChanged =
       (next.predio !== undefined && next.predio !== r.predio) ||
       (next.andar !== undefined && next.andar !== r.andar) ||
@@ -1215,7 +1208,6 @@ function BackorderPage() {
         ativo: true,
       });
       if (!lerr) {
-        // Aplica em cascata a outros chamados com o mesmo ativo
         const { data: siblings } = await supabase
           .from("backorder_os")
           .select("os")
@@ -1242,7 +1234,6 @@ function BackorderPage() {
       }
     }
 
-    // Equipe aprendida por ativo
     if (patch.atividade && patch.atividade !== r.atividade && ativoKey) {
       const { data: user } = await supabase.auth.getUser();
       await supabase.from("regras_aprendidas_equipe").insert({
@@ -1255,7 +1246,6 @@ function BackorderPage() {
       void loadLearnedRules();
     }
 
-    // Marca chamado como resolvido (sai da revisão) quando local + equipe estão preenchidos
     const nowHasLoc = !!(willBePredio || willBeAndar || willBeEspaco);
     if (r.revisao_manual && nowHasLoc) {
       await supabase
@@ -1287,6 +1277,7 @@ function BackorderPage() {
       predio: r.predio,
       andar: r.andar,
       espaco: r.espaco,
+      centro_custo: r.centro_custo,
       atividade: r.atividade as Categoria,
       equipe: r.equipe,
       termino_sla: r.termino_sla,
@@ -1869,6 +1860,10 @@ function BackorderPage() {
               Aguardando aprovação
               <Badge className="ml-2 bg-amber-500 text-white">{aguardandoAprovacao.length}</Badge>
             </TabsTrigger>
+            <TabsTrigger value="reabertas" className="min-h-11">
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Reabertas
+              <Badge className="ml-2 bg-purple-500 text-white">{reabertas.length}</Badge>
+            </TabsTrigger>
             <TabsTrigger value="cancelados" className="min-h-11">
               Cancelados
               <Badge variant="secondary" className="ml-2">
@@ -1934,6 +1929,12 @@ function BackorderPage() {
               rows={aguardandoAprovacao}
               onReabrir={(r) => toggleFinalizado(r, false)}
             />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="reabertas">
+          <div className="max-h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-primary/20">
+            <FinalizadosView rows={reabertas} onReabrir={(r) => toggleFinalizado(r, false)} />
           </div>
         </TabsContent>
 

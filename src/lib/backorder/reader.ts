@@ -18,6 +18,7 @@ export interface BackorderRow {
   termino_sla: string | null;
   data_solicitacao: string; // ISO
   outros: string; // Solicitante (COLUNA E)
+  centro_custo?: string;
   criticidade: string; // Criticidade original da OS
   finalizado: boolean;
   /** OS cancelada / recusada na origem. */
@@ -303,19 +304,15 @@ export async function readBackorderWorkbook(
       "LOCAL DA INSTALAÇÃO",
       "LOCAL DA INSTALACAO",
     );
-    // COLUNA G — estado da OS na planilha oficial.
-    const status =
-      colAt(r, 6) ||
-      pick(
-        r,
-        "STATUS RESUMIDO",
-        "STATUS",
-        "SITUAÇÃO",
-        "SITUACAO",
-        "STATUS DA OS",
-        "STATUS OS",
-        "ESTADO",
-      );
+    // COLUNA D/E — solicitante e centro de custo
+    const solicitanteVal = colAt(r, 3) || pick(r, "DENOMINACAO DO SOLICITANTE", "DENOMINACAO SOLICITANTE", "SOLICITANTE");
+    const centroCusto = colAt(r, 4) || pick(r, "CENTRO DE CUSTO", "CC");
+    
+    // COLUNA F — data de abertura
+    const aberturaVal = colAt(r, 5) || pick(r, "DATA ABERTURA", "DATA HORA SOLICITACAO");
+    
+    // COLUNA G — status
+    const statusVal = colAt(r, 6) || pick(r, "STATUS", "SITUACAO");
 
     const conclusao = pick(
       r,
@@ -355,17 +352,6 @@ export async function readBackorderWorkbook(
       "DATA PREVISTA MÁXIMA",
     );
 
-    // COLUNA E — solicitante na planilha oficial; cabeçalho é fallback para
-    // versões exportadas com ordem diferente.
-    const solicitante =
-      colAt(r, 4) ||
-      pick(
-        r,
-        "DENOMINAÇÃO DO SOLICITANTE",
-        "DENOMINACAO DO SOLICITANTE",
-        "SOLICITANTE",
-        "NOME DO SOLICITANTE",
-      );
     const criticidade = pick(
       r,
       "CRITICIDADE",
@@ -402,7 +388,7 @@ export async function readBackorderWorkbook(
     const found = tree.found || !!(sheetPredio || sheetAndar || sheetEspaco);
 
     const dataConclusao = parseDateISO(conclusao);
-    const statusCat = toStatusCat(status);
+    const statusCat = toStatusCat(statusVal);
     const cancelado = isCancelado(statusCat);
     const finalizado = cancelado || isConcluido(statusCat);
     const revisao_manual = !finalizado && ((!!ativo && !found) || atividade === "Outros");
@@ -414,17 +400,18 @@ export async function readBackorderWorkbook(
       predio,
       andar,
       espaco,
+      centro_custo: centroCusto,
       atividade,
       equipe: CATEGORIA_TO_EQUIPE[atividade],
       equipe_hint: equipeHint,
       termino_sla: parseDateISO(sla),
-      data_solicitacao: parseDateISO(abertura) ?? new Date().toISOString(),
-      outros: solicitante,
+      data_solicitacao: parseDateISO(aberturaVal) ?? new Date().toISOString(),
+      outros: solicitanteVal,
       criticidade,
       finalizado,
       cancelado,
       data_conclusao: dataConclusao,
-      status_origem: status,
+      status_origem: statusVal,
       status_cat: statusCat,
       revisao_manual,
     });
