@@ -438,8 +438,8 @@ function CorretivaPage() {
           </div>
         </div>
       }
-
     >
+
       {!selected ? (
         <GlassCard className="p-4">
           <div className="mb-4 inline-flex rounded-xl border border-white/10 bg-white/5 p-1">
