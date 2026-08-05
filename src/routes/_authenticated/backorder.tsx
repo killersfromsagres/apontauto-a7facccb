@@ -3560,14 +3560,14 @@ const BackorderPanel = memo(function BackorderPanel({
   } = useIncrementalList(ordered, 60);
 
   return (
-    <GlassCard className="border-2 border-orange-500/40 bg-orange-500/5">
+    <GlassCard className="border-2 border-red-500/40 bg-red-500/5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-orange-500" />
+          <ClipboardList className="h-5 w-5 text-red-500" />
           <h3 className="text-sm font-bold uppercase tracking-wider">
-            # Sistema de Backorders e Gestão de Ordens de Serviço (OS)
+            Lista de Backorders (Atendimento Mobile)
           </h3>
-          <Badge className="bg-orange-500 text-white">{ordered.length}</Badge>
+          <Badge className="bg-red-500 text-white">{ordered.length}</Badge>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -3587,7 +3587,7 @@ const BackorderPanel = memo(function BackorderPanel({
         </div>
       ) : (
         <PriorityScroller total={ordered.length}>
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="grid gap-2 grid-cols-1 md:grid-cols-2">
             {visibleCards.map((r) => {
               const dias = daysBetween(r.data_solicitacao);
               const nivelClass =
@@ -3614,7 +3614,7 @@ const BackorderPanel = memo(function BackorderPanel({
                       onSelect(r);
                     }
                   }}
-                  className={`priority-card group animate-fade-in flex max-h-[220px] flex-col rounded-xl border p-3 focus:outline-none focus:ring-2 focus:ring-orange-500/60 ${nivelClass}`}
+                  className={`priority-card group animate-fade-in flex flex-col rounded-xl border p-4 shadow-lg backdrop-blur-md transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-red-500/60 ${nivelClass}`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex min-w-0 flex-1 flex-col">
