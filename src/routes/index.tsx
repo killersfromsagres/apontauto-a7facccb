@@ -23,7 +23,7 @@ function RedirectToHome() {
   const navigate = useNavigate();
   
   useLayoutEffect(() => {
-    navigate({ to: "/_authenticated/", replace: true });
+    navigate({ to: "/_authenticated/dashboard", replace: true });
   }, [navigate]);
 
   return null;
