@@ -621,7 +621,21 @@ function CorretivaPage() {
                     <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-mono font-bold ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white/90'}`}>OS {o.numero_os}</span>
+                          {(() => {
+                            if (!o.data_criacao) return null;
+                            const diff = (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24);
+                            if (diff >= 30) {
+                              return (
+                                <Badge variant="destructive" className="animate-pulse bg-red-600 hover:bg-red-700 text-[10px] h-4 px-1.5 py-0 border-none">
+                                  {Math.floor(diff)}d atraso
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
                         {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">CONCLUÍDA</Badge>}
                       </div>
                       <h3 className="text-sm font-medium text-white/80 line-clamp-1">{o.nome_os}</h3>
