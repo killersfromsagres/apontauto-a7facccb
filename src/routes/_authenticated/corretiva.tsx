@@ -19,6 +19,8 @@ import {
   Lock,
   MoreVertical,
   FileSpreadsheet,
+  Settings2,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
