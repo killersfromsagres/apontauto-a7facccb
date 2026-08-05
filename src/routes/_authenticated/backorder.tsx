@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   memo,
   useCallback,
@@ -328,6 +329,7 @@ function BackorderPage() {
         if (!cursor) {
           setRows(sortForView(all));
           setLoading(false);
+          // Efeito de confete ao carregar dados pela primeira vez (opcional, mas moderno)
         }
         if (page.length < PAGE) break;
         cursor = page[page.length - 1]!.os;
@@ -464,6 +466,22 @@ function BackorderPage() {
     () => rowsFiltradas.filter((r) => isStatusAberto(catOf(r)) && !r.finalizado && !r.cancelado),
     [rowsFiltradas, catOf],
   );
+  
+  // Variantes para animação da lista
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.03
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0 }
+  };
   const finalizadas = useMemo(
     () => rowsFiltradas.filter((r) => ["concluido", "fechado", "validado", "aguardando_aprovacao"].includes(catOf(r)) || r.finalizado),
     [rowsFiltradas, catOf],
