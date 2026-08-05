@@ -1504,8 +1504,8 @@ function BackorderPage() {
 
   return (
     <PageShell
-      title="Backorder de Corretivas"
-      description="OS corretivas em aberto há mais de 30 dias. Importe a planilha para sincronizar a base e acompanhe o fechamento das pendências."
+      title="# Sistema de Backorders e Gestão de Ordens de Serviço (OS)"
+      description="Desenvolver uma seção dedicada a Backorders e um sistema de gestão de Ordens de Serviço (OS) que integre dados de uma planilha histórica (desde o início do ano corrente até a data atual)."
       actions={
         <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
           <Button
