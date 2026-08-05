@@ -93,9 +93,10 @@ export function PreventivaImportDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-11 w-full sm:w-auto">
+        <Button size="sm" variant="outline" className="h-11 flex-1 sm:flex-none sm:w-auto">
           <Upload className="mr-2 h-4 w-4" /> Importar {label}
         </Button>
+
       </DialogTrigger>
       <DialogContent className="max-w-2xl w-[calc(100vw-1.5rem)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
