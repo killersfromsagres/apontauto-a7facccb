@@ -147,22 +147,22 @@ export default function OrbitCarousel() {
       case 'xs':
         return {
           containerRadius: 100,
-          profileSize: 35, // Smaller profiles for more people
+          profileSize: 45,
           cardWidth: 'w-36',
-          avatarSize: 'w-10 h-10',
+          avatarSize: 'w-12 h-12',
           avatarMargin: '-mt-8',
           fontSize: {
             name: 'text-sm',
-            role: 'text-[10px]',
-            email: 'text-[10px]'
+            role: 'text-xs',
+            email: 'text-xs'
           }
         };
       case 'sm':
         return {
-          containerRadius: 130,
-          profileSize: 45,
+          containerRadius: 120,
+          profileSize: 55,
           cardWidth: 'w-40',
-          avatarSize: 'w-12 h-12',
+          avatarSize: 'w-14 h-14',
           avatarMargin: '-mt-9',
           fontSize: {
             name: 'text-base',
@@ -172,10 +172,10 @@ export default function OrbitCarousel() {
         };
       case 'md':
         return {
-          containerRadius: 180,
-          profileSize: 55,
+          containerRadius: 150,
+          profileSize: 65,
           cardWidth: 'w-44',
-          avatarSize: 'w-14 h-14',
+          avatarSize: 'w-16 h-16',
           avatarMargin: '-mt-10',
           fontSize: {
             name: 'text-base',
@@ -185,10 +185,10 @@ export default function OrbitCarousel() {
         };
       default:
         return {
-          containerRadius: 240, // Increased radius for 14 people
-          profileSize: 65,
+          containerRadius: 200,
+          profileSize: 80,
           cardWidth: 'w-52',
-          avatarSize: 'w-18 h-18',
+          avatarSize: 'w-20 h-20',
           avatarMargin: '-mt-12',
           fontSize: {
             name: 'text-lg',
@@ -200,8 +200,7 @@ export default function OrbitCarousel() {
   };
 
   const { containerRadius, profileSize, cardWidth, avatarSize, avatarMargin, fontSize } = getResponsiveValues();
-  // containerSize needs to accommodate the profiles orbiting
-  const containerSize = containerRadius * 2 + profileSize * 2;
+  const containerSize = containerRadius * 2 + 100;
 
   // Calculate rotation for each profile
   const getRotation = React.useCallback(
@@ -253,7 +252,7 @@ export default function OrbitCarousel() {
           height: containerSize,
         }}
       >
-        {/* Central Card */}
+        {/* Active Person Card */}
         <AnimatePresence mode="wait">
           <motion.div
             key={people[activeIndex].id}
@@ -292,13 +291,18 @@ export default function OrbitCarousel() {
               </div>
             </div>
             
-            <button className="mt-5 w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/30">
-              Ver Perfil
-            </button>
+            <div className="flex gap-2 mt-5 w-full">
+              <button className="flex-1 py-2 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition-colors shadow-lg shadow-indigo-500/30">
+                Connect
+              </button>
+              <button className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors">
+                <Mail className="w-4 h-4" />
+              </button>
+            </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Orbiting Profiles */}
+        {/* Orbiting Profiles with Counter-Rotation */}
         {people.map((p, i) => {
           const rotation = getRotation(i);
           const isActive = i === activeIndex;
@@ -319,69 +323,56 @@ export default function OrbitCarousel() {
                 ease: "circOut"
               }}
             >
-              <motion.div
-                className="w-full h-full"
+              {/* Counter-rotation to keep image upright */}
+              <motion.img
+                src={p.profile}
+                alt={p.name}
+                onClick={() => handleProfileClick(i)}
+                onError={safeImage}
                 animate={{
                   rotate: -rotation,
-                  scale: isActive ? 1.2 : 1,
-                  opacity: isActive ? 1 : 0.6,
+                  scale: isActive ? 1.25 : 1,
+                  opacity: isActive ? 1 : 0.7,
+                  borderWidth: isActive ? "4px" : "2px",
                 }}
                 transition={{
                   duration: 0.8,
                   ease: "circOut"
                 }}
-              >
-                <img
-                  src={p.profile}
-                  alt={p.name}
-                  onClick={() => handleProfileClick(i)}
-                  onError={safeImage}
-                  className={`w-full h-full object-cover rounded-full cursor-pointer transition-all duration-300 shadow-md ${
-                    isActive 
-                      ? "ring-4 ring-indigo-500 shadow-indigo-500/40" 
-                      : "ring-2 ring-white/20 hover:ring-indigo-400/50 grayscale-[30%] hover:grayscale-0"
-                  }`}
-                  style={{
-                    transform: `translateY(-${containerRadius}px)`
-                  }}
-                />
-              </motion.div>
+                whileHover={{ 
+                  scale: 1.15,
+                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)"
+                }}
+                whileTap={{ scale: 0.95 }}
+                className={`w-full h-full object-cover rounded-full cursor-pointer transition-all duration-300 ${
+                  isActive 
+                    ? "border-indigo-500 dark:border-indigo-400 shadow-lg" 
+                    : "border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+                }`}
+                style={{
+                  transform: `translateY(-${containerRadius}px)`
+                }}
+              />
             </motion.div>
           );
         })}
       </div>
 
-      {/* Controls */}
-      <div className="mt-8 flex items-center gap-6 z-30">
-        <button 
-          onClick={prev}
-          className="p-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all backdrop-blur-md"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        
-        <div className="flex gap-2">
-          {people.map((_, index) => (
-            <motion.button
-              key={index}
-              onClick={() => setActiveIndex(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${
-                index === activeIndex 
-                  ? "bg-indigo-500 shadow-lg shadow-indigo-500/50" 
-                  : "bg-white/20 hover:bg-white/40"
-              }`}
-              whileHover={{ scale: 1.4 }}
-              whileTap={{ scale: 0.9 }}
-            />
-          ))}
-        </div>
-
-        <button 
-          onClick={next}
-          className="p-3 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white transition-all backdrop-blur-md"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
+      {/* Progress Indicator */}
+      <div className="mt-8 flex items-center gap-2 z-30">
+        {people.map((_, index) => (
+          <motion.button
+            key={index}
+            onClick={() => setActiveIndex(index)}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-colors ${
+              index === activeIndex 
+                ? "bg-indigo-600 dark:bg-indigo-400" 
+                : "bg-gray-300 dark:bg-gray-600"
+            }`}
+            whileHover={{ scale: 1.3 }}
+            whileTap={{ scale: 0.9 }}
+          />
+        ))}
       </div>
     </div>
   );
