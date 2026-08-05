@@ -682,7 +682,7 @@ export function PolygonEditor({
                       fill={poly.color}
                       fillOpacity={isSel ? Math.min(0.65, poly.opacity + 0.15) : poly.opacity}
                       stroke={poly.color}
-                      strokeWidth={(isSel ? 0.45 : 0.3) / zoom}
+                      strokeWidth={(isSel ? 1.5 : 1) / zoom}
                       strokeLinejoin="round"
                       style={{
                         cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
