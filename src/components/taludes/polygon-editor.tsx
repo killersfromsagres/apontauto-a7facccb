@@ -166,37 +166,38 @@ export function PolygonEditor({
     return { x: rect.width / 100, y: rect.height / 100 };
   }, []);
 
+  /** Distância entre dois pontos (%) medida em pixels reais de tela. */
+  const screenDistance = useCallback(
+    (a: Point, b: Point) => {
+      const per = pxPerPercent();
+      return Math.hypot((a.x - b.x) * per.x, (a.y - b.y) * per.y);
+    },
+    [pxPerPercent],
+  );
+
   /**
    * Aproximação assistida. Nunca aproxima de vértices do próprio polígono
-   * em edição (isso fazia o ponto "saltar" para o vizinho).
+   * em edição (isso fazia o ponto "saltar" para o vizinho). A tolerância é
+   * medida em pixels reais de tela, então não muda com o zoom.
    */
   const applySnap = useCallback(
     (p: Point, excludeId?: string): Point => {
-      let out = grid ? snapToGrid(p, 1) : p;
+      const out = grid ? snapToGrid(p, 1) : p;
       if (!snap) return clampPoint(out);
-      const per = pxPerPercent();
       let best: { d: number; pt: Point } | null = null;
-      // Precisamos considerar o zoom para que a distância de "grude" seja consistente em pixels de tela
-      const snapThreshold = (CLOSE_SNAP_PX * 0.4) / zoom; 
-      
       for (const poly of polygons) {
         if (!poly.visible) continue;
         if (poly.id === excludeId) continue;
-        const pts = geometryOf(poly);
-        pts.forEach((v) => {
-          // Distância em porcentagem convertida para pixels de viewport (considerando zoom)
-          const dx = (v.x - p.x) * per.x * zoom;
-          const dy = (v.y - p.y) * per.y * zoom;
-          const d = Math.hypot(dx, dy);
-          // Usamos CLOSE_SNAP_PX diretamente para comparação em pixels de tela
-          if (d < (CLOSE_SNAP_PX * 0.5) && (!best || d < best.d)) best = { d, pt: v };
-        });
+        for (const v of geometryOf(poly)) {
+          const d = screenDistance(v, p);
+          if (d <= SNAP_SCREEN_PX && (!best || d < best.d)) best = { d, pt: v };
+        }
       }
-      if (best) out = { ...(best as { pt: Point }).pt };
-      return clampPoint(out);
+      return clampPoint(best ? { ...best.pt } : out);
     },
-    [grid, snap, polygons, geometryOf, pxPerPercent, zoom],
+    [grid, snap, polygons, geometryOf, screenDistance],
   );
+
 
   /* -------------------------------- histórico ------------------------------- */
 
