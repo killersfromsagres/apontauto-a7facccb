@@ -356,8 +356,8 @@ function ProgramacaoPage() {
 
   return (
     <PageShell
-      title="Programação Semanal"
-      description="Anexe um arquivo por equipe (Civil/Chaveiro/Hidráulica é unificado) e gere as programações semanais até o fim do mês."
+      title="Programação"
+      description="Gestão de programações semanais e manutenção preventiva."
       actions={
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")}>
