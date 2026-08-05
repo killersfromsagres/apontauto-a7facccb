@@ -127,7 +127,47 @@ function UsuariosPage() {
   );
 }
 
+function ProvisionEncarregadosButton() {
+  const provision = useServerFn(provisionEncarregadosUser);
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+
+  const handleProvision = async () => {
+    setLoading(true);
+    try {
+      const res = await provision();
+      toast.success(`Login "encarregados" provisionado com sucesso!`);
+      qc.invalidateQueries({ queryKey: ["app-users"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao provisionar encarregados");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <GlassCard className="flex flex-col sm:flex-row items-center justify-between gap-4 border-primary/20 bg-primary/5">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Acesso Operacional Especial</h3>
+        <p className="text-xs text-muted-foreground max-w-md">
+          Provisiona o login compartilhado <strong>encarregados</strong> (senha: 20252026) com acesso de monitoramento aos módulos de PCM, OS e Frota.
+        </p>
+      </div>
+      <Button 
+        onClick={handleProvision} 
+        disabled={loading} 
+        variant="outline" 
+        className="w-full sm:w-auto border-primary/30 hover:bg-primary/10"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+        Provisionar Encarregados
+      </Button>
+    </GlassCard>
+  );
+}
+
 function CreateUserCard() {
+
   const qc = useQueryClient();
   const create = useServerFn(createAppUser);
   const [login, setLogin] = useState("");
