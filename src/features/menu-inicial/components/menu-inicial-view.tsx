@@ -228,15 +228,16 @@ export function MenuInicialView() {
   );
 }
 
-function KpiMonitorCard({ title, value, trend, icon, chartColor }: { 
+function KpiMonitorCard({ title, value, trend, icon, chartColor, className }: { 
   title: string; 
   value: string; 
   trend: string; 
   icon: React.ReactNode;
   chartColor: string;
+  className?: string;
 }) {
   return (
-    <GlassCard className="relative overflow-hidden group hover:border-primary/50 transition-colors">
+    <GlassCard className={`relative overflow-hidden group hover:border-primary/50 transition-colors card-sheen ${className || ""}`}>
       <div className="flex justify-between items-start mb-2">
         <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">{title}</span>
         {icon}
