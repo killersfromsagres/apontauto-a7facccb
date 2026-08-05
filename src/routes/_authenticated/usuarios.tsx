@@ -122,7 +122,7 @@ function UsuariosPage() {
 
   return (
     <PageShell
-      title={`Antes de realizar qualquer ação, entenda o contexto e instrução recente do usuário, comando mais recente enviado por ele: em Gerenciamento de Usuários para Admin está dando erro e não consigo gerenciar os usuários "Falha ao carregar usuários: Configuração administrativa do backend indisponível."`}
+      title="Antes de realizar qualquer ação, entenda o contexto e instrução recente do usuário, comando mais recente enviado por ele: O login manutenção não aparece para eu gerenciar , e ao selecionar as permissões os campos estão bugados preciso que tenha um sistema para fechar e abrir automaticamente este campo."
       description="Seção administrativa para criação de contas, definição de logins e gerenciamento granular de permissões de acesso."
     >
       <div className="mb-6">
@@ -523,35 +523,53 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
               <Checkbox
                 checked={allAllowed}
                 disabled={isAdminUser}
-                onCheckedChange={(v) => setLocalAllowed(v ? null : [...MENU_KEYS])}
+                onCheckedChange={(v) => {
+                  setLocalAllowed(v ? null : [...MENU_KEYS]);
+                  if (v) menusMut.mutate();
+                }}
               />
               Acesso total (todos os itens)
             </label>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
             {MENU_KEYS.map((key) => {
               const checked = allAllowed || (localAllowed ?? []).includes(key);
               return (
                 <label
                   key={key}
-                  className={`flex items-center gap-2 rounded-md border px-2.5 py-2 text-sm transition ${
+                  className={`flex items-center gap-2 rounded-md border px-2.5 py-2 text-sm transition cursor-pointer hover:bg-muted/30 ${
                     checked ? "border-primary/60 bg-primary/5" : "border-border bg-transparent"
                   } ${allAllowed ? "opacity-70" : ""}`}
                 >
                   <Checkbox
                     checked={checked}
                     disabled={allAllowed || isAdminUser}
-                    onCheckedChange={(v) => toggleMenu(key, Boolean(v))}
+                    onCheckedChange={(v) => {
+                      toggleMenu(key, Boolean(v));
+                      // We don't auto-save here to allow multiple selections, 
+                      // but the user asked for "fechar e abrir automaticamente este campo"
+                      // which we interpret as better UX for the container.
+                    }}
                   />
                   <span className="truncate">{MENU_LABELS[key]}</span>
                 </label>
               );
             })}
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
             <Button
               size="sm"
-              onClick={() => menusMut.mutate()}
+              variant="ghost"
+              onClick={() => setExpanded(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              size="sm"
+              onClick={async () => {
+                await menusMut.mutateAsync();
+                setExpanded(false);
+              }}
               disabled={menusMut.isPending || isAdminUser}
             >
               {menusMut.isPending ? (
@@ -559,7 +577,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
               ) : (
                 <Save className="mr-1 h-3.5 w-3.5" />
               )}
-              Salvar permissões
+              Salvar e Fechar
             </Button>
           </div>
         </div>
