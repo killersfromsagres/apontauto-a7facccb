@@ -121,6 +121,7 @@ export const MENU_KEYS = [
   "corretiva",
   "corretiva-pecas-status",
   "corretiva-historico",
+  "corretiva-finalizar-sem-foto",
   "assets-fill",
   "assets-catalog",
   "assets-unmatched",
