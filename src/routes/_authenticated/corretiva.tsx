@@ -678,7 +678,7 @@ function CorretivaPage() {
                       setSelectedId(o.id);
                     }}
                     className={cn(
-                      "w-full flex items-start gap-3 p-4 rounded-xl text-left transition-colors",
+                      "w-full flex items-start gap-3 p-4 rounded-xl text-left transition-colors cursor-pointer",
                       rowCls
                     )}
                   >
