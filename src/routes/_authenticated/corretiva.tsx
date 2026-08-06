@@ -945,7 +945,7 @@ function OSDetailView({
               )}
             </div>
 
-            {(isAdmin || (os.equipe && liberadas[`can_finish_no_photo_${os.id}`])) && (
+            {(isAdmin || canFinishNoPhoto) && (
               <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <div className="w-full mb-1">
                   <p className="text-[10px] font-bold uppercase tracking-tight text-primary/70">
