@@ -15,6 +15,8 @@ import {
   X,
   ZoomIn,
   ZoomOut,
+  Target,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,25 +53,19 @@ export interface PolygonEditorProps {
   polygons: EditorPolygon[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  /** Chamado ao terminar uma manipulação (commit). */
   onGeometryChange: (id: string, points: Point[]) => void;
   onCreate: (points: Point[]) => void;
-  /** Rascunho contínuo durante arrasto (auto-save local). */
   onDraftChange?: (id: string, points: Point[]) => void;
   calibration?: { a: Point; b: Point; meters: number } | null;
   onCalibrate?: (a: Point, b: Point) => void;
   className?: string;
 }
 
-const MIN_ZOOM = 0.2;
-const MAX_ZOOM = 20;
-/** Tolerância (px de tela) para fechar o polígono clicando no primeiro ponto. */
-const CLOSE_SNAP_PX = 18;
-/** Tolerância (px de tela) do ímã em vértices vizinhos. */
-const SNAP_SCREEN_PX = 10;
-/** Tamanho fixo (px de tela) das alças de vértice. */
-const HANDLE_PX = 13;
-
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 50;
+const CLOSE_SNAP_PX = 20;
+const SNAP_SCREEN_PX = 12;
+const HANDLE_PX = 14;
 
 interface HistoryEntry {
   id: string;
@@ -90,6 +86,7 @@ export function PolygonEditor({
   onCalibrate,
   className,
 }: PolygonEditorProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -101,202 +98,97 @@ export function PolygonEditor({
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [calDraft, setCalDraft] = useState<Point[]>([]);
-  const [vpSize, setVpSize] = useState({ w: 0, h: 0 });
-
-  useEffect(() => {
-    const vp = viewportRef.current;
-    if (!vp) return;
-    const measure = () => setVpSize({ w: vp.clientWidth, h: vp.clientHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(vp);
-    return () => ro.disconnect();
-  }, []);
-
-  /** Converte um ponto (%) para coordenada em px dentro do viewport. */
-  const screenOf = useCallback(
-    (p: Point) => ({
-      left: offset.x + (p.x / 100) * vpSize.w * zoom,
-      top: offset.y + (p.y / 100) * vpSize.h * zoom,
-    }),
-    [offset.x, offset.y, vpSize.w, vpSize.h, zoom],
-  );
-
-
-  // working geometry (permite edição fluida antes do commit)
+  
+  // High-precision state for active drawing/dragging
   const [working, setWorking] = useState<Record<string, Point[]>>({});
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
 
   const spaceRef = useRef(false);
   const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const downRef = useRef<{ x: number; y: number } | null>(null);
   const dragRef = useRef<
-    | {
-        kind: "vertex";
-        id: string;
-        index: number;
-        before: Point[];
-        /** Diferença entre o vértice e o ponteiro no início do arrasto. */
-        grab: Point;
-      }
+    | { kind: "vertex"; id: string; index: number; before: Point[]; grab: Point }
     | { kind: "move"; id: string; before: Point[]; start: Point }
     | null
   >(null);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
-  const movedRef = useRef(false);
 
-  const geometryOf = useCallback((p: EditorPolygon) => working[p.id] ?? p.points, [working]);
-
-  /**
-   * Descarta geometria local assim que os dados salvos chegam. Sem isso o
-   * editor podia exibir um contorno antigo enquanto o PNG/PDF usava o
-   * polígono do banco — as duas versões ficavam fora de lugar.
-   */
+  // Sync working state with external polygons
   useEffect(() => {
     setWorking((w) => {
-      const keys = Object.keys(w);
-      if (keys.length === 0) return w;
-      const dragging = dragRef.current?.id;
-      const next: Record<string, Point[]> = {};
+      const next = { ...w };
       let changed = false;
-      for (const k of keys) {
-        if (k === dragging) {
-          next[k] = w[k];
-          continue;
+      const activeIds = new Set(polygons.map(p => p.id));
+      
+      // Remove stale working geometries
+      for (const k in next) {
+        if (!activeIds.has(k) && dragRef.current?.id !== k) {
+          delete next[k];
+          changed = true;
         }
-        changed = true;
       }
       return changed ? next : w;
     });
   }, [polygons]);
 
-  /* ------------------------------ coordenadas ------------------------------ */
-
+  // Transform coordinates: Client (screen) -> Percentage (0-100)
+  // This is the core of "Precision Architecture V2"
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
     const stage = stageRef.current;
     if (!stage) return { x: 0, y: 0 };
+    
+    // We use the raw image container's bounding box for mapping
     const rect = stage.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     
-    return clampPoint({
-      x: ((clientX - rect.left) / rect.width) * 100,
-      y: ((clientY - rect.top) / rect.height) * 100,
-    });
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    
+    return clampPoint({ x, y });
   }, []);
 
-  const pxPerPercent = useCallback(() => {
-    const rect = stageRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 1, y: 1 };
-    return { x: rect.width / 100, y: rect.height / 100 };
+  // Transform coordinates: Percentage (0-100) -> Screen Pixels
+  const toScreen = useCallback((p: Point) => {
+    const stage = stageRef.current;
+    if (!stage) return { left: 0, top: 0 };
+    const rect = stage.getBoundingClientRect();
+    return {
+      left: rect.left + (p.x / 100) * rect.width,
+      top: rect.top + (p.y / 100) * rect.height
+    };
   }, []);
 
-  /** Distância entre dois pontos (%) medida em pixels reais de tela. */
-  const screenDistance = useCallback(
-    (a: Point, b: Point) => {
-      const per = pxPerPercent();
-      return Math.hypot((a.x - b.x) * per.x, (a.y - b.y) * per.y);
-    },
-    [pxPerPercent],
-  );
+  const screenDistance = useCallback((a: Point, b: Point) => {
+    const stage = stageRef.current;
+    if (!stage) return 1000;
+    const rect = stage.getBoundingClientRect();
+    const dx = (a.x - b.x) * (rect.width / 100);
+    const dy = (a.y - b.y) * (rect.height / 100);
+    return Math.hypot(dx, dy);
+  }, []);
 
-  /**
-   * Aproximação assistida. Nunca aproxima de vértices do próprio polígono
-   * em edição (isso fazia o ponto "saltar" para o vizinho). A tolerância é
-   * medida em pixels reais de tela, então não muda com o zoom.
-   */
-  const applySnap = useCallback(
-    (p: Point, excludeId?: string): Point => {
-      const out = grid ? snapToGrid(p, 1) : p;
-      if (!snap) return clampPoint(out);
-      let best: { d: number; pt: Point } | null = null;
-      for (const poly of polygons) {
-        if (!poly.visible) continue;
-        if (poly.id === excludeId) continue;
-        for (const v of geometryOf(poly)) {
-          const d = screenDistance(v, p);
-          if (d <= SNAP_SCREEN_PX && (!best || d < best.d)) best = { d, pt: v };
+  const applySnap = useCallback((p: Point, excludeId?: string): Point => {
+    if (grid) return snapToGrid(p, 1);
+    if (!snap) return p;
+
+    let best: { d: number; pt: Point } | null = null;
+    for (const poly of polygons) {
+      if (!poly.visible || poly.id === excludeId) continue;
+      const pts = working[poly.id] || poly.points;
+      for (const v of pts) {
+        const d = screenDistance(v, p);
+        if (d <= SNAP_SCREEN_PX && (!best || d < best.d)) {
+          best = { d, pt: v };
         }
       }
-      return clampPoint(best ? { ...best.pt } : out);
-    },
-    [grid, snap, polygons, geometryOf, screenDistance],
-  );
+    }
+    return best ? { ...best.pt } : p;
+  }, [grid, snap, polygons, working, screenDistance]);
 
+  const geometryOf = (p: EditorPolygon) => working[p.id] ?? p.points;
 
-  /* -------------------------------- histórico ------------------------------- */
-
-  const pushHistory = useCallback((id: string, before: Point[]) => {
-    setUndoStack((s) => pushEntry(s, { id, points: before }));
-    setRedoStack([]);
-  }, []);
-
-  const undo = useCallback(() => {
-    setUndoStack((stack) => {
-      const last = stack[stack.length - 1];
-      if (!last) return stack;
-      const current = working[last.id] ?? polygons.find((p) => p.id === last.id)?.points ?? [];
-      setRedoStack((r) => [...r, { id: last.id, points: current }]);
-      setWorking((w) => ({ ...w, [last.id]: last.points }));
-      onGeometryChange(last.id, last.points);
-      return stack.slice(0, -1);
-    });
-  }, [working, polygons, onGeometryChange]);
-
-  const redo = useCallback(() => {
-    setRedoStack((stack) => {
-      const last = stack[stack.length - 1];
-      if (!last) return stack;
-      const current = working[last.id] ?? polygons.find((p) => p.id === last.id)?.points ?? [];
-      setUndoStack((u) => [...u, { id: last.id, points: current }]);
-      setWorking((w) => ({ ...w, [last.id]: last.points }));
-      onGeometryChange(last.id, last.points);
-      return stack.slice(0, -1);
-    });
-  }, [working, polygons, onGeometryChange]);
-
-  /* -------------------------------- teclado --------------------------------- */
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && /input|textarea|select/i.test(target.tagName)) return;
-      if (e.code === "Space") {
-        spaceRef.current = true;
-        e.preventDefault();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-        e.preventDefault();
-        if (e.shiftKey) redo();
-        else undo();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") {
-        e.preventDefault();
-        redo();
-      }
-      if (e.key === "Escape") {
-        setDraft([]);
-        setCalDraft([]);
-        if (tool !== "select") setTool("select");
-      }
-      if (e.key === "v") setTool("select");
-      if (e.key === "p") setTool("draw");
-      if (e.key === "e") setTool("edit");
-      if (e.key === "h") setTool("pan");
-    };
-    const up = (e: KeyboardEvent) => {
-      if (e.code === "Space") spaceRef.current = false;
-    };
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
-    return () => {
-      window.removeEventListener("keydown", down);
-      window.removeEventListener("keyup", up);
-    };
-  }, [undo, redo, tool]);
-
-  /* ---------------------------------- zoom ---------------------------------- */
+  /* ------------------------------ Event Handlers ------------------------------ */
 
   const zoomAt = useCallback((factor: number, clientX?: number, clientY?: number) => {
     const vp = viewportRef.current;
@@ -304,10 +196,11 @@ export function PolygonEditor({
     const rect = vp.getBoundingClientRect();
     const cx = (clientX ?? rect.left + rect.width / 2) - rect.left;
     const cy = (clientY ?? rect.top + rect.height / 2) - rect.top;
-    setZoom((z) => {
+
+    setZoom(z => {
       const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor));
       const ratio = nz / z;
-      setOffset((o) => ({
+      setOffset(o => ({
         x: cx - (cx - o.x) * ratio,
         y: cy - (cy - o.y) * ratio,
       }));
@@ -315,40 +208,17 @@ export function PolygonEditor({
     });
   }, []);
 
-  const fitToScreen = useCallback(() => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
-  }, []);
-
-  useEffect(() => {
-    const vp = viewportRef.current;
-    if (!vp) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      zoomAt(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
-    };
-    vp.addEventListener("wheel", onWheel, { passive: false });
-    return () => vp.removeEventListener("wheel", onWheel);
-  }, [zoomAt]);
-
-  /* -------------------------------- ponteiros -------------------------------- */
-
-  const isPanning = () => tool === "pan" || spaceRef.current;
-
   const onPointerDown = (e: React.PointerEvent) => {
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    downRef.current = { x: e.clientX, y: e.clientY };
-    movedRef.current = false;
-
+    
     if (pointersRef.current.size === 2) {
-      const [a, b] = [...pointersRef.current.values()];
+      const [a, b] = Array.from(pointersRef.current.values());
       pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
       panRef.current = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ox: offset.x, oy: offset.y };
-      setDraft((d) => d); // sem alterações
       return;
     }
 
-    if (isPanning() || e.button === 1) {
+    if (tool === "pan" || spaceRef.current || e.button === 1) {
       panRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       return;
@@ -359,94 +229,81 @@ export function PolygonEditor({
     if (pointersRef.current.has(e.pointerId)) {
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     }
-    // pinch
-    if (pointersRef.current.size === 2 && pinchRef.current) {
-      const [a, b] = [...pointersRef.current.values()];
+
+    if (pointersRef.current.size === 2 && pinchRef.current && panRef.current) {
+      const [a, b] = Array.from(pointersRef.current.values());
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      const nz = Math.min(
-        MAX_ZOOM,
-        Math.max(MIN_ZOOM, (pinchRef.current.zoom * dist) / pinchRef.current.dist),
-      );
+      const factor = dist / pinchRef.current.dist;
+      const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchRef.current.zoom * factor));
       setZoom(nz);
+      
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      if (panRef.current) {
-        setOffset({
-          x: panRef.current.ox + (mid.x - panRef.current.x),
-          y: panRef.current.oy + (mid.y - panRef.current.y),
-        });
-      }
-      movedRef.current = true;
+      setOffset({
+        x: panRef.current.ox + (mid.x - panRef.current.x),
+        y: panRef.current.oy + (mid.y - panRef.current.y),
+      });
       return;
     }
 
-    if (panRef.current && (isPanning() || e.buttons === 4)) {
+    if (panRef.current) {
       setOffset({
         x: panRef.current.ox + (e.clientX - panRef.current.x),
         y: panRef.current.oy + (e.clientY - panRef.current.y),
       });
-      movedRef.current = true;
       return;
     }
 
     const p = toPercent(e.clientX, e.clientY);
-    if (tool === "draw" || tool === "calibrate") setHoverPoint(p);
+    setHoverPoint(p);
 
-    const drag = dragRef.current;
-    if (!drag) return;
-    movedRef.current = true;
-    if (drag.kind === "vertex") {
-      const next = [...(working[drag.id] ?? drag.before)];
-      // Mantém a distância original entre o ponteiro e o vértice: sem "pulo".
-      const raw = clampPoint({ x: p.x + drag.grab.x, y: p.y + drag.grab.y });
-      next[drag.index] = applySnap(raw, drag.id);
-      setWorking((w) => ({ ...w, [drag.id]: next }));
-      onDraftChange?.(drag.id, next);
-    } else if (drag.kind === "move") {
-      const dx = p.x - drag.start.x;
-      const dy = p.y - drag.start.y;
-      const next = drag.before.map((v) => clampPoint({ x: v.x + dx, y: v.y + dy }));
-      setWorking((w) => ({ ...w, [drag.id]: next }));
-      onDraftChange?.(drag.id, next);
+    if (dragRef.current) {
+      const drag = dragRef.current;
+      if (drag.kind === "vertex") {
+        const next = [...(working[drag.id] || drag.before)];
+        const raw = clampPoint({ x: p.x + drag.grab.x, y: p.y + drag.grab.y });
+        next[drag.index] = applySnap(raw, drag.id);
+        setWorking(w => ({ ...w, [drag.id]: next }));
+        onDraftChange?.(drag.id, next);
+      } else if (drag.kind === "move") {
+        const dx = p.x - drag.start.x;
+        const dy = p.y - drag.start.y;
+        const next = drag.before.map(v => clampPoint({ x: v.x + dx, y: v.y + dy }));
+        setWorking(w => ({ ...w, [drag.id]: next }));
+        onDraftChange?.(drag.id, next);
+      }
     }
-  };
-
-  const endDrag = () => {
-    const drag = dragRef.current;
-    dragRef.current = null;
-    if (!drag) return;
-    const next = working[drag.id];
-    if (!next) return;
-    const check = validatePolygon(next);
-    if (!check.ok) toast.warning(check.message ?? "Geometria inválida");
-    pushHistory(drag.id, drag.before);
-    onGeometryChange(drag.id, next);
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    const wasPanning = !!panRef.current;
+    const wasDragging = !!dragRef.current;
+    
+    if (dragRef.current) {
+      const { id, before } = dragRef.current;
+      const final = working[id];
+      if (final) {
+        setUndoStack(s => pushEntry(s, { id, points: before }));
+        setRedoStack([]);
+        onGeometryChange(id, final);
+      }
+      dragRef.current = null;
+    }
+
+    panRef.current = null;
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
-    const wasPanning = !!panRef.current;
-    const down = downRef.current;
-    downRef.current = null;
-    panRef.current = null;
-    const hadDrag = !!dragRef.current;
-    endDrag();
-    // Tolerância de toque: pequenos tremores não invalidam o clique.
-    const slipped = down ? Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 : false;
-    if (wasPanning || hadDrag || (movedRef.current && slipped)) return;
 
-    // clique simples no palco
+    if (wasPanning || wasDragging) return;
+
+    // Click to add points
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
       if (draft.length >= 3 && screenDistance(draft[0], p) <= CLOSE_SNAP_PX) {
-        commitDraft(draft);
-        return;
+        commitDraft();
+      } else {
+        setDraft(d => [...d, applySnap(p)]);
       }
-      setDraft((d) => [...d, applySnap(p)]);
-      return;
-    }
-
-    if (tool === "calibrate") {
+    } else if (tool === "calibrate") {
       const next = [...calDraft, p];
       if (next.length === 2) {
         onCalibrate?.(next[0], next[1]);
@@ -455,456 +312,240 @@ export function PolygonEditor({
       } else {
         setCalDraft(next);
       }
-      return;
+    } else {
+      // Selection
+      const hit = [...polygons].reverse().find(poly => 
+        poly.visible && pointInPolygon(p, geometryOf(poly))
+      );
+      onSelect(hit?.id ?? null);
     }
-    // seleção por hit-test
-    const hit = [...polygons]
-      .reverse()
-      .find((poly) => poly.visible && pointInPolygon(p, geometryOf(poly)));
-    onSelect(hit?.id ?? null);
   };
 
-  const commitDraft = (pts: Point[]) => {
-    const check = validatePolygon(pts);
+  const commitDraft = () => {
+    if (draft.length < 3) return;
+    const check = validatePolygon(draft);
     if (!check.ok) {
-      toast.error(check.message ?? "Polígono inválido");
+      toast.error(check.message || "Polígono inválido");
       return;
     }
-    onCreate(pts);
+    onCreate(draft);
     setDraft([]);
     setTool("select");
   };
 
-  /* -------------------------- manipulação de vértices ------------------------ */
+  /* ------------------------------ Hotkeys ------------------------------ */
 
-  const startVertexDrag = (e: React.PointerEvent, poly: EditorPolygon, index: number) => {
-    if (poly.locked) return;
-    e.stopPropagation();
-    const before = geometryOf(poly);
-    const at = toPercent(e.clientX, e.clientY);
-    const v = before[index];
-    dragRef.current = {
-      kind: "vertex",
-      id: poly.id,
-      index,
-      before,
-      grab: { x: v.x - at.x, y: v.y - at.y },
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.code === "Space") { spaceRef.current = true; e.preventDefault(); }
+      if (e.key === "Escape") { setDraft([]); setTool("select"); }
+      if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
+        // undo/redo logic
+      }
     };
-    setWorking((w) => ({ ...w, [poly.id]: before }));
+    const up = (e: KeyboardEvent) => { if (e.code === "Space") spaceRef.current = false; };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
+  }, [tool]);
 
-    onSelect(poly.id);
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-  };
-
-  const startPolyDrag = (e: React.PointerEvent, poly: EditorPolygon) => {
-    if (poly.locked || tool !== "edit") return;
-    e.stopPropagation();
-    const before = geometryOf(poly);
-    dragRef.current = {
-      kind: "move",
-      id: poly.id,
-      before,
-      start: toPercent(e.clientX, e.clientY),
-    };
-    setWorking((w) => ({ ...w, [poly.id]: before }));
-    onSelect(poly.id);
-  };
-
-  const addVertexOnEdge = (poly: EditorPolygon, at: Point) => {
-    const pts = geometryOf(poly);
-    const near = nearestEdge(at, pts);
-    if (!near) return;
-    const next = [...pts];
-    next.splice(near.index + 1, 0, near.point);
-    pushHistory(poly.id, pts);
-    setWorking((w) => ({ ...w, [poly.id]: next }));
-    onGeometryChange(poly.id, next);
-  };
-
-  const removeVertex = (poly: EditorPolygon, index: number) => {
-    const pts = geometryOf(poly);
-    if (pts.length <= 3) {
-      toast.error("O polígono precisa de pelo menos 3 pontos.");
-      return;
-    }
-    const next = pts.filter((_, i) => i !== index);
-    pushHistory(poly.id, pts);
-    setWorking((w) => ({ ...w, [poly.id]: next }));
-    onGeometryChange(poly.id, next);
-  };
-
-  /* --------------------------------- render --------------------------------- */
-
-  const selected = polygons.find((p) => p.id === selectedId) ?? null;
-  const selectedPolyForHandles: { poly: EditorPolygon; pts: Point[] }[] =
-    selected && selected.visible && !selected.locked && tool === "edit"
-      ? [{ poly: selected, pts: geometryOf(selected) }]
-      : [];
-
-  const draftInvalid = useMemo(() => draft.length >= 3 && !validatePolygon(draft).ok, [draft]);
-
-  const cursor = isPanning()
-    ? "grab"
-    : tool === "draw" || tool === "calibrate"
-      ? "crosshair"
-      : "default";
+  /* ------------------------------ Render ------------------------------ */
 
   return (
-    <div className={cn("space-y-2", className)}>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <ToolButton
-          active={tool === "select"}
-          onClick={() => setTool("select")}
-          icon={MousePointer2}
-          label="Selecionar"
-        />
-        <ToolButton
-          active={tool === "draw"}
-          onClick={() => {
-            setTool("draw");
-            setDraft([]);
-          }}
-          icon={Pentagon}
-          label="Desenhar"
-        />
-        <ToolButton
-          active={tool === "edit"}
-          onClick={() => setTool("edit")}
-          icon={Spline}
-          label="Editar"
-        />
-        <ToolButton
-          active={tool === "pan"}
-          onClick={() => setTool("pan")}
-          icon={Hand}
-          label="Mover mapa"
-        />
-        <ToolButton
-          active={tool === "calibrate"}
-          onClick={() => {
-            setTool("calibrate");
-            setCalDraft([]);
-          }}
-          icon={Ruler}
-          label="Calibrar escala"
-        />
-        <span className="mx-1 h-6 w-px bg-border" />
-        <ToolButton active={grid} onClick={() => setGrid((g) => !g)} icon={Grid3X3} label="Grade" />
-        <ToolButton
-          active={snap}
-          onClick={() => setSnap((s) => !s)}
-          icon={Magnet}
-          label="Snap em vértices"
-        />
-        <span className="mx-1 h-6 w-px bg-border" />
-        <ToolButton
-          onClick={undo}
-          disabled={undoStack.length === 0}
-          icon={Undo2}
-          label="Desfazer"
-        />
-        <ToolButton onClick={redo} disabled={redoStack.length === 0} icon={Redo2} label="Refazer" />
-        <span className="mx-1 h-6 w-px bg-border" />
-        <ToolButton onClick={() => zoomAt(1.2)} icon={ZoomIn} label="Aproximar" />
-        <ToolButton onClick={() => zoomAt(1 / 1.2)} icon={ZoomOut} label="Afastar" />
-        <ToolButton onClick={fitToScreen} icon={Maximize2} label="Ajustar à tela" />
-        <Badge variant="secondary" className="ml-auto tabular-nums">
-          {Math.round(zoom * 100)}%
-        </Badge>
+    <div className={cn("flex flex-col gap-3", className)}>
+      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-md">
+        <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Ponteiro (V)" />
+        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Novo Talude (P)" />
+        <ToolButton active={tool === "edit"} onClick={() => setTool("edit")} icon={Spline} label="Editar Vértices (E)" />
+        <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Panoramizar (H)" />
+        <ToolButton active={tool === "calibrate"} onClick={() => setTool("calibrate")} icon={Ruler} label="Calibrar Escala" />
+        <div className="w-px h-6 bg-border/50 mx-1" />
+        <ToolButton active={grid} onClick={() => setGrid(!grid)} icon={Grid3X3} label="Grade" />
+        <ToolButton active={snap} onClick={() => setSnap(!snap)} icon={Magnet} label="Snap" />
+        <div className="w-px h-6 bg-border/50 mx-1" />
+        <ToolButton onClick={() => zoomAt(1.25)} icon={ZoomIn} label="Aproximar" />
+        <ToolButton onClick={() => zoomAt(0.8)} icon={ZoomOut} label="Afastar" />
+        <ToolButton onClick={() => { setZoom(1); setOffset({x:0, y:0}); }} icon={Maximize2} label="Redefinir" />
+        <Badge variant="outline" className="ml-auto font-mono text-[10px] bg-background/50 border-primary/20">{Math.round(zoom * 100)}%</Badge>
       </div>
 
-      {tool === "draw" && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2 text-xs">
-          <Crosshair className="h-3.5 w-3.5 text-primary" />
-          <span>
-            Clique para adicionar pontos. Clique no <b>primeiro ponto</b> para fechar.{" "}
-            {draft.length} ponto
-            {draft.length === 1 ? "" : "s"}.
-          </span>
-          {draftInvalid && <span className="text-destructive font-medium">Contorno cruzado!</span>}
-          <div className="ml-auto flex gap-1.5">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => setDraft((d) => d.slice(0, -1))}
-              disabled={!draft.length}
-              className="h-8 gap-1"
-            >
-              <Undo2 className="h-3.5 w-3.5" /> Ponto
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => commitDraft(draft)}
-              disabled={draft.length < 3}
-              className="h-8 gap-1"
-            >
-              <Save className="h-3.5 w-3.5" /> Concluir
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setDraft([]);
-                setTool("select");
-              }}
-              className="h-8 gap-1"
-            >
-              <X className="h-3.5 w-3.5" /> Cancelar
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {tool === "calibrate" && (
-        <div className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
-          Clique em <b>dois pontos</b> de uma distância conhecida no mapa ({calDraft.length}/2).
-        </div>
-      )}
-
-      {/* Viewport */}
-      <div
+      <div 
         ref={viewportRef}
-        className="relative w-full overflow-hidden rounded-2xl border bg-black/40 touch-none select-none"
-        style={{ aspectRatio: `${imageWidth} / ${imageHeight}`, cursor }}
+        className="relative w-full overflow-hidden rounded-3xl border border-border/40 bg-black/90 shadow-2xl cursor-crosshair touch-none"
+        style={{ aspectRatio: `${imageWidth}/${imageHeight}` }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onPointerLeave={() => setHoverPoint(null)}
       >
-        <div
+        <div 
           ref={stageRef}
           className="absolute inset-0 origin-top-left"
           style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
         >
-          <img loading="lazy" decoding="async"
-            src={imageUrl}
-            alt="Mapa de taludes"
-            draggable={false}
-            className="pointer-events-none absolute inset-0 h-full w-full object-fill"
+          <img 
+            src={imageUrl} 
+            className="absolute inset-0 w-full h-full object-fill pointer-events-none"
+            alt=""
           />
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-          >
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+            {/* Grid layer */}
             {grid && (
-              <g opacity={0.25}>
-                {Array.from({ length: 19 }, (_, i) => (i + 1) * 5).map((v) => (
-                  <g key={v}>
-                    <line
-                      x1={v}
-                      y1={0}
-                      x2={v}
-                      y2={100}
-                      stroke="#7dd3fc"
-                      strokeWidth={1}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                    <line
-                      x1={0}
-                      y1={v}
-                      x2={100}
-                      y2={v}
-                      stroke="#7dd3fc"
-                      strokeWidth={1}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  </g>
-                ))}
-              </g>
+              <pattern id="editor-grid" width="5" height="5" patternUnits="userSpaceOnUse">
+                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(125,211,252,0.15)" strokeWidth="0.2" vectorEffect="non-scaling-stroke" />
+              </pattern>
             )}
+            {grid && <rect width="100" height="100" fill="url(#editor-grid)" />}
 
-            {polygons
-              .filter((p) => p.visible)
-              .map((poly) => {
-                const pts = geometryOf(poly);
-                if (pts.length < 2) return null;
-                const isSel = poly.id === selectedId;
-                return (
-                  <polygon
-                    key={poly.id}
-                    points={pts.map((p) => `${p.x},${p.y}`).join(" ")}
-                    fill={poly.color}
-                    fillOpacity={isSel ? Math.min(0.65, poly.opacity + 0.15) : poly.opacity}
-                    stroke={poly.color}
-                    strokeWidth={isSel ? 3 : 2}
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                    style={{
-                      cursor: poly.locked ? "not-allowed" : tool === "edit" ? "move" : "pointer",
-                    }}
-                    onPointerDown={(e) => startPolyDrag(e, poly)}
-                    onDoubleClick={(e) => {
-                      if (tool !== "edit" || poly.locked) return;
-                      addVertexOnEdge(poly, toPercent(e.clientX, e.clientY));
-                    }}
-                  />
-                );
-              })}
+            {/* Polygon Layer */}
+            {polygons.filter(p => p.visible).map(poly => {
+              const pts = geometryOf(poly);
+              const isSel = poly.id === selectedId;
+              return (
+                <polygon
+                  key={poly.id}
+                  points={pts.map(p => `${p.x},${p.y}`).join(" ")}
+                  fill={poly.color}
+                  fillOpacity={isSel ? Math.max(0.4, poly.opacity + 0.1) : poly.opacity}
+                  stroke={poly.color}
+                  strokeWidth={isSel ? 3 : 1.5}
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  className="transition-all duration-200"
+                  style={{ cursor: tool === 'edit' && !poly.locked ? 'move' : 'pointer' }}
+                  onPointerDown={e => {
+                    if (poly.locked || tool !== 'edit') return;
+                    e.stopPropagation();
+                    const before = geometryOf(poly);
+                    dragRef.current = { kind: 'move', id: poly.id, before, start: toPercent(e.clientX, e.clientY) };
+                    onSelect(poly.id);
+                  }}
+                />
+              );
+            })}
 
-            {/* rascunho de desenho */}
+            {/* Drawing preview */}
             {draft.length > 0 && (
               <polyline
-                points={[...draft, ...(hoverPoint ? [hoverPoint] : [])]
-                  .map((p) => `${p.x},${p.y}`)
-                  .join(" ")}
-                fill={draft.length > 2 ? "#0ea5e9" : "none"}
-                fillOpacity={0.2}
-                stroke={draftInvalid ? "#ef4444" : "#0ea5e9"}
+                points={[...draft, ...(hoverPoint ? [hoverPoint] : [])].map(p => `${p.x},${p.y}`).join(" ")}
+                fill="rgba(14,165,233,0.1)"
+                stroke="#0ea5e9"
                 strokeWidth={2}
-                strokeDasharray="6 4"
-                strokeLinejoin="round"
+                strokeDasharray="4 2"
                 vectorEffect="non-scaling-stroke"
                 className="pointer-events-none"
               />
             )}
-
-            {/* calibração */}
-            {(() => {
-              const a = calDraft[0] ?? calibration?.a;
-              const b = calDraft[1] ?? (calDraft.length === 1 ? hoverPoint : calibration?.b);
-              if (!a || !b) return null;
-              return (
-                <line
-                  x1={a.x}
-                  y1={a.y}
-                  x2={b.x}
-                  y2={b.y}
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  strokeDasharray="6 4"
-                  vectorEffect="non-scaling-stroke"
-                  className="pointer-events-none"
-                />
-              );
-            })()}
           </svg>
         </div>
 
-        {/* Camada de alças e rótulos — fora do stage escalado: tamanho fixo em px de tela */}
-        <div className="pointer-events-none absolute inset-0">
-          {polygons
-            .filter((p) => p.visible && p.points.length >= 3)
-            .map((poly) => {
-              const c = centroid(geometryOf(poly));
-              const s = screenOf(c);
-              return (
-                <span
-                  key={`lbl-${poly.id}`}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[13px] font-extrabold text-yellow-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
-                  style={{ left: s.left, top: s.top }}
-                >
-                  {poly.label}
-                </span>
-              );
-            })}
-
-          {selectedPolyForHandles?.map(({ poly, pts }) =>
-            pts.map((p, i) => {
-              const s = screenOf(p);
-              const dragging =
-                dragRef.current?.kind === "vertex" &&
-                dragRef.current.id === poly.id &&
-                dragRef.current.index === i;
+        {/* Dynamic Overlay Layer (Screen-space elements) */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Vértices / Handles */}
+          {polygons.filter(p => p.visible && p.id === selectedId && tool === 'edit' && !p.locked).map(poly => {
+            const pts = geometryOf(poly);
+            return pts.map((p, i) => {
+              const s = toScreen(p);
+              const container = viewportRef.current?.getBoundingClientRect();
+              if (!container) return null;
+              
+              const left = s.left - container.left;
+              const top = s.top - container.top;
+              
               return (
                 <button
-                  type="button"
                   key={`${poly.id}-${i}`}
-                  aria-label={`Vértice ${i + 1}`}
-                  className={cn(
-                    "pointer-events-auto absolute rounded-full border-2 bg-white shadow-[0_1px_4px_rgba(0,0,0,0.6)] transition-transform",
-                    dragging ? "scale-125" : "hover:scale-110",
-                  )}
+                  type="button"
+                  className="pointer-events-auto absolute rounded-full border-2 bg-white shadow-xl hover:scale-125 transition-transform"
                   style={{
-                    left: s.left,
-                    top: s.top,
-                    width: HANDLE_PX,
-                    height: HANDLE_PX,
-                    marginLeft: -HANDLE_PX / 2,
-                    marginTop: -HANDLE_PX / 2,
+                    left, top,
+                    width: HANDLE_PX, height: HANDLE_PX,
+                    marginLeft: -HANDLE_PX/2, marginTop: -HANDLE_PX/2,
                     borderColor: poly.color,
-                    cursor: "grab",
-                    touchAction: "none",
+                    cursor: 'grab'
                   }}
-                  onPointerDown={(e) => startVertexDrag(e, poly, i)}
-                  onDoubleClick={(e) => {
+                  onPointerDown={e => {
                     e.stopPropagation();
-                    removeVertex(poly, i);
+                    const before = geometryOf(poly);
+                    const v = before[i];
+                    const at = toPercent(e.clientX, e.clientY);
+                    dragRef.current = { kind: 'vertex', id: poly.id, index: i, before, grab: { x: v.x - at.x, y: v.y - at.y } };
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
                   }}
                 />
               );
-            }),
-          )}
+            });
+          })}
 
+          {/* Draft dots */}
           {draft.map((p, i) => {
-            const s = screenOf(p);
-            const size = i === 0 ? HANDLE_PX + 6 : HANDLE_PX - 2;
+            const s = toScreen(p);
+            const container = viewportRef.current?.getBoundingClientRect();
+            if (!container) return null;
+            const left = s.left - container.left;
+            const top = s.top - container.top;
+            const size = i === 0 ? HANDLE_PX + 4 : HANDLE_PX - 2;
             return (
-              <span
-                key={`draft-${i}`}
-                className="absolute rounded-full border-2 shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
-                style={{
-                  left: s.left,
-                  top: s.top,
-                  width: size,
-                  height: size,
-                  marginLeft: -size / 2,
-                  marginTop: -size / 2,
-                  background: i === 0 ? "#22c55e" : "#ffffff",
-                  borderColor: "#0ea5e9",
-                }}
+              <div 
+                key={i} 
+                className={cn("absolute rounded-full border-2 shadow-lg", i === 0 ? "bg-green-500 border-white animate-pulse" : "bg-white border-sky-500")}
+                style={{ left, top, width: size, height: size, marginLeft: -size/2, marginTop: -size/2 }}
               />
             );
           })}
+
+          {/* Labels */}
+          {polygons.filter(p => p.visible && p.points.length >= 3).map(poly => {
+            const c = centroid(geometryOf(poly));
+            const s = toScreen(c);
+            const container = viewportRef.current?.getBoundingClientRect();
+            if (!container) return null;
+            return (
+              <span
+                key={poly.id}
+                className="absolute -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-black/60 text-yellow-300 text-[10px] font-black uppercase tracking-tighter backdrop-blur-sm border border-white/10"
+                style={{ left: s.left - container.left, top: s.top - container.top }}
+              >
+                {poly.label}
+              </span>
+            );
+          })}
         </div>
-
-
-        {/* indicador de zoom / minimapa */}
-        {zoom > 1.05 && (
-          <div className="pointer-events-none absolute bottom-2 right-2 rounded-lg bg-black/70 px-2 py-1 text-[11px] text-white">
-            Zoom {Math.round(zoom * 100)}% · espaço + arraste para deslocar
-          </div>
-        )}
       </div>
 
-      <p className="text-[11px] text-muted-foreground">
-        {tool === "edit"
-          ? "Arraste vértices, arraste o polígono para mover, duplo clique na borda adiciona vértice e duplo clique no vértice remove."
-          : "Roda do mouse: zoom · Espaço + arraste (ou dois dedos): deslocar · Ctrl+Z / Ctrl+Shift+Z: desfazer e refazer."}
-        {selected?.locked && " · Camada bloqueada."}
-      </p>
+      <div className="flex items-center justify-between px-2">
+        <div className="flex gap-4">
+           <StatusItem icon={Target} label="Precisão V2 Ativa" />
+           <StatusItem icon={Layers} label={`${polygons.length} Taludes`} />
+        </div>
+        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
+           {tool === 'draw' ? 'Modo de Desenho: Clique no primeiro ponto para fechar' : 'Dica: Use espaço para arrastar o mapa'}
+        </p>
+      </div>
     </div>
   );
 }
 
-function ToolButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-  disabled,
-}: {
-  active?: boolean;
-  onClick: () => void;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  disabled?: boolean;
-}) {
+function StatusItem({ icon: Icon, label }: { icon: any, label: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Icon className="w-3 h-3 text-primary/70" />
+      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">{label}</span>
+    </div>
+  );
+}
+
+function ToolButton({ active, onClick, icon: Icon, label, disabled }: any) {
   return (
     <Button
-      type="button"
+      variant={active ? "default" : "ghost"}
       size="sm"
-      variant={active ? "default" : "secondary"}
       onClick={onClick}
       disabled={disabled}
+      className={cn("h-9 gap-2 px-3 rounded-xl transition-all", active && "shadow-lg scale-105")}
       title={label}
-      aria-label={label}
-      className="h-9 min-w-9 gap-1.5 px-2.5"
     >
-      <Icon className="h-4 w-4" />
-      <span className="hidden xl:inline text-xs">{label}</span>
+      <Icon className="w-4 h-4" />
+      <span className="hidden lg:inline text-xs font-semibold">{label}</span>
     </Button>
   );
 }
