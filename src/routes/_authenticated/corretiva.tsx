@@ -731,12 +731,23 @@ function CorretivaPage() {
   );
 }
 
-function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => void; onUpdate: (p: Partial<OsCacheRow>) => void }) {
+function OSDetailView({ 
+  os, 
+  onBack, 
+  onUpdate,
+  allowedMenus = []
+}: { 
+  os: OsCacheRow; 
+  onBack: () => void; 
+  onUpdate: (p: Partial<OsCacheRow>) => void;
+  allowedMenus?: string[];
+}) {
   const { isAdmin } = useIsAdmin();
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [userLogin, setUserLogin] = useState<string>("");
   const isDone = os.status === "concluida";
+  const canFinishNoPhoto = isAdmin || allowedMenus?.includes("corretiva-finalizar-sem-foto");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
