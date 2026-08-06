@@ -174,8 +174,9 @@ function CorretivaPage() {
   useEffect(() => {
     carregarLiberacoes();
     // Carregar permissões de menu (inclusive finalizar sem foto)
-    const { getMyAllowedMenus } = await import("@/lib/users.functions");
-    getMyAllowedMenus().then(res => setAllowedMenus(res.allowed || [])).catch(() => {});
+    import("@/lib/users.functions").then(({ getMyAllowedMenus }) => {
+      getMyAllowedMenus().then(res => setAllowedMenus(res.allowed || [])).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
