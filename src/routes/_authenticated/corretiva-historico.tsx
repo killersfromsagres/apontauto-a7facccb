@@ -86,7 +86,7 @@ function HistoricoPage() {
   const [open, setOpen] = useState<OsRow | null>(null);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [equipes, setEquipes] = useState<string[]>([]);
-  const [aba, setAba] = useState<"corretiva" | "preventiva">("corretiva");
+  const [aba, setAba] = useState<"corretiva" | "backorder">("corretiva");
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -122,7 +122,7 @@ function HistoricoPage() {
     const q = search.trim().toLowerCase();
     return rows.filter((o) => {
       const prev = isPreventiva(o.tipo);
-      if (aba === "preventiva" ? !prev : prev) return false;
+      if (aba === "backorder" ? !prev : prev) return false;
       if (!matchEquipe(o.equipe, equipe)) return false;
       if (!q) return true;
       return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.predio, o.local]
@@ -133,14 +133,14 @@ function HistoricoPage() {
 
   return (
     <PageShell
-      title={aba === "preventiva" ? "Histórico de OS — Preventiva" : "Histórico de OS — Programação"}
+      title={aba === "backorder" ? "Histórico de OS — Backorders" : "Histórico de OS — Programação"}
       description="Ordens de serviço concluídas e canceladas."
     >
       <GlassCard className="p-4">
         <div className="mb-3 inline-flex rounded-xl border border-border/50 bg-muted/40 p-1">
           {([
             { k: "corretiva", label: "Corretivas" },
-            { k: "preventiva", label: "Preventivas" },
+            { k: "backorder", label: "Backorders" },
           ] as const).map((t) => (
             <button
               key={t.k}
@@ -377,11 +377,43 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           <DialogTitle className="text-base sm:text-lg">OS {os?.numero_os}</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-muted/30 border border-border/50 text-[13px]">
-          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Prédio</span> {os?.predio || "—"}</div>
-          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Andar</span> {os?.andar || "—"}</div>
-          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Local</span> {os?.local || "—"}</div>
-          <div><span className="block text-[10px] uppercase text-muted-foreground font-semibold">Solicitante</span> {os?.solicitante || "—"}</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50 text-[13px] shadow-sm">
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Prédio
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5">{os?.predio || "—"}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Andar
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5">{os?.andar || "—"}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Local
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5">{os?.local || "—"}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Ativo
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5">{os?.ativo || "—"}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Equipamento
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5">{os?.equipamento || "—"}</div>
+          </div>
+          <div className="space-y-1">
+            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
+              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Solicitante
+            </span>
+            <div className="font-semibold text-foreground/90 pl-2.5 truncate" title={os?.solicitante || ""}>{os?.solicitante || "—"}</div>
+          </div>
         </div>
 
         {os?.nome_os && (
