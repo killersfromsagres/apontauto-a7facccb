@@ -453,30 +453,14 @@ function CorretivaPage() {
                     variant="outline"
                     className="h-11 flex-1 gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 sm:h-9 sm:flex-none"
                   >
-                    <Printer className="h-4 w-4" />
-                    <span className="hidden sm:inline">Imprimir</span>
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span className="hidden sm:inline">Exportar Excel</span>
                     <ChevronDown className="h-3 w-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Formato PDF (Impressão)</div>
-                  <DropdownMenuItem 
-                    className="gap-2 cursor-pointer"
-                    onClick={() => generateProgramacaoPDF(filtered, equipe)}
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>PDF da Equipe Atual</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    className="gap-2 cursor-pointer"
-                    onClick={() => generateProgramacaoPDF(osList.filter(o => (aba === 'preventiva' ? (o.tipo === 'Backorder' || isPreventiva(o.tipo)) : (o.tipo === 'Corretiva'))), "Todas as Equipes")}
-                  >
-                    <Zap className="h-4 w-4" />
-                    <span>PDF Todas as Equipes</span>
-                  </DropdownMenuItem>
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Exportação para Programação</div>
                   
-                  <div className="my-1 border-t border-white/10" />
-                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Formato Excel (Planilha)</div>
                   <DropdownMenuItem 
                     className="gap-2 cursor-pointer"
                     onClick={() => generateProgramacaoExcel(filtered, equipe, aba)}
