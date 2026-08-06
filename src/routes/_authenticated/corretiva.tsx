@@ -93,6 +93,7 @@ import {
   setLiberacao,
 } from "@/lib/corretiva/semanas";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
+import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -457,7 +458,8 @@ function CorretivaPage() {
                     <ChevronDown className="h-3 w-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-64">
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Formato PDF (Impressão)</div>
                   <DropdownMenuItem 
                     className="gap-2 cursor-pointer"
                     onClick={() => generateProgramacaoPDF(filtered, equipe)}
@@ -471,6 +473,23 @@ function CorretivaPage() {
                   >
                     <Zap className="h-4 w-4" />
                     <span>PDF Todas as Equipes</span>
+                  </DropdownMenuItem>
+                  
+                  <div className="my-1 border-t border-white/10" />
+                  <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Formato Excel (Planilha)</div>
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer"
+                    onClick={() => generateProgramacaoExcel(filtered, equipe, aba)}
+                  >
+                    <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
+                    <span>Excel da Equipe Atual</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer"
+                    onClick={() => generateProgramacaoExcel(osList.filter(o => (aba === 'preventiva' ? (o.tipo === 'Backorder' || isPreventiva(o.tipo)) : (o.tipo === 'Corretiva'))), "Todas as Equipes", aba)}
+                  >
+                    <Zap className="h-4 w-4 text-emerald-500" />
+                    <span>Excel Todas as Equipes</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
