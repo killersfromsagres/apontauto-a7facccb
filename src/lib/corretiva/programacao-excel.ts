@@ -64,7 +64,7 @@ function headerRow(ws: any, rowIdx: number, headers: string[]) {
 function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
   for (let r = firstRow; r <= lastRow; r++) {
     const row = ws.getRow(r);
-    row.height = 20;
+    row.height = 32; // Mais espaçoso
     for (let c = 1; c <= cols; c++) {
       const cell = row.getCell(c);
       cell.font = { name: FONT, size: 10, color: { argb: C.ink } };
@@ -73,7 +73,7 @@ function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
       }
       cell.border = { 
-        bottom: { style: "hair", color: { argb: C.slate200 } },
+        bottom: { style: "thin", color: { argb: C.slate200 } }, // Borda mais visível
         right: { style: "thin", color: { argb: C.slate200 } },
         left: { style: "thin", color: { argb: C.slate200 } },
       };
