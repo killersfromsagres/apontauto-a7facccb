@@ -157,6 +157,7 @@ function CorretivaPage() {
   /** "atual" = semana 32 em diante · "todas" · "AAAA-SS" para uma semana específica. */
   const [semanaFiltro, setSemanaFiltro] = useState<string>("todas");
   const [liberadas, setLiberadas] = useState<Record<string, boolean>>({});
+  const [allowedMenus, setAllowedMenus] = useState<string[]>([]);
   const [savingSemana, setSavingSemana] = useState<string | null>(null);
 
   const carregarLiberacoes = async () => {
