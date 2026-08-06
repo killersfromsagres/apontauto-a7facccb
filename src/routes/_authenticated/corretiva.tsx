@@ -735,7 +735,18 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
   const { isAdmin } = useIsAdmin();
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [userLogin, setUserLogin] = useState<string>("");
   const isDone = os.status === "concluida";
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const login = data.user?.user_metadata?.login || "";
+      setUserLogin(login);
+    });
+  }, []);
+
+  const isEncarregado = userLogin === "encarregados";
+
 
   useEffect(() => {
     draftGet(os.id).then((d) => setDraft(d || { osId: os.id, fotos: [], pecas: [], problemas: [], updatedAt: Date.now() }));
