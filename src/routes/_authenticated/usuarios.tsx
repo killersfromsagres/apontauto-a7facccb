@@ -66,6 +66,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   corretiva: "Programação — Campo",
   "corretiva-pecas-status": "Programação — Status de Peças",
   "corretiva-historico": "Programação — Histórico",
+  "corretiva-finalizar-sem-foto": "Permitir Finalizar OS sem Foto",
   "assets-fill": "Localização de Ativos",
   "assets-catalog": "Base de Ativos",
   "assets-unmatched": "Ativos não encontrados",

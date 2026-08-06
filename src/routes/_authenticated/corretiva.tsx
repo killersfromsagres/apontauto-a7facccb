@@ -157,6 +157,7 @@ function CorretivaPage() {
   /** "atual" = semana 32 em diante · "todas" · "AAAA-SS" para uma semana específica. */
   const [semanaFiltro, setSemanaFiltro] = useState<string>("todas");
   const [liberadas, setLiberadas] = useState<Record<string, boolean>>({});
+  const [canFinishNoPhoto, setCanFinishNoPhoto] = useState(false);
   const [savingSemana, setSavingSemana] = useState<string | null>(null);
 
   const carregarLiberacoes = async () => {
@@ -934,43 +935,77 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
               )}
             </div>
 
-            {isAdmin && (
+            {(isAdmin || (os.equipe && liberadas[`can_finish_no_photo_${os.id}`])) && (
               <div className="mt-4 flex flex-wrap gap-2 rounded-xl border border-primary/20 bg-primary/5 p-3">
                 <div className="w-full mb-1">
                   <p className="text-[10px] font-bold uppercase tracking-tight text-primary/70">
-                    Ações Administrativas
+                    Ações {isAdmin ? "Administrativas" : "Especiais"}
                   </p>
                 </div>
                 
-                <Select
-                  value={os.equipe || ""}
-                  onValueChange={async (novaEquipe) => {
-                    if (!navigator.onLine) return toast.error("Offline: Não é possível reclassificar agora.");
-                    try {
-                      const { error } = await supabase
-                        .from("corretiva_os")
-                        .update({ equipe: novaEquipe })
-                        .eq("id", os.id);
-                      if (error) throw error;
-                      onUpdate({ equipe: novaEquipe });
-                      toast.success(`OS reclassificada para ${novaEquipe}`);
-                    } catch {
-                      toast.error("Erro ao reclassificar");
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
-                    <div className="flex items-center gap-2">
-                      <Settings2 className="h-3.5 w-3.5 text-primary" />
-                      <span className="text-xs">Reclassificar Equipe</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["Hidráulica", "Elétrica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
-                      <SelectItem key={e} value={e}>{e}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isAdmin && (
+                  <>
+                    <Select
+                      value={os.equipe || ""}
+                      onValueChange={async (novaEquipe) => {
+                        if (!navigator.onLine) return toast.error("Offline: Não é possível reclassificar agora.");
+                        try {
+                          const { error } = await supabase
+                            .from("corretiva_os")
+                            .update({ equipe: novaEquipe })
+                            .eq("id", os.id);
+                          if (error) throw error;
+                          onUpdate({ equipe: novaEquipe });
+                          toast.success(`OS reclassificada para ${novaEquipe}`);
+                        } catch {
+                          toast.error("Erro ao reclassificar");
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
+                        <div className="flex items-center gap-2">
+                          <Settings2 className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-xs">Reclassificar Equipe</span>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["Hidráulica", "Elétrica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                          <SelectItem key={e} value={e}>{e}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "h-10 flex-1 gap-2 text-xs transition-all duration-300",
+                        os.material_status === "solicitado"
+                          ? "bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                          : "border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30"
+                      )}
+                      onClick={async () => {
+                        if (!navigator.onLine) return toast.error("Offline: Não é possível alterar agora.");
+                        const novoStatus = os.material_status === "solicitado" ? null : "solicitado";
+                        try {
+                          const { error } = await supabase
+                            .from("corretiva_os")
+                            .update({ 
+                              material_status: novoStatus 
+                            } as any)
+                            .eq("id", os.id);
+                          if (error) throw error;
+                          onUpdate({ material_status: novoStatus });
+                          toast.success(novoStatus ? "Material marcado como solicitado" : "Etiqueta de material removida");
+                        } catch {
+                          toast.error("Erro ao atualizar status de material");
+                        }
+                      }}
+                    >
+                      <Package className={cn("h-3.5 w-3.5", os.material_status === "solicitado" ? "animate-bounce" : "")} />
+                      {os.material_status === "solicitado" ? "Remover Material" : "Solicitar Material"}
+                    </Button>
+                  </>
+                )}
 
                 <Button
                   variant="outline"
@@ -983,12 +1018,12 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                         .update({ 
                           status: "concluida",
                           fim: new Date().toISOString(),
-                          assinatura_nome: "Finalizado pelo Admin (Sem foto)"
+                          assinatura_nome: isAdmin ? "Finalizado pelo Admin (Sem foto)" : "Finalizado (Permissão Especial - Sem foto)"
                         } as any)
                         .eq("id", os.id);
                       if (error) throw error;
                       onUpdate({ status: "concluida" });
-                      toast.success("OS finalizada administrativamente.");
+                      toast.success("OS finalizada com sucesso.");
                       onBack();
                     } catch {
                       toast.error("Erro ao finalizar OS");
@@ -997,36 +1032,6 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                 >
                   <Zap className="h-3.5 w-3.5 text-emerald-400" />
                   Finalizar sem foto
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "h-10 flex-1 gap-2 text-xs transition-all duration-300",
-                    os.material_status === "solicitado"
-                      ? "bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-                      : "border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30"
-                  )}
-                  onClick={async () => {
-                    if (!navigator.onLine) return toast.error("Offline: Não é possível alterar agora.");
-                    const novoStatus = os.material_status === "solicitado" ? null : "solicitado";
-                    try {
-                      const { error } = await supabase
-                        .from("corretiva_os")
-                        .update({ 
-                          material_status: novoStatus 
-                        } as any)
-                        .eq("id", os.id);
-                      if (error) throw error;
-                      onUpdate({ material_status: novoStatus });
-                      toast.success(novoStatus ? "Material marcado como solicitado" : "Etiqueta de material removida");
-                    } catch {
-                      toast.error("Erro ao atualizar status de material");
-                    }
-                  }}
-                >
-                  <Package className={cn("h-3.5 w-3.5", os.material_status === "solicitado" ? "animate-bounce" : "")} />
-                  {os.material_status === "solicitado" ? "Remover Material" : "Solicitar Material"}
                 </Button>
               </div>
             )}
