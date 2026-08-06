@@ -132,6 +132,7 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     row.values = [
       o.numero_os,
       o.equipe || "—",
+      o.nome_solicitante || "—",
       `${o.predio || ""} / ${o.andar || ""}`,
       o.local || "—",
       o.nome_os || "—",
@@ -142,11 +143,11 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
 
     // Status Styling
     if (slaText !== "No prazo") {
-      const slaCell = row.getCell(7);
+      const slaCell = row.getCell(9);
       slaCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.dangerFg } };
     }
     if (o.material_status === "solicitado") {
-      const matCell = row.getCell(8);
+      const matCell = row.getCell(10);
       matCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnFg } };
     }
   });
