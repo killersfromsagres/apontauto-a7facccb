@@ -157,20 +157,20 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
 
   // Totais no final
   const totalRow = lastRow + 2;
-  ws.mergeCells(totalRow, 1, totalRow, 4);
+  ws.mergeCells(totalRow, 1, totalRow, 5);
   const tl = ws.getCell(totalRow, 1);
   tl.value = "Resumo da Programação";
-  tl.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  tl.font = { name: FONT, size: 11, bold: true, color: { argb: C.white } };
   tl.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
-  tl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
+  tl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
   
-  ws.mergeCells(totalRow, 5, totalRow, headers.length);
-  const tr = ws.getCell(totalRow, 5);
+  ws.mergeCells(totalRow, 6, totalRow, headers.length);
+  const tr = ws.getCell(totalRow, 6);
   tr.value = `Total: ${osList.length} chamados em aberto`;
-  tr.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  tr.font = { name: FONT, size: 11, bold: true, color: { argb: C.white } };
   tr.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  tr.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
-  ws.getRow(totalRow).height = 22;
+  tr.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
+  ws.getRow(totalRow).height = 28;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
