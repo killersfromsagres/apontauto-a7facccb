@@ -93,10 +93,11 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
 
-  const headers = ["OS", "Equipe", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material"];
+  const headers = ["OS", "Equipe", "Solicitante", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material"];
   ws.columns = [
     { width: 12 }, // OS
     { width: 18 }, // Equipe
+    { width: 25 }, // Solicitante
     { width: 22 }, // Prédio / Andar
     { width: 22 }, // Local
     { width: 45 }, // Descrição
