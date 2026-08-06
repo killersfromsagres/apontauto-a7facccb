@@ -798,8 +798,7 @@ function OSDetailView({
   };
 
   const handleFinalize = async () => {
-    const canFinalizeWithoutPhoto = isAdmin || isEncarregado;
-    if (!canFinalizeWithoutPhoto && !draft.fotos?.length) {
+    if (!canFinishNoPhoto && !draft.fotos?.length) {
       toast.error("Anexe pelo menos uma foto como evidência.");
       return;
     }
