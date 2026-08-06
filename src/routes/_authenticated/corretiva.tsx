@@ -22,6 +22,8 @@ import {
   Settings2,
   Zap,
   ScrollText,
+  Printer,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
