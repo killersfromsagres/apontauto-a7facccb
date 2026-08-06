@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { toast } from "sonner";
 import {
@@ -24,6 +24,7 @@ import {
   ScrollText,
   Printer,
   ChevronDown,
+  ImagePlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
@@ -734,7 +735,18 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
   const { isAdmin } = useIsAdmin();
   const [draft, setDraft] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [userLogin, setUserLogin] = useState<string>("");
   const isDone = os.status === "concluida";
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const login = data.user?.user_metadata?.login || "";
+      setUserLogin(login);
+    });
+  }, []);
+
+  const isEncarregado = userLogin === "encarregados";
+
 
   useEffect(() => {
     draftGet(os.id).then((d) => setDraft(d || { osId: os.id, fotos: [], pecas: [], problemas: [], updatedAt: Date.now() }));
@@ -755,9 +767,10 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
     await draftPut(d);
   };
 
-  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>, fromGallery = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const toastId = toast.loading(fromGallery ? "Processando imagem da galeria..." : "Processando foto...");
     try {
       const compressed = await compressImage(file);
       const blobKey = `photo-${uuid()}`;
@@ -765,14 +778,15 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
       const photo = { id: uuid(), blobKey };
       const newDraft = { ...draft, fotos: [...(draft.fotos || []), photo] };
       await saveDraft(newDraft);
-      toast.success("Foto capturada!");
+      toast.success(fromGallery ? "Imagem da galeria adicionada!" : "Foto capturada!", { id: toastId });
     } catch (err) {
-      toast.error("Erro ao processar imagem");
+      toast.error("Erro ao processar imagem", { id: toastId });
     }
   };
 
   const handleFinalize = async () => {
-    if (!draft.fotos?.length) {
+    const canFinalizeWithoutPhoto = isAdmin || isEncarregado;
+    if (!canFinalizeWithoutPhoto && !draft.fotos?.length) {
       toast.error("Anexe pelo menos uma foto como evidência.");
       return;
     }
@@ -1022,9 +1036,17 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2"><Camera className="h-5 w-5 text-primary" /> Evidências Fotográficas</h2>
               {!isDone && (
-                <div className="relative">
-                  <Input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={handleAddPhoto} />
-                  <Button size="sm" className="gap-2 pointer-events-none"><Camera className="h-4 w-4" /> Tirar Foto</Button>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleAddPhoto(e, false)} />
+                    <Button size="sm" variant="outline" className="gap-2 pointer-events-none h-9"><Camera className="h-4 w-4" /> Câmera</Button>
+                  </div>
+                  {isEncarregado && (
+                    <div className="relative">
+                      <Input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleAddPhoto(e, true)} />
+                      <Button size="sm" variant="secondary" className="gap-2 pointer-events-none h-9 border-primary/20 bg-primary/10 text-primary"><ImagePlus className="h-4 w-4" /> Galeria</Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
