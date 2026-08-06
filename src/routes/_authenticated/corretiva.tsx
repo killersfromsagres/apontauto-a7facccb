@@ -1041,12 +1041,10 @@ function OSDetailView({ os, onBack, onUpdate }: { os: OsCacheRow; onBack: () => 
                     <Input type="file" accept="image/*" capture="environment" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleAddPhoto(e, false)} />
                     <Button size="sm" variant="outline" className="gap-2 pointer-events-none h-9"><Camera className="h-4 w-4" /> Câmera</Button>
                   </div>
-                  {isEncarregado && (
-                    <div className="relative">
-                      <Input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleAddPhoto(e, true)} />
-                      <Button size="sm" variant="secondary" className="gap-2 pointer-events-none h-9 border-primary/20 bg-primary/10 text-primary"><ImagePlus className="h-4 w-4" /> Galeria</Button>
-                    </div>
-                  )}
+                  <div className="relative">
+                    <Input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => handleAddPhoto(e, true)} />
+                    <Button size="sm" variant="secondary" className="gap-2 pointer-events-none h-9 border-primary/20 bg-primary/10 text-primary"><ImagePlus className="h-4 w-4" /> Galeria</Button>
+                  </div>
                 </div>
               )}
             </div>
