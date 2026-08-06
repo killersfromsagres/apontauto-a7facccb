@@ -132,7 +132,7 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     row.values = [
       o.numero_os,
       o.equipe || "—",
-      o.nome_solicitante || "—",
+      o.solicitante || "—",
       `${o.predio || ""} / ${o.andar || ""}`,
       o.local || "—",
       o.nome_os || "—",
