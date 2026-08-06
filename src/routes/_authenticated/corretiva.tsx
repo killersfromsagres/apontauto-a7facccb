@@ -726,6 +726,7 @@ function CorretivaPage() {
           os={selected}
           onBack={() => setSelectedId(null)}
           onUpdate={(patch) => patchLocal(selected.id, patch)}
+          allowedMenus={allowedMenus}
         />
       )}
     </PageShell>
