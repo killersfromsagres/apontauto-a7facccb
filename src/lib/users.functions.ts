@@ -472,7 +472,7 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
     const supabaseAdmin = await createUsersAdminClient();
 
     const login = "encarregados";
-    const password = "20252026";
+    const password = "15995196";
     const email = loginToEmail(login);
     // Log for debugging (will be visible in server logs if monitored)
     console.log(`[Provision] Provisioning user: ${login} (${email})`);

@@ -160,7 +160,7 @@ function ProvisionEncarregadosButton() {
       <div className="space-y-1">
         <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Acesso Operacional Especial</h3>
         <p className="text-xs text-muted-foreground max-w-md">
-          Provisiona o login compartilhado <strong>encarregados</strong> (senha: 20252026) com acesso de monitoramento aos módulos de PCM, OS e Frota.
+          Provisiona o login compartilhado <strong>encarregados</strong> (senha: 15995196) com acesso de monitoramento aos módulos de PCM, OS e Frota.
         </p>
       </div>
       <Button 
