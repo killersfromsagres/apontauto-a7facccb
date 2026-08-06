@@ -64,7 +64,7 @@ function headerRow(ws: any, rowIdx: number, headers: string[]) {
 function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
   for (let r = firstRow; r <= lastRow; r++) {
     const row = ws.getRow(r);
-    row.height = 20;
+    row.height = 32; // Mais espaçoso
     for (let c = 1; c <= cols; c++) {
       const cell = row.getCell(c);
       cell.font = { name: FONT, size: 10, color: { argb: C.ink } };
@@ -73,7 +73,7 @@ function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
       }
       cell.border = { 
-        bottom: { style: "hair", color: { argb: C.slate200 } },
+        bottom: { style: "thin", color: { argb: C.slate200 } }, // Borda mais visível
         right: { style: "thin", color: { argb: C.slate200 } },
         left: { style: "thin", color: { argb: C.slate200 } },
       };
@@ -93,10 +93,11 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
 
-  const headers = ["OS", "Equipe", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material"];
+  const headers = ["OS", "Equipe", "Solicitante", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material"];
   ws.columns = [
     { width: 12 }, // OS
     { width: 18 }, // Equipe
+    { width: 25 }, // Solicitante
     { width: 22 }, // Prédio / Andar
     { width: 22 }, // Local
     { width: 45 }, // Descrição
@@ -131,6 +132,7 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     row.values = [
       o.numero_os,
       o.equipe || "—",
+      o.solicitante || "—",
       `${o.predio || ""} / ${o.andar || ""}`,
       o.local || "—",
       o.nome_os || "—",
@@ -141,11 +143,11 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
 
     // Status Styling
     if (slaText !== "No prazo") {
-      const slaCell = row.getCell(7);
+      const slaCell = row.getCell(9);
       slaCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.dangerFg } };
     }
     if (o.material_status === "solicitado") {
-      const matCell = row.getCell(8);
+      const matCell = row.getCell(10);
       matCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnFg } };
     }
   });
@@ -155,20 +157,20 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
 
   // Totais no final
   const totalRow = lastRow + 2;
-  ws.mergeCells(totalRow, 1, totalRow, 4);
+  ws.mergeCells(totalRow, 1, totalRow, 5);
   const tl = ws.getCell(totalRow, 1);
   tl.value = "Resumo da Programação";
-  tl.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  tl.font = { name: FONT, size: 11, bold: true, color: { argb: C.white } };
   tl.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
-  tl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
+  tl.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
   
-  ws.mergeCells(totalRow, 5, totalRow, headers.length);
-  const tr = ws.getCell(totalRow, 5);
+  ws.mergeCells(totalRow, 6, totalRow, headers.length);
+  const tr = ws.getCell(totalRow, 6);
   tr.value = `Total: ${osList.length} chamados em aberto`;
-  tr.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  tr.font = { name: FONT, size: 11, bold: true, color: { argb: C.white } };
   tr.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  tr.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
-  ws.getRow(totalRow).height = 22;
+  tr.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
+  ws.getRow(totalRow).height = 28;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
