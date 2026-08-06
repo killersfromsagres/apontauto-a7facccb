@@ -520,10 +520,13 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
         email_confirm: true,
         ban_duration: "none",
         user_metadata: metadata,
-      } as any);
-      // Force update of password even if metadata didn't change to ensure 20252026 is active
-      console.log(`[Provision] Updating password for existing user: ${user.id}`);
+      });
       if (error) throw new Error(error.message);
+      
+      // Forçar atualização do email_confirmed_at se necessário e limpar qualquer banimento
+      await supabaseAdmin.auth.admin.updateUserById(user.id, {
+        email_confirm: true,
+      });
     }
 
     const { error: profErr } = await supabaseAdmin
