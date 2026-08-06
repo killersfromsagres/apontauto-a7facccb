@@ -22,6 +22,8 @@ import {
   Settings2,
   Zap,
   ScrollText,
+  Printer,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearOsTable } from "@/lib/os-management.functions";
@@ -90,6 +92,13 @@ import {
   semanaKey,
   setLiberacao,
 } from "@/lib/corretiva/semanas";
+import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Route = createFileRoute("/_authenticated/corretiva")({
   component: CorretivaPage,
@@ -435,6 +444,37 @@ function CorretivaPage() {
           )}
 
           <div className="flex flex-1 items-center gap-2 sm:flex-none">
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-11 flex-1 gap-2 border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 sm:h-9 sm:flex-none"
+                  >
+                    <Printer className="h-4 w-4" />
+                    <span className="hidden sm:inline">Imprimir</span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer"
+                    onClick={() => generateProgramacaoPDF(filtered, equipe)}
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span>PDF da Equipe Atual</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    className="gap-2 cursor-pointer"
+                    onClick={() => generateProgramacaoPDF(osList.filter(o => (aba === 'preventiva' ? (o.tipo === 'Backorder' || isPreventiva(o.tipo)) : (o.tipo === 'Corretiva'))), "Todas as Equipes")}
+                  >
+                    <Zap className="h-4 w-4" />
+                    <span>PDF Todas as Equipes</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               size="sm"
               variant="outline"
