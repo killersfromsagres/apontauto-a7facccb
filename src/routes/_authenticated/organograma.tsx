@@ -23,7 +23,8 @@ function OrganogramaPage() {
   });
 
   const isAdmin = session?.user?.user_metadata?.role === 'admin' || 
-                  session?.user?.email === 'admin@admin.com';
+                  session?.user?.email === 'admin@admin.com' ||
+                  session?.user?.user_metadata?.permissions?.includes('admin');
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
