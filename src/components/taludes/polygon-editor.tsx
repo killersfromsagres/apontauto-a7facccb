@@ -303,7 +303,7 @@ export function PolygonEditor({
         {/* Main Editor */}
         <div 
           ref={containerRef}
-          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none"
+          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none w-full h-full"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
