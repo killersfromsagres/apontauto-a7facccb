@@ -20,7 +20,7 @@ interface Member {
   display_order: number;
 }
 
-export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
+export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin: boolean, isExporting?: boolean }) {
   const queryClient = useQueryClient();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -159,13 +159,13 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="w-full overflow-x-auto pb-20 custom-scrollbar">
-      <div className="flex flex-col items-center gap-16 min-w-[1100px] p-12 relative">
+      <div className={`flex flex-col items-center gap-16 min-w-[1100px] p-12 relative transition-colors duration-300 ${isExporting ? 'bg-white' : ''}`}>
         
         {levels.map((level) => (
           <div key={level} className="flex flex-wrap justify-center gap-12 relative w-full">
             {/* Linhas de conexão vertical entre níveis */}
             {level < levels[levels.length - 1] && (
-               <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-px h-16 bg-white/10 -z-10" />
+               <div className={`absolute -bottom-16 left-1/2 -translate-x-1/2 w-px h-16 transition-colors ${isExporting ? 'bg-slate-200' : 'bg-white/10'} -z-10`} />
             )}
             
             {members.filter(m => m.level === level).map((member) => (
@@ -180,7 +180,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                   className="relative p-1.5 rounded-full border-[3px] shadow-2xl mb-5 transition-all duration-300 hover:scale-110 z-10"
                   style={{ borderColor: member.color, boxShadow: `0 0 20px ${member.color}33` }}
                 >
-                  <div className="w-28 h-28 rounded-full overflow-hidden bg-white/5 backdrop-blur-md relative group cursor-pointer"
+                  <div className={`w-28 h-28 rounded-full overflow-hidden transition-all duration-300 relative group cursor-pointer ${isExporting ? 'bg-slate-100 border border-slate-200' : 'bg-white/5 backdrop-blur-md'}`}
                     onClick={() => {
                       if (isAdmin) {
                         setEditingMember(member);
@@ -204,7 +204,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                     </div>
                   </div>
                   
-                  {isAdmin && (
+                  {isAdmin && !isExporting && (
                     <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20" title="Adicionar/Alterar Foto">
                       <Camera size={14} className="text-white" />
                       <input 
@@ -224,7 +224,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                 {/* Info Card */}
                 <div className="text-center group w-full relative">
                   {/* Vertical Move Controls (Up/Down) */}
-                  {isAdmin && (
+                  {isAdmin && !isExporting && (
                     <div className="absolute -top-36 left-1/2 -translate-x-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
                       <button 
                         onClick={() => handleMove(member, 'up')}
@@ -244,7 +244,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                   )}
 
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    {isAdmin && (
+                    {isAdmin && !isExporting && (
                       <button 
                         onClick={() => handleMove(member, 'left')}
                         className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
@@ -253,8 +253,8 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                         <ChevronLeft size={16} className="text-indigo-400" />
                       </button>
                     )}
-                    <h3 className="font-black text-white text-base tracking-tight uppercase truncate max-w-[150px]">{member.name}</h3>
-                    {isAdmin && (
+                    <h3 className={`font-black text-base tracking-tight uppercase truncate max-w-[150px] transition-colors ${isExporting ? 'text-slate-900' : 'text-white'}`}>{member.name}</h3>
+                    {isAdmin && !isExporting && (
                       <button 
                         onClick={() => handleMove(member, 'right')}
                         className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
@@ -264,7 +264,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] leading-tight max-w-[180px] mx-auto">
+                  <p className={`text-[10px] font-bold uppercase tracking-[0.2em] leading-tight max-w-[180px] mx-auto transition-colors ${isExporting ? 'text-slate-500' : 'text-white/50'}`}>
                     {member.role}
                   </p>
                   <div className="mt-3 w-8 h-0.5 mx-auto rounded-full opacity-30" style={{ backgroundColor: member.color }} />

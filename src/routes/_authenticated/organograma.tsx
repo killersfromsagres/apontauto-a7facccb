@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useIsAdmin } from '@/hooks/use-is-admin';
 import html2canvas from 'html2canvas';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export const Route = createFileRoute('/_authenticated/organograma')({
   component: OrganogramaPage,
@@ -19,16 +19,22 @@ function OrganogramaPage() {
   const queryClient = useQueryClient();
   const { isAdmin, loading: checkingAdmin } = useIsAdmin();
   const chartRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   const downloadImage = async () => {
     if (!chartRef.current) return;
     
+    setIsExporting(true);
+    // Pequeno delay para garantir que o estado de exportação foi aplicado (muda logos para escuros)
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     try {
       const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: '#0F172A', // Match dashboard background
-        scale: 2, // Higher quality
+        backgroundColor: '#FFFFFF', // Fundo branco na imagem como solicitado
+        scale: 2,
         logging: false,
-        useCORS: true, // Needed for remote photos
+        useCORS: true,
+        allowTaint: true,
       });
       
       const link = document.createElement('a');
@@ -39,6 +45,8 @@ function OrganogramaPage() {
     } catch (error) {
       console.error(error);
       toast.error("Erro ao gerar imagem do organograma.");
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -80,56 +88,61 @@ function OrganogramaPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-[1200px] rounded-[2.5rem] bg-white/5 backdrop-blur-md border border-white/10 p-4 sm:p-8 shadow-2xl overflow-hidden relative"
-          style={{
+          className={`w-full max-w-[1200px] rounded-[2.5rem] ${isExporting ? 'bg-white' : 'bg-white/5 backdrop-blur-md border border-white/10'} p-4 sm:p-8 shadow-2xl overflow-hidden relative`}
+          style={isExporting ? {} : {
             background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.03), transparent)'
           }}
         >
-          <div ref={chartRef} className="p-4 sm:p-8">
+          <div 
+            ref={chartRef} 
+            className={`p-4 sm:p-8 transition-colors duration-300 ${isExporting ? 'bg-white' : ''}`}
+          >
             <div className="mb-12 flex flex-col items-center relative">
               {/* Logos Section */}
               <div className="flex items-center justify-between w-full mb-8 px-4 sm:px-12">
-                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex items-center justify-center overflow-hidden">
+                <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
                   <img 
-                    src="https://www.gpssa.com.br/wp-content/uploads/2021/04/logo-gps.png" 
+                    src="/logos/gps-logo.png" 
                     alt="Grupo GPS" 
-                    className="h-10 object-contain filter brightness-0 invert"
-                    crossOrigin="anonymous"
+                    className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`}
                   />
                 </div>
-                <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex items-center justify-center overflow-hidden">
+                <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
                   <img 
-                    src="https://upload.wikimedia.org/wikipedia/en/thumb/5/52/Sherwin-Williams_logo.svg/1200px-Sherwin-Williams_logo.svg.png" 
+                    src="/logos/sw-logo.png" 
                     alt="Sherwin Williams" 
-                    className="h-10 object-contain filter brightness-0 invert" 
-                    crossOrigin="anonymous"
+                    className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`} 
                   />
                 </div>
               </div>
 
-              <h2 className="text-4xl font-black text-white mb-3 tracking-tighter uppercase">Organograma Demarchi</h2>
+              <h2 className={`text-4xl font-black mb-3 tracking-tighter uppercase transition-colors ${isExporting ? 'text-slate-900' : 'text-white'}`}>
+                Organograma Demarchi
+              </h2>
               <div className="w-24 h-1.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full mb-6" />
             </div>
 
-            <OrganizationalChart isAdmin={isAdmin} />
+            <OrganizationalChart isAdmin={isAdmin} isExporting={isExporting} />
           </div>
 
-          <div className="flex items-center justify-center gap-4 mt-8 pb-4">
-            {isAdmin && (
+          {!isExporting && (
+            <div className="flex items-center justify-center gap-4 mt-8 pb-4">
+              {isAdmin && (
+                <Button 
+                  onClick={() => addMemberMutation.mutate()}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/10"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+                </Button>
+              )}
               <Button 
-                onClick={() => addMemberMutation.mutate()}
-                className="bg-white/10 hover:bg-white/20 text-white border-white/10"
+                onClick={downloadImage}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg shadow-indigo-500/20"
               >
-                <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+                <Download className="mr-2 h-4 w-4" /> Baixar PNG
               </Button>
-            )}
-            <Button 
-              onClick={downloadImage}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg shadow-indigo-500/20"
-            >
-              <Download className="mr-2 h-4 w-4" /> Baixar PNG
-            </Button>
-          </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </PageShell>
