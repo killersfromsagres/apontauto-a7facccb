@@ -138,40 +138,61 @@ export function PolygonEditor({
   }, [polygons]);
 
   // Transform coordinates: Client (screen) -> Percentage (0-100)
-  // This is the core of "Precision Architecture V2"
+  // Refined for absolute precision by using the viewport container as reference
+  // and manually applying the scale and offset calculations to avoid browser transform drift.
   const toPercent = useCallback((clientX: number, clientY: number): Point => {
-    const stage = stageRef.current;
-    if (!stage) return { x: 0, y: 0 };
+    const vp = viewportRef.current;
+    if (!vp) return { x: 0, y: 0 };
     
-    // We use the raw image container's bounding box for mapping
-    const rect = stage.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
+    const vpRect = vp.getBoundingClientRect();
     
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
+    // 1. Calculate relative coordinates in the viewport
+    const rx = clientX - vpRect.left;
+    const ry = clientY - vpRect.top;
+    
+    // 2. Subtract the pan offset
+    const ox = rx - offset.x;
+    const oy = ry - offset.y;
+    
+    // 3. Divide by zoom to get position in original unscaled space
+    const sx = ox / zoom;
+    const sy = oy / zoom;
+    
+    // 4. Map to percentage based on intended image dimensions
+    const x = (sx / vpRect.width) * 100;
+    const y = (sy / vpRect.height) * 100;
     
     return clampPoint({ x, y });
-  }, []);
+  }, [offset, zoom]);
 
-  // Transform coordinates: Percentage (0-100) -> Screen Pixels
+  // Transform coordinates: Percentage (0-100) -> Screen Pixels relative to Viewport
   const toScreen = useCallback((p: Point) => {
-    const stage = stageRef.current;
-    if (!stage) return { left: 0, top: 0 };
-    const rect = stage.getBoundingClientRect();
+    const vp = viewportRef.current;
+    if (!vp) return { left: 0, top: 0 };
+    const vpRect = vp.getBoundingClientRect();
+    
+    // Inverse of toPercent logic
+    const sx = (p.x / 100) * vpRect.width;
+    const sy = (p.y / 100) * vpRect.height;
+    
+    const ox = sx * zoom;
+    const oy = sy * zoom;
+    
     return {
-      left: rect.left + (p.x / 100) * rect.width,
-      top: rect.top + (p.y / 100) * rect.height
+      left: vpRect.left + offset.x + ox,
+      top: vpRect.top + offset.y + oy
     };
-  }, []);
+  }, [offset, zoom]);
 
   const screenDistance = useCallback((a: Point, b: Point) => {
-    const stage = stageRef.current;
-    if (!stage) return 1000;
-    const rect = stage.getBoundingClientRect();
-    const dx = (a.x - b.x) * (rect.width / 100);
-    const dy = (a.y - b.y) * (rect.height / 100);
+    const vp = viewportRef.current;
+    if (!vp) return 1000;
+    const rect = vp.getBoundingClientRect();
+    // Use viewport width as base for distance calculation
+    const dx = (a.x - b.x) * (rect.width / 100) * zoom;
+    const dy = (a.y - b.y) * (rect.height / 100) * zoom;
     return Math.hypot(dx, dy);
-  }, []);
+  }, [zoom]);
 
   const applySnap = useCallback((p: Point, excludeId?: string): Point => {
     if (grid) return snapToGrid(p, 1);

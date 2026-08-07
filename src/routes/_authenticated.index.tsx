@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Dashboard — ApontAuto Premium" },
       {
         name: "description",
-        content: "Execute esta instrucao no projeto: em organograma ao baixar imagem png está dando erro e as logos do grupo gps e sherwin williams está com erro também nao aparece nenhum imagem",
+        content: "Execute esta instrucao no projeto: preciso que em demarcação de taludes voce refaça todo o sistema e arrume o erro no qual a area que eu marco para iniciar a demarcação o traçado que iniciar sai fora do local que eu marquei inicialmente.",
       },
     ],
   }),
