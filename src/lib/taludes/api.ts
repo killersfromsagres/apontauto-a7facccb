@@ -105,14 +105,23 @@ export const createTaludeMap = createServerFn({ method: "POST" })
   .validator((data: { nome: string; image_url: string; image_width: number; image_height: number }) => data)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: userData } = await supabaseAdmin.auth.getUser(); // This is just for context if needed, but let's use a safe insert
+    
+    // We'll use a dynamic object to avoid TS issues with the generated types if they are strict
+    const insertData: any = {
+      ...data,
+      owner_id: (await supabaseAdmin.auth.getUser()).data.user?.id || null
+    };
+
     const { data: inserted, error } = await supabaseAdmin
       .from("talude_maps")
-      .insert(data)
+      .insert(insertData)
       .select()
       .single();
     
     if (error) throw error;
     return inserted as unknown as TaludeMap;
   });
+
 
 
