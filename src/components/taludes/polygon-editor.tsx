@@ -324,8 +324,8 @@ export function PolygonEditor({
               <img 
                 src={imageUrl} 
                 alt="Mapa de Taludes" 
-                className="block max-w-none pointer-events-none"
-                style={{ width: imageWidth, height: imageHeight, objectFit: 'fill' }}
+                className="block max-w-none pointer-events-none w-full h-full"
+                style={{ objectFit: 'contain' }}
               />
 
               {/* SVG Layer for Polygons */}
