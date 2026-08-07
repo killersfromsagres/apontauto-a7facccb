@@ -101,6 +101,9 @@ export function PolygonEditor({
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [calDraft, setCalDraft] = useState<Point[]>([]);
+  const [isLassoDrawing, setIsLassoDrawing] = useState(false);
+  const [lassoPath, setLassoPath] = useState<Point[]>([]);
+  const lastLassoPointRef = useRef<Point | null>(null);
   
   // High-precision state for active drawing/dragging
   const [working, setWorking] = useState<Record<string, Point[]>>({});
