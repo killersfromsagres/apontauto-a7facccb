@@ -358,7 +358,17 @@ export function PolygonEditor({
   const onPointerUp = (e: React.PointerEvent) => {
     const wasPanning = !!panRef.current;
     const wasDragging = !!dragRef.current;
+    const wasLassoing = isLassoDrawing;
     
+    if (isLassoDrawing) {
+      setIsLassoDrawing(false);
+      if (lassoPath.length >= 3) {
+        onCreate(lassoPath);
+      }
+      setLassoPath([]);
+      lastLassoPointRef.current = null;
+    }
+
     if (dragRef.current) {
       const { id, before } = dragRef.current;
       const final = working[id];
