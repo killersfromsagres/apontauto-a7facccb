@@ -299,6 +299,22 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "taludes-grp",
+    title: "Taludes e Clima",
+    icon: MapIcon,
+    items: [
+      {
+        key: "taludes",
+        title: "Demarcação de Taludes",
+        short: "Taludes",
+        url: "/taludes",
+        icon: MapIcon,
+        keywords: ["mapa", "polígono", "demarcação", "pt"],
+      },
+    ],
+  },
+  {
+    kind: "group",
     key: "frota-grp",
     title: "Frota e Abastecimento",
     icon: Fuel,

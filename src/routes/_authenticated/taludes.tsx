@@ -98,7 +98,7 @@ function TaludesPage() {
               <div className="pt-2 border-t border-white/5">
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   As demarcações são atualizadas em tempo real pela equipe técnica. 
-                  Em caso de chuva intensa (>10mm/h), as atividades nos taludes devem ser suspensas.
+                  Em caso de chuva intensa ({">"}10mm/h), as atividades nos taludes devem ser suspensas.
                 </p>
               </div>
             </div>
