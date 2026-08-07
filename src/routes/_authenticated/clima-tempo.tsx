@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
   Line,
   Bar,
   XAxis,
@@ -24,6 +23,8 @@ import {
   MapPin,
   Clock,
   HardHat,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
