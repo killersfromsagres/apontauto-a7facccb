@@ -566,8 +566,10 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
     opacity: m.opacidade ?? 0.32,
     visible: m.visivel !== false,
     locked: !!m.bloqueado,
-    label: String(m.numero),
+    label: m.nome || (m.codigo ? `${m.codigo}` : `Talude ${m.numero}`),
+    status: m.estado_operacional,
   }));
+
 
   const selected = marcacoes.find((m) => m.id === selectedId) ?? null;
   const calibrado = scaleOf(map) != null;
