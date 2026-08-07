@@ -82,9 +82,7 @@ export function PolygonEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EditorTool>("select");
   const [viewport, setViewport] = useState<ViewportState>(() => {
-    // Start with a reasonable zoom to fit the image
-    const initialZoom = 0.5;
-    return { zoom: initialZoom, offset: { x: 40, y: 40 } };
+    return { zoom: 0.1, offset: { x: 20, y: 20 } };
   });
   const [precisionMode, setPrecisionMode] = useState(false);
   
