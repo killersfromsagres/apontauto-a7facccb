@@ -135,7 +135,7 @@ function TaludesPage() {
                 </div>
               ) : currentMap ? (
                 <PolygonEditor 
-                  imageUrl={currentMap.image_url || taludesMapAsset.url}
+                  imageUrl={currentMap.image_url}
                   imageWidth={currentMap.image_width || 3828}
                   imageHeight={currentMap.image_height || 3163}
                   marcacoes={marcacoes || []}
@@ -143,8 +143,12 @@ function TaludesPage() {
                   onDelete={async (id) => { await deleteMutation.mutateAsync(id); }}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  Nenhum mapa disponível para exibição.
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
+                  <MapIcon className="h-12 w-12 opacity-20" />
+                  <p>Nenhum mapa disponível para exibição.</p>
+                  <div className="text-[10px] opacity-50 font-mono">
+                    {maps?.length === 0 ? "O banco de dados não retornou nenhum mapa." : "Erro ao identificar o mapa principal."}
+                  </div>
                 </div>
               )}
             </TabsContent>
