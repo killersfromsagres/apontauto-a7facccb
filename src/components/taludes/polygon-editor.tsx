@@ -32,7 +32,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.1);
+  const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
@@ -44,6 +44,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const imgRef = useRef<HTMLImageElement>(null);
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
+
 
   const fitToView = useCallback(() => {
     if (containerRef.current && imgRef.current) {
