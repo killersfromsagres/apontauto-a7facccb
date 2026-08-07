@@ -40,8 +40,16 @@ export function CopilotView() {
   }, [mensagens, ocupado]);
 
   const enviar = async (pergunta?: string) => {
-    const conteudo = (pergunta ?? texto).trim();
-    if (!conteudo || ocupado) return;
+    const bruto = (pergunta ?? texto).trim();
+    if (!bruto || ocupado) return;
+    // Comando-preâmbulo: descartado por completo; o próximo comando enviado
+    // pelo usuário é que será processado como principal.
+    if (isComandoIgnorado(bruto)) {
+      setTexto("");
+      toast.info("Comando de contexto ignorado. Envie o comando a ser executado.");
+      return;
+    }
+    const conteudo = sanitizeComando(bruto);
     const historico: Bolha[] = [...mensagens, { role: "user", content: conteudo }];
     setMensagens(historico);
     setTexto("");
