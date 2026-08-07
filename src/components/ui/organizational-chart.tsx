@@ -213,7 +213,10 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                 )}
                 <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <Plus className="text-white" size={20} />
+                  <div className="flex flex-col items-center gap-1">
+                    <Camera className="text-white" size={24} />
+                    <span className="text-[10px] text-white font-bold uppercase">Alterar</span>
+                  </div>
                   <input 
                     type="file" 
                     className="hidden" 
