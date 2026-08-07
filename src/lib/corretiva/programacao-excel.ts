@@ -93,17 +93,19 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
   });
 
-  const headers = ["OS", "Equipe", "Solicitante", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material"];
+  const headers = ["ID", "OS", "Equipe", "Solicitante", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA (Atraso)", "Material", "Status Atual"];
   ws.columns = [
+    { width: 8 },  // ID
     { width: 12 }, // OS
     { width: 18 }, // Equipe
     { width: 25 }, // Solicitante
     { width: 22 }, // Prédio / Andar
     { width: 22 }, // Local
-    { width: 45 }, // Descrição
+    { width: 50 }, // Descrição
     { width: 15 }, // Abertura
     { width: 15 }, // SLA
     { width: 15 }, // Material
+    { width: 15 }, // Status Atual
   ];
 
   titleBlock(
@@ -130,6 +132,7 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
     }
 
     row.values = [
+      idx + 1,
       o.numero_os,
       o.equipe || "—",
       o.solicitante || "—",
@@ -138,7 +141,8 @@ export async function generateProgramacaoExcel(osList: OsCacheRow[], equipeFiltr
       o.nome_os || "—",
       dataAbertura,
       slaText,
-      o.material_status === "solicitado" ? "Solicitado" : "N/A"
+      o.material_status === "solicitado" ? "Solicitado" : "N/A",
+      (o.status || "aberto").toUpperCase()
     ];
 
     // Status Styling

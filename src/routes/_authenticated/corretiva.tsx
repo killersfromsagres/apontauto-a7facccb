@@ -280,9 +280,6 @@ function CorretivaPage() {
       const isBackorder = o.tipo === "Backorder";
       const isPreventivaAba = isPreventiva(o.tipo);
       
-      // Ajuste de abas: 
-      // Se aba for 'preventiva', mostramos OS do tipo 'Backorder' ou 'Preventiva'
-      // Se aba for 'corretiva', mostramos OS do tipo 'Corretiva'
       if (aba === "preventiva") {
         if (!isBackorder && !isPreventivaAba) return false;
       } else {
@@ -298,7 +295,6 @@ function CorretivaPage() {
       } else if (semanaFiltro !== "todas") {
         if (key !== semanaFiltro) return false;
       }
-      // Colaboradores só enxergam semanas liberadas pelo gestor.
       if (!isAdmin && key && s && s.semana >= SEMANA_INICIAL && !liberadas[key]) return false;
 
       if (mesFiltro !== "todos") {
@@ -321,9 +317,17 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => {
-      // Ordenação: priorizar data de criação para identificar atrasos
+      // Ordenação Avançada: Prioriza SLA crítico (atrasado) e depois ordem numérica de OS
       const da = a.data_criacao ? new Date(a.data_criacao).getTime() : 0;
       const db = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
+      
+      const diffA = Math.floor((new Date().getTime() - da) / (1000 * 60 * 60 * 24));
+      const diffB = Math.floor((new Date().getTime() - db) / (1000 * 60 * 60 * 24));
+      
+      const criticalA = diffA >= 30 ? 1 : 0;
+      const criticalB = diffB >= 30 ? 1 : 0;
+      
+      if (criticalA !== criticalB) return criticalB - criticalA; // Críticos no topo
       return da - db || a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
   }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
