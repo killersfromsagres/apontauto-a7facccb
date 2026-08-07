@@ -244,7 +244,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                   )}
 
                   <div className="flex items-center justify-center gap-2 mb-1">
-                    {isAdmin && (
+                    {isAdmin && !isExporting && (
                       <button 
                         onClick={() => handleMove(member, 'left')}
                         className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
