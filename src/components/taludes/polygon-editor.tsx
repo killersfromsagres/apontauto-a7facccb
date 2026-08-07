@@ -32,7 +32,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.1);
+  const [zoom, setZoom] = useState(0.5);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
@@ -51,10 +51,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       const container = containerRef.current;
       const img = imgRef.current;
       
-      const padding = 40;
-      const availableWidth = container.clientWidth - padding;
-      const availableHeight = container.clientHeight - padding;
+      const padding = 20;
+      const availableWidth = container.offsetWidth - padding * 2;
+      const availableHeight = container.offsetHeight - padding * 2;
       
+      if (availableWidth <= 0 || availableHeight <= 0) return;
+
       const w = img.naturalWidth || imageWidth;
       const h = img.naturalHeight || imageHeight;
       
@@ -65,8 +67,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       
       setZoom(fitZoom);
       setOffset({
-        x: (container.clientWidth - w * fitZoom) / 2,
-        y: (container.clientHeight - h * fitZoom) / 2
+        x: (container.offsetWidth - w * fitZoom) / 2,
+        y: (container.offsetHeight - h * fitZoom) / 2
       });
       setIsReady(true);
     }
