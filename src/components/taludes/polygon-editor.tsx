@@ -32,8 +32,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.5);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(0.25);
+  const [offset, setOffset] = useState({ x: 50, y: 50 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
