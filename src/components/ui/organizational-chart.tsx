@@ -124,9 +124,12 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
       const fileName = `${memberId}-${Math.random()}.${fileExt}`;
       const filePath = `org-chart/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('backorder_blobs') // Using existing bucket or we should ensure one exists. Let's try to use public URL if possible or just ImgBB
-        .upload(filePath, file);
+      const { data, error: uploadError } = await supabase.storage
+        .from('backorder_blobs')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
