@@ -40,9 +40,18 @@ export const Route = createFileRoute("/api/public/clima")({
           `&forecast_days=7&timezone=America%2FSao_Paulo`;
 
         try {
-          const r = await fetch(upstream, {
-            headers: { accept: "application/json" },
-          });
+          const fetchWithRetry = async (retries = 1): Promise<Response> => {
+            const r = await fetch(upstream, {
+              headers: { accept: "application/json" },
+            });
+            if (r.status === 429 && retries > 0) {
+              await new Promise(res => setTimeout(res, 1000));
+              return fetchWithRetry(retries - 1);
+            }
+            return r;
+          };
+
+          const r = await fetchWithRetry();
           if (!r.ok) {
             return Response.json(
               { error: "upstream_unavailable", status: r.status },
