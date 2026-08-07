@@ -101,3 +101,18 @@ export const deleteTaludeMarcacao = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const createTaludeMap = createServerFn({ method: "POST" })
+  .validator((data: { nome: string; image_url: string; image_width: number; image_height: number }) => data)
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserted, error } = await supabaseAdmin
+      .from("talude_maps")
+      .insert(data)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return inserted as unknown as TaludeMap;
+  });
+
+
