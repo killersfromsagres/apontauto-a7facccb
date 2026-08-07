@@ -495,6 +495,7 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
       "corretiva-historico",
       "abastecimento",
       "agua-execucao",
+      "organograma",
     ];
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
