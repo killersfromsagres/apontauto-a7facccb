@@ -40,6 +40,8 @@ import {
   EXTERNAL_ACTIVITIES,
   shouldAlertExternalActivities,
   EXTERNAL_ACTIVITY_ALERT_THRESHOLD,
+  detectRain,
+  effectiveTaludeStatus,
 } from "@/lib/weather/open-meteo";
 import { WeatherForecastStrip } from "@/components/weather-forecast-strip";
 import { HistoricoChuva, RegistroManualChuva } from "@/components/clima/historico-chuva";
