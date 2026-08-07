@@ -311,7 +311,7 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
+            className="absolute origin-top-left transition-transform duration-75 pointer-events-none flex items-center justify-center"
             style={{ 
               transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
               width: imageWidth,
