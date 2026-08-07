@@ -111,9 +111,25 @@ function todayIso() {
 }
 
 function fmtBr(iso: string) {
-  const [y, m, d] = iso.split("T")[0].split("-");
-  return `${d}/${m}/${y}`;
+  if (!iso) return "";
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
+
+function fmtFullBr(iso: string) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 
 function TaludesPage() {
   const qc = useQueryClient();
@@ -650,8 +666,9 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
       }
     >
       <div className="flex flex-col gap-4">
-        <GlassCard className="space-y-3 p-3 h-[calc(100vh-14rem)]">
+        <GlassCard className="space-y-3 p-3 h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)]">
           {!calibrado && (
+
             <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
               <Ruler className="h-4 w-4 text-amber-500" />
               Mapa <b>não calibrado</b>: use a ferramenta “Calibrar escala” para habilitar área e
