@@ -273,12 +273,34 @@ export function PolygonEditor({
     setHoverPoint(p);
 
     if (isLassoDrawing) {
-      setIsLassoDrawing(false);
-      if (lassoPath.length >= 3) {
-        onCreate(lassoPath);
+      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
+      const threshold = tool === "magnetic" ? 15 : 10;
+
+      if (dist > threshold) {
+        let finalPoint = p;
+        if (tool === "magnetic") {
+          const snapped = applySnap(p);
+          if (snapped.x !== p.x || snapped.y !== p.y) {
+            finalPoint = snapped;
+          } else {
+            let nearest: { pt: Point; d: number } | null = null;
+            for (const poly of polygons) {
+              const pts = geometryOf(poly);
+              const edge = nearestEdge(p, pts);
+              if (edge) {
+                const d = screenDistance(p, edge.point);
+                if (d < 30 && (!nearest || d < nearest.d)) {
+                  nearest = { pt: edge.point, d };
+                }
+              }
+            }
+            if (nearest) finalPoint = nearest.pt;
+          }
+        }
+        
+        setLassoPath(prev => [...prev, finalPoint]);
+        lastLassoPointRef.current = finalPoint;
       }
-      setLassoPath([]);
-      lastLassoPointRef.current = null;
       return;
     }
 
