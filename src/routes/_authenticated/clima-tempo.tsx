@@ -410,13 +410,16 @@ function ClimaTempoPage() {
         {/* Próximos dias úteis — rolagem horizontal */}
         <WeatherForecastStrip />
 
-        <RegistroManualChuva />
+        {showDetails && (
+          <>
+            <RegistroManualChuva />
+            <HistoricoChuva />
+          </>
+        )}
 
-        <HistoricoChuva />
-
-        <div className="text-right text-[11px] text-muted-foreground">
-          Última atualização: {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} ·
-          Fonte: Open-Meteo
+        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 border-t border-border/20 pt-4">
+          <span>Local: {WEATHER_LOCATION.bairro}, {WEATHER_LOCATION.cidade} - {WEATHER_LOCATION.estado}</span>
+          <span>Sinc: {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} · Multi-Source API</span>
         </div>
       </div>
     </PageShell>
