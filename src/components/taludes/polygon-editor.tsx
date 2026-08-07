@@ -274,7 +274,21 @@ export function PolygonEditor({
         <div className="flex items-center gap-1">
           <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.min(MAX_ZOOM, v.zoom * 1.2) }))} icon={ZoomIn} label="Zoom In" />
           <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.max(MIN_ZOOM, v.zoom * 0.8) }))} icon={ZoomOut} label="Zoom Out" />
-          <ToolButton onClick={() => setViewport({ zoom: 1, offset: { x: 0, y: 0 } })} icon={Maximize2} label="Ajustar" />
+          <ToolButton onClick={() => {
+            if (containerRef.current) {
+              const rect = containerRef.current.getBoundingClientRect();
+              const zoomX = rect.width / imageWidth;
+              const zoomY = rect.height / imageHeight;
+              const fitZoom = Math.min(zoomX, zoomY, 1) * 0.9;
+              setViewport({ 
+                zoom: fitZoom, 
+                offset: { 
+                  x: (rect.width - imageWidth * fitZoom) / 2, 
+                  y: (rect.height - imageHeight * fitZoom) / 2 
+                } 
+              });
+            }
+          }} icon={Maximize2} label="Ajustar" />
           <div className="w-px h-4 bg-white/10 mx-1" />
           <Button variant="ghost" size="icon" onClick={handleExport} className="h-8 w-8 rounded-lg hover:bg-primary/20">
             <Download className="h-4 w-4" />
