@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Plus, Edit2, Save, X, Trash2, Palette } from 'lucide-react';
+import { Camera, Plus, Edit2, Save, X, Trash2, Palette, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { updateMemberOrder } from '@/lib/users.functions';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -73,6 +74,33 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
       toast.error("Erro ao atualizar membro.");
     }
   });
+
+  const updateOrderMutation = useMutation({
+    mutationFn: updateMemberOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['organizational_members'] });
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar ordem.");
+    }
+  });
+
+  const handleMove = (member: Member, direction: 'left' | 'right') => {
+    const levelMembers = members.filter(m => m.level === member.level);
+    const currentIndex = levelMembers.findIndex(m => m.id === member.id);
+    const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= levelMembers.length) return;
+
+    const targetMember = levelMembers[targetIndex];
+    
+    const updates = [
+      { id: member.id, display_order: targetMember.display_order },
+      { id: targetMember.id, display_order: member.display_order }
+    ];
+
+    updateOrderMutation.mutate(updates);
+  };
 
   const handleUploadPhoto = async (memberId: string, event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -181,8 +209,28 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                 </div>
 
                 {/* Info Card */}
-                <div className="text-center group">
-                  <h3 className="font-black text-white text-base tracking-tight mb-0.5 uppercase">{member.name}</h3>
+                <div className="text-center group w-full">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleMove(member, 'left')}
+                        className="p-1 hover:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Mover para esquerda"
+                      >
+                        <ChevronLeft size={14} className="text-white/40" />
+                      </button>
+                    )}
+                    <h3 className="font-black text-white text-base tracking-tight uppercase truncate max-w-[150px]">{member.name}</h3>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleMove(member, 'right')}
+                        className="p-1 hover:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Mover para direita"
+                      >
+                        <ChevronRight size={14} className="text-white/40" />
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] leading-tight max-w-[180px] mx-auto">
                     {member.role}
                   </p>
