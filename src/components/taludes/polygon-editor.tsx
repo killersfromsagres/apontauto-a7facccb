@@ -90,10 +90,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   }, [imageLoaded, fitToView]);
 
   const getRelativeCoords = (e: React.MouseEvent | MouseEvent): Point => {
-    if (!containerRef.current) return { x: 0, y: 0 };
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - offset.x) / zoom;
-    const y = (e.clientY - rect.top - offset.y) / zoom;
+    if (!containerRef.current || !imgRef.current) return { x: 0, y: 0 };
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
     return { x, y };
   };
 
@@ -174,10 +174,24 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   };
 
   const onWheel = useCallback((e: WheelEvent) => {
+    if (!containerRef.current) return;
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prev => Math.min(Math.max(prev * delta, 0.01), 10));
-  }, []);
+    
+    const scaleFactor = 1.1;
+    const delta = e.deltaY > 0 ? 1 / scaleFactor : scaleFactor;
+    const newZoom = Math.min(Math.max(zoom * delta, 0.01), 10);
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Calcular novo offset para manter o ponto sob o mouse
+    const newOffsetX = mouseX - (mouseX - offset.x) * (newZoom / zoom);
+    const newOffsetY = mouseY - (mouseY - offset.y) * (newZoom / zoom);
+
+    setZoom(newZoom);
+    setOffset({ x: newOffsetX, y: newOffsetY });
+  }, [zoom, offset]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -244,8 +258,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)',
-            opacity: imageLoaded ? 1 : 0
+            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.1s linear',
+            opacity: imageLoaded ? 1 : 0,
+            willChange: 'transform'
           }}
         >
           <img 
@@ -267,9 +282,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           />
           
           <svg 
-            width={imageWidth} 
-            height={imageHeight} 
-            className="absolute top-0 left-0 pointer-events-none"
+            viewBox={`0 0 ${imageWidth} ${imageHeight}`}
+            style={{ 
+              width: imageWidth, 
+              height: imageHeight,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              pointerEvents: 'none'
+            }}
           >
             {/* Existing Polygons */}
             {marcacoes.map((m) => (
