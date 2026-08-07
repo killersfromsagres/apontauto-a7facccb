@@ -661,62 +661,60 @@ function CorretivaPage() {
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">Nenhuma OS encontrada.</div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filtered.map((o) => {
-                const isDone = (o.status ?? "").toLowerCase() === "concluida";
                 const styles = getTeamStyles(o.equipe);
-                const isBackorder = aba === "preventiva";
+                const isDone = o.status === "concluida";
+                const diff = o.data_criacao ? (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24) : 0;
+                const isDelayed = diff >= 30;
                 
-                const rowCls = isDone 
-                  ? "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-                  : "border-l-4 border-red-500 bg-red-50/70 hover:bg-red-100/70 dark:bg-red-500/10 dark:hover:bg-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)]";
-
-                const dotColor = isDone 
-                  ? 'bg-emerald-500 shadow-[0_0_8px_#10b981]' 
-                  : styles.dot;
-
                 return (
                   <button
                     key={o.id}
-                    onClick={() => {
-                      if (selectedId === o.id) return;
-                      setSelectedId(o.id);
-                    }}
+                    onClick={() => setSelectedId(o.id)}
                     className={cn(
-                      "w-full flex items-start gap-3 p-4 rounded-xl text-left transition-colors cursor-pointer",
-                      rowCls
+                      "group relative flex flex-col text-left transition-all duration-300",
+                      "rounded-2xl border border-white/10 bg-white/5 p-4",
+                      "hover:bg-white/10 hover:border-primary/30 hover:shadow-lift hover:-translate-y-1 active:scale-[0.98]",
+                      styles.row,
+                      isDelayed && !isDone && "ring-1 ring-destructive/30"
                     )}
                   >
-                    <div className={cn("mt-1.5 h-3 w-3 rounded-full shrink-0", dotColor)} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <span className={`text-lg font-mono font-black tracking-tight ${isDone ? 'text-emerald-800 dark:text-emerald-300' : 'text-white'}`}>OS {o.numero_os}</span>
-                          {(() => {
-                            if (!o.data_criacao) return null;
-                            const diff = (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24);
-                            if (diff >= 30) {
-                              return (
-                                <Badge variant="destructive" className="animate-pulse bg-red-600 hover:bg-red-700 text-[10px] h-4 px-1.5 py-0 border-none">
-                                  {Math.floor(diff)}d atraso
-                                </Badge>
-                              );
-                            }
-                            return null;
-                          })()}
+                          <span className="text-xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors">
+                            #{o.numero_os}
+                          </span>
+                          {isDelayed && !isDone && (
+                            <Badge className="bg-destructive/10 text-destructive border-destructive/20 animate-pulse text-[10px] h-5 px-1.5 font-bold">
+                              CRÍTICO
+                            </Badge>
+                          )}
                         </div>
-                        {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[10px]">CONCLUÍDA</Badge>}
-                        {o.material_status === "solicitado" && (
-                          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] font-bold animate-pulse px-1.5 h-4">
-                            MATERIAL SOLICITADO
-                          </Badge>
-                        )}
+                        <div className="flex gap-1.5">
+                          {isDone && <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/20 text-[9px] font-bold h-4">FEITO</Badge>}
+                          {o.material_status === "solicitado" && (
+                            <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[9px] font-bold animate-pulse px-1.5 h-4">
+                              MATERIAL
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                      <h3 className="text-sm font-medium text-white/80 line-clamp-1">{o.nome_os}</h3>
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{o.predio} · {o.andar} · {o.local}</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <Badge variant="outline" className={cn("text-[10px] py-0 px-2", styles.badge)}>{o.equipe || "Sem Equipe"}</Badge>
-                        <span className="text-[10px] text-muted-foreground">{o.ativo}</span>
+                      
+                      <h3 className="text-sm font-semibold text-white/90 line-clamp-2 leading-tight min-h-[2.5rem] mb-2">{o.nome_os || "Sem Descrição"}</h3>
+                      
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <p className="flex items-center gap-1.5 opacity-80 truncate">
+                          <span className="w-1.5 h-4 bg-white/20 rounded-full shrink-0" />
+                          {o.predio} · {o.andar} · {o.local}
+                        </p>
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/5">
+                          <Badge variant="outline" className={cn("text-[10px] py-0 px-2 font-medium", styles.badge)}>
+                            {o.equipe || "Sem Equipe"}
+                          </Badge>
+                          <span className="text-[10px] font-mono opacity-60">{o.ativo || "N/A"}</span>
+                        </div>
                       </div>
                     </div>
                   </button>
