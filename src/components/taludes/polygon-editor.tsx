@@ -402,7 +402,7 @@ export function PolygonEditor({
         </div>
 
         {/* Sidebar - Area List */}
-        <div className="w-80 flex flex-col gap-3">
+        <div className="w-80 flex flex-col gap-3 h-full overflow-hidden">
           <div className="flex-1 rounded-2xl bg-muted/10 border border-white/5 overflow-hidden flex flex-col">
             <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white/90">Áreas Demarcadas</h3>
