@@ -597,7 +597,10 @@ export function PolygonEditor({
            <StatusItem icon={Layers} label={`${polygons.length} Taludes`} />
         </div>
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-           {tool === 'draw' ? 'Modo de Desenho: Clique no primeiro ponto para fechar' : 'Dica: Use espaço para arrastar o mapa'}
+           {tool === 'draw' ? 'Modo Polígono: Clique no primeiro ponto para fechar' : 
+            tool === 'lasso' ? 'Modo Laço: Arraste para desenhar livremente' :
+            tool === 'magnetic' ? 'Modo Magnético: Arraste perto de bordas para auto-alinhamento' :
+            'Dica: Use espaço para arrastar o mapa'}
         </p>
       </div>
     </div>
