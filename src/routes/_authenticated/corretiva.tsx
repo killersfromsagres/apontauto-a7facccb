@@ -951,26 +951,51 @@ function OSDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Prédio</Label><p className="text-sm font-medium text-white/90">{os.predio || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Andar</Label><p className="text-sm font-medium text-white/90">{os.andar || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Local</Label><p className="text-sm font-medium text-white/90 break-words">{os.local || "—"}</p></div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 mt-2 rounded-xl bg-white/5 border border-white/5">
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Equipe</Label><p className="text-sm font-medium text-white/90">{os.equipe}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Solicitante</Label><p className="text-sm font-medium text-white/90 break-words">{os.solicitante || "—"}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Tipo</Label><p className="text-sm font-medium text-white/90">{os.tipo === "Backorder" ? "Backorder" : "Corretiva"}</p></div>
-              {os.material_status && (
-                <div className="md:col-span-1">
-                  <Label className="text-[10px] uppercase text-muted-foreground">Material</Label>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse text-[10px] font-bold py-0.5">
-                      MATERIAL SOLICITADO
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 p-6 mt-4 rounded-3xl bg-white/[0.03] border border-white/10 text-[13px] shadow-2xl backdrop-blur-md">
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Prédio
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os.predio || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Andar
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os.andar || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Local
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight break-words">{os.local || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Equipe
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os.equipe || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Solicitante
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight break-words">{os.solicitante || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Material
+                </span>
+                <div className="pl-3.5">
+                  {os.material_status === "solicitado" ? (
+                    <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 animate-pulse text-[10px] font-black py-0.5">
+                      SOLICITADO
                     </Badge>
-                  </div>
+                  ) : (
+                    <div className="font-bold text-lg text-white/40">N/A</div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {(isAdmin || canFinishNoPhoto) && (
