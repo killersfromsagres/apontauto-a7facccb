@@ -32,15 +32,32 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.2); // Start with a smaller zoom
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
+
+  // Initial fit to container
+  useEffect(() => {
+    if (containerRef.current && imageWidth && imageHeight) {
+      const container = containerRef.current;
+      const fitZoom = Math.min(
+        container.clientWidth / imageWidth,
+        container.clientHeight / imageHeight
+      ) * 0.9;
+      setZoom(fitZoom);
+      
+      const centerX = (container.clientWidth - imageWidth * fitZoom) / 2;
+      const centerY = (container.clientHeight - imageHeight * fitZoom) / 2;
+      setOffset({ x: centerX, y: centerY });
+    }
+  }, [imageWidth, imageHeight, imageLoaded]);
 
   const getRelativeCoords = (e: React.MouseEvent | MouseEvent): Point => {
     if (!containerRef.current) return { x: 0, y: 0 };
