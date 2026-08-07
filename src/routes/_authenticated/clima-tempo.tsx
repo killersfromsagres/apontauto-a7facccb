@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
   Line,
   Bar,
   XAxis,
@@ -24,6 +23,8 @@ import {
   MapPin,
   Clock,
   HardHat,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -95,12 +96,13 @@ const STATUS_STYLES: Record<
 
 function ClimaTempoPage() {
   const q = useWeather();
+  const [showDetails, setShowDetails] = useState(false);
   const data = q.data;
 
   const current = data?.current;
   const currentInfo = weatherCodeInfo(current?.weather_code);
 
-  // Próximas 24h para gráfico
+  // Próximas 48h para gráfico (aumentado para melhor visão de planejamento)
   const hourlySeries = useMemo(() => {
     if (!data) return [];
     const now = Date.now();
@@ -108,12 +110,13 @@ function ClimaTempoPage() {
       .map((t, i) => ({
         raw: new Date(t).getTime(),
         hora: new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        fullDate: new Date(t).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' }),
         probabilidade: data.hourly.precipitation_probability[i] ?? 0,
         chuva: Number((data.hourly.rain[i] ?? 0).toFixed(2)),
         temperatura: data.hourly.temperature_2m[i] ?? null,
       }))
       .filter((h) => h.raw >= now - 60 * 60_000)
-      .slice(0, 24);
+      .slice(0, 48);
   }, [data]);
 
   const probMaxHoje = data?.daily.precipitation_probability_max[0] ?? current?.rain ?? 0;
@@ -134,13 +137,24 @@ function ClimaTempoPage() {
 
   return (
     <PageShell
-      title="Clima e Tempo"
-      description={`Monitoramento meteorológico — ${WEATHER_LOCATION.cidade} · ${WEATHER_LOCATION.bairro} · ${WEATHER_LOCATION.estado}. Fonte: Open-Meteo (atualiza a cada 30 min).`}
+      title="Monitoramento Climático"
+      description={`Sistema de precisão meteorológica para Demarchi — São Bernardo do Campo. Monitoramento via Open-Meteo & MET Norway.`}
       actions={
-        <Button variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", q.isFetching && "animate-spin")} />
-          Atualizar agora
-        </Button>
+        <div className="flex items-center gap-2">
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? <ChevronUp className="mr-1 h-3 w-3" /> : <ChevronDown className="mr-1 h-3 w-3" />}
+            {showDetails ? "Recolher" : "Mais Detalhes"}
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 hover:bg-primary/10" onClick={() => q.refetch()} disabled={q.isFetching}>
+            <RefreshCw className={cn("mr-2 h-3.5 w-3.5", q.isFetching && "animate-spin")} />
+            Sincronizar
+          </Button>
+        </div>
       }
     >
       <div className="space-y-5">
@@ -168,195 +182,204 @@ function ClimaTempoPage() {
           </div>
         )}
 
-        {/* Cards principais */}
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-          {/* Card 1 — Clima atual */}
-          <GlassCard className="lg:col-span-2 xl:col-span-1">
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-3 w-3" /> Agora
-              </span>
-              {current?.is_day === 1 ? (
-                <Sun className="h-4 w-4 text-amber-500" />
-              ) : (
-                <Moon className="h-4 w-4 text-indigo-400" />
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-5xl leading-none">{currentInfo.emoji}</div>
-              <div>
-                <div className="font-display text-4xl font-bold">
-                  {current ? `${Math.round(current.temperature_2m)}°` : "—"}
+        {/* Seção Superior — Cards de Impacto */}
+        <div className="grid gap-4 lg:grid-cols-12">
+          {/* Card 1 — Clima agora (Foco Visual) */}
+          <GlassCard className="flex flex-col justify-between lg:col-span-12 xl:col-span-4 min-h-[220px]">
+            <div>
+              <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 text-primary" /> Agora
+                </span>
+                <Badge variant="outline" className="h-5 px-2 text-[9px] font-bold uppercase bg-background/50 backdrop-blur-sm border-primary/20">
+                  Real-time
+                </Badge>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <div className="text-7xl leading-none drop-shadow-2xl animate-pulse-slow">
+                    {currentInfo.emoji}
+                  </div>
+                  {current?.is_day === 1 ? (
+                    <Sun className="absolute -right-2 -top-2 h-6 w-6 text-amber-500 animate-spin-slow" />
+                  ) : (
+                    <Moon className="absolute -right-2 -top-2 h-6 w-6 text-indigo-400" />
+                  )}
                 </div>
-                <div className="text-sm text-muted-foreground">{currentInfo.label}</div>
+                <div>
+                  <div className="font-display text-6xl font-black tracking-tighter">
+                    {current ? `${Math.round(current.temperature_2m)}°` : "—"}
+                  </div>
+                  <div className="text-base font-medium text-foreground/80">{currentInfo.label}</div>
+                </div>
               </div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Sensação {current ? `${Math.round(current.apparent_temperature)}°` : "—"}
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <Metric
-                icon={<Thermometer className="h-3.5 w-3.5" />}
-                label="Sensação"
-                value={current ? `${Math.round(current.apparent_temperature)}°` : "—"}
-              />
-              <Metric
-                icon={<Droplets className="h-3.5 w-3.5" />}
-                label="Umidade"
-                value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}
-              />
-              <Metric
-                icon={<Wind className="h-3.5 w-3.5" />}
-                label="Vento"
-                value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"}
-              />
-              <Metric
-                icon={<Wind className="h-3.5 w-3.5" />}
-                label="Rajadas"
-                value={current ? `${current.wind_gusts_10m.toFixed(1)} km/h` : "—"}
-              />
-              <Metric
-                icon={<Cloud className="h-3.5 w-3.5" />}
-                label="Nuvens"
-                value={current ? `${Math.round(current.cloud_cover)}%` : "—"}
-              />
-              <Metric
-                icon={<CloudRain className="h-3.5 w-3.5" />}
-                label="Chuva atual"
-                value={current ? `${current.rain.toFixed(1)} mm` : "—"}
-              />
-            </div>
-          </GlassCard>
-
-          {/* Card 3 — Resumo do dia */}
-          <GlassCard>
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span>Resumo do Dia</span>
-              <span>{daySummaryInfo.emoji}</span>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Thermometer className="h-3.5 w-3.5" /> Temperatura
-                </span>
-                <span className="font-semibold">
-                  {daySummary
-                    ? `${Math.round(daySummary.min)}° / ${Math.round(daySummary.max)}°`
-                    : "—"}
-                </span>
+            
+            <div className="mt-6 grid grid-cols-3 gap-2">
+              <div className="flex flex-col rounded-2xl bg-primary/5 p-2 border border-primary/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Vento</span>
+                <span className="text-xs font-black">{current ? `${current.wind_speed_10m.toFixed(0)} km/h` : "—"}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <CloudRain className="h-3.5 w-3.5" /> Prob. máx. chuva
-                </span>
-                <span className="font-semibold">{daySummary ? `${daySummary.probMax}%` : "—"}</span>
+              <div className="flex flex-col rounded-2xl bg-sky-500/5 p-2 border border-sky-500/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Umidade</span>
+                <span className="text-xs font-black">{current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Droplets className="h-3.5 w-3.5" /> Precipitação prevista
-                </span>
-                <span className="font-semibold">
-                  {daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}
-                </span>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 text-xs">
-                <span className="text-muted-foreground">Condição predominante: </span>
-                <span className="font-medium">{daySummaryInfo.label}</span>
+              <div className="flex flex-col rounded-2xl bg-amber-500/5 p-2 border border-amber-500/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Sensação</span>
+                <span className="text-xs font-black">{current ? `${Math.round(current.apparent_temperature)}°` : "—"}</span>
               </div>
             </div>
           </GlassCard>
 
-          {/* Card 4 — Situação operacional */}
+          {/* Card 2 — Situação Operacional (Ação/Decisão) */}
           <GlassCard
             className={cn(
-              "lg:col-span-2 xl:col-span-2 border bg-gradient-to-br ring-1",
+              "lg:col-span-7 xl:col-span-5 border-2 bg-gradient-to-br ring-1 relative overflow-hidden",
               statusStyle.border,
               statusStyle.bg,
               statusStyle.ring,
             )}
           >
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span>Situação Operacional</span>
-              <span>{Math.round(probMaxHoje)}% prob. chuva</span>
+            <div className="absolute -right-8 -top-8 text-8xl opacity-10 rotate-12">
+              {status.emoji}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-5xl leading-none">{status.emoji}</div>
-              <div>
-                <div className={cn("font-display text-2xl font-bold", statusStyle.text)}>
+            <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+              <span>Situação Operacional</span>
+              <span className="bg-background/40 px-2 py-0.5 rounded-full backdrop-blur-md">{Math.round(probMaxHoje)}% prob. chuva</span>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="text-5xl bg-background/50 p-3 rounded-2xl shadow-inner">{status.emoji}</div>
+              <div className="space-y-1">
+                <div className={cn("font-display text-3xl font-black tracking-tight", statusStyle.text)}>
                   {status.titulo}
                 </div>
-                <div className="text-sm text-muted-foreground">{status.descricao}</div>
+                <div className="text-sm font-medium text-foreground/70 leading-relaxed max-w-[280px]">
+                  {status.descricao}
+                </div>
               </div>
             </div>
             {alertExternal && (
-              <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-                <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300">
-                  <HardHat className="h-3.5 w-3.5" /> Atividades externas potencialmente impactadas
-                  (≥ {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
+              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 backdrop-blur-sm">
+                <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-red-600 dark:text-red-400">
+                  <HardHat className="h-3.5 w-3.5" /> Atividades Críticas (≥{EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {EXTERNAL_ACTIVITIES.map((a) => (
+                  {EXTERNAL_ACTIVITIES.slice(0, 5).map((a) => (
                     <Badge
                       key={a}
                       variant="outline"
-                      className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
+                      className="h-5 text-[9px] border-red-500/30 bg-red-500/5 text-red-700 dark:text-red-300 font-bold"
                     >
                       {a}
                     </Badge>
                   ))}
+                  {EXTERNAL_ACTIVITIES.length > 5 && <span className="text-[9px] font-bold text-red-500/70">+{EXTERNAL_ACTIVITIES.length - 5}</span>}
                 </div>
               </div>
             )}
           </GlassCard>
+
+          {/* Card 3 — Resumo Rápido (Dia) */}
+          <GlassCard className="lg:col-span-5 xl:col-span-3 flex flex-col justify-between">
+            <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+              <span>Resumo do Dia</span>
+              <span className="text-lg">{daySummaryInfo.emoji}</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <Thermometer className="h-3 w-3" /> Temp.
+                </span>
+                <span className="text-sm font-black">
+                  {daySummary ? `${Math.round(daySummary.min)}°` : "—"} 
+                  <span className="mx-1 opacity-30">/</span>
+                  {daySummary ? `${Math.round(daySummary.max)}°` : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <CloudRain className="h-3 w-3" /> Prob.
+                </span>
+                <span className="text-sm font-black">{daySummary ? `${daySummary.probMax}%` : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <Droplets className="h-3 w-3" /> Vol.
+                </span>
+                <span className="text-sm font-black">{daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}</span>
+              </div>
+            </div>
+            <div className="mt-4 text-[10px] font-bold text-center py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {daySummaryInfo.label}
+            </div>
+          </GlassCard>
         </div>
 
-        {/* Card 2 — Probabilidade de chuva por hora */}
-        <GlassCard>
-          <div className="mb-3 flex items-center justify-between">
+        {/* Card 4 — Probabilidade de chuva por hora */}
+        <GlassCard className="overflow-hidden border-primary/10">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-semibold">
-                Probabilidade de chuva por hora
+              <h3 className="font-display text-xl font-black tracking-tight flex items-center gap-2">
+                Tendência de Precipitação
+                <Badge variant="secondary" className="text-[9px] h-4 font-bold uppercase tracking-tighter">48h Forecast</Badge>
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Próximas 24 horas — probabilidade (%) e volume (mm)
+              <p className="text-xs font-medium text-muted-foreground/70">
+                Detalhamento horário da probabilidade (%) e volume acumulado (mm)
               </p>
             </div>
-            <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              {data ? new Date(data.fetched_at).toLocaleTimeString("pt-BR") : "—"}
+            <div className="inline-flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1 text-[10px] font-bold text-muted-foreground border border-border/50">
+              <Clock className="h-3 w-3 text-primary" />
+              Sincronizado: {data ? new Date(data.fetched_at).toLocaleTimeString("pt-BR") : "—"}
             </div>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-[320px] w-full pr-2">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={hourlySeries} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
+              <ComposedChart data={hourlySeries} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="rainGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(210 90% 55%)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(210 90% 55%)" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.3)" />
                 <XAxis
                   dataKey="hora"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
                 />
                 <YAxis
                   yAxisId="prob"
                   orientation="left"
                   domain={[0, 100]}
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
                   unit="%"
                 />
                 <YAxis
                   yAxisId="mm"
                   orientation="right"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  unit=" mm"
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  unit="mm"
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
+                    background: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                    borderRadius: 16,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
                   }}
+                  cursor={{ stroke: 'rgba(59, 130, 246, 0.2)', strokeWidth: 2 }}
                   formatter={(value: unknown, name: string) => {
                     if (name === "probabilidade") return [`${value}%`, "Probabilidade"];
                     if (name === "chuva") return [`${value} mm`, "Volume"];
@@ -366,17 +389,18 @@ function ClimaTempoPage() {
                 <Bar
                   yAxisId="mm"
                   dataKey="chuva"
-                  fill="hsl(210 90% 55% / 0.45)"
-                  radius={[4, 4, 0, 0]}
+                  fill="url(#rainGradient)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={24}
                 />
                 <Line
                   yAxisId="prob"
                   type="monotone"
                   dataKey="probabilidade"
                   stroke="hsl(220 90% 60%)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  strokeWidth={4}
+                  dot={false}
+                  activeDot={{ r: 6, fill: '#fff', stroke: 'hsl(220 90% 60%)', strokeWidth: 2 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
@@ -386,13 +410,16 @@ function ClimaTempoPage() {
         {/* Próximos dias úteis — rolagem horizontal */}
         <WeatherForecastStrip />
 
-        <RegistroManualChuva />
+        {showDetails && (
+          <>
+            <RegistroManualChuva />
+            <HistoricoChuva />
+          </>
+        )}
 
-        <HistoricoChuva />
-
-        <div className="text-right text-[11px] text-muted-foreground">
-          Última atualização: {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} ·
-          Fonte: Open-Meteo
+        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50 border-t border-border/20 pt-4">
+          <span>Local: {WEATHER_LOCATION.bairro}, {WEATHER_LOCATION.cidade} - {WEATHER_LOCATION.estado}</span>
+          <span>Sinc: {data ? new Date(data.fetched_at).toLocaleString("pt-BR") : "—"} · Multi-Source API</span>
         </div>
       </div>
     </PageShell>

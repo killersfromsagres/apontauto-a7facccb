@@ -197,33 +197,49 @@ export const Route = createFileRoute("/api/public/clima-forecast")({
         const lat = num(url.searchParams.get("lat"), DEFAULT_LAT);
         const lon = num(url.searchParams.get("lon"), DEFAULT_LON);
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 8000);
+        const timer = setTimeout(() => ctrl.abort(), 12000);
 
         const errors: string[] = [];
+        // 1) MET Norway (Primary)
         try {
           const data = await fromMetNorway(lat, lon, ctrl.signal);
           clearTimeout(timer);
           return Response.json(data, {
             headers: {
-              "Cache-Control": "public, max-age=600, s-maxage=600, stale-while-revalidate=1800",
+              "Cache-Control": "public, max-age=900, s-maxage=900, stale-while-revalidate=3600",
               "Access-Control-Allow-Origin": "*",
             },
           });
         } catch (e) {
           errors.push(`met.no: ${(e as Error).message}`);
         }
-        try {
-          const data = await fromOpenMeteo(lat, lon, ctrl.signal);
+
+        // 2) Open-Meteo (Fallback/Retry)
+        const tryOpenMeteo = async (retryCount = 0): Promise<Response | null> => {
+          try {
+            const data = await fromOpenMeteo(lat, lon, ctrl.signal);
+            return Response.json(data, {
+              headers: {
+                "Cache-Control": "public, max-age=600, s-maxage=600, stale-while-revalidate=1800",
+                "Access-Control-Allow-Origin": "*",
+                "X-Weather-Fallback": "open-meteo",
+              },
+            });
+          } catch (e) {
+            const msg = (e as Error).message;
+            if (msg.includes("429") && retryCount < 1) {
+              await new Promise((r) => setTimeout(r, 1000));
+              return tryOpenMeteo(retryCount + 1);
+            }
+            errors.push(`open-meteo: ${msg}`);
+            return null;
+          }
+        };
+
+        const openMeteoRes = await tryOpenMeteo();
+        if (openMeteoRes) {
           clearTimeout(timer);
-          return Response.json(data, {
-            headers: {
-              "Cache-Control": "public, max-age=600, s-maxage=600, stale-while-revalidate=1800",
-              "Access-Control-Allow-Origin": "*",
-              "X-Weather-Fallback": "open-meteo",
-            },
-          });
-        } catch (e) {
-          errors.push(`open-meteo: ${(e as Error).message}`);
+          return openMeteoRes;
         }
         clearTimeout(timer);
         return Response.json(
