@@ -649,8 +649,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_360px]">
-        <GlassCard className="space-y-3 p-3">
+      <div className="flex flex-col gap-4">
+        <GlassCard className="space-y-3 p-3 h-[calc(100vh-14rem)]">
           {!calibrado && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
               <Ruler className="h-4 w-4 text-amber-500" />
@@ -671,11 +671,10 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
               const m = marcacoes.find(x => x.id === id);
               if (m) setDeleteTarget(m);
             }}
-
           />
         </GlassCard>
 
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           <GlassCard className="space-y-2 p-4">
             <div className="flex items-center justify-between">
               <div className="font-semibold">Camadas</div>
