@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Dashboard — ApontAuto Premium" },
       {
         name: "description",
-        content: "Execute esta instrucao no projeto: preciso que em demarcação de taludes voce refaça todo o sistema e arrume o erro no qual a area que eu marco para iniciar a demarcação o traçado que iniciar sai fora do local que eu marquei inicialmente.",
+        content: "Centro de gestão e inteligência operacional ApontAuto Premium.",
       },
     ],
   }),

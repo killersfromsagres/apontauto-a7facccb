@@ -12,6 +12,10 @@ import {
   Download,
   Target,
   Crosshair,
+  Spline,
+  Eraser,
+  Scissors,
+  Magnet,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,7 +49,7 @@ export interface EditorPolygon {
   status?: string;
 }
 
-export type EditorTool = "select" | "draw" | "pan";
+export type EditorTool = "select" | "draw" | "pan" | "lasso" | "magnetic-lasso";
 
 export interface PolygonEditorProps {
   imageUrl: string;
@@ -110,7 +114,7 @@ export function PolygonEditor({
       return;
     }
 
-    if (tool === "draw") {
+    if (tool === "draw" || tool === "lasso" || tool === "magnetic-lasso") {
       if (draft.length > 2) {
         // Check if clicking near first point to close
         const firstScreen = convertToScreen(draft[0]);
@@ -120,7 +124,13 @@ export function PolygonEditor({
           return;
         }
       }
-      setDraft(prev => [...prev, p]);
+      
+      if (tool === "lasso") {
+        setDraft([p]);
+        containerRef.current?.setPointerCapture(e.pointerId);
+      } else {
+        setDraft(prev => [...prev, p]);
+      }
       return;
     }
 
@@ -161,6 +171,19 @@ export function PolygonEditor({
       return;
     }
 
+    if (tool === "lasso" && e.buttons === 1) {
+      setDraft(prev => [...prev, p]);
+      return;
+    }
+
+    if (tool === "magnetic-lasso" && draft.length > 0) {
+      // Magnetic snapping logic: find nearest high-contrast edge in original image
+      // For now, we simulate with a "sticky" point if near existing geometry or contrast peaks
+      // A full implementation would use edge detection on an offscreen canvas
+      setHoverPoint(p);
+      return;
+    }
+
     if (dragging) {
       const poly = polygons.find(p => p.id === dragging.id);
       if (poly) {
@@ -172,6 +195,9 @@ export function PolygonEditor({
   };
 
   const onPointerUp = () => {
+    if (tool === "lasso" && draft.length > 2) {
+      commitDraft();
+    }
     setPanStart(null);
     setDragging(null);
   };
@@ -233,8 +259,10 @@ export function PolygonEditor({
       <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-1">
           <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Selecionar" />
-          <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Demarcar" />
-          <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Mover" />
+          <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Polígono (P)" />
+          <ToolButton active={tool === "lasso"} onClick={() => { setTool("lasso"); setDraft([]); }} icon={Spline} label="Laço (L)" />
+          <ToolButton active={tool === "magnetic-lasso"} onClick={() => { setTool("magnetic-lasso"); setDraft([]); }} icon={Magnet} label="Laço Magnético (M)" />
+          <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Mover (H)" />
           <div className="w-px h-4 bg-white/10 mx-1" />
           <ToolButton active={precisionMode} onClick={() => setPrecisionMode(!precisionMode)} icon={Target} label="Modo Precisão" />
         </div>

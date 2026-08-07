@@ -91,7 +91,7 @@ export const Route = createFileRoute("/_authenticated/taludes")({
       {
         name: "description",
         content:
-          "Execute esta instrucao no projeto: nao está fazendo a demarcação , e o mapa aparece muito pequeno preciso que apareça o mapa inteiro e arrume o erro da demarcação que nao está funcionando.",
+          "Sistema de demarcação de taludes com precisão milimétrica e ferramentas profissionais inspiradas em software GIS e edição de imagem.",
       },
       { property: "og:title", content: "Demarcação de Taludes" },
       {
