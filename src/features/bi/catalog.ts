@@ -10,7 +10,7 @@ export type DatasetKey =
   | "backlog"
   | "preventive"
   | "assets"
-  | "taludes_pt"
+  
   | "checklists"
   | "fuelings"
   | "occurrences"
@@ -87,21 +87,6 @@ export const DATASETS: Record<DatasetKey, DatasetDef> = {
       { key: "nivel", label: "Nível" },
       { key: "unidade_negocio", label: "Unidade" },
       { key: "descricao_pai", label: "Local pai" },
-    ],
-  },
-  taludes_pt: {
-    key: "taludes_pt",
-    label: "Taludes, chuva e PT",
-    source: "vw_bi_taludes_weather_pt",
-    dateField: "solicitada_em",
-    dimensions: [
-      { key: "status", label: "Status da PT" },
-      { key: "equipe", label: "Equipe" },
-      { key: "max_intensity", label: "Intensidade da chuva" },
-    ],
-    measures: [
-      { key: "horas_suspensas", label: "Horas suspensas" },
-      { key: "accumulated_mm", label: "Chuva acumulada (mm)" },
     ],
   },
   checklists: {
@@ -265,10 +250,6 @@ export type KpiKey =
   | "checklists_nc"
   | "consumo_medio"
   | "custo_km"
-  | "horas_suspensas_chuva"
-  | "pt_liberadas"
-  | "pt_suspensas"
-  | "pt_encerradas";
 
 export type KpiDef = {
   key: KpiKey;

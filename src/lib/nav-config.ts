@@ -299,38 +299,6 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
-    key: "taludes-grp",
-    title: "Taludes e Clima",
-    icon: MapIcon,
-    items: [
-      {
-        key: "taludes",
-        title: "Demarcação de Taludes",
-        short: "Taludes",
-        url: "/taludes",
-        icon: MapIcon,
-        keywords: ["mapa", "polígono", "demarcação", "pt"],
-      },
-      {
-        key: "taludes-pt",
-        title: "PT — Permissão de Trabalho",
-        short: "PT Taludes",
-        url: "/taludes-pt",
-        icon: ShieldCheck,
-        keywords: ["pt", "permissão", "bombeiros", "liberação", "chuva", "suspensão"],
-      },
-      {
-        key: "clima-tempo",
-        title: "Clima e Tempo",
-        short: "Clima",
-        url: "/clima-tempo",
-        icon: CloudSun,
-        keywords: ["chuva", "previsão", "evidência", "sbc"],
-      },
-    ],
-  },
-  {
-    kind: "group",
     key: "frota-grp",
     title: "Frota e Abastecimento",
     icon: Fuel,
@@ -592,7 +560,7 @@ const QUICK_KEYS = [
   "seguranca-trabalho",
   "lavanderia",
   "preventiva-ac",
-  "taludes",
+  
   "dashboard-chamados",
   "painel-legal",
   "capacidade",
