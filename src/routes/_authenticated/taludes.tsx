@@ -649,10 +649,12 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
             selectedId={selectedId}
             onSelect={setSelectedId}
             onGeometryChange={handleGeometry}
-            onDraftChange={handleDraft}
             onCreate={(pts) => create.mutate(pts)}
-            calibration={map.calibration}
-            onCalibrate={(a, b) => setCalPending({ a, b })}
+            onDelete={(id) => {
+              const m = marcacoes.find(x => x.id === id);
+              if (m) setDeleteTarget(m);
+            }}
+
           />
         </GlassCard>
 
