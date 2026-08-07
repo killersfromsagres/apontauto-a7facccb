@@ -202,7 +202,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   }, [onWheel]);
 
   return (
-    <div className="relative w-full h-[80vh] bg-slate-900 overflow-hidden flex flex-col rounded-xl border border-slate-700/50 shadow-2xl">
+    <div className="relative w-full h-full min-h-[600px] bg-slate-900 overflow-hidden flex flex-col">
       {/* Toolbar */}
       <div className="absolute top-4 left-4 z-10 flex gap-2 bg-slate-800/80 p-2 rounded-lg backdrop-blur-sm border border-slate-700">
         <Button 
@@ -256,11 +256,16 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       >
         <div 
           style={{
+            width: imageWidth,
+            height: imageHeight,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
             transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.1s linear',
             opacity: imageLoaded ? 1 : 0,
-            willChange: 'transform'
+            willChange: 'transform',
+            position: 'absolute',
+            top: 0,
+            left: 0
           }}
         >
           <img 
