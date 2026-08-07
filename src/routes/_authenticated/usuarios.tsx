@@ -92,6 +92,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "qualidade-dados": "Qualidade de Dados",
   imagens: "Imagens e Armazenamento",
   usuarios: "Gerenciamento de Usuários",
+  organograma: "Organograma Demarchi",
   configuracoes: "Configurações",
 };
 
