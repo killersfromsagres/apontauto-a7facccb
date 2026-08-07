@@ -99,7 +99,7 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
       { id: targetMember.id, display_order: member.display_order }
     ];
 
-    updateOrderMutation.mutate(updates);
+    updateOrderMutation.mutate({ data: updates });
   };
 
   const handleUploadPhoto = async (memberId: string, event: React.ChangeEvent<HTMLInputElement>) => {
