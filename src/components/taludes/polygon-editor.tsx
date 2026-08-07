@@ -321,8 +321,8 @@ export function PolygonEditor({
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
-                alt="Map" 
-                className="block max-w-none pointer-events-none"
+                alt="Mapa de Taludes" 
+                className="block max-w-none pointer-events-none object-contain"
                 style={{ width: imageWidth, height: imageHeight }}
               />
 
