@@ -12,7 +12,15 @@ import {
   Legend,
 } from "recharts";
 import { toast } from "sonner";
-import { CalendarDays, CloudRain, Download, Gauge, Radio, RefreshCw } from "lucide-react";
+import { 
+  CalendarDays, 
+  CloudRain, 
+  Download, 
+  Gauge, 
+  Radio, 
+  RefreshCw,
+  Clock,
+} from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
