@@ -294,25 +294,25 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 w-full h-full pointer-events-none"
+            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
             style={{ 
-              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`
+              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
+              width: imageWidth,
+              height: imageHeight
             }}
-
           >
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
                 alt="Map" 
-                className="w-full h-full object-contain pointer-events-none"
+                className="block max-w-none pointer-events-none"
+                style={{ width: imageWidth, height: imageHeight }}
               />
 
-              
               {/* SVG Layer for Polygons */}
               <svg 
                 className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
                 viewBox={`0 0 ${imageWidth} ${imageHeight}`}
-                preserveAspectRatio="xMidYMid meet"
               >
                 {/* Render Existing Polygons */}
                 {polygons.map(poly => (
