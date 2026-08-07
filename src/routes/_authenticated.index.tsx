@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Dashboard — ApontAuto Premium" },
       {
         name: "description",
-        content: "Modernize completamente a estética da interface, transformando-a em um software premium, sofisticado e profissional, sem alterar a lógica, funcionalidades, integrações ou comportamento atual do sistema.",
+        content: "Execute esta instrucao no projeto: em organograma ao baixar imagem png está dando erro e as logos do grupo gps e sherwin williams está com erro também nao aparece nenhum imagem",
       },
     ],
   }),
