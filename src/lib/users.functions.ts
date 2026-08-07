@@ -49,6 +49,7 @@ function getAuthEnv() {
   return { url, publishableKey };
 }
 
+
 async function createUsersAdminClient() {
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -106,6 +107,26 @@ const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ 
     },
   });
 });
+
+export const updateMemberOrder = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .validator((data: unknown) => {
+    if (!Array.isArray(data)) throw new Error("Dados inválidos");
+    return data as { id: string; display_order: number }[];
+  })
+  .handler(async ({ data, context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    for (const item of data) {
+      const { error } = await supabaseAdmin
+        .from("organizational_members")
+        .update({ display_order: item.display_order })
+        .eq("id", item.id);
+      if (error) throw error;
+    }
+    return { ok: true };
+  });
 
 export const MENU_KEYS = [
   "dashboard",
