@@ -204,7 +204,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                     </div>
                   </div>
                   
-                  {isAdmin && (
+                  {isAdmin && !isExporting && (
                     <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20" title="Adicionar/Alterar Foto">
                       <Camera size={14} className="text-white" />
                       <input 
