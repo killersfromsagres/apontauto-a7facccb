@@ -256,7 +256,7 @@ export function PolygonEditor({
   };
 
   return (
-    <div className={cn("flex flex-col h-full gap-4", className)}>
+    <div className={cn("flex flex-col h-full gap-4 w-full", className)}>
       {/* Toolbar */}
       <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-1">
