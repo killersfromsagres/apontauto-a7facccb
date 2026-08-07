@@ -32,7 +32,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.2); // Start with a smaller zoom
+  const [zoom, setZoom] = useState(0.2);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
@@ -43,21 +43,43 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
-  // Initial fit to container
-  useEffect(() => {
+  // Centraliza e ajusta o zoom para caber na tela ao carregar a imagem
+  const fitToView = useCallback(() => {
     if (containerRef.current && imageWidth && imageHeight) {
       const container = containerRef.current;
+      const padding = 40;
+      const availableWidth = container.clientWidth - padding;
+      const availableHeight = container.clientHeight - padding;
+      
       const fitZoom = Math.min(
-        container.clientWidth / imageWidth,
-        container.clientHeight / imageHeight
-      ) * 0.9;
+        availableWidth / imageWidth,
+        availableHeight / imageHeight
+      );
+      
       setZoom(fitZoom);
       
-      const centerX = (container.clientWidth - imageWidth * fitZoom) / 2;
-      const centerY = (container.clientHeight - imageHeight * fitZoom) / 2;
-      setOffset({ x: centerX, y: centerY });
+      // Centralizar
+      setOffset({
+        x: (container.clientWidth - imageWidth * fitZoom) / 2,
+        y: (container.clientHeight - imageHeight * fitZoom) / 2
+      });
     }
-  }, [imageWidth, imageHeight, imageLoaded]);
+  }, [imageWidth, imageHeight]);
+
+  useEffect(() => {
+    if (imageLoaded) {
+      fitToView();
+    }
+  }, [imageLoaded, fitToView]);
+
+  // Observer para redimensionamento da janela
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      if (imageLoaded) fitToView();
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [imageLoaded, fitToView]);
 
   const getRelativeCoords = (e: React.MouseEvent | MouseEvent): Point => {
     if (!containerRef.current) return { x: 0, y: 0 };
@@ -173,13 +195,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <PenTool className="h-4 w-4" />
         </Button>
         <div className="w-px h-8 bg-slate-700 mx-1" />
-        <Button variant="ghost" size="icon" onClick={() => handleZoom(0.1)} title="Zoom In">
+        <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z * 1.2, 10))} title="Zoom In">
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleZoom(-0.1)} title="Zoom Out">
+        <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.2, 0.01))} title="Zoom Out">
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={resetView} title="Reset View">
+        <Button variant="ghost" size="icon" onClick={fitToView} title="Reset View">
           <Maximize className="h-4 w-4" />
         </Button>
         {mode === 'draw' && currentPoints.length > 0 && (
