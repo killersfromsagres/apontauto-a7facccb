@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/")({
       { title: "Dashboard — Apont Auto" },
       {
         name: "description",
-        content: "Execute esta instrucao no projeto: Open-Meteo\nFalha\n680ms",
+        content: "Execute esta instrucao no projeto: esta dando ero ao baixar o png da imagem , ela nao gera a imagem , e ao adicionar uma foto para os integrantes do organograma da erro ao fazer upload da imagem também. corrija todos esses pontos.",
       },
     ],
   }),
