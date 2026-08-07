@@ -64,8 +64,8 @@ export interface PolygonEditorProps {
   className?: string;
 }
 
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 8;
+const MIN_ZOOM = 0.05;
+const MAX_ZOOM = 4;
 
 export function PolygonEditor({
   imageUrl,
@@ -208,7 +208,7 @@ export function PolygonEditor({
 
   const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const factor = e.deltaY > 0 ? 0.95 : 1.05;
     const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.zoom * factor));
     
     // Zoom relative to mouse position
@@ -272,8 +272,8 @@ export function PolygonEditor({
         </div>
 
         <div className="flex items-center gap-1">
-          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.min(MAX_ZOOM, v.zoom * 1.2) }))} icon={ZoomIn} label="Zoom In" />
-          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.max(MIN_ZOOM, v.zoom * 0.8) }))} icon={ZoomOut} label="Zoom Out" />
+          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.min(MAX_ZOOM, v.zoom * 1.1) }))} icon={ZoomIn} label="Zoom In" />
+          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.max(MIN_ZOOM, v.zoom * 0.9) }))} icon={ZoomOut} label="Zoom Out" />
           <ToolButton onClick={() => {
             if (containerRef.current) {
               const rect = containerRef.current.getBoundingClientRect();
@@ -402,7 +402,7 @@ export function PolygonEditor({
         </div>
 
         {/* Sidebar - Area List */}
-        <div className="w-64 flex flex-col gap-3">
+        <div className="w-80 flex flex-col gap-3">
           <div className="flex-1 rounded-2xl bg-muted/10 border border-white/5 overflow-hidden flex flex-col">
             <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white/90">Áreas Demarcadas</h3>
