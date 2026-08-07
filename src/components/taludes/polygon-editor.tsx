@@ -76,9 +76,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   useEffect(() => {
     if (imageLoaded) {
-      // Pequeno delay para garantir que o layout do container estabilizou
-      const timer = setTimeout(fitToView, 100);
-      return () => clearTimeout(timer);
+      // Temporarily disabled for debugging
+      // fitToView();
+      setIsReady(true);
     }
   }, [imageLoaded, fitToView]);
 
