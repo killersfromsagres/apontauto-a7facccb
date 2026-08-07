@@ -32,7 +32,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.1);
+  const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
@@ -44,6 +44,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const imgRef = useRef<HTMLImageElement>(null);
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
+
 
   const fitToView = useCallback(() => {
     if (containerRef.current && imgRef.current) {
@@ -75,10 +76,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   useEffect(() => {
     if (imageLoaded) {
-      const timer = setTimeout(fitToView, 100);
-      return () => clearTimeout(timer);
+      // Pequeno delay para garantir que o container tenha dimensões finais
+      setTimeout(fitToView, 50);
     }
-  }, [imageLoaded, fitToView]);
+  }, [imageLoaded, fitToView, imageUrl]);
+
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
@@ -259,11 +261,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             height: imageHeight,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.1s linear',
+            transition: 'none',
             opacity: imageLoaded ? 1 : 0,
             willChange: 'transform',
-            position: 'relative'
+            position: 'relative',
+            background: '#000'
           }}
+
         >
           <img 
             ref={imgRef}
