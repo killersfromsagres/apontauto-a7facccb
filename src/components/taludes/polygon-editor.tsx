@@ -165,14 +165,19 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     setCurrentPoints(prev => prev.slice(0, -1));
   };
 
-  const handleZoom = (delta: number) => {
-    setZoom(prev => Math.min(Math.max(prev + delta, 0.1), 5));
-  };
+  const onWheel = useCallback((e: WheelEvent) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(prev => Math.min(Math.max(prev * delta, 0.01), 10));
+  }, []);
 
-  const resetView = () => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
-  };
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', onWheel, { passive: false });
+      return () => container.removeEventListener('wheel', onWheel);
+    }
+  }, [onWheel]);
 
   return (
     <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
