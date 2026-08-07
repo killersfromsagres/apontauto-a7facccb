@@ -384,7 +384,7 @@ export function PolygonEditor({
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
 
-    if (wasPanning || wasDragging) return;
+    if (wasPanning || wasDragging || wasLassoing) return;
 
     // Click to add points
     const p = toPercent(e.clientX, e.clientY);
