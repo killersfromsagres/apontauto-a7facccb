@@ -81,7 +81,11 @@ export function PolygonEditor({
 }: PolygonEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EditorTool>("select");
-  const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, offset: { x: 0, y: 0 } });
+  const [viewport, setViewport] = useState<ViewportState>(() => {
+    // Start with a reasonable zoom to fit the image
+    const initialZoom = 0.5;
+    return { zoom: initialZoom, offset: { x: 40, y: 40 } };
+  });
   const [precisionMode, setPrecisionMode] = useState(false);
   
   const [draft, setDraft] = useState<Point[]>([]);
@@ -270,7 +274,21 @@ export function PolygonEditor({
         <div className="flex items-center gap-1">
           <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.min(MAX_ZOOM, v.zoom * 1.2) }))} icon={ZoomIn} label="Zoom In" />
           <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.max(MIN_ZOOM, v.zoom * 0.8) }))} icon={ZoomOut} label="Zoom Out" />
-          <ToolButton onClick={() => setViewport({ zoom: 1, offset: { x: 0, y: 0 } })} icon={Maximize2} label="Ajustar" />
+          <ToolButton onClick={() => {
+            if (containerRef.current) {
+              const rect = containerRef.current.getBoundingClientRect();
+              const zoomX = rect.width / imageWidth;
+              const zoomY = rect.height / imageHeight;
+              const fitZoom = Math.min(zoomX, zoomY, 1) * 0.9;
+              setViewport({ 
+                zoom: fitZoom, 
+                offset: { 
+                  x: (rect.width - imageWidth * fitZoom) / 2, 
+                  y: (rect.height - imageHeight * fitZoom) / 2 
+                } 
+              });
+            }
+          }} icon={Maximize2} label="Ajustar" />
           <div className="w-px h-4 bg-white/10 mx-1" />
           <Button variant="ghost" size="icon" onClick={handleExport} className="h-8 w-8 rounded-lg hover:bg-primary/20">
             <Download className="h-4 w-4" />
@@ -290,25 +308,25 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 w-full h-full pointer-events-none"
+            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
             style={{ 
-              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`
+              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
+              width: imageWidth,
+              height: imageHeight
             }}
-
           >
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
                 alt="Map" 
-                className="w-full h-full object-contain pointer-events-none"
+                className="block max-w-none pointer-events-none"
+                style={{ width: imageWidth, height: imageHeight }}
               />
 
-              
               {/* SVG Layer for Polygons */}
               <svg 
                 className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
                 viewBox={`0 0 ${imageWidth} ${imageHeight}`}
-                preserveAspectRatio="xMidYMid meet"
               >
                 {/* Render Existing Polygons */}
                 {polygons.map(poly => (

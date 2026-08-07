@@ -30,18 +30,11 @@ export function screenToImageCoordinates(
   const ry = screenY - containerRect.top;
 
   // 2. Account for pan and zoom
+  // ix, iy are coordinates in the "transformed" layer (at 1x scale, relative to origin)
   const ix = (rx - viewport.offset.x) / viewport.zoom;
   const iy = (ry - viewport.offset.y) / viewport.zoom;
 
-  // 3. Map back to image natural scale
-  // We need to know how the image is scaled inside the "drawing area"
-  // Assuming the drawing area at 1x zoom and 0 offset matches the container's aspect-fit image
-  const { renderedWidth, renderedHeight, offsetX, offsetY } = getImageRenderBounds(containerRect, imageSize);
-
-  const finalX = ((ix - offsetX) / renderedWidth) * imageSize.width;
-  const finalY = ((iy - offsetY) / renderedHeight) * imageSize.height;
-
-  return { x: finalX, y: finalY };
+  return { x: ix, y: iy };
 }
 
 /**
@@ -53,13 +46,8 @@ export function imageToScreenCoordinates(
   viewport: ViewportState,
   imageSize: ImageSize
 ): { x: number; y: number } {
-  const { renderedWidth, renderedHeight, offsetX, offsetY } = getImageRenderBounds(containerRect, imageSize);
-
-  const ix = (point.x / imageSize.width) * renderedWidth + offsetX;
-  const iy = (point.y / imageSize.height) * renderedHeight + offsetY;
-
-  const rx = ix * viewport.zoom + viewport.offset.x;
-  const ry = iy * viewport.zoom + viewport.offset.y;
+  const rx = point.x * viewport.zoom + viewport.offset.x;
+  const ry = point.y * viewport.zoom + viewport.offset.y;
 
   return {
     x: containerRect.left + rx,
