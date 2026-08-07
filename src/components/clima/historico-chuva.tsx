@@ -325,86 +325,98 @@ export function HistoricoChuva() {
         </p>
       </GlassCard>
 
-      {/* Eventos */}
-      <GlassCard>
-        <h3 className="mb-3 text-sm font-semibold sm:text-base">Eventos de chuva</h3>
-        {events.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum evento registrado no período.</p>
-        ) : (
-          <div className="space-y-2">
-            {events.map((e: WeatherEvent) => (
-              <div
-                key={e.id}
-                className="rounded-2xl border border-border/50 bg-muted/15 p-3 text-sm"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge status={e.status === "aberto" ? "aberto" : e.status} />
-                  {e.max_intensity ? (
-                    <Badge
-                      variant="outline"
-                      className={cn("rounded-full", INTENSITY_COLOR[e.max_intensity])}
-                    >
-                      {e.max_intensity}
-                    </Badge>
-                  ) : null}
-                  <span className="text-xs text-muted-foreground">
-                    {fmtDateTime(e.started_at)} → {fmtDateTime(e.ended_at)}
-                  </span>
+      {/* Seção de Eventos e Auditoria */}
+      <div className="grid gap-4 lg:grid-cols-12">
+        {/* Eventos de Chuva (Compacto e Preciso) */}
+        <GlassCard className="lg:col-span-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="font-display text-lg font-black tracking-tight flex items-center gap-2">
+              Auditoria de Eventos
+              <Badge variant="outline" className="text-[9px] font-bold border-primary/20 bg-primary/5 uppercase">{events.length} Registros</Badge>
+            </h3>
+          </div>
+          
+          {events.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center opacity-40">
+              <CloudRain className="h-10 w-10 mb-2" />
+              <p className="text-xs font-bold uppercase tracking-widest">Nenhum evento detectado</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {events.slice(0, 6).map((e: WeatherEvent) => (
+                <div
+                  key={e.id}
+                  className={cn(
+                    "group relative overflow-hidden rounded-2xl border p-3 transition-all hover:bg-muted/30",
+                    e.status === "aberto" ? "border-amber-500/30 bg-amber-500/5" : "border-border/50 bg-muted/15"
+                  )}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <StatusBadge status={e.status === "aberto" ? "aberto" : e.status} />
+                    <span className="text-[10px] font-black text-primary/70">{Number(e.accumulated_mm ?? 0).toFixed(1)} mm</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-[10px] font-medium text-muted-foreground/80">
+                    <CalendarDays className="h-3 w-3" />
+                    <span>{new Date(e.started_at).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' })}</span>
+                    <span className="opacity-30">|</span>
+                    <Clock className="h-3 w-3" />
+                    <span>{new Date(e.started_at).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+
+                  {e.max_intensity && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <div className={cn("h-1.5 w-1.5 rounded-full", 
+                        e.max_intensity === 'forte' || e.max_intensity === 'tempestade' ? 'bg-red-500 animate-pulse' : 'bg-sky-400'
+                      )} />
+                      <span className="text-[9px] font-black uppercase tracking-tighter opacity-70">{e.max_intensity}</span>
+                    </div>
+                  )}
+
+                  <div className="mt-2 flex items-center justify-between opacity-60 grayscale group-hover:grayscale-0 transition-all">
+                    <span className="text-[9px] font-bold uppercase tracking-widest">Confiança: {Math.round(Number(e.confidence ?? 0) * 100)}%</span>
+                  </div>
                 </div>
-                <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-3">
-                  <span>Acumulado: {Number(e.accumulated_mm ?? 0).toFixed(1)} mm</span>
-                  <span>Confiança: {Math.round(Number(e.confidence ?? 0) * 100)}%</span>
-                  <span>Confirmação: {e.confirmation_type}</span>
-                  <span className="sm:col-span-3">
-                    Fontes: {(e.sources ?? []).map(SOURCE_LABEL).join(", ") || "—"}
-                  </span>
-                  {e.affected_scope && Object.keys(e.affected_scope).length ? (
-                    <span className="sm:col-span-3">
-                      Impacto: {JSON.stringify(e.affected_scope).slice(0, 220)}
+              ))}
+            </div>
+          )}
+        </GlassCard>
+
+        {/* Saúde das fontes (Lado a Lado) */}
+        <GlassCard className="lg:col-span-4">
+          <div className="mb-6">
+            <h3 className="font-display text-lg font-black tracking-tight flex items-center gap-2">
+              Rede de Monitoramento
+            </h3>
+            <p className="text-[10px] font-medium text-muted-foreground/60 uppercase mt-1">Status da infraestrutura externa</p>
+          </div>
+          
+          <div className="space-y-2">
+            {(healthQuery.data ?? []).slice(0, 4).map((h) => (
+              <div key={h.source} className="flex items-center gap-3 rounded-2xl border border-border/40 bg-muted/5 p-2.5 transition-colors hover:bg-muted/10">
+                <div className={cn(
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+                  h.state === "ok" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                )}>
+                  <Radio className={cn("h-4 w-4", h.state === "ok" && "animate-pulse")} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="truncate text-xs font-black uppercase tracking-tight">{SOURCE_LABEL(h.source)}</span>
+                    <span className={cn("text-[9px] font-bold uppercase", h.state === "ok" ? "text-emerald-500" : "text-red-500")}>
+                      {h.state === "ok" ? "Online" : "Falha"}
                     </span>
-                  ) : null}
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[9px] font-medium text-muted-foreground/70">
+                    <span className="flex items-center gap-0.5"><Gauge className="h-2.5 w-2.5" /> {h.latency_ms ?? "—"}ms</span>
+                    <span className="flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" /> {new Date(h.last_success_at || 0).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        )}
-      </GlassCard>
-
-      {/* Saúde das fontes */}
-      <GlassCard>
-        <div className="mb-3 flex items-center gap-2">
-          <Radio className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold sm:text-base">Saúde das fontes</h3>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {(healthQuery.data ?? []).map((h) => (
-            <div key={h.source} className="rounded-2xl border border-border/50 bg-muted/15 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium">{SOURCE_LABEL(h.source)}</span>
-                <StatusBadge status={h.state === "ok" ? "concluido" : "erro"} />
-              </div>
-              <div className="mt-1 grid gap-0.5 text-[11px] text-muted-foreground">
-                <span>
-                  Tipo:{" "}
-                  {SOURCE_TYPE_LABEL[SOURCE_META[h.source as WeatherSourceKey]?.type ?? "previsao"]}
-                </span>
-                <span>Última execução: {fmtDateTime(h.last_run_at)}</span>
-                <span>Última resposta válida: {fmtDateTime(h.last_success_at)}</span>
-                <span className="flex items-center gap-1">
-                  <Gauge className="h-3 w-3" /> Latência: {h.latency_ms ?? "—"} ms · erros
-                  consecutivos: {h.consecutive_errors}
-                </span>
-                {h.last_error ? <span className="text-destructive">{h.last_error}</span> : null}
-              </div>
-            </div>
-          ))}
-          {(healthQuery.data ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Aguardando a primeira execução do monitor automático.
-            </p>
-          ) : null}
-        </div>
-      </GlassCard>
+        </GlassCard>
+      </div>
     </div>
   );
 }

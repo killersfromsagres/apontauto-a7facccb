@@ -301,53 +301,71 @@ function ClimaTempoPage() {
           </GlassCard>
         </div>
 
-        {/* Card 2 — Probabilidade de chuva por hora */}
-        <GlassCard>
-          <div className="mb-3 flex items-center justify-between">
+        {/* Card 4 — Probabilidade de chuva por hora */}
+        <GlassCard className="overflow-hidden border-primary/10">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="font-display text-lg font-semibold">
-                Probabilidade de chuva por hora
+              <h3 className="font-display text-xl font-black tracking-tight flex items-center gap-2">
+                Tendência de Precipitação
+                <Badge variant="secondary" className="text-[9px] h-4 font-bold uppercase tracking-tighter">48h Forecast</Badge>
               </h3>
-              <p className="text-xs text-muted-foreground">
-                Próximas 24 horas — probabilidade (%) e volume (mm)
+              <p className="text-xs font-medium text-muted-foreground/70">
+                Detalhamento horário da probabilidade (%) e volume acumulado (mm)
               </p>
             </div>
-            <div className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3.5 w-3.5" />
-              {data ? new Date(data.fetched_at).toLocaleTimeString("pt-BR") : "—"}
+            <div className="inline-flex items-center gap-2 rounded-full bg-muted/50 px-3 py-1 text-[10px] font-bold text-muted-foreground border border-border/50">
+              <Clock className="h-3 w-3 text-primary" />
+              Sincronizado: {data ? new Date(data.fetched_at).toLocaleTimeString("pt-BR") : "—"}
             </div>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-[320px] w-full pr-2">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={hourlySeries} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border) / 0.4)" />
+              <ComposedChart data={hourlySeries} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="rainGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(210 90% 55%)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(210 90% 55%)" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border) / 0.3)" />
                 <XAxis
                   dataKey="hora"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  dy={10}
                 />
                 <YAxis
                   yAxisId="prob"
                   orientation="left"
                   domain={[0, 100]}
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
                   unit="%"
                 />
                 <YAxis
                   yAxisId="mm"
                   orientation="right"
-                  fontSize={11}
-                  tick={{ fill: "hsl(var(--muted-foreground))" }}
-                  unit=" mm"
+                  fontSize={10}
+                  tick={{ fill: "hsl(var(--muted-foreground))", fontWeight: 700 }}
+                  axisLine={false}
+                  tickLine={false}
+                  unit="mm"
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
+                    background: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                    borderRadius: 16,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    backdropFilter: "blur(12px)",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
                   }}
+                  cursor={{ stroke: 'rgba(59, 130, 246, 0.2)', strokeWidth: 2 }}
                   formatter={(value: unknown, name: string) => {
                     if (name === "probabilidade") return [`${value}%`, "Probabilidade"];
                     if (name === "chuva") return [`${value} mm`, "Volume"];
@@ -357,17 +375,18 @@ function ClimaTempoPage() {
                 <Bar
                   yAxisId="mm"
                   dataKey="chuva"
-                  fill="hsl(210 90% 55% / 0.45)"
-                  radius={[4, 4, 0, 0]}
+                  fill="url(#rainGradient)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={24}
                 />
                 <Line
                   yAxisId="prob"
                   type="monotone"
                   dataKey="probabilidade"
                   stroke="hsl(220 90% 60%)"
-                  strokeWidth={2.5}
-                  dot={{ r: 2 }}
-                  activeDot={{ r: 4 }}
+                  strokeWidth={4}
+                  dot={false}
+                  activeDot={{ r: 6, fill: '#fff', stroke: 'hsl(220 90% 60%)', strokeWidth: 2 }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
