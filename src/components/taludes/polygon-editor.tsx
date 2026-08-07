@@ -17,6 +17,8 @@ import {
   ZoomOut,
   Target,
   Layers,
+  Scissors,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,7 +46,7 @@ export interface EditorPolygon {
   label: string;
 }
 
-export type EditorTool = "select" | "draw" | "edit" | "pan" | "calibrate";
+export type EditorTool = "select" | "draw" | "lasso" | "magnetic" | "edit" | "pan" | "calibrate";
 
 export interface PolygonEditorProps {
   imageUrl: string;
@@ -98,6 +100,9 @@ export function PolygonEditor({
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [calDraft, setCalDraft] = useState<Point[]>([]);
+  const [isLassoDrawing, setIsLassoDrawing] = useState(false);
+  const [lassoPath, setLassoPath] = useState<Point[]>([]);
+  const lastLassoPointRef = useRef<Point | null>(null);
   
   // High-precision state for active drawing/dragging
   const [working, setWorking] = useState<Record<string, Point[]>>({});
@@ -223,6 +228,16 @@ export function PolygonEditor({
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       return;
     }
+
+    const p = toPercent(e.clientX, e.clientY);
+
+    if (tool === "lasso" || tool === "magnetic") {
+      setIsLassoDrawing(true);
+      setLassoPath([p]);
+      lastLassoPointRef.current = p;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
@@ -256,6 +271,38 @@ export function PolygonEditor({
     const p = toPercent(e.clientX, e.clientY);
     setHoverPoint(p);
 
+    if (isLassoDrawing) {
+      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
+      const threshold = tool === "magnetic" ? 15 : 10;
+
+      if (dist > threshold) {
+        let finalPoint = p;
+        if (tool === "magnetic") {
+          const snapped = applySnap(p);
+          if (snapped.x !== p.x || snapped.y !== p.y) {
+            finalPoint = snapped;
+          } else {
+            let nearest: { pt: Point; d: number } | null = null;
+            for (const poly of polygons) {
+              const pts = geometryOf(poly);
+              const edge = nearestEdge(p, pts);
+              if (edge) {
+                const d = screenDistance(p, edge.point);
+                if (d < 30 && (!nearest || d < nearest.d)) {
+                  nearest = { pt: edge.point, d };
+                }
+              }
+            }
+            if (nearest) finalPoint = nearest.pt;
+          }
+        }
+        
+        setLassoPath(prev => [...prev, finalPoint]);
+        lastLassoPointRef.current = finalPoint;
+      }
+      return;
+    }
+
     if (dragRef.current) {
       const drag = dragRef.current;
       if (drag.kind === "vertex") {
@@ -272,12 +319,55 @@ export function PolygonEditor({
         onDraftChange?.(drag.id, next);
       }
     }
+
+    if (isLassoDrawing) {
+      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
+      const threshold = tool === "magnetic" ? 15 : 10; // Pixels distance to add new point
+
+      if (dist > threshold) {
+        let finalPoint = p;
+        if (tool === "magnetic") {
+          // Snap to edges of other polygons if close
+          const snapped = applySnap(p);
+          if (snapped.x !== p.x || snapped.y !== p.y) {
+            finalPoint = snapped;
+          } else {
+            // Find nearest edge of ANY polygon
+            let nearest: { pt: Point; d: number } | null = null;
+            for (const poly of polygons) {
+              const pts = geometryOf(poly);
+              const edge = nearestEdge(p, pts);
+              if (edge) {
+                const d = screenDistance(p, edge.point);
+                if (d < 30 && (!nearest || d < nearest.d)) {
+                  nearest = { pt: edge.point, d };
+                }
+              }
+            }
+            if (nearest) finalPoint = nearest.pt;
+          }
+        }
+        
+        setLassoPath(prev => [...prev, finalPoint]);
+        lastLassoPointRef.current = finalPoint;
+      }
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
     const wasPanning = !!panRef.current;
     const wasDragging = !!dragRef.current;
+    const wasLassoing = isLassoDrawing;
     
+    if (isLassoDrawing) {
+      setIsLassoDrawing(false);
+      if (lassoPath.length >= 3) {
+        onCreate(lassoPath);
+      }
+      setLassoPath([]);
+      lastLassoPointRef.current = null;
+    }
+
     if (dragRef.current) {
       const { id, before } = dragRef.current;
       const final = working[id];
@@ -293,16 +383,19 @@ export function PolygonEditor({
     pointersRef.current.delete(e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
 
-    if (wasPanning || wasDragging) return;
+    if (wasPanning || wasDragging || wasLassoing) return;
 
     // Click to add points
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
-      if (draft.length >= 3 && screenDistance(draft[0], p) <= CLOSE_SNAP_PX) {
+      const snapDist = screenDistance(draft[0] || p, p);
+      if (draft.length >= 3 && snapDist <= CLOSE_SNAP_PX) {
         commitDraft();
       } else {
         setDraft(d => [...d, applySnap(p)]);
       }
+    } else if (tool === "lasso" || tool === "magnetic") {
+       // Handled in onPointerUp above
     } else if (tool === "calibrate") {
       const next = [...calDraft, p];
       if (next.length === 2) {
@@ -338,7 +431,13 @@ export function PolygonEditor({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === "Space") { spaceRef.current = true; e.preventDefault(); }
-      if (e.key === "Escape") { setDraft([]); setTool("select"); }
+      if (e.key === "Escape") { setDraft([]); setLassoPath([]); setIsLassoDrawing(false); setTool("select"); }
+      if (e.key === "v") setTool("select");
+      if (e.key === "p") setTool("draw");
+      if (e.key === "l") setTool("lasso");
+      if (e.key === "m") setTool("magnetic");
+      if (e.key === "e") setTool("edit");
+      if (e.key === "h") setTool("pan");
       if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
         // undo/redo logic
       }
@@ -355,7 +454,9 @@ export function PolygonEditor({
     <div className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-md">
         <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Ponteiro (V)" />
-        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Novo Talude (P)" />
+        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Polígono (P)" />
+        <ToolButton active={tool === "lasso"} onClick={() => { setTool("lasso"); setDraft([]); }} icon={Scissors} label="Laço" />
+        <ToolButton active={tool === "magnetic"} onClick={() => { setTool("magnetic"); setDraft([]); }} icon={Magnet} label="Laço Magnético" />
         <ToolButton active={tool === "edit"} onClick={() => setTool("edit")} icon={Spline} label="Editar Vértices (E)" />
         <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Panoramizar (H)" />
         <ToolButton active={tool === "calibrate"} onClick={() => setTool("calibrate")} icon={Ruler} label="Calibrar Escala" />
@@ -423,7 +524,19 @@ export function PolygonEditor({
               );
             })}
 
-            {/* Drawing preview */}
+            {/* Drawing preview (Lasso/Magnetic) */}
+            {(isLassoDrawing || lassoPath.length > 0) && (
+              <polyline
+                points={lassoPath.map(p => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke={tool === "magnetic" ? "#22c55e" : "#0ea5e9"}
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+                className="pointer-events-none"
+              />
+            )}
+
+            {/* Drawing preview (Standard Poly) */}
             {draft.length > 0 && (
               <polyline
                 points={[...draft, ...(hoverPoint ? [hoverPoint] : [])].map(p => `${p.x},${p.y}`).join(" ")}
@@ -518,7 +631,10 @@ export function PolygonEditor({
            <StatusItem icon={Layers} label={`${polygons.length} Taludes`} />
         </div>
         <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-           {tool === 'draw' ? 'Modo de Desenho: Clique no primeiro ponto para fechar' : 'Dica: Use espaço para arrastar o mapa'}
+           {tool === 'draw' ? 'Modo Polígono: Clique no primeiro ponto para fechar' : 
+            tool === 'lasso' ? 'Modo Laço: Arraste para desenhar livremente' :
+            tool === 'magnetic' ? 'Modo Magnético: Arraste perto de bordas para auto-alinhamento' :
+            'Dica: Use espaço para arrastar o mapa'}
         </p>
       </div>
     </div>
