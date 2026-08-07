@@ -125,7 +125,8 @@ function OrganogramaPage() {
             <OrganizationalChart isAdmin={isAdmin} isExporting={isExporting} />
           </div>
 
-          <div className="flex items-center justify-center gap-4 mt-8 pb-4">
+          {!isExporting && (
+            <div className="flex items-center justify-center gap-4 mt-8 pb-4">
             {isAdmin && (
               <Button 
                 onClick={() => addMemberMutation.mutate()}
