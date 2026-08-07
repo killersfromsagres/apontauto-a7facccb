@@ -229,6 +229,16 @@ export function PolygonEditor({
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
       return;
     }
+
+    const p = toPercent(e.clientX, e.clientY);
+
+    if (tool === "lasso" || tool === "magnetic") {
+      setIsLassoDrawing(true);
+      setLassoPath([p]);
+      lastLassoPointRef.current = p;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      return;
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent) => {
