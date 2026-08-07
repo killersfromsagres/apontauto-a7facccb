@@ -111,16 +111,22 @@ export const createTaludeMap = createServerFn({ method: "POST" })
 
     const insertData: any = {
       ...data,
-      owner_id: userResponse.user?.id || null
+      owner_id: userResponse.user?.id
     };
+
+    console.log("Inserting map data:", insertData);
 
     const { data: inserted, error } = await supabaseAdmin
       .from("talude_maps")
       .insert(insertData)
       .select()
-      .single();
+      .maybeSingle();
     
-    if (error) throw error;
+    if (error) {
+      console.error("Database error inserting map:", error);
+      throw error;
+    }
+    if (!inserted) throw new Error("Failed to insert map record");
     return inserted as unknown as TaludeMap;
   });
 
