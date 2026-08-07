@@ -89,7 +89,7 @@ function OrganogramaPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className={`w-full max-w-[1200px] rounded-[2.5rem] ${isExporting ? 'bg-white' : 'bg-white/5 backdrop-blur-md border border-white/10'} p-4 sm:p-8 shadow-2xl overflow-hidden relative`}
-          style={{
+          style={isExporting ? {} : {
             background: 'radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent), radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.03), transparent)'
           }}
         >
