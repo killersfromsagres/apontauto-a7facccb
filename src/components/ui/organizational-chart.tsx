@@ -264,7 +264,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                       </button>
                     )}
                   </div>
-                  <p className="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] leading-tight max-w-[180px] mx-auto">
+                  <p className={`text-[10px] font-bold uppercase tracking-[0.2em] leading-tight max-w-[180px] mx-auto transition-colors ${isExporting ? 'text-slate-500' : 'text-white/50'}`}>
                     {member.role}
                   </p>
                   <div className="mt-3 w-8 h-0.5 mx-auto rounded-full opacity-30" style={{ backgroundColor: member.color }} />
