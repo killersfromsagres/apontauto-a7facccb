@@ -898,14 +898,25 @@ function OSDetailView({
           <GlassCard className="p-6">
             <div className="flex items-start justify-between mb-6">
               <div>
-                <Badge variant="outline" className="mb-2 border-primary/20 bg-primary/10 text-primary">OS {os.numero_os}</Badge>
-                <h1 className="text-2xl font-bold text-white">{os.nome_os}</h1>
-                <p className="text-muted-foreground mt-1">{os.predio} · {os.andar} · {os.local}</p>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary font-black px-2 py-0.5 tracking-tighter text-lg">#{os.numero_os}</Badge>
+                  {os.tipo === "Backorder" && <Badge variant="secondary" className="text-[10px] font-bold">BACKORDER</Badge>}
+                </div>
+                <h1 className="text-3xl font-black text-white leading-tight tracking-tight">{os.nome_os || "Sem Descrição"}</h1>
+                <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+                  <span className="w-1.5 h-4 bg-primary/50 rounded-full" />
+                  <p className="text-sm font-medium">{os.predio} · {os.andar} · {os.local}</p>
+                </div>
               </div>
               <div className="text-right">
-                <span className="text-xs text-muted-foreground block mb-1 uppercase tracking-wider">Status Atual</span>
-                <Badge className={isDone ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/20" : "bg-blue-500/20 text-blue-400 border-blue-500/20"}>
-                  {isDone ? "Concluída" : "Aberta"}
+                <span className="text-[10px] text-muted-foreground block mb-1 uppercase font-black tracking-widest opacity-60">Status da Ordem</span>
+                <Badge className={cn(
+                  "px-3 py-1 text-xs font-bold border",
+                  isDone 
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+                    : "bg-primary/20 text-primary border-primary/30 animate-pulse"
+                )}>
+                  {isDone ? "CONCLUÍDA" : "EM ANDAMENTO"}
                 </Badge>
               </div>
             </div>
