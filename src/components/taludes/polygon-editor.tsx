@@ -46,7 +46,7 @@ export interface EditorPolygon {
   label: string;
 }
 
-export type EditorTool = "select" | "draw" | "lasso" | "magnetic" | "path" | "edit" | "pan" | "calibrate";
+export type EditorTool = "select" | "draw" | "lasso" | "magnetic" | "edit" | "pan" | "calibrate";
 
 export interface PolygonEditorProps {
   imageUrl: string;
