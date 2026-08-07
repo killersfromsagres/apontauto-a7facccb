@@ -137,13 +137,24 @@ function ClimaTempoPage() {
 
   return (
     <PageShell
-      title="Clima e Tempo"
-      description={`Monitoramento meteorológico — ${WEATHER_LOCATION.cidade} · ${WEATHER_LOCATION.bairro} · ${WEATHER_LOCATION.estado}. Fonte: Open-Meteo (atualiza a cada 30 min).`}
+      title="Monitoramento Climático"
+      description={`Sistema de precisão meteorológica para Demarchi — São Bernardo do Campo. Monitoramento via Open-Meteo & MET Norway.`}
       actions={
-        <Button variant="outline" onClick={() => q.refetch()} disabled={q.isFetching}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", q.isFetching && "animate-spin")} />
-          Atualizar agora
-        </Button>
+        <div className="flex items-center gap-2">
+           <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
+            onClick={() => setShowDetails(!showDetails)}
+          >
+            {showDetails ? <ChevronUp className="mr-1 h-3 w-3" /> : <ChevronDown className="mr-1 h-3 w-3" />}
+            {showDetails ? "Recolher" : "Mais Detalhes"}
+          </Button>
+          <Button variant="outline" size="sm" className="rounded-full border-primary/20 bg-primary/5 hover:bg-primary/10" onClick={() => q.refetch()} disabled={q.isFetching}>
+            <RefreshCw className={cn("mr-2 h-3.5 w-3.5", q.isFetching && "animate-spin")} />
+            Sincronizar
+          </Button>
+        </div>
       }
     >
       <div className="space-y-5">
