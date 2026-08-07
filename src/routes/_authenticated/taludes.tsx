@@ -198,8 +198,26 @@ function TaludesPage() {
                   Sincronizado com: <span className="text-emerald-400 font-mono">Open-Meteo V2</span>
                 </div>
               </div>
-
             </div>
+
+            {maps && maps.length > 1 && (
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
+                {maps.map(map => (
+                  <button
+                    key={map.id}
+                    onClick={() => setSelectedMapId(map.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
+                      (selectedMapId === map.id || (!selectedMapId && maps[0].id === map.id))
+                        ? "bg-blue-500/20 border-blue-500 text-blue-200"
+                        : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                    }`}
+                  >
+                    {map.nome}
+                  </button>
+                ))}
+              </div>
+            )}
+
 
             <TabsContent value="mapa" className="flex-1 m-0 p-0 relative rounded-xl overflow-hidden border border-white/5 bg-slate-900 shadow-2xl">
               {loadingMaps || loadingMarcacoes ? (
