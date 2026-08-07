@@ -14,17 +14,7 @@ export const Route = createFileRoute('/_authenticated/organograma')({
 
 function OrganogramaPage() {
   const queryClient = useQueryClient();
-  const { data: session } = useQuery({
-    queryKey: ['session'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    }
-  });
-
-  const isAdmin = session?.user?.user_metadata?.role === 'admin' || 
-                  session?.user?.email === 'admin@admin.com' ||
-                  session?.user?.user_metadata?.permissions?.includes('admin');
+  const { isAdmin, loading: checkingAdmin } = useIsAdmin();
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
