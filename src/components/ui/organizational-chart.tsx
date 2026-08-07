@@ -224,7 +224,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                 {/* Info Card */}
                 <div className="text-center group w-full relative">
                   {/* Vertical Move Controls (Up/Down) */}
-                  {isAdmin && (
+                  {isAdmin && !isExporting && (
                     <div className="absolute -top-36 left-1/2 -translate-x-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
                       <button 
                         onClick={() => handleMove(member, 'up')}
