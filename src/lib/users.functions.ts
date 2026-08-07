@@ -142,7 +142,7 @@ export const updateOrganizationalMember = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("organizational_members")
-      .update(data.updates)
+      .update(data.updates as any)
       .eq("id", data.id);
     
     if (error) throw error;
