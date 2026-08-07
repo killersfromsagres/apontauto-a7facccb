@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { 
@@ -7,6 +7,7 @@ import {
   getTaludeMarcacoes, 
   saveTaludeMarcacao, 
   deleteTaludeMarcacao,
+  createTaludeMap,
   type TaludeMap,
   type TaludeMarcacao
 } from "@/lib/taludes/api";
@@ -15,18 +16,19 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { 
   CloudRain, 
-  Thermometer, 
   Wind, 
   Droplets, 
   AlertTriangle,
   Map as MapIcon,
   LayoutGrid,
-  Info
+  Info,
+  Upload,
+  Plus
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import taludesMapAsset from "@/assets/taludes-mapa.webp.asset.json";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/taludes")({
   component: TaludesPage,
@@ -38,15 +40,18 @@ function TaludesPage() {
   const getMarcacoesFn = useServerFn(getTaludeMarcacoes);
   const saveMarcacaoFn = useServerFn(saveTaludeMarcacao);
   const deleteMarcacaoFn = useServerFn(deleteTaludeMarcacao);
+  const createMapFn = useServerFn(createTaludeMap);
+
 
   const [selectedMapId, setSelectedMapId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: maps, isLoading: loadingMaps } = useQuery({
     queryKey: ["talude_maps"],
     queryFn: () => getMapsFn(),
   });
 
-  // Automatically select the first map if none is selected
   const currentMap = maps?.find(m => m.id === selectedMapId) || maps?.[0];
   const effectiveMapId = currentMap?.id;
 
@@ -70,6 +75,59 @@ function TaludesPage() {
       queryClient.invalidateQueries({ queryKey: ["talude_marcacoes", effectiveMapId] });
     }
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const toastId = toast.loading("Fazendo upload do mapa...");
+
+    try {
+      // 1. Upload image to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `taludes/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      // 2. Get image dimensions
+      const img = new Image();
+      img.src = publicUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      // 3. Create map record
+      const newMap = await createMapFn({
+        data: {
+          nome: file.name.replace(/\.[^/.]+$/, ""),
+          image_url: publicUrl,
+          image_width: img.naturalWidth,
+          image_height: img.naturalHeight
+        }
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["talude_maps"] });
+      setSelectedMapId(newMap.id);
+      toast.success("Mapa adicionado com sucesso!", { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao adicionar mapa.", { id: toastId });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
 
   return (
     <PageShell
@@ -119,11 +177,47 @@ function TaludesPage() {
                   <LayoutGrid className="h-4 w-4" /> Listagem
                 </TabsTrigger>
               </TabsList>
-              
-              <div className="text-xs text-muted-foreground">
-                Sincronizado com: <span className="text-emerald-400 font-mono">Open-Meteo V2</span>
+              <div className="flex items-center gap-3">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileUpload}
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-2 border-white/10 bg-white/5"
+                  onClick={() => fileInputRef.current?.click()}
+                  loading={isUploading}
+                >
+                  <Plus className="h-4 w-4" /> Novo Mapa
+                </Button>
+                <div className="text-xs text-muted-foreground hidden sm:block">
+                  Sincronizado com: <span className="text-emerald-400 font-mono">Open-Meteo V2</span>
+                </div>
               </div>
             </div>
+
+            {maps && maps.length > 1 && (
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
+                {maps.map(map => (
+                  <button
+                    key={map.id}
+                    onClick={() => setSelectedMapId(map.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all border ${
+                      (selectedMapId === map.id || (!selectedMapId && maps[0].id === map.id))
+                        ? "bg-blue-500/20 border-blue-500 text-blue-200"
+                        : "bg-white/5 border-white/5 text-muted-foreground hover:bg-white/10"
+                    }`}
+                  >
+                    {map.nome}
+                  </button>
+                ))}
+              </div>
+            )}
+
 
             <TabsContent value="mapa" className="flex-1 m-0 p-0 relative rounded-xl overflow-hidden border border-white/5 bg-slate-900 shadow-2xl">
               {loadingMaps || loadingMarcacoes ? (
@@ -143,13 +237,24 @@ function TaludesPage() {
                   onDelete={async (id) => { await deleteMutation.mutateAsync(id); }}
                 />
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
-                  <MapIcon className="h-12 w-12 opacity-20" />
-                  <p>Nenhum mapa disponível para exibição.</p>
-                  <div className="text-[10px] opacity-50 font-mono">
-                    {maps?.length === 0 ? "O banco de dados não retornou nenhum mapa." : "Erro ao identificar o mapa principal."}
+                <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground gap-6 p-8 text-center">
+                  <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mb-2">
+                    <MapIcon className="h-10 w-10 opacity-40" />
                   </div>
+                  <div className="max-w-md space-y-2">
+                    <h3 className="text-lg font-medium text-white">Nenhum mapa configurado</h3>
+                    <p className="text-sm">Para iniciar a demarcação, você precisa carregar uma imagem aérea ou planta do local.</p>
+                  </div>
+                  <Button 
+                    variant="premium" 
+                    onClick={() => fileInputRef.current?.click()}
+                    loading={isUploading}
+                    className="gap-2"
+                  >
+                    <Upload className="h-4 w-4" /> Carregar Primeiro Mapa
+                  </Button>
                 </div>
+
               )}
             </TabsContent>
 
