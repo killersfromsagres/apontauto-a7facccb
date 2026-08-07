@@ -226,6 +226,22 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                 </label>
               </div>
               <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Clique para alterar foto</p>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-4 border-white/10 text-white bg-white/5 hover:bg-white/10"
+                onClick={() => document.getElementById('dialog-photo-input')?.click()}
+              >
+                <Camera size={14} className="mr-2" /> Selecionar da Galeria
+              </Button>
+              <input 
+                id="dialog-photo-input"
+                type="file" 
+                className="hidden" 
+                accept="image/*"
+                onChange={(e) => editingMember && handleUploadPhoto(editingMember.id, e)}
+              />
             </div>
 
             <div className="grid gap-2">
