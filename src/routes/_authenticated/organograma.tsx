@@ -30,10 +30,10 @@ function OrganogramaPage() {
       const { error } = await supabase
         .from('organizational_members')
         .insert({
-          name: 'Novo Membro',
-          role: 'Cargo',
+          name: 'Novo Colaborador',
+          role: 'Definir Cargo',
           level: 4,
-          color: '#6366f1',
+          color: '#3B82F6',
           display_order: 99
         });
       if (error) throw error;

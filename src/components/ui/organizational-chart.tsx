@@ -29,12 +29,28 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('organizational_members')
-        .select('*')
-        .order('level', { ascending: true })
-        .order('display_order', { ascending: true });
+        .select('*');
       
       if (error) throw error;
-      return data as Member[];
+      
+      const getPriority = (role: string) => {
+        const r = role.toLowerCase();
+        if (r.includes('adm') || r.includes('rh') || r.includes('gerente')) return 1;
+        if (r.includes('tst') || r.includes('segurança')) return 2;
+        if (r.includes('coord')) return 3;
+        if (r.includes('superv')) return 4;
+        if (r.includes('encarreg')) return 5;
+        if (r.includes('líder') || r.includes('lider')) return 6;
+        return 10;
+      };
+
+      return (data as Member[]).sort((a, b) => {
+        if (a.level !== b.level) return a.level - b.level;
+        const prioA = getPriority(a.role);
+        const prioB = getPriority(b.role);
+        if (prioA !== prioB) return prioA - prioB;
+        return a.display_order - b.display_order;
+      });
     }
   });
 
@@ -142,12 +158,24 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                     {isAdmin && (
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
                         <div className="flex flex-col items-center gap-2">
-                          <Edit2 className="text-white" size={24} />
-                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Editar Perfil</span>
+                          <Camera className="text-white" size={24} />
+                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Alterar Foto</span>
                         </div>
                       </div>
                     )}
                   </div>
+                  
+                  {isAdmin && !member.photo_url && (
+                    <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20">
+                      <Plus size={14} className="text-white" />
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={(e) => handleUploadPhoto(member.id, e)}
+                      />
+                    </label>
+                  )}
                   
                   {/* Pontos de conexão lateral */}
                   <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 rounded-full bg-white border-2" style={{ borderColor: member.color }} />
