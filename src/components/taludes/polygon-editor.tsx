@@ -32,7 +32,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  console.log("PolygonEditor Rendering:", { imageUrl, imageWidth, imageHeight });
   const [zoom, setZoom] = useState(0.2);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
@@ -181,7 +180,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   }, [onWheel]);
 
   return (
-    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
+    <div className="relative w-full h-[80vh] bg-slate-900 overflow-hidden flex flex-col rounded-xl border border-slate-700/50 shadow-2xl">
       {/* Toolbar */}
       <div className="absolute top-4 left-4 z-10 flex gap-2 bg-slate-800/80 p-2 rounded-lg backdrop-blur-sm border border-slate-700">
         <Button 
