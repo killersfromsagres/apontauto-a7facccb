@@ -17,6 +17,9 @@ import {
   ZoomOut,
   Target,
   Layers,
+  Scissors,
+  Zap,
+  DraftingCompass,
 } from "lucide-react";
 import { toast } from "sonner";
 
