@@ -128,6 +128,47 @@ export const updateMemberOrder = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateOrganizationalMember = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .validator((data: unknown) => {
+    if (!data || typeof data !== "object") throw new Error("Dados inválidos");
+    const { id, ...updates } = data as { id: string; [key: string]: any };
+    if (!id) throw new Error("ID do membro é obrigatório");
+    return { id, updates };
+  })
+  .handler(async ({ data, context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    const { error } = await supabaseAdmin
+      .from("organizational_members")
+      .update(data.updates)
+      .eq("id", data.id);
+    
+    if (error) throw error;
+    return { ok: true };
+  });
+
+export const addOrganizationalMember = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .validator((data: unknown) => {
+    if (!data || typeof data !== "object") throw new Error("Dados inválidos");
+    return data as Record<string, any>;
+  })
+  .handler(async ({ data, context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const supabaseAdmin = await createUsersAdminClient();
+
+    const { data: inserted, error } = await supabaseAdmin
+      .from("organizational_members")
+      .insert(data)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return inserted;
+  });
+
 export const MENU_KEYS = [
   "dashboard",
   "avaliacao-chamados",

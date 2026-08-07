@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, Plus, Edit2, Save, X, Trash2, Palette, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { updateMemberOrder } from '@/lib/users.functions';
+import { updateMemberOrder, updateOrganizationalMember } from '@/lib/users.functions';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,11 +57,8 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
 
   const updateMemberMutation = useMutation({
     mutationFn: async (updatedMember: Partial<Member> & { id: string }) => {
-      const { error } = await supabase
-        .from('organizational_members')
-        .update(updatedMember)
-        .eq('id', updatedMember.id);
-      if (error) throw error;
+      const { id, ...updates } = updatedMember;
+      return updateOrganizationalMember({ data: { id, ...updates } });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizational_members'] });
