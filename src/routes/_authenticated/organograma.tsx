@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useIsAdmin } from '@/hooks/use-is-admin';
 
 export const Route = createFileRoute('/_authenticated/organograma')({
   component: OrganogramaPage,
@@ -14,16 +15,17 @@ export const Route = createFileRoute('/_authenticated/organograma')({
 
 function OrganogramaPage() {
   const queryClient = useQueryClient();
-  const { data: session } = useQuery({
-    queryKey: ['session'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    }
-  });
+  const { isAdmin, loading: checkingAdmin } = useIsAdmin();
 
-  const isAdmin = session?.user?.user_metadata?.role === 'admin' || 
-                  session?.user?.email === 'admin@admin.com';
+  if (checkingAdmin) {
+    return (
+      <PageShell title="Estrutura Organizacional" description="Carregando...">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+        </div>
+      </PageShell>
+    );
+  }
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {

@@ -155,19 +155,17 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                       </div>
                     )}
                     
-                    {isAdmin && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
-                        <div className="flex flex-col items-center gap-2">
-                          <Camera className="text-white" size={24} />
-                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Alterar Foto</span>
-                        </div>
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
+                      <div className="flex flex-col items-center gap-2">
+                        <Camera className="text-white" size={24} />
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Alterar Foto</span>
                       </div>
-                    )}
+                    </div>
                   </div>
                   
-                  {isAdmin && !member.photo_url && (
-                    <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20">
-                      <Plus size={14} className="text-white" />
+                  {isAdmin && (
+                    <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20" title="Adicionar/Alterar Foto">
+                      <Camera size={14} className="text-white" />
                       <input 
                         type="file" 
                         className="hidden" 
@@ -215,7 +213,10 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                 )}
                 <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                  <Plus className="text-white" size={20} />
+                  <div className="flex flex-col items-center gap-1">
+                    <Camera className="text-white" size={24} />
+                    <span className="text-[10px] text-white font-bold uppercase">Alterar</span>
+                  </div>
                   <input 
                     type="file" 
                     className="hidden" 
@@ -225,6 +226,22 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                 </label>
               </div>
               <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Clique para alterar foto</p>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-4 border-white/10 text-white bg-white/5 hover:bg-white/10"
+                onClick={() => document.getElementById('dialog-photo-input')?.click()}
+              >
+                <Camera size={14} className="mr-2" /> Selecionar da Galeria
+              </Button>
+              <input 
+                id="dialog-photo-input"
+                type="file" 
+                className="hidden" 
+                accept="image/*"
+                onChange={(e) => editingMember && handleUploadPhoto(editingMember.id, e)}
+              />
             </div>
 
             <div className="grid gap-2">
