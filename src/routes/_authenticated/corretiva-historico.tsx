@@ -377,42 +377,42 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           <DialogTitle className="text-base sm:text-lg">OS {os?.numero_os}</DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-muted/30 border border-border/50 text-[13px] shadow-sm">
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Prédio
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 p-6 rounded-3xl bg-white/[0.03] border border-white/10 text-[13px] shadow-2xl backdrop-blur-md">
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Prédio
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5">{os?.predio || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.predio || "—"}</div>
           </div>
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Andar
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Andar
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5">{os?.andar || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.andar || "—"}</div>
           </div>
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Local
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Local
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5">{os?.local || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.local || "—"}</div>
           </div>
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Ativo
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Ativo
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5">{os?.ativo || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.ativo || "—"}</div>
           </div>
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Equipamento
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Equipamento
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5">{os?.equipamento || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.equipamento || "—"}</div>
           </div>
-          <div className="space-y-1">
-            <span className="flex items-center gap-1.5 text-[10px] uppercase text-muted-foreground font-bold tracking-wider">
-              <span className="w-1 h-3 bg-primary/40 rounded-full" /> Solicitante
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Solicitante
             </span>
-            <div className="font-semibold text-foreground/90 pl-2.5 truncate" title={os?.solicitante || ""}>{os?.solicitante || "—"}</div>
+            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight truncate" title={os?.solicitante || ""}>{os?.solicitante || "—"}</div>
           </div>
         </div>
 
