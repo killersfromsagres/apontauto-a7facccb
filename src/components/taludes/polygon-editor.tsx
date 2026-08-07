@@ -100,6 +100,8 @@ export function PolygonEditor({
   }, [viewport, imageSize]);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+
     const p = convertToImage(e.clientX, e.clientY);
 
     if (tool === "pan" || e.button === 1 || (e.button === 0 && e.altKey)) {
@@ -260,19 +262,19 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75"
+            className="absolute origin-top-left transition-transform duration-75 w-full h-full pointer-events-none"
             style={{ 
-              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
-              width: "100%",
-              height: "100%"
+              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`
             }}
+
           >
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
                 alt="Map" 
-                className="w-full h-full object-contain"
+                className="w-full h-full object-contain pointer-events-none"
               />
+
               
               {/* SVG Layer for Polygons */}
               <svg 
