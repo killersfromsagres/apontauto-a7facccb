@@ -155,19 +155,17 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                       </div>
                     )}
                     
-                    {isAdmin && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
-                        <div className="flex flex-col items-center gap-2">
-                          <Camera className="text-white" size={24} />
-                          <span className="text-[10px] font-bold text-white uppercase tracking-wider">Alterar Foto</span>
-                        </div>
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 gap-2">
+                      <div className="flex flex-col items-center gap-2">
+                        <Camera className="text-white" size={24} />
+                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Alterar Foto</span>
                       </div>
-                    )}
+                    </div>
                   </div>
                   
-                  {isAdmin && !member.photo_url && (
-                    <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20">
-                      <Plus size={14} className="text-white" />
+                  {isAdmin && (
+                    <label className="absolute -top-2 -right-2 bg-indigo-600 p-1.5 rounded-full cursor-pointer hover:bg-indigo-700 transition-colors shadow-lg z-20" title="Adicionar/Alterar Foto">
+                      <Camera size={14} className="text-white" />
                       <input 
                         type="file" 
                         className="hidden" 
