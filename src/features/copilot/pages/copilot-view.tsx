@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { copilotChat, copilotExecutar } from "@/lib/copilot/copilot.functions";
+import { isComandoIgnorado, sanitizeComando } from "@/lib/copilot/sanitize-comando";
 import type { AcaoProposta, CopilotConsulta } from "@/lib/copilot/types";
 
 interface Bolha {
