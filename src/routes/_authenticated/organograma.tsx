@@ -91,16 +91,20 @@ function OrganogramaPage() {
               <div className="flex items-center justify-between w-full mb-8 px-4 sm:px-12">
                 <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex items-center justify-center">
                   <img 
-                    src="https://www.gpssa.com.br/wp-content/uploads/2021/04/logo-gps.png" 
+                    src="https://id-preview--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app/lovable-uploads/27170817-062e-4b44-a639-698f1f1d191a.png" 
                     alt="Grupo GPS" 
                     className="h-10 object-contain filter brightness-0 invert" 
                   />
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm p-3 rounded-2xl border border-white/10 flex items-center justify-center">
                   <img 
-                    src="https://logodownload.org/wp-content/uploads/2019/08/sherwin-williams-logo-1.png" 
+                    src="https://id-preview--bc1896fa-22ee-4484-b349-09c5645d9b9d.lovable.app/lovable-uploads/7c7d1e8d-7a7d-4b5a-9d9d-1b1d1d1d1d1d.png" 
                     alt="Sherwin Williams" 
                     className="h-10 object-contain filter brightness-0 invert" 
+                    onError={(e) => {
+                      // Fallback if the above placeholder is invalid, using a public one for now
+                      (e.target as HTMLImageElement).src = "https://upload.wikimedia.org/wikipedia/en/thumb/5/52/Sherwin-Williams_logo.svg/1200px-Sherwin-Williams_logo.svg.png";
+                    }}
                   />
                 </div>
               </div>
