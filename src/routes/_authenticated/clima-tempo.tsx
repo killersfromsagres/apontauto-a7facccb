@@ -96,12 +96,13 @@ const STATUS_STYLES: Record<
 
 function ClimaTempoPage() {
   const q = useWeather();
+  const [showDetails, setShowDetails] = useState(false);
   const data = q.data;
 
   const current = data?.current;
   const currentInfo = weatherCodeInfo(current?.weather_code);
 
-  // Próximas 24h para gráfico
+  // Próximas 48h para gráfico (aumentado para melhor visão de planejamento)
   const hourlySeries = useMemo(() => {
     if (!data) return [];
     const now = Date.now();
@@ -109,12 +110,13 @@ function ClimaTempoPage() {
       .map((t, i) => ({
         raw: new Date(t).getTime(),
         hora: new Date(t).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        fullDate: new Date(t).toLocaleDateString("pt-BR", { day: '2-digit', month: '2-digit' }),
         probabilidade: data.hourly.precipitation_probability[i] ?? 0,
         chuva: Number((data.hourly.rain[i] ?? 0).toFixed(2)),
         temperatura: data.hourly.temperature_2m[i] ?? null,
       }))
       .filter((h) => h.raw >= now - 60 * 60_000)
-      .slice(0, 24);
+      .slice(0, 48);
   }, [data]);
 
   const probMaxHoje = data?.daily.precipitation_probability_max[0] ?? current?.rain ?? 0;
