@@ -19,7 +19,6 @@ import {
   Layers,
   Scissors,
   Zap,
-  DraftingCompass,
 } from "lucide-react";
 import { toast } from "sonner";
 
