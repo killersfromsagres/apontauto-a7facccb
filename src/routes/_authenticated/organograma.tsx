@@ -32,13 +32,15 @@ function OrganogramaPage() {
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: '#FFFFFF',
         scale: 2,
-        logging: false,
+        logging: true,
         useCORS: true,
         allowTaint: true,
-        proxy: undefined,
         imageTimeout: 15000,
         removeContainer: true,
-        foreignObjectRendering: false
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: chartRef.current.scrollWidth,
+        windowHeight: chartRef.current.scrollHeight,
       });
       
       const link = document.createElement('a');
@@ -108,7 +110,7 @@ function OrganogramaPage() {
                   <img 
                     src="/logos/gps-logo.png" 
                     alt="Grupo GPS" 
-                    className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`}
+                    className={`h-8 object-contain transition-all ${isExporting ? '' : 'brightness-0 invert'}`}
                     crossOrigin="anonymous"
                   />
                 </div>
@@ -116,7 +118,7 @@ function OrganogramaPage() {
                   <img 
                     src="/logos/sw-logo.png" 
                     alt="Sherwin Williams" 
-                    className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`} 
+                    className={`h-8 object-contain transition-all ${isExporting ? '' : 'brightness-0 invert'}`} 
                     crossOrigin="anonymous"
                   />
                 </div>
