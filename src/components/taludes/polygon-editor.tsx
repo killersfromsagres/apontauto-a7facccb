@@ -262,14 +262,11 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75"
+            className="absolute origin-top-left transition-transform duration-75 w-full h-full pointer-events-none"
             style={{ 
-              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
-              width: "100%",
-              height: "100%",
-              pointerEvents: "none"
-
+              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`
             }}
+
           >
             <div className="relative w-full h-full">
               <img 
