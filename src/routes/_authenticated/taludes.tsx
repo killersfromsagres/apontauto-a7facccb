@@ -78,7 +78,9 @@ import {
   type TaludeMapVersion,
   type TaludeMarcacao,
 } from "@/lib/taludes/api";
-import { exportGeoJson, exportJson, exportPdf, exportPng, scaleOf } from "@/lib/taludes/export";
+import { exportGeoJson, exportJson, exportPdf, scaleOf } from "@/lib/taludes/export";
+import { exportPixelPerfectMap } from "@/lib/taludes/export-service";
+
 import { metersPerPixel } from "@/lib/taludes/geometry";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
