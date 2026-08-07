@@ -919,21 +919,35 @@ function OSDetailView({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 rounded-xl bg-white/5 border border-white/5">
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Ativo</Label><p className="text-sm font-medium text-white/90 break-words">{os.ativo}</p></div>
-              <div><Label className="text-[10px] uppercase text-muted-foreground">Data Abertura</Label><p className="text-sm font-medium text-white/90">{os.data_criacao ? new Date(os.data_criacao).toLocaleDateString("pt-BR") : "—"}</p></div>
-              <div>
-                <Label className="text-[10px] uppercase text-muted-foreground">SLA (Dias de Atraso)</Label>
-                {(() => {
-                  if (!os.data_criacao) return <p className="text-sm font-medium text-white/90">—</p>;
-                  const diff = Math.floor((new Date().getTime() - new Date(os.data_criacao).getTime()) / (1000 * 60 * 60 * 24));
-                  const atraso = diff - 30;
-                  return (
-                    <p className={cn("text-sm font-bold", atraso > 0 ? "text-red-500" : "text-emerald-400")}>
-                      {atraso > 0 ? `${atraso} dias em atraso` : "No prazo"}
-                    </p>
-                  );
-                })()}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 p-6 rounded-3xl bg-white/[0.03] border border-white/10 text-[13px] shadow-2xl backdrop-blur-md">
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Ativo
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os.ativo || "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Data Abertura
+                </span>
+                <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os.data_criacao ? new Date(os.data_criacao).toLocaleDateString("pt-BR") : "—"}</div>
+              </div>
+              <div className="space-y-1.5">
+                <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
+                  <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> SLA (Status)
+                </span>
+                <div className="pl-3.5">
+                  {(() => {
+                    if (!os.data_criacao) return <div className="font-bold text-lg text-white/90">—</div>;
+                    const diff = Math.floor((new Date().getTime() - new Date(os.data_criacao).getTime()) / (1000 * 60 * 60 * 24));
+                    const atraso = diff - 30;
+                    return (
+                      <div className={cn("font-black text-lg", atraso > 0 ? "text-destructive animate-pulse" : "text-emerald-400")}>
+                        {atraso > 0 ? `${atraso} DIAS ATRASADO` : "NO PRAZO"}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 
