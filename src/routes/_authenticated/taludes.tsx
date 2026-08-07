@@ -665,8 +665,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-        <GlassCard className="space-y-3 p-3 h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)]">
+      <div className="flex flex-col gap-4 w-full h-full max-w-[100vw]">
+        <GlassCard className="space-y-3 p-3 h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)] w-full overflow-hidden">
           {!calibrado && (
 
             <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
