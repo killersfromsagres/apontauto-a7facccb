@@ -272,6 +272,16 @@ export function PolygonEditor({
     const p = toPercent(e.clientX, e.clientY);
     setHoverPoint(p);
 
+    if (isLassoDrawing) {
+      setIsLassoDrawing(false);
+      if (lassoPath.length >= 3) {
+        onCreate(lassoPath);
+      }
+      setLassoPath([]);
+      lastLassoPointRef.current = null;
+      return;
+    }
+
     if (dragRef.current) {
       const drag = dragRef.current;
       if (drag.kind === "vertex") {
