@@ -118,10 +118,10 @@ export function PolygonEditor({
 
     if (tool === "draw" || tool === "lasso" || tool === "magnetic-lasso") {
       if (draft.length > 2) {
-        // Check if clicking near first point to close
+        // Snap to close
         const firstScreen = convertToScreen(draft[0]);
         const dist = Math.hypot(e.clientX - firstScreen.x, e.clientY - firstScreen.y);
-        if (dist < 15) {
+        if (dist < 20) {
           commitDraft();
           return;
         }
@@ -206,11 +206,11 @@ export function PolygonEditor({
 
   const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const factor = e.deltaY > 0 ? 0.95 : 1.05;
+    const factor = e.deltaY > 0 ? 0.9 : 1.1; // Slightly faster zoom
     const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.zoom * factor));
     
-    // Zoom relative to mouse position
-    const rect = containerRef.current!.getBoundingClientRect();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
@@ -303,27 +303,32 @@ export function PolygonEditor({
         {/* Main Editor */}
         <div 
           ref={containerRef}
-          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none w-full h-full"
+          className="relative flex-1 bg-[#0a0a0c] rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none w-full h-full"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onWheel={onWheel}
         >
-          {/* Base Layer */}
+          {/* Work Area with coordinate system */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             style={{ 
               transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
               width: imageWidth,
               height: imageHeight,
+              transformOrigin: '0 0'
             }}
           >
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
                 alt="Mapa de Taludes" 
-                className="absolute inset-0 block max-w-none pointer-events-none w-full h-full"
-                style={{ objectFit: 'contain' }}
+                className="absolute inset-0 block max-w-none pointer-events-none"
+                style={{ 
+                  width: imageWidth, 
+                  height: imageHeight,
+                  objectFit: 'fill'
+                }}
               />
 
               {/* SVG Layer for Polygons */}
@@ -365,22 +370,30 @@ export function PolygonEditor({
                       points={draft.map(p => `${p.x},${p.y}`).join(" ")}
                       fill="none"
                       stroke="hsl(var(--primary))"
-                      strokeWidth={2 / viewport.zoom}
-                      strokeDasharray={`${4/viewport.zoom},${4/viewport.zoom}`}
+                      strokeWidth={3 / viewport.zoom}
+                      strokeDasharray={`${6/viewport.zoom},${4/viewport.zoom}`}
                     />
-                    {hoverPoint && (
+                    {hoverPoint && tool === "draw" && (
                       <line
                         x1={draft[draft.length-1].x}
                         y1={draft[draft.length-1].y}
                         x2={hoverPoint.x}
                         y2={hoverPoint.y}
                         stroke="hsl(var(--primary))"
-                        strokeWidth={1 / viewport.zoom}
-                        opacity={0.5}
+                        strokeWidth={2 / viewport.zoom}
+                        opacity={0.6}
                       />
                     )}
                     {draft.map((p, i) => (
-                      <circle key={i} cx={p.x} cy={p.y} r={4 / viewport.zoom} fill="hsl(var(--primary))" />
+                      <circle 
+                        key={i} 
+                        cx={p.x} 
+                        cy={p.y} 
+                        r={(i === 0 ? 6 : 4) / viewport.zoom} 
+                        fill={i === 0 ? "white" : "hsl(var(--primary))"} 
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={1 / viewport.zoom}
+                      />
                     ))}
                   </g>
                 )}
@@ -405,9 +418,9 @@ export function PolygonEditor({
 
           {/* Precision Crosshair */}
           {precisionMode && hoverPoint && (
-             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute w-px h-full bg-primary/20" style={{ left: convertToScreen(hoverPoint).x - containerRef.current!.getBoundingClientRect().left }} />
-                <div className="absolute h-px w-full bg-primary/20" style={{ top: convertToScreen(hoverPoint).y - containerRef.current!.getBoundingClientRect().top }} />
+             <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute w-px h-full bg-primary/40" style={{ left: convertToScreen(hoverPoint).x - containerRef.current!.getBoundingClientRect().left }} />
+                <div className="absolute h-px w-full bg-primary/40" style={{ top: convertToScreen(hoverPoint).y - containerRef.current!.getBoundingClientRect().top }} />
              </div>
           )}
 

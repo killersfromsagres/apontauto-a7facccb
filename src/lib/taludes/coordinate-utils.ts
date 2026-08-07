@@ -29,12 +29,16 @@ export function screenToImageCoordinates(
   const rx = screenX - containerRect.left;
   const ry = screenY - containerRect.top;
 
-  // 2. Account for pan and zoom
-  // ix, iy are coordinates in the "transformed" layer (at 1x scale, relative to origin)
+  // 2. We use SVG coordinates (0..imageWidth, 0..imageHeight)
+  // The layer is translated by viewport.offset and scaled by viewport.zoom
   const ix = (rx - viewport.offset.x) / viewport.zoom;
   const iy = (ry - viewport.offset.y) / viewport.zoom;
 
-  return { x: ix, y: iy };
+  // 3. Ensure we stay within image bounds
+  return { 
+    x: Math.max(0, Math.min(imageSize.width, ix)), 
+    y: Math.max(0, Math.min(imageSize.height, iy)) 
+  };
 }
 
 /**
