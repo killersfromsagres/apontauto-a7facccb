@@ -196,19 +196,19 @@ export function situationStatus(probability: number | null | undefined): Operati
  */
 export function effectiveTaludeStatus(
   probability: number | null | undefined,
-  rain: { detected: boolean; intensity: RainIntensity | null; label: string } | null | undefined,
+  rain: { detected: boolean; intensity: RainIntensity | null; label: string; mm_atual: number } | null | undefined,
 ): OperationalStatus {
   if (rain?.detected) {
-    const isDrizzle = rain.intensity === "garoa";
+    const isDrizzle = rain.intensity === "garoa" || (rain.mm_atual > 0 && rain.mm_atual < 0.5);
     return {
       nivel: "suspenso",
-      cor: isDrizzle ? "amber" : "red",
-      emoji: isDrizzle ? "🟠" : "🔴",
+      cor: "red",
+      emoji: "⛈",
       titulo: isDrizzle
-        ? "Operação SUSPENSA — Garoa em curso"
-        : `Operação SUSPENSA — ${rain.label} em curso`,
+        ? "ATIVIDADE PARALISADA — Garoa/Chuva em curso"
+        : `ATIVIDADE PARALISADA — ${rain.label} em curso`,
       descricao:
-        "Qualquer precipitação interrompe as atividades de talude. Aguarde céu limpo e liberação da PT.",
+        "Qualquer precipitação interrompe as atividades de talude por segurança. Aguarde a liberação formal.",
     };
   }
   return situationStatus(probability);

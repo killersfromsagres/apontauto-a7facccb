@@ -99,13 +99,19 @@ function ClimaTempoPage() {
   const [showDetails, setShowDetails] = useState(false);
   const data = q.data;
 
+  // Detecção de chuva em tempo real para status de taludes
+  const rainInfo = useMemo(() => detectRain(data), [data]);
+
   const current = data?.current;
   const currentInfo = weatherCodeInfo(current?.weather_code);
 
-  // Próximas 48h para gráfico (aumentado para melhor visão de planejamento)
+  // Próximas 48h para gráfico - Garantir que o gráfico comece EXATAMENTE agora ou na hora anterior mais próxima
   const hourlySeries = useMemo(() => {
     if (!data) return [];
-    const now = Date.now();
+    const now = new Date();
+    // Resetando para o início da hora atual para garantir alinhamento total com o tempo real
+    const startOfHour = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours()).getTime();
+    
     return data.hourly.time
       .map((t, i) => ({
         raw: new Date(t).getTime(),
@@ -115,14 +121,15 @@ function ClimaTempoPage() {
         chuva: Number((data.hourly.rain[i] ?? 0).toFixed(2)),
         temperatura: data.hourly.temperature_2m[i] ?? null,
       }))
-      .filter((h) => h.raw >= now - 60 * 60_000)
+      .filter((h) => h.raw >= startOfHour) // Filtro rigoroso para tempo real
       .slice(0, 48);
   }, [data]);
 
   const probMaxHoje = data?.daily.precipitation_probability_max[0] ?? current?.rain ?? 0;
-  const status = situationStatus(probMaxHoje);
+  // Usar a lógica específica de taludes que o usuário pediu para a "Situação Operacional" principal
+  const status = effectiveTaludeStatus(probMaxHoje, rainInfo);
   const statusStyle = STATUS_STYLES[status.nivel];
-  const alertExternal = shouldAlertExternalActivities(probMaxHoje);
+  const alertExternal = shouldAlertExternalActivities(probMaxHoje) || rainInfo.detected;
 
   const daySummary = data
     ? {
@@ -248,7 +255,7 @@ function ClimaTempoPage() {
               <span className="bg-background/40 px-2 py-0.5 rounded-full backdrop-blur-md">{Math.round(probMaxHoje)}% prob. chuva</span>
             </div>
             <div className="flex items-start gap-4">
-              <div className="text-5xl bg-background/50 p-3 rounded-2xl shadow-inner">{status.emoji}</div>
+              <div className={cn("text-5xl bg-background/50 p-3 rounded-2xl shadow-inner", status.nivel === 'suspenso' && "animate-pulse")}>{status.emoji}</div>
               <div className="space-y-1">
                 <div className={cn("font-display text-3xl font-black tracking-tight", statusStyle.text)}>
                   {status.titulo}
