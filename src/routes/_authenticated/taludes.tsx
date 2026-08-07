@@ -111,9 +111,25 @@ function todayIso() {
 }
 
 function fmtBr(iso: string) {
-  const [y, m, d] = iso.split("T")[0].split("-");
-  return `${d}/${m}/${y}`;
+  if (!iso) return "";
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
+
+function fmtFullBr(iso: string) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 
 function TaludesPage() {
   const qc = useQueryClient();

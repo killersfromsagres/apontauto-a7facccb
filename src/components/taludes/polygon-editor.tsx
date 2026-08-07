@@ -385,8 +385,23 @@ export function PolygonEditor({
                   </g>
                 )}
               </svg>
+
+              {/* Modern Date Badge Overlay */}
+              <div className="absolute top-4 right-4 z-10 pointer-events-none">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-[10px] font-medium text-white/90 tracking-wider uppercase">
+                    {new Intl.DateTimeFormat("pt-BR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    }).format(new Date())}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+
 
           {/* Precision Crosshair */}
           {precisionMode && hoverPoint && (
