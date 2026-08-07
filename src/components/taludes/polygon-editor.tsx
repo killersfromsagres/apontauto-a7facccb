@@ -288,6 +288,39 @@ export function PolygonEditor({
         onDraftChange?.(drag.id, next);
       }
     }
+
+    if (isLassoDrawing) {
+      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
+      const threshold = tool === "magnetic" ? 15 : 10; // Pixels distance to add new point
+
+      if (dist > threshold) {
+        let finalPoint = p;
+        if (tool === "magnetic") {
+          // Snap to edges of other polygons if close
+          const snapped = applySnap(p);
+          if (snapped.x !== p.x || snapped.y !== p.y) {
+            finalPoint = snapped;
+          } else {
+            // Find nearest edge of ANY polygon
+            let nearest: { pt: Point; d: number } | null = null;
+            for (const poly of polygons) {
+              const pts = geometryOf(poly);
+              const edge = nearestEdge(p, pts);
+              if (edge) {
+                const d = screenDistance(p, edge.point);
+                if (d < 30 && (!nearest || d < nearest.d)) {
+                  nearest = { pt: edge.point, d };
+                }
+              }
+            }
+            if (nearest) finalPoint = nearest.pt;
+          }
+        }
+        
+        setLassoPath(prev => [...prev, finalPoint]);
+        lastLassoPointRef.current = finalPoint;
+      }
+    }
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
