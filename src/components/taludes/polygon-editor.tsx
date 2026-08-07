@@ -389,11 +389,14 @@ export function PolygonEditor({
     // Click to add points
     const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
-      if (draft.length >= 3 && screenDistance(draft[0], p) <= CLOSE_SNAP_PX) {
+      const snapDist = screenDistance(draft[0] || p, p);
+      if (draft.length >= 3 && snapDist <= CLOSE_SNAP_PX) {
         commitDraft();
       } else {
         setDraft(d => [...d, applySnap(p)]);
       }
+    } else if (tool === "lasso" || tool === "magnetic") {
+       // Handled in onPointerUp above
     } else if (tool === "calibrate") {
       const next = [...calDraft, p];
       if (next.length === 2) {
