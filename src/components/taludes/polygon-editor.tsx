@@ -397,7 +397,13 @@ export function PolygonEditor({
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.code === "Space") { spaceRef.current = true; e.preventDefault(); }
-      if (e.key === "Escape") { setDraft([]); setTool("select"); }
+      if (e.key === "Escape") { setDraft([]); setLassoPath([]); setIsLassoDrawing(false); setTool("select"); }
+      if (e.key === "v") setTool("select");
+      if (e.key === "p") setTool("draw");
+      if (e.key === "l") setTool("lasso");
+      if (e.key === "m") setTool("magnetic");
+      if (e.key === "e") setTool("edit");
+      if (e.key === "h") setTool("pan");
       if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
         // undo/redo logic
       }
