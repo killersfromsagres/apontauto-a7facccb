@@ -127,21 +127,22 @@ function OrganogramaPage() {
 
           {!isExporting && (
             <div className="flex items-center justify-center gap-4 mt-8 pb-4">
-            {isAdmin && (
+              {isAdmin && (
+                <Button 
+                  onClick={() => addMemberMutation.mutate()}
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/10"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+                </Button>
+              )}
               <Button 
-                onClick={() => addMemberMutation.mutate()}
-                className="bg-white/10 hover:bg-white/20 text-white border-white/10"
+                onClick={downloadImage}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg shadow-indigo-500/20"
               >
-                <Plus className="mr-2 h-4 w-4" /> Adicionar Membro
+                <Download className="mr-2 h-4 w-4" /> Baixar PNG
               </Button>
-            )}
-            <Button 
-              onClick={downloadImage}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg shadow-indigo-500/20"
-            >
-              <Download className="mr-2 h-4 w-4" /> Baixar PNG
-            </Button>
-          </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </PageShell>
