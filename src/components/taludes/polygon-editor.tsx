@@ -143,10 +143,11 @@ export function PolygonEditor({
     const stage = stageRef.current;
     if (!stage) return { x: 0, y: 0 };
     
-    // We use the raw image container's bounding box for mapping
     const rect = stage.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return { x: 0, y: 0 };
     
+    // Calcula o deslocamento relativo dentro do elemento transformado (stage)
+    // Levando em conta o zoom e o offset do CSS transform
     const x = ((clientX - rect.left) / rect.width) * 100;
     const y = ((clientY - rect.top) / rect.height) * 100;
     
