@@ -32,8 +32,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.25);
-  const [offset, setOffset] = useState({ x: 50, y: 50 });
+  const [zoom, setZoom] = useState(0.1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
@@ -45,15 +45,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
-  // Centraliza e ajusta o zoom para caber na tela ao carregar a imagem
   const fitToView = useCallback(() => {
     if (containerRef.current && imgRef.current) {
       const container = containerRef.current;
       const img = imgRef.current;
       
       const padding = 20;
-      const availableWidth = container.offsetWidth - padding * 2;
-      const availableHeight = container.offsetHeight - padding * 2;
+      const availableWidth = container.clientWidth - padding * 2;
+      const availableHeight = container.clientHeight - padding * 2;
       
       if (availableWidth <= 0 || availableHeight <= 0) return;
 
@@ -67,8 +66,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       
       setZoom(fitZoom);
       setOffset({
-        x: (container.offsetWidth - w * fitZoom) / 2,
-        y: (container.offsetHeight - h * fitZoom) / 2
+        x: (container.clientWidth - w * fitZoom) / 2,
+        y: (container.clientHeight - h * fitZoom) / 2
       });
       setIsReady(true);
     }
@@ -76,13 +75,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   useEffect(() => {
     if (imageLoaded) {
-      // Temporarily disabled for debugging
-      // fitToView();
-      setIsReady(true);
+      const timer = setTimeout(fitToView, 100);
+      return () => clearTimeout(timer);
     }
   }, [imageLoaded, fitToView]);
 
-  // Observer para redimensionamento da janela
   useEffect(() => {
     const observer = new ResizeObserver(() => {
       if (imageLoaded) fitToView();
