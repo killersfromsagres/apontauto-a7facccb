@@ -32,6 +32,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
+  console.log("PolygonEditor Rendering:", { imageUrl, imageWidth, imageHeight });
   const [zoom, setZoom] = useState(0.2);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
