@@ -260,11 +260,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             height: imageHeight,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.1s linear',
+            transition: 'none',
             opacity: imageLoaded ? 1 : 0,
             willChange: 'transform',
-            position: 'relative'
+            position: 'relative',
+            background: '#000'
           }}
+
         >
           <img 
             ref={imgRef}
