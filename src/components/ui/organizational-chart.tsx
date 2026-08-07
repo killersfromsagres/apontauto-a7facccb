@@ -189,7 +189,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                     }}
                   >
                     {member.photo_url ? (
-                      <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
+                      <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" crossOrigin="anonymous" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white/10">
                         <Camera size={36} />

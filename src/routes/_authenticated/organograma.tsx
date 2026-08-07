@@ -30,11 +30,15 @@ function OrganogramaPage() {
 
     try {
       const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: '#FFFFFF', // Fundo branco na imagem como solicitado
+        backgroundColor: '#FFFFFF',
         scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true,
+        proxy: undefined,
+        imageTimeout: 15000,
+        removeContainer: true,
+        foreignObjectRendering: false
       });
       
       const link = document.createElement('a');
