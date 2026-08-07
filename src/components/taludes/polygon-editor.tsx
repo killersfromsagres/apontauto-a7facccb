@@ -185,13 +185,14 @@ export function PolygonEditor({
   }, [offset, zoom]);
 
   const screenDistance = useCallback((a: Point, b: Point) => {
-    const stage = stageRef.current;
-    if (!stage) return 1000;
-    const rect = stage.getBoundingClientRect();
-    const dx = (a.x - b.x) * (rect.width / 100);
-    const dy = (a.y - b.y) * (rect.height / 100);
+    const vp = viewportRef.current;
+    if (!vp) return 1000;
+    const rect = vp.getBoundingClientRect();
+    // Use viewport width as base for distance calculation
+    const dx = (a.x - b.x) * (rect.width / 100) * zoom;
+    const dy = (a.y - b.y) * (rect.height / 100) * zoom;
     return Math.hypot(dx, dy);
-  }, []);
+  }, [zoom]);
 
   const applySnap = useCallback((p: Point, excludeId?: string): Point => {
     if (grid) return snapToGrid(p, 1);
