@@ -30,10 +30,10 @@ export const Route = createFileRoute("/_authenticated/")({
   },
   head: () => ({
     meta: [
-      { title: "Menu Inicial — Apont Auto" },
+      { title: "Dashboard — Apont Auto" },
       {
         name: "description",
-        content: "Painel operacional e executivo unificado com monitoramento em tempo real.",
+        content: "Execute esta instrucao no projeto: preciso que melhore a parte de laudes e clima - clima e tempo , para melhorar todas as informações os graficos icones enquadrar melhor os textos , preciso que seja mais preciso o monitoramento e registro de chuvas para que fique visivelmente bonito , informações claras e precisas , e eventos de chuvas fique mais preciso para todo o monitoramente , preciso que melhore tudo visuavelmente , eventos de chuva preciso que melhore as informações deixe bem minimalista com menas informações de impacto que nao da pra entender melhore esse sistema. e em open meteo corrija o erro 429 melhore todo o sistema de monitoramento de clima e chuva.",
       },
     ],
   }),
