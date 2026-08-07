@@ -4,6 +4,7 @@ import { PageShell } from '@/components/page-shell';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { addOrganizationalMember } from '@/lib/users.functions';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -29,16 +30,15 @@ function OrganogramaPage() {
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from('organizational_members')
-        .insert({
+      return addOrganizationalMember({
+        data: {
           name: 'Novo Colaborador',
           role: 'Definir Cargo',
           level: 4,
           color: '#3B82F6',
           display_order: 99
-        });
-      if (error) throw error;
+        }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizational_members'] });
