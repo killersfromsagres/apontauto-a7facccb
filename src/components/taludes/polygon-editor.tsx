@@ -32,43 +32,51 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(0.2);
+  const [zoom, setZoom] = useState(0.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
   // Centraliza e ajusta o zoom para caber na tela ao carregar a imagem
   const fitToView = useCallback(() => {
-    if (containerRef.current && imageWidth && imageHeight) {
+    if (containerRef.current && imgRef.current) {
       const container = containerRef.current;
+      const img = imgRef.current;
+      
       const padding = 40;
       const availableWidth = container.clientWidth - padding;
       const availableHeight = container.clientHeight - padding;
       
+      const w = img.naturalWidth || imageWidth;
+      const h = img.naturalHeight || imageHeight;
+      
       const fitZoom = Math.min(
-        availableWidth / imageWidth,
-        availableHeight / imageHeight
+        availableWidth / w,
+        availableHeight / h
       );
       
       setZoom(fitZoom);
-      
-      // Centralizar
       setOffset({
-        x: (container.clientWidth - imageWidth * fitZoom) / 2,
-        y: (container.clientHeight - imageHeight * fitZoom) / 2
+        x: (container.clientWidth - w * fitZoom) / 2,
+        y: (container.clientHeight - h * fitZoom) / 2
       });
+      setIsReady(true);
     }
   }, [imageWidth, imageHeight]);
 
   useEffect(() => {
     if (imageLoaded) {
-      fitToView();
+      // Pequeno delay para garantir que o layout do container estabilizou
+      const timer = setTimeout(fitToView, 100);
+      return () => clearTimeout(timer);
     }
   }, [imageLoaded, fitToView]);
 
@@ -236,13 +244,20 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out'
+            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0, 0, 1)',
+            opacity: imageLoaded ? 1 : 0
           }}
         >
           <img 
+            ref={imgRef}
             src={imageUrl} 
             alt="Mapa de Taludes" 
-            style={{ width: imageWidth, height: imageHeight }}
+            style={{ 
+              width: imageWidth, 
+              height: imageHeight,
+              maxWidth: 'none',
+              display: 'block'
+            }}
             draggable={false}
             onLoad={() => setImageLoaded(true)}
             onError={(e) => {
