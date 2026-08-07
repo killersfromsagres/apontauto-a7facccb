@@ -164,7 +164,7 @@ function TaludesPage() {
                     src={m.image_url}
                     alt={m.nome}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+                    className="h-full w-full object-contain transition-transform group-hover:scale-[1.02]"
                   />
                 </div>
                 <div className="space-y-1 p-4">

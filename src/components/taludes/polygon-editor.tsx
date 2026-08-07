@@ -82,9 +82,7 @@ export function PolygonEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EditorTool>("select");
   const [viewport, setViewport] = useState<ViewportState>(() => {
-    // Start with a reasonable zoom to fit the image
-    const initialZoom = 0.5;
-    return { zoom: initialZoom, offset: { x: 40, y: 40 } };
+    return { zoom: 0.1, offset: { x: 20, y: 20 } };
   });
   const [precisionMode, setPrecisionMode] = useState(false);
   
@@ -277,9 +275,14 @@ export function PolygonEditor({
           <ToolButton onClick={() => {
             if (containerRef.current) {
               const rect = containerRef.current.getBoundingClientRect();
-              const zoomX = rect.width / imageWidth;
-              const zoomY = rect.height / imageHeight;
-              const fitZoom = Math.min(zoomX, zoomY, 1) * 0.9;
+              const padding = 40;
+              const availableWidth = rect.width - (padding * 2);
+              const availableHeight = rect.height - (padding * 2);
+              
+              const zoomX = availableWidth / imageWidth;
+              const zoomY = availableHeight / imageHeight;
+              const fitZoom = Math.min(zoomX, zoomY, 1);
+              
               setViewport({ 
                 zoom: fitZoom, 
                 offset: { 
@@ -318,8 +321,8 @@ export function PolygonEditor({
             <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
-                alt="Map" 
-                className="block max-w-none pointer-events-none"
+                alt="Mapa de Taludes" 
+                className="block max-w-none pointer-events-none object-contain"
                 style={{ width: imageWidth, height: imageHeight }}
               />
 
