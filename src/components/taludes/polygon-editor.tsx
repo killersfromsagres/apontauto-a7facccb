@@ -414,7 +414,9 @@ export function PolygonEditor({
     <div className={cn("flex flex-col gap-3", className)}>
       <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-md">
         <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Ponteiro (V)" />
-        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Novo Talude (P)" />
+        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Polígono (P)" />
+        <ToolButton active={tool === "lasso"} onClick={() => { setTool("lasso"); setDraft([]); }} icon={Scissors} label="Laço" />
+        <ToolButton active={tool === "magnetic"} onClick={() => { setTool("magnetic"); setDraft([]); }} icon={Magnet} label="Laço Magnético" />
         <ToolButton active={tool === "edit"} onClick={() => setTool("edit")} icon={Spline} label="Editar Vértices (E)" />
         <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Panoramizar (H)" />
         <ToolButton active={tool === "calibrate"} onClick={() => setTool("calibrate")} icon={Ruler} label="Calibrar Escala" />
