@@ -64,8 +64,8 @@ export interface PolygonEditorProps {
   className?: string;
 }
 
-const MIN_ZOOM = 0.05;
-const MAX_ZOOM = 4;
+const MIN_ZOOM = 0.01;
+const MAX_ZOOM = 8;
 
 export function PolygonEditor({
   imageUrl,
@@ -82,7 +82,7 @@ export function PolygonEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EditorTool>("select");
   const [viewport, setViewport] = useState<ViewportState>(() => {
-    return { zoom: 0.1, offset: { x: 20, y: 20 } };
+    return { zoom: 0.05, offset: { x: 0, y: 0 } };
   });
   const [precisionMode, setPrecisionMode] = useState(false);
   
@@ -275,7 +275,7 @@ export function PolygonEditor({
           <ToolButton onClick={() => {
             if (containerRef.current) {
               const rect = containerRef.current.getBoundingClientRect();
-              const padding = 40;
+              const padding = 10;
               const availableWidth = rect.width - (padding * 2);
               const availableHeight = rect.height - (padding * 2);
               
