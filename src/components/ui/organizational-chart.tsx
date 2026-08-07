@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, Plus, Edit2, Save, X, Trash2, Palette, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Camera, Plus, Edit2, Save, X, Trash2, Palette, GripVertical, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { updateMemberOrder, updateOrganizationalMember } from '@/lib/users.functions';
@@ -82,21 +82,37 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
     }
   });
 
-  const handleMove = (member: Member, direction: 'left' | 'right') => {
+  const handleMove = (member: Member, direction: 'left' | 'right' | 'up' | 'down') => {
     const levelMembers = members.filter(m => m.level === member.level);
     const currentIndex = levelMembers.findIndex(m => m.id === member.id);
-    const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
-
-    if (targetIndex < 0 || targetIndex >= levelMembers.length) return;
-
-    const targetMember = levelMembers[targetIndex];
     
-    const updates = [
-      { id: member.id, display_order: targetMember.display_order },
-      { id: targetMember.id, display_order: member.display_order }
-    ];
+    if (direction === 'left' || direction === 'right') {
+      const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex < 0 || targetIndex >= levelMembers.length) return;
+      const targetMember = levelMembers[targetIndex];
+      const updates = [
+        { id: member.id, display_order: targetMember.display_order },
+        { id: targetMember.id, display_order: member.display_order }
+      ];
+      updateOrderMutation.mutate({ data: updates });
+    } else {
+      // Mover entre níveis (up/down)
+      const currentLevel = member.level;
+      const targetLevel = direction === 'up' ? currentLevel - 1 : currentLevel + 1;
+      if (targetLevel < 0 || targetLevel > 10) return; // Limite arbitrário de níveis
 
-    updateOrderMutation.mutate({ data: updates });
+      // Quando muda de nível, ele vai para o final da fila daquele nível
+      const targetLevelMembers = members.filter(m => m.level === targetLevel);
+      const maxOrder = targetLevelMembers.length > 0 
+        ? Math.max(...targetLevelMembers.map(m => m.display_order))
+        : 0;
+
+      updateMemberMutation.mutate({ 
+        id: member.id, 
+        level: targetLevel,
+        display_order: maxOrder + 1
+      });
+    }
   };
 
   const handleUploadPhoto = async (memberId: string, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,25 +222,45 @@ export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
                 </div>
 
                 {/* Info Card */}
-                <div className="text-center group w-full">
+                <div className="text-center group w-full relative">
+                  {/* Vertical Move Controls (Up/Down) */}
+                  {isAdmin && (
+                    <div className="absolute -top-36 left-1/2 -translate-x-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                      <button 
+                        onClick={() => handleMove(member, 'up')}
+                        className="bg-indigo-600/80 p-1.5 rounded-full hover:bg-indigo-600 text-white shadow-lg backdrop-blur-sm"
+                        title="Subir nível"
+                      >
+                        <ArrowUp size={16} />
+                      </button>
+                      <button 
+                        onClick={() => handleMove(member, 'down')}
+                        className="bg-indigo-600/80 p-1.5 rounded-full hover:bg-indigo-600 text-white shadow-lg backdrop-blur-sm"
+                        title="Descer nível"
+                      >
+                        <ArrowDown size={16} />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-center gap-2 mb-1">
                     {isAdmin && (
                       <button 
                         onClick={() => handleMove(member, 'left')}
-                        className="p-1 hover:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
                         title="Mover para esquerda"
                       >
-                        <ChevronLeft size={14} className="text-white/40" />
+                        <ChevronLeft size={16} className="text-indigo-400" />
                       </button>
                     )}
                     <h3 className="font-black text-white text-base tracking-tight uppercase truncate max-w-[150px]">{member.name}</h3>
                     {isAdmin && (
                       <button 
                         onClick={() => handleMove(member, 'right')}
-                        className="p-1 hover:bg-white/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
                         title="Mover para direita"
                       >
-                        <ChevronRight size={14} className="text-white/40" />
+                        <ChevronRight size={16} className="text-indigo-400" />
                       </button>
                     )}
                   </div>
