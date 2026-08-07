@@ -484,7 +484,19 @@ export function PolygonEditor({
               );
             })}
 
-            {/* Drawing preview */}
+            {/* Drawing preview (Lasso/Magnetic) */}
+            {(isLassoDrawing || lassoPath.length > 0) && (
+              <polyline
+                points={lassoPath.map(p => `${p.x},${p.y}`).join(" ")}
+                fill="none"
+                stroke={tool === "magnetic" ? "#22c55e" : "#0ea5e9"}
+                strokeWidth={2}
+                vectorEffect="non-scaling-stroke"
+                className="pointer-events-none"
+              />
+            )}
+
+            {/* Drawing preview (Standard Poly) */}
             {draft.length > 0 && (
               <polyline
                 points={[...draft, ...(hoverPoint ? [hoverPoint] : [])].map(p => `${p.x},${p.y}`).join(" ")}
