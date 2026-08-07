@@ -165,7 +165,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
           <div key={level} className="flex flex-wrap justify-center gap-12 relative w-full">
             {/* Linhas de conexão vertical entre níveis */}
             {level < levels[levels.length - 1] && (
-               <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-px h-16 bg-white/10 -z-10" />
+               <div className={`absolute -bottom-16 left-1/2 -translate-x-1/2 w-px h-16 transition-colors ${isExporting ? 'bg-slate-200' : 'bg-white/10'} -z-10`} />
             )}
             
             {members.filter(m => m.level === level).map((member) => (
