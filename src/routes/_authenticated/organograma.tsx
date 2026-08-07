@@ -30,11 +30,15 @@ function OrganogramaPage() {
 
     try {
       const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: '#FFFFFF', // Fundo branco na imagem como solicitado
+        backgroundColor: '#FFFFFF',
         scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true,
+        proxy: undefined,
+        imageTimeout: 15000,
+        removeContainer: true,
+        foreignObjectRendering: false
       });
       
       const link = document.createElement('a');
@@ -105,6 +109,7 @@ function OrganogramaPage() {
                     src="/logos/gps-logo.png" 
                     alt="Grupo GPS" 
                     className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`}
+                    crossOrigin="anonymous"
                   />
                 </div>
                 <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
@@ -112,6 +117,7 @@ function OrganogramaPage() {
                     src="/logos/sw-logo.png" 
                     alt="Sherwin Williams" 
                     className={`h-8 object-contain transition-all ${isExporting ? 'brightness-100 invert-0' : 'brightness-0 invert'}`} 
+                    crossOrigin="anonymous"
                   />
                 </div>
               </div>
