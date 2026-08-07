@@ -30,10 +30,10 @@ function GlassCardImpl({
       onClick={onClick}
       className={cn(
         variant === "block" ? "glass-block" : "glass-surface",
-        "animate-card-rise relative overflow-hidden rounded-2xl p-4 sm:p-6",
+        "animate-card-rise relative overflow-hidden rounded-2xl p-5 sm:p-7",
         "transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
-        "hover:border-primary/30 hover:shadow-lift",
-        "active:duration-150",
+        "hover:border-primary/20 hover:shadow-lift",
+        "active:duration-150 active:scale-[0.99]",
         "card-sheen", // Adiciona o brilho especular ao passar o mouse
         onClick && "cursor-pointer",
         className,

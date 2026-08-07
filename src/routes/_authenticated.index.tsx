@@ -30,10 +30,10 @@ export const Route = createFileRoute("/_authenticated/")({
   },
   head: () => ({
     meta: [
-      { title: "Dashboard — Apont Auto" },
+      { title: "Dashboard — ApontAuto Premium" },
       {
         name: "description",
-        content: "Execute esta instrucao no projeto: preciso que corrija o erro em demarcação de taludes no qual ao selecionar o ponto inicial de demarcação o traçado para fazer a marcação vai em outro lugar .",
+        content: "Modernize completamente a estética da interface, transformando-a em um software premium, sofisticado e profissional, sem alterar a lógica, funcionalidades, integrações ou comportamento atual do sistema.",
       },
     ],
   }),
