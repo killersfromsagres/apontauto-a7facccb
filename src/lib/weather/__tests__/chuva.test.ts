@@ -48,7 +48,7 @@ describe("detecção de chuva", () => {
 
 describe("regra de suspensão e retomada", () => {
   it("qualquer chuva suspende a operação de talude", () => {
-    const s = effectiveTaludeStatus(5, { detected: true, intensity: "garoa", label: "Garoa" });
+    const s = effectiveTaludeStatus(5, { detected: true, intensity: "garoa", label: "Garoa", mm_atual: 0.1 });
     expect(s.nivel).toBe("suspenso");
   });
 
@@ -57,13 +57,14 @@ describe("regra de suspensão e retomada", () => {
       detected: true,
       intensity: "forte",
       label: "Chuva forte",
+      mm_atual: 10,
     });
     expect(s.nivel).toBe("suspenso");
     expect(s.cor).toBe("red");
   });
 
   it("sem chuva retoma o status previsto pela probabilidade", () => {
-    expect(effectiveTaludeStatus(5, { detected: false, intensity: null, label: "" }).nivel).toBe(
+    expect(effectiveTaludeStatus(5, { detected: false, intensity: null, label: "", mm_atual: 0 }).nivel).toBe(
       "normal",
     );
     expect(effectiveTaludeStatus(95, null).nivel).toBe("reprogramar");
