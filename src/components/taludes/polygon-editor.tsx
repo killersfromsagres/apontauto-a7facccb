@@ -217,6 +217,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             alt="Mapa de Taludes" 
             style={{ width: imageWidth, height: imageHeight }}
             draggable={false}
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              console.error("Erro ao carregar mapa:", imageUrl);
+              toast.error("Erro ao carregar a imagem do mapa.");
+            }}
           />
           
           <svg 
