@@ -20,7 +20,7 @@ interface Member {
   display_order: number;
 }
 
-export default function OrganizationalChart({ isAdmin }: { isAdmin: boolean }) {
+export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin: boolean, isExporting?: boolean }) {
   const queryClient = useQueryClient();
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
