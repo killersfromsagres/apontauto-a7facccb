@@ -1,24 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Crosshair,
-  Grid3X3,
-  Hand,
-  Magnet,
-  Maximize2,
   MousePointer2,
   Pentagon,
-  Redo2,
-  Ruler,
-  Save,
-  Spline,
-  Undo2,
-  X,
+  Hand,
   ZoomIn,
   ZoomOut,
+  Maximize2,
+  Undo2,
+  Redo2,
+  Trash2,
+  Download,
   Target,
-  Layers,
-  Scissors,
-  Zap,
+  Crosshair,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -27,14 +20,18 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { Point } from "@/lib/taludes/api";
 import {
-  centroid,
-  clampPoint,
-  nearestEdge,
   pointInPolygon,
-  snapToGrid,
   validatePolygon,
 } from "@/lib/taludes/geometry";
-import { pushEntry } from "@/lib/taludes/history";
+import {
+  screenToImageCoordinates,
+  imageToScreenCoordinates,
+  getImageRenderBounds,
+  type ViewportState,
+  type ImageSize
+} from "@/lib/taludes/coordinate-utils";
+import { exportPixelPerfectMap } from "@/lib/taludes/export-service";
+import { downloadBlob } from "@/lib/download";
 
 export interface EditorPolygon {
   id: string;
@@ -44,9 +41,11 @@ export interface EditorPolygon {
   visible: boolean;
   locked: boolean;
   label: string;
+  date?: string;
+  status?: string;
 }
 
-export type EditorTool = "select" | "draw" | "lasso" | "magnetic" | "edit" | "pan" | "calibrate";
+export type EditorTool = "select" | "draw" | "pan";
 
 export interface PolygonEditorProps {
   imageUrl: string;
@@ -57,22 +56,12 @@ export interface PolygonEditorProps {
   onSelect: (id: string | null) => void;
   onGeometryChange: (id: string, points: Point[]) => void;
   onCreate: (points: Point[]) => void;
-  onDraftChange?: (id: string, points: Point[]) => void;
-  calibration?: { a: Point; b: Point; meters: number } | null;
-  onCalibrate?: (a: Point, b: Point) => void;
+  onDelete?: (id: string) => void;
   className?: string;
 }
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 50;
-const CLOSE_SNAP_PX = 20;
-const SNAP_SCREEN_PX = 12;
-const HANDLE_PX = 14;
-
-interface HistoryEntry {
-  id: string;
-  points: Point[];
-}
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 8;
 
 export function PolygonEditor({
   imageUrl,
@@ -83,363 +72,132 @@ export function PolygonEditor({
   onSelect,
   onGeometryChange,
   onCreate,
-  onDraftChange,
-  calibration,
-  onCalibrate,
+  onDelete,
   className,
 }: PolygonEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-
   const [tool, setTool] = useState<EditorTool>("select");
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [grid, setGrid] = useState(false);
-  const [snap, setSnap] = useState(true);
+  const [viewport, setViewport] = useState<ViewportState>({ zoom: 1, offset: { x: 0, y: 0 } });
+  const [precisionMode, setPrecisionMode] = useState(false);
+  
   const [draft, setDraft] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
-  const [calDraft, setCalDraft] = useState<Point[]>([]);
-  const [isLassoDrawing, setIsLassoDrawing] = useState(false);
-  const [lassoPath, setLassoPath] = useState<Point[]>([]);
-  const lastLassoPointRef = useRef<Point | null>(null);
-  
-  // High-precision state for active drawing/dragging
-  const [working, setWorking] = useState<Record<string, Point[]>>({});
-  const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
-  const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
+  const [dragging, setDragging] = useState<{ id: string; index: number } | null>(null);
+  const [panStart, setPanStart] = useState<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
-  const spaceRef = useRef(false);
-  const panRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const dragRef = useRef<
-    | { kind: "vertex"; id: string; index: number; before: Point[]; grab: Point }
-    | { kind: "move"; id: string; before: Point[]; start: Point }
-    | null
-  >(null);
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const pinchRef = useRef<{ dist: number; zoom: number } | null>(null);
+  const imageSize = useMemo<ImageSize>(() => ({ width: imageWidth, height: imageHeight }), [imageWidth, imageHeight]);
 
-  // Sync working state with external polygons
-  useEffect(() => {
-    setWorking((w) => {
-      const next = { ...w };
-      let changed = false;
-      const activeIds = new Set(polygons.map(p => p.id));
-      
-      // Remove stale working geometries
-      for (const k in next) {
-        if (!activeIds.has(k) && dragRef.current?.id !== k) {
-          delete next[k];
-          changed = true;
-        }
-      }
-      return changed ? next : w;
-    });
-  }, [polygons]);
+  const convertToImage = useCallback((clientX: number, clientY: number) => {
+    if (!containerRef.current) return { x: 0, y: 0 };
+    const rect = containerRef.current.getBoundingClientRect();
+    return screenToImageCoordinates(clientX, clientY, rect, viewport, imageSize);
+  }, [viewport, imageSize]);
 
-  // Transform coordinates: Client (screen) -> Percentage (0-100)
-  // Refined for absolute precision by using the viewport container as reference
-  // and manually applying the scale and offset calculations to avoid browser transform drift.
-  const toPercent = useCallback((clientX: number, clientY: number): Point => {
-    const vp = viewportRef.current;
-    if (!vp) return { x: 0, y: 0 };
-    
-    const vpRect = vp.getBoundingClientRect();
-    
-    // 1. Calculate relative coordinates in the viewport
-    const rx = clientX - vpRect.left;
-    const ry = clientY - vpRect.top;
-    
-    // 2. Subtract the pan offset
-    const ox = rx - offset.x;
-    const oy = ry - offset.y;
-    
-    // 3. Divide by zoom to get position in original unscaled space
-    const sx = ox / zoom;
-    const sy = oy / zoom;
-    
-    // 4. Map to percentage based on intended image dimensions
-    const x = (sx / vpRect.width) * 100;
-    const y = (sy / vpRect.height) * 100;
-    
-    return clampPoint({ x, y });
-  }, [offset, zoom]);
-
-  // Transform coordinates: Percentage (0-100) -> Screen Pixels relative to Viewport
-  const toScreen = useCallback((p: Point) => {
-    const vp = viewportRef.current;
-    if (!vp) return { left: 0, top: 0 };
-    const vpRect = vp.getBoundingClientRect();
-    
-    // Inverse of toPercent logic
-    const sx = (p.x / 100) * vpRect.width;
-    const sy = (p.y / 100) * vpRect.height;
-    
-    const ox = sx * zoom;
-    const oy = sy * zoom;
-    
-    return {
-      left: vpRect.left + offset.x + ox,
-      top: vpRect.top + offset.y + oy
-    };
-  }, [offset, zoom]);
-
-  const screenDistance = useCallback((a: Point, b: Point) => {
-    const vp = viewportRef.current;
-    if (!vp) return 1000;
-    const rect = vp.getBoundingClientRect();
-    // Use viewport width as base for distance calculation
-    const dx = (a.x - b.x) * (rect.width / 100) * zoom;
-    const dy = (a.y - b.y) * (rect.height / 100) * zoom;
-    return Math.hypot(dx, dy);
-  }, [zoom]);
-
-  const applySnap = useCallback((p: Point, excludeId?: string): Point => {
-    if (grid) return snapToGrid(p, 1);
-    if (!snap) return p;
-
-    let best: { d: number; pt: Point } | null = null;
-    for (const poly of polygons) {
-      if (!poly.visible || poly.id === excludeId) continue;
-      const pts = working[poly.id] || poly.points;
-      for (const v of pts) {
-        const d = screenDistance(v, p);
-        if (d <= SNAP_SCREEN_PX && (!best || d < best.d)) {
-          best = { d, pt: v };
-        }
-      }
-    }
-    return best ? { ...best.pt } : p;
-  }, [grid, snap, polygons, working, screenDistance]);
-
-  const geometryOf = (p: EditorPolygon) => working[p.id] ?? p.points;
-
-  /* ------------------------------ Event Handlers ------------------------------ */
-
-  const zoomAt = useCallback((factor: number, clientX?: number, clientY?: number) => {
-    const vp = viewportRef.current;
-    if (!vp) return;
-    const rect = vp.getBoundingClientRect();
-    const cx = (clientX ?? rect.left + rect.width / 2) - rect.left;
-    const cy = (clientY ?? rect.top + rect.height / 2) - rect.top;
-
-    setZoom(z => {
-      const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor));
-      const ratio = nz / z;
-      setOffset(o => ({
-        x: cx - (cx - o.x) * ratio,
-        y: cy - (cy - o.y) * ratio,
-      }));
-      return nz;
-    });
-  }, []);
+  const convertToScreen = useCallback((p: Point) => {
+    if (!containerRef.current) return { x: 0, y: 0 };
+    const rect = containerRef.current.getBoundingClientRect();
+    return imageToScreenCoordinates(p, rect, viewport, imageSize);
+  }, [viewport, imageSize]);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    
-    if (pointersRef.current.size === 2) {
-      const [a, b] = Array.from(pointersRef.current.values());
-      pinchRef.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom };
-      panRef.current = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ox: offset.x, oy: offset.y };
+    const p = convertToImage(e.clientX, e.clientY);
+
+    if (tool === "pan" || e.button === 1 || (e.button === 0 && e.altKey)) {
+      setPanStart({ x: e.clientX, y: e.clientY, ox: viewport.offset.x, oy: viewport.offset.y });
+      containerRef.current?.setPointerCapture(e.pointerId);
       return;
     }
 
-    if (tool === "pan" || spaceRef.current || e.button === 1) {
-      panRef.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      return;
-    }
-
-    const p = toPercent(e.clientX, e.clientY);
-
-    if (tool === "lasso" || tool === "magnetic") {
-      setIsLassoDrawing(true);
-      setLassoPath([p]);
-      lastLassoPointRef.current = p;
-      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      return;
-    }
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (pointersRef.current.has(e.pointerId)) {
-      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    }
-
-    if (pointersRef.current.size === 2 && pinchRef.current && panRef.current) {
-      const [a, b] = Array.from(pointersRef.current.values());
-      const dist = Math.hypot(a.x - b.x, a.y - b.y);
-      const factor = dist / pinchRef.current.dist;
-      const nz = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinchRef.current.zoom * factor));
-      setZoom(nz);
-      
-      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-      setOffset({
-        x: panRef.current.ox + (mid.x - panRef.current.x),
-        y: panRef.current.oy + (mid.y - panRef.current.y),
-      });
-      return;
-    }
-
-    if (panRef.current) {
-      setOffset({
-        x: panRef.current.ox + (e.clientX - panRef.current.x),
-        y: panRef.current.oy + (e.clientY - panRef.current.y),
-      });
-      return;
-    }
-
-    const p = toPercent(e.clientX, e.clientY);
-    setHoverPoint(p);
-
-    if (isLassoDrawing) {
-      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
-      const threshold = tool === "magnetic" ? 15 : 10;
-
-      if (dist > threshold) {
-        let finalPoint = p;
-        if (tool === "magnetic") {
-          const snapped = applySnap(p);
-          if (snapped.x !== p.x || snapped.y !== p.y) {
-            finalPoint = snapped;
-          } else {
-            let nearest: { pt: Point; d: number } | null = null;
-            for (const poly of polygons) {
-              const pts = geometryOf(poly);
-              const edge = nearestEdge(p, pts);
-              if (edge) {
-                const d = screenDistance(p, edge.point);
-                if (d < 30 && (!nearest || d < nearest.d)) {
-                  nearest = { pt: edge.point, d };
-                }
-              }
-            }
-            if (nearest) finalPoint = nearest.pt;
-          }
-        }
-        
-        setLassoPath(prev => [...prev, finalPoint]);
-        lastLassoPointRef.current = finalPoint;
-      }
-      return;
-    }
-
-    if (dragRef.current) {
-      const drag = dragRef.current;
-      if (drag.kind === "vertex") {
-        const next = [...(working[drag.id] || drag.before)];
-        const raw = clampPoint({ x: p.x + drag.grab.x, y: p.y + drag.grab.y });
-        next[drag.index] = applySnap(raw, drag.id);
-        setWorking(w => ({ ...w, [drag.id]: next }));
-        onDraftChange?.(drag.id, next);
-      } else if (drag.kind === "move") {
-        const dx = p.x - drag.start.x;
-        const dy = p.y - drag.start.y;
-        const next = drag.before.map(v => clampPoint({ x: v.x + dx, y: v.y + dy }));
-        setWorking(w => ({ ...w, [drag.id]: next }));
-        onDraftChange?.(drag.id, next);
-      }
-    }
-
-    if (isLassoDrawing) {
-      const dist = lastLassoPointRef.current ? screenDistance(lastLassoPointRef.current, p) : 100;
-      const threshold = tool === "magnetic" ? 15 : 10; // Pixels distance to add new point
-
-      if (dist > threshold) {
-        let finalPoint = p;
-        if (tool === "magnetic") {
-          // Snap to edges of other polygons if close
-          const snapped = applySnap(p);
-          if (snapped.x !== p.x || snapped.y !== p.y) {
-            finalPoint = snapped;
-          } else {
-            // Find nearest edge of ANY polygon
-            let nearest: { pt: Point; d: number } | null = null;
-            for (const poly of polygons) {
-              const pts = geometryOf(poly);
-              const edge = nearestEdge(p, pts);
-              if (edge) {
-                const d = screenDistance(p, edge.point);
-                if (d < 30 && (!nearest || d < nearest.d)) {
-                  nearest = { pt: edge.point, d };
-                }
-              }
-            }
-            if (nearest) finalPoint = nearest.pt;
-          }
-        }
-        
-        setLassoPath(prev => [...prev, finalPoint]);
-        lastLassoPointRef.current = finalPoint;
-      }
-    }
-  };
-
-  const onPointerUp = (e: React.PointerEvent) => {
-    const wasPanning = !!panRef.current;
-    const wasDragging = !!dragRef.current;
-    const wasLassoing = isLassoDrawing;
-    
-    if (isLassoDrawing) {
-      setIsLassoDrawing(false);
-      if (lassoPath.length >= 3) {
-        onCreate(lassoPath);
-      }
-      setLassoPath([]);
-      lastLassoPointRef.current = null;
-    }
-
-    if (dragRef.current) {
-      const { id, before } = dragRef.current;
-      const final = working[id];
-      if (final) {
-        setUndoStack(s => pushEntry(s, { id, points: before }));
-        setRedoStack([]);
-        onGeometryChange(id, final);
-      }
-      dragRef.current = null;
-    }
-
-    panRef.current = null;
-    pointersRef.current.delete(e.pointerId);
-    if (pointersRef.current.size < 2) pinchRef.current = null;
-
-    if (wasPanning || wasDragging || wasLassoing) return;
-
-    // Click to add points
-    const p = toPercent(e.clientX, e.clientY);
     if (tool === "draw") {
-      const snapDist = screenDistance(draft[0] || p, p);
-      if (draft.length >= 3 && snapDist <= CLOSE_SNAP_PX) {
-        commitDraft();
-      } else {
-        setDraft(d => [...d, applySnap(p)]);
+      if (draft.length > 2) {
+        // Check if clicking near first point to close
+        const firstScreen = convertToScreen(draft[0]);
+        const dist = Math.hypot(e.clientX - firstScreen.x, e.clientY - firstScreen.y);
+        if (dist < 15) {
+          commitDraft();
+          return;
+        }
       }
-    } else if (tool === "lasso" || tool === "magnetic") {
-       // Handled in onPointerUp above
-    } else if (tool === "calibrate") {
-      const next = [...calDraft, p];
-      if (next.length === 2) {
-        onCalibrate?.(next[0], next[1]);
-        setCalDraft([]);
-        setTool("select");
-      } else {
-        setCalDraft(next);
+      setDraft(prev => [...prev, p]);
+      return;
+    }
+
+    if (tool === "select") {
+      // Check for vertex dragging
+      for (const poly of polygons) {
+        if (!poly.visible) continue;
+        for (let i = 0; i < poly.points.length; i++) {
+          const sp = convertToScreen(poly.points[i]);
+          const dist = Math.hypot(e.clientX - sp.x, e.clientY - sp.y);
+          if (dist < (precisionMode ? 6 : 12)) {
+            onSelect(poly.id);
+            setDragging({ id: poly.id, index: i });
+            containerRef.current?.setPointerCapture(e.pointerId);
+            return;
+          }
+        }
       }
-    } else {
-      // Selection
-      const hit = [...polygons].reverse().find(poly => 
-        poly.visible && pointInPolygon(p, geometryOf(poly))
-      );
+
+      // Check for polygon selection
+      const hit = [...polygons].reverse().find(poly => poly.visible && pointInPolygon(p, poly.points));
       onSelect(hit?.id ?? null);
     }
   };
 
+  const onPointerMove = (e: React.PointerEvent) => {
+    const p = convertToImage(e.clientX, e.clientY);
+    setHoverPoint(p);
+
+    if (panStart) {
+      setViewport(prev => ({
+        ...prev,
+        offset: {
+          x: panStart.ox + (e.clientX - panStart.x),
+          y: panStart.oy + (e.clientY - panStart.y)
+        }
+      }));
+      return;
+    }
+
+    if (dragging) {
+      const poly = polygons.find(p => p.id === dragging.id);
+      if (poly) {
+        const nextPoints = [...poly.points];
+        nextPoints[dragging.index] = p;
+        onGeometryChange(poly.id, nextPoints);
+      }
+    }
+  };
+
+  const onPointerUp = () => {
+    setPanStart(null);
+    setDragging(null);
+  };
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, viewport.zoom * factor));
+    
+    // Zoom relative to mouse position
+    const rect = containerRef.current!.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    setViewport(prev => ({
+      zoom: newZoom,
+      offset: {
+        x: mx - (mx - prev.offset.x) * (newZoom / prev.zoom),
+        y: my - (my - prev.offset.y) * (newZoom / prev.zoom),
+      }
+    }));
+  };
+
   const commitDraft = () => {
     if (draft.length < 3) return;
-    const check = validatePolygon(draft);
-    if (!check.ok) {
-      toast.error(check.message || "Polígono inválido");
+    const validation = validatePolygon(draft);
+    if (!validation.ok) {
+      toast.error(validation.message || "Polígono inválido");
       return;
     }
     onCreate(draft);
@@ -447,242 +205,213 @@ export function PolygonEditor({
     setTool("select");
   };
 
-  /* ------------------------------ Hotkeys ------------------------------ */
-
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.code === "Space") { spaceRef.current = true; e.preventDefault(); }
-      if (e.key === "Escape") { setDraft([]); setLassoPath([]); setIsLassoDrawing(false); setTool("select"); }
-      if (e.key === "v") setTool("select");
-      if (e.key === "p") setTool("draw");
-      if (e.key === "l") setTool("lasso");
-      if (e.key === "m") setTool("magnetic");
-      if (e.key === "e") setTool("edit");
-      if (e.key === "h") setTool("pan");
-      if (e.key === "z" && (e.ctrlKey || e.metaKey)) {
-        // undo/redo logic
+  const handleExport = async () => {
+    toast.promise(
+      exportPixelPerfectMap({
+        imageUrl,
+        imageSize,
+        polygons: polygons.filter(p => p.visible).map(p => ({
+          points: p.points,
+          color: p.color,
+          opacity: p.opacity,
+          label: p.label
+        }))
+      }).then(blob => downloadBlob(blob, `taludes-${new Date().getTime()}.png`)),
+      {
+        loading: "Preparando exportação...",
+        success: "Imagem exportada com sucesso!",
+        error: "Falha na exportação."
       }
-    };
-    const up = (e: KeyboardEvent) => { if (e.code === "Space") spaceRef.current = false; };
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
-    return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, [tool]);
-
-  /* ------------------------------ Render ------------------------------ */
+    );
+  };
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
-      <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-2xl bg-muted/30 border border-border/50 backdrop-blur-md">
-        <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Ponteiro (V)" />
-        <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Polígono (P)" />
-        <ToolButton active={tool === "lasso"} onClick={() => { setTool("lasso"); setDraft([]); }} icon={Scissors} label="Laço" />
-        <ToolButton active={tool === "magnetic"} onClick={() => { setTool("magnetic"); setDraft([]); }} icon={Magnet} label="Laço Magnético" />
-        <ToolButton active={tool === "edit"} onClick={() => setTool("edit")} icon={Spline} label="Editar Vértices (E)" />
-        <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Panoramizar (H)" />
-        <ToolButton active={tool === "calibrate"} onClick={() => setTool("calibrate")} icon={Ruler} label="Calibrar Escala" />
-        <div className="w-px h-6 bg-border/50 mx-1" />
-        <ToolButton active={grid} onClick={() => setGrid(!grid)} icon={Grid3X3} label="Grade" />
-        <ToolButton active={snap} onClick={() => setSnap(!snap)} icon={Magnet} label="Snap" />
-        <div className="w-px h-6 bg-border/50 mx-1" />
-        <ToolButton onClick={() => zoomAt(1.25)} icon={ZoomIn} label="Aproximar" />
-        <ToolButton onClick={() => zoomAt(0.8)} icon={ZoomOut} label="Afastar" />
-        <ToolButton onClick={() => { setZoom(1); setOffset({x:0, y:0}); }} icon={Maximize2} label="Redefinir" />
-        <Badge variant="outline" className="ml-auto font-mono text-[10px] bg-background/50 border-primary/20">{Math.round(zoom * 100)}%</Badge>
+    <div className={cn("flex flex-col h-full gap-4", className)}>
+      {/* Toolbar */}
+      <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-white/5 backdrop-blur-md">
+        <div className="flex items-center gap-1">
+          <ToolButton active={tool === "select"} onClick={() => setTool("select")} icon={MousePointer2} label="Selecionar" />
+          <ToolButton active={tool === "draw"} onClick={() => { setTool("draw"); setDraft([]); }} icon={Pentagon} label="Demarcar" />
+          <ToolButton active={tool === "pan"} onClick={() => setTool("pan")} icon={Hand} label="Mover" />
+          <div className="w-px h-4 bg-white/10 mx-1" />
+          <ToolButton active={precisionMode} onClick={() => setPrecisionMode(!precisionMode)} icon={Target} label="Modo Precisão" />
+        </div>
+
+        <div className="flex items-center gap-1">
+          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.min(MAX_ZOOM, v.zoom * 1.2) }))} icon={ZoomIn} label="Zoom In" />
+          <ToolButton onClick={() => setViewport(v => ({ ...v, zoom: Math.max(MIN_ZOOM, v.zoom * 0.8) }))} icon={ZoomOut} label="Zoom Out" />
+          <ToolButton onClick={() => setViewport({ zoom: 1, offset: { x: 0, y: 0 } })} icon={Maximize2} label="Ajustar" />
+          <div className="w-px h-4 bg-white/10 mx-1" />
+          <Button variant="ghost" size="icon" onClick={handleExport} className="h-8 w-8 rounded-lg hover:bg-primary/20">
+            <Download className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      <div 
-        ref={viewportRef}
-        className="relative w-full overflow-hidden rounded-3xl border border-border/40 bg-black/90 shadow-2xl cursor-crosshair touch-none"
-        style={{ aspectRatio: `${imageWidth}/${imageHeight}` }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-      >
+      <div className="flex flex-1 gap-4 overflow-hidden">
+        {/* Main Editor */}
         <div 
-          ref={stageRef}
-          className="absolute inset-0 origin-top-left"
-          style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+          ref={containerRef}
+          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onWheel={onWheel}
         >
-          <img 
-            src={imageUrl} 
-            className="absolute inset-0 w-full h-full object-fill pointer-events-none"
-            alt=""
-          />
-          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-            {/* Grid layer */}
-            {grid && (
-              <pattern id="editor-grid" width="5" height="5" patternUnits="userSpaceOnUse">
-                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="rgba(125,211,252,0.15)" strokeWidth="0.2" vectorEffect="non-scaling-stroke" />
-              </pattern>
-            )}
-            {grid && <rect width="100" height="100" fill="url(#editor-grid)" />}
-
-            {/* Polygon Layer */}
-            {polygons.filter(p => p.visible).map(poly => {
-              const pts = geometryOf(poly);
-              const isSel = poly.id === selectedId;
-              return (
-                <polygon
-                  key={poly.id}
-                  points={pts.map(p => `${p.x},${p.y}`).join(" ")}
-                  fill={poly.color}
-                  fillOpacity={isSel ? Math.max(0.4, poly.opacity + 0.1) : poly.opacity}
-                  stroke={poly.color}
-                  strokeWidth={isSel ? 3 : 1.5}
-                  strokeLinejoin="round"
-                  vectorEffect="non-scaling-stroke"
-                  className="transition-all duration-200"
-                  style={{ cursor: tool === 'edit' && !poly.locked ? 'move' : 'pointer' }}
-                  onPointerDown={e => {
-                    if (poly.locked || tool !== 'edit') return;
-                    e.stopPropagation();
-                    const before = geometryOf(poly);
-                    dragRef.current = { kind: 'move', id: poly.id, before, start: toPercent(e.clientX, e.clientY) };
-                    onSelect(poly.id);
-                  }}
-                />
-              );
-            })}
-
-            {/* Drawing preview (Lasso/Magnetic) */}
-            {(isLassoDrawing || lassoPath.length > 0) && (
-              <polyline
-                points={lassoPath.map(p => `${p.x},${p.y}`).join(" ")}
-                fill="none"
-                stroke={tool === "magnetic" ? "#22c55e" : "#0ea5e9"}
-                strokeWidth={2}
-                vectorEffect="non-scaling-stroke"
-                className="pointer-events-none"
+          {/* Base Layer */}
+          <div 
+            className="absolute origin-top-left transition-transform duration-75"
+            style={{ 
+              transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
+              width: "100%",
+              height: "100%"
+            }}
+          >
+            <div className="relative w-full h-full">
+              <img 
+                src={imageUrl} 
+                alt="Map" 
+                className="w-full h-full object-contain"
               />
-            )}
-
-            {/* Drawing preview (Standard Poly) */}
-            {draft.length > 0 && (
-              <polyline
-                points={[...draft, ...(hoverPoint ? [hoverPoint] : [])].map(p => `${p.x},${p.y}`).join(" ")}
-                fill="rgba(14,165,233,0.1)"
-                stroke="#0ea5e9"
-                strokeWidth={2}
-                strokeDasharray="4 2"
-                vectorEffect="non-scaling-stroke"
-                className="pointer-events-none"
-              />
-            )}
-          </svg>
-        </div>
-
-        {/* Dynamic Overlay Layer (Screen-space elements) */}
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Vértices / Handles */}
-          {polygons.filter(p => p.visible && p.id === selectedId && tool === 'edit' && !p.locked).map(poly => {
-            const pts = geometryOf(poly);
-            return pts.map((p, i) => {
-              const s = toScreen(p);
-              const container = viewportRef.current?.getBoundingClientRect();
-              if (!container) return null;
               
-              const left = s.left - container.left;
-              const top = s.top - container.top;
-              
-              return (
-                <button
-                  key={`${poly.id}-${i}`}
-                  type="button"
-                  className="pointer-events-auto absolute rounded-full border-2 bg-white shadow-xl hover:scale-125 transition-transform"
-                  style={{
-                    left, top,
-                    width: HANDLE_PX, height: HANDLE_PX,
-                    marginLeft: -HANDLE_PX/2, marginTop: -HANDLE_PX/2,
-                    borderColor: poly.color,
-                    cursor: 'grab'
-                  }}
-                  onPointerDown={e => {
-                    e.stopPropagation();
-                    const before = geometryOf(poly);
-                    const v = before[i];
-                    const at = toPercent(e.clientX, e.clientY);
-                    dragRef.current = { kind: 'vertex', id: poly.id, index: i, before, grab: { x: v.x - at.x, y: v.y - at.y } };
-                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                  }}
-                />
-              );
-            });
-          })}
-
-          {/* Draft dots */}
-          {draft.map((p, i) => {
-            const s = toScreen(p);
-            const container = viewportRef.current?.getBoundingClientRect();
-            if (!container) return null;
-            const left = s.left - container.left;
-            const top = s.top - container.top;
-            const size = i === 0 ? HANDLE_PX + 4 : HANDLE_PX - 2;
-            return (
-              <div 
-                key={i} 
-                className={cn("absolute rounded-full border-2 shadow-lg", i === 0 ? "bg-green-500 border-white animate-pulse" : "bg-white border-sky-500")}
-                style={{ left, top, width: size, height: size, marginLeft: -size/2, marginTop: -size/2 }}
-              />
-            );
-          })}
-
-          {/* Labels */}
-          {polygons.filter(p => p.visible && p.points.length >= 3).map(poly => {
-            const c = centroid(geometryOf(poly));
-            const s = toScreen(c);
-            const container = viewportRef.current?.getBoundingClientRect();
-            if (!container) return null;
-            return (
-              <span
-                key={poly.id}
-                className="absolute -translate-x-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded bg-black/60 text-yellow-300 text-[10px] font-black uppercase tracking-tighter backdrop-blur-sm border border-white/10"
-                style={{ left: s.left - container.left, top: s.top - container.top }}
+              {/* SVG Layer for Polygons */}
+              <svg 
+                className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+                viewBox={`0 0 ${imageWidth} ${imageHeight}`}
+                preserveAspectRatio="xMidYMid meet"
               >
-                {poly.label}
-              </span>
-            );
-          })}
-        </div>
-      </div>
+                {/* Render Existing Polygons */}
+                {polygons.map(poly => (
+                  <g key={poly.id} className={cn("transition-opacity", !poly.visible && "opacity-0")}>
+                    <polygon
+                      points={poly.points.map(p => `${p.x},${p.y}`).join(" ")}
+                      fill={poly.color}
+                      fillOpacity={selectedId === poly.id ? 0.4 : 0.2}
+                      stroke={poly.color}
+                      strokeWidth={2 / viewport.zoom}
+                      className={cn("cursor-pointer pointer-events-auto", selectedId === poly.id && "stroke-[3px]")}
+                    />
+                    {/* Vertices when selected */}
+                    {selectedId === poly.id && poly.points.map((p, i) => (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={(precisionMode ? 3 : 6) / viewport.zoom}
+                        fill="white"
+                        stroke={poly.color}
+                        strokeWidth={1 / viewport.zoom}
+                        className="pointer-events-auto cursor-move"
+                      />
+                    ))}
+                  </g>
+                ))}
 
-      <div className="flex items-center justify-between px-2">
-        <div className="flex gap-4">
-           <StatusItem icon={Target} label="Precisão V2 Ativa" />
-           <StatusItem icon={Layers} label={`${polygons.length} Taludes`} />
+                {/* Render Draft */}
+                {draft.length > 0 && (
+                  <g>
+                    <polyline
+                      points={draft.map(p => `${p.x},${p.y}`).join(" ")}
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2 / viewport.zoom}
+                      strokeDasharray={`${4/viewport.zoom},${4/viewport.zoom}`}
+                    />
+                    {hoverPoint && (
+                      <line
+                        x1={draft[draft.length-1].x}
+                        y1={draft[draft.length-1].y}
+                        x2={hoverPoint.x}
+                        y2={hoverPoint.y}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={1 / viewport.zoom}
+                        opacity={0.5}
+                      />
+                    )}
+                    {draft.map((p, i) => (
+                      <circle key={i} cx={p.x} cy={p.y} r={4 / viewport.zoom} fill="hsl(var(--primary))" />
+                    ))}
+                  </g>
+                )}
+              </svg>
+            </div>
+          </div>
+
+          {/* Precision Crosshair */}
+          {precisionMode && hoverPoint && (
+             <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute w-px h-full bg-primary/20" style={{ left: convertToScreen(hoverPoint).x - containerRef.current!.getBoundingClientRect().left }} />
+                <div className="absolute h-px w-full bg-primary/20" style={{ top: convertToScreen(hoverPoint).y - containerRef.current!.getBoundingClientRect().top }} />
+             </div>
+          )}
+
+          {/* Debug Info */}
+          <div className="absolute bottom-4 left-4 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] font-mono text-white/50 pointer-events-none">
+            Scale: {imageWidth}x{imageHeight}<br/>
+            Zoom: {Math.round(viewport.zoom * 100)}%<br/>
+            Pos: {hoverPoint ? `${Math.round(hoverPoint.x)}, ${Math.round(hoverPoint.y)}` : "0, 0"}
+          </div>
         </div>
-        <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
-           {tool === 'draw' ? 'Modo Polígono: Clique no primeiro ponto para fechar' : 
-            tool === 'lasso' ? 'Modo Laço: Arraste para desenhar livremente' :
-            tool === 'magnetic' ? 'Modo Magnético: Arraste perto de bordas para auto-alinhamento' :
-            'Dica: Use espaço para arrastar o mapa'}
-        </p>
+
+        {/* Sidebar - Area List */}
+        <div className="w-64 flex flex-col gap-3">
+          <div className="flex-1 rounded-2xl bg-muted/10 border border-white/5 overflow-hidden flex flex-col">
+            <div className="p-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white/90">Áreas Demarcadas</h3>
+              <Badge variant="outline" className="text-[10px] h-4 px-1">{polygons.length}</Badge>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {polygons.length === 0 ? (
+                <div className="py-8 text-center text-xs text-white/30 italic">Nenhuma área</div>
+              ) : (
+                polygons.map(poly => (
+                  <button
+                    key={poly.id}
+                    onClick={() => onSelect(poly.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-2 rounded-xl transition-all text-left group",
+                      selectedId === poly.id ? "bg-primary/20 border border-primary/20" : "hover:bg-white/5 border border-transparent"
+                    )}
+                  >
+                    <div className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: poly.color }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-white/90 truncate">{poly.label || `Talude ${poly.id.slice(0, 4)}`}</div>
+                      <div className="text-[10px] text-white/40">{poly.status || "Pendente"}</div>
+                    </div>
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => { e.stopPropagation(); onDelete?.(poly.id); }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatusItem({ icon: Icon, label }: { icon: any, label: string }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <Icon className="w-3 h-3 text-primary/70" />
-      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">{label}</span>
-    </div>
-  );
-}
-
-function ToolButton({ active, onClick, icon: Icon, label, disabled }: any) {
+function ToolButton({ active, onClick, icon: Icon, label }: { active?: boolean; onClick: () => void; icon: any; label: string }) {
   return (
     <Button
       variant={active ? "default" : "ghost"}
-      size="sm"
+      size="icon"
       onClick={onClick}
-      disabled={disabled}
-      className={cn("h-9 gap-2 px-3 rounded-xl transition-all", active && "shadow-lg scale-105")}
+      className={cn(
+        "h-8 w-8 rounded-lg transition-all",
+        active ? "bg-primary shadow-lg shadow-primary/20" : "hover:bg-white/10"
+      )}
       title={label}
     >
-      <Icon className="w-4 h-4" />
-      <span className="hidden lg:inline text-xs font-semibold">{label}</span>
+      <Icon className={cn("h-4 w-4", active ? "text-primary-foreground" : "text-white/70")} />
     </Button>
   );
 }
