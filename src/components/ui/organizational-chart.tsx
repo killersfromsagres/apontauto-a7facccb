@@ -180,7 +180,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                   className="relative p-1.5 rounded-full border-[3px] shadow-2xl mb-5 transition-all duration-300 hover:scale-110 z-10"
                   style={{ borderColor: member.color, boxShadow: `0 0 20px ${member.color}33` }}
                 >
-                  <div className="w-28 h-28 rounded-full overflow-hidden bg-white/5 backdrop-blur-md relative group cursor-pointer"
+                  <div className={`w-28 h-28 rounded-full overflow-hidden transition-all duration-300 relative group cursor-pointer ${isExporting ? 'bg-slate-100 border border-slate-200' : 'bg-white/5 backdrop-blur-md'}`}
                     onClick={() => {
                       if (isAdmin) {
                         setEditingMember(member);
