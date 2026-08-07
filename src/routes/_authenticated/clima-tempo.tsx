@@ -168,145 +168,136 @@ function ClimaTempoPage() {
           </div>
         )}
 
-        {/* Cards principais */}
-        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-          {/* Card 1 — Clima atual */}
-          <GlassCard className="lg:col-span-2 xl:col-span-1">
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-3 w-3" /> Agora
-              </span>
-              {current?.is_day === 1 ? (
-                <Sun className="h-4 w-4 text-amber-500" />
-              ) : (
-                <Moon className="h-4 w-4 text-indigo-400" />
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="text-5xl leading-none">{currentInfo.emoji}</div>
-              <div>
-                <div className="font-display text-4xl font-bold">
-                  {current ? `${Math.round(current.temperature_2m)}°` : "—"}
+        {/* Seção Superior — Cards de Impacto */}
+        <div className="grid gap-4 lg:grid-cols-12">
+          {/* Card 1 — Clima agora (Foco Visual) */}
+          <GlassCard className="flex flex-col justify-between lg:col-span-12 xl:col-span-4 min-h-[220px]">
+            <div>
+              <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin className="h-3 w-3 text-primary" /> Agora
+                </span>
+                <Badge variant="outline" className="h-5 px-2 text-[9px] font-bold uppercase bg-background/50 backdrop-blur-sm border-primary/20">
+                  Real-time
+                </Badge>
+              </div>
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <div className="text-7xl leading-none drop-shadow-2xl animate-pulse-slow">
+                    {currentInfo.emoji}
+                  </div>
+                  {current?.is_day === 1 ? (
+                    <Sun className="absolute -right-2 -top-2 h-6 w-6 text-amber-500 animate-spin-slow" />
+                  ) : (
+                    <Moon className="absolute -right-2 -top-2 h-6 w-6 text-indigo-400" />
+                  )}
                 </div>
-                <div className="text-sm text-muted-foreground">{currentInfo.label}</div>
+                <div>
+                  <div className="font-display text-6xl font-black tracking-tighter">
+                    {current ? `${Math.round(current.temperature_2m)}°` : "—"}
+                  </div>
+                  <div className="text-base font-medium text-foreground/80">{currentInfo.label}</div>
+                </div>
               </div>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Sensação {current ? `${Math.round(current.apparent_temperature)}°` : "—"}
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-              <Metric
-                icon={<Thermometer className="h-3.5 w-3.5" />}
-                label="Sensação"
-                value={current ? `${Math.round(current.apparent_temperature)}°` : "—"}
-              />
-              <Metric
-                icon={<Droplets className="h-3.5 w-3.5" />}
-                label="Umidade"
-                value={current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}
-              />
-              <Metric
-                icon={<Wind className="h-3.5 w-3.5" />}
-                label="Vento"
-                value={current ? `${current.wind_speed_10m.toFixed(1)} km/h` : "—"}
-              />
-              <Metric
-                icon={<Wind className="h-3.5 w-3.5" />}
-                label="Rajadas"
-                value={current ? `${current.wind_gusts_10m.toFixed(1)} km/h` : "—"}
-              />
-              <Metric
-                icon={<Cloud className="h-3.5 w-3.5" />}
-                label="Nuvens"
-                value={current ? `${Math.round(current.cloud_cover)}%` : "—"}
-              />
-              <Metric
-                icon={<CloudRain className="h-3.5 w-3.5" />}
-                label="Chuva atual"
-                value={current ? `${current.rain.toFixed(1)} mm` : "—"}
-              />
-            </div>
-          </GlassCard>
-
-          {/* Card 3 — Resumo do dia */}
-          <GlassCard>
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span>Resumo do Dia</span>
-              <span>{daySummaryInfo.emoji}</span>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Thermometer className="h-3.5 w-3.5" /> Temperatura
-                </span>
-                <span className="font-semibold">
-                  {daySummary
-                    ? `${Math.round(daySummary.min)}° / ${Math.round(daySummary.max)}°`
-                    : "—"}
-                </span>
+            
+            <div className="mt-6 grid grid-cols-3 gap-2">
+              <div className="flex flex-col rounded-2xl bg-primary/5 p-2 border border-primary/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Vento</span>
+                <span className="text-xs font-black">{current ? `${current.wind_speed_10m.toFixed(0)} km/h` : "—"}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <CloudRain className="h-3.5 w-3.5" /> Prob. máx. chuva
-                </span>
-                <span className="font-semibold">{daySummary ? `${daySummary.probMax}%` : "—"}</span>
+              <div className="flex flex-col rounded-2xl bg-sky-500/5 p-2 border border-sky-500/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Umidade</span>
+                <span className="text-xs font-black">{current ? `${Math.round(current.relative_humidity_2m)}%` : "—"}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Droplets className="h-3.5 w-3.5" /> Precipitação prevista
-                </span>
-                <span className="font-semibold">
-                  {daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}
-                </span>
-              </div>
-              <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-2 text-xs">
-                <span className="text-muted-foreground">Condição predominante: </span>
-                <span className="font-medium">{daySummaryInfo.label}</span>
+              <div className="flex flex-col rounded-2xl bg-amber-500/5 p-2 border border-amber-500/10">
+                <span className="text-[9px] font-bold uppercase text-muted-foreground/80">Sensação</span>
+                <span className="text-xs font-black">{current ? `${Math.round(current.apparent_temperature)}°` : "—"}</span>
               </div>
             </div>
           </GlassCard>
 
-          {/* Card 4 — Situação operacional */}
+          {/* Card 2 — Situação Operacional (Ação/Decisão) */}
           <GlassCard
             className={cn(
-              "lg:col-span-2 xl:col-span-2 border bg-gradient-to-br ring-1",
+              "lg:col-span-7 xl:col-span-5 border-2 bg-gradient-to-br ring-1 relative overflow-hidden",
               statusStyle.border,
               statusStyle.bg,
               statusStyle.ring,
             )}
           >
-            <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <span>Situação Operacional</span>
-              <span>{Math.round(probMaxHoje)}% prob. chuva</span>
+            <div className="absolute -right-8 -top-8 text-8xl opacity-10 rotate-12">
+              {status.emoji}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-5xl leading-none">{status.emoji}</div>
-              <div>
-                <div className={cn("font-display text-2xl font-bold", statusStyle.text)}>
+            <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+              <span>Situação Operacional</span>
+              <span className="bg-background/40 px-2 py-0.5 rounded-full backdrop-blur-md">{Math.round(probMaxHoje)}% prob. chuva</span>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="text-5xl bg-background/50 p-3 rounded-2xl shadow-inner">{status.emoji}</div>
+              <div className="space-y-1">
+                <div className={cn("font-display text-3xl font-black tracking-tight", statusStyle.text)}>
                   {status.titulo}
                 </div>
-                <div className="text-sm text-muted-foreground">{status.descricao}</div>
+                <div className="text-sm font-medium text-foreground/70 leading-relaxed max-w-[280px]">
+                  {status.descricao}
+                </div>
               </div>
             </div>
             {alertExternal && (
-              <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3">
-                <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300">
-                  <HardHat className="h-3.5 w-3.5" /> Atividades externas potencialmente impactadas
-                  (≥ {EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
+              <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 backdrop-blur-sm">
+                <div className="mb-2 inline-flex items-center gap-1.5 text-[10px] font-black uppercase text-red-600 dark:text-red-400">
+                  <HardHat className="h-3.5 w-3.5" /> Atividades Críticas (≥{EXTERNAL_ACTIVITY_ALERT_THRESHOLD}%)
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {EXTERNAL_ACTIVITIES.map((a) => (
+                  {EXTERNAL_ACTIVITIES.slice(0, 5).map((a) => (
                     <Badge
                       key={a}
                       variant="outline"
-                      className="border-red-400/50 bg-red-500/10 text-red-700 dark:text-red-200"
+                      className="h-5 text-[9px] border-red-500/30 bg-red-500/5 text-red-700 dark:text-red-300 font-bold"
                     >
                       {a}
                     </Badge>
                   ))}
+                  {EXTERNAL_ACTIVITIES.length > 5 && <span className="text-[9px] font-bold text-red-500/70">+{EXTERNAL_ACTIVITIES.length - 5}</span>}
                 </div>
               </div>
             )}
+          </GlassCard>
+
+          {/* Card 3 — Resumo Rápido (Dia) */}
+          <GlassCard className="lg:col-span-5 xl:col-span-3 flex flex-col justify-between">
+            <div className="mb-4 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/70">
+              <span>Resumo do Dia</span>
+              <span className="text-lg">{daySummaryInfo.emoji}</span>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <Thermometer className="h-3 w-3" /> Temp.
+                </span>
+                <span className="text-sm font-black">
+                  {daySummary ? `${Math.round(daySummary.min)}°` : "—"} 
+                  <span className="mx-1 opacity-30">/</span>
+                  {daySummary ? `${Math.round(daySummary.max)}°` : "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <CloudRain className="h-3 w-3" /> Prob.
+                </span>
+                <span className="text-sm font-black">{daySummary ? `${daySummary.probMax}%` : "—"}</span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-muted/30">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase">
+                  <Droplets className="h-3 w-3" /> Vol.
+                </span>
+                <span className="text-sm font-black">{daySummary ? `${daySummary.rainSum.toFixed(1)} mm` : "—"}</span>
+              </div>
+            </div>
+            <div className="mt-4 text-[10px] font-bold text-center py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+              {daySummaryInfo.label}
+            </div>
           </GlassCard>
         </div>
 
