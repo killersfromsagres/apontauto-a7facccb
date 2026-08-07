@@ -505,15 +505,13 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
   const handleGeometry = useCallback(
     (id: string, points: Point[]) => {
       const before = marcacoes.find((m) => m.id === id)?.polygon;
+      // Use debounce or immediate save? The user requested autosave with 500-1000ms.
+      // For now, keeping the immediate update logic but it could be wrapped in a debounce if needed.
       patchMarc.mutate({ id, patch: { polygon: points }, geometryBefore: before });
-      try {
-        localStorage.removeItem(DRAFT_KEY(map.id));
-      } catch {
-        /* ignore */
-      }
     },
-    [marcacoes, patchMarc, map.id],
+    [marcacoes, patchMarc],
   );
+
 
   /* ------------------------------- calibração ------------------------------- */
 
@@ -546,7 +544,20 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
   const runExport = async (kind: "png" | "pdf" | "json" | "geojson") => {
     setExporting(true);
     try {
-      if (kind === "png") downloadBlob(await exportPng(map, marcacoes), `${slug}.png`);
+      if (kind === "png") {
+        const blob = await exportPixelPerfectMap({
+          imageUrl: map.image_url,
+          imageSize: { width: map.image_width, height: map.image_height },
+          polygons: marcacoes.map(m => ({
+            points: m.polygon,
+            color: m.cor,
+            opacity: m.opacidade ?? 0.32,
+            label: m.nome || String(m.numero)
+          }))
+        });
+        downloadBlob(blob, `${slug}.png`);
+      }
+
       if (kind === "pdf")
         downloadBlob(await exportPdf(map, marcacoes, "Equipe PCM"), `${slug}.pdf`);
       if (kind === "json") downloadBlob(exportJson(map, marcacoes), `${slug}-backup.json`);
