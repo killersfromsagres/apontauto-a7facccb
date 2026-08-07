@@ -10,7 +10,7 @@ export type DatasetKey =
   | "backlog"
   | "preventive"
   | "assets"
-  | "taludes_pt"
+  
   | "checklists"
   | "fuelings"
   | "occurrences"
@@ -87,21 +87,6 @@ export const DATASETS: Record<DatasetKey, DatasetDef> = {
       { key: "nivel", label: "Nível" },
       { key: "unidade_negocio", label: "Unidade" },
       { key: "descricao_pai", label: "Local pai" },
-    ],
-  },
-  taludes_pt: {
-    key: "taludes_pt",
-    label: "Taludes, chuva e PT",
-    source: "vw_bi_taludes_weather_pt",
-    dateField: "solicitada_em",
-    dimensions: [
-      { key: "status", label: "Status da PT" },
-      { key: "equipe", label: "Equipe" },
-      { key: "max_intensity", label: "Intensidade da chuva" },
-    ],
-    measures: [
-      { key: "horas_suspensas", label: "Horas suspensas" },
-      { key: "accumulated_mm", label: "Chuva acumulada (mm)" },
     ],
   },
   checklists: {
@@ -265,10 +250,6 @@ export type KpiKey =
   | "checklists_nc"
   | "consumo_medio"
   | "custo_km"
-  | "horas_suspensas_chuva"
-  | "pt_liberadas"
-  | "pt_suspensas"
-  | "pt_encerradas";
 
 export type KpiDef = {
   key: KpiKey;
@@ -566,37 +547,6 @@ export const KPIS: Record<KpiKey, KpiDef> = {
       const total = list.reduce((a, r) => a + num(r.total_value), 0);
       return dist > 0 ? total / dist : null;
     },
-  },
-  horas_suspensas_chuva: {
-    key: "horas_suspensas_chuva",
-    label: "Horas suspensas por chuva",
-    hint: "Somatório de horas com PT suspensa por evento de chuva.",
-    unit: "h",
-    datasets: ["taludes_pt"],
-    lowerIsBetter: true,
-    compute: (d) => rows(d, "taludes_pt").reduce((a, r) => a + num(r.horas_suspensas), 0) || null,
-  },
-  pt_liberadas: {
-    key: "pt_liberadas",
-    label: "PTs liberadas",
-    hint: "Permissões de trabalho liberadas no período.",
-    datasets: ["taludes_pt"],
-    compute: (d) => rows(d, "taludes_pt").filter((r) => r.liberada_em).length,
-  },
-  pt_suspensas: {
-    key: "pt_suspensas",
-    label: "PTs suspensas",
-    hint: "Permissões suspensas (chuva ou decisão do gestor).",
-    datasets: ["taludes_pt"],
-    lowerIsBetter: true,
-    compute: (d) => rows(d, "taludes_pt").filter((r) => r.suspensa_em).length,
-  },
-  pt_encerradas: {
-    key: "pt_encerradas",
-    label: "PTs encerradas",
-    hint: "Permissões finalizadas no período.",
-    datasets: ["taludes_pt"],
-    compute: (d) => rows(d, "taludes_pt").filter((r) => r.encerrada_em).length,
   },
 };
 
@@ -998,59 +948,6 @@ export const TEMPLATES: TemplateDef[] = [
         size: "lg",
       }),
       w({ title: "Base de ativos", chart: "table", dataset: "assets", size: "lg" }),
-    ],
-  },
-  {
-    key: "taludes",
-    label: "Taludes, chuva e PT",
-    description: "Permissões de trabalho, suspensões e impacto da chuva.",
-    widgets: [
-      w({
-        title: "PTs liberadas",
-        chart: "kpi",
-        dataset: "taludes_pt",
-        kpi: "pt_liberadas",
-        size: "sm",
-      }),
-      w({
-        title: "PTs suspensas",
-        chart: "kpi",
-        dataset: "taludes_pt",
-        kpi: "pt_suspensas",
-        size: "sm",
-      }),
-      w({
-        title: "PTs encerradas",
-        chart: "kpi",
-        dataset: "taludes_pt",
-        kpi: "pt_encerradas",
-        size: "sm",
-      }),
-      w({
-        title: "Horas suspensas por chuva",
-        chart: "kpi",
-        dataset: "taludes_pt",
-        kpi: "horas_suspensas_chuva",
-        size: "sm",
-      }),
-      w({
-        title: "PT por status",
-        chart: "donut",
-        dataset: "taludes_pt",
-        dimension: "status",
-        aggregation: "count",
-        size: "md",
-      }),
-      w({
-        title: "Chuva acumulada por PT",
-        chart: "bar",
-        dataset: "taludes_pt",
-        dimension: "max_intensity",
-        aggregation: "sum",
-        field: "accumulated_mm",
-        size: "md",
-      }),
-      w({ title: "Linha do tempo das PTs", chart: "timeline", dataset: "taludes_pt", size: "lg" }),
     ],
   },
   {

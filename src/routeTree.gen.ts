@@ -22,8 +22,6 @@ import { Route as ApiImgbbUploadRouteImport } from './routes/api/imgbb-upload'
 import { Route as ApiBiFeedRouteImport } from './routes/api/bi-feed'
 import { Route as ApiBackorderReclassificarRouteImport } from './routes/api/backorder-reclassificar'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
-import { Route as AuthenticatedTaludesPtRouteImport } from './routes/_authenticated/taludes-pt'
-import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticated/taludes'
 import { Route as AuthenticatedSolicitacaoMateriaisRouteImport } from './routes/_authenticated/solicitacao-materiais'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './routes/_authenticated/refrigeracao-pecas-status'
@@ -54,7 +52,6 @@ import { Route as AuthenticatedCopilotoRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedControleMateriaisRouteImport } from './routes/_authenticated/controle-materiais'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
-import { Route as AuthenticatedClimaTempoRouteImport } from './routes/_authenticated/clima-tempo'
 import { Route as AuthenticatedBiStudioRouteImport } from './routes/_authenticated/bi-studio'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
@@ -154,16 +151,6 @@ const ApiBackorderReclassificarRoute =
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedTaludesPtRoute = AuthenticatedTaludesPtRouteImport.update({
-  id: '/taludes-pt',
-  path: '/taludes-pt',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedTaludesRoute = AuthenticatedTaludesRouteImport.update({
-  id: '/taludes',
-  path: '/taludes',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSolicitacaoMateriaisRoute =
@@ -339,11 +326,6 @@ const AuthenticatedConfiabilidadeRoute =
     path: '/confiabilidade',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedClimaTempoRoute = AuthenticatedClimaTempoRouteImport.update({
-  id: '/clima-tempo',
-  path: '/clima-tempo',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedBiStudioRoute = AuthenticatedBiStudioRouteImport.update({
   id: '/bi-studio',
   path: '/bi-studio',
@@ -563,7 +545,6 @@ export interface FileRoutesByFullPath {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
-  '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -594,8 +575,6 @@ export interface FileRoutesByFullPath {
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
-  '/taludes': typeof AuthenticatedTaludesRoute
-  '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
@@ -644,7 +623,6 @@ export interface FileRoutesByTo {
   '/backorder': typeof AuthenticatedBackorderRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
-  '/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -675,8 +653,6 @@ export interface FileRoutesByTo {
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
-  '/taludes': typeof AuthenticatedTaludesRoute
-  '/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
@@ -727,7 +703,6 @@ export interface FileRoutesById {
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/_authenticated/bi-studio': typeof AuthenticatedBiStudioRoute
-  '/_authenticated/clima-tempo': typeof AuthenticatedClimaTempoRoute
   '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/controle-materiais': typeof AuthenticatedControleMateriaisRoute
@@ -758,8 +733,6 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
-  '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
-  '/_authenticated/taludes-pt': typeof AuthenticatedTaludesPtRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/backorder-reclassificar': typeof ApiBackorderReclassificarRoute
   '/api/bi-feed': typeof ApiBiFeedRoute
@@ -812,7 +785,6 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/base-ativos'
     | '/bi-studio'
-    | '/clima-tempo'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
@@ -843,8 +815,6 @@ export interface FileRouteTypes {
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/solicitacao-materiais'
-    | '/taludes'
-    | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/api/bi-feed'
@@ -893,7 +863,6 @@ export interface FileRouteTypes {
     | '/backorder'
     | '/base-ativos'
     | '/bi-studio'
-    | '/clima-tempo'
     | '/confiabilidade'
     | '/configuracoes'
     | '/controle-materiais'
@@ -924,8 +893,6 @@ export interface FileRouteTypes {
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/solicitacao-materiais'
-    | '/taludes'
-    | '/taludes-pt'
     | '/usuarios'
     | '/api/backorder-reclassificar'
     | '/api/bi-feed'
@@ -975,7 +942,6 @@ export interface FileRouteTypes {
     | '/_authenticated/backorder'
     | '/_authenticated/base-ativos'
     | '/_authenticated/bi-studio'
-    | '/_authenticated/clima-tempo'
     | '/_authenticated/confiabilidade'
     | '/_authenticated/configuracoes'
     | '/_authenticated/controle-materiais'
@@ -1006,8 +972,6 @@ export interface FileRouteTypes {
     | '/_authenticated/refrigeracao-pecas-status'
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/solicitacao-materiais'
-    | '/_authenticated/taludes'
-    | '/_authenticated/taludes-pt'
     | '/_authenticated/usuarios'
     | '/api/backorder-reclassificar'
     | '/api/bi-feed'
@@ -1158,20 +1122,6 @@ declare module '@tanstack/react-router' {
       path: '/usuarios'
       fullPath: '/usuarios'
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/taludes-pt': {
-      id: '/_authenticated/taludes-pt'
-      path: '/taludes-pt'
-      fullPath: '/taludes-pt'
-      preLoaderRoute: typeof AuthenticatedTaludesPtRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/taludes': {
-      id: '/_authenticated/taludes'
-      path: '/taludes'
-      fullPath: '/taludes'
-      preLoaderRoute: typeof AuthenticatedTaludesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/solicitacao-materiais': {
@@ -1382,13 +1332,6 @@ declare module '@tanstack/react-router' {
       path: '/confiabilidade'
       fullPath: '/confiabilidade'
       preLoaderRoute: typeof AuthenticatedConfiabilidadeRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/clima-tempo': {
-      id: '/_authenticated/clima-tempo'
-      path: '/clima-tempo'
-      fullPath: '/clima-tempo'
-      preLoaderRoute: typeof AuthenticatedClimaTempoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bi-studio': {
@@ -1711,7 +1654,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
   AuthenticatedBiStudioRoute: typeof AuthenticatedBiStudioRoute
-  AuthenticatedClimaTempoRoute: typeof AuthenticatedClimaTempoRoute
   AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedControleMateriaisRoute: typeof AuthenticatedControleMateriaisRoute
@@ -1742,8 +1684,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedSolicitacaoMateriaisRoute: typeof AuthenticatedSolicitacaoMateriaisRoute
-  AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
-  AuthenticatedTaludesPtRoute: typeof AuthenticatedTaludesPtRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAtivoCodeRoute: typeof AuthenticatedAtivoCodeRoute
@@ -1761,7 +1701,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
   AuthenticatedBiStudioRoute: AuthenticatedBiStudioRoute,
-  AuthenticatedClimaTempoRoute: AuthenticatedClimaTempoRoute,
   AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedControleMateriaisRoute: AuthenticatedControleMateriaisRoute,
@@ -1797,8 +1736,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedSolicitacaoMateriaisRoute:
     AuthenticatedSolicitacaoMateriaisRoute,
-  AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
-  AuthenticatedTaludesPtRoute: AuthenticatedTaludesPtRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAtivoCodeRoute: AuthenticatedAtivoCodeRoute,
@@ -1840,13 +1777,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
