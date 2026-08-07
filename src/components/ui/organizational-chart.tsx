@@ -253,8 +253,8 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                         <ChevronLeft size={16} className="text-indigo-400" />
                       </button>
                     )}
-                    <h3 className="font-black text-white text-base tracking-tight uppercase truncate max-w-[150px]">{member.name}</h3>
-                    {isAdmin && (
+                    <h3 className={`font-black text-base tracking-tight uppercase truncate max-w-[150px] transition-colors ${isExporting ? 'text-slate-900' : 'text-white'}`}>{member.name}</h3>
+                    {isAdmin && !isExporting && (
                       <button 
                         onClick={() => handleMove(member, 'right')}
                         className="p-2 hover:bg-indigo-600/20 rounded-full opacity-0 group-hover:opacity-100 transition-all bg-white/5 border border-white/10"
