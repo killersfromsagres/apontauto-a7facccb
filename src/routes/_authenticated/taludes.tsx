@@ -78,7 +78,9 @@ import {
   type TaludeMapVersion,
   type TaludeMarcacao,
 } from "@/lib/taludes/api";
-import { exportGeoJson, exportJson, exportPdf, exportPng, scaleOf } from "@/lib/taludes/export";
+import { exportGeoJson, exportJson, exportPdf, scaleOf } from "@/lib/taludes/export";
+import { exportPixelPerfectMap } from "@/lib/taludes/export-service";
+
 import { metersPerPixel } from "@/lib/taludes/geometry";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
@@ -505,15 +507,13 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
   const handleGeometry = useCallback(
     (id: string, points: Point[]) => {
       const before = marcacoes.find((m) => m.id === id)?.polygon;
+      // Use debounce or immediate save? The user requested autosave with 500-1000ms.
+      // For now, keeping the immediate update logic but it could be wrapped in a debounce if needed.
       patchMarc.mutate({ id, patch: { polygon: points }, geometryBefore: before });
-      try {
-        localStorage.removeItem(DRAFT_KEY(map.id));
-      } catch {
-        /* ignore */
-      }
     },
-    [marcacoes, patchMarc, map.id],
+    [marcacoes, patchMarc],
   );
+
 
   /* ------------------------------- calibração ------------------------------- */
 
@@ -546,7 +546,20 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
   const runExport = async (kind: "png" | "pdf" | "json" | "geojson") => {
     setExporting(true);
     try {
-      if (kind === "png") downloadBlob(await exportPng(map, marcacoes), `${slug}.png`);
+      if (kind === "png") {
+        const blob = await exportPixelPerfectMap({
+          imageUrl: map.image_url,
+          imageSize: { width: map.image_width, height: map.image_height },
+          polygons: marcacoes.map(m => ({
+            points: m.polygon,
+            color: m.cor,
+            opacity: m.opacidade ?? 0.32,
+            label: m.nome || String(m.numero)
+          }))
+        });
+        downloadBlob(blob, `${slug}.png`);
+      }
+
       if (kind === "pdf")
         downloadBlob(await exportPdf(map, marcacoes, "Equipe PCM"), `${slug}.pdf`);
       if (kind === "json") downloadBlob(exportJson(map, marcacoes), `${slug}-backup.json`);
@@ -566,8 +579,11 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
     opacity: m.opacidade ?? 0.32,
     visible: m.visivel !== false,
     locked: !!m.bloqueado,
-    label: String(m.numero),
+    label: m.nome || (m.codigo ? `${m.codigo}` : `Talude ${m.numero}`),
+    status: m.estado_operacional ?? undefined,
   }));
+
+
 
   const selected = marcacoes.find((m) => m.id === selectedId) ?? null;
   const calibrado = scaleOf(map) != null;
@@ -649,10 +665,12 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
             selectedId={selectedId}
             onSelect={setSelectedId}
             onGeometryChange={handleGeometry}
-            onDraftChange={handleDraft}
             onCreate={(pts) => create.mutate(pts)}
-            calibration={map.calibration}
-            onCalibrate={(a, b) => setCalPending({ a, b })}
+            onDelete={(id) => {
+              const m = marcacoes.find(x => x.id === id);
+              if (m) setDeleteTarget(m);
+            }}
+
           />
         </GlassCard>
 

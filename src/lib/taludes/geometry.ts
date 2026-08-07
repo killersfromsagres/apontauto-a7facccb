@@ -1,7 +1,7 @@
 import type { Point } from "./api";
 
-/** Área do polígono em unidades normalizadas (%²), via fórmula do shoelace. */
-export function polygonAreaNorm(pts: Point[]): number {
+/** Área do polígono via fórmula do shoelace. Unidade depende da entrada. */
+export function polygonArea(pts: Point[]): number {
   if (pts.length < 3) return 0;
   let s = 0;
   for (let i = 0; i < pts.length; i++) {
@@ -12,7 +12,7 @@ export function polygonAreaNorm(pts: Point[]): number {
   return Math.abs(s) / 2;
 }
 
-export function polygonPerimeterNorm(pts: Point[]): number {
+export function polygonPerimeter(pts: Point[]): number {
   if (pts.length < 2) return 0;
   let p = 0;
   for (let i = 0; i < pts.length; i++) {
@@ -29,34 +29,6 @@ export function centroid(pts: Point[]): Point {
     x: pts.reduce((a, p) => a + p.x, 0) / n,
     y: pts.reduce((a, p) => a + p.y, 0) / n,
   };
-}
-
-/** Distância normalizada corrigida pelo aspecto da imagem (px reais). */
-export function segmentLengthPx(a: Point, b: Point, w: number, h: number): number {
-  return Math.hypot(((b.x - a.x) / 100) * w, ((b.y - a.y) / 100) * h);
-}
-
-export function perimeterPx(pts: Point[], w: number, h: number): number {
-  let p = 0;
-  for (let i = 0; i < pts.length; i++) {
-    p += segmentLengthPx(pts[i], pts[(i + 1) % pts.length], w, h);
-  }
-  return p;
-}
-
-export function areaPx(pts: Point[], w: number, h: number): number {
-  if (pts.length < 3) return 0;
-  let s = 0;
-  for (let i = 0; i < pts.length; i++) {
-    const a = pts[i];
-    const b = pts[(i + 1) % pts.length];
-    const ax = (a.x / 100) * w;
-    const ay = (a.y / 100) * h;
-    const bx = (b.x / 100) * w;
-    const by = (b.y / 100) * h;
-    s += ax * by - bx * ay;
-  }
-  return Math.abs(s) / 2;
 }
 
 function segIntersects(p1: Point, p2: Point, p3: Point, p4: Point): boolean {
@@ -121,19 +93,15 @@ export function nearestEdge(
 
 export function validatePolygon(pts: Point[]): { ok: boolean; message?: string } {
   if (pts.length < 3) return { ok: false, message: "O polígono precisa de pelo menos 3 pontos." };
-  if (polygonAreaNorm(pts) < 0.002)
+  if (polygonArea(pts) < 10) // 10 pixels quadrados mínimos
     return { ok: false, message: "Área muito pequena — o polígono é inválido." };
   if (hasSelfIntersection(pts))
     return { ok: false, message: "O contorno cruza a si mesmo (auto-interseção)." };
   return { ok: true };
 }
 
-export function clampPoint(p: Point): Point {
-  return { x: Math.max(0, Math.min(100, p.x)), y: Math.max(0, Math.min(100, p.y)) };
-}
-
-export function snapToGrid(p: Point, step: number): Point {
-  return { x: Math.round(p.x / step) * step, y: Math.round(p.y / step) * step };
+export function clampPoint(p: Point, width: number, height: number): Point {
+  return { x: Math.max(0, Math.min(width, p.x)), y: Math.max(0, Math.min(height, p.y)) };
 }
 
 export interface Calibration {
@@ -144,7 +112,7 @@ export interface Calibration {
 
 /** metros por pixel da imagem original. */
 export function metersPerPixel(cal: Calibration, w: number, h: number): number {
-  const px = segmentLengthPx(cal.a, cal.b, w, h);
+  const px = Math.hypot(cal.b.x - cal.a.x, cal.b.y - cal.a.y);
   if (px <= 0) return 0;
   return cal.meters / px;
 }

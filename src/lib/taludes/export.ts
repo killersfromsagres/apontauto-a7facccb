@@ -1,6 +1,6 @@
 import type { CalibrationData, TaludeMap, TaludeMarcacao } from "./api";
-import { areaPx, formatArea, formatLength, metersPerPixel, perimeterPx } from "./geometry";
-import { renderMapToBlob } from "./render";
+import { formatArea, formatLength, metersPerPixel, polygonArea, polygonPerimeter } from "./geometry";
+import { exportPixelPerfectMap } from "./export-service";
 
 export function scaleOf(map: TaludeMap): number | null {
   const cal = map.calibration as CalibrationData | null;
@@ -18,8 +18,8 @@ export interface Medidas {
 export function medidas(map: TaludeMap, m: TaludeMarcacao): Medidas {
   const mpp = scaleOf(map);
   if (!mpp) return { areaM2: null, perimetroM: null };
-  const aPx = areaPx(m.polygon, map.image_width, map.image_height);
-  const pPx = perimeterPx(m.polygon, map.image_width, map.image_height);
+  const aPx = polygonArea(m.polygon);
+  const pPx = polygonPerimeter(m.polygon);
   return { areaM2: aPx * mpp * mpp, perimetroM: pPx * mpp };
 }
 
@@ -32,11 +32,18 @@ function fmtBr(iso?: string | null) {
 /* -------------------------------- PNG HD -------------------------------- */
 
 export async function exportPng(map: TaludeMap, marcacoes: TaludeMarcacao[]): Promise<Blob> {
-  return renderMapToBlob(
-    map.image_url,
-    marcacoes.filter((m) => m.visivel !== false),
-  );
+  return exportPixelPerfectMap({
+    imageUrl: map.image_url,
+    imageSize: { width: map.image_width, height: map.image_height },
+    polygons: marcacoes.filter((m) => m.visivel !== false).map(m => ({
+      points: m.polygon,
+      color: m.cor,
+      opacity: m.opacidade ?? 0.32,
+      label: m.nome || String(m.numero)
+    }))
+  });
 }
+
 
 /* ---------------------------------- PDF ---------------------------------- */
 

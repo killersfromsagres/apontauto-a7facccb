@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  areaPx,
   formatArea,
   formatLength,
   hasSelfIntersection,
   metersPerPixel,
-  perimeterPx,
-  polygonAreaNorm,
+  polygonArea,
+  polygonPerimeter,
   pointInPolygon,
   validatePolygon,
 } from "@/lib/taludes/geometry";
@@ -20,25 +19,25 @@ const square = [
 ];
 
 describe("cálculos de área calibrada", () => {
-  it("calcula a área normalizada de um quadrado", () => {
-    expect(polygonAreaNorm(square)).toBeCloseTo(100, 5);
+  it("calcula a área de um quadrado", () => {
+    expect(polygonArea(square)).toBeCloseTo(100, 5);
   });
 
   it("converte a escala com metros por pixel", () => {
-    // Régua horizontal de 0% a 50% em imagem de 1000px = 500px para 100 m.
+    // Régua horizontal de 0 a 50 pixels em imagem de 1000px = 50px para 100 m.
     const mpp = metersPerPixel({ a: { x: 0, y: 0 }, b: { x: 50, y: 0 }, meters: 100 }, 1000, 1000);
-    expect(mpp).toBeCloseTo(0.2, 6);
+    expect(mpp).toBeCloseTo(2, 6); // 100m / 50px = 2 m/px
   });
 
   it("área em metros quadrados = áreaPx × (m/px)²", () => {
-    const mpp = metersPerPixel({ a: { x: 0, y: 0 }, b: { x: 50, y: 0 }, meters: 100 }, 1000, 1000);
-    const px2 = areaPx(square, 1000, 1000); // 100px × 100px
-    expect(px2).toBeCloseTo(10000, 3);
+    const mpp = 2; // m/px
+    const px2 = polygonArea(square); // 10px × 10px = 100 px²
+    expect(px2).toBeCloseTo(100, 3);
     expect(px2 * mpp * mpp).toBeCloseTo(400, 3);
   });
 
   it("perímetro acompanha a calibração", () => {
-    expect(perimeterPx(square, 1000, 1000)).toBeCloseTo(400, 3);
+    expect(polygonPerimeter(square)).toBeCloseTo(40, 3);
   });
 
   it("calibração degenerada não divide por zero", () => {
