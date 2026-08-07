@@ -76,10 +76,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   useEffect(() => {
     if (imageLoaded) {
-      const timer = setTimeout(fitToView, 100);
-      return () => clearTimeout(timer);
+      // Pequeno delay para garantir que o container tenha dimensões finais
+      setTimeout(fitToView, 50);
     }
-  }, [imageLoaded, fitToView]);
+  }, [imageLoaded, fitToView, imageUrl]);
+
 
   useEffect(() => {
     const observer = new ResizeObserver(() => {
