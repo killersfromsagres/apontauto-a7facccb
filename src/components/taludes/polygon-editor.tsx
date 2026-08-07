@@ -275,9 +275,14 @@ export function PolygonEditor({
           <ToolButton onClick={() => {
             if (containerRef.current) {
               const rect = containerRef.current.getBoundingClientRect();
-              const zoomX = rect.width / imageWidth;
-              const zoomY = rect.height / imageHeight;
-              const fitZoom = Math.min(zoomX, zoomY, 1) * 0.9;
+              const padding = 40;
+              const availableWidth = rect.width - (padding * 2);
+              const availableHeight = rect.height - (padding * 2);
+              
+              const zoomX = availableWidth / imageWidth;
+              const zoomY = availableHeight / imageHeight;
+              const fitZoom = Math.min(zoomX, zoomY, 1);
+              
               setViewport({ 
                 zoom: fitZoom, 
                 offset: { 
