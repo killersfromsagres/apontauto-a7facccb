@@ -82,7 +82,7 @@ export function PolygonEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const [tool, setTool] = useState<EditorTool>("select");
   const [viewport, setViewport] = useState<ViewportState>(() => {
-    return { zoom: 0.05, offset: { x: 0, y: 0 } };
+    return { zoom: 0.1, offset: { x: 0, y: 0 } };
   });
   const [precisionMode, setPrecisionMode] = useState(false);
   
@@ -311,20 +311,18 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 pointer-events-none flex items-center justify-center"
+            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
             style={{ 
               transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
               width: imageWidth,
               height: imageHeight,
-              minWidth: imageWidth,
-              minHeight: imageHeight
             }}
           >
-            <div className="relative w-full h-full" style={{ width: imageWidth, height: imageHeight }}>
+            <div className="relative w-full h-full">
               <img 
                 src={imageUrl} 
                 alt="Mapa de Taludes" 
-                className="block max-w-none pointer-events-none w-full h-full"
+                className="absolute inset-0 block max-w-none pointer-events-none w-full h-full"
                 style={{ objectFit: 'contain' }}
               />
 
@@ -414,7 +412,7 @@ export function PolygonEditor({
           )}
 
           {/* Debug Info */}
-          <div className="absolute bottom-4 left-4 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] font-mono text-white/50 pointer-events-none">
+          <div className="absolute bottom-4 left-4 p-2 rounded-lg bg-black/60 backdrop-blur-sm border border-white/10 text-[10px] font-mono text-white/50 pointer-events-none z-20">
             Scale: {imageWidth}x{imageHeight}<br/>
             Zoom: {Math.round(viewport.zoom * 100)}%<br/>
             Pos: {hoverPoint ? `${Math.round(hoverPoint.x)}, ${Math.round(hoverPoint.y)}` : "0, 0"}
