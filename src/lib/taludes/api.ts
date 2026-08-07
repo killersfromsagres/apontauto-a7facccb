@@ -9,20 +9,22 @@ export interface Point {
 export interface TaludeMarcacao {
   id: string;
   map_id: string;
-  nome: string;
-  geometria: Point[];
-  cor?: string;
-  area?: number;
-  perimetro?: number;
+  nome: string | null;
+  rotulo: string | null;
+  polygon: Point[];
+  cor: string;
+  opacidade: number;
   created_at?: string;
+  bloqueado: boolean;
+  visivel: boolean;
 }
 
 export interface TaludeMap {
   id: string;
   nome: string;
-  url: string;
-  largura_original: number;
-  altura_original: number;
+  image_url: string;
+  image_width: number;
+  image_height: number;
   created_at: string;
 }
 
@@ -34,7 +36,8 @@ export const getTaludeMaps = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     
     if (error) throw error;
-    return data as TaludeMap[];
+    // Map database field names to our interface if they differ
+    return data as unknown as TaludeMap[];
   });
 
 export const getTaludeMarcacoes = createServerFn({ method: "GET" })
@@ -46,23 +49,38 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
       .eq("map_id", mapId);
     
     if (error) throw error;
-    return data as TaludeMarcacao[];
+    
+    // We store 'polygon' as JSONB in the DB, so we cast it to Point[]
+    return (data ?? []).map(m => ({
+      ...m,
+      polygon: m.polygon as unknown as Point[]
+    })) as unknown as TaludeMarcacao[];
   });
 
 export const saveTaludeMarcacao = createServerFn({ method: "POST" })
-  .validator((data: Omit<TaludeMarcacao, "id"> & { id?: string }) => data)
+  .validator((data: Partial<TaludeMarcacao> & { map_id: string }) => data)
   .handler(async ({ data }) => {
-    if (data.id) {
+    const { id, ...payload } = data;
+    
+    if (id) {
       const { error } = await supabase
         .from("talude_marcacoes")
-        .update(data)
-        .eq("id", data.id);
+        .update(payload as any)
+        .eq("id", id);
       if (error) throw error;
-      return { id: data.id };
+      return { id };
     } else {
+      // Need owner_id for insert policies if not using admin
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("Unauthorized");
+
       const { data: inserted, error } = await supabase
         .from("talude_marcacoes")
-        .insert(data)
+        .insert({
+          ...payload,
+          owner_id: userData.user.id,
+          numero: Math.floor(Math.random() * 1000000) // Dummy numero for constraint
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -80,3 +98,4 @@ export const deleteTaludeMarcacao = createServerFn({ method: "POST" })
     if (error) throw error;
     return { ok: true };
   });
+
