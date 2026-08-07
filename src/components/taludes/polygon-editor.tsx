@@ -228,7 +228,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.2, 0.01))} title="Zoom Out">
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={fitToView} title="Reset View">
+        <Button variant="ghost" size="icon" onClick={fitToView} title="Ajustar ao Tamanho da Tela" className="text-blue-400">
           <Maximize className="h-4 w-4" />
         </Button>
         {mode === 'draw' && currentPoints.length > 0 && (
