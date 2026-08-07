@@ -256,7 +256,7 @@ export function PolygonEditor({
   };
 
   return (
-    <div className={cn("flex flex-col h-full gap-4", className)}>
+    <div className={cn("flex flex-col h-full gap-4 w-full", className)}>
       {/* Toolbar */}
       <div className="flex items-center justify-between p-2 rounded-xl bg-muted/20 border border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-1">
@@ -303,7 +303,7 @@ export function PolygonEditor({
         {/* Main Editor */}
         <div 
           ref={containerRef}
-          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none"
+          className="relative flex-1 bg-black/40 rounded-2xl border border-white/5 overflow-hidden cursor-crosshair touch-none select-none w-full h-full"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -311,7 +311,7 @@ export function PolygonEditor({
         >
           {/* Base Layer */}
           <div 
-            className="absolute origin-top-left transition-transform duration-75 pointer-events-none"
+            className="absolute origin-top-left transition-transform duration-75 pointer-events-none flex items-center justify-center"
             style={{ 
               transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
               width: imageWidth,
@@ -324,8 +324,8 @@ export function PolygonEditor({
               <img 
                 src={imageUrl} 
                 alt="Mapa de Taludes" 
-                className="block max-w-none pointer-events-none"
-                style={{ width: imageWidth, height: imageHeight, objectFit: 'fill' }}
+                className="block max-w-none pointer-events-none w-full h-full"
+                style={{ objectFit: 'contain' }}
               />
 
               {/* SVG Layer for Polygons */}

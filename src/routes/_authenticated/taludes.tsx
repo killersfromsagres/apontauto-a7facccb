@@ -665,8 +665,8 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
-        <GlassCard className="space-y-3 p-3 h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)]">
+      <div className="flex flex-col gap-4 w-full h-full max-w-[100vw]">
+        <GlassCard className="space-y-3 p-3 h-[calc(100vh-12rem)] md:h-[calc(100vh-10rem)] lg:h-[calc(100vh-8rem)] w-full overflow-hidden">
           {!calibrado && (
 
             <div className="flex items-center gap-2 rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-xs">
@@ -675,20 +675,23 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
               perímetro em metros.
             </div>
           )}
-          <PolygonEditor
-            imageUrl={map.image_url}
-            imageWidth={map.image_width}
-            imageHeight={map.image_height}
-            polygons={editorPolygons}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onGeometryChange={handleGeometry}
-            onCreate={(pts) => create.mutate(pts)}
-            onDelete={(id) => {
-              const m = marcacoes.find(x => x.id === id);
-              if (m) setDeleteTarget(m);
-            }}
-          />
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
+            <PolygonEditor
+              imageUrl={map.image_url}
+              imageWidth={map.image_width}
+              imageHeight={map.image_height}
+              polygons={editorPolygons}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onGeometryChange={handleGeometry}
+              onCreate={(pts) => create.mutate(pts)}
+              onDelete={(id) => {
+                const m = marcacoes.find(x => x.id === id);
+                if (m) setDeleteTarget(m);
+              }}
+              className="w-full h-full"
+            />
+          </div>
         </GlassCard>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
