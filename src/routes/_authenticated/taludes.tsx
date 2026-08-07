@@ -675,20 +675,23 @@ function MapEditor({ map: initialMap, onBack }: { map: TaludeMap; onBack: () => 
               perímetro em metros.
             </div>
           )}
-          <PolygonEditor
-            imageUrl={map.image_url}
-            imageWidth={map.image_width}
-            imageHeight={map.image_height}
-            polygons={editorPolygons}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            onGeometryChange={handleGeometry}
-            onCreate={(pts) => create.mutate(pts)}
-            onDelete={(id) => {
-              const m = marcacoes.find(x => x.id === id);
-              if (m) setDeleteTarget(m);
-            }}
-          />
+          <div className="flex-1 min-h-0 w-full overflow-hidden">
+            <PolygonEditor
+              imageUrl={map.image_url}
+              imageWidth={map.image_width}
+              imageHeight={map.image_height}
+              polygons={editorPolygons}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onGeometryChange={handleGeometry}
+              onCreate={(pts) => create.mutate(pts)}
+              onDelete={(id) => {
+                const m = marcacoes.find(x => x.id === id);
+                if (m) setDeleteTarget(m);
+              }}
+              className="w-full h-full"
+            />
+          </div>
         </GlassCard>
 
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
