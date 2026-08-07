@@ -159,7 +159,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
 
   return (
     <div className="w-full overflow-x-auto pb-20 custom-scrollbar">
-      <div className="flex flex-col items-center gap-16 min-w-[1100px] p-12 relative">
+      <div className={`flex flex-col items-center gap-16 min-w-[1100px] p-12 relative transition-colors duration-300 ${isExporting ? 'bg-white' : ''}`}>
         
         {levels.map((level) => (
           <div key={level} className="flex flex-wrap justify-center gap-12 relative w-full">
