@@ -315,15 +315,17 @@ export function PolygonEditor({
             style={{ 
               transform: `translate(${viewport.offset.x}px, ${viewport.offset.y}px) scale(${viewport.zoom})`,
               width: imageWidth,
-              height: imageHeight
+              height: imageHeight,
+              minWidth: imageWidth,
+              minHeight: imageHeight
             }}
           >
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full" style={{ width: imageWidth, height: imageHeight }}>
               <img 
                 src={imageUrl} 
                 alt="Mapa de Taludes" 
-                className="block max-w-none pointer-events-none object-contain"
-                style={{ width: imageWidth, height: imageHeight }}
+                className="block max-w-none pointer-events-none"
+                style={{ width: imageWidth, height: imageHeight, objectFit: 'contain' }}
               />
 
               {/* SVG Layer for Polygons */}
