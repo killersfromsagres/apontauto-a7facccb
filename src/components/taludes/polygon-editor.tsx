@@ -32,21 +32,67 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   onSave,
   onDelete
 }) => {
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(0.1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [mode, setMode] = useState<'view' | 'draw'>('view');
   const [currentPoints, setCurrentPoints] = useState<Point[]>([]);
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const isDragging = useRef(false);
   const lastMousePos = useRef({ x: 0, y: 0 });
 
+  const fitToView = useCallback(() => {
+    if (containerRef.current && imgRef.current) {
+      const container = containerRef.current;
+      const img = imgRef.current;
+      
+      const padding = 20;
+      const availableWidth = container.clientWidth - padding * 2;
+      const availableHeight = container.clientHeight - padding * 2;
+      
+      if (availableWidth <= 0 || availableHeight <= 0) return;
+
+      const w = img.naturalWidth || imageWidth;
+      const h = img.naturalHeight || imageHeight;
+      
+      const fitZoom = Math.min(
+        availableWidth / w,
+        availableHeight / h
+      );
+      
+      setZoom(fitZoom);
+      setOffset({
+        x: (container.clientWidth - w * fitZoom) / 2,
+        y: (container.clientHeight - h * fitZoom) / 2
+      });
+      setIsReady(true);
+    }
+  }, [imageWidth, imageHeight]);
+
+  useEffect(() => {
+    if (imageLoaded) {
+      const timer = setTimeout(fitToView, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [imageLoaded, fitToView]);
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => {
+      if (imageLoaded) fitToView();
+    });
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [imageLoaded, fitToView]);
+
   const getRelativeCoords = (e: React.MouseEvent | MouseEvent): Point => {
-    if (!containerRef.current) return { x: 0, y: 0 };
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - offset.x) / zoom;
-    const y = (e.clientY - rect.top - offset.y) / zoom;
+    if (!containerRef.current || !imgRef.current) return { x: 0, y: 0 };
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / zoom;
+    const y = (e.clientY - rect.top) / zoom;
     return { x, y };
   };
 
@@ -126,17 +172,36 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     setCurrentPoints(prev => prev.slice(0, -1));
   };
 
-  const handleZoom = (delta: number) => {
-    setZoom(prev => Math.min(Math.max(prev + delta, 0.1), 5));
-  };
+  const onWheel = useCallback((e: WheelEvent) => {
+    if (!containerRef.current) return;
+    e.preventDefault();
+    
+    const scaleFactor = 1.1;
+    const delta = e.deltaY > 0 ? 1 / scaleFactor : scaleFactor;
+    const newZoom = Math.min(Math.max(zoom * delta, 0.01), 10);
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
-  const resetView = () => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
-  };
+    // Calcular novo offset para manter o ponto sob o mouse
+    const newOffsetX = mouseX - (mouseX - offset.x) * (newZoom / zoom);
+    const newOffsetY = mouseY - (mouseY - offset.y) * (newZoom / zoom);
+
+    setZoom(newZoom);
+    setOffset({ x: newOffsetX, y: newOffsetY });
+  }, [zoom, offset]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', onWheel, { passive: false });
+      return () => container.removeEventListener('wheel', onWheel);
+    }
+  }, [onWheel]);
 
   return (
-    <div className="relative w-full h-full bg-slate-900 overflow-hidden flex flex-col">
+    <div className="relative w-full h-[600px] bg-slate-900 overflow-hidden flex flex-col rounded-xl border border-white/5">
       {/* Toolbar */}
       <div className="absolute top-4 left-4 z-10 flex gap-2 bg-slate-800/80 p-2 rounded-lg backdrop-blur-sm border border-slate-700">
         <Button 
@@ -156,13 +221,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <PenTool className="h-4 w-4" />
         </Button>
         <div className="w-px h-8 bg-slate-700 mx-1" />
-        <Button variant="ghost" size="icon" onClick={() => handleZoom(0.1)} title="Zoom In">
+        <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z * 1.2, 10))} title="Zoom In">
           <ZoomIn className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={() => handleZoom(-0.1)} title="Zoom Out">
+        <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.2, 0.01))} title="Zoom Out">
           <ZoomOut className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={resetView} title="Reset View">
+        <Button variant="ghost" size="icon" onClick={fitToView} title="Ajustar ao Tamanho da Tela" className="text-blue-400">
           <Maximize className="h-4 w-4" />
         </Button>
         {mode === 'draw' && currentPoints.length > 0 && (
@@ -190,22 +255,44 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       >
         <div 
           style={{
+            width: imageWidth,
+            height: imageHeight,
             transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
             transformOrigin: '0 0',
-            transition: isDragging.current ? 'none' : 'transform 0.1s ease-out'
+            transition: (isDragging.current || !isReady) ? 'none' : 'transform 0.1s linear',
+            opacity: imageLoaded ? 1 : 0,
+            willChange: 'transform',
+            position: 'relative'
           }}
         >
           <img 
+            ref={imgRef}
             src={imageUrl} 
             alt="Mapa de Taludes" 
-            style={{ width: imageWidth, height: imageHeight }}
+            style={{ 
+              width: imageWidth, 
+              height: imageHeight,
+              maxWidth: 'none',
+              display: 'block'
+            }}
             draggable={false}
+            onLoad={() => setImageLoaded(true)}
+            onError={(e) => {
+              console.error("Erro ao carregar mapa:", imageUrl);
+              toast.error("Erro ao carregar a imagem do mapa.");
+            }}
           />
           
           <svg 
-            width={imageWidth} 
-            height={imageHeight} 
-            className="absolute top-0 left-0 pointer-events-none"
+            viewBox={`0 0 ${imageWidth} ${imageHeight}`}
+            style={{ 
+              width: imageWidth, 
+              height: imageHeight,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              pointerEvents: 'none'
+            }}
           >
             {/* Existing Polygons */}
             {marcacoes.map((m) => (

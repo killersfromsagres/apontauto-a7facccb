@@ -30,7 +30,8 @@ export interface TaludeMap {
 
 export const getTaludeMaps = createServerFn({ method: "GET" })
   .handler(async () => {
-    const { data, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("talude_maps")
       .select("*")
       .order("created_at", { ascending: false });
@@ -43,7 +44,8 @@ export const getTaludeMaps = createServerFn({ method: "GET" })
 export const getTaludeMarcacoes = createServerFn({ method: "GET" })
   .validator((mapId: string) => mapId)
   .handler(async ({ data: mapId }) => {
-    const { data, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("talude_marcacoes")
       .select("*")
       .eq("map_id", mapId);
