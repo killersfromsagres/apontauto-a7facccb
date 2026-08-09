@@ -504,11 +504,12 @@ function CorretivaPage() {
             <Button
               size="sm"
               variant="outline"
-              className="h-11 flex-1 sm:h-9 sm:flex-none"
+              className="h-11 flex-1 sm:h-9 sm:flex-none border-primary/40 bg-primary/5 hover:bg-primary/20 text-primary-glow font-bold"
               onClick={() => doSync(false)}
               disabled={syncing || !online}
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              <span className="sm:hidden ml-2">Sincronizar</span>
             </Button>
             {isAdmin && (
               <AlertDialog>
@@ -1030,7 +1031,7 @@ function OSDetailView({
                         }
                       }}
                     >
-                      <SelectTrigger className="h-10 flex-1 bg-background/50 border-primary/20">
+                      <SelectTrigger className="h-10 flex-1 bg-primary/10 border-primary/40 text-primary-glow font-bold">
                         <div className="flex items-center gap-2">
                           <Settings2 className="h-3.5 w-3.5 text-primary" />
                           <span className="text-xs">Reclassificar Equipe</span>
@@ -1046,10 +1047,10 @@ function OSDetailView({
                     <Button
                       variant="outline"
                       className={cn(
-                        "h-10 flex-1 gap-2 text-xs transition-all duration-300",
+                        "h-10 flex-1 gap-2 text-xs font-bold transition-all duration-300",
                         os.material_status === "solicitado"
-                          ? "bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-                          : "border-white/10 hover:bg-amber-500/10 hover:text-amber-400 hover:border-amber-500/30"
+                          ? "bg-amber-500/30 border-amber-500/50 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                          : "bg-white/5 border-white/20 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/40"
                       )}
                       onClick={async () => {
                         if (!navigator.onLine) return toast.error("Offline: Não é possível alterar agora.");

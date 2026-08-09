@@ -264,10 +264,10 @@ function CreateUserCard() {
             <button
               type="button"
               onClick={() => setRole("user")}
-              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition ${
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition font-bold ${
                 role === "user"
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-transparent text-muted-foreground hover:bg-muted/40"
+                  ? "border-primary bg-primary/20 text-primary-glow shadow-[0_0_15px_rgba(135,206,250,0.3)]"
+                  : "border-border bg-white/5 text-muted-foreground hover:bg-white/10"
               }`}
             >
               <UserIcon className="h-4 w-4" /> Usuário
@@ -275,10 +275,10 @@ function CreateUserCard() {
             <button
               type="button"
               onClick={() => setRole("admin")}
-              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition ${
+              className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition font-bold ${
                 role === "admin"
-                  ? "border-primary bg-primary/10 text-foreground"
-                  : "border-border bg-transparent text-muted-foreground hover:bg-muted/40"
+                  ? "border-primary bg-primary/20 text-primary-glow shadow-[0_0_15px_rgba(135,206,250,0.3)]"
+                  : "border-border bg-white/5 text-muted-foreground hover:bg-white/10"
               }`}
             >
               <ShieldCheck className="h-4 w-4" /> Administrador
@@ -470,6 +470,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
           <Button
             size="sm"
             variant="outline"
+            className="bg-primary/10 border-primary/30 text-primary-glow hover:bg-primary/20 font-bold"
             onClick={() => roleMut.mutate(user.role === "admin" ? "user" : "admin")}
             loading={roleMut.isPending}
             title="Alternar papel"
@@ -480,6 +481,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
           <Button
             size="sm"
             variant="outline"
+            className="bg-primary/10 border-primary/30 text-primary-glow hover:bg-primary/20 font-bold"
             onClick={() => banMut.mutate(!user.banned)}
             loading={banMut.isPending}
           >

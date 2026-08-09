@@ -364,9 +364,9 @@ function ProgramacaoPage() {
       actions={
         <div className="flex flex-wrap items-center gap-3">
           {isAdmin && (
-            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-elegant animate-card-rise">
+            <div className="flex items-center gap-2 bg-primary/5 p-1.5 rounded-2xl border border-primary/20 backdrop-blur-md shadow-elegant animate-card-rise">
               <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
-              <div className="w-px h-6 bg-white/10 mx-1" />
+              <div className="w-px h-6 bg-primary/20 mx-1" />
               <PreventivaImportDialog mode="backorder" onDone={() => {}} />
             </div>
           )}
@@ -635,6 +635,7 @@ function ProgramacaoPage() {
                             <Button
                               size="sm"
                               variant="secondary"
+                              className="bg-primary/20 text-primary-glow border-primary/30 hover:bg-primary/30 font-bold"
                               onClick={() => downloadBlob(f.blob, f.filename)}
                             >
                               <Download className="mr-1.5 h-3.5 w-3.5" /> Baixar
