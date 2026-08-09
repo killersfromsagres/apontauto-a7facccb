@@ -364,21 +364,29 @@ function ProgramacaoPage() {
       actions={
         <div className="flex flex-wrap items-center gap-3">
           {isAdmin && (
-            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-elegant animate-card-rise">
               <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
               <div className="w-px h-6 bg-white/10 mx-1" />
               <PreventivaImportDialog mode="backorder" onDone={() => {}} />
             </div>
           )}
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")} className="h-11 sm:h-9 px-4 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300">
+            <Button 
+              variant="glass" 
+              onClick={() => downloadTemplate("GRUPO GPS")} 
+              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
+            >
               <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> 
-              <span className="hidden sm:inline">Template GPS</span>
+              <span className="hidden sm:inline font-semibold">Template GPS</span>
               <span className="sm:hidden text-xs">GPS</span>
             </Button>
-            <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)} className="h-11 sm:h-9 px-4 hover:bg-primary/5 hover:border-primary/30 transition-all duration-300">
+            <Button 
+              variant="glass" 
+              onClick={() => downloadTemplate(TITULO_PADRAO)} 
+              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
+            >
               <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
-              <span className="hidden sm:inline">Template Sherwin</span>
+              <span className="hidden sm:inline font-semibold">Template Sherwin</span>
               <span className="sm:hidden text-xs">Sherwin</span>
             </Button>
           </div>
