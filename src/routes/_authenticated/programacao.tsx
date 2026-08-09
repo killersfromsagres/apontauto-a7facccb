@@ -362,19 +362,34 @@ function ProgramacaoPage() {
       title="Programação"
       description="Gestão de programações semanais e manutenção preventiva."
       actions={
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           {isAdmin && (
-            <>
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-elegant animate-card-rise">
               <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
+              <div className="w-px h-6 bg-white/10 mx-1" />
               <PreventivaImportDialog mode="backorder" onDone={() => {}} />
-            </>
+            </div>
           )}
-          <Button variant="outline" onClick={() => downloadTemplate("GRUPO GPS")} className="h-11 sm:h-9">
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Template GPS
-          </Button>
-          <Button variant="outline" onClick={() => downloadTemplate(TITULO_PADRAO)} className="h-11 sm:h-9">
-            <FileSpreadsheet className="mr-2 h-4 w-4" /> Template Sherwin
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="glass" 
+              onClick={() => downloadTemplate("GRUPO GPS")} 
+              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> 
+              <span className="hidden sm:inline font-semibold">Template GPS</span>
+              <span className="sm:hidden text-xs">GPS</span>
+            </Button>
+            <Button 
+              variant="glass" 
+              onClick={() => downloadTemplate(TITULO_PADRAO)} 
+              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+              <span className="hidden sm:inline font-semibold">Template Sherwin</span>
+              <span className="sm:hidden text-xs">Sherwin</span>
+            </Button>
+          </div>
         </div>
       }
     >

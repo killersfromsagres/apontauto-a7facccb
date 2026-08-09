@@ -229,7 +229,10 @@ function CorretivaPage() {
         try {
           await refreshOsFromServer();
         } catch (e: any) {
-          if (osList.length === 0) toast.error("Não foi possível carregar OS: The user denied permission to access the database.");
+          console.error("Erro ao carregar OS:", e);
+          // O erro de permissão geralmente acontece por falta de GRANTs ou RLS mal configurado.
+          // Já aplicamos os GRANTs via migração para resolver isso.
+          if (osList.length === 0) toast.error("Erro de acesso ao banco de dados. Contate o administrador.");
         }
       }
       setLoadingList(false);
@@ -366,22 +369,24 @@ function CorretivaPage() {
 
 
       actions={
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           {isAdmin && (
-            <div className="flex flex-1 flex-wrap items-center gap-2 sm:flex-none">
+            <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-elegant">
               <PreventivaImportDialog
                 mode="corretiva"
                 onDone={() => refreshOsFromServer().catch(() => {})}
               />
+              <div className="w-px h-6 bg-white/10" />
               <PreventivaImportDialog
                 mode="backorder"
                 onDone={() => refreshOsFromServer().catch(() => {})}
               />
+              <div className="w-px h-6 bg-white/10" />
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-11 flex-1 gap-2 sm:h-9 sm:flex-none">
+                  <Button size="sm" variant="glass" className="h-9 gap-2">
                     <Lock className="h-4 w-4" />
-                    <span className="sm:inline">Liberar</span>
+                    <span className="hidden sm:inline">Liberar Semanas</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-lg">
