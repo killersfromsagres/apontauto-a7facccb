@@ -109,8 +109,8 @@ export function PreventivaImportDialog({
           className={cn(
             "h-9 px-4 gap-2 transition-all duration-300",
             mode === "corretiva" 
-              ? "hover:bg-primary/20 hover:text-primary border-primary/20" 
-              : "hover:bg-amber-500/20 hover:text-amber-500 border-amber-500/20"
+              ? "bg-primary/20 text-primary-glow border-primary/40 hover:bg-primary/30 shadow-[0_0_15px_rgba(135,206,250,0.2)]" 
+              : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
           )}
         >
           <Upload className="h-4 w-4" />

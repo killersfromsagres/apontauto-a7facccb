@@ -470,6 +470,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
           <Button
             size="sm"
             variant="outline"
+            className="bg-primary/10 border-primary/30 text-primary-glow hover:bg-primary/20 font-bold"
             onClick={() => roleMut.mutate(user.role === "admin" ? "user" : "admin")}
             loading={roleMut.isPending}
             title="Alternar papel"
@@ -480,6 +481,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
           <Button
             size="sm"
             variant="outline"
+            className="bg-primary/10 border-primary/30 text-primary-glow hover:bg-primary/20 font-bold"
             onClick={() => banMut.mutate(!user.banned)}
             loading={banMut.isPending}
           >
