@@ -381,13 +381,12 @@ function CorretivaPage() {
                 mode="backorder"
                 onDone={() => refreshOsFromServer().catch(() => {})}
               />
-            </div>
-          )}
+              <div className="w-px h-6 bg-white/10" />
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button size="sm" variant="outline" className="h-11 flex-1 gap-2 sm:h-9 sm:flex-none">
+                  <Button size="sm" variant="glass" className="h-9 gap-2">
                     <Lock className="h-4 w-4" />
-                    <span className="sm:inline">Liberar</span>
+                    <span className="hidden sm:inline">Liberar Semanas</span>
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-lg">
