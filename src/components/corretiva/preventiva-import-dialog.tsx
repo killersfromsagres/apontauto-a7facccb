@@ -103,9 +103,20 @@ export function PreventivaImportDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-11 flex-1 sm:h-9 sm:flex-none">
-          <Upload className="mr-2 h-4 w-4" />
-          <span className="sm:inline">Planilha {mode === "corretiva" ? "Corretiva" : "Backorder"}</span>
+        <Button 
+          variant="glass" 
+          size="sm"
+          className={cn(
+            "h-9 px-4 gap-2 transition-all duration-300",
+            mode === "corretiva" 
+              ? "hover:bg-primary/20 hover:text-primary border-primary/20" 
+              : "hover:bg-amber-500/20 hover:text-amber-500 border-amber-500/20"
+          )}
+        >
+          <Upload className="h-4 w-4" />
+          <span className="font-semibold tracking-tight">
+            {mode === "corretiva" ? "Planilha Corretiva" : "Planilha Backorder"}
+          </span>
         </Button>
 
 
