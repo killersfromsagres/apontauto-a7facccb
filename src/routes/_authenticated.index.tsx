@@ -1,4 +1,4 @@
-/* Execute esta instrucao no projeto: na foto anexada mostro como está pequena a rea que o mapa fica preciso que aumente a área o tamanho do campo para que o mapa fique maior e completo dentro do campo */
+/* Refatorado para o design Apple Glass Premium e central inteligência operacional */
 import {
   createFileRoute,
   Outlet,
