@@ -81,7 +81,7 @@ export function PreventivaImportDialog({
     const payload = rows.map(r => ({ 
       ...r, 
       updated_at: new Date().toISOString(),
-      // Garante que campos extras sejam mapeados corretamente para o banco se existirem na planilha
+      data_criacao: r.data_criacao || null, // Garante que a data de abertura seja salva no banco
       predio: (r as any).predio || (r as any).localizacao || "",
       andar: (r as any).andar || "",
       local: (r as any).local || (r as any).ambiente || "",
