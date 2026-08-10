@@ -167,8 +167,10 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     for (const [rawKey, target] of headerMap) {
       const raw = r[rawKey];
       const val = raw === "" || raw == null ? null : String(raw).trim();
-      if (target === "data_sla" || target === "data_programada" || target === "data_criacao") {
+      if (target === "data_sla" || target === "data_programada") {
         rec[target] = toISODate(parseDate(raw));
+      } else if (target === "data_criacao") {
+        rec[target] = toISODateTime(parseDate(raw));
       } else if (target === "inicio" || target === "fim") {
         rec[target] = toISODateTime(parseDate(raw));
       } else {

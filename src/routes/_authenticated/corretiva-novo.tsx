@@ -311,7 +311,7 @@ function CorretivaNovoPage() {
                     {os.data_criacao && (
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70">
                         <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                        <span><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleDateString('pt-BR')}</span>
+                        <span><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                       </div>
                     )}
                   </div>
