@@ -82,7 +82,7 @@ function CorretivaNovoPage() {
   const exportExcelByTeam = async () => {
     if (!filtered.length) return toast.error("Nenhuma OS para exportar.");
     try {
-      await generateProgramacaoExcel(filtered, "Programacao_por_Equipe");
+      await generateProgramacaoExcel(filtered, "Programacao_por_Equipe", "corretiva");
       toast.success("Excel gerado com sucesso!");
     } catch (error) {
       toast.error("Erro ao gerar Excel.");

@@ -46,6 +46,7 @@ import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
 import { Route as AuthenticatedFrotaRouteImport } from './routes/_authenticated/frota'
 import { Route as AuthenticatedCorretivaPecasStatusRouteImport } from './routes/_authenticated/corretiva-pecas-status'
+import { Route as AuthenticatedCorretivaNovoRouteImport } from './routes/_authenticated/corretiva-novo'
 import { Route as AuthenticatedCorretivaHistoricoRouteImport } from './routes/_authenticated/corretiva-historico'
 import { Route as AuthenticatedCorretivaGestorRouteImport } from './routes/_authenticated/corretiva-gestor'
 import { Route as AuthenticatedCorretivaRouteImport } from './routes/_authenticated/corretiva'
@@ -290,6 +291,12 @@ const AuthenticatedCorretivaPecasStatusRoute =
   AuthenticatedCorretivaPecasStatusRouteImport.update({
     id: '/corretiva-pecas-status',
     path: '/corretiva-pecas-status',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCorretivaNovoRoute =
+  AuthenticatedCorretivaNovoRouteImport.update({
+    id: '/corretiva-novo',
+    path: '/corretiva-novo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCorretivaHistoricoRoute =
@@ -558,6 +565,7 @@ export interface FileRoutesByFullPath {
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
+  '/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
@@ -637,6 +645,7 @@ export interface FileRoutesByTo {
   '/corretiva': typeof AuthenticatedCorretivaRoute
   '/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
+  '/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/frota': typeof AuthenticatedFrotaRoute
   '/imagens': typeof AuthenticatedImagensRoute
@@ -718,6 +727,7 @@ export interface FileRoutesById {
   '/_authenticated/corretiva': typeof AuthenticatedCorretivaRoute
   '/_authenticated/corretiva-gestor': typeof AuthenticatedCorretivaGestorRoute
   '/_authenticated/corretiva-historico': typeof AuthenticatedCorretivaHistoricoRoute
+  '/_authenticated/corretiva-novo': typeof AuthenticatedCorretivaNovoRoute
   '/_authenticated/corretiva-pecas-status': typeof AuthenticatedCorretivaPecasStatusRoute
   '/_authenticated/frota': typeof AuthenticatedFrotaRoute
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
@@ -801,6 +811,7 @@ export interface FileRouteTypes {
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
+    | '/corretiva-novo'
     | '/corretiva-pecas-status'
     | '/frota'
     | '/imagens'
@@ -880,6 +891,7 @@ export interface FileRouteTypes {
     | '/corretiva'
     | '/corretiva-gestor'
     | '/corretiva-historico'
+    | '/corretiva-novo'
     | '/corretiva-pecas-status'
     | '/frota'
     | '/imagens'
@@ -960,6 +972,7 @@ export interface FileRouteTypes {
     | '/_authenticated/corretiva'
     | '/_authenticated/corretiva-gestor'
     | '/_authenticated/corretiva-historico'
+    | '/_authenticated/corretiva-novo'
     | '/_authenticated/corretiva-pecas-status'
     | '/_authenticated/frota'
     | '/_authenticated/imagens'
@@ -1302,6 +1315,13 @@ declare module '@tanstack/react-router' {
       path: '/corretiva-pecas-status'
       fullPath: '/corretiva-pecas-status'
       preLoaderRoute: typeof AuthenticatedCorretivaPecasStatusRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/corretiva-novo': {
+      id: '/_authenticated/corretiva-novo'
+      path: '/corretiva-novo'
+      fullPath: '/corretiva-novo'
+      preLoaderRoute: typeof AuthenticatedCorretivaNovoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/corretiva-historico': {
@@ -1680,6 +1700,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorretivaRoute: typeof AuthenticatedCorretivaRoute
   AuthenticatedCorretivaGestorRoute: typeof AuthenticatedCorretivaGestorRoute
   AuthenticatedCorretivaHistoricoRoute: typeof AuthenticatedCorretivaHistoricoRoute
+  AuthenticatedCorretivaNovoRoute: typeof AuthenticatedCorretivaNovoRoute
   AuthenticatedCorretivaPecasStatusRoute: typeof AuthenticatedCorretivaPecasStatusRoute
   AuthenticatedFrotaRoute: typeof AuthenticatedFrotaRoute
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
@@ -1728,6 +1749,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorretivaRoute: AuthenticatedCorretivaRoute,
   AuthenticatedCorretivaGestorRoute: AuthenticatedCorretivaGestorRoute,
   AuthenticatedCorretivaHistoricoRoute: AuthenticatedCorretivaHistoricoRoute,
+  AuthenticatedCorretivaNovoRoute: AuthenticatedCorretivaNovoRoute,
   AuthenticatedCorretivaPecasStatusRoute:
     AuthenticatedCorretivaPecasStatusRoute,
   AuthenticatedFrotaRoute: AuthenticatedFrotaRoute,
