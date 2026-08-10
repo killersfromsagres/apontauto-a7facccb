@@ -12,7 +12,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const migrateRefrigLegacyPhotosToImgBB = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { batchSize?: number } | undefined) => ({
+  .validator((input: { batchSize?: number } | undefined) => ({
     batchSize: Math.max(1, Math.min(20, Number(input?.batchSize ?? 8))),
   }))
   .handler(async ({ data, context }) => {

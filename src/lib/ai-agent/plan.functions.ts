@@ -14,7 +14,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { generateText } from "ai";
 
 export const planDocumentAgent = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => InputSchema.parse(input))
+  .validator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) {

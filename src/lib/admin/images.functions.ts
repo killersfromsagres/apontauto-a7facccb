@@ -31,7 +31,7 @@ export const inventoryStorageImages = createServerFn({ method: "POST" })
 /** Migra um lote de imagens de uma origem para o ImgBB (somente admin). */
 export const migrateStorageImagesBatch = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { source: ImageSourceKey; batchSize?: number }) => ({
+  .validator((input: { source: ImageSourceKey; batchSize?: number }) => ({
     source: input.source,
     batchSize: Math.max(1, Math.min(15, Number(input?.batchSize ?? 6))),
   }))
@@ -57,7 +57,7 @@ export const migrateStorageImagesBatch = createServerFn({ method: "POST" })
 /** Apaga objetos órfãos (sem linha correspondente) do bucket. */
 export const purgeStorageOrphans = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { source: ImageSourceKey }) => ({ source: input.source }))
+  .validator((input: { source: ImageSourceKey }) => ({ source: input.source }))
   .handler(async ({ data, context }) => {
     const { assertAdmin, purgeSourceOrphans, sourceByKey } =
       await import("@/lib/admin/images.server");
@@ -73,7 +73,7 @@ export const purgeStorageOrphans = createServerFn({ method: "POST" })
 /** Últimos links de imagens hospedadas no ImgBB (auditoria/consulta). */
 export const listImgbbLinks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { limit?: number } | undefined) => ({
+  .validator((input: { limit?: number } | undefined) => ({
     limit: Math.max(1, Math.min(200, Number(input?.limit ?? 50))),
   }))
   .handler(async ({ data, context }) => {

@@ -11,7 +11,7 @@ async function assertAdmin(supabase: any, userId: string) {
 
 export const copilotChat = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => {
+  .validator((input: unknown) => {
     const messages = (input as any)?.messages;
     if (!Array.isArray(messages) || messages.length === 0) throw new Error("Mensagem vazia.");
     return {
@@ -28,7 +28,7 @@ export const copilotChat = createServerFn({ method: "POST" })
 
 export const copilotExecutar = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => {
+  .validator((input: unknown) => {
     const tipo = (input as any)?.tipo as AcaoTipo;
     const params = (input as any)?.params;
     if (typeof tipo !== "string") throw new Error("Ação inválida.");
