@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Instalação - ApontAuto Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; scroll-behavior: smooth; }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(229, 231, 235, 0.5); border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .nav-link.active { background: #3b82f6; color: white; }
+        pre { background: #1f2937; color: #f9fafb; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        code { font-family: 'Fira Code', 'Courier New', Courier, monospace; }
+        .step-number { width: 2.5rem; height: 2.5rem; display: flex; align-items: center; justify-content: center; background: #3b82f6; color: white; border-radius: 9999px; flex-shrink: 0; font-weight: 700; }
+        .sidebar { transition: all 0.3s ease; }
+        @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+    <!-- Header/Nav Mobile -->
+    <header class="lg:hidden fixed top-0 w-full z-50 bg-white border-b px-4 py-3 flex items-center justify-between">
+        <span class="font-bold text-blue-600">ApontAuto Premium</span>
+        <button id="menu-toggle" class="p-2"><i class="fas fa-bars"></i></button>
+    </header>
+
+    <div class="flex">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 w-64 bg-white border-r z-40 lg:translate-x-0 overflow-y-auto">
+            <div class="p-6">
+                <h1 class="text-xl font-bold text-blue-600 mb-2">ApontAuto</h1>
+                <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold mb-6">Manual v1.0.0</p>
+                
+                <nav class="space-y-1">
+                    <a href="#inicio" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-home w-5 mr-2"></i> Início</a>
+                    <a href="#requisitos" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-list-check w-5 mr-2"></i> Requisitos</a>
+                    <a href="#passo-a-passo" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-stairs w-5 mr-2"></i> Passo a Passo</a>
+                    <a href="#configuracao" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-cogs w-5 mr-2"></i> Config. Supabase</a>
+                    <a href="#banco-de-dados" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-database w-5 mr-2"></i> Banco de Dados</a>
+                    <a href="#sql-editor" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-code w-5 mr-2"></i> SQL Editor</a>
+                    <a href="#storage" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-box w-5 mr-2"></i> Storage</a>
+                    <a href="#variaveis" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-key w-5 mr-2"></i> Variáveis de Ambiente</a>
+                    <a href="#testando" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-vial w-5 mr-2"></i> Testando</a>
+                    <a href="#troubleshooting" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-bug w-5 mr-2"></i> Solução de Problemas</a>
+                    <a href="#faq" class="nav-link flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-100"><i class="fas fa-question-circle w-5 mr-2"></i> FAQ</a>
+                </nav>
+            </div>
+            
+            <div class="mt-auto p-4 border-t">
+                <div class="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+                    <div id="progress-bar" class="bg-blue-600 h-1.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-[10px] text-gray-500 text-center">Progresso da Instalação</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 lg:ml-64 p-4 md:p-8 lg:p-12 mt-16 lg:mt-0 max-w-5xl">
+            
+            <!-- Section: Início -->
+            <section id="inicio" class="mb-20 pt-8">
+                <div class="glass-card p-8 md:p-12 text-center">
+                    <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 text-blue-600 rounded-2xl mb-6">
+                        <i class="fas fa-rocket text-3xl"></i>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-extrabold mb-4">Manual de Instalação ApontAuto</h2>
+                    <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">Documentação técnica profissional para implantação completa do sistema de gestão operacional e inteligência de ativos.</p>
+                    <div class="flex flex-wrap justify-center gap-4 mb-10">
+                        <span class="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-600"><i class="fas fa-code-branch mr-2"></i> Versão 1.0.0</span>
+                        <span class="px-4 py-2 bg-gray-100 rounded-full text-sm font-medium text-gray-600"><i class="fas fa-calendar-alt mr-2"></i> Agosto 2026</span>
+                    </div>
+                    <a href="#requisitos" class="inline-flex items-center px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all transform hover:scale-105 shadow-lg">
+                        Começar Instalação <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+            </section>
+
+            <!-- Section: Requisitos -->
+            <section id="requisitos" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-list-check text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Requisitos do Sistema</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card p-6">
+                        <h4 class="font-bold mb-4 flex items-center"><i class="fas fa-cloud text-blue-500 mr-2"></i> Infraestrutura</h4>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span>Conta ativa na <strong>Supabase</strong> (Free tier suportado)</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span>Acesso ao editor SQL da Supabase</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span>Capacidade de criar Storage Buckets públicos e privados</span></li>
+                        </ul>
+                    </div>
+                    <div class="glass-card p-6">
+                        <h4 class="font-bold mb-4 flex items-center"><i class="fas fa-desktop text-blue-500 mr-2"></i> Cliente & Dev</h4>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span><strong>Node.js 20+</strong> (se executado localmente)</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span>Navegador moderno (Chrome, Edge ou Safari)</span></li>
+                            <li class="flex items-start"><i class="fas fa-check-circle text-green-500 mt-1 mr-2"></i> <span>Dispositivo móvel com iOS 15+ ou Android 12+ (para app)</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Passo a Passo -->
+            <section id="passo-a-passo" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-stairs text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Guia de Implantação</h3>
+                </div>
+                
+                <div class="space-y-12">
+                    <!-- Step 1 -->
+                    <div class="flex gap-6">
+                        <div class="step-number">1</div>
+                        <div>
+                            <h4 class="text-xl font-bold mb-2">Configuração Inicial Supabase</h4>
+                            <p class="text-gray-600 mb-4">Acesse <a href="https://supabase.com" class="text-blue-600 underline">supabase.com</a>, crie uma conta e inicie um novo projeto. Escolha uma região próxima aos seus usuários e defina uma senha forte para o banco de dados.</p>
+                            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                                <p class="text-sm text-yellow-700 font-medium"><i class="fas fa-triangle-exclamation mr-2"></i> Importante: Aguarde até que o banco de dados esteja totalmente provisionado antes de prosseguir.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex gap-6">
+                        <div class="step-number">2</div>
+                        <div>
+                            <h4 class="text-xl font-bold mb-2">Execução do Esquema (SQL)</h4>
+                            <p class="text-gray-600 mb-4">No painel lateral da Supabase, clique em <strong>SQL Editor</strong>, crie uma nova query chamada "Setup ApontAuto" e cole o conteúdo do script SQL completo fornecido neste manual.</p>
+                            <div class="flex gap-2">
+                                <a href="#sql-editor" class="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 uppercase tracking-tighter">Ir para SQL Completo</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex gap-6">
+                        <div class="step-number">3</div>
+                        <div>
+                            <h4 class="text-xl font-bold mb-2">Configuração do Storage</h4>
+                            <p class="text-gray-600 mb-4">Vá em <strong>Storage</strong> e crie os buckets necessários (ex: <code>evidencias</code>, <code>checklist-fotos</code>). Certifique-se de aplicar as policies de RLS para permitir uploads de usuários autenticados.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Configuração Supabase -->
+            <section id="configuracao" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-cogs text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Configuração da Supabase</h3>
+                </div>
+                <div class="glass-card p-6 overflow-hidden">
+                    <div class="space-y-6 text-sm">
+                        <div>
+                            <h5 class="font-bold mb-2">Onde encontrar as chaves?</h5>
+                            <p class="text-gray-600">No painel da Supabase, vá em <strong>Project Settings</strong> > <strong>API</strong>.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <span class="block text-xs font-bold text-gray-400 uppercase mb-1">Project URL</span>
+                                <code class="text-blue-600">https://xxxx.supabase.co</code>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border">
+                                <span class="block text-xs font-bold text-gray-400 uppercase mb-1">Anon Key</span>
+                                <code class="text-blue-600">eyJhbGciOiJIUzI1NiI...</code>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <p class="text-xs text-red-700 italic"><i class="fas fa-shield-halved mr-2"></i> Nunca exponha a <strong>Service Role Key</strong> no código frontend (client-side). Use apenas em funções de servidor.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Banco de Dados -->
+            <section id="banco-de-dados" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-database text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Estrutura do Banco de Dados</h3>
+                </div>
+                <p class="text-gray-600 mb-6">O ApontAuto utiliza uma estrutura relacional robusta otimizada para performance offline e sincronização inteligente.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 text-sm">
+                    <div class="glass-card p-4">
+                        <h5 class="font-bold border-b pb-2 mb-2">Núcleo OS</h5>
+                        <ul class="text-gray-500 list-disc list-inside space-y-1">
+                            <li>corretiva_os</li>
+                            <li>refrigeracao_os</li>
+                            <li>preventiva_programacao</li>
+                        </ul>
+                    </div>
+                    <div class="glass-card p-4">
+                        <h5 class="font-bold border-b pb-2 mb-2">Evidências</h5>
+                        <ul class="text-gray-500 list-disc list-inside space-y-1">
+                            <li>corretiva_fotos</li>
+                            <li>checklist_evidencias</li>
+                            <li>assinaturas_digitais</li>
+                        </ul>
+                    </div>
+                    <div class="glass-card p-4">
+                        <h5 class="font-bold border-b pb-2 mb-2">Segurança</h5>
+                        <ul class="text-gray-500 list-disc list-inside space-y-1">
+                            <li>user_roles</li>
+                            <li>user_module_permissions</li>
+                            <li>audit_logs</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: SQL Editor -->
+            <section id="sql-editor" class="mb-20 scroll-mt-24">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-4">
+                        <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-code text-xl"></i></div>
+                        <h3 class="text-2xl font-bold">SQL Editor</h3>
+                    </div>
+                    <button id="copy-sql" class="px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors">
+                        <i class="fas fa-copy mr-2"></i> Copiar SQL Completo
+                    </button>
+                </div>
+                
+                <div class="relative group">
+                    <div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span class="text-[10px] text-gray-400 bg-gray-800 px-2 py-1 rounded">PostgreSQL</span>
+                    </div>
+                    <pre id="sql-content" class="text-xs h-[500px] overflow-y-auto custom-scrollbar shadow-2xl border border-gray-800">
+-- SCRIPT DE INSTALAÇÃO APONTAUTO
+-- Extraído do ambiente de produção
+
+-- As tabelas e permissões estão consolidadas no arquivo full_schema.sql
+-- Caso este manual esteja rodando em servidor local, utilize o botão acima para copiar.
+
+-- Tabelas Principais (Exemplos)
+CREATE TABLE IF NOT EXISTS public.corretiva_os (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    numero_os TEXT UNIQUE NOT NULL,
+    solicitante TEXT,
+    local TEXT,
+    descricao TEXT,
+    status TEXT DEFAULT 'aberto',
+    equipe TEXT,
+    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.corretiva_os ENABLE ROW LEVEL SECURITY;
+
+-- Verifique o arquivo /manual/full_schema.sql para o esquema completo.
+                    </pre>
+                </div>
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-start gap-3">
+                    <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                    <p class="text-xs text-blue-700 leading-relaxed">Este script inclui: Tabelas, Views, Triggers de auditoria, Policies de segurança (RLS) e Funções auxiliares. Certifique-se de executar no banco correto da Supabase.</p>
+                </div>
+            </section>
+
+            <!-- Section: Storage -->
+            <section id="storage" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-box text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Configuração de Storage</h3>
+                </div>
+                <div class="glass-card overflow-hidden">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="text-left px-6 py-4 font-bold text-gray-700">Bucket</th>
+                                <th class="text-left px-6 py-4 font-bold text-gray-700">Tipo</th>
+                                <th class="text-left px-6 py-4 font-bold text-gray-700">Finalidade</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <tr>
+                                <td class="px-6 py-4"><code class="bg-gray-100 px-2 py-1 rounded text-blue-600">evidencias</code></td>
+                                <td class="px-6 py-4"><span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-[10px] font-bold">PÚBLICO</span></td>
+                                <td class="px-6 py-4 text-gray-500">Fotos de "Antes" e "Depois" das corretivas</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4"><code class="bg-gray-100 px-2 py-1 rounded text-blue-600">documentos</code></td>
+                                <td class="px-6 py-4"><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-bold">PRIVADO</span></td>
+                                <td class="px-6 py-4 text-gray-500">Relatórios PDF e arquivos de frota</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section: Variáveis -->
+            <section id="variaveis" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-key text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Variáveis de Ambiente</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="p-4 bg-white border rounded-xl flex items-center justify-between">
+                        <div>
+                            <code class="text-sm font-bold text-gray-800">VITE_SUPABASE_URL</code>
+                            <p class="text-[10px] text-gray-500">Endpoint da sua instância Supabase</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-300"></i>
+                    </div>
+                    <div class="p-4 bg-white border rounded-xl flex items-center justify-between">
+                        <div>
+                            <code class="text-sm font-bold text-gray-800">VITE_SUPABASE_ANON_KEY</code>
+                            <p class="text-[10px] text-gray-500">Chave pública para acesso autenticado</p>
+                        </div>
+                        <i class="fas fa-lock text-gray-300"></i>
+                    </div>
+                    <div class="p-4 bg-white border rounded-xl flex items-center justify-between">
+                        <div>
+                            <code class="text-sm font-bold text-gray-800">VITE_IMGBB_API_KEY</code>
+                            <p class="text-[10px] text-gray-500">Key para hosting externo de imagens (Opcional)</p>
+                        </div>
+                        <i class="fas fa-image text-gray-300"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Testando -->
+            <section id="testando" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-blue-100 text-blue-600 rounded-xl"><i class="fas fa-vial text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Testando a Instalação</h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="p-6 bg-green-50 border border-green-100 rounded-2xl">
+                        <h4 class="font-bold text-green-800 mb-2">Checklist de Sucesso</h4>
+                        <ul class="space-y-2 text-sm text-green-700">
+                            <li class="flex items-center"><i class="fas fa-check mr-2"></i> Login via e-mail funciona</li>
+                            <li class="flex items-center"><i class="fas fa-check mr-2"></i> Perfil de usuário carregado</li>
+                            <li class="flex items-center"><i class="fas fa-check mr-2"></i> Menu lateral exibe módulos</li>
+                            <li class="flex items-center"><i class="fas fa-check mr-2"></i> Upload de foto de teste concluído</li>
+                        </ul>
+                    </div>
+                    <div class="p-6 bg-blue-50 border border-blue-100 rounded-2xl">
+                        <h4 class="font-bold text-blue-800 mb-2">Primeiro Acesso</h4>
+                        <p class="text-sm text-blue-700">O primeiro usuário criado via Supabase Auth deve ser promovido a <strong>admin</strong> manualmente no banco para acessar as configurações.</p>
+                        <code class="block mt-2 text-[10px] bg-blue-900 text-white p-2 rounded">INSERT INTO user_roles (user_id, role) VALUES ('ID_DO_USER', 'admin');</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Troubleshooting -->
+            <section id="troubleshooting" class="mb-20 scroll-mt-24">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-red-100 text-red-600 rounded-xl"><i class="fas fa-bug text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">Solução de Problemas</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="glass-card p-6">
+                        <h5 class="font-bold text-red-600 mb-2">Erro: "Policy not found" ao fazer upload</h5>
+                        <p class="text-sm text-gray-600">Causa: O bucket do Storage não possui policies de SELECT/INSERT habilitadas para <code>authenticated</code>.</p>
+                        <p class="text-sm font-bold mt-2">Solução: Adicione policies no painel Supabase Storage.</p>
+                    </div>
+                    <div class="glass-card p-6">
+                        <h5 class="font-bold text-red-600 mb-2">Erro: "Invalid JWT" no frontend</h5>
+                        <p class="text-sm text-gray-600">Causa: Chaves de ambiente incorretas ou projeto Supabase pausado.</p>
+                        <p class="text-sm font-bold mt-2">Solução: Verifique o arquivo .env e o status do projeto.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: FAQ -->
+            <section id="faq" class="mb-20 scroll-mt-24 pb-20 border-b">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="p-3 bg-gray-100 text-gray-600 rounded-xl"><i class="fas fa-question-circle text-xl"></i></div>
+                    <h3 class="text-2xl font-bold">FAQ</h3>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h5 class="font-bold mb-1">O sistema funciona offline?</h5>
+                        <p class="text-sm text-gray-600">Sim. O ApontAuto utiliza IndexedDB para cache local e sincronização automática quando a rede retorna.</p>
+                    </div>
+                    <div>
+                        <h5 class="font-bold mb-1">Como integrar com Power BI?</h5>
+                        <p class="text-sm text-gray-600">Utilize a string de conexão direta do PostgreSQL fornecida na aba <strong>Database Settings</strong> da Supabase.</p>
+                    </div>
+                </div>
+            </section>
+
+            <footer class="py-12 text-center">
+                <p class="text-gray-400 text-xs">ApontAuto Premium © 2026 - Desenvolvido com Lovable Cloud</p>
+                <div class="mt-6 flex justify-center gap-4">
+                    <a href="#" class="text-gray-400 hover:text-blue-600"><i class="fab fa-github"></i></a>
+                    <a href="#" class="text-gray-400 hover:text-blue-600"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+    <script>
+        // Progress Bar
+        window.addEventListener('scroll', () => {
+            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById("progress-bar").style.width = scrolled + "%";
+            
+            // Highlight nav links
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 150) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(current)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Mobile Menu Toggle
+        const menuToggle = document.getElementById('menu-toggle');
+        const sidebar = document.getElementById('sidebar');
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+        });
+
+        // Copy SQL
+        document.getElementById('copy-sql').addEventListener('click', function() {
+            const sqlText = document.getElementById('sql-content').innerText;
+            navigator.clipboard.writeText(sqlText).then(() => {
+                this.innerHTML = '<i class="fas fa-check mr-2"></i> Copiado!';
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-copy mr-2"></i> Copiar SQL Completo';
+                }, 2000);
+            });
+        });
+
+        // Async fetch for real SQL if available
+        async function loadFullSchema() {
+            try {
+                const response = await fetch('/manual/full_schema.sql');
+                if (response.ok) {
+                    const text = await response.text();
+                    document.getElementById('sql-content').innerText = text;
+                }
+            } catch (e) {
+                console.log('Using placeholder SQL');
+            }
+        }
+        loadFullSchema();
+    </script>
+</body>
+</html>
