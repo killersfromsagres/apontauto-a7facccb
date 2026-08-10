@@ -35,11 +35,11 @@ import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/corretiva-novo")({
-  component: CorretivaNovoPage,
+export const Route = createFileRoute("/_authenticated/backorder-mensal")({
+  component: BackorderMensalPage,
 });
 
-function CorretivaNovoPage() {
+function BackorderMensalPage() {
   const { isAdmin } = useIsAdmin();
   const [osList, setOsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,11 +53,11 @@ function CorretivaNovoPage() {
     setLoading(true);
     console.log("[CorretivaNovo] Iniciando loadData...");
     try {
-      // 1. Tentar carregar as OS do Supabase
+      // 1. Tentar carregar as OS do Supabase filtrando por backorder_mensal
       const { data, error } = await supabase
         .from("corretiva_os")
         .select("*")
-        .neq("tipo_importacao", "backorder_mensal")
+        .eq("tipo_importacao", "backorder_mensal")
         .order("data_criacao", { ascending: false });
 
       if (error) {
@@ -138,12 +138,12 @@ function CorretivaNovoPage() {
 
   return (
     <PageShell
-      title="Programação de Corretivas"
-      description="Sistema inteligente com classificação automática por IA."
+      title="Backorder Mensal"
+      description="Gestão mensal de backorders com classificação inteligente."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <PreventivaImportDialog mode="corretiva" onDone={loadData} />
+            <PreventivaImportDialog mode="backorder-mensal" onDone={loadData} />
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

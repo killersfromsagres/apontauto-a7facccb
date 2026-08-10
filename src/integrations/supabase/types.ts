@@ -2752,6 +2752,7 @@ export type Database = {
           solicitante: string | null
           status: Database["public"]["Enums"]["corretiva_os_status"]
           tipo: string | null
+          tipo_importacao: string | null
           updated_at: string
         }
         Insert: {
@@ -2778,6 +2779,7 @@ export type Database = {
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
+          tipo_importacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -2804,6 +2806,7 @@ export type Database = {
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
           tipo?: string | null
+          tipo_importacao?: string | null
           updated_at?: string
         }
         Relationships: []

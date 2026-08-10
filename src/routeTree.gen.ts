@@ -56,6 +56,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedConfiabilidadeRouteImport } from './routes/_authenticated/confiabilidade'
 import { Route as AuthenticatedBiStudioRouteImport } from './routes/_authenticated/bi-studio'
 import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authenticated/base-ativos'
+import { Route as AuthenticatedBackorderMensalRouteImport } from './routes/_authenticated/backorder-mensal'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
@@ -349,6 +350,12 @@ const AuthenticatedBaseAtivosRoute = AuthenticatedBaseAtivosRouteImport.update({
   path: '/base-ativos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBackorderMensalRoute =
+  AuthenticatedBackorderMensalRouteImport.update({
+    id: '/backorder-mensal',
+    path: '/backorder-mensal',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBackorderRoute = AuthenticatedBackorderRouteImport.update({
   id: '/backorder',
   path: '/backorder',
@@ -556,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
@@ -636,6 +644,7 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuthenticatedAuditoriaRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
+  '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/bi-studio': typeof AuthenticatedBiStudioRoute
   '/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
@@ -718,6 +727,7 @@ export interface FileRoutesById {
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
+  '/_authenticated/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
   '/_authenticated/base-ativos': typeof AuthenticatedBaseAtivosRoute
   '/_authenticated/bi-studio': typeof AuthenticatedBiStudioRoute
   '/_authenticated/confiabilidade': typeof AuthenticatedConfiabilidadeRoute
@@ -802,6 +812,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/backlog-inteligente'
     | '/backorder'
+    | '/backorder-mensal'
     | '/base-ativos'
     | '/bi-studio'
     | '/confiabilidade'
@@ -882,6 +893,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/backlog-inteligente'
     | '/backorder'
+    | '/backorder-mensal'
     | '/base-ativos'
     | '/bi-studio'
     | '/confiabilidade'
@@ -963,6 +975,7 @@ export interface FileRouteTypes {
     | '/_authenticated/auditoria'
     | '/_authenticated/backlog-inteligente'
     | '/_authenticated/backorder'
+    | '/_authenticated/backorder-mensal'
     | '/_authenticated/base-ativos'
     | '/_authenticated/bi-studio'
     | '/_authenticated/confiabilidade'
@@ -1387,6 +1400,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBaseAtivosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/backorder-mensal': {
+      id: '/_authenticated/backorder-mensal'
+      path: '/backorder-mensal'
+      fullPath: '/backorder-mensal'
+      preLoaderRoute: typeof AuthenticatedBackorderMensalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/backorder': {
       id: '/_authenticated/backorder'
       path: '/backorder'
@@ -1691,6 +1711,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
+  AuthenticatedBackorderMensalRoute: typeof AuthenticatedBackorderMensalRoute
   AuthenticatedBaseAtivosRoute: typeof AuthenticatedBaseAtivosRoute
   AuthenticatedBiStudioRoute: typeof AuthenticatedBiStudioRoute
   AuthenticatedConfiabilidadeRoute: typeof AuthenticatedConfiabilidadeRoute
@@ -1740,6 +1761,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
+  AuthenticatedBackorderMensalRoute: AuthenticatedBackorderMensalRoute,
   AuthenticatedBaseAtivosRoute: AuthenticatedBaseAtivosRoute,
   AuthenticatedBiStudioRoute: AuthenticatedBiStudioRoute,
   AuthenticatedConfiabilidadeRoute: AuthenticatedConfiabilidadeRoute,
