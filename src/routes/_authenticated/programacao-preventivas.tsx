@@ -23,10 +23,10 @@ export const Route = createFileRoute("/_authenticated/programacao-preventivas")(
 
 type EquipeKey = "Chaveiro" | "Civil" | "Hidráulica" | "Elétrica" | "Refrigeração";
 
-const EQUIPES_CONFIG: Record<EquipeKey, { label: string; triageEquipes: Equipe[]; minutes: number }> = {
-  Chaveiro: { label: "Chaveiro", triageEquipes: ["CHAVEIRO"], minutes: 60 },
-  Civil: { label: "Civil", triageEquipes: ["CIVIL"], minutes: 60 },
-  Hidráulica: { label: "Hidráulica", triageEquipes: ["HIDRÁULICA"], minutes: 60 },
+const EQUIPES_CONFIG: Record<EquipeKey, { label: string; triageEquipes: Equipe[]; minutes: number; group?: string }> = {
+  Chaveiro: { label: "Chaveiro", triageEquipes: ["CHAVEIRO"], minutes: 60, group: "CCH" },
+  Civil: { label: "Civil", triageEquipes: ["CIVIL"], minutes: 60, group: "CCH" },
+  Hidráulica: { label: "Hidráulica", triageEquipes: ["HIDRÁULICA"], minutes: 60, group: "CCH" },
   Elétrica: { label: "Elétrica", triageEquipes: ["ELÉTRICA"], minutes: 30 },
   Refrigeração: { label: "Refrigeração", triageEquipes: ["CLIMATIZAÇÃO E REFRIGERAÇÃO 1", "CLIMATIZAÇÃO E REFRIGERAÇÃO 2", "CLIMATIZAÇÃO E REFRIGERAÇÃO 3"], minutes: 60 },
 };
@@ -166,6 +166,52 @@ function ProgramacaoPreventivasPage() {
     }
   };
 
+  const handleAutoClassifyCCH = async () => {
+    const cchFile = files.Civil || files.Chaveiro || files.Hidráulica;
+    if (!cchFile) {
+      toast.error("Anexe uma planilha em Civil, Chaveiro ou Hidráulica primeiro.");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const read = await readPreventivaFiles([cchFile]);
+      const triaged = triage(read.rows);
+      
+      // Separar as triagens
+      const chaveiroOS = triaged.filter(o => o.equipe === "CHAVEIRO");
+      const civilOS = triaged.filter(o => o.equipe === "CIVIL");
+      const hidraulicaOS = triaged.filter(o => o.equipe === "HIDRÁULICA");
+
+      toast.success(
+        `Classificação concluída: ${chaveiroOS.length} Chaveiro, ${civilOS.length} Civil, ${hidraulicaOS.length} Hidráulica.`,
+        { duration: 5000 }
+      );
+      
+      // Como o usuário quer um botão para classificar, podemos mostrar o resultado.
+      // A lógica de "generate" já faz a triagem por equipe filtrando as OSs triaged.
+      // O que o usuário quer é que se ele colocar uma planilha que tem tudo misturado, 
+      // o sistema "saiba" o que é o que. A função triage() já faz isso.
+      
+      // Se ele clicar em Gerar agora, as 3 planilhas (se forem o mesmo arquivo) 
+      // iriam gerar 3 arquivos separados contendo cada um sua parte.
+      
+      // Vamos facilitar preenchendo as outras slots se estiverem vazias com o mesmo arquivo
+      setFiles(prev => ({
+        ...prev,
+        Civil: prev.Civil || cchFile,
+        Chaveiro: prev.Chaveiro || cchFile,
+        Hidráulica: prev.Hidráulica || cchFile,
+      }));
+
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao classificar planilha.");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <PageShell
       title="Programação Semanal de Preventivas"
@@ -174,12 +220,29 @@ function ProgramacaoPreventivasPage() {
       <div className="space-y-6">
         <GlassCard className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-primary" />
-                Data de Início
-              </h2>
-              <p className="text-sm text-muted-foreground">Define quando a programação semanal começa.</p>
+            <div className="flex items-center gap-4">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  Data de Início
+                </h2>
+                <p className="text-sm text-muted-foreground">Define quando a programação semanal começa.</p>
+              </div>
+              
+              <Button 
+                variant="glass" 
+                size="sm" 
+                onClick={handleAutoClassifyCCH}
+                className="hidden md:flex gap-2 border-primary/20 hover:bg-primary/10"
+                disabled={processing || !(files.Civil || files.Chaveiro || files.Hidráulica)}
+              >
+                <div className="flex -space-x-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#4F4FD9] border border-white/20" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#00863D] border border-white/20" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#DB8E03] border border-white/20" />
+                </div>
+                Classificar CCH Automaticamente
+              </Button>
             </div>
             
             <Popover>
@@ -284,6 +347,8 @@ function ProgramacaoPreventivasPage() {
             </Button>
             <p className="text-center text-[11px] text-muted-foreground mt-3">
               * O sistema irá gerar um arquivo separado para cada planilha anexada, colorindo a Coluna A e inserindo corretivas diárias.
+              <br />
+              Dica: O botão "Classificar CCH" tria automaticamente planilhas que contêm Civil, Chaveiro e Hidráulica misturados.
             </p>
           </div>
         </GlassCard>
