@@ -527,8 +527,8 @@ export const itemKeys = (item: MenuItem) => [item.key, ...(item.aliases ?? [])];
 
 /** Encontra o item de menu que corresponde a um pathname (prefixo mais longo). */
 export function menuItemForPath(pathname: string): MenuItem | null {
-  if (pathname === "/" || pathname === "") {
-    return allMenuItems.find((i) => i.url === "/dashboard" || i.url === "/_authenticated/dashboard") ?? null;
+  if (pathname === "/" || pathname === "" || pathname === "/_authenticated/") {
+    return allMenuItems.find((i) => i.url === "/" || i.key === "dashboard") ?? null;
   }
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
