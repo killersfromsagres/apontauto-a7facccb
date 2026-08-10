@@ -284,22 +284,31 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                             const file = e.target.files[0];
                             if (!file) return;
 
-                            const formData = new FormData();
-                            formData.append("image", file);
-                            formData.append("module", "corretiva-novo");
-
                             setLoading(true);
                             try {
+                              // Criar um FormData próprio para o upload
+                              const formData = new FormData();
+                              formData.append("image", file);
+                              formData.append("module", "corretiva-novo");
+                              formData.append("name", `os-${os.numero_os}-antes-${Date.now()}`);
+
                               const res = await fetch("/api/imgbb-upload", {
                                 method: "POST",
                                 body: formData,
                               });
+                              
+                              if (!res.ok) {
+                                const errorData = await res.json().catch(() => ({}));
+                                throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+                              }
+                              
                               const data = await res.json();
-                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              if (!data.url) throw new Error("URL da imagem não retornada");
+                              
                               setPhotoBefore(data.url);
-                              toast.success("Foto 'Antes' carregada!");
+                              toast.success("Foto 'Antes' carregada com sucesso!");
                             } catch (err: any) {
-                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              console.error("[CorretivaPhoto] Erro upload Antes:", err);
                               toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
@@ -343,22 +352,30 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                             const file = e.target.files[0];
                             if (!file) return;
 
-                            const formData = new FormData();
-                            formData.append("image", file);
-                            formData.append("module", "corretiva-novo");
-
                             setLoading(true);
                             try {
+                              const formData = new FormData();
+                              formData.append("image", file);
+                              formData.append("module", "corretiva-novo");
+                              formData.append("name", `os-${os.numero_os}-depois-${Date.now()}`);
+
                               const res = await fetch("/api/imgbb-upload", {
                                 method: "POST",
                                 body: formData,
                               });
+                              
+                              if (!res.ok) {
+                                const errorData = await res.json().catch(() => ({}));
+                                throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+                              }
+
                               const data = await res.json();
-                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              if (!data.url) throw new Error("URL da imagem não retornada");
+                              
                               setPhotoAfter(data.url);
-                              toast.success("Foto 'Depois' carregada!");
+                              toast.success("Foto 'Depois' carregada com sucesso!");
                             } catch (err: any) {
-                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              console.error("[CorretivaPhoto] Erro upload Depois:", err);
                               toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
