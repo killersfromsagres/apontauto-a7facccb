@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft } from "lucide-react";
+import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft, LayoutGrid, Zap, Droplets, Hammer, Key, Paintbrush, Snowflake } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { supabase } from "@/integrations/supabase/client";
