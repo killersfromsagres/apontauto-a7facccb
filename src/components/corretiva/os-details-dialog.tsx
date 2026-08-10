@@ -20,13 +20,14 @@ interface OsDetailsDialogProps {
 
 export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDialogProps) {
   const [loading, setLoading] = useState(false);
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photoBefore, setPhotoBefore] = useState<string | null>(null);
+  const [photoAfter, setPhotoAfter] = useState<string | null>(null);
   const [pecas, setPecas] = useState(os.pecas_solicitadas || "");
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
 
   const handleFinish = async (withPhoto: boolean) => {
-    if (withPhoto && !photo) {
-      toast.error("Por favor, adicione uma foto para concluir.");
+    if (withPhoto && (!photoBefore || !photoAfter)) {
+      toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
       return;
     }
 
@@ -36,7 +37,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         .from("corretiva_os")
         .update({
           status: "concluida",
-          foto_conclusao: photo,
+          foto_conclusao: photoAfter,
+          foto_antes: photoBefore,
           observacao_conclusao: observacao,
           pecas_solicitadas: pecas,
           data_conclusao: new Date().toISOString()
@@ -148,48 +150,96 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 />
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Label className="text-xs font-bold text-white/70">Evidência Fotográfica</Label>
-                {photo ? (
-                  <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 group">
-                    <img src={photo} alt="Evidência" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Foto de ANTES */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Antes</Label>
+                    {photoBefore ? (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 group">
+                        <img src={photoBefore} alt="Antes" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="rounded-full gap-2 h-8"
+                            onClick={() => setPhotoBefore(null)}
+                          >
+                            <X className="h-3 w-3" /> Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
                       <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        className="rounded-full gap-2"
-                        onClick={() => setPhoto(null)}
+                        variant="glass" 
+                        className="w-full h-24 border-dashed border-2 border-white/10 hover:border-primary/50 gap-2 flex-col rounded-2xl bg-white/2 transition-all"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.capture = 'environment';
+                          input.onchange = (e: any) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (re) => setPhotoBefore(re.target?.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
                       >
-                        <X className="h-4 w-4" /> Remover
+                        <Camera className="h-5 w-5 text-primary" />
+                        <span className="text-[10px] font-medium text-white">Foto de Antes</span>
                       </Button>
-                    </div>
+                    )}
                   </div>
-                ) : (
-                  <Button 
-                    variant="glass" 
-                    className="w-full h-28 border-dashed border-2 border-white/10 hover:border-primary/50 gap-3 flex-col rounded-2xl bg-white/2 transition-all"
-                    onClick={() => {
-                      const input = document.createElement('input');
-                      input.type = 'file';
-                      input.accept = 'image/*';
-                      input.capture = 'environment';
-                      input.onchange = (e: any) => {
-                        const file = e.target.files[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (re) => setPhoto(re.target?.result as string);
-                          reader.readAsDataURL(file);
-                        }
-                      };
-                      input.click();
-                    }}
-                  >
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Camera className="h-5 w-5 text-primary" />
-                    </div>
-                    <span className="text-xs font-medium text-muted-foreground text-white">Tirar foto ou anexar</span>
-                  </Button>
-                )}
+
+                  {/* Foto de DEPOIS */}
+                  <div className="space-y-2">
+                    <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Depois</Label>
+                    {photoAfter ? (
+                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 group">
+                        <img src={photoAfter} alt="Depois" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            className="rounded-full gap-2 h-8"
+                            onClick={() => setPhotoAfter(null)}
+                          >
+                            <X className="h-3 w-3" /> Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button 
+                        variant="glass" 
+                        className="w-full h-24 border-dashed border-2 border-white/10 hover:border-primary/50 gap-2 flex-col rounded-2xl bg-white/2 transition-all"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.capture = 'environment';
+                          input.onchange = (e: any) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (re) => setPhotoAfter(re.target?.result as string);
+                              reader.readAsDataURL(file);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        <Camera className="h-5 w-5 text-emerald-400" />
+                        <span className="text-[10px] font-medium text-white">Foto de Depois</span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -210,9 +260,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               className={cn(
                 "h-12 rounded-xl text-xs font-bold gap-2 shadow-lg shadow-primary/20",
                 os?.isAdmin ? "" : "col-span-2",
-                !photo && !os?.isAdmin && "opacity-50"
+                !(photoBefore && photoAfter) && !os?.isAdmin && "opacity-50"
               )} 
-              disabled={loading || (!photo && !os?.isAdmin)}
+              disabled={loading || (!(photoBefore && photoAfter) && !os?.isAdmin)}
               onClick={() => handleFinish(true)}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
