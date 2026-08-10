@@ -1,3 +1,4 @@
+// Dashboard principal do ApontAuto
 
 import {
   createFileRoute,
