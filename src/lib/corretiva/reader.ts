@@ -122,6 +122,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
   const sheet = wb.Sheets[wb.SheetNames[0]];
   if (!sheet) throw new Error("Planilha vazia.");
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+  console.log("[Reader] Total de linhas brutas na planilha:", rows.length);
   if (rows.length === 0) return [];
 
   // Mapeia cada header do arquivo para uma chave do CorretivaOsImport.
@@ -198,6 +199,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
 
   // Dedup por numero_os (mantém a última ocorrência)
   const map = new Map<string, CorretivaOsImport>();
-  for (const r of out) map.set(r.numero_os, r);
-  return Array.from(map.values());
+  const finalRows = Array.from(map.values());
+  console.log("[Reader] Total de linhas após dedup e validação de OS:", finalRows.length);
+  return finalRows;
 }

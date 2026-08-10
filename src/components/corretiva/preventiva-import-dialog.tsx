@@ -82,10 +82,13 @@ export function PreventivaImportDialog({
     // não permitimos que uma importação de "Backorder" a sobrescreva ou vice-versa sem critério,
     // mas o upsert do Postgres com ON CONFLICT (numero_os) DO UPDATE garante integridade.
     // Adicionamos um filtro de verificação manual se necessário.
+    const payload = rows.map(r => ({ ...r, updated_at: new Date().toISOString() }));
+    console.log("[Import] Payload para upsert:", payload.length, "linhas");
+
     const { error, count } = await supabase
       .from("corretiva_os")
       .upsert(
-        rows.map(r => ({ ...r, updated_at: new Date().toISOString() })) as any, 
+        payload as any, 
         { onConflict: "numero_os", count: "exact" }
       );
       
