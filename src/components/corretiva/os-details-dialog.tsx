@@ -26,18 +26,20 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
 
   const handleFinish = async (withPhoto: boolean) => {
+    // Audit: useMyAccess hook provides access object, but here we receive os.allowedMenus injected in the route
     const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
-    const canFinishWithoutPhoto = os?.isAdmin || hasSpecialPermission;
+    const isAdmin = os?.isAdmin;
+    
+    if (!withPhoto && !isAdmin && !hasSpecialPermission) {
+      toast.error("Você não tem permissão para concluir sem foto.");
+      return;
+    }
 
-    if (withPhoto && !canFinishWithoutPhoto && (!photoBefore || !photoAfter)) {
+    if (withPhoto && (!photoBefore || !photoAfter) && !isAdmin && !hasSpecialPermission) {
       toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
       return;
     }
 
-    if (!withPhoto && !canFinishWithoutPhoto) {
-      toast.error("Você não tem permissão para concluir sem foto.");
-      return;
-    }
 
     setLoading(true);
     try {
