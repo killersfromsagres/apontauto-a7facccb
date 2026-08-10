@@ -223,7 +223,7 @@ export const sections: MenuSection[] = [
       },
       {
         key: "corretiva",
-        title: "Programação — Campo",
+        title: "Campo",
         short: "Campo",
         url: "/corretiva-novo",
         aliases: ["corretiva-novo"],
