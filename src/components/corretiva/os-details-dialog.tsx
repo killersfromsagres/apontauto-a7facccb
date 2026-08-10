@@ -222,14 +222,29 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          // Removido capture="environment" para permitir escolher entre câmera e galeria
-                          // input.capture = 'environment';
-                          input.onchange = (e: any) => {
+                          input.onchange = async (e: any) => {
                             const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (re) => setPhotoBefore(re.target?.result as string);
-                              reader.readAsDataURL(file);
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            formData.append("module", "corretiva-novo");
+
+                            setLoading(true);
+                            try {
+                              const res = await fetch("/api/imgbb-upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              setPhotoBefore(data.url);
+                              toast.success("Foto 'Antes' carregada!");
+                            } catch (err: any) {
+                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              toast.error(`Falha no upload: ${err.message}`);
+                            } finally {
+                              setLoading(false);
                             }
                           };
                           input.click();
@@ -266,14 +281,29 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          // Removido capture="environment" para permitir escolher entre câmera e galeria
-                          // input.capture = 'environment';
-                          input.onchange = (e: any) => {
+                          input.onchange = async (e: any) => {
                             const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (re) => setPhotoAfter(re.target?.result as string);
-                              reader.readAsDataURL(file);
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            formData.append("module", "corretiva-novo");
+
+                            setLoading(true);
+                            try {
+                              const res = await fetch("/api/imgbb-upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              setPhotoAfter(data.url);
+                              toast.success("Foto 'Depois' carregada!");
+                            } catch (err: any) {
+                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              toast.error(`Falha no upload: ${err.message}`);
+                            } finally {
+                              setLoading(false);
                             }
                           };
                           input.click();
