@@ -20,6 +20,7 @@ export const EQUIPES_ORDEM: Equipe[] = [
   "CLIMATIZAÇÃO E REFRIGERAÇÃO 3",
   "ELÉTRICA",
   "HIDRÁULICA",
+  "CORRETIVA",
 ];
 
 export const EQUIPE_COLOR: Record<Equipe, string> = {
@@ -30,6 +31,7 @@ export const EQUIPE_COLOR: Record<Equipe, string> = {
   "CLIMATIZAÇÃO E REFRIGERAÇÃO 3": "#A85D5F",
   ELÉTRICA: "#3EA9AB",
   HIDRÁULICA: "#DB8E03",
+  CORRETIVA: "#FF0000",
 };
 
 const HIDRAULICA_KEYWORDS = [
