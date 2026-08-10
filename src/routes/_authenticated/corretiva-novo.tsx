@@ -308,6 +308,12 @@ function CorretivaNovoPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
                       <span className="truncate text-primary-glow/80"><span className="opacity-60">Solicitante:</span> {os.solicitante || "Não inf."}</span>
                     </div>
+                    {os.data_criacao && (
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
+                        <span><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    )}
                   </div>
                   {os.pecas_solicitadas && (
                     <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-400/80">

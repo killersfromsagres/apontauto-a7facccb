@@ -70,6 +70,7 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
     "datasolicitacao",
     "datahorasolicitacao",
     "abertura",
+    "datahoraabertura",
   ],
 };
 
