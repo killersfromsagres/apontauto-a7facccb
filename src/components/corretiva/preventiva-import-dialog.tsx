@@ -78,11 +78,15 @@ export function PreventivaImportDialog({
     setSaving(true);
     
     // Para evitar duplicados ao importar, usamos upsert com 'onConflict: numero_os'.
-    // Requisito: Prevenção de duplicidade. Se a OS já existe como "Corretiva",
-    // não permitimos que uma importação de "Backorder" a sobrescreva ou vice-versa sem critério,
-    // mas o upsert do Postgres com ON CONFLICT (numero_os) DO UPDATE garante integridade.
-    // Adicionamos um filtro de verificação manual se necessário.
-    const payload = rows.map(r => ({ ...r, updated_at: new Date().toISOString() }));
+    const payload = rows.map(r => ({ 
+      ...r, 
+      updated_at: new Date().toISOString(),
+      // Garante que campos extras sejam mapeados corretamente para o banco se existirem na planilha
+      predio: (r as any).predio || (r as any).localizacao || "",
+      andar: (r as any).andar || "",
+      local: (r as any).local || (r as any).ambiente || "",
+      solicitante: (r as any).solicitante || (r as any).nome_solicitante || ""
+    }));
     console.log("[Import] Payload para upsert:", payload.length, "linhas");
 
     const { error, count } = await supabase
