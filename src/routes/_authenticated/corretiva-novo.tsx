@@ -171,41 +171,50 @@ function CorretivaNovoPage() {
               />
             </div>
             
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
-              <div className="flex p-1 gap-1 bg-black/40 backdrop-blur-md rounded-full border border-white/5 ring-1 ring-white/10 shadow-inner">
-                <button
-                  onClick={() => setEquipe("todas")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap",
-                    equipe === "todas"
-                      ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  )}
-                >
-                  Todas
-                </button>
-                {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => {
-                  const isActive = equipe === e;
-                  const styles = equipeStyles(e as any);
-                  return (
-                    <button
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="glass" 
+                    className={cn(
+                      "h-11 px-6 rounded-full gap-2 border-white/10 transition-all duration-300",
+                      equipe !== "todas" && equipeStyles(equipe as any).badge
+                    )}
+                  >
+                    <Filter className="h-4 w-4" />
+                    <span className="font-medium">
+                      {equipe === "todas" ? "Filtrar Equipe" : equipe}
+                    </span>
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", "group-data-[state=open]:rotate-180")} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
+                  <DropdownMenuItem 
+                    onClick={() => setEquipe("todas")}
+                    className={cn(
+                      "rounded-xl mb-1 px-4 py-2.5 cursor-pointer transition-colors",
+                      equipe === "todas" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    Todas as Equipes
+                  </DropdownMenuItem>
+                  {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                    <DropdownMenuItem
                       key={e}
                       onClick={() => setEquipe(e as any)}
                       className={cn(
-                        "px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap relative group",
-                        isActive
-                          ? cn("text-white shadow-lg scale-105", styles.badge)
-                          : "text-white/60 hover:text-white hover:bg-white/5"
+                        "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center justify-between group transition-all",
+                        equipe === e 
+                          ? cn("text-white", equipeStyles(e as any).badge.replace('shadow-lg', ''))
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
                       )}
                     >
-                      {isActive && (
-                        <div className="absolute inset-0 rounded-full bg-current opacity-20 blur-sm animate-pulse" />
-                      )}
-                      <span className="relative z-10">{e}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                      <span>{e}</span>
+                      {equipe === e && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
