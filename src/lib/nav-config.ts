@@ -226,6 +226,7 @@ export const sections: MenuSection[] = [
         title: "Programação — Campo",
         short: "Campo",
         url: "/corretiva-novo",
+        aliases: ["corretiva-novo"],
         icon: Wrench,
         keywords: ["execução", "equipes", "atendimento"],
       },
