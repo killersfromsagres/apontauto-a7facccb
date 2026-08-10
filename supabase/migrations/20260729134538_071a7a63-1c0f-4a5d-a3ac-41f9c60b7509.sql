@@ -1,1 +1,0 @@
-CREATE OR REPLACE FUNCTION public.audit_noop() RETURNS boolean LANGUAGE sql IMMUTABLE AS $function$ SELECT true; $function$;

@@ -1,2 +1,0 @@
-update public.profiles set allowed_menus = array(select distinct unnest(allowed_menus || array['refrigeracao-pecas-status'])) where id='fbda7bd9-924d-4f8d-8264-cb74853ae676';
-update public.profiles set allowed_menus = array(select distinct unnest(allowed_menus || array['corretiva-pecas-status'])) where id='dcb87318-32eb-4313-9267-c71baa798bc7';

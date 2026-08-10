@@ -1,1 +1,0 @@
-DROP INDEX IF EXISTS public.taludes_map_numero_uk;
