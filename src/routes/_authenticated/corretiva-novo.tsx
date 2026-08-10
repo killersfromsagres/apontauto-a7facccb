@@ -155,7 +155,7 @@ function CorretivaNovoPage() {
               {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
                 <Button
                   key={e}
-                  variant={equipe === e ? "default" : "glass"}
+                  variant={equipe === e ? "default" : "outline"}
                   size="sm"
                   onClick={() => setEquipe(e as any)}
                   className={cn("whitespace-nowrap", equipe === e && equipeStyles(e).badge)}
