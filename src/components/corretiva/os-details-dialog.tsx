@@ -107,9 +107,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 <p className={cn("font-bold text-primary")}>
                   {os.equipe || "Não definida"}
                 </p>
-                <p className="text-[10px] text-muted-foreground">Solicitante: {os.solicitante || "-"}</p>
+                <p className="text-[10px] text-muted-foreground italic">Solicitante: {os.solicitante || "-"}</p>
                 {os.data_criacao && (
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-primary font-medium mt-1">
                     Abertura: {new Date(os.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                   </p>
                 )}
