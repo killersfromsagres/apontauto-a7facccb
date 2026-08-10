@@ -200,8 +200,8 @@ function CorretivaNovoPage() {
         ) : (
           <div className={cn(
             viewMode === "grid" 
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" 
-              : "flex flex-col gap-3"
+              ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4" 
+              : "flex flex-col gap-2 md:gap-3"
           )}>
             {filtered.map((os) => (
               <GlassCard 
@@ -213,22 +213,20 @@ function CorretivaNovoPage() {
                 onClick={() => setSelectedOs(os)}
               >
                 <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className={cn("font-mono text-xs", equipeStyles(os.equipe).badge)}>
+                  <div className="flex items-center justify-between mb-1.5 md:mb-2">
+                    <Badge variant="outline" className={cn("font-mono text-[9px] md:text-xs", equipeStyles(os.equipe).badge)}>
                       OS {os.numero_os}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px] opacity-70">
+                    <Badge variant="outline" className="text-[8px] md:text-[10px] opacity-70">
                       {os.equipe || "Sem Equipe"}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-sm truncate group-hover:text-primary transition-colors">
+                  <h3 className="font-semibold text-xs md:text-sm truncate group-hover:text-primary transition-colors mb-1 md:mb-2 text-white">
                     {os.nome_os || "Sem descrição"}
                   </h3>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-[11px] text-muted-foreground">
-                    <div className="truncate"><strong>Ativo:</strong> {os.ativo}</div>
-                    <div className="truncate"><strong>Local:</strong> {os.local}</div>
-                    <div className="truncate"><strong>Andar:</strong> {os.andar}</div>
-                    <div className="truncate"><strong>Prédio:</strong> {os.predio}</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5 mt-auto text-[10px] md:text-[11px] text-muted-foreground/80">
+                    <div className="truncate"><span className="opacity-50">Local:</span> {os.predio}</div>
+                    <div className="truncate"><span className="opacity-50">Sala:</span> {os.local}</div>
                   </div>
                 </div>
               </GlassCard>
