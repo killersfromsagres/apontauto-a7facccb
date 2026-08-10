@@ -216,11 +216,26 @@ function CorretivaNovoPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Wrench className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Carregando ordens de serviço...</p>
+            <p className="text-muted-foreground animate-pulse">Consultando banco de dados...</p>
+          </div>
+        ) : osList.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2 space-y-4">
+            <div className="mx-auto w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+              <Search className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-white font-medium">Nenhuma Ordem de Serviço encontrada</p>
+              <p className="text-xs text-muted-foreground mt-1">Importe uma planilha ou aguarde a sincronização.</p>
+            </div>
+            {isAdmin && (
+              <Button variant="outline" size="sm" onClick={loadData} className="mt-4">
+                Tentar Recarregar
+              </Button>
+            )}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2">
-            <p className="text-muted-foreground">Nenhuma ordem de serviço encontrada.</p>
+            <p className="text-muted-foreground">Nenhuma OS corresponde aos filtros aplicados.</p>
           </div>
         ) : (
           <div className={cn(
