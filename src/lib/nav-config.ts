@@ -222,15 +222,6 @@ export const sections: MenuSection[] = [
         keywords: ["semanal", "preventiva", "backorder", "agendamento"],
       },
       {
-        key: "corretiva",
-        title: "Programação — Campo",
-        short: "Campo",
-        url: "/corretiva-novo",
-        aliases: ["corretiva-novo"],
-        icon: Wrench,
-        keywords: ["execução", "equipes", "atendimento"],
-      },
-      {
         key: "corretiva-pecas-status",
         title: "Programação — Status de Peças",
         short: "Peças",
