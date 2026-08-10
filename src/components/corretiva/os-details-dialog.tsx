@@ -189,7 +189,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-6 pt-2 border-t border-white/10 bg-white/5 backdrop-blur-sm sticky bottom-0">
+          <div className="grid grid-cols-2 gap-3 p-6 pt-2 border-t border-white/10 bg-white/5 backdrop-blur-sm sticky bottom-0 z-50">
             {os?.isAdmin && (
               <Button 
                 variant="outline" 
