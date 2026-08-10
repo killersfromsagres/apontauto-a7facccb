@@ -189,11 +189,11 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-6 pt-2 border-t border-white/10 bg-white/5 backdrop-blur-sm sticky bottom-0 z-50">
+          <div className="grid grid-cols-2 gap-3 p-6 pt-2 border-t border-white/10 bg-[#0A0A0A] backdrop-blur-md sticky bottom-0 left-0 right-0 z-[10000]">
             {os?.isAdmin && (
               <Button 
                 variant="outline" 
-                className="h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10" 
+                className="h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white" 
                 disabled={loading}
                 onClick={() => handleFinish(false)}
               >
