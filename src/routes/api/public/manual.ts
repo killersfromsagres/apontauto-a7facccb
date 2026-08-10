@@ -15,13 +15,17 @@ export const Route = createFileRoute("/api/public/manual")({
         }
 
         const filePath = path.join(process.cwd(), "public", "manual", fileName);
+        const altPath = path.join(process.cwd(), "bundle", "public", "manual", fileName);
+        const finalPath = fs.existsSync(filePath) ? filePath : altPath;
+
 
         try {
-          if (!fs.existsSync(filePath)) {
-            return new Response(`Arquivo "${fileName}" não encontrado no manual. Caminho: ${filePath}`, { status: 404 });
+          if (!fs.existsSync(finalPath)) {
+            return new Response(`Arquivo "${fileName}" não encontrado no manual. Caminho: ${finalPath}`, { status: 404 });
           }
 
-          const content = fs.readFileSync(filePath);
+          const content = fs.readFileSync(finalPath);
+
           const ext = path.extname(fileName).toLowerCase();
           
           let contentType = "application/octet-stream";
