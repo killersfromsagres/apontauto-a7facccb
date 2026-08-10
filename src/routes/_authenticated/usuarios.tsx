@@ -62,11 +62,12 @@ const MENU_LABELS: Record<MenuKey, string> = {
   refrigeracao: "Refrigeração — Campo",
   "refrigeracao-pecas-status": "Refrigeração — Status de Peças",
   "refrigeracao-historico": "Refrigeração — Histórico",
-  programacao: "Programação Semanal",
+  programacao: "Programação Semanal (Legado)",
+  "programacao-preventivas": "Programação Semanal",
   corretiva: "Programação — Campo (Legado)",
-  "corretiva-novo": "Programação — Campo",
-  "corretiva-pecas-status": "Programação — Status de Peças",
-  "corretiva-historico": "Programação — Histórico",
+  "corretiva-novo": "Execução de Campo (IA)",
+  "corretiva-pecas-status": "Corretiva — Status de Peças",
+  "corretiva-historico": "Corretiva — Histórico",
   "corretiva-finalizar-sem-foto": "Admin: Finalizar OS sem Foto (Botão)",
   "corretiva-concluir-sem-foto-especial": "Encarregados: Finalizar OS sem Foto",
   "assets-fill": "Localização de Ativos",
@@ -93,6 +94,9 @@ const MENU_LABELS: Record<MenuKey, string> = {
   usuarios: "Gerenciamento de Usuários",
   organograma: "Organograma Demarchi",
   configuracoes: "Configurações",
+  backorder: "Backorders (Histórico)",
+  "backorder-mensal": "Backorder Mensal",
+  taludes: "Demarcação de Taludes",
 };
 
 function UsuariosPage() {
