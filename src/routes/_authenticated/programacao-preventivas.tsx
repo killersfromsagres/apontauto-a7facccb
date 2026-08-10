@@ -131,11 +131,13 @@ function ProgramacaoPreventivasPage() {
             result.buckets.forEach(bucket => {
               bucket.porDia.forEach((diaList, dow) => {
                 if (diaList.length > 0) {
-                  // Pega uma corretiva da fila (se disponível) ou cria um slot fixo
+                  // Pega uma corretiva da fila (se disponível)
                   const corr = corretivasTriaged.shift();
                   if (corr) {
-                    diaList.push(corr);
-                    bucket.os.push(corr);
+                    // Garante que a equipe seja "CORRETIVA" para a cor vermelha na Coluna A
+                    const correctedCorr = { ...corr, equipe: "CORRETIVA" as const };
+                    diaList.push(correctedCorr);
+                    bucket.os.push(correctedCorr);
                   }
                 }
               });

@@ -174,8 +174,12 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
           cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
         }
 
-        let color = c.key === "os" ? "FFFFFFFF" : "FF000000";
-        if (c.key === "ativo" && ativoNaoLocalizado) color = NAO_LOCALIZADO_COLOR;
+        let color = "FF000000"; // Default text color: Black
+        if (c.key === "os" || i === 0) {
+          color = "FFFFFFFF"; // White text for colored Column A
+        } else if (c.key === "ativo" && ativoNaoLocalizado) {
+          color = NAO_LOCALIZADO_COLOR;
+        }
 
         cell.font = {
           name: APTOS_EXTRABOLD,
