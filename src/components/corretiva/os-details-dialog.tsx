@@ -196,7 +196,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-[calc(100%-1.5rem)] md:w-full h-auto max-h-[90vh] rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] shadow-2xl z-[9999]">
+      <DialogContent className="max-w-lg w-[calc(100%-1.5rem)] md:w-full h-auto max-h-[90vh] rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] shadow-2xl z-[9999]" onPointerDownOutside={(e) => {
+        // Impedir fechamento do modal ao clicar no dropdown (que está no Portal)
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-radix-dropdown-menu-content]')) {
+          e.preventDefault();
+        }
+      }}>
         <div className="flex flex-col h-full max-h-[90vh] overflow-hidden bg-[#0A0A0A]">
           <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto custom-scrollbar bg-[#0A0A0A]">
             <DialogHeader className="text-left">
