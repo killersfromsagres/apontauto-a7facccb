@@ -52,11 +52,14 @@ function CorretivaNovoPage() {
         .select("*")
         .order("data_criacao", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro Supabase:", error);
+        throw error;
+      }
       setOsList(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao carregar OS:", error);
-      toast.error("Erro ao carregar ordens de serviço.");
+      toast.error(`Erro ao carregar ordens de serviço: ${error.message || "Erro desconhecido"}`);
     } finally {
       setLoading(false);
     }
