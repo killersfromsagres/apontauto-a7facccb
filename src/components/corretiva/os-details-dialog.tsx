@@ -221,22 +221,48 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
               <div className="space-y-1 text-right">
                 <Label className="text-[10px] uppercase opacity-50 font-bold tracking-tighter">Equipe</Label>
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end mt-1">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-xs font-bold rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-primary gap-1")}>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className={cn(
+                          "h-9 px-3 text-xs font-bold rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group",
+                          equipeStyles(os.equipe).badge
+                        )}
+                      >
+                        <LayoutGrid className="h-3.5 w-3.5 mr-2 opacity-70 group-hover:rotate-90 transition-transform" />
                         {os.equipe || "Não definida"}
-                        <ArrowRightLeft className="h-3 w-3 opacity-50" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-xl">
-                      {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                    <DropdownMenuContent align="end" className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+                      <div className="px-2 py-1.5 mb-1">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">Reclassificar Equipe</p>
+                      </div>
+                      {[
+                        { name: "Elétrica", icon: Zap, color: "text-yellow-400" },
+                        { name: "Hidráulica", icon: Droplets, color: "text-blue-400" },
+                        { name: "Civil", icon: Hammer, color: "text-emerald-400" },
+                        { name: "Chaveiro", icon: Key, color: "text-purple-400" },
+                        { name: "Pintura", icon: Paintbrush, color: "text-pink-400" },
+                        { name: "Refrigeração", icon: Snowflake, color: "text-cyan-400" }
+                      ].map((team) => (
                         <DropdownMenuItem
-                          key={e}
-                          onClick={() => handleReclassificar(e)}
-                          className="text-xs focus:bg-white/10 cursor-pointer text-white"
+                          key={team.name}
+                          onClick={() => handleReclassificar(team.name)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-xl cursor-pointer transition-colors focus:bg-white/5",
+                            os.equipe === team.name ? "bg-white/10 text-white" : "text-white/60 hover:text-white"
+                          )}
                         >
-                          {e}
+                          <div className={cn("p-1.5 rounded-lg bg-white/5", team.color)}>
+                            <team.icon className="h-4 w-4" />
+                          </div>
+                          {team.name}
+                          {os.equipe === team.name && (
+                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                          )}
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
