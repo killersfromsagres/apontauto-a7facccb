@@ -80,12 +80,13 @@ function detectCategoria(raw: string): Categoria {
   const n = norm(raw);
   if (!n) return "OUTROS";
   if (n.includes("ABASTEC")) return "ABASTECIMENTO";
-  if (n.includes("CLIMAT") || n.includes("REFRIG") || n.includes("AR CONDIC"))
+  if (n.includes("CLIMAT") || n.includes("REFRIG") || n.includes("AR CONDIC") || n.includes("AC") || n.includes("FANCOIL") || n.includes("SPLIT"))
     return "CLIMATIZAÇÃO E REFRIGERAÇÃO";
-  if (n.includes("ELETR")) return "ELÉTRICA";
+  if (n.includes("ELETR") || n.includes("SUBEST") || n.includes("GERADOR") || n.includes("PAINEL")) return "ELÉTRICA";
   if (n.includes("JARDIN") || n.includes("PAISAG")) return "JARDINAGEM E PAISAGISMO";
   if (n.includes("LIMPEZ")) return "LIMPEZA";
-  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR")) return "CIVIL";
+  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR") || n.includes("PINTURA") || n.includes("ALVENARIA") || n.includes("TELHADO")) return "CIVIL";
+  if (n.includes("OUTRO") || n.includes("DIVERSOS")) return "OUTROS";
   return "OUTROS";
 }
 

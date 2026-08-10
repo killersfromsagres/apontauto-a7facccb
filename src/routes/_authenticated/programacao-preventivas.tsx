@@ -5,7 +5,7 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Calendar a
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
-import { readPreventivaFiles, type RawRow } from "@/lib/preventiva/reader";
+import { readPreventivaFiles, type RawRow, type AtivoIndexEntry } from "@/lib/preventiva/reader";
 import { triage, type Equipe, type TriagedOS, EQUIPE_COLOR } from "@/lib/preventiva/triage";
 import { weeksToCoverAll, distributeAcrossMonth, MINUTOS_UTEIS_DIA, type WeekBucket } from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
@@ -91,23 +91,42 @@ function ProgramacaoPreventivasPage() {
         arquivo: "Database",
       }));
 
+      const allTriagedOS: TriagedOS[] = [];
+      const ativoIndex = new Map<string, AtivoIndexEntry>();
+
+      // 1. Ler todas as planilhas anexadas e consolidar dados
       for (const key of activeEquipes) {
         const file = files[key]!;
+        const read = await readPreventivaFiles([file]);
+        allTriagedOS.push(...triage(read.rows));
+        // Consolidar índice de ativos
+        for (const [k, v] of read.ativoIndex.entries()) {
+          ativoIndex.set(k, v);
+        }
+      }
+
+      if (allTriagedOS.length === 0) {
+        toast.error("Nenhuma OS válida encontrada nas planilhas.");
+        setProcessing(false);
+        return;
+      }
+
+      // 2. Processar cada equipe individualmente (gerar um arquivo por equipe selecionada)
+      for (const key of activeEquipes) {
         const config = EQUIPES_CONFIG[key];
         
-        const read = await readPreventivaFiles([file]);
-        const triaged = triage(read.rows);
-        
-        // Filtra as OSs que realmente pertencem a este grupo
-        const filtered = triaged.filter(o => config.triageEquipes.includes(o.equipe));
+        // Filtra as OSs que realmente pertencem a este grupo de triagem
+        const filtered = allTriagedOS.filter(o => config.triageEquipes.includes(o.equipe));
         
         if (filtered.length === 0) {
-          toast.warning(`Nenhuma OS de ${key} encontrada no arquivo ${file.name}`);
+          toast.warning(`Nenhuma OS de ${key} encontrada no arquivo processado.`);
           continue;
         }
 
         // Calcula semanas e distribuição
         const capPerDay = Math.floor(MINUTOS_UTEIS_DIA / config.minutes);
+        
+        // Maior fila entre as sub-equipes do grupo (ex: Clima 1, 2 e 3)
         const maiorFila = config.triageEquipes.reduce((max, eq) => {
           const n = filtered.filter(o => o.equipe === eq).length;
           return n > max ? n : max;
@@ -116,8 +135,12 @@ function ProgramacaoPreventivasPage() {
         const diasNecessarios = Math.ceil(maiorFila / capPerDay);
         const { weeks, until } = weeksToCoverAll(startDate, diasNecessarios);
 
-        // Distribui
+        // Distribui cada sub-equipe nos mesmos dias para o cronograma
         const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
+        
+        // Criar uma cópia local das corretivas para esta equipe específica
+        let localCorretivas = [...corretivasTriaged];
+
         for (const eq of config.triageEquipes) {
           const osEq = filtered.filter(o => o.equipe === eq);
           if (osEq.length > 0) {
@@ -128,13 +151,13 @@ function ProgramacaoPreventivasPage() {
             });
             
             // Injetar uma Corretiva ao final de cada dia útil que tenha preventivas
+            // Apenas para a primeira sub-equipe do grupo para não duplicar corretivas no mesmo arquivo
+            // ou injetamos em todas se preferir, mas geralmente o técnico é o mesmo.
             result.buckets.forEach(bucket => {
               bucket.porDia.forEach((diaList, dow) => {
                 if (diaList.length > 0) {
-                  // Pega uma corretiva da fila (se disponível)
-                  const corr = corretivasTriaged.shift();
+                  const corr = localCorretivas.shift();
                   if (corr) {
-                    // Garante que a equipe seja "CORRETIVA" para a cor vermelha na Coluna A
                     const correctedCorr = { ...corr, equipe: "CORRETIVA" as const };
                     diaList.push(correctedCorr);
                     bucket.os.push(correctedCorr);
@@ -143,7 +166,7 @@ function ProgramacaoPreventivasPage() {
               });
             });
             
-            bucketsPorEquipe.set(eq, result.buckets[0]); // Pega a primeira semana para o exemplo
+            bucketsPorEquipe.set(eq, result.buckets[0]);
           }
         }
 
@@ -151,12 +174,13 @@ function ProgramacaoPreventivasPage() {
           titulo: "SHERWIN WILLIAMS / DEMARCHI",
           week: weeks[0],
           bucketsPorEquipe,
-          ativoIndex: read.ativoIndex,
+          ativoIndex,
           atividadePadrao: "Preventiva"
         });
 
-        downloadBlob(blob, `PROGRAMACAO_${key.toUpperCase()}_SEM${weeks[0].isoWeek}.xlsx`);
-        toast.success(`Programação de ${key} gerada com sucesso!`);
+        const fileName = files[key]?.name.split('.')[0] || key.toUpperCase();
+        downloadBlob(blob, `PROGRAMACAO_${fileName}.xlsx`);
+        toast.success(`Programação de ${key} gerada!`);
       }
     } catch (e) {
       console.error(e);
