@@ -171,26 +171,41 @@ function CorretivaNovoPage() {
               />
             </div>
             
-            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
-              <Button
-                variant={equipe === "todas" ? "default" : "glass"}
-                size="sm"
-                onClick={() => setEquipe("todas")}
-                className="whitespace-nowrap"
-              >
-                Todas
-              </Button>
-              {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
-                <Button
-                  key={e}
-                  variant={equipe === e ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setEquipe(e as any)}
-                  className={cn("whitespace-nowrap", equipe === e && equipeStyles(e).badge)}
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+              <div className="flex p-1 gap-1 bg-black/40 backdrop-blur-md rounded-full border border-white/5 ring-1 ring-white/10 shadow-inner">
+                <button
+                  onClick={() => setEquipe("todas")}
+                  className={cn(
+                    "px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap",
+                    equipe === "todas"
+                      ? "bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.3)] scale-105"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
                 >
-                  {e}
-                </Button>
-              ))}
+                  Todas
+                </button>
+                {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => {
+                  const isActive = equipe === e;
+                  const styles = equipeStyles(e as any);
+                  return (
+                    <button
+                      key={e}
+                      onClick={() => setEquipe(e as any)}
+                      className={cn(
+                        "px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 whitespace-nowrap relative group",
+                        isActive
+                          ? cn("text-white shadow-lg scale-105", styles.badge)
+                          : "text-white/60 hover:text-white hover:bg-white/5"
+                      )}
+                    >
+                      {isActive && (
+                        <div className="absolute inset-0 rounded-full bg-current opacity-20 blur-sm animate-pulse" />
+                      )}
+                      <span className="relative z-10">{e}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">

@@ -2,6 +2,17 @@
 @source "../src";
 @import "tw-animate-css";
 
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+
 @custom-variant dark (&:is(.dark *));
 
 /*
