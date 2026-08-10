@@ -213,7 +213,12 @@ function CorretivaPage() {
       .from("corretiva_os")
       .select(OS_COLUMNS)
       .order("numero_os", { ascending: true });
-    if (error) throw error;
+    
+    if (error) {
+      console.error("[Corretiva] Erro Supabase:", error);
+      throw error;
+    }
+
     const rows = (data ?? []) as unknown as OsCacheRow[];
     await cacheOsList(rows);
     setOsList(rows);
@@ -231,9 +236,10 @@ function CorretivaPage() {
           await refreshOsFromServer();
         } catch (e: any) {
           console.error("Erro ao carregar OS:", e);
-          // O erro de permissão geralmente acontece por falta de GRANTs ou RLS mal configurado.
-          // Já aplicamos os GRANTs via migração para resolver isso.
-          if (osList.length === 0) toast.error("Erro de acesso ao banco de dados. Contate o administrador.");
+          if (osList.length === 0) {
+            // Se não temos nada no cache e falhou a rede/banco
+            toast.error("Erro de acesso ao banco de dados. Contate o administrador.");
+          }
         }
       }
       setLoadingList(false);

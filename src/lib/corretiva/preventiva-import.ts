@@ -109,7 +109,8 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
     if (tipoFinal === TIPO_CORRETIVA && r.data_criacao) {
       const criacao = new Date(r.data_criacao);
       const diffDays = (new Date().getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24);
-      if (diffDays >= 30) tipoFinal = "Backorder";
+      // Ajustado para 35 dias conforme solicitado para identificação de atrasos
+      if (diffDays >= 35) tipoFinal = "Backorder";
     }
 
     return {
