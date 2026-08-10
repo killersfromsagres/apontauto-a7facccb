@@ -274,11 +274,15 @@ function CorretivaNovoPage() {
                   <div className="space-y-1.5 mt-auto">
                     <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
                       <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                      <span className="truncate"><span className="opacity-60">Local:</span> {os.predio}</span>
+                      <span className="truncate"><span className="opacity-60">Prédio/Andar:</span> {os.predio} - {os.andar}</span>
                     </div>
                     <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
                       <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                      <span className="truncate"><span className="opacity-60">Sala:</span> {os.local}</span>
+                      <span className="truncate"><span className="opacity-60">Ambiente:</span> {os.local}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90 italic">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                      <span className="truncate text-primary-glow/80"><span className="opacity-60">Solicitante:</span> {os.solicitante || "Não inf."}</span>
                     </div>
                   </div>
                   {os.pecas_solicitadas && (
