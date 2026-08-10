@@ -115,6 +115,7 @@ function ProgramacaoPreventivasPage() {
         const filtered = allTriagedOS.filter(o => config.triageEquipes.includes(o.equipe));
         
         if (filtered.length === 0) {
+          console.warn(`Nenhuma OS de ${key} encontrada no arquivo processado. Equipes procuradas:`, config.triageEquipes);
           toast.warning(`Nenhuma OS de ${key} encontrada no arquivo processado.`);
           continue;
         }
