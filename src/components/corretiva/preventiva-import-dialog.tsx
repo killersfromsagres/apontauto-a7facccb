@@ -134,8 +134,8 @@ export function PreventivaImportDialog({
           {mode === "corretiva" && (
             <Button 
               variant="outline" 
-              size="xs" 
-              className="h-6 text-[10px] opacity-70 hover:opacity-100 border-white/10 bg-white/5"
+              size="sm" 
+              className="h-6 text-[10px] opacity-70 hover:opacity-100 border-white/10 bg-white/5 px-2"
             >
               <FileSpreadsheet className="h-3 w-3 mr-1" />
               Atualizar Sem Duplicidade
