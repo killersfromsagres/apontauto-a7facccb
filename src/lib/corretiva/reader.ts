@@ -199,6 +199,10 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
 
   // Dedup por numero_os (mantém a última ocorrência)
   const map = new Map<string, CorretivaOsImport>();
+  for (const item of out) {
+    map.set(item.numero_os, item);
+  }
+  
   const finalRows = Array.from(map.values());
   console.log("[Reader] Total de linhas após dedup e validação de OS:", finalRows.length);
   return finalRows;
