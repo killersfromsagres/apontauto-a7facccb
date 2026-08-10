@@ -185,6 +185,7 @@ export const MENU_KEYS = [
   "corretiva-pecas-status",
   "corretiva-historico",
   "corretiva-finalizar-sem-foto",
+  "corretiva-concluir-sem-foto-especial",
   "assets-fill",
   "assets-catalog",
   "assets-unmatched",
@@ -556,6 +557,7 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
       "abastecimento",
       "agua-execucao",
       "organograma",
+      "corretiva-concluir-sem-foto-especial",
     ];
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({

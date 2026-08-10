@@ -26,7 +26,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
 
   const handleFinish = async (withPhoto: boolean) => {
-    if (withPhoto && (!photoBefore || !photoAfter)) {
+    // Permissão especial para o login encarregados ou outros usuários com essa permissão
+    const canFinishWithoutPhoto = os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
+
+    if (withPhoto && (!photoBefore || !photoAfter) && !canFinishWithoutPhoto) {
       toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
       return;
     }
@@ -179,7 +182,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          input.capture = 'environment';
+                          // Removido capture="environment" para permitir escolher entre câmera e galeria
+                          // input.capture = 'environment';
                           input.onchange = (e: any) => {
                             const file = e.target.files[0];
                             if (file) {
@@ -222,7 +226,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          input.capture = 'environment';
+                          // Removido capture="environment" para permitir escolher entre câmera e galeria
+                          // input.capture = 'environment';
                           input.onchange = (e: any) => {
                             const file = e.target.files[0];
                             if (file) {
@@ -245,24 +250,27 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           </div>
 
           <div className="grid grid-cols-2 gap-3 p-6 border-t border-white/10 bg-[#0A0A0A] sticky bottom-0 left-0 right-0 z-[10000]">
-            {os?.isAdmin && (
+            {(os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial")) && (
               <Button 
                 variant="outline" 
-                className="h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white" 
+                className={cn(
+                  "h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white",
+                  os?.isAdmin ? "" : "col-span-2"
+                )} 
                 disabled={loading}
                 onClick={() => handleFinish(false)}
               >
-                Concluir s/ Foto (Admin)
+                Concluir s/ Foto {os?.isAdmin ? "(Admin)" : ""}
               </Button>
             )}
             <Button 
               variant="default" 
               className={cn(
                 "h-12 rounded-xl text-xs font-bold gap-2 shadow-lg shadow-primary/20",
-                os?.isAdmin ? "" : "col-span-2",
-                !(photoBefore && photoAfter) && !os?.isAdmin && "opacity-50"
+                (os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial")) ? (os?.isAdmin ? "" : "hidden") : "col-span-2",
+                !(photoBefore && photoAfter) && !os?.isAdmin && !os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial") && "opacity-50"
               )} 
-              disabled={loading || (!(photoBefore && photoAfter) && !os?.isAdmin)}
+              disabled={loading || (!(photoBefore && photoAfter) && !os?.isAdmin && !os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial"))}
               onClick={() => handleFinish(true)}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}

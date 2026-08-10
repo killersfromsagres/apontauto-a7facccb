@@ -373,7 +373,7 @@ function CorretivaNovoPage() {
       </div>
       {selectedOs && (
         <OsDetailsDialog 
-          os={{...selectedOs, isAdmin}} 
+          os={{...selectedOs, isAdmin, allowedMenus: (window as any).__ALLOWED_MENUS__ || []}} 
           isOpen={!!selectedOs} 
           onClose={() => setSelectedOs(null)}
           onUpdate={loadData}
