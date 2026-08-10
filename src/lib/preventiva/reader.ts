@@ -154,11 +154,11 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
         continue;
       }
       const site = pick(r, "SITE", "UNIDADE");
-      if (site && !norm(site).includes("DEMARCHI")) {
-        discartadasSite++;
-        continue;
-      }
-      const categoriaRaw = pick(r, "CATEGORIA", "CATEGORY");
+      // Se não houver SITE ou não contiver DEMARCHI, aceitamos mesmo assim se o resto parecer válido
+      // pois o filtro rígido pode estar descartando OSs legítimas.
+      const isDemarchi = !site || norm(site).includes("DEMARCHI");
+      
+      const categoriaRaw = pick(r, "CATEGORIA", "CATEGORY", "TIPO DE SERVIÇO");
       const categoria = detectCategoria(categoriaRaw || file.name);
       const terminoSLARaw = pick(r, "TERMINO SLA", "TÉRMINO SLA", "TERMINO_SLA", "DATA LIMITE");
       const tSLA = parseDate(terminoSLARaw);
