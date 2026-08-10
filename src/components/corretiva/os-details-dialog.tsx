@@ -79,9 +79,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-full h-[100dvh] md:h-auto rounded-none md:rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] md:bg-[#0A0A0A]/95 md:backdrop-blur-2xl fixed inset-0 md:relative transition-all z-[9999]">
-        <div className="flex flex-col h-full md:max-h-[90vh] overflow-hidden relative z-[9999]">
-          <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto custom-scrollbar relative">
+      <DialogContent className="max-w-lg w-full h-[100dvh] md:h-auto rounded-none md:rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] md:bg-[#0A0A0A]/95 md:backdrop-blur-2xl fixed inset-0 md:relative transition-all z-[9999] shadow-2xl">
+        <div className="flex flex-col h-full md:max-h-[90vh] overflow-hidden relative z-[9999] bg-[#0A0A0A]">
+          <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto custom-scrollbar relative bg-[#0A0A0A]">
             <DialogHeader>
               <div className="flex items-center justify-between mb-3">
                 <Badge variant="outline" className={cn("font-mono text-[10px]", equipeStyles(os.equipe).badge)}>
