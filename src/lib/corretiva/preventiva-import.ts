@@ -84,10 +84,11 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
     .eq("tipo", "Backorder");
 
   // 2. Se vazio, marcar todas as novas importações como Backorder automaticamente
+  // Se já houver dados, as novas entram como Corretiva (a menos que a data seja antiga)
   const autoBackorder = backorderCount === 0;
   
   // 3. Log para auditoria (visível no console se houver erro)
-  console.log(`[Import] Linhas lidas: ${rows.length}, AutoBackorder: ${autoBackorder}`);
+  console.log(`[Import] Linhas lidas: ${rows.length}, Total Backorder Atual: ${backorderCount}, AutoBackorder: ${autoBackorder}`);
 
   return rows.map((r) => {
     // A equipe vinda da planilha tem precedência se for reconhecida
