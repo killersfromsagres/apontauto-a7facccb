@@ -53,7 +53,10 @@ function pathKeys(pathname: string): string[] | null {
     pathname === "/_authenticated/";
 
   if (isDashboard) return null;
-  return menuKeysForPath(pathname);
+  
+  // Normalizar paths do TanStack Router que podem vir com prefixo /_authenticated
+  const normalizedPath = pathname.replace(/^\/_authenticated/, "") || "/";
+  return menuKeysForPath(normalizedPath);
 }
 
 function AccessGuard() {
