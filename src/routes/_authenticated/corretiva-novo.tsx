@@ -46,20 +46,42 @@ function CorretivaNovoPage() {
 
   const loadData = async () => {
     setLoading(true);
+    console.log("[CorretivaNovo] Iniciando loadData...");
     try {
+      // 1. Tentar carregar as OS do Supabase
       const { data, error } = await supabase
         .from("corretiva_os")
         .select("*")
         .order("data_criacao", { ascending: false });
 
       if (error) {
-        console.error("Erro Supabase:", error);
-        throw error;
+        console.error("[CorretivaNovo] Erro Supabase:", error);
+        
+        // Se der erro de permissão ou conexão, tentar ler do cache local (IndexedDB)
+        console.log("[CorretivaNovo] Tentando carregar do cache local devido a erro...");
+        const { getCachedOsList } = await import("@/lib/corretiva/db");
+        const cached = await getCachedOsList();
+        if (cached && cached.length > 0) {
+          console.log(`[CorretivaNovo] Carregadas ${cached.length} OS do cache local.`);
+          setOsList(cached);
+          toast.info("Visualizando dados em modo offline.");
+        } else {
+          throw error;
+        }
+      } else {
+        console.log(`[CorretivaNovo] Sucesso: ${data?.length || 0} OS carregadas.`);
+        const list = data || [];
+        setOsList(list);
+        
+        // Atualizar cache local em background
+        if (list.length > 0) {
+          const { cacheOsList } = await import("@/lib/corretiva/db");
+          cacheOsList(list).catch(err => console.error("[CorretivaNovo] Erro ao cachear:", err));
+        }
       }
-      setOsList(data || []);
     } catch (error: any) {
-      console.error("Erro ao carregar OS:", error);
-      toast.error(`Erro ao carregar ordens de serviço: ${error.message || "Erro desconhecido"}`);
+      console.error("[CorretivaNovo] Erro fatal no loadData:", error);
+      toast.error(`Não foi possível carregar as OS: ${error.message || "Erro de conexão"}`);
     } finally {
       setLoading(false);
     }
