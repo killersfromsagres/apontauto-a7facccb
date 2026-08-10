@@ -93,7 +93,10 @@ export function PreventivaImportDialog({
       );
       
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      console.error("[Import] Erro ao importar:", error);
+      return toast.error("Não foi possível salvar as OS no banco de dados. Verifique a conexão e permissões.");
+    }
     toast.success(`${count ?? rows.length} ${label} processadas (sem duplicidade).`);
     setOpen(false);
     setRows([]);
