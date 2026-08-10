@@ -197,7 +197,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 disabled={loading}
                 onClick={() => handleFinish(false)}
               >
-                Finalizar s/ Foto
+                Concluir s/ Foto (Admin)
               </Button>
             )}
             <Button 
