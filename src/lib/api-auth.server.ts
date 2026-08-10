@@ -30,7 +30,7 @@ function authConfig(): { url: string; key: string } | null {
   const key =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY : null);
+    (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SUPABASE_ANON_KEY : null);
   if (!url || !key) return null;
   return { url, key };
 }

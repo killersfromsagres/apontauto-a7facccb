@@ -341,7 +341,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               toast.success("Foto 'Antes' carregada com sucesso!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Antes:", err);
-                              toast.error(`Falha no upload: ${err.message}`);
+                              toast.error(`Falha no upload: ${err.message || "Verifique sua conexão"}`);
                             } finally {
                               setLoading(false);
                             }
@@ -408,7 +408,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               toast.success("Foto 'Depois' carregada com sucesso!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Depois:", err);
-                              toast.error(`Falha no upload: ${err.message}`);
+                              toast.error(`Falha no upload: ${err.message || "Verifique sua conexão"}`);
                             } finally {
                               setLoading(false);
                             }
