@@ -254,7 +254,11 @@ function ProgramacaoPreventivasPage() {
                 )}>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-base flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: EQUIPE_COLOR[config.triageEquipes[0]] || '#3B82F6' }} />
+                      <div className="flex -space-x-1">
+                        {config.triageEquipes.slice(0, 3).map((eq) => (
+                          <div key={eq} className="w-3 h-3 rounded-full border border-black/20" style={{ backgroundColor: EQUIPE_COLOR[eq] || '#3B82F6' }} />
+                        ))}
+                      </div>
                       {key}
                     </h3>
                     {file ? (
