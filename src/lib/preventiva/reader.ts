@@ -159,7 +159,7 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
         continue;
       }
       const categoriaRaw = pick(r, "CATEGORIA", "CATEGORY");
-      const categoria = detectCategoria(categoriaRaw);
+      const categoria = detectCategoria(categoriaRaw || file.name);
       const terminoSLARaw = pick(r, "TERMINO SLA", "TÉRMINO SLA", "TERMINO_SLA", "DATA LIMITE");
       const tSLA = parseDate(terminoSLARaw);
       const row: RawRow = {

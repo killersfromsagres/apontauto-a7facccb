@@ -134,25 +134,41 @@ export function triage(rows: RawRow[]): TriagedOS[] {
   const sorted = [...rows].sort((a, b) => a.terminoSLATs - b.terminoSLATs);
 
   for (const r of sorted) {
-    switch (r.categoria) {
-      case "CIVIL":
-        if (isHidraulica(r)) out.push({ ...r, equipe: "HIDRÁULICA" });
-        else civilPool.push(r);
-        break;
-      case "CLIMATIZAÇÃO E REFRIGERAÇÃO":
+    const cat = r.categoria;
+    
+    if (cat === "CLIMATIZAÇÃO E REFRIGERAÇÃO") {
+      out.push({ ...r, equipe: refrigTeamForPredio(r.predio) });
+    } else if (cat === "ELÉTRICA") {
+      out.push({ ...r, equipe: "ELÉTRICA" });
+    } else if (cat === "CIVIL") {
+      if (isHidraulica(r)) {
+        out.push({ ...r, equipe: "HIDRÁULICA" });
+      } else {
+        civilPool.push(r);
+      }
+    } else {
+      // Tenta classificar pelo nome da OS se for OUTROS
+      const bag = norm(`${r.nomeOS} ${r.descricao} ${r.arquivo}`);
+      if (bag.includes("CLIMAT") || bag.includes("REFRIG") || bag.includes("AR CONDIC")) {
         out.push({ ...r, equipe: refrigTeamForPredio(r.predio) });
-        break;
-      case "ELÉTRICA":
+      } else if (bag.includes("ELETR")) {
         out.push({ ...r, equipe: "ELÉTRICA" });
-        break;
-      default:
-        // Outras categorias (Abastec./Limpeza/Jardin.) não entram na programação semanal.
-        break;
+      } else if (bag.includes("HIDR")) {
+        out.push({ ...r, equipe: "HIDRÁULICA" });
+      } else if (bag.includes("CIVIL") || bag.includes("PINTURA")) {
+        civilPool.push(r);
+      }
     }
   }
 
   civilPool.forEach((r, i) => {
-    out.push({ ...r, equipe: i % 2 === 0 ? "CIVIL" : "CHAVEIRO" });
+    // Balanceamento entre Civil e Chaveiro baseado em palavras-chave se possível
+    const bag = norm(`${r.nomeOS} ${r.descricao}`);
+    if (bag.includes("CHAVE") || bag.includes("PORTA") || bag.includes("FECHADURA")) {
+      out.push({ ...r, equipe: "CHAVEIRO" });
+    } else {
+      out.push({ ...r, equipe: i % 2 === 0 ? "CIVIL" : "CHAVEIRO" });
+    }
   });
 
   // Ordena por Equipe → Prédio → Andar → SLA
