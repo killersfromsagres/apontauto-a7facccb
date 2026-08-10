@@ -263,11 +263,19 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "programacao",
+        title: "Programação Semanal (Legado)",
+        short: "Legado",
+        url: "/programacao",
+        icon: FileClock,
+        keywords: ["semanal", "preventiva", "backorder", "agendamento", "legado"],
+      },
+      {
+        key: "programacao-preventivas",
         title: "Programação Semanal",
         short: "Prog.",
-        url: "/programacao",
+        url: "/programacao-preventivas",
         icon: CalendarDays,
-        keywords: ["semanal", "preventiva", "backorder", "agendamento"],
+        keywords: ["semanal", "preventiva", "backorder", "agendamento", "equipes"],
       },
     ],
   },
