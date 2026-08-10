@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { useMyAccess } from "@/hooks/use-my-access";
 import { createFileRoute } from "@tanstack/react-router";
+
 import { toast } from "sonner";
 import {
   Wrench,
@@ -41,6 +43,8 @@ export const Route = createFileRoute("/_authenticated/corretiva-novo")({
 
 function CorretivaNovoPage() {
   const { isAdmin } = useIsAdmin();
+  const { access } = useMyAccess();
+
   const [osList, setOsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -373,7 +377,7 @@ function CorretivaNovoPage() {
       </div>
       {selectedOs && (
         <OsDetailsDialog 
-          os={{...selectedOs, isAdmin}} 
+          os={{...selectedOs, isAdmin, allowedMenus: access.allowed || []}} 
           isOpen={!!selectedOs} 
           onClose={() => setSelectedOs(null)}
           onUpdate={loadData}
