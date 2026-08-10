@@ -18,23 +18,24 @@ export const Route = createFileRoute("/api/public/manual")({
 
         try {
           if (!fs.existsSync(filePath)) {
-            return new Response("Arquivo não encontrado no manual", { status: 404 });
+            return new Response(`Arquivo "${fileName}" não encontrado no manual. Caminho: ${filePath}`, { status: 404 });
           }
 
           const content = fs.readFileSync(filePath);
           const ext = path.extname(fileName).toLowerCase();
-          const contentType =
-            ext === ".html"
-              ? "text/html"
-              : ext === ".sql"
-              ? "text/plain"
-              : ext === ".md"
-              ? "text/markdown"
-              : "application/octet-stream";
+          
+          let contentType = "application/octet-stream";
+          if (ext === ".html") contentType = "text/html";
+          else if (ext === ".sql") contentType = "text/plain";
+          else if (ext === ".md") contentType = "text/markdown";
+          else if (ext === ".css") contentType = "text/css";
+          else if (ext === ".js") contentType = "application/javascript";
 
           return new Response(content, {
             headers: {
               "Content-Type": `${contentType}; charset=utf-8`,
+              "Content-Disposition": ext === ".html" ? "inline" : `attachment; filename="${fileName}"`,
+              "Access-Control-Allow-Origin": "*",
             },
           });
         } catch (error) {
@@ -45,3 +46,4 @@ export const Route = createFileRoute("/api/public/manual")({
     },
   },
 });
+
