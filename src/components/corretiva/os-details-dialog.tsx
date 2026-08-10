@@ -26,11 +26,16 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
 
   const handleFinish = async (withPhoto: boolean) => {
-    // Permissão especial para o login encarregados ou outros usuários com essa permissão
-    const canFinishWithoutPhoto = os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
+    const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
+    const canFinishWithoutPhoto = os?.isAdmin || hasSpecialPermission;
 
-    if (withPhoto && (!photoBefore || !photoAfter) && !canFinishWithoutPhoto) {
+    if (withPhoto && !canFinishWithoutPhoto && (!photoBefore || !photoAfter)) {
       toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
+      return;
+    }
+
+    if (!withPhoto && !canFinishWithoutPhoto) {
+      toast.error("Você não tem permissão para concluir sem foto.");
       return;
     }
 
@@ -255,7 +260,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 variant="outline" 
                 className={cn(
                   "h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white",
-                  os?.isAdmin ? "" : "col-span-2"
+                  os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial") ? "col-span-1" : "col-span-2"
                 )} 
                 disabled={loading}
                 onClick={() => handleFinish(false)}
@@ -267,7 +272,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               variant="default" 
               className={cn(
                 "h-12 rounded-xl text-xs font-bold gap-2 shadow-lg shadow-primary/20",
-                (os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial")) ? (os?.isAdmin ? "" : "hidden") : "col-span-2",
+                (os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial")) ? "col-span-1" : "col-span-2",
                 !(photoBefore && photoAfter) && !os?.isAdmin && !os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial") && "opacity-50"
               )} 
               disabled={loading || (!(photoBefore && photoAfter) && !os?.isAdmin && !os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial"))}
