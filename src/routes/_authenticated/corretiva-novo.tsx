@@ -277,6 +277,7 @@ function CorretivaNovoPage() {
                 <List className="h-4 w-4" />
               </Button>
             </div>
+            </div>
           </div>
         </GlassCard>
 
