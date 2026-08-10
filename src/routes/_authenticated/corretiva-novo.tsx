@@ -25,6 +25,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
+import { OsDetailsDialog } from "@/components/corretiva/os-details-dialog";
 import { equipeStyles, matchEquipe, type EquipeFiltro } from "@/lib/corretiva/equipe";
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
@@ -41,6 +42,7 @@ function CorretivaNovoPage() {
   const [search, setSearch] = useState("");
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedOs, setSelectedOs] = useState<any | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -202,7 +204,14 @@ function CorretivaNovoPage() {
               : "flex flex-col gap-3"
           )}>
             {filtered.map((os) => (
-              <GlassCard key={os.id} className={cn("p-4 group", viewMode === "list" && "flex items-center gap-4 py-3")}>
+              <GlassCard 
+                key={os.id} 
+                className={cn(
+                  "p-4 group cursor-pointer hover:bg-white/[0.07] transition-all", 
+                  viewMode === "list" && "flex items-center gap-4 py-3"
+                )}
+                onClick={() => setSelectedOs(os)}
+              >
                 <div className="flex flex-col flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
                     <Badge variant="outline" className={cn("font-mono text-xs", equipeStyles(os.equipe).badge)}>
@@ -227,6 +236,12 @@ function CorretivaNovoPage() {
           </div>
         )}
       </div>
+      <OsDetailsDialog 
+        os={selectedOs} 
+        isOpen={!!selectedOs} 
+        onClose={() => setSelectedOs(null)}
+        onUpdate={loadData}
+      />
     </PageShell>
   );
 }
