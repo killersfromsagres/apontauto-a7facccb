@@ -326,6 +326,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
                               const res = await fetch("/api/imgbb-upload", {
                                 method: "POST",
+                                headers: {
+                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`
+                                },
                                 body: formData,
                               });
                               
@@ -393,6 +396,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
                               const res = await fetch("/api/imgbb-upload", {
                                 method: "POST",
+                                headers: {
+                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`
+                                },
                                 body: formData,
                               });
                               
