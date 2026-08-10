@@ -30,12 +30,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
     const isAdmin = os?.isAdmin;
     
-    if (!withPhoto && !isAdmin && !hasSpecialPermission) {
+    const canBypass = isAdmin || hasSpecialPermission;
+
+    if (!withPhoto && !canBypass) {
       toast.error("Você não tem permissão para concluir sem foto.");
       return;
     }
 
-    if (withPhoto && (!photoBefore || !photoAfter) && !isAdmin && !hasSpecialPermission) {
+    if (withPhoto && !canBypass && (!photoBefore || !photoAfter)) {
       toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
       return;
     }
@@ -325,7 +327,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 variant="outline" 
                 className={cn(
                   "h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white",
-                  os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial") ? "col-span-1" : "col-span-2"
+                  "col-span-1"
                 )} 
                 disabled={loading}
                 onClick={() => handleFinish(false)}
