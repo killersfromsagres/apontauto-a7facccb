@@ -5,11 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Package, CheckCircle2, X, Loader2 } from "lucide-react";
+import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface OsDetailsDialogProps {
   os: any;
@@ -138,6 +144,24 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     }
   };
 
+  const handleReclassificar = async (novaEquipe: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("corretiva_os")
+        .update({ equipe: novaEquipe } as any)
+        .eq("id", os.id);
+
+      if (error) throw error;
+      toast.success(`OS reclassificada para ${novaEquipe}`);
+      onUpdate();
+    } catch (err: any) {
+      toast.error("Erro ao reclassificar OS.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg w-[calc(100%-1.5rem)] md:w-full h-auto max-h-[90vh] rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] shadow-2xl z-[9999]">
@@ -165,9 +189,27 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
               <div className="space-y-1 text-right">
                 <Label className="text-[10px] uppercase opacity-50 font-bold tracking-tighter">Equipe</Label>
-                <p className={cn("font-bold text-primary")}>
-                  {os.equipe || "Não definida"}
-                </p>
+                <div className="flex items-center justify-end gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className={cn("h-7 px-2 text-xs font-bold rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-primary gap-1")}>
+                        {os.equipe || "Não definida"}
+                        <ArrowRightLeft className="h-3 w-3 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-xl">
+                      {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                        <DropdownMenuItem
+                          key={e}
+                          onClick={() => handleReclassificar(e)}
+                          className="text-xs focus:bg-white/10 cursor-pointer text-white"
+                        >
+                          {e}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <p className="text-[10px] text-muted-foreground italic">Solicitante: {os.solicitante || "-"}</p>
                 {os.data_criacao && (
                   <p className="text-[10px] text-primary font-medium mt-1">
