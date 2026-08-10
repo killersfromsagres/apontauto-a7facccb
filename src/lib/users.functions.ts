@@ -180,6 +180,7 @@ export const MENU_KEYS = [
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
   "programacao",
+  "programacao-preventivas",
   "corretiva",
   "corretiva-novo",
   "corretiva-pecas-status",
@@ -210,6 +211,9 @@ export const MENU_KEYS = [
   "usuarios",
   "organograma",
   "configuracoes",
+  "backorder",
+  "backorder-mensal",
+  "taludes",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
 
