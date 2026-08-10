@@ -241,6 +241,22 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "backorder-mensal-grp",
+    title: "Backorder Mensal",
+    icon: CalendarDays,
+    items: [
+      {
+        key: "backorder-mensal",
+        title: "Backorder Mensal",
+        short: "Backorder",
+        url: "/backorder-mensal",
+        icon: PackageX,
+        keywords: ["backorder", "mensal", "execução", "campo", "os"],
+      },
+    ],
+  },
+  {
+    kind: "group",
     key: "os-grp",
     title: "Ordens de Serviço (Preventiva)",
     icon: CalendarDays,
