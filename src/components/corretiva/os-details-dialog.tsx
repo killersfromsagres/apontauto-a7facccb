@@ -41,19 +41,38 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data: sess } = await supabase.auth.getSession();
+      const userId = sess.session?.user?.id;
+
+      // 1. Atualiza status na tabela principal (que aceita status mas não as novas colunas)
+      const { error: mainError } = await supabase
         .from("corretiva_os")
         .update({
           status: "concluida",
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("id", os.id);
+
+      if (mainError) throw mainError;
+
+      // 2. Salva detalhes na tabela de conclusão (sidecar)
+      const { error: sidecarError } = await supabase
+        .from("corretiva_os_conclusao" as any)
+        .upsert({
+          os_id: os.id,
           foto_conclusao: photoAfter,
           foto_antes: photoBefore,
           observacao_conclusao: observacao,
           pecas_solicitadas: pecas,
-          data_conclusao: new Date().toISOString()
-        } as any)
-        .eq("id", os.id);
+          data_conclusao: new Date().toISOString(),
+          concluido_por: userId
+        } as any);
 
-      if (error) throw error;
+      if (sidecarError) {
+        console.error("Erro ao salvar detalhes de conclusão:", sidecarError);
+        // Não lançamos erro aqui se o status principal foi atualizado,
+        // mas avisamos o console.
+      }
 
       toast.success("OS concluída com sucesso!");
       onUpdate();
