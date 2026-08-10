@@ -595,6 +595,9 @@ const RESTRICTED_KEYS = [
   "confiabilidade",
   "gestao-executiva",
   "planejamento-grp",
+  "refrigeracao",
+  "refrigeracao-pecas-status",
+  "refrigeracao-historico",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */

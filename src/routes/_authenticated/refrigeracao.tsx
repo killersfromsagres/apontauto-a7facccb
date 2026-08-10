@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 
@@ -222,7 +222,7 @@ function RefrigeracaoPage() {
     }
   };
 
-  const refreshOsFromServer = async () => {
+  const refreshOsFromServer = useCallback(async () => {
     const { data, error } = await supabase
       .from("refrigeracao_os")
       .select(OS_COLUMNS)
@@ -231,44 +231,66 @@ function RefrigeracaoPage() {
     const rows = (data ?? []) as unknown as OsCacheRow[];
     await cacheOsList(rows);
     setOsList(rows);
-  };
+  }, []);
 
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       try {
         const cached = await getCachedOsList();
-        if (cached.length) setOsList(cached);
+        if (mounted && cached.length) setOsList(cached);
       } catch {
         /* falha silenciosa: cache local é um extra */
       }
+      
       if (navigator.onLine) {
         try {
           await refreshOsFromServer();
         } catch (e: any) {
-          if (osList.length === 0)
-            toast.error("Não foi possível carregar OS: The user denied permission to access the database.");
+          if (mounted && osList.length === 0)
+            toast.error("Não foi possível carregar OS do servidor.");
         }
       }
-      setLoadingList(false);
-      refreshPending();
-      doSync(true);
+      
+      if (mounted) {
+        setLoadingList(false);
+        refreshPending();
+        doSync(true);
+      }
     })();
-    const on = () => doSync(true);
-    window.addEventListener("online", on);
-    const focus = () => {
-      if (navigator.onLine) doSync(true);
+
+    const onOnline = () => {
+      if (mounted) doSync(true);
+      refreshOsFromServer().catch(() => {});
     };
-    window.addEventListener("focus", focus);
+
+    const onFocus = () => {
+      if (mounted && navigator.onLine) {
+        doSync(true);
+        refreshOsFromServer().catch(() => {});
+      }
+    };
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("focus", onFocus);
+
     const iv = window.setInterval(() => {
-      if (navigator.onLine) doSync(true);
-    }, 10_000); // Sincronização agressiva a cada 10s
+      if (mounted && navigator.onLine) {
+        doSync(true);
+        // Opcional: atualização periódica da lista se desejar tempo real
+        // refreshOsFromServer().catch(() => {});
+      }
+    }, 10_000);
+
     return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("focus", focus);
+      mounted = false;
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("focus", onFocus);
       window.clearInterval(iv);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshOsFromServer]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
