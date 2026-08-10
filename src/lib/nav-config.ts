@@ -532,7 +532,7 @@ export function menuItemForPath(pathname: string): MenuItem | null {
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
     if (item.url === "/") continue;
-    if (pathname === item.url || pathname.startsWith(`${item.url}/`)) {
+    if (pathname === item.url || pathname === `/_authenticated${item.url}` || pathname.startsWith(`${item.url}/`)) {
       if (!best || item.url.length > best.url.length) best = item;
     }
   }
