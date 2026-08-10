@@ -92,14 +92,21 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
 
   return rows.map((r) => {
     // A equipe vinda da planilha tem precedência se for reconhecida
-    const equipeFinal = (r.equipe && r.equipe.trim()) || classificarEquipeOs(r).equipe;
+    let equipeFinal = (r.equipe && r.equipe.trim());
+    
+    // Se não tiver equipe ou não for reconhecida, usamos a IA de classificação por texto
+    if (!equipeFinal || !equipeReconhecida(equipeFinal)) {
+      // Combina descrição, equipamento e ativo para uma leitura mais precisa da IA
+      const textForClassification = [r.nome_os, r.equipamento, r.ativo].filter(Boolean).join(" ");
+      equipeFinal = classifyTeamByText(textForClassification).equipe;
+    }
     
     // Regra: se autoBackorder, o tipo vira "Backorder"
     let tipoFinal = TIPO_CORRETIVA;
     if (autoBackorder) {
       tipoFinal = "Backorder";
     } else if (r.tipo) {
-      // Tentar reconhecer "Backorder" ou "Corretiva" se vier na planilha
+      // Tentar reconhecer "Backorder" ou "Corretiva" se vindo na planilha
       const t = r.tipo.toLowerCase();
       if (t.includes("back") || t.includes("atras")) tipoFinal = "Backorder";
     }

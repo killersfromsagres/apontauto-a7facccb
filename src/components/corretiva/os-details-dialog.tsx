@@ -188,18 +188,24 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           </div>
 
           <div className="grid grid-cols-2 gap-3 pb-2">
-            <Button 
-              variant="outline" 
-              className="h-12 rounded-xl text-xs font-bold border-white/10" 
-              disabled={loading}
-              onClick={() => handleFinish(false)}
-            >
-              Finalizar s/ Foto
-            </Button>
+            {os?.isAdmin && (
+              <Button 
+                variant="outline" 
+                className="h-12 rounded-xl text-xs font-bold border-white/10" 
+                disabled={loading}
+                onClick={() => handleFinish(false)}
+              >
+                Finalizar s/ Foto
+              </Button>
+            )}
             <Button 
               variant="default" 
-              className={cn("h-12 rounded-xl text-xs font-bold gap-2 shadow-lg shadow-primary/20", !photo && "opacity-50")} 
-              disabled={loading}
+              className={cn(
+                "h-12 rounded-xl text-xs font-bold gap-2 shadow-lg shadow-primary/20",
+                os?.isAdmin ? "" : "col-span-2",
+                !photo && !os?.isAdmin && "opacity-50"
+              )} 
+              disabled={loading || (!photo && !os?.isAdmin)}
               onClick={() => handleFinish(true)}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
