@@ -5,7 +5,7 @@ import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2, Calendar a
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
-import { readPreventivaFiles, type RawRow } from "@/lib/preventiva/reader";
+import { readPreventivaFiles, type RawRow, type AtivoIndexEntry } from "@/lib/preventiva/reader";
 import { triage, type Equipe, type TriagedOS, EQUIPE_COLOR } from "@/lib/preventiva/triage";
 import { weeksToCoverAll, distributeAcrossMonth, MINUTOS_UTEIS_DIA, type WeekBucket } from "@/lib/preventiva/capacity";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
