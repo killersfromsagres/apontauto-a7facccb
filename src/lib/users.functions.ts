@@ -181,6 +181,7 @@ export const MENU_KEYS = [
   "refrigeracao-historico",
   "programacao",
   "corretiva",
+  "corretiva-novo",
   "corretiva-pecas-status",
   "corretiva-historico",
   "corretiva-finalizar-sem-foto",
