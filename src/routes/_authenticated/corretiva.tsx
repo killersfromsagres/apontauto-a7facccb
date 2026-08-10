@@ -217,6 +217,7 @@ function CorretivaPage() {
     const rows = (data ?? []) as unknown as OsCacheRow[];
     await cacheOsList(rows);
     setOsList(rows);
+    console.log("[Corretiva] Lista de OS atualizada:", rows.length, "itens.");
   };
 
   useEffect(() => {
