@@ -222,13 +222,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               <div className="space-y-1 text-right">
                 <Label className="text-[10px] uppercase opacity-50 font-bold tracking-tighter">Equipe</Label>
                 <div className="flex items-center justify-end mt-1">
-                  <DropdownMenu>
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         className={cn(
-                          "h-9 px-3 text-xs font-bold rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group",
+                          "h-9 px-3 text-xs font-bold rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all group pointer-events-auto",
                           equipeStyles(os.equipe).badge
                         )}
                       >
@@ -236,7 +236,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         {os.equipe || "Não definida"}
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+                    <DropdownMenuContent align="end" side="bottom" sideOffset={5} className="w-56 p-2 bg-[#0A0A0A] border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl animate-in fade-in zoom-in duration-200 z-[10000]">
                       <div className="px-2 py-1.5 mb-1">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-50">Reclassificar Equipe</p>
                       </div>
