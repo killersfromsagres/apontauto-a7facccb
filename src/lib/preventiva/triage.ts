@@ -9,7 +9,8 @@ export type Equipe =
   | "CLIMATIZAÇÃO E REFRIGERAÇÃO 2"
   | "CLIMATIZAÇÃO E REFRIGERAÇÃO 3"
   | "ELÉTRICA"
-  | "HIDRÁULICA";
+  | "HIDRÁULICA"
+  | "CORRETIVA";
 
 export const EQUIPES_ORDEM: Equipe[] = [
   "CHAVEIRO",
