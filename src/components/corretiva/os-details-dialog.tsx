@@ -286,39 +286,37 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               <div className="space-y-4">
                 <Label className="text-xs font-bold text-white/70">Evidência Fotográfica</Label>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   {/* Foto de ANTES */}
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Antes</Label>
+                    <Label className="text-[9px] uppercase opacity-60 font-bold tracking-wider text-center block">Antes</Label>
                     {photoBefore ? (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 group">
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
                         <img src={photoBefore} alt="Antes" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
                             variant="destructive" 
-                            size="sm" 
-                            className="rounded-full gap-2 h-8"
+                            size="icon" 
+                            className="rounded-full h-8 w-8"
                             onClick={() => setPhotoBefore(null)}
                           >
-                            <X className="h-3 w-3" /> Remover
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <Button 
-                        variant="glass" 
-                        className="w-full h-24 border-dashed border-2 border-white/10 hover:border-primary/50 gap-2 flex-col rounded-2xl bg-white/2 transition-all"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = async (e: any) => {
-                            const file = e.target.files[0];
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          disabled={loading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
                             if (!file) return;
 
                             setLoading(true);
                             try {
-                              // Criar um FormData próprio para o upload
                               const formData = new FormData();
                               formData.append("image", file);
                               formData.append("module", "corretiva-novo");
@@ -341,50 +339,52 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoBefore(data.url);
-                              toast.success("Foto 'Antes' carregada com sucesso!");
+                              toast.success("Foto 'Antes' carregada!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Antes:", err);
-                              toast.error(`Falha no upload: ${err.message || "Verifique sua conexão"}`);
+                              toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
                             }
-                          };
-                          input.click();
-                        }}
-                      >
-                        <Camera className="h-5 w-5 text-primary" />
-                        <span className="text-[10px] font-medium text-white">Foto de Antes</span>
-                      </Button>
+                          }}
+                        />
+                        <div className={cn(
+                          "w-full aspect-square border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center rounded-2xl bg-white/5 transition-all",
+                          loading && "opacity-50"
+                        )}>
+                          {loading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-primary mb-1" />}
+                          <span className="text-[9px] font-bold text-white uppercase tracking-tighter text-center px-1">Tirar Foto Antes</span>
+                        </div>
+                      </div>
                     )}
                   </div>
 
                   {/* Foto de DEPOIS */}
                   <div className="space-y-2">
-                    <Label className="text-[10px] uppercase opacity-60 font-bold tracking-wider">Depois</Label>
+                    <Label className="text-[9px] uppercase opacity-60 font-bold tracking-wider text-center block">Depois</Label>
                     {photoAfter ? (
-                      <div className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 group">
+                      <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
                         <img src={photoAfter} alt="Depois" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
                             variant="destructive" 
-                            size="sm" 
-                            className="rounded-full gap-2 h-8"
+                            size="icon" 
+                            className="rounded-full h-8 w-8"
                             onClick={() => setPhotoAfter(null)}
                           >
-                            <X className="h-3 w-3" /> Remover
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
                     ) : (
-                      <Button 
-                        variant="glass" 
-                        className="w-full h-24 border-dashed border-2 border-white/10 hover:border-primary/50 gap-2 flex-col rounded-2xl bg-white/2 transition-all"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = async (e: any) => {
-                            const file = e.target.files[0];
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          disabled={loading}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
                             if (!file) return;
 
                             setLoading(true);
@@ -411,20 +411,23 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoAfter(data.url);
-                              toast.success("Foto 'Depois' carregada com sucesso!");
+                              toast.success("Foto 'Depois' carregada!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Depois:", err);
-                              toast.error(`Falha no upload: ${err.message || "Verifique sua conexão"}`);
+                              toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
                             }
-                          };
-                          input.click();
-                        }}
-                      >
-                        <Camera className="h-5 w-5 text-emerald-400" />
-                        <span className="text-[10px] font-medium text-white">Foto de Depois</span>
-                      </Button>
+                          }}
+                        />
+                        <div className={cn(
+                          "w-full aspect-square border-dashed border-2 border-white/10 hover:border-emerald-500/50 flex flex-col items-center justify-center rounded-2xl bg-white/5 transition-all",
+                          loading && "opacity-50"
+                        )}>
+                          {loading ? <Loader2 className="h-5 w-5 animate-spin text-emerald-400" /> : <Camera className="h-6 w-6 text-emerald-400 mb-1" />}
+                          <span className="text-[9px] font-bold text-white uppercase tracking-tighter text-center px-1">Tirar Foto Depois</span>
+                        </div>
+                      </div>
                     )}
                   </div>
                 </div>
