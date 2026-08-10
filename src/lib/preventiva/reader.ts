@@ -148,7 +148,7 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
     const catCount = new Map<Categoria, number>();
 
     for (const r of raw) {
-      const os = pick(r, "OS", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO");
+      const os = pick(r, "OS", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO", "ID OS", "NÚMERO OS", "NUMERO OS");
       if (!os) {
         discartadasVazias++;
         continue;
