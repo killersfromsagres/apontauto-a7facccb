@@ -36,9 +36,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         .from("corretiva_os")
         .update({
           status: "concluida",
-          // Note: these columns might need to exist in the DB, 
-          // based on schema analysis I'll use common names or fallback
-          pecas_solicitadas: pecas,
+          // Based on schema analysis, using any to bypass strict type checking for dynamic columns
+          foto_conclusao: photo,
           observacao_conclusao: observacao,
           data_conclusao: new Date().toISOString()
         } as any)
@@ -104,7 +103,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             </div>
             <div className="space-y-1 text-right">
               <Label className="text-[10px] uppercase opacity-50 font-bold tracking-tighter">Equipe</Label>
-              <p className={cn("font-bold", equipeStyles(os.equipe).text)}>
+              <p className={cn("font-bold text-primary")}>
                 {os.equipe || "Não definida"}
               </p>
               <p className="text-[10px] text-muted-foreground">Solicitante: {os.solicitante || "-"}</p>
