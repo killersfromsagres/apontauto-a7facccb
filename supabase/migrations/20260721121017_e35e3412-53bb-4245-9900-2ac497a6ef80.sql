@@ -1,0 +1,1 @@
+ALTER TABLE public.taludes ADD COLUMN IF NOT EXISTS cor TEXT;

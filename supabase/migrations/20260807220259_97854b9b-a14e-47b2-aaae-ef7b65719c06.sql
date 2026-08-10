@@ -1,0 +1,1 @@
+UPDATE public.talude_maps SET image_url = '/__l5e/assets-v1/1bda0cea-f1a2-48c3-a2f8-830326712b26/taludes-mapa.webp' WHERE nome = 'Mapa Principal Demarchi';

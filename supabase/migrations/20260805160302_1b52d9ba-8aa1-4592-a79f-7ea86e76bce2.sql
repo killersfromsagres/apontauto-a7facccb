@@ -1,0 +1,1 @@
+ALTER TABLE public.backorder_os ADD COLUMN centro_custo text DEFAULT '';

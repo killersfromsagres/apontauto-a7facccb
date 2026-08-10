@@ -1,0 +1,10 @@
+REVOKE EXECUTE ON FUNCTION public.can_access_corretiva(text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.can_write_corretiva(text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.can_access_refrigeracao(text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.can_write_refrigeracao(text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.can_access_backorder(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.can_access_corretiva(text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_write_corretiva(text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_access_refrigeracao(text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_write_refrigeracao(text) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.can_access_backorder(text) TO authenticated, service_role;
