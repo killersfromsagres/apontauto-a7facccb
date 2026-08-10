@@ -129,8 +129,8 @@ function CorretivaNovoPage() {
 
   return (
     <PageShell
-      title="Nova Programação de Corretivas"
-      description="Sistema inteligente de separação por equipe e impressão."
+      title="Programação de Corretivas"
+      description="Sistema inteligente com classificação automática por IA."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -293,12 +293,14 @@ function CorretivaNovoPage() {
           </div>
         )}
       </div>
-      <OsDetailsDialog 
-        os={selectedOs} 
-        isOpen={!!selectedOs} 
-        onClose={() => setSelectedOs(null)}
-        onUpdate={loadData}
-      />
+      {selectedOs && (
+        <OsDetailsDialog 
+          os={{...selectedOs, isAdmin}} 
+          isOpen={!!selectedOs} 
+          onClose={() => setSelectedOs(null)}
+          onUpdate={loadData}
+        />
+      )}
     </PageShell>
   );
 }
