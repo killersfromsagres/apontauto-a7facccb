@@ -79,10 +79,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg w-full h-[100dvh] md:h-auto rounded-none md:rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] md:bg-[#0A0A0A]/95 md:backdrop-blur-2xl fixed inset-0 md:relative transition-all z-[9999] shadow-2xl">
-        <div className="flex flex-col h-full md:max-h-[90vh] overflow-hidden relative z-[9999] bg-[#0A0A0A]">
-          <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto custom-scrollbar relative bg-[#0A0A0A]">
-            <DialogHeader>
+      <DialogContent className="max-w-lg w-[calc(100%-1.5rem)] md:w-full h-auto max-h-[90vh] rounded-3xl overflow-hidden p-0 gap-0 border-white/10 bg-[#0A0A0A] shadow-2xl z-[9999]">
+        <div className="flex flex-col h-full max-h-[90vh] overflow-hidden bg-[#0A0A0A]">
+          <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto custom-scrollbar bg-[#0A0A0A]">
+            <DialogHeader className="text-left">
               <div className="flex items-center justify-between mb-3">
                 <Badge variant="outline" className={cn("font-mono text-[10px]", equipeStyles(os.equipe).badge)}>
                   OS {os.numero_os}
@@ -119,7 +119,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     placeholder="Ex: Lâmpada LED 9W..." 
                     value={pecas}
                     onChange={(e) => setPecas(e.target.value)}
-                    className="bg-white/5 border-white/10 h-11 text-sm focus:ring-primary/50"
+                    className="bg-white/5 border-white/10 h-11 text-sm focus:ring-primary/50 text-white"
                   />
                   <Button 
                     variant="glass" 
@@ -128,7 +128,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     onClick={handleSolicitarPeca}
                     disabled={loading}
                   >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4" />}
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4 text-white" />}
                   </Button>
                 </div>
               </div>
@@ -139,7 +139,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   placeholder="Relate o que foi feito no local..."
                   value={observacao}
                   onChange={(e) => setObservacao(e.target.value)}
-                  className="bg-white/5 border-white/10 min-h-[90px] text-sm focus:ring-primary/50 resize-none"
+                  className="bg-white/5 border-white/10 min-h-[90px] text-sm focus:ring-primary/50 resize-none text-white"
                 />
               </div>
 
@@ -182,14 +182,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                       <Camera className="h-5 w-5 text-primary" />
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground">Tirar foto ou anexar</span>
+                    <span className="text-xs font-medium text-muted-foreground text-white">Tirar foto ou anexar</span>
                   </Button>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 p-6 pt-2 border-t border-white/10 bg-[#0A0A0A] backdrop-blur-md sticky bottom-0 left-0 right-0 z-[10000]">
+          <div className="grid grid-cols-2 gap-3 p-6 border-t border-white/10 bg-[#0A0A0A] sticky bottom-0 left-0 right-0 z-[10000]">
             {os?.isAdmin && (
               <Button 
                 variant="outline" 
