@@ -145,18 +145,50 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   };
 
   const handleReclassificar = async (novaEquipe: string) => {
+    if (loading) return;
+    
     setLoading(true);
+    const toastId = toast.loading(`Reclassificando para ${novaEquipe}...`);
+    
     try {
-      const { error } = await supabase
+      console.log(`[CorretivaReclassificar] Iniciando para OS ${os.id} -> ${novaEquipe}`);
+      
+      const { data, error } = await supabase
         .from("corretiva_os")
-        .update({ equipe: novaEquipe } as any)
-        .eq("id", os.id);
+        .update({ 
+          equipe: novaEquipe,
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq("id", os.id)
+        .select();
 
-      if (error) throw error;
-      toast.success(`OS reclassificada para ${novaEquipe}`);
-      onUpdate();
+      if (error) {
+        console.error("[CorretivaReclassificar] Erro Supabase:", error);
+        throw error;
+      }
+
+      console.log("[CorretivaReclassificar] Sucesso:", data);
+      
+      try {
+        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        const cached = await getCachedOsList();
+        const updated = cached.map(o => o.id === os.id ? { ...o, equipe: novaEquipe } : o);
+        await cacheOsList(updated);
+      } catch (e) {
+        console.warn("[CorretivaReclassificar] Erro cache local:", e);
+      }
+
+      toast.success(`OS reclassificada para ${novaEquipe}`, { id: toastId });
+      
+      if (onUpdate) onUpdate();
+      
+      setTimeout(() => {
+        onClose();
+      }, 500);
+      
     } catch (err: any) {
-      toast.error("Erro ao reclassificar OS.");
+      console.error("[CorretivaReclassificar] Erro fatal:", err);
+      toast.error(`Erro ao reclassificar: ${err.message || "Tente novamente"}`, { id: toastId });
     } finally {
       setLoading(false);
     }
