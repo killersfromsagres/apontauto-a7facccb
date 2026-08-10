@@ -138,7 +138,7 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "backorder",
-        title: "Backorders e OS",
+        title: "Backorders (Histórico)",
         short: "Backorder",
         url: "/backorder",
         icon: PackageX,
