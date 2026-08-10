@@ -11,6 +11,9 @@ import {
   LayoutGrid,
   List,
   Package,
+  ArrowUpDown,
+  History,
+  Clock,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -44,6 +47,7 @@ function CorretivaNovoPage() {
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedOs, setSelectedOs] = useState<any | null>(null);
+  const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
 
   const loadData = async () => {
     setLoading(true);
@@ -104,8 +108,12 @@ function CorretivaNovoPage() {
       const matchesEquipe = matchEquipe(o.equipe, equipe);
       
       return matchesSearch && matchesEquipe;
+    }).sort((a, b) => {
+      const dateA = new Date(a.data_criacao || 0).getTime();
+      const dateB = new Date(b.data_criacao || 0).getTime();
+      return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
     });
-  }, [osList, search, equipe]);
+  }, [osList, search, equipe, sortOrder]);
 
   const exportExcelByTeam = async () => {
     if (!filtered.length) return toast.error("Nenhuma OS para exportar.");
@@ -217,7 +225,41 @@ function CorretivaNovoPage() {
               </DropdownMenu>
             </div>
 
-            <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="glass" className="h-11 px-6 rounded-full gap-2 border-white/10">
+                    <ArrowUpDown className="h-4 w-4" />
+                    <span className="font-medium">
+                      {sortOrder === "recent" ? "Mais Recentes" : "Mais Antigos"}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
+                  <DropdownMenuItem 
+                    onClick={() => setSortOrder("recent")}
+                    className={cn(
+                      "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
+                      sortOrder === "recent" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <Clock className="h-4 w-4" />
+                    Mais Recentes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setSortOrder("oldest")}
+                    className={cn(
+                      "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
+                      sortOrder === "oldest" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                    )}
+                  >
+                    <History className="h-4 w-4" />
+                    Mais Antigos
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
               <Button
                 variant={viewMode === "grid" ? "secondary" : "ghost"}
                 size="icon"
@@ -234,6 +276,7 @@ function CorretivaNovoPage() {
               >
                 <List className="h-4 w-4" />
               </Button>
+            </div>
             </div>
           </div>
         </GlassCard>
