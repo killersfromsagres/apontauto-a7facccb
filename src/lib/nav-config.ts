@@ -575,6 +575,7 @@ const RESTRICTED_KEYS = [
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [
+  "corretiva-novo",
   "corretiva",
   "refrigeracao",
   "programacao",
