@@ -287,6 +287,8 @@ function CorretivaPage() {
       if (aba === "preventiva") {
         if (!isBackorder && !isPreventivaAba) return false;
       } else {
+        // Se estiver na aba Corretiva, mostramos tudo que não for Backorder ou Preventiva.
+        // Se a importação marcar como Backorder por ser antiga, ela aparecerá na aba Preventiva.
         if (isBackorder || isPreventivaAba) return false;
       }
 
@@ -321,18 +323,12 @@ function CorretivaPage() {
         (o.local ?? "").toLowerCase().includes(q)
       );
     }).sort((a, b) => {
-      // Ordenação Avançada: Prioriza SLA crítico (atrasado) e depois ordem numérica de OS
+      // Ordenação: primeiro por data de criação (mais antigas primeiro), depois por número da OS
       const da = a.data_criacao ? new Date(a.data_criacao).getTime() : 0;
       const db = b.data_criacao ? new Date(b.data_criacao).getTime() : 0;
       
-      const diffA = Math.floor((new Date().getTime() - da) / (1000 * 60 * 60 * 24));
-      const diffB = Math.floor((new Date().getTime() - db) / (1000 * 60 * 60 * 24));
-      
-      const criticalA = diffA >= 30 ? 1 : 0;
-      const criticalB = diffB >= 30 ? 1 : 0;
-      
-      if (criticalA !== criticalB) return criticalB - criticalA; // Críticos no topo
-      return da - db || a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
+      if (da !== db) return da - db;
+      return a.numero_os.localeCompare(b.numero_os, "pt-BR", { numeric: true });
     });
   }, [osList, search, equipe, mesFiltro, aba, semanaFiltro, liberadas, isAdmin]);
 
