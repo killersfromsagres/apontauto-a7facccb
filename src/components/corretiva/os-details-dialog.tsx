@@ -40,7 +40,6 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
       return;
     }
 
-
     setLoading(true);
     try {
       const { data: sess } = await supabase.auth.getSession();
@@ -62,39 +61,40 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
       // 2. Persistir fotos se houver (tabela corretiva_fotos já existe e é acessível)
       if (photoBefore) {
-        await supabase.from("corretiva_fotos").insert({
+        const { error: photoBeforeErr } = await supabase.from("corretiva_fotos").insert({
           os_id: os.id,
           image_url: photoBefore,
           legenda: "Evidência: Antes",
           enviado_por: userId
         } as any);
+        if (photoBeforeErr) console.warn("Erro ao salvar foto Antes:", photoBeforeErr);
       }
       if (photoAfter) {
-        await supabase.from("corretiva_fotos").insert({
+        const { error: photoAfterErr } = await supabase.from("corretiva_fotos").insert({
           os_id: os.id,
           image_url: photoAfter,
           legenda: "Evidência: Depois",
           enviado_por: userId
         } as any);
+        if (photoAfterErr) console.warn("Erro ao salvar foto Depois:", photoAfterErr);
       }
 
       // 3. Persistir peças se houver
       if (pecas) {
-        await supabase.from("corretiva_pecas").insert({
+        const { error: pecasErr } = await supabase.from("corretiva_pecas").insert({
           os_id: os.id,
           descricao: pecas,
           quantidade: 1,
           enviado_por: userId
         } as any);
+        if (pecasErr) console.warn("Erro ao salvar peças:", pecasErr);
       }
-
-      toast.success("OS concluída com sucesso!");
 
       toast.success("OS concluída com sucesso!");
       onUpdate();
       onClose();
     } catch (err) {
-      console.error(err);
+      console.error("[CorretivaAudit] Erro ao concluir:", err);
       toast.error("Erro ao concluir OS.");
     } finally {
       setLoading(false);
