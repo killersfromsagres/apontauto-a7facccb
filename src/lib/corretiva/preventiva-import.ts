@@ -79,16 +79,21 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
   const rows = await readCorretivaOsFile(file);
   
   // 1. Verificar se a aba Backorder está vazia no banco
-  const { count: backorderCount } = await supabase
-    .from("corretiva_os")
-    .select("*", { count: 'exact', head: true })
-    .eq("tipo", "Backorder");
+  let backorderCount = 0;
+  try {
+    const { count, error } = await supabase
+      .from("corretiva_os")
+      .select("*", { count: 'exact', head: true })
+      .eq("tipo", "Backorder");
+    if (!error) backorderCount = count ?? 0;
+  } catch (e) {
+    console.warn("[Import] Erro ao contar backorders, assumindo 0", e);
+  }
 
   // 2. Se vazio, marcar todas as novas importações como Backorder automaticamente
-  // Se já houver dados, as novas entram como Corretiva (a menos que a data seja antiga)
   const autoBackorder = backorderCount === 0;
   
-  // 3. Log para auditoria (visível no console se houver erro)
+  // 3. Log para auditoria
   console.log(`[Import] Linhas lidas: ${rows.length}, Total Backorder Atual: ${backorderCount}, AutoBackorder: ${autoBackorder}`);
 
   return rows.map((r) => {
