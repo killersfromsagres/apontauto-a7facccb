@@ -129,7 +129,7 @@ function CorretivaNovoPage() {
 
   return (
     <PageShell
-      title="Campo"
+      title="Nova Programação de Corretivas"
       description="Sistema inteligente de separação por equipe e impressão."
       actions={
         <div className="flex items-center gap-2">
