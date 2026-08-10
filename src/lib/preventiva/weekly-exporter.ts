@@ -162,8 +162,15 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
         const cell = row.getCell(i + 1);
         cell.value = values[c.key];
 
-        // Só a coluna OS carrega a cor da equipe; demais ficam sem preenchimento.
+        // A coluna A (OS) agora carrega a cor da equipe.
         if (c.key === "os") {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+        }
+        
+        // A primeira coluna (coluna 1, key: os) deve SEMPRE ter a cor da equipe 
+        // para atender o requisito "coluna a preciso que coloque uma cor para cada equipe".
+        // Embora já esteja acima, garantimos que qualquer equipe tenha sua cor na Coluna A.
+        if (i === 0) {
           cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
         }
 
