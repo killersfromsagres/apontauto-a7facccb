@@ -10,6 +10,7 @@ import {
   Filter,
   LayoutGrid,
   List,
+  Package,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -253,21 +254,39 @@ function CorretivaNovoPage() {
                 onClick={() => setSelectedOs(os)}
               >
                 <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1.5 md:mb-2">
-                    <Badge variant="outline" className={cn("font-mono text-[9px] md:text-xs", equipeStyles(os.equipe).badge)}>
+                  <div className="flex items-center justify-between mb-2">
+                    <Badge variant="outline" className={cn("font-mono text-[10px] md:text-xs", equipeStyles(os.equipe).badge)}>
                       OS {os.numero_os}
                     </Badge>
-                    <Badge variant="outline" className="text-[8px] md:text-[10px] opacity-70">
-                      {os.equipe || "Sem Equipe"}
+                    <Badge 
+                      variant={os.status === 'concluida' ? 'secondary' : 'outline'} 
+                      className={cn(
+                        "text-[9px] md:text-[10px] uppercase font-bold",
+                        os.status === 'concluida' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "opacity-70"
+                      )}
+                    >
+                      {os.status === 'concluida' ? 'Concluída' : (os.equipe || "Sem Equipe")}
                     </Badge>
                   </div>
-                  <h3 className="font-semibold text-xs md:text-sm truncate group-hover:text-primary transition-colors mb-1 md:mb-2 text-white">
+                  <h3 className="font-bold text-sm md:text-base leading-tight group-hover:text-primary transition-colors mb-2 text-white line-clamp-2">
                     {os.nome_os || "Sem descrição"}
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-0.5 mt-auto text-[10px] md:text-[11px] text-muted-foreground/80">
-                    <div className="truncate"><span className="opacity-50">Local:</span> {os.predio}</div>
-                    <div className="truncate"><span className="opacity-50">Sala:</span> {os.local}</div>
+                  <div className="space-y-1.5 mt-auto">
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                      <span className="truncate"><span className="opacity-60">Local:</span> {os.predio}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                      <span className="truncate"><span className="opacity-60">Sala:</span> {os.local}</span>
+                    </div>
                   </div>
+                  {os.pecas_solicitadas && (
+                    <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-400/80">
+                      <Package className="h-3 w-3" />
+                      <span className="truncate">Peças solicitadas</span>
+                    </div>
+                  )}
                 </div>
               </GlassCard>
             ))}

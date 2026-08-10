@@ -36,9 +36,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         .from("corretiva_os")
         .update({
           status: "concluida",
-          // Based on schema analysis, using any to bypass strict type checking for dynamic columns
           foto_conclusao: photo,
           observacao_conclusao: observacao,
+          pecas_solicitadas: pecas,
           data_conclusao: new Date().toISOString()
         } as any)
         .eq("id", os.id);
