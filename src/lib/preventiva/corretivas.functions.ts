@@ -6,7 +6,7 @@ export const getLatestCorretivas = createServerFn({ method: "GET" })
     const { data, error } = await supabase
       .from("corretiva_os")
       .select("*")
-      .eq("status", "Em Aberto")
+      .eq("status", "aberta")
       .order("data_criacao", { ascending: true })
       .limit(50);
     
