@@ -1,1 +1,0 @@
-ALTER TABLE public.legal_items ADD COLUMN IF NOT EXISTS predio TEXT;

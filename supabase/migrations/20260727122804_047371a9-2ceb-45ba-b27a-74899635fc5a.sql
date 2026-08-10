@@ -1,2 +1,0 @@
-DROP POLICY IF EXISTS "refrigeracao-fotos read own or admin" ON storage.objects;
-CREATE POLICY "refrigeracao-fotos read auth" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'refrigeracao-fotos');
