@@ -4,6 +4,7 @@
 
 import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
 import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
+import { classifyTeamByText } from "@/lib/backorder/team-classifier";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
@@ -92,7 +93,7 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
 
   return rows.map((r) => {
     // A equipe vinda da planilha tem precedência se for reconhecida
-    let equipeFinal = (r.equipe && r.equipe.trim());
+    let equipeFinal: string = (r.equipe && r.equipe.trim()) || "";
     
     // Se não tiver equipe ou não for reconhecida, usamos a IA de classificação por texto
     if (!equipeFinal || !equipeReconhecida(equipeFinal)) {
@@ -124,7 +125,7 @@ export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
       ...r,
       tipo: tipoFinal,
       equipe: equipeFinal,
-    };
+    } as CorretivaRow;
   });
 }
 
