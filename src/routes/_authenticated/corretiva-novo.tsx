@@ -208,7 +208,7 @@ function CorretivaNovoPage() {
                     <Badge variant="outline" className={cn("font-mono text-xs", equipeStyles(os.equipe).badge)}>
                       OS {os.numero_os}
                     </Badge>
-                    <Badge variant="glass" className="text-[10px] opacity-70">
+                    <Badge variant="outline" className="text-[10px] opacity-70">
                       {os.equipe || "Sem Equipe"}
                     </Badge>
                   </div>
