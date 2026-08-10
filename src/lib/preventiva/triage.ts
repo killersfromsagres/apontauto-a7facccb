@@ -155,18 +155,16 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     out.push({ ...r, equipe: i % 2 === 0 ? "CIVIL" : "CHAVEIRO" });
   });
 
-  // Ordena Climatização por Prédio + Andar
+  // Ordena por Equipe → Prédio → Andar → SLA
   return out.sort((a, b) => {
     if (a.equipe !== b.equipe)
       return EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
-    if (a.equipe.startsWith("CLIMAT")) {
-      return (
-        a.predio.localeCompare(b.predio) ||
-        a.andar.localeCompare(b.andar) ||
-        a.terminoSLATs - b.terminoSLATs
-      );
-    }
-    return a.terminoSLATs - b.terminoSLATs;
+    
+    return (
+      a.predio.localeCompare(b.predio) ||
+      a.andar.localeCompare(b.andar) ||
+      a.terminoSLATs - b.terminoSLATs
+    );
   });
 }
 
