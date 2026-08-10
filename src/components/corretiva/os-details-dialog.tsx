@@ -110,7 +110,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 <p className="text-[10px] text-muted-foreground">Solicitante: {os.solicitante || "-"}</p>
                 {os.data_criacao && (
                   <p className="text-[10px] text-muted-foreground">
-                    Abertura: {new Date(os.data_criacao).toLocaleDateString('pt-BR')}
+                    Abertura: {new Date(os.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                   </p>
                 )}
               </div>
