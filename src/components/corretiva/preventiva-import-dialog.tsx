@@ -26,7 +26,7 @@ import {
 } from "@/lib/corretiva/preventiva-import";
 
 type Row = PreventivaRow | CorretivaRow;
-type Mode = "backorder" | "corretiva";
+type Mode = "backorder" | "corretiva" | "backorder-mensal";
 
 function contar(rows: Row[]): Array<[string, number]> {
   const map = new Map<string, number>();
@@ -53,7 +53,7 @@ export function PreventivaImportDialog({
   // Importação em massa é restrita ao proprietário e a administradores.
   if (!isOwner && !isAdmin) return null;
 
-  const label = mode === "corretiva" ? "corretivas/backorder" : "backorder";
+  const label = mode === "backorder-mensal" ? "backorder mensal" : mode === "corretiva" ? "corretivas/backorder" : "backorder";
 
 
   const onFile = async (f: File | null) => {
@@ -62,7 +62,7 @@ export function PreventivaImportDialog({
     if (!f) return;
     setParsing(true);
     try {
-      const parsed = mode === "corretiva" ? await lerCorretivaFile(f) : await lerPreventivaFile(f);
+      const parsed = (mode === "corretiva" || mode === "backorder-mensal") ? await lerCorretivaFile(f) : await lerPreventivaFile(f);
       if (parsed.length === 0) toast.warning("Nenhuma linha válida encontrada.");
       else toast.success(`${parsed.length} ${label} separadas automaticamente por equipe.`);
       setRows(parsed);
@@ -81,6 +81,7 @@ export function PreventivaImportDialog({
     const payload = rows.map(r => ({ 
       ...r, 
       updated_at: new Date().toISOString(),
+      tipo_importacao: mode === "backorder-mensal" ? "backorder_mensal" : "padrao",
       data_criacao: r.data_criacao || null, // Garante que a data de abertura seja salva no banco
       predio: (r as any).predio || (r as any).localizacao || "",
       andar: (r as any).andar || "",
@@ -118,14 +119,14 @@ export function PreventivaImportDialog({
           size="sm"
           className={cn(
             "h-9 px-4 gap-2 transition-all duration-300",
-            mode === "corretiva" 
+            mode === "corretiva" || mode === "backorder-mensal" 
               ? "bg-primary/20 text-primary-glow border-primary/40 hover:bg-primary/30 shadow-[0_0_15px_rgba(135,206,250,0.2)]" 
               : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
           )}
         >
           <Upload className="h-4 w-4" />
           <span className="font-semibold tracking-tight">
-            {mode === "corretiva" ? "Planilha Corretiva" : "Planilha Backorder"}
+            {mode === "corretiva" ? "Planilha Corretiva" : mode === "backorder-mensal" ? "Planilha Backorder Mensal" : "Planilha Backorder"}
           </span>
         </Button>
 

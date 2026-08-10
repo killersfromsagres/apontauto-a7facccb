@@ -53,10 +53,11 @@ function BackorderMensalPage() {
     setLoading(true);
     console.log("[CorretivaNovo] Iniciando loadData...");
     try {
-      // 1. Tentar carregar as OS do Supabase
+      // 1. Tentar carregar as OS do Supabase filtrando por backorder_mensal
       const { data, error } = await supabase
         .from("corretiva_os")
         .select("*")
+        .eq("tipo_importacao", "backorder_mensal")
         .order("data_criacao", { ascending: false });
 
       if (error) {
@@ -142,7 +143,7 @@ function BackorderMensalPage() {
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <PreventivaImportDialog mode="corretiva" onDone={loadData} />
+            <PreventivaImportDialog mode="backorder-mensal" onDone={loadData} />
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

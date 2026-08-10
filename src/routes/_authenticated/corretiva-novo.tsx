@@ -57,6 +57,7 @@ function CorretivaNovoPage() {
       const { data, error } = await supabase
         .from("corretiva_os")
         .select("*")
+        .neq("tipo_importacao", "backorder_mensal")
         .order("data_criacao", { ascending: false });
 
       if (error) {
