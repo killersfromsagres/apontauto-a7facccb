@@ -238,7 +238,7 @@ function CorretivaPage() {
           console.error("Erro ao carregar OS:", e);
           if (osList.length === 0) {
             // Se não temos nada no cache e falhou a rede/banco
-            toast.error("nao está aparecendo as OS carregadas ainda e esta dando problema que nao carrega o banco de dados para contatar o administrador");
+            toast.error("Erro de acesso ao banco de dados. Contate o administrador.");
           }
         }
       }
