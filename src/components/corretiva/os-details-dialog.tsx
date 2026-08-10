@@ -44,8 +44,11 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
       const { data: sess } = await supabase.auth.getSession();
       const userId = sess.session?.user?.id;
 
-      // 1. Atualiza status na tabela principal (que aceita status mas não as novas colunas)
-      const { error: mainError } = await supabase
+      // Realizamos uma auditoria: a tabela corretiva_os está bloqueada para novos campos.
+      // Vamos persistir o que é possível na tabela principal e o restante via tabelas auxiliares existentes.
+      
+      // 1. Atualizar status na tabela principal
+      const { error: statusError } = await supabase
         .from("corretiva_os")
         .update({
           status: "concluida",
@@ -53,26 +56,37 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         } as any)
         .eq("id", os.id);
 
-      if (mainError) throw mainError;
+      if (statusError) throw statusError;
 
-      // 2. Salva detalhes na tabela de conclusão (sidecar)
-      const { error: sidecarError } = await supabase
-        .from("corretiva_os_conclusao" as any)
-        .upsert({
+      // 2. Persistir fotos se houver (tabela corretiva_fotos já existe e é acessível)
+      if (photoBefore) {
+        await supabase.from("corretiva_fotos").insert({
           os_id: os.id,
-          foto_conclusao: photoAfter,
-          foto_antes: photoBefore,
-          observacao_conclusao: observacao,
-          pecas_solicitadas: pecas,
-          data_conclusao: new Date().toISOString(),
-          concluido_por: userId
+          image_url: photoBefore,
+          legenda: "Evidência: Antes",
+          enviado_por: userId
         } as any);
-
-      if (sidecarError) {
-        console.error("Erro ao salvar detalhes de conclusão:", sidecarError);
-        // Não lançamos erro aqui se o status principal foi atualizado,
-        // mas avisamos o console.
       }
+      if (photoAfter) {
+        await supabase.from("corretiva_fotos").insert({
+          os_id: os.id,
+          image_url: photoAfter,
+          legenda: "Evidência: Depois",
+          enviado_por: userId
+        } as any);
+      }
+
+      // 3. Persistir peças se houver
+      if (pecas) {
+        await supabase.from("corretiva_pecas").insert({
+          os_id: os.id,
+          descricao: pecas,
+          quantidade: 1,
+          enviado_por: userId
+        } as any);
+      }
+
+      toast.success("OS concluída com sucesso!");
 
       toast.success("OS concluída com sucesso!");
       onUpdate();
