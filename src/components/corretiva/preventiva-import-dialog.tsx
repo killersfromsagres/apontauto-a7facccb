@@ -114,23 +114,34 @@ export function PreventivaImportDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button 
-          variant="glass" 
-          size="sm"
-          className={cn(
-            "h-9 px-4 gap-2 transition-all duration-300",
-            mode === "corretiva" || mode === "backorder-mensal" 
-              ? "bg-primary/20 text-primary-glow border-primary/40 hover:bg-primary/30 shadow-[0_0_15px_rgba(135,206,250,0.2)]" 
-              : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="glass" 
+            size="sm"
+            className={cn(
+              "h-9 px-4 gap-2 transition-all duration-300",
+              mode === "corretiva" || mode === "backorder-mensal" 
+                ? "bg-primary/20 text-primary-glow border-primary/40 hover:bg-primary/30 shadow-[0_0_15px_rgba(135,206,250,0.2)]" 
+                : "bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+            )}
+          >
+            <Upload className="h-4 w-4" />
+            <span className="font-semibold tracking-tight">
+              {mode === "corretiva" ? "Planilha Corretiva" : mode === "backorder-mensal" ? "Planilha Backorder Mensal" : "Planilha Backorder"}
+            </span>
+          </Button>
+          
+          {mode === "corretiva" && (
+            <Button 
+              variant="outline" 
+              size="xs" 
+              className="h-6 text-[10px] opacity-70 hover:opacity-100 border-white/10 bg-white/5"
+            >
+              <FileSpreadsheet className="h-3 w-3 mr-1" />
+              Atualizar Sem Duplicidade
+            </Button>
           )}
-        >
-          <Upload className="h-4 w-4" />
-          <span className="font-semibold tracking-tight">
-            {mode === "corretiva" ? "Planilha Corretiva" : mode === "backorder-mensal" ? "Planilha Backorder Mensal" : "Planilha Backorder"}
-          </span>
-        </Button>
-
-
+        </div>
       </DialogTrigger>
       <DialogContent className="max-w-2xl w-[calc(100vw-1.5rem)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
