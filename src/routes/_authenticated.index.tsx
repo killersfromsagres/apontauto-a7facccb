@@ -82,6 +82,7 @@ function AccessGuard() {
     if (access.allowed.length === 0) return;
 
     if (!keys.some((k) => access.allowed!.includes(k))) {
+      console.warn(`[AccessGuard] Denying access to ${pathname}. Required keys: ${keys.join(", ")}. Allowed: ${access.allowed.join(", ")}`);
       toast.error("Você não tem permissão para acessar essa página.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
       const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/_authenticated/${fallback}`;
