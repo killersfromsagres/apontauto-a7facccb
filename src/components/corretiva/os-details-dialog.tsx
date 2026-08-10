@@ -29,13 +29,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     // Audit: useMyAccess hook provides access object, but here we receive os.allowedMenus injected in the route
     const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
     const isAdmin = os?.isAdmin;
-    
-    if (!withPhoto && !isAdmin && !hasSpecialPermission) {
+    const canBypass = isAdmin || hasSpecialPermission;
+
+    if (!withPhoto && !canBypass) {
       toast.error("Você não tem permissão para concluir sem foto.");
       return;
     }
 
-    if (withPhoto && (!photoBefore || !photoAfter) && !isAdmin && !hasSpecialPermission) {
+    if (withPhoto && !canBypass && (!photoBefore || !photoAfter)) {
       toast.error("Por favor, adicione as fotos de 'Antes' e 'Depois' para concluir.");
       return;
     }
@@ -45,21 +46,20 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
       const { data: sess } = await supabase.auth.getSession();
       const userId = sess.session?.user?.id;
 
-      // Realizamos uma auditoria: a tabela corretiva_os está bloqueada para novos campos.
-      // Vamos persistir o que é possível na tabela principal e o restante via tabelas auxiliares existentes.
-      
-      // 1. Atualizar status na tabela principal
+      // 1. Atualizar status na tabela principal (corretiva_os)
       const { error: statusError } = await supabase
         .from("corretiva_os")
         .update({
           status: "concluida",
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          // Se houver observação ou peças, poderíamos tentar salvar aqui se a tabela permitisse,
+          // mas como estamos em auditoria e a tabela pode estar bloqueada, usamos as auxiliares.
         } as any)
         .eq("id", os.id);
 
       if (statusError) throw statusError;
 
-      // 2. Persistir fotos se houver (tabela corretiva_fotos já existe e é acessível)
+      // 2. Persistir evidências fotográficas (tabela corretiva_fotos)
       if (photoBefore) {
         const { error: photoBeforeErr } = await supabase.from("corretiva_fotos").insert({
           os_id: os.id,
@@ -67,7 +67,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           legenda: "Evidência: Antes",
           enviado_por: userId
         } as any);
-        if (photoBeforeErr) console.warn("Erro ao salvar foto Antes:", photoBeforeErr);
+        if (photoBeforeErr) {
+          console.error("[CorretivaAudit] Erro ao salvar foto Antes no banco:", photoBeforeErr);
+          throw new Error("Erro ao salvar foto de evidência (Antes).");
+        }
       }
       if (photoAfter) {
         const { error: photoAfterErr } = await supabase.from("corretiva_fotos").insert({
@@ -76,10 +79,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           legenda: "Evidência: Depois",
           enviado_por: userId
         } as any);
-        if (photoAfterErr) console.warn("Erro ao salvar foto Depois:", photoAfterErr);
+        if (photoAfterErr) {
+          console.error("[CorretivaAudit] Erro ao salvar foto Depois no banco:", photoAfterErr);
+          throw new Error("Erro ao salvar foto de evidência (Depois).");
+        }
       }
 
-      // 3. Persistir peças se houver
+      // 3. Persistir peças solicitadas (tabela corretiva_pecas)
       if (pecas) {
         const { error: pecasErr } = await supabase.from("corretiva_pecas").insert({
           os_id: os.id,
@@ -90,12 +96,22 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         if (pecasErr) console.warn("Erro ao salvar peças:", pecasErr);
       }
 
-      toast.success("OS concluída com sucesso!");
+      // 4. Sincronizar com cache local (opcional, mas bom para UX offline)
+      try {
+        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        const cached = await getCachedOsList();
+        const updated = cached.map(o => o.id === os.id ? { ...o, status: 'concluida' } : o);
+        await cacheOsList(updated);
+      } catch (e) {
+        console.warn("Erro ao atualizar cache local:", e);
+      }
+
+      toast.success("Chamado concluído com sucesso!");
       onUpdate();
       onClose();
-    } catch (err) {
-      console.error("[CorretivaAudit] Erro ao concluir:", err);
-      toast.error("Erro ao concluir OS.");
+    } catch (err: any) {
+      console.error("[CorretivaAudit] Erro fatal ao finalizar OS:", err);
+      toast.error(err.message || "Erro ao concluir OS no servidor.");
     } finally {
       setLoading(false);
     }
@@ -222,14 +238,29 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          // Removido capture="environment" para permitir escolher entre câmera e galeria
-                          // input.capture = 'environment';
-                          input.onchange = (e: any) => {
+                          input.onchange = async (e: any) => {
                             const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (re) => setPhotoBefore(re.target?.result as string);
-                              reader.readAsDataURL(file);
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            formData.append("module", "corretiva-novo");
+
+                            setLoading(true);
+                            try {
+                              const res = await fetch("/api/imgbb-upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              setPhotoBefore(data.url);
+                              toast.success("Foto 'Antes' carregada!");
+                            } catch (err: any) {
+                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              toast.error(`Falha no upload: ${err.message}`);
+                            } finally {
+                              setLoading(false);
                             }
                           };
                           input.click();
@@ -266,14 +297,29 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           const input = document.createElement('input');
                           input.type = 'file';
                           input.accept = 'image/*';
-                          // Removido capture="environment" para permitir escolher entre câmera e galeria
-                          // input.capture = 'environment';
-                          input.onchange = (e: any) => {
+                          input.onchange = async (e: any) => {
                             const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (re) => setPhotoAfter(re.target?.result as string);
-                              reader.readAsDataURL(file);
+                            if (!file) return;
+
+                            const formData = new FormData();
+                            formData.append("image", file);
+                            formData.append("module", "corretiva-novo");
+
+                            setLoading(true);
+                            try {
+                              const res = await fetch("/api/imgbb-upload", {
+                                method: "POST",
+                                body: formData,
+                              });
+                              const data = await res.json();
+                              if (!res.ok) throw new Error(data.error || "Erro no upload");
+                              setPhotoAfter(data.url);
+                              toast.success("Foto 'Depois' carregada!");
+                            } catch (err: any) {
+                              console.error("[CorretivaPhoto] Erro upload:", err);
+                              toast.error(`Falha no upload: ${err.message}`);
+                            } finally {
+                              setLoading(false);
                             }
                           };
                           input.click();
@@ -295,7 +341,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 variant="outline" 
                 className={cn(
                   "h-12 rounded-xl text-xs font-bold border-white/10 bg-white/5 hover:bg-white/10 text-white",
-                  os?.isAdmin || os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial") ? "col-span-1" : "col-span-2"
+                  "col-span-1"
                 )} 
                 disabled={loading}
                 onClick={() => handleFinish(false)}
