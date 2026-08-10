@@ -80,12 +80,12 @@ function detectCategoria(raw: string): Categoria {
   const n = norm(raw);
   if (!n) return "OUTROS";
   if (n.includes("ABASTEC")) return "ABASTECIMENTO";
-  if (n.includes("CLIMAT") || n.includes("REFRIG") || n.includes("AR CONDIC") || n.includes("AC") || n.includes("FANCOIL") || n.includes("SPLIT"))
+  if (n.includes("CLIMAT") || n.includes("REFRIG") || n.includes("AR CONDIC") || n.includes("AC ") || n.includes("FANCOIL") || n.includes("SPLIT") || n.includes("CHILLER"))
     return "CLIMATIZAÇÃO E REFRIGERAÇÃO";
-  if (n.includes("ELETR") || n.includes("SUBEST") || n.includes("GERADOR") || n.includes("PAINEL")) return "ELÉTRICA";
+  if (n.includes("ELETR") || n.includes("SUBEST") || n.includes("GERADOR") || n.includes("PAINEL") || n.includes("ILUMINACAO") || n.includes("LUMINARIA")) return "ELÉTRICA";
   if (n.includes("JARDIN") || n.includes("PAISAG")) return "JARDINAGEM E PAISAGISMO";
   if (n.includes("LIMPEZ")) return "LIMPEZA";
-  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR") || n.includes("PINTURA") || n.includes("ALVENARIA") || n.includes("TELHADO")) return "CIVIL";
+  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR") || n.includes("PINTURA") || n.includes("ALVENARIA") || n.includes("TELHADO") || n.includes("PORTA") || n.includes("FECHADURA") || n.includes("PISO") || n.includes("PAREDE")) return "CIVIL";
   if (n.includes("OUTRO") || n.includes("DIVERSOS")) return "OUTROS";
   return "OUTROS";
 }
@@ -148,7 +148,7 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
     const catCount = new Map<Categoria, number>();
 
     for (const r of raw) {
-      const os = pick(r, "OS", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO", "ID OS", "NÚMERO OS", "NUMERO OS");
+      const os = pick(r, "OS", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO", "ID OS", "NÚMERO OS", "NUMERO OS", "OS #", "WO");
       if (!os) {
         discartadasVazias++;
         continue;
