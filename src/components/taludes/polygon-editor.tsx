@@ -375,10 +375,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw background pill for the number
         const numText = String(numero);
-        ctx.font = `bold ${32 * lScale}px monospace`;
+        ctx.font = `bold ${48 * lScale}px monospace`;
         const numWidth = ctx.measureText(numText).width;
-        const pillWidth = Math.max(numWidth + 24 * lScale, 50 * lScale);
-        const pillHeight = 46 * lScale;
+        const pillWidth = Math.max(numWidth + 36 * lScale, 70 * lScale);
+        const pillHeight = 64 * lScale;
         const pillX = firstPoint.x - pillWidth / 2;
         const pillY = firstPoint.y - (80 * lScale);
 
