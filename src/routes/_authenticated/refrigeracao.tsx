@@ -694,6 +694,11 @@ function OsDetail({
   });
   const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
 
+  // Observações Técnicas (Histórico Permanente)
+  const [obsTecnica, setObsTecnica] = useState("");
+  const [obsTecnicaOriginal, setObsTecnicaOriginal] = useState("");
+  const [savingObs, setSavingObs] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
