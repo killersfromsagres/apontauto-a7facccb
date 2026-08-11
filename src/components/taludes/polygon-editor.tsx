@@ -426,13 +426,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Color dot
         ctx.fillStyle = m.cor;
         ctx.beginPath();
-        ctx.arc(sPillX + 20 * lScale, sPillY + sPillHeight / 2, 7 * lScale, 0, Math.PI * 2);
+        ctx.arc(sPillX + 30 * lScale, sPillY + sPillHeight / 2, 10 * lScale, 0, Math.PI * 2);
         ctx.fill();
-
+        
         // Status text
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText(statusTextFull, sPillX + 35 * lScale, sPillY + sPillHeight / 2);
+        ctx.fillText(statusTextFull, sPillX + 50 * lScale, sPillY + sPillHeight / 2);
 
         ctx.restore();
       }
