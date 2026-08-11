@@ -690,8 +690,11 @@ export function canSeeMenuItem(
   if (key === "configuracoes") return false;
   if (key === "refrigeracao-gestor") return allowed?.includes("refrigeracao-gestor") ?? false;
   if (key === "corretiva-gestor") return allowed?.includes("corretiva-gestor") ?? false;
+  if (key === "taludes-programacao") return allowed?.includes("taludes-programacao") ?? false;
+  if (key === "taludes-monitoramento") return allowed?.includes("taludes-monitoramento") ?? false;
   if (key === "assets-catalog") return false;
   if (key.startsWith("assets-")) return false;
+
 
   // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
   if (key.startsWith("refrigeracao")) {
