@@ -566,8 +566,11 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
       "abastecimento",
       "agua-execucao",
       "organograma",
+      "taludes-programacao",
+      "taludes-monitoramento",
       "corretiva-concluir-sem-foto-especial",
     ];
+
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
