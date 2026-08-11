@@ -269,7 +269,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     enabled: !!os,
     queryFn: async () => {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
-      const [f, p, pr] = await Promise.all([
+      const [f, p, pr, hist] = await Promise.all([
         supabase
           .from("refrigeracao_fotos")
           .select("id, storage_path, image_url, created_at, legenda")
@@ -282,7 +282,6 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           )
           .eq("os_id", os.id)
           .order("created_at"),
-
         supabase
           .from("refrigeracao_problemas")
           .select("id, descricao, gravidade, created_at")
@@ -299,7 +298,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
         fotos: (f.data ?? []) as Foto[],
         pecas: (p.data ?? []) as Peca[],
         problemas: (pr.data ?? []) as Problema[],
-        historico: h.data?.informacoes_tecnicas || null,
+        historico: hist.data?.informacoes_tecnicas || null,
       };
     },
   });
