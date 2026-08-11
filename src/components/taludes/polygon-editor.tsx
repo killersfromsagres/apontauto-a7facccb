@@ -402,14 +402,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw the secondary label (Status)
         ctx.shadowBlur = 4 * lScale;
-        ctx.font = `bold ${24 * lScale}px sans-serif`;
+        ctx.font = `bold ${32 * lScale}px sans-serif`;
         const dateStr = m.rotulo?.split(' - ')[1] || '';
         const statusTextFull = `${numero} - ${status}${dateStr ? ` - ${dateStr}` : ''}`;
         const statusWidth = ctx.measureText(statusTextFull).width;
-        const sPillWidth = statusWidth + 50 * lScale;
-        const sPillHeight = 36 * lScale;
+        const sPillWidth = statusWidth + 70 * lScale;
+        const sPillHeight = 48 * lScale;
         const sPillX = firstPoint.x - sPillWidth / 2;
-        const sPillY = pillY + pillHeight + (12 * lScale);
+        const sPillY = pillY + pillHeight + (16 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.beginPath();
