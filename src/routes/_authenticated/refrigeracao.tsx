@@ -752,10 +752,10 @@ function OsDetail({
 
       const suggested =
         histRes.data?.patrimonio ||
-        (osRes.data ?? [])
+        ((osRes.data ?? [])
           .map((r: any) => (r.patrimonio ?? "").trim())
           .find((v: string) => v.length > 0) ??
-        "";
+          "");
 
       return {
         suggested,
