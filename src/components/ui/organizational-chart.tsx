@@ -119,28 +119,46 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
     const file = event.target.files?.[0];
     if (!file || !isAdmin) return;
 
+    const loadingToastId = toast.loading("Enviando imagem...");
+
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${memberId}-${Math.random()}.${fileExt}`;
-      const filePath = `org-chart/${fileName}`;
+      // 1. Obter a sessão atual para o token Bearer
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sessão não encontrada. Faça login novamente.");
 
-      const { data, error: uploadError } = await supabase.storage
-        .from('backorder_blobs')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+      // 2. Preparar FormData para a nossa rota de upload autenticada
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('module', 'organograma');
+      formData.append('entity_type', 'organizational_member');
+      formData.append('entity_id', memberId);
+      formData.append('name', `org-chart-${memberId}`);
 
-      if (uploadError) throw uploadError;
+      // 3. Fazer o upload via nossa API proxy (que usa ImgBB internamente e registra no DB)
+      const response = await fetch('/api/imgbb-upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: formData
+      });
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('backorder_blobs')
-        .getPublicUrl(filePath);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Erro no upload: ${response.status}`);
+      }
 
-      updateMemberMutation.mutate({ id: memberId, photo_url: publicUrl });
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro ao fazer upload da imagem.");
+      const { url } = await response.json();
+      
+      // 4. Atualizar o membro com a nova URL da foto
+      updateMemberMutation.mutate({ id: memberId, photo_url: url });
+      toast.success("Foto atualizada com sucesso!", { id: loadingToastId });
+    } catch (error: any) {
+      console.error("[Organograma] Erro no upload:", error);
+      toast.error(error.message || "Erro ao fazer upload da imagem.", { id: loadingToastId });
+    } finally {
+      // Limpar o input para permitir selecionar o mesmo arquivo novamente se necessário
+      event.target.value = '';
     }
   };
 
