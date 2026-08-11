@@ -564,6 +564,7 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
                         await setMenus({ data: { userId: user.id, allowed: next } });
                         qc.invalidateQueries({ queryKey: ["app-users"] });
                       }
+                      // Adiciona animação de fechar se desejar, mas aqui apenas processamos
                     }}
                   />
                   <span className="truncate">{MENU_LABELS[key]}</span>
