@@ -882,6 +882,31 @@ function OsDetail({
     }
   };
 
+  const saveObsTecnica = async () => {
+    if (obsTecnica === obsTecnicaOriginal) return;
+    setSavingObs(true);
+    try {
+      const { error } = await supabase
+        .from("refrigeracao_historico_permanente")
+        .upsert(
+          {
+            ativo: os.ativo,
+            equipamento: os.equipamento,
+            informacoes_tecnicas: obsTecnica.trim(),
+            data_ultima_atualizacao: new Date().toISOString(),
+          },
+          { onConflict: "ativo,equipamento" }
+        );
+      if (error) throw error;
+      setObsTecnicaOriginal(obsTecnica);
+      toast.success("Informações técnicas salvas no histórico permanente.");
+    } catch (e: any) {
+      toast.error("Erro ao salvar histórico: " + e.message);
+    } finally {
+      setSavingObs(false);
+    }
+  };
+
   const onPickFiles = async (files: FileList | null) => {
     if (!files) return;
     const next: Preview[] = [];
