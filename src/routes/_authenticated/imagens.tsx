@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import { useAllowedMenus } from "@/hooks/use-allowed-menus";
 import { withValidSession } from "@/lib/session-guard";
 import {
   inventoryStorageImages,
@@ -49,6 +50,8 @@ function friendlyError(err: unknown, fallback: string): string {
 
 function Page() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
+  const { access } = useAllowedMenus();
+
 
   const inventory = useServerFn(inventoryStorageImages);
   const migrate = useServerFn(migrateStorageImagesBatch);
@@ -187,14 +190,16 @@ function Page() {
             )}
             Listar imagens
           </Button>
-          <Button onClick={runMigration} disabled={busy}>
-            {phase === "migrating" || phase === "cleaning" ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <CloudUpload className="mr-2 h-4 w-4" />
-            )}
-            Listar e Migrar Imagens
-          </Button>
+          {(isAdmin || access?.allowed?.includes("imagens-migrar")) && (
+            <Button onClick={runMigration} disabled={busy}>
+              {phase === "migrating" || phase === "cleaning" ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CloudUpload className="mr-2 h-4 w-4" />
+              )}
+              Listar e Migrar Imagens
+            </Button>
+          )}
         </div>
       }
     >
