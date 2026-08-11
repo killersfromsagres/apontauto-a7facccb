@@ -98,8 +98,11 @@ const MENU_LABELS: Record<MenuKey, string> = {
   backorder: "Backorders (Histórico)",
   "backorder-mensal": "Backorder Mensal",
   taludes: "Demarcação de Taludes",
+  "taludes-programacao": "Programação de Serviços (Taludes)",
+  "taludes-monitoramento": "Monitoramento Climático (Taludes)",
   "reclassificar-equipe": "Encarregados: Reclassificar Equipe Manualmente",
 };
+
 
 function UsuariosPage() {
   const { isAdmin, loading: checking } = useIsAdmin();

@@ -216,7 +216,10 @@ export const MENU_KEYS = [
   "taludes",
   "imagens-migrar",
   "reclassificar-equipe",
+  "taludes-programacao",
+  "taludes-monitoramento",
 ] as const;
+
 export type MenuKey = (typeof MENU_KEYS)[number];
 
 export function loginToEmail(login: string) {
@@ -563,8 +566,11 @@ export const provisionEncarregadosUser = createServerFn({ method: "POST" })
       "abastecimento",
       "agua-execucao",
       "organograma",
+      "taludes-programacao",
+      "taludes-monitoramento",
       "corretiva-concluir-sem-foto-especial",
     ];
+
 
     const { data: list, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,

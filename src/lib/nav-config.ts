@@ -351,8 +351,25 @@ export const sections: MenuSection[] = [
         icon: MapIcon,
         keywords: ["mapa", "polígono", "demarcação", "pt"],
       },
+      {
+        key: "taludes-programacao",
+        title: "Programação de Serviços",
+        short: "Prog. Taludes",
+        url: "/taludes/programacao",
+        icon: CalendarClock,
+        keywords: ["clima", "chuva", "taludes", "programação", "agendamento"],
+      },
+      {
+        key: "taludes-monitoramento",
+        title: "Monitoramento Climático",
+        short: "Clima",
+        url: "/taludes/monitoramento",
+        icon: CloudSun,
+        keywords: ["tempo", "previsão", "alerta", "chuva", "vento"],
+      },
     ],
   },
+
   {
     kind: "group",
     key: "frota-grp",
@@ -606,7 +623,10 @@ const RESTRICTED_KEYS = [
   "refrigeracao",
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
+  "taludes-programacao",
+  "taludes-monitoramento",
 ];
+
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [
@@ -670,8 +690,11 @@ export function canSeeMenuItem(
   if (key === "configuracoes") return false;
   if (key === "refrigeracao-gestor") return allowed?.includes("refrigeracao-gestor") ?? false;
   if (key === "corretiva-gestor") return allowed?.includes("corretiva-gestor") ?? false;
+  if (key === "taludes-programacao") return allowed?.includes("taludes-programacao") ?? false;
+  if (key === "taludes-monitoramento") return allowed?.includes("taludes-monitoramento") ?? false;
   if (key === "assets-catalog") return false;
   if (key.startsWith("assets-")) return false;
+
 
   // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
   if (key.startsWith("refrigeracao")) {
