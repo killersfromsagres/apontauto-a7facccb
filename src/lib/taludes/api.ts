@@ -185,13 +185,29 @@ export const createTaludeMap = createServerFn({ method: "POST" })
   .validator((data: { nome: string; image_url: string; image_width: number; image_height: number }) => data)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-    
-    if (userError) throw userError;
+    let userId: string;
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const authHeader = request?.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
+    if (token) {
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+      if (user) userId = user.id;
+      else {
+        const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+        if (sessionResponse.session?.user) userId = sessionResponse.session.user.id;
+        else throw new Error("Unauthorized: Sessão inválida no servidor.");
+      }
+    } else {
+      const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+      if (sessionResponse.session?.user) userId = sessionResponse.session.user.id;
+      else throw new Error("Unauthorized: Sessão necessária para criar mapas.");
+    }
 
     const insertData: any = {
       ...data,
-      owner_id: userResponse.user?.id
+      owner_id: userId
     };
 
     console.log("Inserting map data:", insertData);
