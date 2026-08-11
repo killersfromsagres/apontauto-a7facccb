@@ -7,14 +7,16 @@ export const Route = createFileRoute("/")({
     if (!data.session) {
       throw redirect({ to: "/auth" });
     }
-    throw redirect({ to: "/dashboard" });
+    // O sistema usa / como dashboard dentro do layout _authenticated
+    // A rota _authenticated.index.tsx processa a renderização do dashboard.
+    return;
   },
   loader: async () => {
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       throw redirect({ to: "/auth" });
     }
-    throw redirect({ to: "/dashboard" });
+    return;
   },
   component: () => null,
 });
