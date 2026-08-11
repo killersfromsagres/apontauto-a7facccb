@@ -54,7 +54,6 @@ type Role = "admin" | "user";
 
 const MENU_LABELS: Record<MenuKey, string> = {
   dashboard: "Menu Inicial (BI)",
-  "avaliacao-chamados": "Avaliação de Chamados",
   "programacao-gps": "Programação GPS",
   "backlog-inteligente": "Backlog Inteligente",
   capacidade: "Capacidade das Equipes",
@@ -68,6 +67,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "corretiva-novo": "Execução de Campo (IA)",
   "corretiva-pecas-status": "Corretiva — Status de Peças",
   "corretiva-historico": "Corretiva — Histórico",
+  "avaliacao-chamados": "Avaliação de Chamados",
   "corretiva-finalizar-sem-foto": "Admin: Finalizar OS sem Foto (Botão)",
   "corretiva-concluir-sem-foto-especial": "Encarregados: Finalizar OS sem Foto",
   "imagens-migrar": "Migrar Imagens (Storage -> ImgBB)",
