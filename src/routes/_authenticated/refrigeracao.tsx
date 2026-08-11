@@ -713,7 +713,7 @@ function OsDetail({
     enabled: !!os.ativo && !!os.equipamento,
     staleTime: 60_000,
     queryFn: async () => {
-      const [osRes, pecRes, probRes] = await Promise.all([
+      const [osRes, pecRes, probRes, histRes] = await Promise.all([
         supabase
           .from("refrigeracao_os")
           .select("id, numero_os, patrimonio, status, fim")
@@ -742,16 +742,27 @@ function OsDetail({
           .neq("os_id", os.id)
           .order("created_at", { ascending: false })
           .limit(10),
+        supabase
+          .from("refrigeracao_historico_permanente")
+          .select("patrimonio, informacoes_tecnicas")
+          .eq("ativo", os.ativo)
+          .eq("equipamento", os.equipamento)
+          .maybeSingle(),
       ]);
+
       const suggested =
+        histRes.data?.patrimonio ||
         (osRes.data ?? [])
           .map((r: any) => (r.patrimonio ?? "").trim())
-          .find((v: string) => v.length > 0) ?? "";
+          .find((v: string) => v.length > 0) ??
+        "";
+
       return {
         suggested,
         priorOs: (osRes.data ?? []) as any[],
         pecas: (pecRes.data ?? []) as any[],
         problemas: (probRes.data ?? []) as any[],
+        historicoPermanente: histRes.data,
       };
     },
   });
