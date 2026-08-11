@@ -65,6 +65,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [statusText, setStatusText] = useState('Em Execução');
   const [lineThickness, setLineThickness] = useState(4);
   const [legendScale, setLegendScale] = useState(1);
+  const [activeLegendScale, setActiveLegendScale] = useState(1);
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -199,9 +200,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     if (e.button !== 0 || isPanning.current) return;
     
-    // When clicking a marcacao, ensure we load its scale into the toolbar state
+    // Selection logic
     const coords = getMapCoords(e);
     
+    // Check if we clicked inside any polygon
+    for (const m of localMarcacoes) {
+      if (isPointInPolygon(coords, m.polygon)) {
+        setSelectedMarcacaoId(m.id);
+        setLineThickness(m.espessura_linha || 4);
+        setActiveLegendScale(m.tamanho_legenda || 1);
+        setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setCurrentColor(m.cor);
+        setStatusText(m.rotulo?.split(' - ')[0] || 'Em Execução');
+        return;
+      }
+    }
+
     if (mode === 'draw') {
       // Check for closure
       if (currentPoints.length > 2) {
@@ -215,8 +229,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       }
       setCurrentPoints(prev => [...prev, coords]);
     } else if (mode === 'view') {
-      // Selection logic could go here if needed
+      setSelectedMarcacaoId(null);
     }
+  };
+
+  // Helper to check point in polygon
+  const isPointInPolygon = (point: Point, vs: Point[]) => {
+    let x = point.x, y = point.y;
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x, yi = vs[i].y;
+        let xj = vs[j].x, yj = vs[j].y;
+        let intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
   };
 
   const handleFinishDrawing = async () => {
@@ -335,16 +363,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const firstPoint = m.polygon[0];
         const status = m.rotulo?.split(' - ')[0] || '';
         const numero = m.numero || '#';
-        const labelText = `${numero} - ${status}`;
         const lScale = m.tamanho_legenda || 1;
 
         ctx.save();
         
         // Settings for shadow/glow
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 8 * lScale;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
+        ctx.shadowOffsetY = 4 * lScale;
 
         // Draw background pill for the number
         const numText = String(numero);
@@ -357,10 +384,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10 * lScale);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10 * lScale);
+        } else {
+          ctx.rect(pillX, pillY, pillWidth, pillHeight);
+        }
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * lScale;
         ctx.stroke();
 
         // Draw the number text
@@ -372,19 +403,24 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw the secondary label (Status)
         ctx.shadowBlur = 4 * lScale;
         ctx.font = `bold ${24 * lScale}px sans-serif`;
-        const statusTextFull = `${numero} - ${status} - ${m.rotulo?.split(' - ')[1] || ''}`;
+        const dateStr = m.rotulo?.split(' - ')[1] || '';
+        const statusTextFull = `${numero} - ${status}${dateStr ? ` - ${dateStr}` : ''}`;
         const statusWidth = ctx.measureText(statusTextFull).width;
-        const sPillWidth = statusWidth + 40 * lScale;
+        const sPillWidth = statusWidth + 50 * lScale;
         const sPillHeight = 36 * lScale;
         const sPillX = firstPoint.x - sPillWidth / 2;
         const sPillY = pillY + pillHeight + (12 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.beginPath();
-        ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 18);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 18 * lScale);
+        } else {
+          ctx.rect(sPillX, sPillY, sPillWidth, sPillHeight);
+        }
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1 * lScale;
         ctx.stroke();
 
         // Color dot
@@ -541,12 +577,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 min="0.5" 
                 max="4" 
                 step="0.1"
-                value={legendScale}
+                value={selectedMarcacaoId ? activeLegendScale : legendScale}
                 onChange={async (e) => {
                   const val = parseFloat(e.target.value);
-                  setLegendScale(val);
-                  
                   if (selectedMarcacaoId) {
+                    setActiveLegendScale(val);
                     const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                     if (target) {
                       try {
@@ -555,11 +590,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         console.error("Erro ao atualizar tamanho da legenda:", err);
                       }
                     }
+                  } else {
+                    setLegendScale(val);
                   }
                 }}
                 className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
-              <span className="text-[9px] font-mono text-white/40 w-4">{legendScale.toFixed(1)}x</span>
+              <span className="text-[9px] font-mono text-white/40 w-4">{(selectedMarcacaoId ? activeLegendScale : legendScale).toFixed(1)}x</span>
             </div>
 
             {/* Ultra Realist Glass Date Picker */}
@@ -710,7 +747,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       <div 
                         className="flex flex-col items-center gap-1.5 transform"
                         style={{ 
-                          transform: `translate(-50%, -100%) translateY(-10px) scale(${m.tamanho_legenda || 1})`,
+                          transform: `translate(-50%, -100%) translateY(-10px) scale(${legendScale})`,
                           transformOrigin: 'bottom center'
                         }}
                       >
@@ -741,7 +778,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 )}
                 
                 {/* Vertices (only in edit mode) */}
-                {mode === 'edit' && m.polygon.map((p, idx) => (
+                {mode === 'edit' && m.id === selectedMarcacaoId && m.polygon.map((p, idx) => (
                   <circle
                     key={idx}
                     cx={p.x}
