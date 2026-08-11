@@ -396,7 +396,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Status text
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText(statusTextFull, sPillX + 35, sPillY + sPillHeight / 2);
+        ctx.fillText(statusTextFull, sPillX + 35 * lScale, sPillY + sPillHeight / 2);
 
         ctx.restore();
       }
