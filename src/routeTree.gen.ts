@@ -26,6 +26,7 @@ import { Route as AuthenticatedTaludesRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSolicitacaoMateriaisRouteImport } from './routes/_authenticated/solicitacao-materiais'
 import { Route as AuthenticatedSegurancaTrabalhoRouteImport } from './routes/_authenticated/seguranca-trabalho'
 import { Route as AuthenticatedRefrigeracaoPecasStatusRouteImport } from './routes/_authenticated/refrigeracao-pecas-status'
+import { Route as AuthenticatedRefrigeracaoHistoricoPermanenteRouteImport } from './routes/_authenticated/refrigeracao-historico-permanente'
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
@@ -180,6 +181,12 @@ const AuthenticatedRefrigeracaoPecasStatusRoute =
   AuthenticatedRefrigeracaoPecasStatusRouteImport.update({
     id: '/refrigeracao-pecas-status',
     path: '/refrigeracao-pecas-status',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRefrigeracaoHistoricoPermanenteRoute =
+  AuthenticatedRefrigeracaoHistoricoPermanenteRouteImport.update({
+    id: '/refrigeracao-historico-permanente',
+    path: '/refrigeracao-historico-permanente',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedRefrigeracaoHistoricoRoute =
@@ -616,6 +623,7 @@ export interface FileRoutesByFullPath {
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
+  '/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
@@ -701,6 +709,7 @@ export interface FileRoutesByTo {
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
+  '/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
@@ -787,6 +796,7 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
+  '/_authenticated/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
@@ -874,6 +884,7 @@ export interface FileRouteTypes {
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
+    | '/refrigeracao-historico-permanente'
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/solicitacao-materiais'
@@ -959,6 +970,7 @@ export interface FileRouteTypes {
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
+    | '/refrigeracao-historico-permanente'
     | '/refrigeracao-pecas-status'
     | '/seguranca-trabalho'
     | '/solicitacao-materiais'
@@ -1044,6 +1056,7 @@ export interface FileRouteTypes {
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
+    | '/_authenticated/refrigeracao-historico-permanente'
     | '/_authenticated/refrigeracao-pecas-status'
     | '/_authenticated/seguranca-trabalho'
     | '/_authenticated/solicitacao-materiais'
@@ -1228,6 +1241,13 @@ declare module '@tanstack/react-router' {
       path: '/refrigeracao-pecas-status'
       fullPath: '/refrigeracao-pecas-status'
       preLoaderRoute: typeof AuthenticatedRefrigeracaoPecasStatusRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/refrigeracao-historico-permanente': {
+      id: '/_authenticated/refrigeracao-historico-permanente'
+      path: '/refrigeracao-historico-permanente'
+      fullPath: '/refrigeracao-historico-permanente'
+      preLoaderRoute: typeof AuthenticatedRefrigeracaoHistoricoPermanenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/refrigeracao-historico': {
@@ -1805,6 +1825,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
+  AuthenticatedRefrigeracaoHistoricoPermanenteRoute: typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedSolicitacaoMateriaisRoute: typeof AuthenticatedSolicitacaoMateriaisRoute
@@ -1860,6 +1881,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:
     AuthenticatedRefrigeracaoHistoricoRoute,
+  AuthenticatedRefrigeracaoHistoricoPermanenteRoute:
+    AuthenticatedRefrigeracaoHistoricoPermanenteRoute,
   AuthenticatedRefrigeracaoPecasStatusRoute:
     AuthenticatedRefrigeracaoPecasStatusRoute,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
@@ -1908,13 +1931,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
