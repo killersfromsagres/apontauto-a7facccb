@@ -351,8 +351,25 @@ export const sections: MenuSection[] = [
         icon: MapIcon,
         keywords: ["mapa", "polígono", "demarcação", "pt"],
       },
+      {
+        key: "taludes-programacao",
+        title: "Programação de Serviços",
+        short: "Prog. Taludes",
+        url: "/taludes/programacao",
+        icon: CalendarClock,
+        keywords: ["clima", "chuva", "taludes", "programação", "agendamento"],
+      },
+      {
+        key: "taludes-monitoramento",
+        title: "Monitoramento Climático",
+        short: "Clima",
+        url: "/taludes/monitoramento",
+        icon: CloudSun,
+        keywords: ["tempo", "previsão", "alerta", "chuva", "vento"],
+      },
     ],
   },
+
   {
     kind: "group",
     key: "frota-grp",
@@ -606,7 +623,10 @@ const RESTRICTED_KEYS = [
   "refrigeracao",
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
+  "taludes-programacao",
+  "taludes-monitoramento",
 ];
+
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [

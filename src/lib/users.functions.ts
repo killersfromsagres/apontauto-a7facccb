@@ -216,7 +216,10 @@ export const MENU_KEYS = [
   "taludes",
   "imagens-migrar",
   "reclassificar-equipe",
+  "taludes-programacao",
+  "taludes-monitoramento",
 ] as const;
+
 export type MenuKey = (typeof MENU_KEYS)[number];
 
 export function loginToEmail(login: string) {
