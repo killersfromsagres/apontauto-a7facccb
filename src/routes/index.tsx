@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
 import { CentralInteligenciaView } from "@/features/inteligencia-pcm/components/central-inteligencia-view";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
