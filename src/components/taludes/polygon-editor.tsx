@@ -380,7 +380,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const pillWidth = Math.max(numWidth + 36 * lScale, 70 * lScale);
         const pillHeight = 64 * lScale;
         const pillX = firstPoint.x - pillWidth / 2;
-        const pillY = firstPoint.y - (80 * lScale);
+        const pillY = firstPoint.y - (110 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.beginPath();
