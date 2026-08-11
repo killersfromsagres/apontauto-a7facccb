@@ -1154,6 +1154,33 @@ function OsDetail({
           </GlassCard>
         )}
 
+      <GlassCard className="p-4 border-primary/20 bg-primary/5">
+        <SectionTitle icon={RefreshCw} label="Informações Técnicas Permanentes" />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Estas informações são vinculadas ao <strong>Ativo/Equipamento</strong> e serão preenchidas automaticamente em OS futuras.
+        </p>
+        <div className="mt-3 space-y-2">
+          <Textarea
+            value={obsTecnica}
+            onChange={(e) => setObsTecnica(e.target.value)}
+            placeholder="Ex.: Modelo, BTUs, Gás refrigerante, histórico de vazamentos..."
+            className="min-h-[100px] text-sm"
+          />
+          <Button
+            onClick={saveObsTecnica}
+            disabled={savingObs || obsTecnica === obsTecnicaOriginal}
+            className="w-full sm:w-auto h-11"
+          >
+            {savingObs ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Atualizar Histórico Permanente
+          </Button>
+        </div>
+      </GlassCard>
+
       <GlassCard className="p-4">
         <SectionTitle icon={Package} label="Patrimônio (opcional)" />
         <p className="mt-1 text-xs text-muted-foreground">
