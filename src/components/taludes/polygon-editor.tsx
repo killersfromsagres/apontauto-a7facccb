@@ -674,9 +674,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     >
                       {/* Professional Number Badge */}
                       <div 
-                        className="flex items-center justify-center min-w-[32px] h-8 px-2.5 rounded-lg bg-black/80 backdrop-blur-xl border border-white/20 text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
+                        className="flex items-center justify-center min-w-[40px] h-10 px-3 rounded-xl bg-black/90 backdrop-blur-xl border border-white/30 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
                       >
-                        <span className="text-[13px] font-bold font-mono tracking-tight leading-none">{m.numero || '#'}</span>
+                        <span className="text-[16px] font-black font-mono tracking-tight leading-none">{m.numero || '#'}</span>
                       </div>
 
                       {/* Legend Content (Numeric Legend - Status) */}
