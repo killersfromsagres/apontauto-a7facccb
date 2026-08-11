@@ -5591,6 +5591,7 @@ export type Database = {
           rotulo: string | null
           servico_atual: string | null
           setor: string | null
+          tamanho_legenda: number | null
           tipo_solo: string | null
           ultima_inspecao: string | null
           updated_at: string
@@ -5624,6 +5625,7 @@ export type Database = {
           rotulo?: string | null
           servico_atual?: string | null
           setor?: string | null
+          tamanho_legenda?: number | null
           tipo_solo?: string | null
           ultima_inspecao?: string | null
           updated_at?: string
@@ -5657,6 +5659,7 @@ export type Database = {
           rotulo?: string | null
           servico_atual?: string | null
           setor?: string | null
+          tamanho_legenda?: number | null
           tipo_solo?: string | null
           ultima_inspecao?: string | null
           updated_at?: string
