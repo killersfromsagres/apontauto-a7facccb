@@ -576,28 +576,39 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           >
             {/* Defined Areas */}
             {localMarcacoes.map((m) => (
-              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={() => setSelectedMarcacaoId(m.id)}>
+              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedMarcacaoId(m.id); }}>
                 <polygon
                   points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                   fill={m.cor}
                   fillOpacity={selectedMarcacaoId === m.id ? 0.4 : 0.25}
                   stroke={m.cor}
-                  strokeWidth={(m.espessura_linha || 3) / zoom}
-                  className="transition-opacity duration-200"
+                  strokeWidth={(m.espessura_linha || 4) / zoom}
+                  strokeDasharray={m.bloqueado ? "5,5" : "none"}
                 />
                 
-                {/* Status Label on Map */}
-                {m.rotulo && (
-                  <text
+                {/* Visual Label with Date & Status */}
+                {m.polygon.length > 0 && (
+                  <foreignObject
                     x={m.polygon[0].x}
-                    y={m.polygon[0].y - (10 / zoom)}
-                    fill="white"
-                    fontSize={12 / zoom}
-                    fontWeight="600"
-                    className="select-none pointer-events-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    y={m.polygon[0].y - 30 / zoom}
+                    width={200 / zoom}
+                    height={40 / zoom}
+                    className="overflow-visible pointer-events-none"
                   >
-                    {m.rotulo}
-                  </text>
+                    <div 
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white whitespace-nowrap shadow-xl transform origin-left"
+                      style={{ 
+                        fontSize: `${Math.max(10 / zoom, 8)}px`,
+                        transform: `scale(${1/zoom})`,
+                        width: 'fit-content'
+                      }}
+                    >
+                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: m.cor }} />
+                      <span className="font-bold opacity-90">{m.nome}</span>
+                      <span className="opacity-60">|</span>
+                      <span className="font-medium">{m.rotulo}</span>
+                    </div>
+                  </foreignObject>
                 )}
                 
                 {/* Vertices (only in edit mode) */}
