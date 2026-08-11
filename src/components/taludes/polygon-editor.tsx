@@ -64,6 +64,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusText, setStatusText] = useState('Em Execução');
   const [lineThickness, setLineThickness] = useState(4);
+  const [legendScale, setLegendScale] = useState(1);
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -198,6 +199,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     if (e.button !== 0 || isPanning.current) return;
     
+    // When clicking a marcacao, ensure we load its scale into the toolbar state
     const coords = getMapCoords(e);
     
     if (mode === 'draw') {
@@ -231,7 +233,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       opacidade: 0.3,
       visivel: true,
       bloqueado: false,
-      espessura_linha: lineThickness
+      espessura_linha: lineThickness,
+      tamanho_legenda: legendScale
     };
 
     try {
@@ -333,6 +336,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const status = m.rotulo?.split(' - ')[0] || '';
         const numero = m.numero || '#';
         const labelText = `${numero} - ${status}`;
+        const lScale = m.tamanho_legenda || 1;
 
         ctx.save();
         
@@ -344,16 +348,16 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw background pill for the number
         const numText = String(numero);
-        ctx.font = 'bold 32px monospace';
+        ctx.font = `bold ${32 * lScale}px monospace`;
         const numWidth = ctx.measureText(numText).width;
-        const pillWidth = Math.max(numWidth + 24, 50);
-        const pillHeight = 46;
+        const pillWidth = Math.max(numWidth + 24 * lScale, 50 * lScale);
+        const pillHeight = 46 * lScale;
         const pillX = firstPoint.x - pillWidth / 2;
-        const pillY = firstPoint.y - 80;
+        const pillY = firstPoint.y - (80 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10);
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10 * lScale);
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
         ctx.lineWidth = 2;
@@ -366,14 +370,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.fillText(numText, firstPoint.x, pillY + pillHeight / 2);
 
         // Draw the secondary label (Status)
-        ctx.shadowBlur = 4;
-        ctx.font = 'bold 24px sans-serif';
-        const statusTextFull = `${numero} - ${status}`;
+        ctx.shadowBlur = 4 * lScale;
+        ctx.font = `bold ${24 * lScale}px sans-serif`;
+        const statusTextFull = `${numero} - ${status} - ${m.rotulo?.split(' - ')[1] || ''}`;
         const statusWidth = ctx.measureText(statusTextFull).width;
-        const sPillWidth = statusWidth + 40;
-        const sPillHeight = 36;
+        const sPillWidth = statusWidth + 40 * lScale;
+        const sPillHeight = 36 * lScale;
         const sPillX = firstPoint.x - sPillWidth / 2;
-        const sPillY = pillY + pillHeight + 12;
+        const sPillY = pillY + pillHeight + (12 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.beginPath();
@@ -386,13 +390,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Color dot
         ctx.fillStyle = m.cor;
         ctx.beginPath();
-        ctx.arc(sPillX + 20, sPillY + sPillHeight / 2, 7, 0, Math.PI * 2);
+        ctx.arc(sPillX + 20 * lScale, sPillY + sPillHeight / 2, 7 * lScale, 0, Math.PI * 2);
         ctx.fill();
 
         // Status text
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText(statusTextFull, sPillX + 35, sPillY + sPillHeight / 2);
+        ctx.fillText(statusTextFull, sPillX + 35 * lScale, sPillY + sPillHeight / 2);
 
         ctx.restore();
       }
@@ -529,6 +533,35 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               <span className="text-[9px] font-mono text-white/40 w-4">{lineThickness}px</span>
             </div>
 
+            {/* Legend Scale Control */}
+            <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-lg border border-white/5 px-2">
+              <span className="text-[10px] font-bold text-white/50">A</span>
+              <input 
+                type="range" 
+                min="0.5" 
+                max="4" 
+                step="0.1"
+                value={legendScale}
+                onChange={async (e) => {
+                  const val = parseFloat(e.target.value);
+                  setLegendScale(val);
+                  
+                  if (selectedMarcacaoId) {
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) {
+                      try {
+                        await onSave({ ...target, tamanho_legenda: val });
+                      } catch (err) {
+                        console.error("Erro ao atualizar tamanho da legenda:", err);
+                      }
+                    }
+                  }
+                }}
+                className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <span className="text-[9px] font-mono text-white/40 w-4">{legendScale.toFixed(1)}x</span>
+            </div>
+
             {/* Ultra Realist Glass Date Picker */}
             <div className="relative group/date">
               <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]" />
@@ -647,7 +680,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           >
             {/* Defined Areas */}
             {localMarcacoes.map((m) => (
-              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedMarcacaoId(m.id); }}>
+              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={(e) => { 
+                e.stopPropagation(); 
+                setSelectedMarcacaoId(m.id);
+                setLineThickness(m.espessura_linha || 4);
+                setLegendScale(m.tamanho_legenda || 1);
+                setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+                setCurrentColor(m.cor);
+                setStatusText(m.rotulo?.split(' - ')[0] || 'Em Execução');
+              }}>
                 <polygon
                   points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                   fill={m.cor}
@@ -666,32 +707,36 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     height={1}
                     className="overflow-visible pointer-events-none"
                   >
-                    <div 
-                      className="flex flex-col items-center gap-1.5 transform"
-                      style={{ 
-                        transform: `translate(-50%, -100%) translateY(-10px)`,
-                      }}
-                    >
-                      {/* Professional Number Badge */}
                       <div 
-                        className="flex items-center justify-center min-w-[40px] h-10 px-3 rounded-xl bg-black/90 backdrop-blur-xl border border-white/30 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
-                      >
-                        <span className="text-[16px] font-black font-mono tracking-tight leading-none">{m.numero || '#'}</span>
-                      </div>
-
-                      {/* Legend Content (Numeric Legend - Status) */}
-                      <div 
-                        className="flex items-center gap-2 px-3.5 py-1.8 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl whitespace-nowrap"
+                        className="flex flex-col items-center gap-1.5 transform"
                         style={{ 
-                          fontSize: `14px`,
+                          transform: `translate(-50%, -100%) translateY(-10px) scale(${m.tamanho_legenda || 1})`,
+                          transformOrigin: 'bottom center'
                         }}
                       >
-                        <div className="w-3 h-3 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.3)]" style={{ backgroundColor: m.cor }} />
-                        <span className="font-black opacity-100">{m.numero || 'T'}</span>
-                        <span className="opacity-50 font-light">-</span>
-                        <span className="font-bold opacity-100">{m.rotulo?.split(' - ')[0]}</span>
+                        {/* Premium Number Badge */}
+                        <div 
+                          className="flex items-center justify-center min-w-[40px] h-10 px-3 rounded-xl bg-black/90 backdrop-blur-xl border border-white/30 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
+                        >
+                          <span className="text-[16px] font-black font-mono tracking-tight leading-none">{m.numero || '#'}</span>
+                        </div>
+
+                        {/* Combined Information Badge */}
+                        <div 
+                          className="flex items-center gap-2 px-3.5 py-1.8 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl whitespace-nowrap min-h-[36px]"
+                          style={{ 
+                            fontSize: `14px`,
+                          }}
+                        >
+                          <div className="w-3 h-3 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.3)]" style={{ backgroundColor: m.cor }} />
+                          <span className="font-black opacity-100">{m.numero || 'T'}</span>
+                          <span className="opacity-50 font-light">-</span>
+                          <div className="flex flex-col items-start leading-none gap-0.5">
+                            <span className="font-bold opacity-100 text-[12px]">{m.rotulo?.split(' - ')[0]}</span>
+                            <span className="text-[10px] opacity-60 font-medium">{m.rotulo?.split(' - ')[1]}</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
                   </foreignObject>
                 )}
                 
