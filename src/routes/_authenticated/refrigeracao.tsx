@@ -767,14 +767,19 @@ function OsDetail({
     },
   });
 
-  // Auto-preenche patrimônio a partir de OS anteriores do mesmo Ativo+Equipamento
+  // Auto-preenche patrimonio e informações técnicas a partir do histórico permanente
   useEffect(() => {
     const s = (priorInfo?.suggested ?? "").trim();
-    if (!s) return;
-    if ((os.patrimonio ?? "").trim()) return;
-    if (patrim.trim()) return;
-    setPatrim(s);
-  }, [priorInfo?.suggested, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (s && !(os.patrimonio ?? "").trim() && !patrim.trim()) {
+      setPatrim(s);
+    }
+    
+    const info = priorInfo?.historicoPermanente?.informacoes_tecnicas;
+    if (info && !obsTecnica) {
+      setObsTecnica(info);
+      setObsTecnicaOriginal(info);
+    }
+  }, [priorInfo?.suggested, priorInfo?.historicoPermanente, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
