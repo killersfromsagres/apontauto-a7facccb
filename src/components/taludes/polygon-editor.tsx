@@ -65,6 +65,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [statusText, setStatusText] = useState('Em Execução');
   const [lineThickness, setLineThickness] = useState(4);
   const [legendScale, setLegendScale] = useState(1);
+  const [activeLegendScale, setActiveLegendScale] = useState(1);
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -199,9 +200,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     if (e.button !== 0 || isPanning.current) return;
     
-    // When clicking a marcacao, ensure we load its scale into the toolbar state
+    // Selection logic
     const coords = getMapCoords(e);
     
+    // Check if we clicked inside any polygon
+    for (const m of localMarcacoes) {
+      if (isPointInPolygon(coords, m.polygon)) {
+        setSelectedMarcacaoId(m.id);
+        setLineThickness(m.espessura_linha || 4);
+        setActiveLegendScale(m.tamanho_legenda || 1);
+        setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setCurrentColor(m.cor);
+        setStatusText(m.rotulo?.split(' - ')[0] || 'Em Execução');
+        return;
+      }
+    }
+
     if (mode === 'draw') {
       // Check for closure
       if (currentPoints.length > 2) {
@@ -215,8 +229,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       }
       setCurrentPoints(prev => [...prev, coords]);
     } else if (mode === 'view') {
-      // Selection logic could go here if needed
+      setSelectedMarcacaoId(null);
     }
+  };
+
+  // Helper to check point in polygon
+  const isPointInPolygon = (point: Point, vs: Point[]) => {
+    let x = point.x, y = point.y;
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        let xi = vs[i].x, yi = vs[i].y;
+        let xj = vs[j].x, yj = vs[j].y;
+        let intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
   };
 
   const handleFinishDrawing = async () => {
@@ -567,7 +595,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 }}
                 className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
               />
-              <span className="text-[9px] font-mono text-white/40 w-4">{legendScale.toFixed(1)}x</span>
+              <span className="text-[9px] font-mono text-white/40 w-4">{(selectedMarcacaoId ? activeLegendScale : legendScale).toFixed(1)}x</span>
             </div>
 
             {/* Ultra Realist Glass Date Picker */}
