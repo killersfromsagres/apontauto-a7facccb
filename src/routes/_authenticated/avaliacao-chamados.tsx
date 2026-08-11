@@ -47,7 +47,7 @@ function AvaliacaoChamadosPage() {
   const [selectedSolicitante, setSelectedSolicitante] = useState<string | null>(null);
   const [selectedOsIds, setSelectedOsIds] = useState<string[]>([]);
   const [isComposing, setIsComposing] = useState(false);
-  const [emailData, setEmailData] = useState<{ assunt: string; corpo: string; destinatario: string } | null>(null);
+  const [emailData, setEmailData] = useState<{ assunto: string; corpo: string; destinatario: string } | null>(null);
 
   const { data: osList, isLoading: loadingOs } = useQuery({
     queryKey: ["os-concluidas-avaliacao"],
@@ -71,7 +71,7 @@ function AvaliacaoChamadosPage() {
 
     return Object.entries(groups).map(([nome, items]) => ({
       nome,
-      email: items[0].email_solicitante || "N/A",
+      email: items[0].email_solicitante || items[0].solicitante_email || "N/A",
       osCount: items.length,
       items,
       lastDate: items[0].data_criacao
@@ -101,9 +101,9 @@ function AvaliacaoChamadosPage() {
     try {
       const res = await gerarIAFn({ data: { solicitante: nome, osList: selectedItems } });
       setEmailData({
-        assunt: res.assunto,
+        assunto: res.assunto,
         corpo: res.corpo,
-        destinatario: selectedItems[0].email_solicitante || ""
+        destinatario: selectedItems[0].email_solicitante || selectedItems[0].solicitante_email || ""
       });
       setIsComposing(true);
       toast.success("E-mail gerado com sucesso!", { id: tid });
@@ -121,7 +121,7 @@ function AvaliacaoChamadosPage() {
           os_ids: selectedOsIds,
           solicitante: selectedSolicitante,
           email_destinatario: emailData.destinatario,
-          assunto: emailData.assunt,
+          assunto: emailData.assunto,
           corpo_email: emailData.corpo,
           status: "Enviado",
           enviado_em: new Date().toISOString()
@@ -313,8 +313,8 @@ function AvaliacaoChamadosPage() {
                       <div className="space-y-1.5">
                         <label className="text-[10px] uppercase font-bold text-muted-foreground ml-1">Assunto</label>
                         <Input 
-                          value={emailData.assunt} 
-                          onChange={e => setEmailData({...emailData, assunt: e.target.value})}
+                          value={emailData.assunto} 
+                          onChange={e => setEmailData({...emailData, assunto: e.target.value})}
                           className="bg-white/5 border-white/10 font-bold text-primary-glow"
                         />
                       </div>
