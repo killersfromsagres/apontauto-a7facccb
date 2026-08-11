@@ -205,6 +205,13 @@ export const sections: MenuSection[] = [
         url: "/refrigeracao-historico",
         icon: ScrollText,
       },
+      {
+        key: "refrigeracao-historico-permanente",
+        title: "Histórico Permanente",
+        short: "Permanente",
+        url: "/refrigeracao-historico-permanente",
+        icon: Database,
+      },
     ],
   },
   {
