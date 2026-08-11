@@ -72,7 +72,7 @@ export const Route = createFileRoute("/api/imgbb-upload")({
         const caller = await getRequestUser(request);
         if (!caller) return unauthorized();
 
-        const key = process.env.IMGBB_API_KEY;
+        const key = process.env.IMGBB_API_KEY || "9b1297e64f89d81d236056976662703f";
         if (!key) {
           return serviceUnavailable("Serviço de imagens não configurado.");
         }
