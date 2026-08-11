@@ -50,7 +50,7 @@ function friendlyError(err: unknown, fallback: string): string {
 
 function Page() {
   const { isAdmin, loading: adminLoading } = useIsAdmin();
-  const { access } = useAllowedMenus();
+  const { allowed: allowedMenus } = useAllowedMenus();
 
 
 
@@ -191,7 +191,7 @@ function Page() {
             )}
             Listar imagens
           </Button>
-          {(isAdmin || access?.allowed?.includes("imagens-migrar")) && (
+          {(isAdmin || allowedMenus?.includes("imagens-migrar")) && (
             <Button onClick={runMigration} disabled={busy}>
               {phase === "migrating" || phase === "cleaning" ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
