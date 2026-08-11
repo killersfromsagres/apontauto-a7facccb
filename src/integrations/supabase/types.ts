@@ -4769,6 +4769,36 @@ export type Database = {
           },
         ]
       }
+      refrigeracao_historico_permanente: {
+        Row: {
+          ativo: string
+          data_ultima_atualizacao: string | null
+          equipamento: string
+          id: string
+          informacoes_tecnicas: string | null
+          patrimonio: string | null
+          ultima_os_concluida: string | null
+        }
+        Insert: {
+          ativo: string
+          data_ultima_atualizacao?: string | null
+          equipamento: string
+          id?: string
+          informacoes_tecnicas?: string | null
+          patrimonio?: string | null
+          ultima_os_concluida?: string | null
+        }
+        Update: {
+          ativo?: string
+          data_ultima_atualizacao?: string | null
+          equipamento?: string
+          id?: string
+          informacoes_tecnicas?: string | null
+          patrimonio?: string | null
+          ultima_os_concluida?: string | null
+        }
+        Relationships: []
+      }
       refrigeracao_os: {
         Row: {
           andar: string | null
