@@ -18,6 +18,7 @@ export interface TaludeMarcacao {
   bloqueado: boolean;
   visivel: boolean;
   espessura_linha?: number;
+  numero?: number;
 }
 
 export interface TaludeMap {
