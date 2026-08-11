@@ -1,0 +1,1 @@
+ALTER TABLE public.talude_marcacoes ADD COLUMN IF NOT EXISTS tamanho_legenda FLOAT DEFAULT 1;
