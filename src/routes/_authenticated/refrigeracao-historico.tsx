@@ -288,11 +288,18 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           .select("id, descricao, gravidade, created_at")
           .eq("os_id", os.id)
           .order("created_at"),
+        supabase
+          .from("refrigeracao_historico_permanente")
+          .select("informacoes_tecnicas")
+          .eq("ativo", os.ativo)
+          .eq("equipamento", os.equipamento)
+          .maybeSingle(),
       ]);
       return {
         fotos: (f.data ?? []) as Foto[],
         pecas: (p.data ?? []) as Peca[],
         problemas: (pr.data ?? []) as Problema[],
+        historico: h.data?.informacoes_tecnicas || null,
       };
     },
   });
