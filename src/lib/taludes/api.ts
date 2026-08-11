@@ -82,15 +82,23 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
         userId = user.id;
       } else {
         console.error("Token inválido no getUser:", userError);
-        throw new Error("Unauthorized: Sessão inválida ou expirada no servidor.");
+        // Fallback para getSession se o token do header falhar (middleware pode ter injetado algo inválido)
+        const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+        if (sessionResponse.session?.user) {
+          userId = sessionResponse.session.user.id;
+        } else {
+          throw new Error("Unauthorized: Sessão inválida ou expirada no servidor.");
+        }
       }
     } else {
-      // Fallback para getSession se o token não estiver no header
+      // Fallback para getSession se o token não estiver no header (ex: chamadas diretas ou falha de middleware)
       const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+      
       if (sessionResponse.session?.user) {
         userId = sessionResponse.session.user.id;
       } else {
-        console.error("Nenhum token ou sessão encontrada nos headers/contexto.");
+        // Log headers for debugging in the sandbox
+        console.error("Auth failed. No user in getUser() or getSession(). Headers:", request?.headers);
         throw new Error("Unauthorized: Sessão inválida ou expirada. Por favor, faça login novamente.");
       }
     }
