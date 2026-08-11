@@ -382,6 +382,17 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
               </div>
             </section>
 
+            {data?.historico && (
+              <section className="min-w-0 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-primary">
+                  <Package className="h-4 w-4" /> Informações Técnicas (Histórico Permanente)
+                </h4>
+                <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
+                  {data.historico}
+                </p>
+              </section>
+            )}
+
             <section>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h4 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
