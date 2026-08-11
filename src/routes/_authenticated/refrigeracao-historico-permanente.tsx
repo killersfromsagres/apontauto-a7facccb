@@ -1,13 +1,17 @@
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Search, Database, Loader2, Info, ArrowLeft, History } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Search, Database, Loader2, Info, ArrowLeft, History, RefreshCw } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { recuperarHistoricoRefrigeracao } from "@/lib/refrigeracao/recovery.functions";
+import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-historico-permanente")({
   component: HistoricoPermanentePage,
@@ -23,6 +27,9 @@ type HistoricoPermanente = {
 
 function HistoricoPermanentePage() {
   const [search, setSearch] = useState("");
+  const [recovering, setRecovering] = useState(false);
+  const queryClient = useQueryClient();
+  const recover = useServerFn(recuperarHistoricoRefrigeracao);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["refrig-historico-permanente"],
@@ -35,6 +42,20 @@ function HistoricoPermanentePage() {
       return (data ?? []) as HistoricoPermanente[];
     },
   });
+
+  const handleRecover = async () => {
+    setRecovering(true);
+    try {
+      const res = await recover();
+      toast.success(`${res.recovered} equipamentos recuperados das OS concluídas.`);
+      queryClient.invalidateQueries({ queryKey: ["refrig-historico-permanente"] });
+    } catch (e: any) {
+      toast.error("Erro ao recuperar histórico: " + e.message);
+    } finally {
+      setRecovering(false);
+    }
+  };
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -51,11 +72,22 @@ function HistoricoPermanentePage() {
       title="Histórico Permanente"
       description="Base de conhecimento técnica por equipamento (BTUs, Modelo, Histórico)."
     >
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRecover} 
+          disabled={recovering}
+          className="border-primary/20 bg-primary/5 hover:bg-primary/10"
+        >
+          <RefreshCw className={`mr-2 h-4 w-4 ${recovering ? "animate-spin" : ""}`} />
+          Recuperar de OS Concluídas
+        </Button>
       </div>
+
 
       <GlassCard className="p-4">
         <div className="mb-4 flex items-center gap-2">
