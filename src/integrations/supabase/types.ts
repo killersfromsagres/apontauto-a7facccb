@@ -2659,6 +2659,54 @@ export type Database = {
         }
         Relationships: []
       }
+      corretiva_avaliacoes: {
+        Row: {
+          assunto: string | null
+          corpo_email: string | null
+          criado_em: string | null
+          email_destinatario: string
+          enviado_em: string | null
+          feedback_comentario: string | null
+          feedback_nota: number | null
+          id: string
+          os_ids: string[]
+          owner_id: string | null
+          respondido_em: string | null
+          solicitante: string
+          status: string
+        }
+        Insert: {
+          assunto?: string | null
+          corpo_email?: string | null
+          criado_em?: string | null
+          email_destinatario: string
+          enviado_em?: string | null
+          feedback_comentario?: string | null
+          feedback_nota?: number | null
+          id?: string
+          os_ids: string[]
+          owner_id?: string | null
+          respondido_em?: string | null
+          solicitante: string
+          status?: string
+        }
+        Update: {
+          assunto?: string | null
+          corpo_email?: string | null
+          criado_em?: string | null
+          email_destinatario?: string
+          enviado_em?: string | null
+          feedback_comentario?: string | null
+          feedback_nota?: number | null
+          id?: string
+          os_ids?: string[]
+          owner_id?: string | null
+          respondido_em?: string | null
+          solicitante?: string
+          status?: string
+        }
+        Relationships: []
+      }
       corretiva_equipes: {
         Row: {
           colaboradores: string
