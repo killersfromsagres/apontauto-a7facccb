@@ -63,61 +63,76 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
 export const saveTaludeMarcacao = createServerFn({ method: "POST" })
   .validator((data: Partial<TaludeMarcacao> & { map_id: string }) => data)
   .handler(async ({ data }) => {
+    console.log("Iniciando salvamento de demarcação:", data);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { id, ...payload } = data;
     
     // Ensure we have a valid user
     const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-    if (userError || !userResponse.user) throw new Error("Unauthorized");
+    if (userError || !userResponse.user) {
+      console.error("Erro de autenticação no saveTaludeMarcacao:", userError);
+      throw new Error("Unauthorized");
+    }
     const userId = userResponse.user.id;
 
-    if (id) {
-      const { error } = await supabaseAdmin
-        .from("talude_marcacoes")
-        .update({
-          ...payload,
-          updated_at: new Date().toISOString()
-        } as any)
-        .eq("id", id);
-      
-      if (error) {
-        console.error("Error updating talude_marcacao:", error);
-        throw error;
-      }
-      return { id };
-    } else {
-      // Try to get max numero, default to 0 if none exists or map_id is missing
-      let nextNumero = 1;
-      if (data.map_id) {
-        const { data: maxRecord, error: fetchError } = await supabaseAdmin
+    try {
+      if (id) {
+        console.log("Atualizando demarcação existente:", id);
+        const { error } = await supabaseAdmin
           .from("talude_marcacoes")
-          .select("numero")
-          .eq("map_id", data.map_id)
-          .order("numero", { ascending: false })
-          .limit(1);
+          .update({
+            ...payload,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq("id", id);
         
-        if (!fetchError && maxRecord && maxRecord.length > 0) {
-          nextNumero = (maxRecord[0].numero || 0) + 1;
+        if (error) {
+          console.error("Erro ao atualizar talude_marcacao:", error);
+          throw error;
         }
-      }
+        return { id };
+      } else {
+        console.log("Inserindo nova demarcação para o mapa:", data.map_id);
+        // Try to get max numero, default to 0 if none exists or map_id is missing
+        let nextNumero = 1;
+        if (data.map_id) {
+          const { data: maxRecord, error: fetchError } = await supabaseAdmin
+            .from("talude_marcacoes")
+            .select("numero")
+            .eq("map_id", data.map_id)
+            .order("numero", { ascending: false })
+            .limit(1);
+          
+          if (!fetchError && maxRecord && maxRecord.length > 0) {
+            nextNumero = (maxRecord[0].numero || 0) + 1;
+          }
+        }
 
-      const { data: inserted, error } = await supabaseAdmin
-        .from("talude_marcacoes")
-        .insert({
+        const insertPayload = {
           ...payload,
           owner_id: userId,
           numero: nextNumero,
           map_id: data.map_id
-        } as any)
-        .select()
-        .single();
+        };
         
-      if (error) {
-        console.error("Error inserting talude_marcacao:", error);
-        // If it's a conflict on numero, we could retry once, but usually single-user session
-        throw error;
+        console.log("Payload de inserção:", insertPayload);
+
+        const { data: inserted, error } = await supabaseAdmin
+          .from("talude_marcacoes")
+          .insert(insertPayload as any)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("Erro ao inserir talude_marcacao:", error);
+          throw error;
+        }
+        console.log("Demarcação inserida com sucesso:", inserted.id);
+        return inserted;
       }
-      return inserted;
+    } catch (err: any) {
+      console.error("Falha fatal no saveTaludeMarcacao:", err);
+      throw new Error(`Erro ao salvar demarcação: ${err.message || 'Erro desconhecido'}`);
     }
   });
 

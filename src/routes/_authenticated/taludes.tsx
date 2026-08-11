@@ -62,10 +62,17 @@ function TaludesPage() {
   });
 
   const saveMutation = useMutation({
-    mutationFn: (data: Partial<TaludeMarcacao>) => 
-      saveMarcacaoFn({ data: { ...data, map_id: effectiveMapId! } }),
+    mutationFn: (data: Partial<TaludeMarcacao>) => {
+      if (!effectiveMapId) throw new Error("Nenhum mapa selecionado");
+      return saveMarcacaoFn({ data: { ...data, map_id: effectiveMapId } });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["talude_marcacoes", effectiveMapId] });
+      toast.success("Demarcação salva com sucesso");
+    },
+    onError: (error: any) => {
+      console.error("Erro na mutação de salvamento:", error);
+      toast.error(error.message || "Erro ao salvar demarcação");
     }
   });
 

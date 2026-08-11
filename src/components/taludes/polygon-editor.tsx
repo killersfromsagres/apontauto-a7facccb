@@ -175,9 +175,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       if (target) {
         try {
           await onSave(target);
-          toast.success("Posição atualizada");
         } catch (err) {
-          toast.error("Erro ao salvar alteração");
+          console.error("Erro ao salvar movimento de vértice:", err);
         }
       }
       setDraggedPointIndex(null);
@@ -222,12 +221,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     };
 
     try {
+      console.log("Iniciando salvamento de nova demarcação...");
       await onSave(newMarcacao);
       setCurrentPoints([]);
       setMode('view');
-      toast.success("Área demarcada com sucesso");
-    } catch (error) {
-      toast.error("Erro ao salvar demarcação");
+    } catch (error: any) {
+      console.error("Erro capturado no PolygonEditor:", error);
+      // O toast agora é disparado pela mutação no componente pai
     }
   };
 
