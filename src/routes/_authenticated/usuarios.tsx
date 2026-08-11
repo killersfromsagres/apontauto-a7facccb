@@ -391,6 +391,7 @@ function UsersListCard() {
 }
 
 function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) {
+  const qc = useQueryClient();
   const del = useServerFn(deleteAppUser);
   const setBanned = useServerFn(setUserBanned);
   const setRole = useServerFn(setUserRole);
