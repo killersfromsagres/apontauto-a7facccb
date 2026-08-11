@@ -741,7 +741,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 )}
                 
                 {/* Vertices (only in edit mode) */}
-                {mode === 'edit' && m.polygon.map((p, idx) => (
+                {mode === 'edit' && m.id === selectedMarcacaoId && m.polygon.map((p, idx) => (
                   <circle
                     key={idx}
                     cx={p.x}
