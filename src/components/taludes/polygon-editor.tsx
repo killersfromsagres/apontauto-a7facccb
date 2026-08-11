@@ -318,14 +318,82 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       });
       ctx.closePath();
       
+      // Fill
+      ctx.fillStyle = m.cor + '4D'; // 30% alpha
+      ctx.fill();
+
       // Lines
       ctx.strokeStyle = m.cor;
       ctx.lineWidth = m.espessura_linha || 4;
       ctx.stroke();
-      
-      // Fill
-      ctx.fillStyle = m.cor + '4D'; // 30% alpha
-      ctx.fill();
+
+      // Draw Labels on Canvas
+      if (m.polygon.length > 0) {
+        const firstPoint = m.polygon[0];
+        const status = m.rotulo?.split(' - ')[0] || '';
+        const numero = m.numero || '#';
+        const labelText = `${numero} - ${status}`;
+
+        ctx.save();
+        
+        // Settings for shadow/glow
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+
+        // Draw background pill for the number
+        const numText = String(numero);
+        ctx.font = 'bold 24px monospace';
+        const numWidth = ctx.measureText(numText).width;
+        const pillWidth = Math.max(numWidth + 20, 40);
+        const pillHeight = 36;
+        const pillX = firstPoint.x - pillWidth / 2;
+        const pillY = firstPoint.y - 60;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 8);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Draw the number text
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(numText, firstPoint.x, pillY + pillHeight / 2);
+
+        // Draw the secondary label (Status)
+        ctx.shadowBlur = 4;
+        ctx.font = '500 18px sans-serif';
+        const statusWidth = ctx.measureText(labelText).width;
+        const sPillWidth = statusWidth + 24;
+        const sPillHeight = 28;
+        const sPillX = firstPoint.x - sPillWidth / 2;
+        const sPillY = pillY + pillHeight + 8;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 14);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.stroke();
+
+        // Color dot
+        ctx.fillStyle = m.cor;
+        ctx.beginPath();
+        ctx.arc(sPillX + 12, sPillY + sPillHeight / 2, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Status text
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.fillText(labelText, sPillX + 22, sPillY + sPillHeight / 2);
+
+        ctx.restore();
+      }
     });
 
     // Trigger download
