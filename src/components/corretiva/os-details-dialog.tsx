@@ -366,14 +366,39 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               
                               if (!res.ok) {
                                 const errorData = await res.json().catch(() => ({}));
-                                throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+                                const errorMsg = errorData.error || `Erro HTTP ${res.status}`;
+                                console.error("[CorretivaPhoto] Erro upload Antes:", errorMsg, errorData);
+                                
+                                // Se falhar o upload online, salvamos no IndexedDB para sincronização posterior
+                                try {
+                                  const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                  const blobKey = `os-${os.id}-antes-${Date.now()}`;
+                                  await blobPut(blobKey, file);
+                                  await outboxAdd({
+                                    id: crypto.randomUUID(),
+                                    kind: "foto",
+                                    osId: os.id,
+                                    numeroOs: os.numero_os,
+                                    payload: { blobKey, legenda: "Evidência: Antes" },
+                                    createdAt: Date.now(),
+                                    attempts: 0
+                                  });
+                                  
+                                  const localUrl = URL.createObjectURL(file);
+                                  setPhotoBefore(localUrl);
+                                  toast.success("Foto salva localmente (Offline)!");
+                                  return;
+                                } catch (dbErr) {
+                                  console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
+                                  throw new Error(errorMsg);
+                                }
                               }
                               
                               const data = await res.json();
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoBefore(data.url);
-                              toast.success("Foto 'Antes' carregada!");
+                              toast.success("Foto 'Antes' enviada com sucesso!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Antes:", err);
                               toast.error(`Falha no upload: ${err.message}`);
@@ -438,14 +463,39 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               
                               if (!res.ok) {
                                 const errorData = await res.json().catch(() => ({}));
-                                throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+                                const errorMsg = errorData.error || `Erro HTTP ${res.status}`;
+                                console.error("[CorretivaPhoto] Erro upload Depois:", errorMsg, errorData);
+                                
+                                // Se falhar o upload online, salvamos no IndexedDB para sincronização posterior
+                                try {
+                                  const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                  const blobKey = `os-${os.id}-depois-${Date.now()}`;
+                                  await blobPut(blobKey, file);
+                                  await outboxAdd({
+                                    id: crypto.randomUUID(),
+                                    kind: "foto",
+                                    osId: os.id,
+                                    numeroOs: os.numero_os,
+                                    payload: { blobKey, legenda: "Evidência: Depois" },
+                                    createdAt: Date.now(),
+                                    attempts: 0
+                                  });
+                                  
+                                  const localUrl = URL.createObjectURL(file);
+                                  setPhotoAfter(localUrl);
+                                  toast.success("Foto salva localmente (Offline)!");
+                                  return;
+                                } catch (dbErr) {
+                                  console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
+                                  throw new Error(errorMsg);
+                                }
                               }
-
+                              
                               const data = await res.json();
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoAfter(data.url);
-                              toast.success("Foto 'Depois' carregada!");
+                              toast.success("Foto 'Depois' enviada com sucesso!");
                             } catch (err: any) {
                               console.error("[CorretivaPhoto] Erro upload Depois:", err);
                               toast.error(`Falha no upload: ${err.message}`);
