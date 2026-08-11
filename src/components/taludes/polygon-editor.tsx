@@ -344,19 +344,19 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw background pill for the number
         const numText = String(numero);
-        ctx.font = 'bold 24px monospace';
+        ctx.font = 'bold 32px monospace';
         const numWidth = ctx.measureText(numText).width;
-        const pillWidth = Math.max(numWidth + 20, 40);
-        const pillHeight = 36;
+        const pillWidth = Math.max(numWidth + 24, 50);
+        const pillHeight = 46;
         const pillX = firstPoint.x - pillWidth / 2;
-        const pillY = firstPoint.y - 60;
+        const pillY = firstPoint.y - 80;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 8);
+        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10);
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
         // Draw the number text
@@ -367,30 +367,32 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw the secondary label (Status)
         ctx.shadowBlur = 4;
-        ctx.font = '500 18px sans-serif';
-        const statusWidth = ctx.measureText(labelText).width;
-        const sPillWidth = statusWidth + 24;
-        const sPillHeight = 28;
+        ctx.font = 'bold 24px sans-serif';
+        const statusTextFull = `${numero} - ${status}`;
+        const statusWidth = ctx.measureText(statusTextFull).width;
+        const sPillWidth = statusWidth + 40;
+        const sPillHeight = 36;
         const sPillX = firstPoint.x - sPillWidth / 2;
-        const sPillY = pillY + pillHeight + 8;
+        const sPillY = pillY + pillHeight + 12;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.beginPath();
-        ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 14);
+        ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 18);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
         // Color dot
         ctx.fillStyle = m.cor;
         ctx.beginPath();
-        ctx.arc(sPillX + 12, sPillY + sPillHeight / 2, 5, 0, Math.PI * 2);
+        ctx.arc(sPillX + 20, sPillY + sPillHeight / 2, 7, 0, Math.PI * 2);
         ctx.fill();
 
         // Status text
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
-        ctx.fillText(labelText, sPillX + 22, sPillY + sPillHeight / 2);
+        ctx.fillText(statusTextFull, sPillX + 35, sPillY + sPillHeight / 2);
 
         ctx.restore();
       }
