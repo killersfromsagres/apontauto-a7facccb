@@ -242,7 +242,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 <Label className="text-[10px] uppercase opacity-50 font-bold tracking-tighter">Equipe</Label>
                 <div className="flex items-center justify-end mt-1">
                   <DropdownMenu modal={false}>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild disabled={!os?.isAdmin && !os?.allowedMenus?.includes("reclassificar-equipe")}>
                       <Button 
                         variant="ghost" 
                         size="sm" 
