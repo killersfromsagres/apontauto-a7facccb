@@ -54,7 +54,6 @@ type Role = "admin" | "user";
 
 const MENU_LABELS: Record<MenuKey, string> = {
   dashboard: "Menu Inicial (BI)",
-  "avaliacao-chamados": "Avaliação de Chamados",
   "programacao-gps": "Programação GPS",
   "backlog-inteligente": "Backlog Inteligente",
   capacidade: "Capacidade das Equipes",
