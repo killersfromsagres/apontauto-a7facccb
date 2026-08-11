@@ -128,7 +128,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
     if (mode === 'edit' && e.button === 0) {
       const coords = getMapCoords(e);
-      const hitRadius = 12 / zoom;
+      const hitRadius = 15 / zoom;
 
       // Find if we clicked on a vertex
       for (const m of localMarcacoes) {
@@ -194,7 +194,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       if (currentPoints.length > 2) {
         const firstPoint = currentPoints[0];
         const dist = getDistance(coords, firstPoint);
-        if (dist < 15 / zoom) {
+        // Snapping radius for closure
+        if (dist < 20 / zoom) {
           handleFinishDrawing();
           return;
         }
