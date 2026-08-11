@@ -69,20 +69,21 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     
     // Resolve owner_id safely
     let userId: string;
+    
+    // Attempt to get user via supabaseAdmin.auth.getUser()
+    // This uses the access token from the Authorization header if attached by middleware
     const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
     
     if (userError || !userResponse.user) {
       console.warn("Auth getUser failed in saveTaludeMarcacao, attempting session check:", userError);
       const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+      
       if (sessionResponse.session?.user) {
         userId = sessionResponse.session.user.id;
       } else {
-        // As a last resort for this specific administrative bypass module, 
-        // we might check if we can get the user from the JWT if available in context,
-        // but since we are in a server function with supabaseAdmin, we should ideally have a session
-        // if the client attached it correctly.
-        console.error("Nenhum usuário autenticado encontrado no servidor.");
-        throw new Error("Unauthorized");
+        // Log headers for debugging in the sandbox
+        console.error("Auth failed. No user in getUser() or getSession().");
+        throw new Error("Unauthorized: Sessão inválida ou expirada. Por favor, faça login novamente.");
       }
     } else {
       userId = userResponse.user.id;

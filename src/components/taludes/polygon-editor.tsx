@@ -53,6 +53,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [selectedMarcacaoId, setSelectedMarcacaoId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<{ marcacaoId: string, pointIndex: number } | null>(null);
   const [currentColor, setCurrentColor] = useState('#ef4444');
+  const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [statusText, setStatusText] = useState('Programado');
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -214,6 +216,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
     const newMarcacao: Partial<TaludeMarcacao> = {
       nome: `Talude ${localMarcacoes.length + 1}`,
+      rotulo: `${statusText} - ${statusDate}`,
       polygon: currentPoints,
       cor: currentColor,
       opacidade: 0.3,
@@ -368,19 +371,40 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
           <div className="w-px h-6 bg-white/10 self-center mx-1" />
 
-          {/* Color Selection */}
-          <div className="flex gap-1 items-center px-1">
-            {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'].map(color => (
-              <button
-                key={color}
-                onClick={() => setCurrentColor(color)}
-                className={cn(
-                  "w-5 h-5 rounded-full border border-white/20 transition-transform",
-                  currentColor === color ? "scale-125 border-white ring-2 ring-white/20" : "hover:scale-110"
-                )}
-                style={{ backgroundColor: color }}
-              />
-            ))}
+          {/* Color & Status selection */}
+          <div className="flex gap-2 items-center px-1">
+            <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
+              {[
+                { color: '#ef4444', label: 'Em Execução' },
+                { color: '#f59e0b', label: 'Programado' },
+                { color: '#10b981', label: 'Finalizado' },
+                { color: '#3b82f6', label: 'Em Pausa' },
+                { color: '#8b5cf6', label: 'Atenção' }
+              ].map(item => (
+                <button
+                  key={item.color}
+                  onClick={() => {
+                    setCurrentColor(item.color);
+                    setStatusText(item.label);
+                  }}
+                  title={item.label}
+                  className={cn(
+                    "w-6 h-6 rounded-md border border-white/10 transition-all flex items-center justify-center",
+                    currentColor === item.color ? "scale-110 border-white ring-2 ring-white/20 z-10" : "hover:scale-105 opacity-60"
+                  )}
+                  style={{ backgroundColor: item.color }}
+                >
+                  {currentColor === item.color && <div className="w-1 h-1 bg-white rounded-full animate-pulse" />}
+                </button>
+              ))}
+            </div>
+
+            <input 
+              type="date" 
+              value={statusDate}
+              onChange={(e) => setStatusDate(e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white outline-none focus:ring-1 focus:ring-blue-500/50 h-8"
+            />
           </div>
         </div>
 
@@ -478,6 +502,20 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   strokeWidth={(m.espessura_linha || 3) / zoom}
                   className="transition-opacity duration-200"
                 />
+                
+                {/* Status Label on Map */}
+                {m.rotulo && (
+                  <text
+                    x={m.polygon[0].x}
+                    y={m.polygon[0].y - (10 / zoom)}
+                    fill="white"
+                    fontSize={12 / zoom}
+                    fontWeight="600"
+                    className="select-none pointer-events-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                  >
+                    {m.rotulo}
+                  </text>
+                )}
                 
                 {/* Vertices (only in edit mode) */}
                 {mode === 'edit' && m.polygon.map((p, idx) => (
