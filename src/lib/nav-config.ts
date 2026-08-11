@@ -222,6 +222,14 @@ export const sections: MenuSection[] = [
         keywords: ["campo", "executar", "os", "corretiva", "equipe", "ia"],
       },
       {
+        key: "avaliacao-chamados",
+        title: "Avaliação de Chamados",
+        short: "Avaliação",
+        url: "/avaliacao-chamados",
+        icon: MessageSquareCheck,
+        keywords: ["avaliação", "satisfação", "feedback", "email", "solicitante"],
+      },
+      {
         key: "corretiva-pecas-status",
         title: "Status de Peças",
         short: "Peças",
