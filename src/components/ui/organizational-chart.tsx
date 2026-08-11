@@ -232,6 +232,7 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
                         type="file" 
                         className="hidden" 
                         accept="image/*"
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleUploadPhoto(member.id, e)}
                       />
                     </label>
