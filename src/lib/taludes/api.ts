@@ -70,9 +70,9 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     // Resolve owner_id safely
     let userId: string;
     
-    // Obtemos os headers da requisição atual para extrair o token
-    const { getWebRequest } = await import("@tanstack/react-start/server");
-    const request = getWebRequest();
+    // Obtemos o token do header de autorização injetado pelo middleware
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
     const authHeader = request?.headers.get("Authorization");
     const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
 
