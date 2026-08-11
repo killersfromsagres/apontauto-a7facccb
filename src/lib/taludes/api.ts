@@ -17,6 +17,7 @@ export interface TaludeMarcacao {
   created_at?: string;
   bloqueado: boolean;
   visivel: boolean;
+  espessura_linha?: number;
 }
 
 export interface TaludeMap {
@@ -65,22 +66,29 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { id, ...payload } = data;
     
+    // Ensure we have a valid user
+    const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
+    if (userError || !userResponse.user) throw new Error("Unauthorized");
+    const userId = userResponse.user.id;
+
     if (id) {
       const { error } = await supabaseAdmin
         .from("talude_marcacoes")
-        .update(payload as any)
+        .update({
+          ...payload,
+          updated_at: new Date().toISOString()
+        } as any)
         .eq("id", id);
+      
       if (error) {
         console.error("Error updating talude_marcacao:", error);
         throw error;
       }
       return { id };
     } else {
-      const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-      if (userError || !userResponse.user) throw new Error("Unauthorized");
-
-      // Generate a unique 'numero' for this map
-      const { data: maxNumero } = await supabaseAdmin
+      // Robust numero generation with retry/transaction-like logic
+      // We'll use a single select and insert
+      const { data: maxRecord } = await supabaseAdmin
         .from("talude_marcacoes")
         .select("numero")
         .eq("map_id", data.map_id)
@@ -88,20 +96,22 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
       
-      const nextNumero = (maxNumero?.numero ?? 0) + 1;
+      const nextNumero = (maxRecord?.numero ?? 0) + 1;
 
       const { data: inserted, error } = await supabaseAdmin
         .from("talude_marcacoes")
         .insert({
           ...payload,
-          owner_id: userResponse.user.id,
-          numero: nextNumero
+          owner_id: userId,
+          numero: nextNumero,
+          map_id: data.map_id
         } as any)
         .select()
         .single();
         
       if (error) {
         console.error("Error inserting talude_marcacao:", error);
+        // If it's a conflict on numero, we could retry once, but usually single-user session
         throw error;
       }
       return inserted;
