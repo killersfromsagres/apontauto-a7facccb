@@ -70,23 +70,37 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     // Resolve owner_id safely
     let userId: string;
     
-    // Attempt to get user via supabaseAdmin.auth.getUser()
-    // This uses the access token from the Authorization header if attached by middleware
-    const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-    
-    if (userError || !userResponse.user) {
-      console.warn("Auth getUser failed in saveTaludeMarcacao, attempting session check:", userError);
+    // Obtemos o token do header de autorização injetado pelo middleware
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const authHeader = request?.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
+    if (token) {
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+      if (user) {
+        userId = user.id;
+      } else {
+        console.error("Token inválido no getUser:", userError);
+        // Fallback para getSession se o token do header falhar (middleware pode ter injetado algo inválido)
+        const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+        if (sessionResponse.session?.user) {
+          userId = sessionResponse.session.user.id;
+        } else {
+          throw new Error("Unauthorized: Sessão inválida ou expirada no servidor.");
+        }
+      }
+    } else {
+      // Fallback para getSession se o token não estiver no header (ex: chamadas diretas ou falha de middleware)
       const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
       
       if (sessionResponse.session?.user) {
         userId = sessionResponse.session.user.id;
       } else {
         // Log headers for debugging in the sandbox
-        console.error("Auth failed. No user in getUser() or getSession().");
+        console.error("Auth failed. No user in getUser() or getSession(). Headers:", request?.headers);
         throw new Error("Unauthorized: Sessão inválida ou expirada. Por favor, faça login novamente.");
       }
-    } else {
-      userId = userResponse.user.id;
     }
 
     try {
@@ -171,13 +185,29 @@ export const createTaludeMap = createServerFn({ method: "POST" })
   .validator((data: { nome: string; image_url: string; image_width: number; image_height: number }) => data)
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-    
-    if (userError) throw userError;
+    let userId: string;
+    const { getRequest } = await import("@tanstack/react-start/server");
+    const request = getRequest();
+    const authHeader = request?.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+
+    if (token) {
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+      if (user) userId = user.id;
+      else {
+        const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+        if (sessionResponse.session?.user) userId = sessionResponse.session.user.id;
+        else throw new Error("Unauthorized: Sessão inválida no servidor.");
+      }
+    } else {
+      const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+      if (sessionResponse.session?.user) userId = sessionResponse.session.user.id;
+      else throw new Error("Unauthorized: Sessão necessária para criar mapas.");
+    }
 
     const insertData: any = {
       ...data,
-      owner_id: userResponse.user?.id
+      owner_id: userId
     };
 
     console.log("Inserting map data:", insertData);

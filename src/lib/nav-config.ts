@@ -227,7 +227,7 @@ export const sections: MenuSection[] = [
         short: "Avaliação",
         url: "/avaliacao-chamados",
         icon: MessageSquareCheck,
-        keywords: ["avaliação", "satisfação", "feedback", "email", "solicitante"],
+        keywords: ["avaliação", "satisfação", "feedback", "email", "solicitante", "encarregado"],
       },
       {
         key: "corretiva-pecas-status",

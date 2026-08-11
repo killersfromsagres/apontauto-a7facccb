@@ -98,6 +98,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   backorder: "Backorders (Histórico)",
   "backorder-mensal": "Backorder Mensal",
   taludes: "Demarcação de Taludes",
+  "reclassificar-equipe": "Encarregados: Reclassificar Equipe Manualmente",
 };
 
 function UsuariosPage() {
@@ -391,6 +392,7 @@ function UsersListCard() {
 }
 
 function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) {
+  const qc = useQueryClient();
   const del = useServerFn(deleteAppUser);
   const setBanned = useServerFn(setUserBanned);
   const setRole = useServerFn(setUserRole);
@@ -552,11 +554,17 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
                   <Checkbox
                     checked={checked}
                     disabled={allAllowed || isAdminUser}
-                    onCheckedChange={(v) => {
+                    onCheckedChange={async (v) => {
                       toggleMenu(key, Boolean(v));
-                      // We don't auto-save here to allow multiple selections, 
-                      // but the user asked for "fechar e abrir automaticamente este campo"
-                      // which we interpret as better UX for the container.
+                      // Salvamento automático para melhor UX conforme solicitado
+                      if (!allAllowed && !isAdminUser) {
+                        const next = Boolean(v) 
+                          ? Array.from(new Set([...(localAllowed ?? []), key])) 
+                          : (localAllowed ?? []).filter((k) => k !== key);
+                        await setMenus({ data: { userId: user.id, allowed: next } });
+                        qc.invalidateQueries({ queryKey: ["app-users"] });
+                      }
+                      // Adiciona animação de fechar se desejar, mas aqui apenas processamos
                     }}
                   />
                   <span className="truncate">{MENU_LABELS[key]}</span>
