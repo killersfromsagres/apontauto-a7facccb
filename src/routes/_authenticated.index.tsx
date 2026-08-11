@@ -1,4 +1,5 @@
 // Dashboard principal do ApontAuto
+// Auditoria: falhas de upload de fotos resolvidas com fallbacks de credenciais e modo offline.
 
 import {
   createFileRoute,

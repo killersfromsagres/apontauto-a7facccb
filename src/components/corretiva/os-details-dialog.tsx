@@ -30,6 +30,17 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [photoAfter, setPhotoAfter] = useState<string | null>(null);
   const [pecas, setPecas] = useState(os.pecas_solicitadas || "");
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
+  const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const handleStatus = () => setOfflineMode(!navigator.onLine);
+    window.addEventListener('online', handleStatus);
+    window.addEventListener('offline', handleStatus);
+    return () => {
+      window.removeEventListener('online', handleStatus);
+      window.removeEventListener('offline', handleStatus);
+    };
+  }, []);
 
   const handleFinish = async (withPhoto: boolean) => {
     // Audit: useMyAccess hook provides access object, but here we receive os.allowedMenus injected in the route
