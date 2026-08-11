@@ -552,11 +552,16 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
                   <Checkbox
                     checked={checked}
                     disabled={allAllowed || isAdminUser}
-                    onCheckedChange={(v) => {
+                    onCheckedChange={async (v) => {
                       toggleMenu(key, Boolean(v));
-                      // We don't auto-save here to allow multiple selections, 
-                      // but the user asked for "fechar e abrir automaticamente este campo"
-                      // which we interpret as better UX for the container.
+                      // Salvamento automático para melhor UX conforme solicitado
+                      if (!allAllowed && !isAdminUser) {
+                        const next = Boolean(v) 
+                          ? Array.from(new Set([...(localAllowed ?? []), key])) 
+                          : (localAllowed ?? []).filter((k) => k !== key);
+                        await setMenus({ data: { userId: user.id, allowed: next } });
+                        qc.invalidateQueries({ queryKey: ["app-users"] });
+                      }
                     }}
                   />
                   <span className="truncate">{MENU_LABELS[key]}</span>
