@@ -769,17 +769,20 @@ function OsDetail({
 
   // Auto-preenche patrimonio e informações técnicas a partir do histórico permanente
   useEffect(() => {
+    // Patrimônio: Prioridade para o que está na OS atual, senão o sugerido do histórico
     const s = (priorInfo?.suggested ?? "").trim();
     if (s && !(os.patrimonio ?? "").trim() && !patrim.trim()) {
       setPatrim(s);
     }
     
+    // Informações Técnicas: Se não houver nada no campo atual, pega do histórico permanente
     const info = priorInfo?.historicoPermanente?.informacoes_tecnicas;
     if (info && !obsTecnica) {
       setObsTecnica(info);
       setObsTecnicaOriginal(info);
     }
-  }, [priorInfo?.suggested, priorInfo?.historicoPermanente, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [priorInfo?.suggested, priorInfo?.historicoPermanente, os.patrimonio, os.id]); 
+
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
