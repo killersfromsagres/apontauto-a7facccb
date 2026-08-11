@@ -397,7 +397,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   
                                   const localUrl = URL.createObjectURL(file);
                                   setPhotoBefore(localUrl);
-                                  toast.success("Foto salva localmente (Offline)!");
+                                  toast.info(
+                                    <div className="flex flex-col gap-1">
+                                      <span className="font-bold">Foto salva localmente (Offline)</span>
+                                      <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
+                                    </div>,
+                                    { duration: 5000 }
+                                  );
                                   return;
                                 } catch (dbErr) {
                                   console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
@@ -494,7 +500,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   
                                   const localUrl = URL.createObjectURL(file);
                                   setPhotoAfter(localUrl);
-                                  toast.success("Foto salva localmente (Offline)!");
+                                  toast.info(
+                                    <div className="flex flex-col gap-1">
+                                      <span className="font-bold">Foto salva localmente (Offline)</span>
+                                      <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
+                                    </div>,
+                                    { duration: 5000 }
+                                  );
                                   return;
                                 } catch (dbErr) {
                                   console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
