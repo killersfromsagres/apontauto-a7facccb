@@ -137,7 +137,7 @@ function TaludesPage() {
       title="Gestão de Taludes e Clima"
       description="Monitoramento avançado de áreas de risco e condições climáticas em tempo real."
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-12rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100dvh-10rem)]">
         {/* Sidebar: Weather & Stats */}
         <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2">
           <WeatherWidget />
@@ -222,7 +222,7 @@ function TaludesPage() {
             )}
 
 
-            <TabsContent value="mapa" className="flex-1 m-0 p-0 relative rounded-xl overflow-hidden border border-white/5 bg-slate-900 shadow-2xl">
+            <TabsContent value="mapa" className="flex-1 m-0 p-0 relative rounded-xl overflow-hidden border border-white/5 bg-slate-950 shadow-2xl min-h-[500px]">
               {loadingMaps || loadingMarcacoes ? (
                 <div className="w-full h-full flex items-center justify-center bg-slate-900">
                   <div className="text-center space-y-4">

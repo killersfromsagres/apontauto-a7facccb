@@ -1,6 +1,3 @@
-// Dashboard principal do ApontAuto
-// Auditoria: falhas de upload de fotos resolvidas com fallbacks de credenciais e modo offline.
-
 import {
   createFileRoute,
   Outlet,
@@ -24,11 +21,11 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw, LogOut } from "lucide-react";
 import { CentralInteligenciaView } from "@/features/inteligencia-pcm/components/central-inteligencia-view";
 
-export const Route = createFileRoute("/_authenticated/")({
+export const Route = createFileRoute("/")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session) return redirect({ to: "/auth" });
+    if (!data.session) throw redirect({ to: "/auth" });
     return { user: data.session.user };
   },
   head: () => ({
@@ -44,7 +41,6 @@ export const Route = createFileRoute("/_authenticated/")({
 });
 
 function pathKeys(pathname: string): string[] | null {
-  // O dashboard é a rota raiz da aplicação autenticada, acessível a todos.
   const isDashboard = 
     pathname === "/" || 
     pathname === "" || 
@@ -54,8 +50,6 @@ function pathKeys(pathname: string): string[] | null {
     pathname === "/_authenticated/";
 
   if (isDashboard) return null;
-  
-  // Normalizar paths do TanStack Router que podem vir com prefixo /_authenticated
   const normalizedPath = pathname.replace(/^\/_authenticated/, "") || "/";
   return menuKeysForPath(normalizedPath);
 }
@@ -67,22 +61,17 @@ function AccessGuard() {
 
   useEffect(() => {
     if (loading) return;
-
     const keys = pathKeys(pathname);
     if (!keys) return;
 
-    // Rota exclusiva de admin
     if (keys.includes("usuarios") && !access.isAdmin) {
       toast.error("Área restrita a administradores.");
       navigate({ to: "/", replace: true });
       return;
     }
 
-    if (access.isAdmin || access.allowed?.includes("climatizacao")) return; // admin e climatizacao acessam tudo sem restrições de menu (climatizacao foca em refrigeração no menu lateral)
-
-    // Sem restrição customizada → acesso total.
+    if (access.isAdmin || access.allowed?.includes("climatizacao")) return;
     if (!access.allowed) return;
-    // Lista vazia: não redireciona (evita loop) — o layout mostra tela de retry.
     if (access.allowed.length === 0) return;
 
     if (!keys.some((k) => access.allowed!.includes(k))) {
@@ -97,59 +86,34 @@ function AccessGuard() {
   return null;
 }
 
-function canRenderPath(
-  pathname: string,
-  access: ReturnType<typeof useMyAccess>["access"],
-  loading: boolean,
-) {
+function canRenderPath(pathname: string, access: any, loading: boolean) {
   if (loading) return false;
   if (access.isAdmin) return true;
   const keys = pathKeys(pathname);
   if (!keys) return true;
   if (keys.includes("usuarios")) return false;
   if (!access.allowed) return true;
-  return keys.some((k) => access.allowed!.includes(k));
+  return keys.some((k: string) => access.allowed.includes(k));
 }
 
 function AccessFallback({ loading, noMenus }: { loading: boolean; noMenus: boolean }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center px-4 text-sm text-muted-foreground">
-        Verificando permissões…
-      </div>
-    );
-  }
+  if (loading) return <div className="flex min-h-[50vh] items-center justify-center px-4 text-sm text-muted-foreground">Verificando permissões…</div>;
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
       <div className="max-w-md space-y-4">
         <h1 className="text-lg font-semibold tracking-tight">Acesso restrito</h1>
         <p className="text-sm text-muted-foreground">
-          {noMenus
-            ? "Nenhum módulo foi liberado para este usuário. Se você acabou de entrar, tente recarregar as permissões — caso o problema persista, solicite ao administrador."
-            : "Você não tem permissão para acessar este módulo."}
+          {noMenus ? "Nenhum módulo foi liberado." : "Você não tem permissão para acessar este módulo."}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => qc.invalidateQueries({ queryKey: ["my-access"] })}
-          >
+          <Button size="sm" variant="outline" onClick={() => qc.invalidateQueries({ queryKey: ["my-access"] })}>
             <RefreshCw className="mr-2 h-4 w-4" /> Recarregar permissões
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={async () => {
-              await qc.cancelQueries();
-              qc.clear();
-              await supabase.auth.signOut();
-              navigate({ to: "/auth", replace: true });
-            }}
-          >
+          <Button size="sm" variant="ghost" onClick={async () => { await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }}>
             <LogOut className="mr-2 h-4 w-4" /> Sair
           </Button>
         </div>
@@ -162,13 +126,7 @@ function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { access, loading } = useMyAccess();
   const canRender = canRenderPath(pathname, access, loading);
-  const noMenus =
-    !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
-
-  // No TanStack Router, se acessamos a rota raiz de um grupo /_authenticated,
-  // o Outlet renderizará o conteúdo da rota index se ela existir no mesmo nível.
-  // Como agora este arquivo É a rota index (/_authenticated/), se o path for "/",
-  // renderizamos o CentralInteligenciaView diretamente em vez de outro Outlet.
+  const noMenus = !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
   const isIndex = pathname === "/" || pathname === "" || pathname === "/_authenticated" || pathname === "/_authenticated/";
 
   return (
@@ -176,23 +134,10 @@ function AuthenticatedLayout() {
       <div className="flex min-h-dvh w-full app-bg">
         <AppSidebar />
         <SidebarInset className="flex min-h-dvh min-w-0 flex-1 flex-col bg-transparent">
-          <a href="#conteudo-principal" className="skip-link">
-            Pular para o conteúdo principal
-          </a>
           <AppHeader />
           <AccessGuard />
-          <main
-            id="conteudo-principal"
-            tabIndex={-1}
-            className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
-          >
-            {canRender ? (
-              isIndex ? <CentralInteligenciaView /> : <Outlet />
-            ) : (
-              <>
-                <AccessFallback loading={loading} noMenus={noMenus} />
-              </>
-            )}
+          <main id="conteudo-principal" tabIndex={-1} className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]">
+            {canRender ? (isIndex ? <CentralInteligenciaView /> : <Outlet />) : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
           <MobileTabBar />
           <ForcePasswordChange />

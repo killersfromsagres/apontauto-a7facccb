@@ -16,7 +16,7 @@ import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated.index'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWhatsappEnviarRouteImport } from './routes/api/whatsapp-enviar'
 import { Route as ApiImgbbUploadRouteImport } from './routes/api/imgbb-upload'
 import { Route as ApiBiFeedRouteImport } from './routes/api/bi-feed'
@@ -127,10 +127,10 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWhatsappEnviarRoute = ApiWhatsappEnviarRouteImport.update({
   id: '/api/whatsapp-enviar',
@@ -563,7 +563,7 @@ const AuthenticatedAbastecimentoAguaBagsRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -647,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/abastecimento/agua/': typeof AuthenticatedAbastecimentoAguaIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -700,7 +701,6 @@ export interface FileRoutesByTo {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/api/whatsapp-enviar': typeof ApiWhatsappEnviarRoute
-  '/': typeof AuthenticatedIndexRoute
   '/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -731,6 +731,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
@@ -785,7 +786,6 @@ export interface FileRoutesById {
   '/api/bi-feed': typeof ApiBiFeedRoute
   '/api/imgbb-upload': typeof ApiImgbbUploadRoute
   '/api/whatsapp-enviar': typeof ApiWhatsappEnviarRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/abastecimento/agua': typeof AuthenticatedAbastecimentoAguaRouteWithChildren
   '/_authenticated/ativo/$code': typeof AuthenticatedAtivoCodeRoute
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
@@ -902,6 +902,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
     | '/auth'
     | '/contato'
     | '/privacidade'
@@ -955,7 +956,6 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/api/whatsapp-enviar'
-    | '/'
     | '/ativo/$code'
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
@@ -985,6 +985,7 @@ export interface FileRouteTypes {
     | '/abastecimento/agua'
   id:
     | '__root__'
+    | '/'
     | '/_authenticated'
     | '/auth'
     | '/contato'
@@ -1039,7 +1040,6 @@ export interface FileRouteTypes {
     | '/api/bi-feed'
     | '/api/imgbb-upload'
     | '/api/whatsapp-enviar'
-    | '/_authenticated/'
     | '/_authenticated/abastecimento/agua'
     | '/_authenticated/ativo/$code'
     | '/_authenticated/inteligencia-ativos/historico'
@@ -1071,6 +1071,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
@@ -1146,12 +1147,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
+    '/': {
+      id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/whatsapp-enviar': {
       id: '/api/whatsapp-enviar'
@@ -1788,7 +1789,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedSolicitacaoMateriaisRoute: typeof AuthenticatedSolicitacaoMateriaisRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedAtivoCodeRoute: typeof AuthenticatedAtivoCodeRoute
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
@@ -1845,7 +1845,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedSolicitacaoMateriaisRoute,
   AuthenticatedTaludesRoute: AuthenticatedTaludesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedAtivoCodeRoute: AuthenticatedAtivoCodeRoute,
   AuthenticatedInteligenciaAtivosHistoricoRoute:
     AuthenticatedInteligenciaAtivosHistoricoRoute,
@@ -1859,6 +1858,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,

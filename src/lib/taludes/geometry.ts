@@ -1,9 +1,8 @@
-import { type Point } from "./api";
+export interface Point {
+  x: number;
+  y: number;
+}
 
-/**
- * Calcula a área de um polígono usando a fórmula do cadarço (Shoelace formula).
- * Retorna em pixels quadrados ou unidades de mapa.
- */
 export function calculatePolygonArea(points: Point[]): number {
   if (points.length < 3) return 0;
   let area = 0;
@@ -15,24 +14,6 @@ export function calculatePolygonArea(points: Point[]): number {
   return Math.abs(area) / 2;
 }
 
-/**
- * Calcula o perímetro de um polígono.
- */
-export function calculatePolygonPerimeter(points: Point[]): number {
-  if (points.length < 2) return 0;
-  let perimeter = 0;
-  for (let i = 0; i < points.length; i++) {
-    const j = (i + 1) % points.length;
-    const dx = points[j].x - points[i].x;
-    const dy = points[j].y - points[i].y;
-    perimeter += Math.sqrt(dx * dx + dy * dy);
-  }
-  return perimeter;
-}
-
-/**
- * Verifica se um ponto está dentro de um polígono.
- */
 export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -43,4 +24,8 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
     if (intersect) inside = !inside;
   }
   return inside;
+}
+
+export function getDistance(p1: Point, p2: Point): number {
+  return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 }
