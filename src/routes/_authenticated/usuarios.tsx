@@ -70,6 +70,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "corretiva-historico": "Corretiva — Histórico",
   "corretiva-finalizar-sem-foto": "Admin: Finalizar OS sem Foto (Botão)",
   "corretiva-concluir-sem-foto-especial": "Encarregados: Finalizar OS sem Foto",
+  "imagens-migrar": "Migrar Imagens (Storage -> ImgBB)",
   "assets-fill": "Localização de Ativos",
   "assets-catalog": "Base de Ativos",
   "assets-unmatched": "Ativos não encontrados",

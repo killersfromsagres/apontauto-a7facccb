@@ -82,6 +82,8 @@ type Peca = {
 type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
 
 function HistoricoPage() {
+  const [urls, setUrls] = useState<Record<string, string>>({});
+
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<OsRow | null>(null);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
@@ -284,7 +286,14 @@ function HistoricoPage() {
                       </div>
                     </button>
                     <div className="shrink-0 self-center">
-                      <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
+                      <div className="flex items-center gap-2">
+                        {(o.status === "concluida" && (o.assinatura_url || urls[o.id])) && (
+                           <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                             Evidências OK
+                           </Badge>
+                        )}
+                        <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
+                      </div>
                     </div>
                   </div>
                 </li>
