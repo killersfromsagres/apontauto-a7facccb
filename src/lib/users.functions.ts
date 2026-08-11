@@ -214,6 +214,7 @@ export const MENU_KEYS = [
   "backorder",
   "backorder-mensal",
   "taludes",
+  "imagens-migrar",
 ] as const;
 export type MenuKey = (typeof MENU_KEYS)[number];
 

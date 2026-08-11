@@ -53,6 +53,7 @@ function Page() {
   const { access } = useAllowedMenus();
 
 
+
   const inventory = useServerFn(inventoryStorageImages);
   const migrate = useServerFn(migrateStorageImagesBatch);
   const purge = useServerFn(purgeStorageOrphans);
