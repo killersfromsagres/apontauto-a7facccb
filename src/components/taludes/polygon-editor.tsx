@@ -577,12 +577,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 min="0.5" 
                 max="4" 
                 step="0.1"
-                value={selectedMarcacaoId ? (localMarcacoes.find(m => m.id === selectedMarcacaoId)?.tamanho_legenda || 1) : legendScale}
+                value={selectedMarcacaoId ? activeLegendScale : legendScale}
                 onChange={async (e) => {
                   const val = parseFloat(e.target.value);
-                  setLegendScale(val);
-                  
                   if (selectedMarcacaoId) {
+                    setActiveLegendScale(val);
                     const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                     if (target) {
                       try {
@@ -591,6 +590,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         console.error("Erro ao atualizar tamanho da legenda:", err);
                       }
                     }
+                  } else {
+                    setLegendScale(val);
                   }
                 }}
                 className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
