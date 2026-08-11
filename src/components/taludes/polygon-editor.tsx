@@ -753,24 +753,24 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       >
                         {/* Premium Number Badge */}
                         <div 
-                          className="flex items-center justify-center min-w-[40px] h-10 px-3 rounded-xl bg-black/90 backdrop-blur-xl border border-white/30 text-white shadow-[0_8px_24px_rgba(0,0,0,0.6)] ring-1 ring-white/10"
+                          className="flex items-center justify-center min-w-[60px] h-14 px-4 rounded-xl bg-black/90 backdrop-blur-xl border border-white/30 text-white shadow-[0_12px_32px_rgba(0,0,0,0.7)] ring-1 ring-white/10"
                         >
-                          <span className="text-[16px] font-black font-mono tracking-tight leading-none">{m.numero || '#'}</span>
+                          <span className="text-[24px] font-black font-mono tracking-tight leading-none">{m.numero || '#'}</span>
                         </div>
 
                         {/* Combined Information Badge */}
                         <div 
-                          className="flex items-center gap-2 px-3.5 py-1.8 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl whitespace-nowrap min-h-[36px]"
+                          className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl whitespace-nowrap min-h-[48px]"
                           style={{ 
-                            fontSize: `14px`,
+                            fontSize: `20px`,
                           }}
                         >
-                          <div className="w-3 h-3 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.3)]" style={{ backgroundColor: m.cor }} />
+                          <div className="w-4 h-4 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.4)]" style={{ backgroundColor: m.cor }} />
                           <span className="font-black opacity-100">{m.numero || 'T'}</span>
                           <span className="opacity-50 font-light">-</span>
-                          <div className="flex flex-col items-start leading-none gap-0.5">
-                            <span className="font-bold opacity-100 text-[12px]">{m.rotulo?.split(' - ')[0]}</span>
-                            <span className="text-[10px] opacity-60 font-medium">{m.rotulo?.split(' - ')[1]}</span>
+                          <div className="flex flex-col items-start leading-none gap-1">
+                            <span className="font-bold opacity-100 text-[18px]">{m.rotulo?.split(' - ')[0]}</span>
+                            <span className="text-[14px] opacity-60 font-medium">{m.rotulo?.split(' - ')[1]}</span>
                           </div>
                         </div>
                       </div>
