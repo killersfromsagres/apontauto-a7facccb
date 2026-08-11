@@ -541,7 +541,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 min="0.5" 
                 max="4" 
                 step="0.1"
-                value={legendScale}
+                value={selectedMarcacaoId ? (localMarcacoes.find(m => m.id === selectedMarcacaoId)?.tamanho_legenda || 1) : legendScale}
                 onChange={async (e) => {
                   const val = parseFloat(e.target.value);
                   setLegendScale(val);
@@ -710,7 +710,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       <div 
                         className="flex flex-col items-center gap-1.5 transform"
                         style={{ 
-                          transform: `translate(-50%, -100%) translateY(-10px) scale(${m.tamanho_legenda || 1})`,
+                          transform: `translate(-50%, -100%) translateY(-10px) scale(${legendScale})`,
                           transformOrigin: 'bottom center'
                         }}
                       >
