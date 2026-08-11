@@ -98,6 +98,7 @@ const MENU_LABELS: Record<MenuKey, string> = {
   backorder: "Backorders (Histórico)",
   "backorder-mensal": "Backorder Mensal",
   taludes: "Demarcação de Taludes",
+  "reclassificar-equipe": "Encarregados: Reclassificar Equipe Manualmente",
 };
 
 function UsuariosPage() {
