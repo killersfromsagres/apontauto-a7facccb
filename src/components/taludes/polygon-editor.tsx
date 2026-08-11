@@ -335,16 +335,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const firstPoint = m.polygon[0];
         const status = m.rotulo?.split(' - ')[0] || '';
         const numero = m.numero || '#';
-        const labelText = `${numero} - ${status}`;
         const lScale = m.tamanho_legenda || 1;
 
         ctx.save();
         
         // Settings for shadow/glow
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = 8 * lScale;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
+        ctx.shadowOffsetY = 4 * lScale;
 
         // Draw background pill for the number
         const numText = String(numero);
@@ -357,10 +356,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
         ctx.beginPath();
-        ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10 * lScale);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(pillX, pillY, pillWidth, pillHeight, 10 * lScale);
+        } else {
+          ctx.rect(pillX, pillY, pillWidth, pillHeight);
+        }
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 * lScale;
         ctx.stroke();
 
         // Draw the number text
@@ -372,19 +375,24 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw the secondary label (Status)
         ctx.shadowBlur = 4 * lScale;
         ctx.font = `bold ${24 * lScale}px sans-serif`;
-        const statusTextFull = `${numero} - ${status} - ${m.rotulo?.split(' - ')[1] || ''}`;
+        const dateStr = m.rotulo?.split(' - ')[1] || '';
+        const statusTextFull = `${numero} - ${status}${dateStr ? ` - ${dateStr}` : ''}`;
         const statusWidth = ctx.measureText(statusTextFull).width;
-        const sPillWidth = statusWidth + 40 * lScale;
+        const sPillWidth = statusWidth + 50 * lScale;
         const sPillHeight = 36 * lScale;
         const sPillX = firstPoint.x - sPillWidth / 2;
         const sPillY = pillY + pillHeight + (12 * lScale);
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
         ctx.beginPath();
-        ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 18);
+        if (typeof ctx.roundRect === 'function') {
+          ctx.roundRect(sPillX, sPillY, sPillWidth, sPillHeight, 18 * lScale);
+        } else {
+          ctx.rect(sPillX, sPillY, sPillWidth, sPillHeight);
+        }
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1 * lScale;
         ctx.stroke();
 
         // Color dot
