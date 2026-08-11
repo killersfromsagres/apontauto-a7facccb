@@ -52,6 +52,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedMarcacaoId, setSelectedMarcacaoId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<{ marcacaoId: string, pointIndex: number } | null>(null);
+  const [currentColor, setCurrentColor] = useState('#ef4444');
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -127,7 +128,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
     if (mode === 'edit' && e.button === 0) {
       const coords = getMapCoords(e);
-      const hitRadius = 12 / zoom;
+      const hitRadius = 15 / zoom;
 
       // Find if we clicked on a vertex
       for (const m of localMarcacoes) {
@@ -193,7 +194,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       if (currentPoints.length > 2) {
         const firstPoint = currentPoints[0];
         const dist = getDistance(coords, firstPoint);
-        if (dist < 15 / zoom) {
+        // Snapping radius for closure
+        if (dist < 20 / zoom) {
           handleFinishDrawing();
           return;
         }
@@ -213,7 +215,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     const newMarcacao: Partial<TaludeMarcacao> = {
       nome: `Talude ${localMarcacoes.length + 1}`,
       polygon: currentPoints,
-      cor: '#ef4444',
+      cor: currentColor,
       opacidade: 0.3,
       visivel: true,
       bloqueado: false,
@@ -363,6 +365,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <Button variant="ghost" size="icon" onClick={fitToView} className="h-9 w-9 text-blue-400">
             <Maximize className="h-4 w-4" />
           </Button>
+
+          <div className="w-px h-6 bg-white/10 self-center mx-1" />
+
+          {/* Color Selection */}
+          <div className="flex gap-1 items-center px-1">
+            {['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'].map(color => (
+              <button
+                key={color}
+                onClick={() => setCurrentColor(color)}
+                className={cn(
+                  "w-5 h-5 rounded-full border border-white/20 transition-transform",
+                  currentColor === color ? "scale-125 border-white ring-2 ring-white/20" : "hover:scale-110"
+                )}
+                style={{ backgroundColor: color }}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Action Bar (Conditional) */}

@@ -67,13 +67,26 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { id, ...payload } = data;
     
-    // Ensure we have a valid user
+    // Resolve owner_id safely
+    let userId: string;
     const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
+    
     if (userError || !userResponse.user) {
-      console.error("Erro de autenticação no saveTaludeMarcacao:", userError);
-      throw new Error("Unauthorized");
+      console.warn("Auth getUser failed in saveTaludeMarcacao, attempting session check:", userError);
+      const { data: sessionResponse } = await supabaseAdmin.auth.getSession();
+      if (sessionResponse.session?.user) {
+        userId = sessionResponse.session.user.id;
+      } else {
+        // As a last resort for this specific administrative bypass module, 
+        // we might check if we can get the user from the JWT if available in context,
+        // but since we are in a server function with supabaseAdmin, we should ideally have a session
+        // if the client attached it correctly.
+        console.error("Nenhum usuário autenticado encontrado no servidor.");
+        throw new Error("Unauthorized");
+      }
+    } else {
+      userId = userResponse.user.id;
     }
-    const userId = userResponse.user.id;
 
     try {
       if (id) {
@@ -93,7 +106,7 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
         return { id };
       } else {
         console.log("Inserindo nova demarcação para o mapa:", data.map_id);
-        // Try to get max numero, default to 0 if none exists or map_id is missing
+        
         let nextNumero = 1;
         if (data.map_id) {
           const { data: maxRecord, error: fetchError } = await supabaseAdmin
@@ -112,7 +125,12 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
           ...payload,
           owner_id: userId,
           numero: nextNumero,
-          map_id: data.map_id
+          map_id: data.map_id,
+          cor: payload.cor || "#ef4444",
+          opacidade: payload.opacidade ?? 0.3,
+          visivel: payload.visivel ?? true,
+          bloqueado: payload.bloqueado ?? false,
+          espessura_linha: payload.espessura_linha ?? 4
         };
         
         console.log("Payload de inserção:", insertPayload);
