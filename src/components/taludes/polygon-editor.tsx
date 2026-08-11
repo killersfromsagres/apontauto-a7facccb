@@ -214,10 +214,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     const newMarcacao: Partial<TaludeMarcacao> = {
       nome: `Talude ${localMarcacoes.length + 1}`,
       polygon: currentPoints,
-      cor: '#ef4444', // Red for better visibility as requested
+      cor: '#ef4444',
       opacidade: 0.3,
       visivel: true,
-      bloqueado: false
+      bloqueado: false,
+      espessura_linha: 4
     };
 
     try {
@@ -305,7 +306,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       
       // Lines
       ctx.strokeStyle = m.cor;
-      ctx.lineWidth = 4;
+      ctx.lineWidth = m.espessura_linha || 4;
       ctx.stroke();
       
       // Fill
@@ -455,7 +456,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   fill={m.cor}
                   fillOpacity={selectedMarcacaoId === m.id ? 0.4 : 0.25}
                   stroke={m.cor}
-                  strokeWidth={2 / zoom}
+                  strokeWidth={(m.espessura_linha || 3) / zoom}
                   className="transition-opacity duration-200"
                 />
                 
@@ -482,7 +483,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
                   fill="none"
                   stroke="#ef4444"
-                  strokeWidth={2 / zoom}
+                  strokeWidth={3 / zoom}
                 />
                 {currentPoints.map((p, i) => (
                   <circle

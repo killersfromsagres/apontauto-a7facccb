@@ -17,6 +17,7 @@ export interface TaludeMarcacao {
   created_at?: string;
   bloqueado: boolean;
   visivel: boolean;
+  espessura_linha?: number;
 }
 
 export interface TaludeMap {
@@ -65,43 +66,55 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { id, ...payload } = data;
     
+    // Ensure we have a valid user
+    const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
+    if (userError || !userResponse.user) throw new Error("Unauthorized");
+    const userId = userResponse.user.id;
+
     if (id) {
       const { error } = await supabaseAdmin
         .from("talude_marcacoes")
-        .update(payload as any)
+        .update({
+          ...payload,
+          updated_at: new Date().toISOString()
+        } as any)
         .eq("id", id);
+      
       if (error) {
         console.error("Error updating talude_marcacao:", error);
         throw error;
       }
       return { id };
     } else {
-      const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
-      if (userError || !userResponse.user) throw new Error("Unauthorized");
-
-      // Generate a unique 'numero' for this map
-      const { data: maxNumero } = await supabaseAdmin
-        .from("talude_marcacoes")
-        .select("numero")
-        .eq("map_id", data.map_id)
-        .order("numero", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      const nextNumero = (maxNumero?.numero ?? 0) + 1;
+      // Try to get max numero, default to 0 if none exists or map_id is missing
+      let nextNumero = 1;
+      if (data.map_id) {
+        const { data: maxRecord, error: fetchError } = await supabaseAdmin
+          .from("talude_marcacoes")
+          .select("numero")
+          .eq("map_id", data.map_id)
+          .order("numero", { ascending: false })
+          .limit(1);
+        
+        if (!fetchError && maxRecord && maxRecord.length > 0) {
+          nextNumero = (maxRecord[0].numero || 0) + 1;
+        }
+      }
 
       const { data: inserted, error } = await supabaseAdmin
         .from("talude_marcacoes")
         .insert({
           ...payload,
-          owner_id: userResponse.user.id,
-          numero: nextNumero
+          owner_id: userId,
+          numero: nextNumero,
+          map_id: data.map_id
         } as any)
         .select()
         .single();
         
       if (error) {
         console.error("Error inserting talude_marcacao:", error);
+        // If it's a conflict on numero, we could retry once, but usually single-user session
         throw error;
       }
       return inserted;

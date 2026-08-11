@@ -5525,6 +5525,7 @@ export type Database = {
           data_executada: string | null
           data_prevista: string | null
           equipe: string | null
+          espessura_linha: number | null
           estado_operacional: string | null
           id: string
           inclinacao: number | null
@@ -5557,6 +5558,7 @@ export type Database = {
           data_executada?: string | null
           data_prevista?: string | null
           equipe?: string | null
+          espessura_linha?: number | null
           estado_operacional?: string | null
           id?: string
           inclinacao?: number | null
@@ -5589,6 +5591,7 @@ export type Database = {
           data_executada?: string | null
           data_prevista?: string | null
           equipe?: string | null
+          espessura_linha?: number | null
           estado_operacional?: string | null
           id?: string
           inclinacao?: number | null
