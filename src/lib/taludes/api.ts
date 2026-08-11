@@ -86,17 +86,20 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
       }
       return { id };
     } else {
-      // Robust numero generation with retry/transaction-like logic
-      // We'll use a single select and insert
-      const { data: maxRecord } = await supabaseAdmin
-        .from("talude_marcacoes")
-        .select("numero")
-        .eq("map_id", data.map_id)
-        .order("numero", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      const nextNumero = (maxRecord?.numero ?? 0) + 1;
+      // Try to get max numero, default to 0 if none exists or map_id is missing
+      let nextNumero = 1;
+      if (data.map_id) {
+        const { data: maxRecord, error: fetchError } = await supabaseAdmin
+          .from("talude_marcacoes")
+          .select("numero")
+          .eq("map_id", data.map_id)
+          .order("numero", { ascending: false })
+          .limit(1);
+        
+        if (!fetchError && maxRecord && maxRecord.length > 0) {
+          nextNumero = (maxRecord[0].numero || 0) + 1;
+        }
+      }
 
       const { data: inserted, error } = await supabaseAdmin
         .from("talude_marcacoes")
