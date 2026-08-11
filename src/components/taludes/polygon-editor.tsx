@@ -59,9 +59,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedMarcacaoId, setSelectedMarcacaoId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<{ marcacaoId: string, pointIndex: number } | null>(null);
-  const [currentColor, setCurrentColor] = useState('#ef4444');
+  const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [statusText, setStatusText] = useState('Programado');
+  const [statusText, setStatusText] = useState('Em Execução');
   const [lineThickness, setLineThickness] = useState(4);
   
   // Local state for undo/redo and immediate UI response
@@ -383,11 +383,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <div className="flex gap-2 items-center px-1">
             <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
               {[
-                { color: '#ef4444', label: 'Em Execução', icon: PlayCircle },
-                { color: '#f59e0b', label: 'Programado', icon: Clock },
-                { color: '#10b981', label: 'Finalizado', icon: CheckCircle2 },
-                { color: '#3b82f6', label: 'Em Pausa', icon: PauseCircle },
-                { color: '#8b5cf6', label: 'Atenção', icon: AlertCircle }
+                { color: '#ef4444', label: 'Interditado', icon: AlertCircle },
+                { color: '#f59e0b', label: 'Em Execução', icon: PlayCircle },
+                { color: '#10b981', label: 'Concluído', icon: CheckCircle2 },
+                { color: '#3b82f6', label: 'Programado', icon: Clock },
+                { color: '#8b5cf6', label: 'Interferência Climática', icon: CloudRain }
               ].map(item => (
                 <button
                   key={item.color}
@@ -586,27 +586,40 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   strokeDasharray={m.bloqueado ? "5,5" : "none"}
                 />
                 
-                {/* Visual Label with Date & Status */}
+                {/* Visual Label with Number and Status Color */}
                 {m.polygon.length > 0 && (
                   <foreignObject
                     x={m.polygon[0].x}
-                    y={m.polygon[0].y - 30 / zoom}
-                    width={200 / zoom}
-                    height={40 / zoom}
+                    y={m.polygon[0].y}
+                    width={1}
+                    height={1}
                     className="overflow-visible pointer-events-none"
                   >
                     <div 
-                      className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white whitespace-nowrap shadow-xl transform origin-left"
+                      className="flex flex-col items-center gap-1.5 transform"
                       style={{ 
-                        fontSize: `${Math.max(10 / zoom, 8)}px`,
-                        transform: `scale(${1/zoom})`,
-                        width: 'fit-content'
+                        transform: `translate(-50%, -100%) translateY(-10px)`,
                       }}
                     >
-                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: m.cor }} />
-                      <span className="font-bold opacity-90">{m.nome}</span>
-                      <span className="opacity-60">|</span>
-                      <span className="font-medium">{m.rotulo}</span>
+                      {/* Professional Number Badge */}
+                      <div 
+                        className="flex items-center justify-center min-w-[32px] h-8 px-2.5 rounded-lg bg-black/80 backdrop-blur-xl border border-white/20 text-white shadow-[0_4px_12px_rgba(0,0,0,0.5)] ring-1 ring-white/5"
+                      >
+                        <span className="text-[13px] font-bold font-mono tracking-tight leading-none">{m.numero || '#'}</span>
+                      </div>
+
+                      {/* Legend Content (Numeric Legend - Status) */}
+                      <div 
+                        className="flex items-center gap-1.5 px-2.5 py-1.2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white shadow-xl whitespace-nowrap"
+                        style={{ 
+                          fontSize: `11px`,
+                        }}
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: m.cor }} />
+                        <span className="font-bold opacity-95">{m.numero || 'T'}</span>
+                        <span className="opacity-40 font-light">-</span>
+                        <span className="font-medium opacity-90">{m.rotulo?.split(' - ')[0]}</span>
+                      </div>
                     </div>
                   </foreignObject>
                 )}
