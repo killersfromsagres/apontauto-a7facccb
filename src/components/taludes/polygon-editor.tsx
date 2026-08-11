@@ -14,7 +14,14 @@ import {
   Undo2,
   Download,
   Eraser,
-  X
+  X,
+  Calendar,
+  Settings2,
+  CheckCircle2,
+  Clock,
+  PlayCircle,
+  PauseCircle,
+  AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -55,6 +62,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [currentColor, setCurrentColor] = useState('#ef4444');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusText, setStatusText] = useState('Programado');
+  const [lineThickness, setLineThickness] = useState(4);
   
   // Local state for undo/redo and immediate UI response
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
@@ -222,7 +230,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       opacidade: 0.3,
       visivel: true,
       bloqueado: false,
-      espessura_linha: 4
+      espessura_linha: lineThickness
     };
 
     try {
@@ -375,36 +383,111 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <div className="flex gap-2 items-center px-1">
             <div className="flex gap-1 bg-black/40 p-1 rounded-lg border border-white/5">
               {[
-                { color: '#ef4444', label: 'Em Execução' },
-                { color: '#f59e0b', label: 'Programado' },
-                { color: '#10b981', label: 'Finalizado' },
-                { color: '#3b82f6', label: 'Em Pausa' },
-                { color: '#8b5cf6', label: 'Atenção' }
+                { color: '#ef4444', label: 'Em Execução', icon: PlayCircle },
+                { color: '#f59e0b', label: 'Programado', icon: Clock },
+                { color: '#10b981', label: 'Finalizado', icon: CheckCircle2 },
+                { color: '#3b82f6', label: 'Em Pausa', icon: PauseCircle },
+                { color: '#8b5cf6', label: 'Atenção', icon: AlertCircle }
               ].map(item => (
                 <button
                   key={item.color}
-                  onClick={() => {
+                  onClick={async () => {
                     setCurrentColor(item.color);
                     setStatusText(item.label);
+                    
+                    // IF we have a selected area, update it instantly
+                    if (selectedMarcacaoId) {
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) {
+                        try {
+                          await onSave({
+                            ...target,
+                            cor: item.color,
+                            rotulo: `${item.label} - ${statusDate}`
+                          });
+                        } catch (err) {
+                          console.error("Erro ao atualizar cor/status:", err);
+                        }
+                      }
+                    }
                   }}
                   title={item.label}
                   className={cn(
-                    "w-6 h-6 rounded-md border border-white/10 transition-all flex items-center justify-center",
-                    currentColor === item.color ? "scale-110 border-white ring-2 ring-white/20 z-10" : "hover:scale-105 opacity-60"
+                    "w-8 h-8 rounded-md border border-white/10 transition-all flex items-center justify-center relative overflow-hidden group/btn",
+                    currentColor === item.color ? "scale-110 border-white ring-2 ring-white/20 z-10 bg-white/10" : "hover:scale-105 opacity-60 hover:opacity-100"
                   )}
-                  style={{ backgroundColor: item.color }}
                 >
-                  {currentColor === item.color && <div className="w-1 h-1 bg-white rounded-full animate-pulse" />}
+                  <div 
+                    className="absolute inset-0 opacity-20 group-hover/btn:opacity-40 transition-opacity" 
+                    style={{ backgroundColor: item.color }} 
+                  />
+                  <item.icon className="h-4 w-4 relative z-10" style={{ color: item.color }} />
+                  {currentColor === item.color && (
+                    <div className="absolute bottom-0.5 right-0.5 w-1 h-1 bg-white rounded-full animate-pulse z-20" />
+                  )}
                 </button>
               ))}
             </div>
 
-            <input 
-              type="date" 
-              value={statusDate}
-              onChange={(e) => setStatusDate(e.target.value)}
-              className="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-[10px] text-white outline-none focus:ring-1 focus:ring-blue-500/50 h-8"
-            />
+            {/* Thickness Control */}
+            <div className="flex items-center gap-1.5 bg-black/40 p-1 rounded-lg border border-white/5 px-2">
+              <Settings2 className="h-3.5 w-3.5 text-white/50" />
+              <input 
+                type="range" 
+                min="1" 
+                max="12" 
+                step="1"
+                value={lineThickness}
+                onChange={async (e) => {
+                  const val = parseInt(e.target.value);
+                  setLineThickness(val);
+                  
+                  if (selectedMarcacaoId) {
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) {
+                      try {
+                        await onSave({ ...target, espessura_linha: val });
+                      } catch (err) {
+                        console.error("Erro ao atualizar espessura:", err);
+                      }
+                    }
+                  }
+                }}
+                className="w-16 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <span className="text-[9px] font-mono text-white/40 w-4">{lineThickness}px</span>
+            </div>
+
+            {/* Ultra Realist Glass Date Picker */}
+            <div className="relative group/date">
+              <div className="absolute inset-0 bg-white/5 backdrop-blur-xl rounded-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)]" />
+              <div className="relative flex items-center gap-2 px-3 py-1.5 h-9">
+                <Calendar className="h-3.5 w-3.5 text-blue-400" />
+                <input 
+                  type="date" 
+                  value={statusDate}
+                  onChange={async (e) => {
+                    const newDate = e.target.value;
+                    setStatusDate(newDate);
+                    
+                    if (selectedMarcacaoId) {
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) {
+                        try {
+                          await onSave({
+                            ...target,
+                            rotulo: `${statusText} - ${newDate}`
+                          });
+                        } catch (err) {
+                          console.error("Erro ao atualizar data:", err);
+                        }
+                      }
+                    }
+                  }}
+                  className="bg-transparent border-none text-[10px] font-medium text-white/90 outline-none w-[90px] cursor-pointer"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -493,28 +576,39 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           >
             {/* Defined Areas */}
             {localMarcacoes.map((m) => (
-              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={() => setSelectedMarcacaoId(m.id)}>
+              <g key={m.id} className="pointer-events-auto cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedMarcacaoId(m.id); }}>
                 <polygon
                   points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                   fill={m.cor}
                   fillOpacity={selectedMarcacaoId === m.id ? 0.4 : 0.25}
                   stroke={m.cor}
-                  strokeWidth={(m.espessura_linha || 3) / zoom}
-                  className="transition-opacity duration-200"
+                  strokeWidth={(m.espessura_linha || 4) / zoom}
+                  strokeDasharray={m.bloqueado ? "5,5" : "none"}
                 />
                 
-                {/* Status Label on Map */}
-                {m.rotulo && (
-                  <text
+                {/* Visual Label with Date & Status */}
+                {m.polygon.length > 0 && (
+                  <foreignObject
                     x={m.polygon[0].x}
-                    y={m.polygon[0].y - (10 / zoom)}
-                    fill="white"
-                    fontSize={12 / zoom}
-                    fontWeight="600"
-                    className="select-none pointer-events-none drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]"
+                    y={m.polygon[0].y - 30 / zoom}
+                    width={200 / zoom}
+                    height={40 / zoom}
+                    className="overflow-visible pointer-events-none"
                   >
-                    {m.rotulo}
-                  </text>
+                    <div 
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white whitespace-nowrap shadow-xl transform origin-left"
+                      style={{ 
+                        fontSize: `${Math.max(10 / zoom, 8)}px`,
+                        transform: `scale(${1/zoom})`,
+                        width: 'fit-content'
+                      }}
+                    >
+                      <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: m.cor }} />
+                      <span className="font-bold opacity-90">{m.nome}</span>
+                      <span className="opacity-60">|</span>
+                      <span className="font-medium">{m.rotulo}</span>
+                    </div>
+                  </foreignObject>
                 )}
                 
                 {/* Vertices (only in edit mode) */}
