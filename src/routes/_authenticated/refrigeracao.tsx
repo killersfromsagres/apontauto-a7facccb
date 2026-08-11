@@ -694,6 +694,11 @@ function OsDetail({
   });
   const [problemas, setProblemas] = useState<ProblemaDraft[]>([]);
 
+  // Observações Técnicas (Histórico Permanente)
+  const [obsTecnica, setObsTecnica] = useState("");
+  const [obsTecnicaOriginal, setObsTecnicaOriginal] = useState("");
+  const [savingObs, setSavingObs] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
@@ -708,7 +713,7 @@ function OsDetail({
     enabled: !!os.ativo && !!os.equipamento,
     staleTime: 60_000,
     queryFn: async () => {
-      const [osRes, pecRes, probRes] = await Promise.all([
+      const [osRes, pecRes, probRes, histRes] = await Promise.all([
         supabase
           .from("refrigeracao_os")
           .select("id, numero_os, patrimonio, status, fim")
@@ -737,28 +742,44 @@ function OsDetail({
           .neq("os_id", os.id)
           .order("created_at", { ascending: false })
           .limit(10),
+        supabase
+          .from("refrigeracao_historico_permanente")
+          .select("patrimonio, informacoes_tecnicas")
+          .eq("ativo", os.ativo)
+          .eq("equipamento", os.equipamento)
+          .maybeSingle(),
       ]);
+
       const suggested =
-        (osRes.data ?? [])
+        histRes.data?.patrimonio ||
+        ((osRes.data ?? [])
           .map((r: any) => (r.patrimonio ?? "").trim())
-          .find((v: string) => v.length > 0) ?? "";
+          .find((v: string) => v.length > 0) ??
+          "");
+
       return {
         suggested,
         priorOs: (osRes.data ?? []) as any[],
         pecas: (pecRes.data ?? []) as any[],
         problemas: (probRes.data ?? []) as any[],
+        historicoPermanente: histRes.data,
       };
     },
   });
 
-  // Auto-preenche patrimônio a partir de OS anteriores do mesmo Ativo+Equipamento
+  // Auto-preenche patrimonio e informações técnicas a partir do histórico permanente
   useEffect(() => {
     const s = (priorInfo?.suggested ?? "").trim();
-    if (!s) return;
-    if ((os.patrimonio ?? "").trim()) return;
-    if (patrim.trim()) return;
-    setPatrim(s);
-  }, [priorInfo?.suggested, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (s && !(os.patrimonio ?? "").trim() && !patrim.trim()) {
+      setPatrim(s);
+    }
+    
+    const info = priorInfo?.historicoPermanente?.informacoes_tecnicas;
+    if (info && !obsTecnica) {
+      setObsTecnica(info);
+      setObsTecnicaOriginal(info);
+    }
+  }, [priorInfo?.suggested, priorInfo?.historicoPermanente, os.patrimonio, os.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restaura rascunho salvo (fotos + textos) ao entrar na OS
   useEffect(() => {
@@ -858,6 +879,31 @@ function OsDetail({
       toast.error(e?.message ?? "Falha ao salvar patrimônio");
     } finally {
       setSavingPatrim(false);
+    }
+  };
+
+  const saveObsTecnica = async () => {
+    if (obsTecnica === obsTecnicaOriginal) return;
+    setSavingObs(true);
+    try {
+      const { error } = await supabase
+        .from("refrigeracao_historico_permanente")
+        .upsert(
+          {
+            ativo: os.ativo,
+            equipamento: os.equipamento,
+            informacoes_tecnicas: obsTecnica.trim(),
+            data_ultima_atualizacao: new Date().toISOString(),
+          },
+          { onConflict: "ativo,equipamento" }
+        );
+      if (error) throw error;
+      setObsTecnicaOriginal(obsTecnica);
+      toast.success("Informações técnicas salvas no histórico permanente.");
+    } catch (e: any) {
+      toast.error("Erro ao salvar histórico: " + e.message);
+    } finally {
+      setSavingObs(false);
     }
   };
 
@@ -1107,6 +1153,33 @@ function OsDetail({
             </div>
           </GlassCard>
         )}
+
+      <GlassCard className="p-4 border-primary/20 bg-primary/5">
+        <SectionTitle icon={RefreshCw} label="Informações Técnicas Permanentes" />
+        <p className="mt-1 text-xs text-muted-foreground">
+          Estas informações são vinculadas ao <strong>Ativo/Equipamento</strong> e serão preenchidas automaticamente em OS futuras.
+        </p>
+        <div className="mt-3 space-y-2">
+          <Textarea
+            value={obsTecnica}
+            onChange={(e) => setObsTecnica(e.target.value)}
+            placeholder="Ex.: Modelo, BTUs, Gás refrigerante, histórico de vazamentos..."
+            className="min-h-[100px] text-sm"
+          />
+          <Button
+            onClick={saveObsTecnica}
+            disabled={savingObs || obsTecnica === obsTecnicaOriginal}
+            className="w-full sm:w-auto h-11"
+          >
+            {savingObs ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Atualizar Histórico Permanente
+          </Button>
+        </div>
+      </GlassCard>
 
       <GlassCard className="p-4">
         <SectionTitle icon={Package} label="Patrimônio (opcional)" />
