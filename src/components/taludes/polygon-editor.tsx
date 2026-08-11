@@ -681,15 +681,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
                       {/* Legend Content (Numeric Legend - Status) */}
                       <div 
-                        className="flex items-center gap-1.5 px-2.5 py-1.2 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white shadow-xl whitespace-nowrap"
+                        className="flex items-center gap-2 px-3.5 py-1.8 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-white shadow-2xl whitespace-nowrap"
                         style={{ 
-                          fontSize: `11px`,
+                          fontSize: `14px`,
                         }}
                       >
-                        <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)]" style={{ backgroundColor: m.cor }} />
-                        <span className="font-bold opacity-95">{m.numero || 'T'}</span>
-                        <span className="opacity-40 font-light">-</span>
-                        <span className="font-medium opacity-90">{m.rotulo?.split(' - ')[0]}</span>
+                        <div className="w-3 h-3 rounded-full shadow-[0_0_12px_rgba(255,255,255,0.3)]" style={{ backgroundColor: m.cor }} />
+                        <span className="font-black opacity-100">{m.numero || 'T'}</span>
+                        <span className="opacity-50 font-light">-</span>
+                        <span className="font-bold opacity-100">{m.rotulo?.split(' - ')[0]}</span>
                       </div>
                     </div>
                   </foreignObject>
