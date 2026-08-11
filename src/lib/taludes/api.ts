@@ -62,30 +62,48 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
 export const saveTaludeMarcacao = createServerFn({ method: "POST" })
   .validator((data: Partial<TaludeMarcacao> & { map_id: string }) => data)
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { id, ...payload } = data;
     
     if (id) {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from("talude_marcacoes")
         .update(payload as any)
         .eq("id", id);
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating talude_marcacao:", error);
+        throw error;
+      }
       return { id };
     } else {
-      // Need owner_id for insert policies if not using admin
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("Unauthorized");
+      const { data: userResponse, error: userError } = await supabaseAdmin.auth.getUser();
+      if (userError || !userResponse.user) throw new Error("Unauthorized");
 
-      const { data: inserted, error } = await supabase
+      // Generate a unique 'numero' for this map
+      const { data: maxNumero } = await supabaseAdmin
+        .from("talude_marcacoes")
+        .select("numero")
+        .eq("map_id", data.map_id)
+        .order("numero", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      const nextNumero = (maxNumero?.numero ?? 0) + 1;
+
+      const { data: inserted, error } = await supabaseAdmin
         .from("talude_marcacoes")
         .insert({
           ...payload,
-          owner_id: userData.user.id,
-          numero: Math.floor(Math.random() * 1000000) // Dummy numero for constraint
+          owner_id: userResponse.user.id,
+          numero: nextNumero
         } as any)
         .select()
         .single();
-      if (error) throw error;
+        
+      if (error) {
+        console.error("Error inserting talude_marcacao:", error);
+        throw error;
+      }
       return inserted;
     }
   });
@@ -93,7 +111,8 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
 export const deleteTaludeMarcacao = createServerFn({ method: "POST" })
   .validator((id: string) => id)
   .handler(async ({ data: id }) => {
-    const { error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
       .from("talude_marcacoes")
       .delete()
       .eq("id", id);
