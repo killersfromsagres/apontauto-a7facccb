@@ -60,6 +60,7 @@ import { Route as AuthenticatedBaseAtivosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedBackorderMensalRouteImport } from './routes/_authenticated/backorder-mensal'
 import { Route as AuthenticatedBackorderRouteImport } from './routes/_authenticated/backorder'
 import { Route as AuthenticatedBacklogInteligenteRouteImport } from './routes/_authenticated/backlog-inteligente'
+import { Route as AuthenticatedAvaliacaoChamadosRouteImport } from './routes/_authenticated/avaliacao-chamados'
 import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authenticated/auditoria'
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAgenteIaRouteImport } from './routes/_authenticated/agente-ia'
@@ -375,6 +376,12 @@ const AuthenticatedBacklogInteligenteRoute =
     path: '/backlog-inteligente',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAvaliacaoChamadosRoute =
+  AuthenticatedAvaliacaoChamadosRouteImport.update({
+    id: '/avaliacao-chamados',
+    path: '/avaliacao-chamados',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAuditoriaRoute = AuthenticatedAuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
@@ -574,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
+  '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
@@ -658,6 +666,7 @@ export interface FileRoutesByTo {
   '/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/apontamentos': typeof AuthenticatedApontamentosRoute
   '/auditoria': typeof AuthenticatedAuditoriaRoute
+  '/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/backorder': typeof AuthenticatedBackorderRoute
   '/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
@@ -743,6 +752,7 @@ export interface FileRoutesById {
   '/_authenticated/agente-ia': typeof AuthenticatedAgenteIaRoute
   '/_authenticated/apontamentos': typeof AuthenticatedApontamentosRoute
   '/_authenticated/auditoria': typeof AuthenticatedAuditoriaRoute
+  '/_authenticated/avaliacao-chamados': typeof AuthenticatedAvaliacaoChamadosRoute
   '/_authenticated/backlog-inteligente': typeof AuthenticatedBacklogInteligenteRoute
   '/_authenticated/backorder': typeof AuthenticatedBackorderRoute
   '/_authenticated/backorder-mensal': typeof AuthenticatedBackorderMensalRoute
@@ -829,6 +839,7 @@ export interface FileRouteTypes {
     | '/agente-ia'
     | '/apontamentos'
     | '/auditoria'
+    | '/avaliacao-chamados'
     | '/backlog-inteligente'
     | '/backorder'
     | '/backorder-mensal'
@@ -913,6 +924,7 @@ export interface FileRouteTypes {
     | '/agente-ia'
     | '/apontamentos'
     | '/auditoria'
+    | '/avaliacao-chamados'
     | '/backlog-inteligente'
     | '/backorder'
     | '/backorder-mensal'
@@ -997,6 +1009,7 @@ export interface FileRouteTypes {
     | '/_authenticated/agente-ia'
     | '/_authenticated/apontamentos'
     | '/_authenticated/auditoria'
+    | '/_authenticated/avaliacao-chamados'
     | '/_authenticated/backlog-inteligente'
     | '/_authenticated/backorder'
     | '/_authenticated/backorder-mensal'
@@ -1455,6 +1468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBacklogInteligenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/avaliacao-chamados': {
+      id: '/_authenticated/avaliacao-chamados'
+      path: '/avaliacao-chamados'
+      fullPath: '/avaliacao-chamados'
+      preLoaderRoute: typeof AuthenticatedAvaliacaoChamadosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/auditoria': {
       id: '/_authenticated/auditoria'
       path: '/auditoria'
@@ -1750,6 +1770,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgenteIaRoute: typeof AuthenticatedAgenteIaRoute
   AuthenticatedApontamentosRoute: typeof AuthenticatedApontamentosRoute
   AuthenticatedAuditoriaRoute: typeof AuthenticatedAuditoriaRoute
+  AuthenticatedAvaliacaoChamadosRoute: typeof AuthenticatedAvaliacaoChamadosRoute
   AuthenticatedBacklogInteligenteRoute: typeof AuthenticatedBacklogInteligenteRoute
   AuthenticatedBackorderRoute: typeof AuthenticatedBackorderRoute
   AuthenticatedBackorderMensalRoute: typeof AuthenticatedBackorderMensalRoute
@@ -1800,6 +1821,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgenteIaRoute: AuthenticatedAgenteIaRoute,
   AuthenticatedApontamentosRoute: AuthenticatedApontamentosRoute,
   AuthenticatedAuditoriaRoute: AuthenticatedAuditoriaRoute,
+  AuthenticatedAvaliacaoChamadosRoute: AuthenticatedAvaliacaoChamadosRoute,
   AuthenticatedBacklogInteligenteRoute: AuthenticatedBacklogInteligenteRoute,
   AuthenticatedBackorderRoute: AuthenticatedBackorderRoute,
   AuthenticatedBackorderMensalRoute: AuthenticatedBackorderMensalRoute,
