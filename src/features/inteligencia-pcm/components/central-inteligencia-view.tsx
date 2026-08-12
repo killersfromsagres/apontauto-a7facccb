@@ -92,6 +92,7 @@ export function CentralInteligenciaView() {
           name: name.charAt(0).toUpperCase() + name.slice(1), 
           value: Number(value) 
         }))
+        .filter(item => item.value > 0) // Remove status zerados para limpar o gráfico
         .sort((a, b) => b.value - a.value)
     : [];
 
