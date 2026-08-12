@@ -329,7 +329,15 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
 
               <div className="space-y-4">
-                <Label className="text-xs font-bold text-white/70">Evidência Fotográfica</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-bold text-white/70">Evidência Fotográfica</Label>
+                  <div className="flex gap-2">
+                    <Badge variant="outline" className="bg-emerald-500/5 text-emerald-500 border-emerald-500/20 text-[10px] gap-1.5 py-1">
+                      <Zap className="h-3 w-3" />
+                      Modo Offline Ativo
+                    </Badge>
+                  </div>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-3">
                   {/* Foto de ANTES */}
@@ -341,10 +349,6 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           src={photoBefore} 
                           alt="Antes" 
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          onError={(e) => {
-                            console.error("[CorretivaPhoto] Erro ao carregar preview Antes:", photoBefore);
-                            // Fallback se o link do ImgBB falhar ou expirar (raro no ImgBB, mas bom ter)
-                          }}
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
@@ -358,35 +362,18 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         </div>
                       </div>
                     ) : (
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                          disabled={loading}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-
-                            setLoading(true);
-                            try {
-                              const formData = new FormData();
-                              formData.append("image", file);
-                              formData.append("module", "corretiva-novo");
-                              formData.append("name", `os-${os.numero_os}-antes-${Date.now()}`);
-
-                              const { postImgbbForm } = await import("@/lib/imgbb-post");
-                              const data = await postImgbbForm(formData);
+                      <div className="grid grid-rows-2 gap-2 h-full aspect-square">
+                        <div className="relative overflow-hidden rounded-xl">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            disabled={loading}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
                               
-                              if (!data.url) throw new Error("URL da imagem não retornada");
-                              
-                              setPhotoBefore(data.url);
-                              toast.success("Foto 'Antes' enviada com sucesso!");
-                            } catch (err: any) {
-                              const errorMsg = err.message || "Erro no upload";
-                              console.error("[CorretivaPhoto] Falha no upload Antes:", err);
-                              
-                              // Se for erro temporário ou de rede, salvamos no IndexedDB para sincronização posterior
                               try {
                                 const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
                                 const blobKey = `os-${os.id}-antes-${Date.now()}`;
@@ -401,30 +388,53 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   attempts: 0
                                 });
                                 
-                                const localUrl = URL.createObjectURL(file);
-                                setPhotoBefore(localUrl);
-                                toast.info(
-                                  <div className="flex flex-col gap-1">
-                                    <span className="font-bold">Foto salva localmente (Offline)</span>
-                                    <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
-                                  </div>,
-                                  { duration: 5000 }
-                                );
-                              } catch (dbErr) {
-                                console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
-                                toast.error(`Falha no upload: ${errorMsg}`);
+                                setPhotoBefore(URL.createObjectURL(file));
+                                toast.success("Foto (Câmera) salva e aguardando sincronização.");
+                              } catch (err) {
+                                toast.error("Erro ao salvar foto localmente.");
                               }
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                        />
-                        <div className={cn(
-                          "w-full aspect-square border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center rounded-2xl bg-white/5 transition-all",
-                          loading && "opacity-50"
-                        )}>
-                          {loading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Camera className="h-6 w-6 text-primary mb-1" />}
-                          <span className="text-[9px] font-bold text-white uppercase tracking-tighter text-center px-1">Tirar Foto Antes</span>
+                            }}
+                          />
+                          <div className="w-full h-full border-dashed border-2 border-white/10 hover:border-primary/50 flex flex-col items-center justify-center bg-white/5 transition-all">
+                            <Camera className="h-5 w-5 text-primary mb-1" />
+                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Câmera</span>
+                          </div>
+                        </div>
+                        <div className="relative overflow-hidden rounded-xl">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            disabled={loading}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              try {
+                                const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                const blobKey = `os-${os.id}-antes-galeria-${Date.now()}`;
+                                await blobPut(blobKey, file);
+                                await outboxAdd({
+                                  id: crypto.randomUUID(),
+                                  kind: "foto",
+                                  osId: os.id,
+                                  numeroOs: os.numero_os,
+                                  payload: { blobKey, legenda: "Evidência: Antes (Galeria)" },
+                                  createdAt: Date.now(),
+                                  attempts: 0
+                                });
+                                
+                                setPhotoBefore(URL.createObjectURL(file));
+                                toast.success("Foto (Galeria) salva e aguardando sincronização.");
+                              } catch (err) {
+                                toast.error("Erro ao salvar foto localmente.");
+                              }
+                            }}
+                          />
+                          <div className="w-full h-full border-dashed border-2 border-white/10 hover:border-blue-400/50 flex flex-col items-center justify-center bg-white/5 transition-all">
+                            <LayoutGrid className="h-4 w-4 text-blue-400 mb-1" />
+                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Galeria</span>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -439,9 +449,6 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                           src={photoAfter} 
                           alt="Depois" 
                           className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          onError={(e) => {
-                            console.error("[CorretivaPhoto] Erro ao carregar preview Depois:", photoAfter);
-                          }}
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
@@ -455,35 +462,18 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         </div>
                       </div>
                     ) : (
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                          disabled={loading}
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-
-                            setLoading(true);
-                            try {
-                              const formData = new FormData();
-                              formData.append("image", file);
-                              formData.append("module", "corretiva-novo");
-                              formData.append("name", `os-${os.numero_os}-depois-${Date.now()}`);
-
-                              const { postImgbbForm } = await import("@/lib/imgbb-post");
-                              const data = await postImgbbForm(formData);
+                      <div className="grid grid-rows-2 gap-2 h-full aspect-square">
+                        <div className="relative overflow-hidden rounded-xl">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            disabled={loading}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
                               
-                              if (!data.url) throw new Error("URL da imagem não retornada");
-                              
-                              setPhotoAfter(data.url);
-                              toast.success("Foto 'Depois' enviada com sucesso!");
-                            } catch (err: any) {
-                              const errorMsg = err.message || "Erro no upload";
-                              console.error("[CorretivaPhoto] Falha no upload Depois:", err);
-                              
-                              // Se for erro temporário ou de rede, salvamos no IndexedDB para sincronização posterior
                               try {
                                 const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
                                 const blobKey = `os-${os.id}-depois-${Date.now()}`;
@@ -498,36 +488,60 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   attempts: 0
                                 });
                                 
-                                const localUrl = URL.createObjectURL(file);
-                                setPhotoAfter(localUrl);
-                                toast.info(
-                                  <div className="flex flex-col gap-1">
-                                    <span className="font-bold">Foto salva localmente (Offline)</span>
-                                    <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
-                                  </div>,
-                                  { duration: 5000 }
-                                );
-                              } catch (dbErr) {
-                                console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
-                                toast.error(`Falha no upload: ${errorMsg}`);
+                                setPhotoAfter(URL.createObjectURL(file));
+                                toast.success("Foto (Câmera) salva e aguardando sincronização.");
+                              } catch (err) {
+                                toast.error("Erro ao salvar foto localmente.");
                               }
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                        />
-                        <div className={cn(
-                          "w-full aspect-square border-dashed border-2 border-white/10 hover:border-emerald-500/50 flex flex-col items-center justify-center rounded-2xl bg-white/5 transition-all",
-                          loading && "opacity-50"
-                        )}>
-                          {loading ? <Loader2 className="h-5 w-5 animate-spin text-emerald-400" /> : <Camera className="h-6 w-6 text-emerald-400 mb-1" />}
-                          <span className="text-[9px] font-bold text-white uppercase tracking-tighter text-center px-1">Tirar Foto Depois</span>
+                            }}
+                          />
+                          <div className="w-full h-full border-dashed border-2 border-white/10 hover:border-emerald-500/50 flex flex-col items-center justify-center bg-white/5 transition-all">
+                            <Camera className="h-5 w-5 text-emerald-400 mb-1" />
+                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Câmera</span>
+                          </div>
+                        </div>
+                        <div className="relative overflow-hidden rounded-xl">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            disabled={loading}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              
+                              try {
+                                const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                const blobKey = `os-${os.id}-depois-galeria-${Date.now()}`;
+                                await blobPut(blobKey, file);
+                                await outboxAdd({
+                                  id: crypto.randomUUID(),
+                                  kind: "foto",
+                                  osId: os.id,
+                                  numeroOs: os.numero_os,
+                                  payload: { blobKey, legenda: "Evidência: Depois (Galeria)" },
+                                  createdAt: Date.now(),
+                                  attempts: 0
+                                });
+                                
+                                setPhotoAfter(URL.createObjectURL(file));
+                                toast.success("Foto (Galeria) salva e aguardando sincronização.");
+                              } catch (err) {
+                                toast.error("Erro ao salvar foto localmente.");
+                              }
+                            }}
+                          />
+                          <div className="w-full h-full border-dashed border-2 border-white/10 hover:border-blue-400/50 flex flex-col items-center justify-center bg-white/5 transition-all">
+                            <LayoutGrid className="h-4 w-4 text-blue-400 mb-1" />
+                            <span className="text-[8px] font-bold text-white uppercase tracking-tighter">Galeria</span>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
 
