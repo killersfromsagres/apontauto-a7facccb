@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { type Point, type TaludeMarcacao } from '@/lib/taludes/api';
-import { calculatePolygonArea, getDistance } from '@/lib/taludes/geometry';
+import { calculatePolygonArea, getDistance, getCentroid } from '@/lib/taludes/geometry';
 import { Button } from '@/components/ui/button';
 import { 
   Plus, 
@@ -110,8 +110,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   }, [imageLoaded, fitToView, imageUrl]);
 
   useEffect(() => {
-    const observer = new ResizeObserver(() => {
-      if (imageLoaded) fitToView();
+    const observer = new ResizeObserver((entries) => {
+      // Use requestAnimationFrame to avoid "ResizeObserver loop completed with undelivered notifications"
+      window.requestAnimationFrame(() => {
+        if (!Array.isArray(entries) || !entries.length) return;
+        if (imageLoaded) fitToView();
+      });
     });
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -132,10 +136,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       return;
     }
 
-    if (mode === 'edit' && e.button === 0) {
-      const coords = getMapCoords(e);
-      const hitRadius = 15 / zoom;
+    const coords = getMapCoords(e);
+    const hitRadius = 20 / zoom;
 
+    if (mode === 'edit' && e.button === 0) {
       for (const m of localMarcacoes) {
         for (let i = 0; i < m.polygon.length; i++) {
           const p = m.polygon[i];
@@ -149,8 +153,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     }
     
     if (mode === 'move' && e.button === 0) {
-      const coords = getMapCoords(e);
-      // Logic for selecting label to move would go here
+      // Check for label hits
+      for (const m of localMarcacoes) {
+        const centroid = getCentroid(m.polygon);
+        const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
+        const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+
+        if (getDistance(coords, numPos) < hitRadius) {
+          setDraggedLabel({ marcacaoId: m.id, type: 'numero' });
+          setSelectedMarcacaoId(m.id);
+          return;
+        }
+        if (getDistance(coords, dataPos) < hitRadius) {
+          setDraggedLabel({ marcacaoId: m.id, type: 'data' });
+          setSelectedMarcacaoId(m.id);
+          return;
+        }
+      }
     }
   };
 
@@ -176,20 +195,37 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         return m;
       }));
     }
+
+    if (draggedLabel) {
+      setLocalMarcacoes(prev => prev.map(m => {
+        if (m.id === draggedLabel.marcacaoId) {
+          if (draggedLabel.type === 'numero') {
+            return { ...m, numero_x: coords.x, numero_y: coords.y };
+          } else {
+            return { ...m, data_x: coords.x, data_y: coords.y };
+          }
+        }
+        return m;
+      }));
+    }
   };
 
   const handleMouseUp = async () => {
     isPanning.current = false;
-    if (draggedPointIndex) {
-      const target = localMarcacoes.find(m => m.id === draggedPointIndex.marcacaoId);
+    
+    if (draggedPointIndex || draggedLabel) {
+      const id = draggedPointIndex?.marcacaoId || draggedLabel?.marcacaoId;
+      const target = localMarcacoes.find(m => m.id === id);
       if (target) {
         try {
           await onSave(target);
+          toast.success("Posição atualizada");
         } catch (err) {
-          console.error("Erro ao salvar vértice:", err);
+          console.error("Erro ao salvar posição:", err);
         }
       }
       setDraggedPointIndex(null);
+      setDraggedLabel(null);
     }
   };
 
@@ -258,13 +294,103 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   return (
     <div className="relative w-full h-full bg-slate-950 overflow-hidden flex flex-col group/editor">
-      <div className="absolute top-4 left-4 z-50 flex gap-1 bg-black/60 p-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl">
-          <Button variant={mode === 'view' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('view')} className="h-9 w-9"><MousePointer2 className="h-4 w-4" /></Button>
-          <Button variant={mode === 'draw' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('draw')} className="h-9 w-9"><PenTool className="h-4 w-4" /></Button>
-          <Button variant={mode === 'edit' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('edit')} className="h-9 w-9"><Move className="h-4 w-4" /></Button>
+      <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
+        <div className="flex gap-1 bg-black/60 p-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl">
+          <Button variant={mode === 'view' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('view')} className="h-9 w-9" title="Visualizar"><MousePointer2 className="h-4 w-4" /></Button>
+          <Button variant={mode === 'draw' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('draw')} className="h-9 w-9" title="Desenhar Área"><Plus className="h-4 w-4" /></Button>
+          <Button variant={mode === 'edit' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('edit')} className="h-9 w-9" title="Editar Pontos"><PenTool className="h-4 w-4" /></Button>
+          <Button variant={mode === 'move' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('move')} className="h-9 w-9" title="Mover Legendas"><Move className="h-4 w-4" /></Button>
           <div className="w-px h-6 bg-white/10 self-center mx-1" />
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z * 1.25, 20))} className="h-9 w-9"><ZoomIn className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.25, 0.05))} className="h-9 w-9"><ZoomOut className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={fitToView} className="h-9 w-9" title="Resetar Visualização"><Maximize className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={handleExport} className="h-9 w-9 text-emerald-400" title="Exportar Mapa"><Download className="h-4 w-4" /></Button>
+        </div>
+
+        {selectedMarcacaoId && (
+          <div className="bg-black/80 p-3 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl flex flex-col gap-3 min-w-[200px] animate-in slide-in-from-left-2">
+            <div className="flex justify-between items-center border-b border-white/10 pb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Configurar Legenda</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMarcacaoId(null)}>
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-white/70">Escala Número</span>
+                  <span className="text-blue-400 font-mono">{(numeroScale).toFixed(1)}x</span>
+                </div>
+                <input 
+                  type="range" min="0.5" max="5" step="0.1" 
+                  value={numeroScale} 
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setNumeroScale(val);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, numero_scale: val } : m));
+                  }}
+                  onMouseUp={() => {
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave(target);
+                  }}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-white/70">Escala Data</span>
+                  <span className="text-emerald-400 font-mono">{(dataScale).toFixed(1)}x</span>
+                </div>
+                <input 
+                  type="range" min="0.5" max="5" step="0.1" 
+                  value={dataScale} 
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    setDataScale(val);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, data_scale: val } : m));
+                  }}
+                  onMouseUp={() => {
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave(target);
+                  }}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" variant="outline" className="flex-1 h-8 text-[10px] border-white/5 bg-white/5"
+                  onClick={() => {
+                    setLocalMarcacoes(prev => prev.map(m => {
+                      if (m.id === selectedMarcacaoId) {
+                        return { ...m, numero_x: null, numero_y: null, data_x: null, data_y: null };
+                      }
+                      return m;
+                    }));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, numero_x: null, numero_y: null, data_x: null, data_y: null });
+                    toast.info("Legendas resetadas");
+                  }}
+                >
+                  <Undo2 className="h-3 w-3 mr-1" /> Resetar
+                </Button>
+                <Button 
+                  size="sm" variant="destructive" className="flex-1 h-8 text-[10px]"
+                  onClick={() => {
+                    if (selectedMarcacaoId) {
+                      onDelete(selectedMarcacaoId);
+                      setSelectedMarcacaoId(null);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div 
@@ -287,18 +413,112 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           }}
         >
           <img src={imageUrl} alt="Mapa" className="block" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} />
-          <svg viewBox={`0 0 ${imageWidth} ${imageHeight}`} className="absolute inset-0 w-full h-full pointer-events-none">
-            {localMarcacoes.map((m) => (
-              <g key={m.id}>
-                <polygon
-                  points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
-                  fill={m.cor}
-                  fillOpacity={0.25}
-                  stroke={m.cor}
-                  strokeWidth={(m.espessura_linha || 4) / zoom}
+          <svg viewBox={`0 0 ${imageWidth} ${imageHeight}`} className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
+            {localMarcacoes.map((m) => {
+              const centroid = getCentroid(m.polygon);
+              const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
+              const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+              const isSelected = selectedMarcacaoId === m.id;
+
+              return (
+                <g key={m.id} className={cn("transition-opacity duration-300", isSelected ? "opacity-100" : "opacity-90")}>
+                  {/* Polygon Area */}
+                  <polygon
+                    points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
+                    fill={m.cor}
+                    fillOpacity={isSelected ? 0.4 : 0.25}
+                    stroke={m.cor}
+                    strokeWidth={(m.espessura_linha || 4) / zoom}
+                    className="pointer-events-auto cursor-pointer"
+                  />
+
+                  {/* Manual Labels */}
+                  <g className={cn(mode === 'move' ? "pointer-events-auto cursor-move" : "pointer-events-none")}>
+                    {/* Slope Number */}
+                    <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="black" fillOpacity={0.6} stroke={m.cor} strokeWidth={2} />
+                    <text
+                      x={numPos.x}
+                      y={numPos.y}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill="white"
+                      fontSize={16 * (m.numero_scale || 1)}
+                      fontWeight="bold"
+                      className="select-none"
+                    >
+                      {m.numero}
+                    </text>
+
+                    {/* Status Date */}
+                    <rect 
+                      x={dataPos.x - (60 * (m.data_scale || 1))} 
+                      y={dataPos.y - (15 * (m.data_scale || 1))} 
+                      width={120 * (m.data_scale || 1)} 
+                      height={30 * (m.data_scale || 1)} 
+                      rx={4} 
+                      fill="black" 
+                      fillOpacity={0.8} 
+                      stroke="white" 
+                      strokeOpacity={0.2}
+                    />
+                    <text
+                      x={dataPos.x}
+                      y={dataPos.y}
+                      textAnchor="middle"
+                      dominantBaseline="middle"
+                      fill={m.cor}
+                      fontSize={12 * (m.data_scale || 1)}
+                      fontWeight="600"
+                      className="select-none"
+                    >
+                      {m.rotulo?.split(' - ')[1] || m.rotulo}
+                    </text>
+                  </g>
+
+                  {/* Edit Handles (only in Edit mode for selected) */}
+                  {mode === 'edit' && isSelected && m.polygon.map((p, idx) => (
+                    <circle
+                      key={idx}
+                      cx={p.x}
+                      cy={p.y}
+                      r={6 / zoom}
+                      fill="white"
+                      stroke={m.cor}
+                      strokeWidth={2 / zoom}
+                      className="pointer-events-auto cursor-pointer"
+                    />
+                  ))}
+                </g>
+              );
+            })}
+
+            {/* Current Drawing Points */}
+            {mode === 'draw' && currentPoints.length > 0 && (
+              <g>
+                <polyline
+                  points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                  fill="none"
+                  stroke={currentColor}
+                  strokeWidth={lineThickness / zoom}
+                  strokeDasharray="5,5"
                 />
+                {currentPoints.map((p, idx) => (
+                  <circle key={idx} cx={p.x} cy={p.y} r={4 / zoom} fill={currentColor} />
+                ))}
+                {hoverPoint && currentPoints.length > 0 && (
+                  <line
+                    x1={currentPoints[currentPoints.length - 1].x}
+                    y1={currentPoints[currentPoints.length - 1].y}
+                    x2={hoverPoint.x}
+                    y2={hoverPoint.y}
+                    stroke={currentColor}
+                    strokeWidth={lineThickness / zoom}
+                    strokeDasharray="5,5"
+                    opacity={0.5}
+                  />
+                )}
               </g>
-            ))}
+            )}
           </svg>
         </div>
       </div>
