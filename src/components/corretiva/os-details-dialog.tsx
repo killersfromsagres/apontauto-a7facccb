@@ -367,51 +367,45 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               formData.append("module", "corretiva-novo");
                               formData.append("name", `os-${os.numero_os}-antes-${Date.now()}`);
 
-                              const res = await fetch("/api/imgbb-upload", {
-                                method: "POST",
-                                headers: {
-                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`
-                                },
-                                body: formData,
-                              });
+                              const { postImgbbForm } = await import("@/lib/imgbb-post");
+                              const data = await postImgbbForm(formData);
                               
-                              if (!res.ok) {
-                                const errorData = await res.json().catch(() => ({}));
-                                const errorMsg = errorData.error || `Erro HTTP ${res.status}`;
-                                console.error("[CorretivaPhoto] Erro upload Antes:", errorMsg, errorData);
+                            } catch (err: any) {
+                              const errorMsg = err.message || "Erro no upload";
+                              console.error("[CorretivaPhoto] Falha no upload Antes:", err);
+                              
+                              // Se for erro temporário ou de rede, salvamos no IndexedDB para sincronização posterior
+                              try {
+                                const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                const blobKey = `os-${os.id}-antes-${Date.now()}`;
+                                await blobPut(blobKey, file);
+                                await outboxAdd({
+                                  id: crypto.randomUUID(),
+                                  kind: "foto",
+                                  osId: os.id,
+                                  numeroOs: os.numero_os,
+                                  payload: { blobKey, legenda: "Evidência: Antes" },
+                                  createdAt: Date.now(),
+                                  attempts: 0
+                                });
                                 
-                                // Se falhar o upload online, salvamos no IndexedDB para sincronização posterior
-                                try {
-                                  const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
-                                  const blobKey = `os-${os.id}-antes-${Date.now()}`;
-                                  await blobPut(blobKey, file);
-                                  await outboxAdd({
-                                    id: crypto.randomUUID(),
-                                    kind: "foto",
-                                    osId: os.id,
-                                    numeroOs: os.numero_os,
-                                    payload: { blobKey, legenda: "Evidência: Antes" },
-                                    createdAt: Date.now(),
-                                    attempts: 0
-                                  });
-                                  
-                                  const localUrl = URL.createObjectURL(file);
-                                  setPhotoBefore(localUrl);
-                                  toast.info(
-                                    <div className="flex flex-col gap-1">
-                                      <span className="font-bold">Foto salva localmente (Offline)</span>
-                                      <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
-                                    </div>,
-                                    { duration: 5000 }
-                                  );
-                                  return;
-                                } catch (dbErr) {
-                                  console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
-                                  throw new Error(errorMsg);
-                                }
+                                const localUrl = URL.createObjectURL(file);
+                                setPhotoBefore(localUrl);
+                                toast.info(
+                                  <div className="flex flex-col gap-1">
+                                    <span className="font-bold">Foto salva localmente (Offline)</span>
+                                    <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
+                                  </div>,
+                                  { duration: 5000 }
+                                );
+                                return;
+                              } catch (dbErr) {
+                                console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
+                                toast.error(`Falha no upload: ${errorMsg}`);
                               }
-                              
-                              const data = await res.json();
+                            } finally {
+                              setLoading(false);
+                            }
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoBefore(data.url);
@@ -470,51 +464,45 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               formData.append("module", "corretiva-novo");
                               formData.append("name", `os-${os.numero_os}-depois-${Date.now()}`);
 
-                              const res = await fetch("/api/imgbb-upload", {
-                                method: "POST",
-                                headers: {
-                                  "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ""}`
-                                },
-                                body: formData,
-                              });
+                              const { postImgbbForm } = await import("@/lib/imgbb-post");
+                              const data = await postImgbbForm(formData);
                               
-                              if (!res.ok) {
-                                const errorData = await res.json().catch(() => ({}));
-                                const errorMsg = errorData.error || `Erro HTTP ${res.status}`;
-                                console.error("[CorretivaPhoto] Erro upload Depois:", errorMsg, errorData);
+                            } catch (err: any) {
+                              const errorMsg = err.message || "Erro no upload";
+                              console.error("[CorretivaPhoto] Falha no upload Depois:", err);
+                              
+                              // Se for erro temporário ou de rede, salvamos no IndexedDB para sincronização posterior
+                              try {
+                                const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+                                const blobKey = `os-${os.id}-depois-${Date.now()}`;
+                                await blobPut(blobKey, file);
+                                await outboxAdd({
+                                  id: crypto.randomUUID(),
+                                  kind: "foto",
+                                  osId: os.id,
+                                  numeroOs: os.numero_os,
+                                  payload: { blobKey, legenda: "Evidência: Depois" },
+                                  createdAt: Date.now(),
+                                  attempts: 0
+                                });
                                 
-                                // Se falhar o upload online, salvamos no IndexedDB para sincronização posterior
-                                try {
-                                  const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
-                                  const blobKey = `os-${os.id}-depois-${Date.now()}`;
-                                  await blobPut(blobKey, file);
-                                  await outboxAdd({
-                                    id: crypto.randomUUID(),
-                                    kind: "foto",
-                                    osId: os.id,
-                                    numeroOs: os.numero_os,
-                                    payload: { blobKey, legenda: "Evidência: Depois" },
-                                    createdAt: Date.now(),
-                                    attempts: 0
-                                  });
-                                  
-                                  const localUrl = URL.createObjectURL(file);
-                                  setPhotoAfter(localUrl);
-                                  toast.info(
-                                    <div className="flex flex-col gap-1">
-                                      <span className="font-bold">Foto salva localmente (Offline)</span>
-                                      <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
-                                    </div>,
-                                    { duration: 5000 }
-                                  );
-                                  return;
-                                } catch (dbErr) {
-                                  console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
-                                  throw new Error(errorMsg);
-                                }
+                                const localUrl = URL.createObjectURL(file);
+                                setPhotoAfter(localUrl);
+                                toast.info(
+                                  <div className="flex flex-col gap-1">
+                                    <span className="font-bold">Foto salva localmente (Offline)</span>
+                                    <span className="text-xs opacity-80">A foto será enviada automaticamente quando houver internet.</span>
+                                  </div>,
+                                  { duration: 5000 }
+                                );
+                                return;
+                              } catch (dbErr) {
+                                console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
+                                toast.error(`Falha no upload: ${errorMsg}`);
                               }
-                              
-                              const data = await res.json();
+                            } finally {
+                              setLoading(false);
+                            }
                               if (!data.url) throw new Error("URL da imagem não retornada");
                               
                               setPhotoAfter(data.url);
