@@ -371,7 +371,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw Date Label
         const dateText = m.rotulo?.split(' - ')[1] || m.rotulo || '';
         const dataScale = m.data_scale || 1;
-        ctx.font = `600 ${14 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
         const textWidth = ctx.measureText(dateText).width;
         const rectWidth = textWidth + 20 * dataScale;
         const rectHeight = 30 * dataScale;
