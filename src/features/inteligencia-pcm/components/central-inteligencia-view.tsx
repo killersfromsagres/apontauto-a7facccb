@@ -27,8 +27,7 @@ import {
   Filter,
   X,
   Building2,
-  Users,
-  RefreshCw
+  Users
 } from "lucide-react";
 import { 
   Area, 
@@ -47,15 +46,11 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useWeather } from "@/hooks/use-weather";
 import { detectRain } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
 import { KpiMonitorCard } from "./kpi-monitor-card";
-
-// Lazy load the new area chart to avoid SSR issues with reaviz
-const AreaChart1 = lazy(() => import("@/components/ui/area-chart-1"));
-
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -84,31 +79,25 @@ export function CentralInteligenciaView() {
 
 
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserName(user.email?.split("@")[0] || "Gestor");
-      }
-    };
-    checkUser();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserName(data.user?.email?.split("@")[0] || "Gestor");
+    });
   }, []);
 
-  const { data: overview, isLoading: overviewLoading, error: overviewError, refetch: refetchOverview } = useQuery({
+  const { data: overview, isLoading: overviewLoading, error: overviewError } = useQuery({
     queryKey: ["gestao", "overview", filtros],
     queryFn: async () => {
       try {
         const data = await fetchGestaoOverview(filtros);
         console.log("Dashboard data fetched successfully:", data);
-        if (!data) throw new Error("O servidor retornou um conjunto de dados vazio.");
         return data;
       } catch (err) {
-        console.error("Dashboard fetch error details:", err);
+        console.error("Dashboard fetch error:", err);
         throw err;
       }
     },
     refetchInterval: 10000, 
     staleTime: 5000,
-    retry: 2,
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -124,54 +113,11 @@ export function CentralInteligenciaView() {
   });
 
 
-  const chartDataReaviz = useMemo(() => {
-    try {
-      if (!overview?.os_mensal || !Array.isArray(overview.os_mensal) || overview.os_mensal.length === 0) {
-        // Mock data to prevent empty chart crashes if real data is not yet available
-        return [
-          { key: 'Chamados IA', data: [{ key: new Date(), data: 0 }] },
-          { key: 'Finalizados', data: [{ key: new Date(), data: 0 }] }
-        ];
-      }
-      
-      const seriesIA: any = {
-        key: 'Chamados IA',
-        data: overview.os_mensal.map((item, index) => {
-          // Reconstruct date from the string if possible, or use index-based month offsets
-          const d = new Date();
-          d.setDate(1); // Avoid month skipping on 31st
-          d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
-          
-          return {
-            key: d,
-            data: Math.max(0, Number(item.criadas) || 0)
-          };
-        })
-      };
-
-      const seriesFinalizados: any = {
-        key: 'Finalizados',
-        data: overview.os_mensal.map((item, index) => {
-          const d = new Date();
-          d.setDate(1); 
-          d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
-          
-          return {
-            key: d,
-            data: Math.max(0, Number(item.concluidas) || 0)
-          };
-        })
-      };
-
-      return [seriesIA, seriesFinalizados];
-    } catch (err) {
-      console.error("Error computing chartDataReaviz:", err);
-      return [];
-    }
-  }, [overview?.os_mensal]);
-
-  // chartData original removido para favorecer chartDataReaviz
-
+  const chartData = overview?.os_mensal?.map(item => ({
+    name: item.mes,
+    value: item.criadas,
+    concluidas: item.concluidas || 0
+  })) || [];
 
   const statusData = overview?.os_status 
     ? Object.entries(overview.os_status)
@@ -201,34 +147,11 @@ export function CentralInteligenciaView() {
     >
       <div className="space-y-6">
         {overviewError && (
-          <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-sm backdrop-blur-md animate-in fade-in zoom-in duration-300">
-            <h4 className="font-bold flex items-center gap-2 mb-2 text-lg">
-              <AlertTriangle className="h-5 w-5" /> Erro ao carregar a página
+          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm">
+            <h4 className="font-bold flex items-center gap-2 mb-1">
+              <AlertTriangle className="h-4 w-4" /> Erro ao carregar dashboard
             </h4>
-            <div className="space-y-2 opacity-90 mb-4">
-              <p>Algo deu errado. Tente recarregar ou voltar ao dashboard.</p>
-              <code className="block p-2 bg-black/20 rounded text-[10px] break-all">
-                {(overviewError as Error).message || "Erro desconhecido"}
-              </code>
-            </div>
-            <div className="flex gap-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30 text-rose-500"
-                onClick={() => refetchOverview()}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-rose-500 hover:bg-rose-500/10"
-                onClick={() => window.location.href = '/'}
-              >
-                Voltar ao dashboard
-              </Button>
-            </div>
+            <p className="opacity-80">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
           </div>
         )}
 
@@ -473,8 +396,8 @@ export function CentralInteligenciaView() {
 
         {/* MONITORAMENTO PRINCIPAL */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="relative overflow-hidden lg:col-span-2 min-h-[400px]">
-            <div className="hidden">
+          <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px] glass-surface card-sheen">
+            <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Volume de Campo IA & Histórico</h3>
                 <div className="text-2xl font-bold text-white">
@@ -491,44 +414,67 @@ export function CentralInteligenciaView() {
               </div>
             </div>
             
-            <div className="h-[580px] w-full">
-              <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-muted-foreground">Carregando gráficos premium...</div>}>
-                <AreaChart1 
-                  title=""
-                  data={chartDataReaviz}
-                  legendItems={[
-                    { name: 'Chamados IA', color: '#8B5CF6' },
-                    { name: 'Finalizados', color: '#34d399' }
-                  ]}
-                  metrics={[
-                    {
-                      id: 'mttd',
-                      Icon: Clock,
-                      label: 'Tempo Médio Resposta',
-                      tooltip: 'Tempo Médio Resposta',
-                      value: `${mttrGlobal.toFixed(1)}h`,
-                      TrendIcon: TrendingUp,
-                      trendBaseColor: '#34d399',
-                      trendStrokeColor: '#34d399',
-                      delay: 0,
-                    },
-                    {
-                      id: 'sla',
-                      Icon: Zap,
-                      label: 'Eficiência SLA',
-                      tooltip: 'Eficiência SLA',
-                      value: overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%",
-                      TrendIcon: TrendingUp,
-                      trendBaseColor: '#4F8CFF',
-                      trendStrokeColor: '#4F8CFF',
-                      delay: 0.05,
-                    }
-                  ]}
-                />
-              </Suspense>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: "rgba(13, 20, 34, 0.9)", 
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      borderRadius: "12px",
+                      backdropFilter: "blur(12px)"
+                    }}
+                    itemStyle={{ color: "#fff" }}
+                  />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="rgba(255,255,255,0.3)" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="rgba(255,255,255,0.3)" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="value" 
+                    name="Chamados IA"
+                    stroke="#8B5CF6" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorValue)" 
+                    dot={{ r: 4, fill: "#8B5CF6", strokeWidth: 2, stroke: "#05070C" }}
+                    activeDot={{ r: 6, fill: "#fff" }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="concluidas" 
+                    name="Finalizados"
+                    stroke="#34d399" 
+                    strokeWidth={3}
+                    fillOpacity={1} 
+                    fill="url(#colorConcluidas)" 
+                    dot={{ r: 4, fill: "#34d399", strokeWidth: 2, stroke: "#05070C" }}
+                    activeDot={{ r: 6, fill: "#fff" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-
+          </GlassCard>
 
           <GlassCard className="flex flex-col glass-surface card-sheen">
             <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">DISTRIBUIÇÃO POR STATUS</h3>
