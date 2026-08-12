@@ -206,8 +206,8 @@ export function GestaoView() {
   const favoritos = prefs.data?.favorites_json ?? [];
 
   const overview = useQuery({
-    queryKey: ["gestao", "overview", filtros.dias],
-    queryFn: () => fetchGestaoOverview(filtros.dias),
+    queryKey: ["gestao", "overview", filtros],
+    queryFn: () => fetchGestaoOverview(filtros),
     enabled: canSee,
     staleTime: 60_000,
     refetchInterval: 120_000,
