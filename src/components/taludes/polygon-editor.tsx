@@ -63,7 +63,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' } | null>(null);
   const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [statusText, setStatusText] = useState('Em Execução');
+  const [statusText, setStatusText] = useState('Monitorado');
+  const [statusType, setStatusType] = useState<'monitorado' | 'execucao' | 'alerta' | 'concluido'>('monitorado');
+  
+  const STATUS_CONFIG = {
+    monitorado: { color: '#10b981', label: 'Monitorado' },
+    execucao: { color: '#f59e0b', label: 'Em Execução' },
+    alerta: { color: '#ef4444', label: 'Alerta Crítico' },
+    concluido: { color: '#3b82f6', label: 'Concluído' }
+  };
   const [lineThickness, setLineThickness] = useState(4);
   const [legendScale, setLegendScale] = useState(1);
   const [activeLegendScale, setActiveLegendScale] = useState(1);
@@ -241,7 +249,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setNumeroScale(m.numero_scale || 1);
         setDataScale(m.data_scale || 1);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
-        setStatusText(m.rotulo?.split(' - ')[0] || 'Em Execução');
+        const fullRotulo = m.rotulo || '';
+        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'monitorado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Monitorado');
         return;
       }
     }
@@ -275,9 +286,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const handleFinishDrawing = async () => {
     if (currentPoints.length < 3) return;
     const newMarcacao: Partial<TaludeMarcacao> = {
-      rotulo: `${statusText} - ${statusDate}`,
+      rotulo: `${STATUS_CONFIG[statusType].label} - ${statusDate}`,
       polygon: currentPoints,
-      cor: currentColor,
+      cor: STATUS_CONFIG[statusType].color,
       espessura_linha: lineThickness,
       numero_scale: numeroScale,
       data_scale: dataScale
@@ -317,6 +328,60 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             </div>
             
             <div className="space-y-4">
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase">Status da Atividade</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        const type = key as keyof typeof STATUS_CONFIG;
+                        setStatusType(type);
+                        setLocalMarcacoes(prev => prev.map(m => 
+                          m.id === selectedMarcacaoId 
+                            ? { ...m, cor: cfg.color, rotulo: `${cfg.label} - ${statusDate}` } 
+                            : m
+                        ));
+                        const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                        if (target) onSave({ ...target, cor: cfg.color, rotulo: `${cfg.label} - ${statusDate}` });
+                      }}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-lg border text-[10px] transition-all",
+                        statusType === key 
+                          ? "bg-white/10 border-white/20 text-white" 
+                          : "bg-transparent border-white/5 text-white/50 hover:bg-white/5"
+                      )}
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cfg.color }} />
+                      {cfg.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase">Data do Status</span>
+                <div className="relative">
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <input 
+                    type="date" 
+                    value={statusDate}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setStatusDate(newDate);
+                      setLocalMarcacoes(prev => prev.map(m => 
+                        m.id === selectedMarcacaoId 
+                          ? { ...m, rotulo: `${STATUS_CONFIG[statusType].label} - ${newDate}` } 
+                          : m
+                      ));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, rotulo: `${STATUS_CONFIG[statusType].label} - ${newDate}` });
+                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex justify-between text-[10px]">
                   <span className="text-white/70">Escala Número</span>
