@@ -266,8 +266,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
-    } else if (mode === 'view') {
-      setSelectedMarcacaoId(null);
+    } else if (mode === 'view' || mode === 'edit' || mode === 'move') {
+      // Find which marcacao was clicked
+      const clicked = localMarcacoes.find(m => isPointInPolygon(coords, m.polygon));
+      if (clicked) {
+        setSelectedMarcacaoId(clicked.id);
+        setCurrentColor(clicked.cor);
+        setLineThickness(clicked.espessura_linha || 4);
+        setNumeroScale(clicked.numero_scale || 1);
+        setDataScale(clicked.data_scale || 1);
+        setStatusDate(clicked.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        const fullRotulo = clicked.rotulo || '';
+        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
+      } else {
+        setSelectedMarcacaoId(null);
+      }
     }
   };
 
@@ -299,8 +314,92 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   };
 
   const handleExport = async () => {
-    // Canvas logic will be updated later to handle manual label positioning
-    toast.info("Exportação em atualização");
+    if (!imgRef.current) return;
+    
+    toast.loading("Gerando imagem de alta resolução...");
+    
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = imageWidth;
+      canvas.height = imageHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error("Could not get canvas context");
+
+      // 1. Draw Background Image
+      ctx.drawImage(imgRef.current, 0, 0, imageWidth, imageHeight);
+
+      // 2. Draw Polygons and Labels
+      localMarcacoes.forEach(m => {
+        if (!m.visivel) return;
+
+        // Draw Polygon
+        ctx.beginPath();
+        m.polygon.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        
+        ctx.fillStyle = `${m.cor}${Math.round((m.opacidade || 0.3) * 255).toString(16).padStart(2, '0')}`;
+        ctx.fill();
+        ctx.strokeStyle = m.cor;
+        ctx.lineWidth = m.espessura_linha || 4;
+        ctx.stroke();
+
+        // Calculate Label Positions
+        const centroid = getCentroid(m.polygon);
+        const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
+        const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+
+        // Draw Number Circle
+        const numRadius = 20 * (m.numero_scale || 1);
+        ctx.beginPath();
+        ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fill();
+        ctx.strokeStyle = m.cor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw Number Text
+        ctx.fillStyle = 'white';
+        ctx.font = `bold ${18 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(m.numero), numPos.x, numPos.y);
+
+        // Draw Date Label
+        const dateText = m.rotulo?.split(' - ')[1] || m.rotulo || '';
+        const dataScale = m.data_scale || 1;
+        ctx.font = `600 ${14 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        const textWidth = ctx.measureText(dateText).width;
+        const rectWidth = textWidth + 20 * dataScale;
+        const rectHeight = 30 * dataScale;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = m.cor;
+        ctx.fillText(dateText, dataPos.x, dataPos.y);
+      });
+
+      // 3. Trigger Download
+      const link = document.createElement('a');
+      link.download = `Mapa-Taludes-${new Date().toLocaleDateString()}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+      
+      toast.dismiss();
+      toast.success("Mapa exportado com sucesso!");
+    } catch (err) {
+      console.error("Erro na exportação:", err);
+      toast.dismiss();
+      toast.error("Erro ao exportar mapa");
+    }
   };
 
   return (
@@ -477,7 +576,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             willChange: 'transform'
           }}
         >
-          <img src={imageUrl} alt="Mapa" className="block" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} />
+          <img ref={imgRef} src={imageUrl} alt="Mapa" className="block" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} crossOrigin="anonymous" />
           <svg viewBox={`0 0 ${imageWidth} ${imageHeight}`} className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             {localMarcacoes.map((m) => {
               const centroid = getCentroid(m.polygon);
@@ -500,44 +599,46 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   {/* Manual Labels */}
                   <g className={cn(mode === 'move' ? "pointer-events-auto cursor-move" : "pointer-events-none")}>
                     {/* Slope Number */}
-                    <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="black" fillOpacity={0.6} stroke={m.cor} strokeWidth={2} />
+                    <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
                     <text
                       x={numPos.x}
                       y={numPos.y}
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="white"
-                      fontSize={16 * (m.numero_scale || 1)}
-                      fontWeight="bold"
-                      className="select-none"
+                      fontSize={18 * (m.numero_scale || 1)}
+                      fontWeight="800"
+                      className="select-none font-['SF_Pro_Display']"
+                      style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
                     >
                       {m.numero}
                     </text>
 
                     {/* Status Date */}
-                    <rect 
-                      x={dataPos.x - (60 * (m.data_scale || 1))} 
-                      y={dataPos.y - (15 * (m.data_scale || 1))} 
-                      width={120 * (m.data_scale || 1)} 
-                      height={30 * (m.data_scale || 1)} 
-                      rx={4} 
-                      fill="black" 
-                      fillOpacity={0.8} 
-                      stroke="white" 
-                      strokeOpacity={0.2}
-                    />
-                    <text
-                      x={dataPos.x}
-                      y={dataPos.y}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill={m.cor}
-                      fontSize={12 * (m.data_scale || 1)}
-                      fontWeight="600"
-                      className="select-none"
-                    >
-                      {m.rotulo?.split(' - ')[1] || m.rotulo}
-                    </text>
+                    <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
+                      <rect 
+                        x="-45"
+                        y="-15" 
+                        width="90" 
+                        height="30" 
+                        rx="6" 
+                        fill="rgba(0,0,0,0.85)" 
+                        stroke="rgba(255,255,255,0.15)" 
+                        strokeWidth="1"
+                      />
+                      <text
+                        x="0"
+                        y="0"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fill={m.cor}
+                        fontSize="13"
+                        fontWeight="700"
+                        className="select-none font-['SF_Pro_Display'] uppercase tracking-tight"
+                      >
+                        {m.rotulo?.split(' - ')[1] || m.rotulo}
+                      </text>
+                    </g>
                   </g>
 
                   {/* Edit Handles (only in Edit mode for selected) */}
