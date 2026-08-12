@@ -135,7 +135,7 @@ function LiquidPanel({
       className={cn(
         "relative overflow-hidden rounded-3xl border bg-card/60 p-5 backdrop-blur-xl sm:p-7",
         tone === "accent"
-          ? "border-primary/40 shadow-[0_0_60px_-25px_hsl(var(--primary)/0.9)]"
+          ? "border-primary/40 shadow-[0_0_60px_-25px_oklch(0.85_0.12_220/0.9)]"
           : "border-border/60",
         className,
       )}
