@@ -437,8 +437,8 @@ export function CentralInteligenciaView() {
 
         {/* MONITORAMENTO PRINCIPAL */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px] glass-surface card-sheen">
-            <div className="flex items-center justify-between mb-6">
+          <div className="relative overflow-hidden lg:col-span-2 min-h-[400px]">
+            <div className="hidden">
               <div>
                 <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Volume de Campo IA & Histórico</h3>
                 <div className="text-2xl font-bold text-white">
@@ -455,7 +455,7 @@ export function CentralInteligenciaView() {
               </div>
             </div>
             
-            <div className="h-[400px] w-full mt-4">
+            <div className="h-[580px] w-full">
               <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-muted-foreground">Carregando gráficos premium...</div>}>
                 <AreaChart1 
                   title=""
@@ -491,7 +491,8 @@ export function CentralInteligenciaView() {
                 />
               </Suspense>
             </div>
-          </GlassCard>
+          </div>
+
 
           <GlassCard className="flex flex-col glass-surface card-sheen">
             <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">DISTRIBUIÇÃO POR STATUS</h3>
