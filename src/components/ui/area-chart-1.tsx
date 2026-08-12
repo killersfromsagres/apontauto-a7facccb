@@ -15,7 +15,9 @@ import {
   GradientStop,
   GridlineSeries,
   Gridline,
-  ChartDataTypes, 
+  ChartDataTypes,
+  ChartDataShape,
+
 } from 'reaviz';
 
 
@@ -113,14 +115,14 @@ const initialChartData: ChartSeries[] = [
 ];
 
 
-const validateChartData = (data: ChartSeries[]): any[] => {
+const validateChartData = (data: ChartSeries[]): (ChartDataTypes | ChartDataShape)[] => {
   return data.map(series => ({
     key: series.key,
     data: series.data.map(item => ({
       key: item.key,
       data: (typeof item.data !== 'number' || isNaN(item.data)) ? 0 : item.data,
     })),
-  }));
+  })) as any;
 };
 
 interface MetricInfo {
