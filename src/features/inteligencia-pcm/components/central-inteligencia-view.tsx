@@ -63,7 +63,8 @@ export function CentralInteligenciaView() {
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ["gestao", "overview", 30],
     queryFn: () => fetchGestaoOverview(30),
-    refetchInterval: 30000,
+    refetchInterval: 10000, // Intervalo reduzido para 10s para atualização mais rápida
+    staleTime: 0,
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -73,7 +74,8 @@ export function CentralInteligenciaView() {
     queryKey: ["gestao", "os-recente"],
     queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
     select: (data) => data.slice(0, 5),
-    refetchInterval: 60000,
+    refetchInterval: 10000, // Intervalo reduzido para 10s
+    staleTime: 0,
   });
 
   const chartData = overview?.os_mensal?.map(item => ({
@@ -128,7 +130,7 @@ export function CentralInteligenciaView() {
           />
           <KpiMonitorCard
             title="CAMPO IA (MÊS)"
-            value={overview?.corretiva_novo?.criadas.toString() || overview?.os.criadas.toString() || "0"}
+            value={overview?.corretiva_novo?.criadas.toString() || "0"}
             trend={(() => {
               const atual = overview?.corretiva_novo?.criadas || 0;
               const ant = overview?.corretiva_novo?.criadas_ant || 0;
@@ -138,7 +140,7 @@ export function CentralInteligenciaView() {
             })()}
             icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />}
             chartColor="#8B5CF6"
-            description="Execução de Campo IA"
+            description="Total Execução Campo IA"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
