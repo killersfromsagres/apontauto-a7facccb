@@ -26,6 +26,7 @@ export interface TaludeMarcacao {
   data_x?: number | null;
   data_y?: number | null;
   data_scale?: number;
+  prazo_rotulo?: string | null;
 }
 
 export interface TaludeMap {
