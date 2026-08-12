@@ -477,146 +477,64 @@ export function GestaoView() {
         </GlassCard>
 
         {/* Filtros globais avançados */}
-        <div className="mb-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-          <GlassCard className="p-3">
-            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Período de Análise</label>
-            <div className="flex flex-wrap gap-1.5">
-              {PERIODOS.map((p) => (
-                <Chip
-                  key={p.label}
-                  ativo={filtros.dias === p.dias}
-                  onClick={() => setFiltroUnico("dias", p.dias)}
+        <GlassCard className="mb-4 p-3">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold uppercase text-muted-foreground">Período de Análise</label>
+              <div className="flex flex-wrap gap-1.5">
+                {PERIODOS.map((p) => (
+                  <Chip
+                    key={p.label}
+                    ativo={filtros.dias === p.dias}
+                    onClick={() => setFiltroUnico("dias", p.dias)}
+                  >
+                    {p.label}
+                  </Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold uppercase text-muted-foreground">Módulo & Criticidade</label>
+              <div className="flex flex-wrap gap-1.5">
+                <Chip ativo={!filtros.modulo} onClick={() => setFiltroUnico("modulo", null)}>Todos</Chip>
+                {MODULOS.map(m => (
+                  <Chip key={m} ativo={filtros.modulo === m} onClick={() => setFiltroUnico("modulo", m)}>{m}</Chip>
+                ))}
+                {CRITICIDADES.map(c => (
+                  <Chip key={c} ativo={filtros.criticidade === c} onClick={() => setFiltroUnico("criticidade", filtros.criticidade === c ? null : c)}>{c}</Chip>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold uppercase text-muted-foreground">Equipe</label>
+              <select 
+                value={filtros.equipe || ""} 
+                onChange={(e) => setFiltroUnico("equipe", e.target.value || null)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl h-10 text-xs px-3 text-white focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Todas Equipes</option>
+                {equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold uppercase text-muted-foreground">Prédio / Local</label>
+              <div className="flex gap-2">
+                <select 
+                  value={filtros.predio || ""} 
+                  onChange={(e) => setFiltroUnico("predio", e.target.value || null)}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl h-10 text-xs px-3 text-white focus:outline-none focus:ring-1 focus:ring-primary"
                 >
-                  {p.label}
-                </Chip>
-              ))}
+                  <option value="">Todos Prédios</option>
+                  {predios.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+                </select>
+                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0" onClick={() => setFiltros(FILTROS_PADRAO)}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-          </GlassCard>
-
-          <GlassCard className="p-3">
-            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Módulo</label>
-            <div className="flex flex-wrap gap-1.5">
-              <Chip ativo={!filtros.modulo} onClick={() => setFiltroUnico("modulo", null)}>Todos</Chip>
-              {MODULOS.map(m => (
-                <Chip key={m} ativo={filtros.modulo === m} onClick={() => setFiltroUnico("modulo", m)}>{m}</Chip>
-              ))}
-            </div>
-          </GlassCard>
-
-          <GlassCard className="p-3">
-            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Equipe</label>
-            <select 
-              value={filtros.equipe || ""} 
-              onChange={(e) => setFiltroUnico("equipe", e.target.value || null)}
-              className="w-full bg-white/5 border border-white/10 rounded-md h-9 text-xs px-2 text-white focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Todas Equipes</option>
-              {equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
-          </GlassCard>
-
-          <GlassCard className="p-3">
-            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Prédio / Local</label>
-            <select 
-              value={filtros.predio || ""} 
-              onChange={(e) => setFiltroUnico("predio", e.target.value || null)}
-              className="w-full bg-white/5 border border-white/10 rounded-md h-9 text-xs px-2 text-white focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="">Todos Prédios</option>
-              {predios.map(pr => <option key={pr} value={pr}>{pr}</option>)}
-            </select>
-          </GlassCard>
-        </div>
-
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Chip
-              ativo={!filtros.modulo}
-              onClick={() => setFiltros((f) => ({ ...f, modulo: null }))}
-            >
-              Todos os módulos
-            </Chip>
-            {MODULOS.map((m) => (
-              <Chip
-                key={m}
-                ativo={filtros.modulo === m}
-                onClick={() => setFiltros((f) => ({ ...f, modulo: m }))}
-              >
-                {m}
-              </Chip>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Chip
-              ativo={!filtros.status}
-              onClick={() => setFiltros((f) => ({ ...f, status: null }))}
-            >
-              Todos os status
-            </Chip>
-            {STATUS_CANONICOS.map((s) => (
-              <Chip
-                key={s}
-                ativo={filtros.status === s}
-                onClick={() => setFiltros((f) => ({ ...f, status: s }))}
-              >
-                {s}
-              </Chip>
-            ))}
-            {CRITICIDADES.map((c) => (
-              <Chip
-                key={c}
-                ativo={filtros.criticidade === c}
-                onClick={() =>
-                  setFiltros((f) => ({ ...f, criticidade: f.criticidade === c ? null : c }))
-                }
-              >
-                {c}
-              </Chip>
-            ))}
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={filtros.equipe ?? ""}
-              onChange={(e) => setFiltros((f) => ({ ...f, equipe: e.target.value || null }))}
-              className="h-10 min-w-40 rounded-xl border border-border/60 bg-background/60 px-3 text-sm"
-            >
-              <option value="">Todas as equipes</option>
-              {equipes.map((e) => (
-                <option key={e} value={e}>
-                  {e}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtros.predio ?? ""}
-              onChange={(e) => setFiltros((f) => ({ ...f, predio: e.target.value || null }))}
-              className="h-10 min-w-40 rounded-xl border border-border/60 bg-background/60 px-3 text-sm"
-            >
-              <option value="">Todos os prédios</option>
-              {predios.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <Button variant="ghost" className="min-h-10" onClick={() => setFiltros(FILTROS_PADRAO)}>
-              Limpar filtros
-            </Button>
-            {podeAgir && (
-              <Button
-                variant="outline"
-                className="ml-auto min-h-10"
-                onClick={() =>
-                  salvarPrefs.mutate({
-                    layout_json: prefs.data?.layout_json ?? {},
-                    filters_json: filtros,
-                    favorites_json: favoritos,
-                  })
-                }
-              >
-                Salvar filtros
-              </Button>
-            )}
           </div>
         </GlassCard>
 
