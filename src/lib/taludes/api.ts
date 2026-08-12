@@ -27,6 +27,8 @@ export interface TaludeMarcacao {
   data_y?: number | null;
   data_scale?: number;
   prazo_rotulo?: string | null;
+  numero_visivel?: boolean;
+  data_visivel?: boolean;
 }
 
 export interface TaludeMap {
