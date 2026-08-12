@@ -388,32 +388,13 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   const downloadPhoto = useCallback(async (f: Foto, idx: number) => {
     const url = urls[f.id];
     if (!url) {
-      toast.error("URL da foto não disponível para download.");
+      toast.error("URL da foto não disponível.");
       return;
     }
     
-    try {
-      // Tentar fetch direto para download forçado (funciona se CORS permitir)
-      const res = await fetch(url, { mode: 'cors', cache: 'no-cache' });
-      if (!res.ok) throw new Error("Fetch failed");
-      
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `OS-${os?.numero_os ?? "foto"}-${idx + 1}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      
-      // Cleanup
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-    } catch (err) {
-      console.warn("[CorretivaHistorico] Falha no download direto, tentando abrir em nova aba:", err);
-      // Fallback: abrir em nova aba se o fetch falhar (CORS)
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  }, [urls, os?.numero_os]);
+    // Abrir em nova aba é o método mais confiável para ImgBB/Storage sem problemas de CORS ou bloqueio de download direto no navegador
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [urls]);
 
   return (
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>

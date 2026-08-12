@@ -213,15 +213,13 @@ export function OsPhotosButton({
                           >
                             <Copy className="mr-1 h-3 w-3" /> Copiar
                           </Button>
-                          <a
-                            href={f.url}
-                            download={`OS-${numeroOs ?? "foto"}-${i + 1}.jpg`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            onClick={() => window.open(f.url!, "_blank", "noopener,noreferrer")}
                             className="inline-flex h-7 items-center rounded-full bg-primary/90 px-2 text-[11px] font-medium text-primary-foreground shadow-sm transition-transform active:scale-95"
                           >
-                            <Download className="mr-1 h-3 w-3" /> Baixar
-                          </a>
+                            <Download className="mr-1 h-3 w-3" /> Abrir/Baixar
+                          </button>
                         </div>
                       )}
                     </div>
