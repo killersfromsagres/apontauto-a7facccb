@@ -509,7 +509,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <span className="text-emerald-400 font-mono">{(dataScale).toFixed(1)}x</span>
                 </div>
                 <input 
-                  type="range" min="0.5" max="5" step="0.1" 
+                  type="range" min="0.5" max="15" step="0.1" 
                   value={dataScale} 
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
