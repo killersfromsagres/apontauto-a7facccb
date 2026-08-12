@@ -29,21 +29,26 @@ function OrganogramaPage() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      // Tenta capturar o container específico para evitar problemas de scroll/offset
+      const exportTarget = document.getElementById('org-chart-container') || chartRef.current;
+      
+      const canvas = await html2canvas(exportTarget, {
         backgroundColor: '#FFFFFF',
-        scale: 2,
+        scale: 3, // Aumenta resolução
         useCORS: true,
         allowTaint: false,
-        imageTimeout: 60000, // Aumentado para lidar com muitas imagens
-        logging: true,
-        scrollX: 0,
-        scrollY: 0, // Removido ajuste de scroll para evitar corte
-        windowWidth: document.documentElement.scrollWidth,
-        windowHeight: document.documentElement.scrollHeight,
-        x: chartRef.current.getBoundingClientRect().left + window.scrollX,
-        y: chartRef.current.getBoundingClientRect().top + window.scrollY,
-        width: chartRef.current.scrollWidth,
-        height: chartRef.current.scrollHeight,
+        imageTimeout: 90000,
+        logging: false,
+        width: exportTarget.scrollWidth,
+        height: exportTarget.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Garante que o elemento clonado esteja visível e com cores corretas
+          const el = clonedDoc.getElementById('org-chart-container');
+          if (el) {
+            el.style.backgroundColor = '#FFFFFF';
+            el.style.color = '#000000';
+          }
+        }
       });
       
       const link = document.createElement('a');
