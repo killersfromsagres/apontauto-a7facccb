@@ -14,7 +14,8 @@ import {
   Building2,
   Users,
   RefreshCw,
-  PieChart as PieChartLucide
+  PieChart as PieChartLucide,
+  ShieldCheck
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -77,10 +78,8 @@ export function CentralInteligenciaView() {
   const { data: recentEvents } = useQuery({
     queryKey: ["gestao", "os-recente", filtros],
     queryFn: () => fetchOsConsolidada(filtros),
-    select: (data) => data.slice(0, 10),
+    select: (data) => Array.isArray(data) ? data.slice(0, 10) : [],
     refetchInterval: 5000,
-    staleTime: 0,
-    gcTime: 0,
   });
 
   const chartDataReaviz = useMemo(() => {
@@ -198,24 +197,159 @@ export function CentralInteligenciaView() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <GlassCard className="lg:col-span-3 p-0 overflow-hidden border-primary/20 bg-primary/5 min-h-[580px]">
-            <Suspense fallback={<div className="h-[580px] flex items-center justify-center">Carregando...</div>}>
-              <AreaChart1 data={chartDataReaviz} />
+          <GlassCard className="lg:col-span-3 p-0 overflow-hidden border-primary/20 bg-primary/5 min-h-[620px]">
+            <Suspense fallback={
+              <div className="flex flex-col items-center justify-center h-[580px] text-muted-foreground animate-pulse">
+                <BarChart3 className="h-10 w-10 mb-4 opacity-20" />
+                <p className="text-sm font-medium uppercase tracking-widest opacity-50">Sincronizando Inteligência IA...</p>
+              </div>
+            }>
+              <AreaChart1 
+                title="Performance Operacional"
+                data={chartDataReaviz}
+                legendItems={[
+                  { name: 'Chamados IA', color: '#8B5CF6' },
+                  { name: 'Finalizados', color: '#4F8CFF' }
+                ]}
+                metrics={[
+                  {
+                    id: 'tma',
+                    Icon: Clock,
+                    label: 'Tempo Médio Atendimento',
+                    tooltip: 'Média de horas para conclusão',
+                    value: `${tmaGlobal.toFixed(1)}h`,
+                    TrendIcon: TrendingUp,
+                    trendBaseColor: tmaGlobal > 24 ? '#E84045' : '#40E5D1',
+                    trendStrokeColor: tmaGlobal > 24 ? '#F08083' : '#40E5D1',
+                    delay: 0,
+                  },
+                  {
+                    id: 'mttr',
+                    Icon: Activity,
+                    label: 'MTTR Médio',
+                    tooltip: 'Mean Time To Repair',
+                    value: `${mttrGlobal.toFixed(1)}h`,
+                    TrendIcon: TrendingUp,
+                    trendBaseColor: mttrGlobal > 12 ? '#E84045' : '#40E5D1',
+                    trendStrokeColor: mttrGlobal > 12 ? '#F08083' : '#40E5D1',
+                    delay: 0.1,
+                  },
+                  {
+                    id: 'sla',
+                    Icon: ShieldCheck,
+                    label: 'Aderência ao SLA',
+                    tooltip: 'Percentual de OS dentro do prazo',
+                    value: overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%",
+                    TrendIcon: TrendingUp,
+                    trendBaseColor: '#40E5D1',
+                    trendStrokeColor: '#40E5D1',
+                    delay: 0.2,
+                  }
+                ]}
+              />
             </Suspense>
           </GlassCard>
           <div className="lg:col-span-2 space-y-4">
              <GlassCard className="p-6 border-white/5 bg-white/5 h-full">
-                <h3 className="text-sm font-bold text-white uppercase tracking-tight mb-6">Distribuição Status</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-tight mb-6 flex items-center gap-2">
+                  <PieChartLucide className="h-4 w-4 text-[#52E5FF]" /> Distribuição por Status
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {statusData.slice(0, 6).map((item, idx) => (
+                  {statusData.length > 0 ? statusData.slice(0, 6).map((item, idx) => (
                     <div key={item.name} className="p-3 rounded-xl bg-white/5 border border-white/10">
-                      <p className="text-[10px] text-muted-foreground uppercase">{item.name}</p>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CORES[idx % CORES.length] }} />
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold truncate">{item.name}</p>
+                      </div>
                       <p className="text-lg font-bold text-white">{item.value}</p>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="col-span-2 flex flex-col items-center justify-center py-10 opacity-20">
+                      <PieChartLucide className="h-10 w-10 mb-2" />
+                      <p className="text-[10px] font-bold uppercase">Sem dados</p>
+                    </div>
+                  )}
                 </div>
              </GlassCard>
+
+             {overview?.taludes && (
+               <GlassCard className="p-6 border-white/5 bg-white/5">
+                 <h3 className="text-sm font-bold text-white uppercase tracking-tight flex items-center gap-2 mb-6">
+                   <CloudRain className="h-4 w-4 text-primary" /> Monitoramento de Taludes
+                 </h3>
+                 <div className="grid grid-cols-3 gap-3">
+                   {taludesData.map((d) => (
+                     <div key={d.name} className="text-center p-3 rounded-xl bg-white/5 border border-white/10">
+                       <p className="text-[9px] text-muted-foreground uppercase font-bold mb-1">{d.name}</p>
+                       <p className="text-lg font-bold" style={{ color: d.color }}>{d.value}</p>
+                     </div>
+                   ))}
+                 </div>
+               </GlassCard>
+             )}
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <GlassCard className="lg:col-span-3 p-6 border-white/5 bg-white/5 overflow-hidden">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-bold text-white uppercase tracking-tight flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-primary animate-spin-slow" /> Atividade Recente (IA Triage)
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-emerald-500 font-bold uppercase">Sincronizado</span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] text-muted-foreground uppercase font-black tracking-widest border-b border-white/5">
+                    <th className="pb-3 px-2">Data/Hora</th>
+                    <th className="pb-3 px-2">Ativo</th>
+                    <th className="pb-3 px-2">Solicitação</th>
+                    <th className="pb-3 px-2">Equipe</th>
+                    <th className="pb-3 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recentEvents?.map((os: any) => (
+                    <tr key={os.id} className="group hover:bg-white/[0.02] transition-colors">
+                      <td className="py-4 px-2">
+                        <span className="text-[10px] font-mono text-white/70">
+                          {os.data_criacao ? new Date(os.data_criacao).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : "N/A"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-2">
+                        <span className="text-[11px] font-bold text-white">#{os.id.slice(0, 8)}</span>
+                      </td>
+                      <td className="py-4 px-2 max-w-xs">
+                        <span className="text-[11px] text-white/90 line-clamp-1 group-hover:line-clamp-none transition-all">
+                          {os.descricao || "Sem descrição"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-2">
+                        <span className="text-[9px] font-bold text-white uppercase px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                          {os.equipe || "IA Triage"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-2">
+                        <div className={cn(
+                          "px-2 py-1 rounded-full text-[9px] font-black uppercase text-center border w-fit",
+                          os.status === "concluido" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" :
+                          os.status === "em_andamento" ? "bg-primary/10 text-primary border-primary/20" :
+                          "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                        )}>
+                          {os.status || "Pendente"}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GlassCard>
         </div>
       </div>
     </PageShell>
