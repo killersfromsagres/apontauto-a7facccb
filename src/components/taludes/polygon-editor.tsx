@@ -266,8 +266,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
-    } else if (mode === 'view') {
-      setSelectedMarcacaoId(null);
+    } else if (mode === 'view' || mode === 'edit' || mode === 'move') {
+      // Find which marcacao was clicked
+      const clicked = localMarcacoes.find(m => isPointInPolygon(coords, m.polygon));
+      if (clicked) {
+        setSelectedMarcacaoId(clicked.id);
+        setCurrentColor(clicked.cor);
+        setLineThickness(clicked.espessura_linha || 4);
+        setNumeroScale(clicked.numero_scale || 1);
+        setDataScale(clicked.data_scale || 1);
+        setStatusDate(clicked.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        const fullRotulo = clicked.rotulo || '';
+        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
+      } else {
+        setSelectedMarcacaoId(null);
+      }
     }
   };
 
@@ -561,7 +576,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             willChange: 'transform'
           }}
         >
-          <img ref={imgRef} src={imageUrl} alt="Mapa" className="block" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} crossorigin="anonymous" />
+          <img ref={imgRef} src={imageUrl} alt="Mapa" className="block" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} crossOrigin="anonymous" />
           <svg viewBox={`0 0 ${imageWidth} ${imageHeight}`} className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             {localMarcacoes.map((m) => {
               const centroid = getCentroid(m.polygon);
