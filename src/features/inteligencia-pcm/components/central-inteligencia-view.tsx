@@ -28,21 +28,27 @@ import {
   X,
   Building2,
   Users,
-  RefreshCw
+  RefreshCw,
+  PieChart as PieChartLucide
 } from "lucide-react";
+import { PageShell } from "@/components/page-shell";
+import { GlassCard } from "@/components/glass-card";
+import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { useWeather } from "@/hooks/use-weather";
+import { detectRain } from "@/lib/weather/open-meteo";
+import { cn } from "@/lib/utils";
+import { KpiMonitorCard } from "./kpi-monitor-card";
+import { Button } from "@/components/ui/button";
 import { 
-  Area, 
-  AreaChart, 
-  ResponsiveContainer, 
-  Tooltip, 
-  XAxis, 
-  YAxis,
-  Bar,
-  BarChart,
-  Cell,
-  Pie,
-  PieChart
-} from "recharts";
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { PERIODOS, MODULOS, CRITICIDADES } from "@/features/gestao/types";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
