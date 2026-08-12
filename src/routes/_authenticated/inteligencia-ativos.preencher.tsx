@@ -1040,18 +1040,18 @@ function PreencherPlanilha() {
               </button>
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={downloadUnmatched}>
+                <Button variant="outline" onClick={downloadUnmatched} className="border-primary/40 text-primary hover:bg-primary/10">
                   <Download className="mr-2 h-4 w-4" /> Relatório de não encontrados
                 </Button>
-                <Button variant="outline" onClick={downloadTemplate}>
+                <Button variant="outline" onClick={downloadTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
                   <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
                 </Button>
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
                   <Link to="/inteligencia-ativos/nao-encontrados">
                     <Search className="mr-2 h-4 w-4" /> Revisar não encontrados
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={saveTemplate}>
+                <Button variant="outline" onClick={saveTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
                   <Save className="mr-2 h-4 w-4" /> Salvar mapeamento como modelo
                 </Button>
                 <Button variant="ghost" onClick={reset}>
