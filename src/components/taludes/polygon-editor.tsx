@@ -261,6 +261,30 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (e.button !== 0 || isPanning.current) return;
     
     const coords = getMapCoords(e);
+    
+    // Check for label hits first to avoid losing selection when clicking labels
+    const labelHitRadius = 60 / zoom;
+    for (const m of localMarcacoes) {
+      const centroid = getCentroid(m.polygon);
+      const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
+      const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+
+      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius) {
+        setSelectedMarcacaoId(m.id);
+        setCurrentColor(m.cor);
+        setLineThickness(m.espessura_linha || 4);
+        setNumeroScale(m.numero_scale || 1);
+        setDataScale(m.data_scale || 1);
+        setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
+        const fullRotulo = m.rotulo || '';
+        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
+        return;
+      }
+    }
+
     for (const m of localMarcacoes) {
       if (isPointInPolygon(coords, m.polygon)) {
         setSelectedMarcacaoId(m.id);
@@ -287,24 +311,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
-    } else if (mode === 'view' || mode === 'edit' || mode === 'move') {
-      // Find which marcacao was clicked
-      const clicked = localMarcacoes.find(m => isPointInPolygon(coords, m.polygon));
-      if (clicked) {
-        setSelectedMarcacaoId(clicked.id);
-        setCurrentColor(clicked.cor);
-        setLineThickness(clicked.espessura_linha || 4);
-        setNumeroScale(clicked.numero_scale || 1);
-        setDataScale(clicked.data_scale || 1);
-        setStatusDate(clicked.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
-        setPrazoDate(clicked.prazo_rotulo || new Date().toISOString().split('T')[0]);
-        const fullRotulo = clicked.rotulo || '';
-        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
-        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
-        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
-      } else {
-        setSelectedMarcacaoId(null);
-      }
+    } else if (mode !== 'draw') {
+      setSelectedMarcacaoId(null);
     }
   };
 
