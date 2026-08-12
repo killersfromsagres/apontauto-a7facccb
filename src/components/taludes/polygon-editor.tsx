@@ -388,21 +388,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
 
         // Draw Number Circle
-        const numRadius = 20 * (m.numero_scale || 1);
-        ctx.beginPath();
-        ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fill();
-        ctx.strokeStyle = m.cor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        if (m.numero_visivel !== false) {
+          const numRadius = 20 * (m.numero_scale || 1);
+          ctx.beginPath();
+          ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fill();
+          ctx.strokeStyle = m.cor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
 
-        // Draw Number Text
-        ctx.fillStyle = 'white';
-        ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(m.numero), numPos.x, numPos.y);
+          // Draw Number Text
+          ctx.fillStyle = 'white';
+          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(m.numero), numPos.x, numPos.y);
+        }
 
         // Draw Date Labels (Start/End)
         const rotuloParts = m.rotulo?.split(' - ') || [];
