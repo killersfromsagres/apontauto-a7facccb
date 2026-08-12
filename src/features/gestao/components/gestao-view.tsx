@@ -302,6 +302,10 @@ export function GestaoView() {
   const drill = (f: Partial<GestaoFiltros>) => {
     setFiltros((prev) => ({ ...prev, ...f }));
     setAba("os");
+    // Scroll suave para a lista de OS
+    setTimeout(() => {
+      document.querySelector('[value="os"]')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   };
 
   const setFiltroUnico = (chave: keyof GestaoFiltros, valor: any) => {
