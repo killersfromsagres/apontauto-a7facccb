@@ -27,7 +27,8 @@ import {
   Filter,
   X,
   Building2,
-  Users
+  Users,
+  RefreshCw
 } from "lucide-react";
 import { 
   Area, 
@@ -179,11 +180,19 @@ export function CentralInteligenciaView() {
     >
       <div className="space-y-6">
         {overviewError && (
-          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm">
-            <h4 className="font-bold flex items-center gap-2 mb-1">
-              <AlertTriangle className="h-4 w-4" /> Erro ao carregar dashboard
+          <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-sm backdrop-blur-md">
+            <h4 className="font-bold flex items-center gap-2 mb-2 text-lg">
+              <AlertTriangle className="h-5 w-5" /> Erro ao carregar dashboard
             </h4>
-            <p className="opacity-80">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
+            <p className="opacity-90 mb-4">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30 text-rose-500"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Recarregar Página
+            </Button>
           </div>
         )}
 
