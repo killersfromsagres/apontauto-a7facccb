@@ -720,13 +720,17 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         const deadlineText = m.prazo_rotulo || '';
                         const displayDeadline = formatDate(deadlineText);
 
+                        const baseFontSize = 24;
+                        const labelWidth = 120;
+                        const labelHeight = 60;
+
                         return (
                           <g>
                             <rect 
-                               x={-60}
-                               y={-30} 
-                               width={120} 
-                               height={60} 
+                               x={-labelWidth / 2}
+                               y={-labelHeight / 2} 
+                               width={labelWidth} 
+                               height={labelHeight} 
                                rx="8" 
                                fill="rgba(0,0,0,0.85)" 
                                stroke="rgba(255,255,255,0.15)" 
@@ -735,11 +739,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                              />
                              <text
                                x="0"
-                               y="-10"
+                               y="-12"
                                textAnchor="middle"
                                dominantBaseline="middle"
                                fill="white"
-                               fontSize="24"
+                               fontSize={baseFontSize}
                                fontWeight="900"
                                className="select-none font-['SF_Pro_Display'] tracking-tight"
                              >
@@ -751,7 +755,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                textAnchor="middle"
                                dominantBaseline="middle"
                                fill="white"
-                               fontSize="24"
+                               fontSize={baseFontSize}
                                fontWeight="900"
                                className="select-none font-['SF_Pro_Display'] tracking-tight"
                              >
