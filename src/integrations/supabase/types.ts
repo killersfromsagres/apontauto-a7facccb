@@ -5596,6 +5596,9 @@ export type Database = {
           data: string
           data_executada: string | null
           data_prevista: string | null
+          data_scale: number | null
+          data_x: number | null
+          data_y: number | null
           equipe: string | null
           espessura_linha: number | null
           estado_operacional: string | null
@@ -5604,6 +5607,9 @@ export type Database = {
           map_id: string
           nome: string | null
           numero: number
+          numero_scale: number | null
+          numero_x: number | null
+          numero_y: number | null
           observacao: string | null
           opacidade: number
           ordem: number
@@ -5630,6 +5636,9 @@ export type Database = {
           data?: string
           data_executada?: string | null
           data_prevista?: string | null
+          data_scale?: number | null
+          data_x?: number | null
+          data_y?: number | null
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
@@ -5638,6 +5647,9 @@ export type Database = {
           map_id: string
           nome?: string | null
           numero: number
+          numero_scale?: number | null
+          numero_x?: number | null
+          numero_y?: number | null
           observacao?: string | null
           opacidade?: number
           ordem?: number
@@ -5664,6 +5676,9 @@ export type Database = {
           data?: string
           data_executada?: string | null
           data_prevista?: string | null
+          data_scale?: number | null
+          data_x?: number | null
+          data_y?: number | null
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
@@ -5672,6 +5687,9 @@ export type Database = {
           map_id?: string
           nome?: string | null
           numero?: number
+          numero_scale?: number | null
+          numero_x?: number | null
+          numero_y?: number | null
           observacao?: string | null
           opacidade?: number
           ordem?: number

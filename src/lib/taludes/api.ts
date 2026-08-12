@@ -20,6 +20,12 @@ export interface TaludeMarcacao {
   espessura_linha?: number;
   numero?: number;
   tamanho_legenda?: number;
+  numero_x?: number | null;
+  numero_y?: number | null;
+  numero_scale?: number;
+  data_x?: number | null;
+  data_y?: number | null;
+  data_scale?: number;
 }
 
 export interface TaludeMap {
@@ -148,7 +154,13 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
           visivel: payload.visivel ?? true,
           bloqueado: payload.bloqueado ?? false,
           espessura_linha: payload.espessura_linha ?? 4,
-          tamanho_legenda: payload.tamanho_legenda ?? 1
+          tamanho_legenda: payload.tamanho_legenda ?? 1,
+          numero_x: payload.numero_x ?? null,
+          numero_y: payload.numero_y ?? null,
+          numero_scale: payload.numero_scale ?? 1.0,
+          data_x: payload.data_x ?? null,
+          data_y: payload.data_y ?? null,
+          data_scale: payload.data_scale ?? 1.0
         };
         
         console.log("Payload de inserção:", insertPayload);
