@@ -307,11 +307,11 @@ function BackorderPage() {
 
 
     const fetchAfter = async (cursor: string | null) => {
-      let q = supabase.from("backorder_os").select(COLS).order("os", { ascending: true }).limit(PAGE);
+      let q = supabase.from("backorder_os").select(COLS, { count: "exact" }).order("os", { ascending: true }).limit(PAGE);
       if (cursor) q = q.gt("os", cursor);
-      const { data, error } = await q;
+      const { data, error, count } = await q;
       if (error) throw error;
-      return (data as unknown as BOSRow[]) ?? [];
+      return { data: (data as unknown as BOSRow[]) ?? [], count };
     };
 
     const sortForView = (list: BOSRow[]) =>
@@ -326,15 +326,15 @@ function BackorderPage() {
     try {
       let cursor: string | null = null;
       while (all.length < MAX) {
-        const page: BOSRow[] = await fetchAfter(cursor);
+        const { data: page, count } = await fetchAfter(cursor);
         all.push(...page);
-        // Primeira página já pinta a tela; as demais entram sem bloquear.
+        
         if (!cursor) {
           setRows(sortForView(all));
           setLoading(false);
-          // Efeito de confete ao carregar dados pela primeira vez (opcional, mas moderno)
         }
-        if (page.length < PAGE) break;
+        
+        if (page.length < PAGE || (count !== null && all.length >= count)) break;
         cursor = page[page.length - 1]!.os;
       }
       setRows(sortForView(all));

@@ -337,7 +337,15 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     <Label className="text-[9px] uppercase opacity-60 font-bold tracking-wider text-center block">Antes</Label>
                     {photoBefore ? (
                       <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
-                        <img src={photoBefore} alt="Antes" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <img 
+                          src={photoBefore} 
+                          alt="Antes" 
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          onError={(e) => {
+                            console.error("[CorretivaPhoto] Erro ao carregar preview Antes:", photoBefore);
+                            // Fallback se o link do ImgBB falhar ou expirar (raro no ImgBB, mas bom ter)
+                          }}
+                        />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
                             variant="destructive" 
@@ -427,7 +435,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     <Label className="text-[9px] uppercase opacity-60 font-bold tracking-wider text-center block">Depois</Label>
                     {photoAfter ? (
                       <div className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group">
-                        <img src={photoAfter} alt="Depois" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                        <img 
+                          src={photoAfter} 
+                          alt="Depois" 
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                          onError={(e) => {
+                            console.error("[CorretivaPhoto] Erro ao carregar preview Depois:", photoAfter);
+                          }}
+                        />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <Button 
                             variant="destructive" 
