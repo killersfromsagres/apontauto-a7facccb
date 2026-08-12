@@ -162,28 +162,35 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     }
     
     if (mode === 'move' && e.button === 0) {
-      // Check for label hits - expand hit area for easier selection
-      const labelHitRadius = 40 / zoom; 
+      // Check for label hits - expand hit area significantly
+      const labelHitRadius = 100 / zoom; 
       
+      let closestLabel = null;
+      let minDistance = Infinity;
+
       for (const m of localMarcacoes) {
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
 
-        // Distance check between click coordinates and label positions
-        if (getDistance(coords, numPos) < labelHitRadius) {
-          setDraggedLabel({ marcacaoId: m.id, type: 'numero' });
-          setSelectedMarcacaoId(m.id);
-          // Set as panning false to ensure label dragging takes precedence
-          isPanning.current = false;
-          return;
+        const dNum = getDistance(coords, numPos);
+        const dData = getDistance(coords, dataPos);
+
+        if (dNum < labelHitRadius && dNum < minDistance) {
+          minDistance = dNum;
+          closestLabel = { id: m.id, type: 'numero' as const };
         }
-        if (getDistance(coords, dataPos) < labelHitRadius) {
-          setDraggedLabel({ marcacaoId: m.id, type: 'data' });
-          setSelectedMarcacaoId(m.id);
-          isPanning.current = false;
-          return;
+        if (dData < labelHitRadius && dData < minDistance) {
+          minDistance = dData;
+          closestLabel = { id: m.id, type: 'data' as const };
         }
+      }
+
+      if (closestLabel) {
+        setDraggedLabel({ marcacaoId: closestLabel.id, type: closestLabel.type });
+        setSelectedMarcacaoId(closestLabel.id);
+        isPanning.current = false;
+        return;
       }
     }
   };
@@ -705,12 +712,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         const displayDeadline = formatDate(deadlineText);
 
                         return (
-                          <>
+                          <g>
                             <rect 
-                              x={-50}
-                              y={-25} 
-                              width={100} 
-                              height={50} 
+                              x={-60}
+                              y={-30} 
+                              width={120} 
+                              height={60} 
                               rx="8" 
                               fill="rgba(0,0,0,0.85)" 
                               stroke="rgba(255,255,255,0.15)" 
@@ -719,7 +726,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             />
                             <text
                               x="0"
-                              y="-6"
+                              y="-8"
                               textAnchor="middle"
                               dominantBaseline="middle"
                               fill="white"
@@ -731,17 +738,17 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             </text>
                             <text
                               x="0"
-                              y="12"
+                              y="14"
                               textAnchor="middle"
                               dominantBaseline="middle"
                               fill="white"
                               fontSize="18"
                               fontWeight="800"
-                              className="select-none font-['SF_Pro_Display'] uppercase tracking-widest"
+                              className="select-none font-['SF_Pro_Display'] tracking-tight"
                             >
-                              {displayDeadline}
+                              {displayDeadline || displayDate}
                             </text>
-                          </>
+                          </g>
                         );
                       })()}
                     </g>
