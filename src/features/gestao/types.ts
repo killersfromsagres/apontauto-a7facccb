@@ -63,6 +63,12 @@ export type GestaoOverviewV2 = {
   sst: { aso_vencidos: number; aso_proximos_30: number };
   taludes: { pt_ativas: number; pt_aguardando: number; pt_suspensas: number };
   notas_abertas: number;
+  corretiva_novo?: {
+    criadas: number;
+    criadas_ant: number;
+    concluidas: number;
+    concluidas_ant: number;
+  };
 };
 
 export type OsConsolidada = {
