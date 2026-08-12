@@ -328,17 +328,29 @@ export function CentralInteligenciaView() {
                 recentEvents.map((os) => (
                   <div key={os.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-primary" />
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center",
+                        os.origem === 'corretiva_novo' ? "bg-purple-500/10" : "bg-primary/10"
+                      )}>
+                        {os.origem === 'corretiva_novo' ? (
+                          <Activity className="h-4 w-4 text-purple-400" />
+                        ) : (
+                          <Zap className="h-4 w-4 text-primary" />
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">OS #{os.numero_os || os.id.slice(0, 8)}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase">
-                          {os.descricao?.slice(0, 40)}... · {os.criado_em ? formatDistanceToNow(new Date(os.criado_em), { addSuffix: true, locale: ptBR }) : 'Recentemente'}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">OS #{os.numero_os || os.id.slice(0, 8)}</p>
+                          {os.status_canonico === 'concluida' && (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1 rounded uppercase font-bold">OK</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground uppercase truncate">
+                          {os.equipe} · {os.descricao?.slice(0, 30)}... · {os.criado_em ? formatDistanceToNow(new Date(os.criado_em), { addSuffix: true, locale: ptBR }) : 'Recentemente'}
                         </p>
                       </div>
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
                   </div>
                 ))
               ) : (
