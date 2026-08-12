@@ -383,7 +383,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = m.cor;
+        ctx.fillStyle = 'white';
         ctx.fillText(dateText, dataPos.x, dataPos.y);
       });
 
