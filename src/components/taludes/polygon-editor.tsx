@@ -275,6 +275,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setLineThickness(m.espessura_linha || 4);
         setNumeroScale(m.numero_scale || 1);
         setDataScale(m.data_scale || 1);
+        setNumeroVisivel(m.numero_visivel !== false);
+        setDataVisivel(m.data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
