@@ -46,11 +46,15 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { useWeather } from "@/hooks/use-weather";
 import { detectRain } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
 import { KpiMonitorCard } from "./kpi-monitor-card";
+
+// Lazy load the new area chart to avoid SSR issues with reaviz
+const AreaChart1 = lazy(() => import("@/components/ui/area-chart-1"));
+
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -112,6 +116,29 @@ export function CentralInteligenciaView() {
     gcTime: 0,
   });
 
+
+  const chartDataReaviz = useMemo(() => {
+    if (!overview?.os_mensal) return [];
+    
+    // Mapping for AreaChart1 (reaviz)
+    const seriesIA: any = {
+      key: 'Chamados IA',
+      data: overview.os_mensal.map(item => ({
+        key: new Date(item.criado_em || new Date()),
+        data: item.criadas || 0
+      }))
+    };
+
+    const seriesFinalizados: any = {
+      key: 'Finalizados',
+      data: overview.os_mensal.map(item => ({
+        key: new Date(item.criado_em || new Date()),
+        data: item.concluidas || 0
+      }))
+    };
+
+    return [seriesIA, seriesFinalizados];
+  }, [overview?.os_mensal]);
 
   const chartData = overview?.os_mensal?.map(item => ({
     name: item.mes,
@@ -414,65 +441,41 @@ export function CentralInteligenciaView() {
               </div>
             </div>
             
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "rgba(13, 20, 34, 0.9)", 
-                      borderColor: "rgba(255, 255, 255, 0.1)",
-                      borderRadius: "12px",
-                      backdropFilter: "blur(12px)"
-                    }}
-                    itemStyle={{ color: "#fff" }}
-                  />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="rgba(255,255,255,0.3)" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="rgba(255,255,255,0.3)" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    name="Chamados IA"
-                    stroke="#8B5CF6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorValue)" 
-                    dot={{ r: 4, fill: "#8B5CF6", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff" }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="concluidas" 
-                    name="Finalizados"
-                    stroke="#34d399" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorConcluidas)" 
-                    dot={{ r: 4, fill: "#34d399", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-[400px] w-full mt-4">
+              <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-muted-foreground">Carregando gráficos premium...</div>}>
+                <AreaChart1 
+                  title=""
+                  data={chartDataReaviz}
+                  legendItems={[
+                    { name: 'Chamados IA', color: '#8B5CF6' },
+                    { name: 'Finalizados', color: '#34d399' }
+                  ]}
+                  metrics={[
+                    {
+                      id: 'mttd',
+                      Icon: Clock,
+                      label: 'Tempo Médio Resposta',
+                      tooltip: 'Tempo Médio Resposta',
+                      value: `${mttrGlobal.toFixed(1)}h`,
+                      TrendIcon: TrendingUp,
+                      trendBaseColor: '#34d399',
+                      trendStrokeColor: '#34d399',
+                      delay: 0,
+                    },
+                    {
+                      id: 'sla',
+                      Icon: Zap,
+                      label: 'Eficiência SLA',
+                      tooltip: 'Eficiência SLA',
+                      value: overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%",
+                      TrendIcon: TrendingUp,
+                      trendBaseColor: '#4F8CFF',
+                      trendStrokeColor: '#4F8CFF',
+                      delay: 0.05,
+                    }
+                  ]}
+                />
+              </Suspense>
             </div>
           </GlassCard>
 
