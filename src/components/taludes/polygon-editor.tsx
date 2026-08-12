@@ -368,13 +368,26 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.textBaseline = 'middle';
         ctx.fillText(String(m.numero), numPos.x, numPos.y);
 
-        // Draw Date Label
-        const dateText = m.rotulo?.split(' - ')[1] || m.rotulo || '';
+        // Draw Date Labels (Start/End)
+        const rotuloParts = m.rotulo?.split(' - ') || [];
+        const dateText = rotuloParts[1] || m.rotulo || '';
         const dataScale = m.data_scale || 1;
+        
+        // Brazilian format: DD/MM
+        const formatDate = (dateStr: string) => {
+          if (!dateStr || !dateStr.includes('-')) return dateStr;
+          const [y, m, d] = dateStr.split('-');
+          return `${d}/${m}`;
+        };
+
+        const displayDate = formatDate(dateText);
+        // Default relative deadline (e.g., +15 days) if no second date is stored
+        const deadlineDate = formatDate(new Date(new Date(dateText).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
         ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        const textWidth = ctx.measureText(dateText).width;
+        const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(deadlineDate).width);
         const rectWidth = textWidth + 30 * dataScale;
-        const rectHeight = 40 * dataScale;
+        const rectHeight = 65 * dataScale; // Increased height for two dates
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
@@ -384,7 +397,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.stroke();
 
         ctx.fillStyle = 'white';
-        ctx.fillText(dateText, dataPos.x, dataPos.y);
+        ctx.textAlign = 'center';
+        ctx.fillText(displayDate, dataPos.x, dataPos.y - 10 * dataScale);
+        
+        ctx.fillStyle = '#94a3b8'; // Muted color for the deadline
+        ctx.font = `700 ${14 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.fillText(deadlineDate, dataPos.x, dataPos.y + 12 * dataScale);
       });
 
       // 3. Trigger Download
@@ -615,33 +633,63 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       {m.numero}
                     </text>
 
-                    {/* Status Date */}
+                    {/* Status Dates */}
                     <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
-                      <rect 
-                        x={-60}
-                        y={-20} 
-                        width={120} 
-                        height={40} 
+                      {(() => {
+                        const rotuloParts = m.rotulo?.split(' - ') || [];
+                        const dateText = rotuloParts[1] || m.rotulo || '';
+                        
+                        const formatDate = (dateStr: string) => {
+                          if (!dateStr || !dateStr.includes('-')) return dateStr;
+                          const [y, mm, dd] = dateStr.split('-');
+                          return `${dd}/${mm}`;
+                        };
 
+                        const displayDate = formatDate(dateText);
+                        // Using a calculated deadline (initial date + 15 days) as requested for "prazo"
+                        const baseDate = dateText.includes('-') ? new Date(dateText) : new Date();
+                        const deadlineDate = formatDate(new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
-
-                        rx="6" 
-                        fill="rgba(0,0,0,0.85)" 
-                        stroke="rgba(255,255,255,0.15)" 
-                        strokeWidth="1"
-                      />
-                      <text
-                        x="0"
-                        y="0"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        fill="white"
-                        fontSize="18"
-                        fontWeight="800"
-                        className="select-none font-['SF_Pro_Display'] uppercase tracking-tight"
-                      >
-                        {m.rotulo?.split(' - ')[1] || m.rotulo}
-                      </text>
+                        return (
+                          <>
+                            <rect 
+                              x={-50}
+                              y={-25} 
+                              width={100} 
+                              height={50} 
+                              rx="8" 
+                              fill="rgba(0,0,0,0.85)" 
+                              stroke="rgba(255,255,255,0.15)" 
+                              strokeWidth="1"
+                              className="backdrop-blur-sm"
+                            />
+                            <text
+                              x="0"
+                              y="-6"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fill="white"
+                              fontSize="18"
+                              fontWeight="800"
+                              className="select-none font-['SF_Pro_Display'] tracking-tight"
+                            >
+                              {displayDate}
+                            </text>
+                            <text
+                              x="0"
+                              y="12"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              fill="#94a3b8"
+                              fontSize="12"
+                              fontWeight="700"
+                              className="select-none font-['SF_Pro_Display'] uppercase tracking-widest"
+                            >
+                              {deadlineDate}
+                            </text>
+                          </>
+                        );
+                      })()}
                     </g>
                   </g>
 
