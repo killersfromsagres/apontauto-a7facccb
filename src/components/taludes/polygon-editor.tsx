@@ -311,7 +311,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
-    } else if (mode !== 'draw') {
+    } else {
       setSelectedMarcacaoId(null);
     }
   };
