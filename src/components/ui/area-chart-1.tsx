@@ -116,14 +116,41 @@ const initialChartData: ChartSeries[] = [
 
 
 const validateChartData = (data: ChartSeries[]): any => {
-  if (!Array.isArray(data) || data.length === 0) return [];
-  return data.map(series => ({
-    key: series.key || 'Sem Nome',
-    data: (Array.isArray(series.data) ? series.data : []).map(item => ({
-      key: item.key instanceof Date ? item.key : new Date(item.key),
-      data: (typeof item.data !== 'number' || isNaN(item.data)) ? 0 : item.data,
-    })),
-  }));
+  if (!Array.isArray(data) || data.length === 0) {
+    console.warn("AreaChart1: Data is not an array or is empty", data);
+    return [];
+  }
+  
+  return data.map(series => {
+    const seriesKey = String(series?.key || 'Sem Nome');
+    const seriesData = Array.isArray(series?.data) ? series.data : [];
+    
+    return {
+      key: seriesKey,
+      data: seriesData.map(item => {
+        let keyDate: Date;
+        if (item.key instanceof Date) {
+          keyDate = item.key;
+        } else if (typeof item.key === 'string' || typeof item.key === 'number') {
+          keyDate = new Date(item.key);
+        } else {
+          keyDate = new Date(); // Fallback to now
+        }
+
+        // Final check for Invalid Date
+        if (isNaN(keyDate.getTime())) {
+          keyDate = new Date();
+        }
+
+        const dataValue = (typeof item.data !== 'number' || isNaN(item.data)) ? 0 : item.data;
+        
+        return {
+          key: keyDate,
+          data: dataValue,
+        };
+      }),
+    };
+  });
 };
 
 interface MetricInfo {
