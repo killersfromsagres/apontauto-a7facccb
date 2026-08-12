@@ -5617,6 +5617,11 @@ export type Database = {
           ordem: number
           owner_id: string
           polygon: Json
+          prazo_rotulo: string | null
+          prazo_scale: number | null
+          prazo_visivel: boolean | null
+          prazo_x: number | null
+          prazo_y: number | null
           proxima_inspecao: string | null
           rascunho: boolean
           risco: string | null
@@ -5659,6 +5664,11 @@ export type Database = {
           ordem?: number
           owner_id: string
           polygon: Json
+          prazo_rotulo?: string | null
+          prazo_scale?: number | null
+          prazo_visivel?: boolean | null
+          prazo_x?: number | null
+          prazo_y?: number | null
           proxima_inspecao?: string | null
           rascunho?: boolean
           risco?: string | null
@@ -5701,6 +5711,11 @@ export type Database = {
           ordem?: number
           owner_id?: string
           polygon?: Json
+          prazo_rotulo?: string | null
+          prazo_scale?: number | null
+          prazo_visivel?: boolean | null
+          prazo_x?: number | null
+          prazo_y?: number | null
           proxima_inspecao?: string | null
           rascunho?: boolean
           risco?: string | null
