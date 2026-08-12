@@ -379,7 +379,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw Number Text
         ctx.fillStyle = 'white';
-        ctx.font = `800 ${22 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(m.numero), numPos.x, numPos.y);
@@ -397,31 +397,29 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         };
 
         const displayDate = formatDate(dateText);
-        // Default relative deadline (e.g., +15 days) if no second date is stored
-        const deadlineDate = formatDate(new Date(new Date(dateText).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
         const deadlineText = m.prazo_rotulo || '';
         const displayDeadline = formatDate(deadlineText);
 
-        ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
         const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(displayDeadline).width);
-        const rectWidth = textWidth + 30 * dataScale;
+        const rectWidth = textWidth + 20 * dataScale;
         const rectHeight = 65 * dataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText(displayDate, dataPos.x, dataPos.y - 10 * dataScale);
+        ctx.textBaseline = 'middle';
+        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * dataScale);
         
         ctx.fillStyle = 'white';
-        ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.fillText(displayDeadline, dataPos.x, dataPos.y + 12 * dataScale);
+        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 12 * dataScale);
       });
 
       // 3. Trigger Download
