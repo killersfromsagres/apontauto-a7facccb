@@ -427,21 +427,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const rectWidth = 120 * currentDataScale;
         const rectHeight = 60 * currentDataScale;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.beginPath();
-        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        if (m.data_visivel !== false) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          ctx.beginPath();
+          ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
 
-        ctx.fillStyle = 'white';
-        ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
-        
-        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
+          ctx.fillStyle = 'white';
+          ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
+          
+          ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
+        }
       });
 
       // 3. Trigger Download
