@@ -127,12 +127,18 @@ export function CentralInteligenciaView() {
             description="Chamados em espera"
           />
           <KpiMonitorCard
-            title="CORRETIVAS MÊS"
-            value={overview?.os.criadas.toString() || "0"}
-            trend="-1.8%"
+            title="CAMPO IA (MÊS)"
+            value={overview?.corretiva_novo?.criadas.toString() || overview?.os.criadas.toString() || "0"}
+            trend={(() => {
+              const atual = overview?.corretiva_novo?.criadas || 0;
+              const ant = overview?.corretiva_novo?.criadas_ant || 0;
+              if (ant === 0) return "+0%";
+              const pct = ((atual - ant) / ant) * 100;
+              return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+            })()}
             icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />}
             chartColor="#8B5CF6"
-            description="Volume de solicitações"
+            description="Execução de Campo IA"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
