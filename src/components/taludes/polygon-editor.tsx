@@ -63,14 +63,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' } | null>(null);
   const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  const [statusText, setStatusText] = useState('Monitorado');
-  const [statusType, setStatusType] = useState<'monitorado' | 'execucao' | 'alerta' | 'concluido'>('monitorado');
+  const [statusText, setStatusText] = useState('Programado');
+  const [statusType, setStatusType] = useState<'concluido' | 'execucao' | 'perimetro' | 'programado'>('programado');
   
   const STATUS_CONFIG = {
-    monitorado: { color: '#10b981', label: 'Monitorado' },
+    concluido: { color: '#10b981', label: 'Concluído' },
     execucao: { color: '#f59e0b', label: 'Em Execução' },
-    alerta: { color: '#ef4444', label: 'Alerta Crítico' },
-    concluido: { color: '#3b82f6', label: 'Concluído' }
+    perimetro: { color: '#ef4444', label: 'Perímetro' },
+    programado: { color: '#3b82f6', label: 'Programado' }
   };
   const [lineThickness, setLineThickness] = useState(4);
   const [legendScale, setLegendScale] = useState(1);
@@ -251,8 +251,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
         const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
-        setStatusType(foundStatus ? (foundStatus[0] as any) : 'monitorado');
-        setStatusText(foundStatus ? foundStatus[1].label : 'Monitorado');
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
         return;
       }
     }
