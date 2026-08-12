@@ -302,10 +302,21 @@ export function GestaoView() {
   const drill = (f: Partial<GestaoFiltros>) => {
     setFiltros((prev) => ({ ...prev, ...f }));
     setAba("os");
+    // Scroll suave para a lista de OS
+    setTimeout(() => {
+      document.querySelector('[value="os"]')?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   const setFiltroUnico = (chave: keyof GestaoFiltros, valor: any) => {
-    setFiltros((prev) => ({ ...prev, [chave]: valor }));
+    setFiltros((prev) => {
+      const novos = { ...prev, [chave]: valor };
+      // Se mudar o período, limpamos os outros filtros para evitar vazios seletivos
+      if (chave === "dias") {
+        return { ...FILTROS_PADRAO, dias: valor };
+      }
+      return novos;
+    });
   };
 
   const ctxRelatorio = () => ({
