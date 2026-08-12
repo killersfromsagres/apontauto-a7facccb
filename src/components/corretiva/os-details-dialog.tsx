@@ -370,6 +370,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               const { postImgbbForm } = await import("@/lib/imgbb-post");
                               const data = await postImgbbForm(formData);
                               
+                              if (!data.url) throw new Error("URL da imagem não retornada");
+                              
+                              setPhotoBefore(data.url);
+                              toast.success("Foto 'Antes' enviada com sucesso!");
                             } catch (err: any) {
                               const errorMsg = err.message || "Erro no upload";
                               console.error("[CorretivaPhoto] Falha no upload Antes:", err);
@@ -398,21 +402,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   </div>,
                                   { duration: 5000 }
                                 );
-                                return;
                               } catch (dbErr) {
                                 console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
                                 toast.error(`Falha no upload: ${errorMsg}`);
                               }
-                            } finally {
-                              setLoading(false);
-                            }
-                              if (!data.url) throw new Error("URL da imagem não retornada");
-                              
-                              setPhotoBefore(data.url);
-                              toast.success("Foto 'Antes' enviada com sucesso!");
-                            } catch (err: any) {
-                              console.error("[CorretivaPhoto] Erro upload Antes:", err);
-                              toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
                             }
@@ -467,6 +460,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                               const { postImgbbForm } = await import("@/lib/imgbb-post");
                               const data = await postImgbbForm(formData);
                               
+                              if (!data.url) throw new Error("URL da imagem não retornada");
+                              
+                              setPhotoAfter(data.url);
+                              toast.success("Foto 'Depois' enviada com sucesso!");
                             } catch (err: any) {
                               const errorMsg = err.message || "Erro no upload";
                               console.error("[CorretivaPhoto] Falha no upload Depois:", err);
@@ -495,21 +492,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                                   </div>,
                                   { duration: 5000 }
                                 );
-                                return;
                               } catch (dbErr) {
                                 console.error("[CorretivaPhoto] Erro ao salvar localmente:", dbErr);
                                 toast.error(`Falha no upload: ${errorMsg}`);
                               }
-                            } finally {
-                              setLoading(false);
-                            }
-                              if (!data.url) throw new Error("URL da imagem não retornada");
-                              
-                              setPhotoAfter(data.url);
-                              toast.success("Foto 'Depois' enviada com sucesso!");
-                            } catch (err: any) {
-                              console.error("[CorretivaPhoto] Erro upload Depois:", err);
-                              toast.error(`Falha no upload: ${err.message}`);
                             } finally {
                               setLoading(false);
                             }
