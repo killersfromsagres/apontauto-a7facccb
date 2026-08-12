@@ -373,8 +373,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dataScale = m.data_scale || 1;
         ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
         const textWidth = ctx.measureText(dateText).width;
-        const rectWidth = textWidth + 20 * dataScale;
-        const rectHeight = 30 * dataScale;
+        const rectWidth = textWidth + 30 * dataScale;
+        const rectHeight = 40 * dataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
