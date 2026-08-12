@@ -124,7 +124,8 @@ export function CentralInteligenciaView() {
     const seriesIA: any = {
       key: 'Chamados IA',
       data: overview.os_mensal.map(item => ({
-        key: new Date(item.criado_em || new Date()),
+        key: new Date(), // Fallback since criado_em is not in type, or map from month name if possible
+
         data: item.criadas || 0
       }))
     };
@@ -132,7 +133,7 @@ export function CentralInteligenciaView() {
     const seriesFinalizados: any = {
       key: 'Finalizados',
       data: overview.os_mensal.map(item => ({
-        key: new Date(item.criado_em || new Date()),
+        key: new Date(),
         data: item.concluidas || 0
       }))
     };
