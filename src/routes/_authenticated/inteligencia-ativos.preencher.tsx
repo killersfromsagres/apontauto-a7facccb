@@ -595,7 +595,7 @@ function PreencherPlanilha() {
                 size="lg"
                 disabled={busy}
                 onClick={() => inputRef.current?.click()}
-                className="h-12 rounded-2xl bg-gradient-to-r from-primary to-violet-500 px-8 text-base font-semibold shadow-elegant hover:opacity-90"
+                className="h-12 rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_oklch(0.85_0.12_220/0.5)] px-8 text-base font-semibold hover:opacity-90 hover:shadow-[0_0_25px_-5px_oklch(0.85_0.12_220/0.6)] transition-all"
               >
                 {busy ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
