@@ -709,40 +709,40 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         return (
                           <g>
                             <rect 
-                              x={-60}
-                              y={-30} 
-                              width={120} 
-                              height={60} 
-                              rx="8" 
-                              fill="rgba(0,0,0,0.85)" 
-                              stroke="rgba(255,255,255,0.15)" 
-                              strokeWidth="1"
-                              className="backdrop-blur-sm"
-                            />
-                            <text
-                              x="0"
-                              y="-8"
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fill="white"
-                              fontSize="18"
-                              fontWeight="800"
-                              className="select-none font-['SF_Pro_Display'] tracking-tight"
-                            >
-                              {displayDate}
-                            </text>
-                            <text
-                              x="0"
-                              y="14"
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fill="white"
-                              fontSize="18"
-                              fontWeight="800"
-                              className="select-none font-['SF_Pro_Display'] tracking-tight"
-                            >
-                              {displayDeadline || displayDate}
-                            </text>
+                               x={-60}
+                               y={-30} 
+                               width={120} 
+                               height={60} 
+                               rx="8" 
+                               fill="rgba(0,0,0,0.85)" 
+                               stroke="rgba(255,255,255,0.15)" 
+                               strokeWidth="1"
+                               className="backdrop-blur-sm"
+                             />
+                             <text
+                               x="0"
+                               y="-10"
+                               textAnchor="middle"
+                               dominantBaseline="middle"
+                               fill="white"
+                               fontSize="24"
+                               fontWeight="900"
+                               className="select-none font-['SF_Pro_Display'] tracking-tight"
+                             >
+                               {displayDate}
+                             </text>
+                             <text
+                               x="0"
+                               y="14"
+                               textAnchor="middle"
+                               dominantBaseline="middle"
+                               fill="white"
+                               fontSize="24"
+                               fontWeight="900"
+                               className="select-none font-['SF_Pro_Display'] tracking-tight"
+                             >
+                               {displayDeadline || displayDate}
+                             </text>
                           </g>
                         );
                       })()}
