@@ -148,11 +148,8 @@ export function CentralInteligenciaView() {
     return [seriesIA, seriesFinalizados];
   }, [overview?.os_mensal]);
 
-  const chartData = overview?.os_mensal?.map(item => ({
-    name: item.mes,
-    value: item.criadas,
-    concluidas: item.concluidas || 0
-  })) || [];
+  // chartData original removido para favorecer chartDataReaviz
+
 
   const statusData = overview?.os_status 
     ? Object.entries(overview.os_status)
