@@ -340,28 +340,49 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   });
 
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState(false);
+
   useEffect(() => {
     (async () => {
-      if (!data?.fotos?.length) return;
+      if (!data?.fotos?.length) {
+        setUrls({});
+        return;
+      }
+      
+      setLoadingUrls(true);
       const next: Record<string, string> = {};
       const legacy: Foto[] = [];
+      
       for (const f of data.fotos) {
-        if (f.image_url) next[f.id] = f.image_url;
-        else if (f.storage_path) legacy.push(f);
+        if (f.image_url) {
+          next[f.id] = f.image_url;
+        } else if (f.storage_path) {
+          legacy.push(f);
+        }
       }
-      if (legacy.length) {
-        const paths = legacy.map((f) => f.storage_path as string);
-        const { data: s } = await supabase.storage
-          .from("corretiva-fotos")
-          .createSignedUrls(paths, 3600);
-        legacy.forEach((f, i) => {
-          const u = s?.[i]?.signedUrl;
-          if (u) next[f.id] = u;
-        });
+
+      if (legacy.length > 0) {
+        try {
+          const paths = legacy.map((f) => f.storage_path as string);
+          const { data: s, error } = await supabase.storage
+            .from("corretiva-fotos")
+            .createSignedUrls(paths, 3600);
+            
+          if (error) throw error;
+          
+          legacy.forEach((f, i) => {
+            const u = s?.[i]?.signedUrl;
+            if (u) next[f.id] = u;
+          });
+        } catch (err) {
+          console.error("[CorretivaHistorico] Erro ao resolver URLs legadas:", err);
+        }
       }
+      
       setUrls(next);
+      setLoadingUrls(false);
     })();
-  }, [data]);
+  }, [data?.fotos]);
 
   const downloadPhoto = async (f: Foto, idx: number) => {
     const url = urls[f.id];
@@ -431,9 +452,10 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           </div>
         )}
 
-        {isLoading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
+        {isLoading || loadingUrls ? (
+          <div className="p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center min-h-[200px]">
+            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
+            <p className="animate-pulse">Carregando evidências fotográficas...</p>
           </div>
         ) : (
           <div className="space-y-4">
