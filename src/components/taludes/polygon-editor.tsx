@@ -363,7 +363,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Draw Number Text
         ctx.fillStyle = 'white';
-        ctx.font = `bold ${18 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.font = `800 ${22 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(m.numero), numPos.x, numPos.y);
@@ -371,7 +371,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw Date Label
         const dateText = m.rotulo?.split(' - ')[1] || m.rotulo || '';
         const dataScale = m.data_scale || 1;
-        ctx.font = `600 ${14 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
         const textWidth = ctx.measureText(dateText).width;
         const rectWidth = textWidth + 20 * dataScale;
         const rectHeight = 30 * dataScale;
@@ -383,7 +383,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.fillStyle = m.cor;
+        ctx.fillStyle = 'white';
         ctx.fillText(dateText, dataPos.x, dataPos.y);
       });
 
@@ -606,7 +606,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill="white"
-                      fontSize={18 * (m.numero_scale || 1)}
+                      fontSize={22 * (m.numero_scale || 1)}
                       fontWeight="800"
                       className="select-none font-['SF_Pro_Display']"
                       style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
@@ -617,10 +617,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     {/* Status Date */}
                     <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       <rect 
-                        x="-45"
-                        y="-15" 
-                        width="90" 
-                        height="30" 
+                        x="-55"
+                        y="-18" 
+                        width="110" 
+                        height="36" 
+
                         rx="6" 
                         fill="rgba(0,0,0,0.85)" 
                         stroke="rgba(255,255,255,0.15)" 
@@ -631,9 +632,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         y="0"
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fill={m.cor}
-                        fontSize="13"
-                        fontWeight="700"
+                        fill="white"
+                        fontSize="18"
+                        fontWeight="800"
                         className="select-none font-['SF_Pro_Display'] uppercase tracking-tight"
                       >
                         {m.rotulo?.split(' - ')[1] || m.rotulo}
