@@ -618,10 +618,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     {/* Status Date */}
                     <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       <rect 
-                        x="-55"
-                        y="-18" 
-                        width="110" 
-                        height="36" 
+                        x={-55 * (m.data_scale || 1) / (m.data_scale || 1)}
+                        y={-20} 
+                        width={110} 
+                        height={40} 
+
 
                         rx="6" 
                         fill="rgba(0,0,0,0.85)" 
