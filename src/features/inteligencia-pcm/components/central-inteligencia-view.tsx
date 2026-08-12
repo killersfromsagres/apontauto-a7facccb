@@ -84,12 +84,20 @@ export function CentralInteligenciaView() {
     });
   }, []);
 
-  const { data: overview, isLoading: overviewLoading } = useQuery({
+  const { data: overview, isLoading: overviewLoading, error: overviewError } = useQuery({
     queryKey: ["gestao", "overview", filtros],
-    queryFn: () => fetchGestaoOverview(filtros),
-    refetchInterval: 5000, 
-    staleTime: 0,
-    gcTime: 0, 
+    queryFn: async () => {
+      try {
+        const data = await fetchGestaoOverview(filtros);
+        console.log("Dashboard data fetched successfully:", data);
+        return data;
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+        throw err;
+      }
+    },
+    refetchInterval: 10000, 
+    staleTime: 5000,
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -138,6 +146,15 @@ export function CentralInteligenciaView() {
       description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >
       <div className="space-y-6">
+        {overviewError && (
+          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm">
+            <h4 className="font-bold flex items-center gap-2 mb-1">
+              <AlertTriangle className="h-4 w-4" /> Erro ao carregar dashboard
+            </h4>
+            <p className="opacity-80">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
+          </div>
+        )}
+
         {/* BARRA DE FILTROS GLOBAIS */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
           <div className="flex items-center gap-2">
