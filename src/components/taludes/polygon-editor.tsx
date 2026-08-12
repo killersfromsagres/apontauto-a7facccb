@@ -606,6 +606,37 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  size="sm" 
+                  variant={numeroVisivel ? "premium" : "outline"} 
+                  className={cn("h-8 text-[10px]", !numeroVisivel && "opacity-50")}
+                  onClick={() => {
+                    const newVal = !numeroVisivel;
+                    setNumeroVisivel(newVal);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, numero_visivel: newVal } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, numero_visivel: newVal });
+                  }}
+                >
+                  {numeroVisivel ? "Ocultar Nº" : "Mostrar Nº"}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={dataVisivel ? "premium" : "outline"} 
+                  className={cn("h-8 text-[10px]", !dataVisivel && "opacity-50")}
+                  onClick={() => {
+                    const newVal = !dataVisivel;
+                    setDataVisivel(newVal);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, data_visivel: newVal } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, data_visivel: newVal });
+                  }}
+                >
+                  {dataVisivel ? "Ocultar Data" : "Mostrar Data"}
+                </Button>
+              </div>
+
               <div className="flex gap-2">
                 <Button 
                   size="sm" variant="outline" className="flex-1 h-8 text-[10px] border-white/5 bg-white/5"
