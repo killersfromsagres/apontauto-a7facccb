@@ -176,11 +176,17 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
 
-        if (dNum < labelHitRadius && dNum < minDistance) {
+        // Adjust hit radius based on current scale to make sure big labels are easy to grab
+        const currentNumScale = m.numero_scale || 1;
+        const currentDataScale = m.data_scale || 1;
+        const numHitRadius = (25 * currentNumScale) / zoom;
+        const dataHitRadius = (60 * currentDataScale) / zoom;
+
+        if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
           closestLabel = { id: m.id, type: 'numero' as const };
         }
-        if (dData < labelHitRadius && dData < minDistance) {
+        if (dData < dataHitRadius && dData < minDistance) {
           minDistance = dData;
           closestLabel = { id: m.id, type: 'data' as const };
         }
@@ -255,6 +261,30 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (e.button !== 0 || isPanning.current) return;
     
     const coords = getMapCoords(e);
+    
+    // Check for label hits first to avoid losing selection when clicking labels
+    const labelHitRadius = 60 / zoom;
+    for (const m of localMarcacoes) {
+      const centroid = getCentroid(m.polygon);
+      const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
+      const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+
+      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius) {
+        setSelectedMarcacaoId(m.id);
+        setCurrentColor(m.cor);
+        setLineThickness(m.espessura_linha || 4);
+        setNumeroScale(m.numero_scale || 1);
+        setDataScale(m.data_scale || 1);
+        setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
+        const fullRotulo = m.rotulo || '';
+        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
+        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
+        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
+        return;
+      }
+    }
+
     for (const m of localMarcacoes) {
       if (isPointInPolygon(coords, m.polygon)) {
         setSelectedMarcacaoId(m.id);
@@ -281,24 +311,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
-    } else if (mode === 'view' || mode === 'edit' || mode === 'move') {
-      // Find which marcacao was clicked
-      const clicked = localMarcacoes.find(m => isPointInPolygon(coords, m.polygon));
-      if (clicked) {
-        setSelectedMarcacaoId(clicked.id);
-        setCurrentColor(clicked.cor);
-        setLineThickness(clicked.espessura_linha || 4);
-        setNumeroScale(clicked.numero_scale || 1);
-        setDataScale(clicked.data_scale || 1);
-        setStatusDate(clicked.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
-        setPrazoDate(clicked.prazo_rotulo || new Date().toISOString().split('T')[0]);
-        const fullRotulo = clicked.rotulo || '';
-        const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
-        setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
-        setStatusText(foundStatus ? foundStatus[1].label : 'Programado');
-      } else {
-        setSelectedMarcacaoId(null);
-      }
+    } else {
+      setSelectedMarcacaoId(null);
     }
   };
 
@@ -387,7 +401,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw Date Labels (Start/End)
         const rotuloParts = m.rotulo?.split(' - ') || [];
         const dateText = rotuloParts[1] || m.rotulo || '';
-        const dataScale = m.data_scale || 1;
+        const currentDataScale = m.data_scale || 1;
         
         // Brazilian format: DD/MM
         const formatDate = (dateStr: string) => {
@@ -400,26 +414,26 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const deadlineText = m.prazo_rotulo || '';
         const displayDeadline = formatDate(deadlineText);
 
-        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(displayDeadline).width);
-        const rectWidth = textWidth + 20 * dataScale;
-        const rectHeight = 65 * dataScale;
+        const baseFontSize = 24;
+        const scaledFontSize = baseFontSize * currentDataScale;
+        const rectWidth = 120 * currentDataScale;
+        const rectHeight = 60 * currentDataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
+        ctx.beginPath();
+        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
         ctx.fillStyle = 'white';
+        ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * dataScale);
+        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
         
-        ctx.fillStyle = 'white';
-        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 12 * dataScale);
+        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
       });
 
       // 3. Trigger Download
@@ -706,13 +720,17 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         const deadlineText = m.prazo_rotulo || '';
                         const displayDeadline = formatDate(deadlineText);
 
+                        const baseFontSize = 24;
+                        const labelWidth = 120;
+                        const labelHeight = 60;
+
                         return (
                           <g>
                             <rect 
-                               x={-60}
-                               y={-30} 
-                               width={120} 
-                               height={60} 
+                               x={-labelWidth / 2}
+                               y={-labelHeight / 2} 
+                               width={labelWidth} 
+                               height={labelHeight} 
                                rx="8" 
                                fill="rgba(0,0,0,0.85)" 
                                stroke="rgba(255,255,255,0.15)" 
@@ -721,11 +739,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                              />
                              <text
                                x="0"
-                               y="-10"
+                               y="-12"
                                textAnchor="middle"
                                dominantBaseline="middle"
                                fill="white"
-                               fontSize="24"
+                               fontSize={baseFontSize}
                                fontWeight="900"
                                className="select-none font-['SF_Pro_Display'] tracking-tight"
                              >
@@ -737,7 +755,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                textAnchor="middle"
                                dominantBaseline="middle"
                                fill="white"
-                               fontSize="24"
+                               fontSize={baseFontSize}
                                fontWeight="900"
                                className="select-none font-['SF_Pro_Display'] tracking-tight"
                              >
