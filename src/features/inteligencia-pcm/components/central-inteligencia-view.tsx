@@ -93,20 +93,22 @@ export function CentralInteligenciaView() {
     checkUser();
   }, []);
 
-  const { data: overview, isLoading: overviewLoading, error: overviewError } = useQuery({
+  const { data: overview, isLoading: overviewLoading, error: overviewError, refetch: refetchOverview } = useQuery({
     queryKey: ["gestao", "overview", filtros],
     queryFn: async () => {
       try {
         const data = await fetchGestaoOverview(filtros);
         console.log("Dashboard data fetched successfully:", data);
+        if (!data) throw new Error("O servidor retornou um conjunto de dados vazio.");
         return data;
       } catch (err) {
-        console.error("Dashboard fetch error:", err);
+        console.error("Dashboard fetch error details:", err);
         throw err;
       }
     },
     refetchInterval: 10000, 
     staleTime: 5000,
+    retry: 2,
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -184,19 +186,34 @@ export function CentralInteligenciaView() {
     >
       <div className="space-y-6">
         {overviewError && (
-          <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-sm backdrop-blur-md">
+          <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-sm backdrop-blur-md animate-in fade-in zoom-in duration-300">
             <h4 className="font-bold flex items-center gap-2 mb-2 text-lg">
-              <AlertTriangle className="h-5 w-5" /> Erro ao carregar dashboard
+              <AlertTriangle className="h-5 w-5" /> Erro ao carregar a página
             </h4>
-            <p className="opacity-90 mb-4">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30 text-rose-500"
-              onClick={() => window.location.reload()}
-            >
-              <RefreshCw className="mr-2 h-4 w-4" /> Recarregar Página
-            </Button>
+            <div className="space-y-2 opacity-90 mb-4">
+              <p>Algo deu errado ao processar os dados dos gráficos.</p>
+              <code className="block p-2 bg-black/20 rounded text-[10px] break-all">
+                {(overviewError as Error).message || "Erro desconhecido"}
+              </code>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30 text-rose-500"
+                onClick={() => refetchOverview()}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-rose-500 hover:bg-rose-500/10"
+                onClick={() => window.location.href = '/'}
+              >
+                Voltar ao dashboard
+              </Button>
+            </div>
           </div>
         )}
 
