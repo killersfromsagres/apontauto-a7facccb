@@ -607,7 +607,7 @@ function PreencherPlanilha() {
               <Button
                 variant="outline"
                 onClick={downloadTemplate}
-                className="h-10 rounded-2xl border-primary/30 bg-background/40"
+                className="h-10 rounded-2xl border-primary/40 bg-background/60 backdrop-blur-md text-primary hover:bg-primary/10 transition-colors"
               >
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
               </Button>
