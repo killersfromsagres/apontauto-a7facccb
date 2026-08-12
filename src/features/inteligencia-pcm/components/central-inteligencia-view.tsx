@@ -23,7 +23,11 @@ import {
   Fuel,
   ShieldCheck,
   Package,
-  Boxes
+  Boxes,
+  Filter,
+  X,
+  Building2,
+  Users
 } from "lucide-react";
 import { 
   Area, 
@@ -42,17 +46,37 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useWeather } from "@/hooks/use-weather";
 import { detectRain } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
 import { KpiMonitorCard } from "./kpi-monitor-card";
+import { Button } from "@/components/ui/button";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { PERIODOS, MODULOS, CRITICIDADES } from "@/features/gestao/types";
 
 const CORES = ["#4F8CFF", "#52E5FF", "#8B5CF6", "#34d399", "#f59e0b", "#f87171"];
 
 
 export function CentralInteligenciaView() {
   const [userName, setUserName] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState({
+    dias: 30,
+    modulo: null as string | null,
+    equipe: null as string | null,
+    predio: null as string | null,
+    status: null as string | null,
+    criticidade: null as string | null,
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -61,24 +85,25 @@ export function CentralInteligenciaView() {
   }, []);
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
-    queryKey: ["gestao", "overview", 30],
-    queryFn: () => fetchGestaoOverview(30),
-    refetchInterval: 5000, // Reduzido para 5s para sincronização ultra-rápida pedida pelo usuário
+    queryKey: ["gestao", "overview", filtros],
+    queryFn: () => fetchGestaoOverview(filtros),
+    refetchInterval: 5000, 
     staleTime: 0,
-    gcTime: 0, // Garante que não use dados antigos em cache ao remontar
+    gcTime: 0, 
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
   const weatherStatus = weather ? detectRain(weather) : null;
 
   const { data: recentEvents } = useQuery({
-    queryKey: ["gestao", "os-recente"],
-    queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
-    select: (data) => data.slice(0, 10), // Aumentado para 10 eventos recentes
-    refetchInterval: 5000, // Sincronizado com o overview em 5s
+    queryKey: ["gestao", "os-recente", filtros],
+    queryFn: () => fetchOsConsolidada(filtros),
+    select: (data) => data.slice(0, 10),
+    refetchInterval: 5000,
     staleTime: 0,
     gcTime: 0,
   });
+
 
   const chartData = overview?.os_mensal?.map(item => ({
     name: item.mes,
@@ -113,6 +138,156 @@ export function CentralInteligenciaView() {
       description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
     >
       <div className="space-y-6">
+        {/* BARRA DE FILTROS GLOBAIS */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+              <Filter className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white uppercase tracking-tight">Filtros Operacionais</h2>
+              <p className="text-[10px] text-muted-foreground uppercase">Refinar dashboard em tempo real</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Select 
+              value={filtros.dias.toString()} 
+              onValueChange={(v) => setFiltros(prev => ({ ...prev, dias: parseInt(v) }))}
+            >
+              <SelectTrigger className="w-[130px] h-9 bg-white/5 border-white/10 text-xs">
+                <Clock className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Período" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-white/10">
+                {PERIODOS.map(p => (
+                  <SelectItem key={p.dias} value={p.dias.toString()} className="text-xs uppercase">
+                    {p.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select 
+              value={filtros.modulo || "todos"} 
+              onValueChange={(v) => setFiltros(prev => ({ ...prev, modulo: v === "todos" ? null : v }))}
+            >
+              <SelectTrigger className="w-[130px] h-9 bg-white/5 border-white/10 text-xs">
+                <LayoutDashboard className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Módulo" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-white/10">
+                <SelectItem value="todos" className="text-xs uppercase">Todos Módulos</SelectItem>
+                {MODULOS.map(m => (
+                  <SelectItem key={m} value={m} className="text-xs uppercase">
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                "h-9 px-3 gap-2 text-xs border-white/10 transition-all",
+                showFilters ? "bg-primary/20 border-primary/30 text-primary" : "bg-white/5"
+              )}
+            >
+              {showFilters ? <X className="w-3.5 h-3.5" /> : <Filter className="w-3.5 h-3.5" />}
+              {showFilters ? "Fechar Filtros" : "Mais Filtros"}
+            </Button>
+
+            {(filtros.equipe || filtros.predio || filtros.criticidade) && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setFiltros({
+                  dias: 30,
+                  modulo: null,
+                  equipe: null,
+                  predio: null,
+                  status: null,
+                  criticidade: null
+                })}
+                className="h-9 px-3 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+              >
+                Limpar
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {showFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-white/5 rounded-2xl border border-white/10 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Users className="w-3 h-3" /> Equipe Responsável
+              </label>
+              <Select 
+                value={filtros.equipe || "todas"} 
+                onValueChange={(v) => setFiltros(prev => ({ ...prev, equipe: v === "todas" ? null : v }))}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 text-xs h-9">
+                  <SelectValue placeholder="Selecione a equipe" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10">
+                  <SelectItem value="todas" className="text-xs uppercase">Todas Equipes</SelectItem>
+                  {/* Hardcoded options as fallback for common teams in this project */}
+                  <SelectItem value="Hidráulica" className="text-xs uppercase">Hidráulica</SelectItem>
+                  <SelectItem value="Civil" className="text-xs uppercase">Civil</SelectItem>
+                  <SelectItem value="Elétrica" className="text-xs uppercase">Elétrica</SelectItem>
+                  <SelectItem value="Refrigeração" className="text-xs uppercase">Refrigeração</SelectItem>
+                  <SelectItem value="Pintura" className="text-xs uppercase">Pintura</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Building2 className="w-3 h-3" /> Prédio / Localidade
+              </label>
+              <Select 
+                value={filtros.predio || "todos"} 
+                onValueChange={(v) => setFiltros(prev => ({ ...prev, predio: v === "todos" ? null : v }))}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 text-xs h-9">
+                  <SelectValue placeholder="Selecione o prédio" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10">
+                  <SelectItem value="todos" className="text-xs uppercase">Todos Prédios</SelectItem>
+                  <SelectItem value="A" className="text-xs uppercase">Prédio A</SelectItem>
+                  <SelectItem value="B" className="text-xs uppercase">Prédio B</SelectItem>
+                  <SelectItem value="C" className="text-xs uppercase">Prédio C</SelectItem>
+                  <SelectItem value="D" className="text-xs uppercase">Prédio D</SelectItem>
+                  <SelectItem value="Administrativo" className="text-xs uppercase">Administrativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <TrendingUp className="w-3 h-3" /> Nível de Criticidade
+              </label>
+              <Select 
+                value={filtros.criticidade || "todas"} 
+                onValueChange={(v) => setFiltros(prev => ({ ...prev, criticidade: v === "todas" ? null : v }))}
+              >
+                <SelectTrigger className="bg-white/5 border-white/10 text-xs h-9">
+                  <SelectValue placeholder="Selecione a criticidade" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10">
+                  <SelectItem value="todas" className="text-xs uppercase">Todas Criticidades</SelectItem>
+                  {CRITICIDADES.map(c => (
+                    <SelectItem key={c} value={c} className="text-xs uppercase">{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+
         {/* LINHA 1: KPIs OPERACIONAIS CRÍTICOS */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <KpiMonitorCard
