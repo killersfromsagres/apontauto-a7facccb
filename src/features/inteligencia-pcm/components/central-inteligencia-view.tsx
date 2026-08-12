@@ -125,34 +125,40 @@ export function CentralInteligenciaView() {
 
 
   const chartDataReaviz = useMemo(() => {
-    if (!overview?.os_mensal) return [];
-    
-    // Mapping for AreaChart1 (reaviz)
-    const seriesIA: any = {
-      key: 'Chamados IA',
-      data: overview.os_mensal.map((item, index) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
-        return {
-          key: d,
-          data: item.criadas || 0
-        };
-      })
-    };
+    try {
+      if (!overview?.os_mensal || !Array.isArray(overview.os_mensal) || overview.os_mensal.length === 0) {
+        return [];
+      }
+      
+      const seriesIA: any = {
+        key: 'Chamados IA',
+        data: overview.os_mensal.map((item, index) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+          return {
+            key: d,
+            data: Number(item.criadas) || 0
+          };
+        })
+      };
 
-    const seriesFinalizados: any = {
-      key: 'Finalizados',
-      data: overview.os_mensal.map((item, index) => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
-        return {
-          key: d,
-          data: item.concluidas || 0
-        };
-      })
-    };
+      const seriesFinalizados: any = {
+        key: 'Finalizados',
+        data: overview.os_mensal.map((item, index) => {
+          const d = new Date();
+          d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+          return {
+            key: d,
+            data: Number(item.concluidas) || 0
+          };
+        })
+      };
 
-    return [seriesIA, seriesFinalizados];
+      return [seriesIA, seriesFinalizados];
+    } catch (err) {
+      console.error("Error computing chartDataReaviz:", err);
+      return [];
+    }
   }, [overview?.os_mensal]);
 
   // chartData original removido para favorecer chartDataReaviz
