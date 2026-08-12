@@ -27,7 +27,8 @@ import {
   Filter,
   X,
   Building2,
-  Users
+  Users,
+  RefreshCw
 } from "lucide-react";
 import { 
   Area, 
@@ -46,11 +47,15 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { fetchGestaoOverview, fetchOsConsolidada } from "@/features/gestao/queries";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { useWeather } from "@/hooks/use-weather";
 import { detectRain } from "@/lib/weather/open-meteo";
 import { cn } from "@/lib/utils";
 import { KpiMonitorCard } from "./kpi-monitor-card";
+
+// Lazy load the new area chart to avoid SSR issues with reaviz
+const AreaChart1 = lazy(() => import("@/components/ui/area-chart-1"));
+
 import { Button } from "@/components/ui/button";
 import { 
   Select, 
@@ -79,9 +84,13 @@ export function CentralInteligenciaView() {
 
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserName(data.user?.email?.split("@")[0] || "Gestor");
-    });
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserName(user.email?.split("@")[0] || "Gestor");
+      }
+    };
+    checkUser();
   }, []);
 
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useQuery({
@@ -113,11 +122,39 @@ export function CentralInteligenciaView() {
   });
 
 
-  const chartData = overview?.os_mensal?.map(item => ({
-    name: item.mes,
-    value: item.criadas,
-    concluidas: item.concluidas || 0
-  })) || [];
+  const chartDataReaviz = useMemo(() => {
+    if (!overview?.os_mensal) return [];
+    
+    // Mapping for AreaChart1 (reaviz)
+    const seriesIA: any = {
+      key: 'Chamados IA',
+      data: overview.os_mensal.map((item, index) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+        return {
+          key: d,
+          data: item.criadas || 0
+        };
+      })
+    };
+
+    const seriesFinalizados: any = {
+      key: 'Finalizados',
+      data: overview.os_mensal.map((item, index) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+        return {
+          key: d,
+          data: item.concluidas || 0
+        };
+      })
+    };
+
+    return [seriesIA, seriesFinalizados];
+  }, [overview?.os_mensal]);
+
+  // chartData original removido para favorecer chartDataReaviz
+
 
   const statusData = overview?.os_status 
     ? Object.entries(overview.os_status)
@@ -147,11 +184,19 @@ export function CentralInteligenciaView() {
     >
       <div className="space-y-6">
         {overviewError && (
-          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-sm">
-            <h4 className="font-bold flex items-center gap-2 mb-1">
-              <AlertTriangle className="h-4 w-4" /> Erro ao carregar dashboard
+          <div className="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-sm backdrop-blur-md">
+            <h4 className="font-bold flex items-center gap-2 mb-2 text-lg">
+              <AlertTriangle className="h-5 w-5" /> Erro ao carregar dashboard
             </h4>
-            <p className="opacity-80">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
+            <p className="opacity-90 mb-4">{(overviewError as Error).message}. Verifique as permissões ou tente atualizar a página.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-rose-500/20 border-rose-500/30 hover:bg-rose-500/30 text-rose-500"
+              onClick={() => window.location.reload()}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Recarregar Página
+            </Button>
           </div>
         )}
 
@@ -396,8 +441,8 @@ export function CentralInteligenciaView() {
 
         {/* MONITORAMENTO PRINCIPAL */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px] glass-surface card-sheen">
-            <div className="flex items-center justify-between mb-6">
+          <div className="relative overflow-hidden lg:col-span-2 min-h-[400px]">
+            <div className="hidden">
               <div>
                 <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Volume de Campo IA & Histórico</h3>
                 <div className="text-2xl font-bold text-white">
@@ -414,67 +459,44 @@ export function CentralInteligenciaView() {
               </div>
             </div>
             
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: "rgba(13, 20, 34, 0.9)", 
-                      borderColor: "rgba(255, 255, 255, 0.1)",
-                      borderRadius: "12px",
-                      backdropFilter: "blur(12px)"
-                    }}
-                    itemStyle={{ color: "#fff" }}
-                  />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="rgba(255,255,255,0.3)" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                  />
-                  <YAxis 
-                    stroke="rgba(255,255,255,0.3)" 
-                    fontSize={10} 
-                    tickLine={false} 
-                    axisLine={false}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    name="Chamados IA"
-                    stroke="#8B5CF6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorValue)" 
-                    dot={{ r: 4, fill: "#8B5CF6", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff" }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="concluidas" 
-                    name="Finalizados"
-                    stroke="#34d399" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#colorConcluidas)" 
-                    dot={{ r: 4, fill: "#34d399", strokeWidth: 2, stroke: "#05070C" }}
-                    activeDot={{ r: 6, fill: "#fff" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div className="h-[580px] w-full">
+              <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-muted-foreground">Carregando gráficos premium...</div>}>
+                <AreaChart1 
+                  title=""
+                  data={chartDataReaviz}
+                  legendItems={[
+                    { name: 'Chamados IA', color: '#8B5CF6' },
+                    { name: 'Finalizados', color: '#34d399' }
+                  ]}
+                  metrics={[
+                    {
+                      id: 'mttd',
+                      Icon: Clock,
+                      label: 'Tempo Médio Resposta',
+                      tooltip: 'Tempo Médio Resposta',
+                      value: `${mttrGlobal.toFixed(1)}h`,
+                      TrendIcon: TrendingUp,
+                      trendBaseColor: '#34d399',
+                      trendStrokeColor: '#34d399',
+                      delay: 0,
+                    },
+                    {
+                      id: 'sla',
+                      Icon: Zap,
+                      label: 'Eficiência SLA',
+                      tooltip: 'Eficiência SLA',
+                      value: overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%",
+                      TrendIcon: TrendingUp,
+                      trendBaseColor: '#4F8CFF',
+                      trendStrokeColor: '#4F8CFF',
+                      delay: 0.05,
+                    }
+                  ]}
+                />
+              </Suspense>
             </div>
-          </GlassCard>
+          </div>
+
 
           <GlassCard className="flex flex-col glass-surface card-sheen">
             <h3 className="text-sm font-semibold tracking-wider text-muted-foreground mb-6">DISTRIBUIÇÃO POR STATUS</h3>
