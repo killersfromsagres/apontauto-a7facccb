@@ -63,8 +63,9 @@ export function CentralInteligenciaView() {
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ["gestao", "overview", 30],
     queryFn: () => fetchGestaoOverview(30),
-    refetchInterval: 10000, // Intervalo reduzido para 10s para atualização mais rápida
+    refetchInterval: 5000, // Reduzido para 5s para sincronização ultra-rápida pedida pelo usuário
     staleTime: 0,
+    gcTime: 0, // Garante que não use dados antigos em cache ao remontar
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
@@ -73,9 +74,10 @@ export function CentralInteligenciaView() {
   const { data: recentEvents } = useQuery({
     queryKey: ["gestao", "os-recente"],
     queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
-    select: (data) => data.slice(0, 5),
-    refetchInterval: 10000, // Intervalo reduzido para 10s
+    select: (data) => data.slice(0, 10), // Aumentado para 10 eventos recentes
+    refetchInterval: 5000, // Sincronizado com o overview em 5s
     staleTime: 0,
+    gcTime: 0,
   });
 
   const chartData = overview?.os_mensal?.map(item => ({
@@ -90,6 +92,7 @@ export function CentralInteligenciaView() {
           name: name.charAt(0).toUpperCase() + name.slice(1), 
           value: Number(value) 
         }))
+        .filter(item => item.value > 0) // Remove status zerados para limpar o gráfico
         .sort((a, b) => b.value - a.value)
     : [];
 
