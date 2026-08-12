@@ -632,9 +632,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         y="0"
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        fill={m.cor}
-                        fontSize="13"
-                        fontWeight="700"
+                        fill="white"
+                        fontSize="18"
+                        fontWeight="800"
                         className="select-none font-['SF_Pro_Display'] uppercase tracking-tight"
                       >
                         {m.rotulo?.split(' - ')[1] || m.rotulo}
