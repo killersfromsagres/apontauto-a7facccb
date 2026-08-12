@@ -64,6 +64,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusText, setStatusText] = useState('Programado');
+  const [prazoDate, setPrazoDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusType, setStatusType] = useState<'concluido' | 'execucao' | 'perimetro' | 'programado'>('programado');
   
   const STATUS_CONFIG = {
@@ -161,20 +162,26 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     }
     
     if (mode === 'move' && e.button === 0) {
-      // Check for label hits
+      // Check for label hits - expand hit area for easier selection
+      const labelHitRadius = 40 / zoom; 
+      
       for (const m of localMarcacoes) {
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
 
-        if (getDistance(coords, numPos) < hitRadius) {
+        // Distance check between click coordinates and label positions
+        if (getDistance(coords, numPos) < labelHitRadius) {
           setDraggedLabel({ marcacaoId: m.id, type: 'numero' });
           setSelectedMarcacaoId(m.id);
+          // Set as panning false to ensure label dragging takes precedence
+          isPanning.current = false;
           return;
         }
-        if (getDistance(coords, dataPos) < hitRadius) {
+        if (getDistance(coords, dataPos) < labelHitRadius) {
           setDraggedLabel({ marcacaoId: m.id, type: 'data' });
           setSelectedMarcacaoId(m.id);
+          isPanning.current = false;
           return;
         }
       }
@@ -249,6 +256,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setNumeroScale(m.numero_scale || 1);
         setDataScale(m.data_scale || 1);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
         const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
         setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
@@ -276,6 +284,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setNumeroScale(clicked.numero_scale || 1);
         setDataScale(clicked.data_scale || 1);
         setStatusDate(clicked.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
+        setPrazoDate(clicked.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = clicked.rotulo || '';
         const foundStatus = Object.entries(STATUS_CONFIG).find(([_, cfg]) => fullRotulo.includes(cfg.label));
         setStatusType(foundStatus ? (foundStatus[0] as any) : 'programado');
@@ -384,10 +393,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Default relative deadline (e.g., +15 days) if no second date is stored
         const deadlineDate = formatDate(new Date(new Date(dateText).getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
+        const deadlineText = m.prazo_rotulo || '';
+        const displayDeadline = formatDate(deadlineText);
+
         ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(deadlineDate).width);
+        const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(displayDeadline).width);
         const rectWidth = textWidth + 30 * dataScale;
-        const rectHeight = 65 * dataScale; // Increased height for two dates
+        const rectHeight = 65 * dataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
@@ -400,9 +412,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.textAlign = 'center';
         ctx.fillText(displayDate, dataPos.x, dataPos.y - 10 * dataScale);
         
-        ctx.fillStyle = '#94a3b8'; // Muted color for the deadline
-        ctx.font = `700 ${14 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.fillText(deadlineDate, dataPos.x, dataPos.y + 12 * dataScale);
+        ctx.fillStyle = 'white';
+        ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
+        ctx.fillText(displayDeadline, dataPos.x, dataPos.y + 12 * dataScale);
       });
 
       // 3. Trigger Download
@@ -493,6 +505,29 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       ));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, rotulo: `${STATUS_CONFIG[statusType].label} - ${newDate}` });
+                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase">Data Prazo (Manual)</span>
+                <div className="relative">
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <input 
+                    type="date" 
+                    value={prazoDate}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      setPrazoDate(newDate);
+                      setLocalMarcacoes(prev => prev.map(m => 
+                        m.id === selectedMarcacaoId 
+                          ? { ...m, prazo_rotulo: newDate } 
+                          : m
+                      ));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, prazo_rotulo: newDate });
                     }}
                     className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
@@ -646,9 +681,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         };
 
                         const displayDate = formatDate(dateText);
-                        // Using a calculated deadline (initial date + 15 days) as requested for "prazo"
-                        const baseDate = dateText.includes('-') ? new Date(dateText) : new Date();
-                        const deadlineDate = formatDate(new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+                        const deadlineText = m.prazo_rotulo || '';
+                        const displayDeadline = formatDate(deadlineText);
 
                         return (
                           <>
@@ -680,12 +714,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               y="12"
                               textAnchor="middle"
                               dominantBaseline="middle"
-                              fill="#94a3b8"
-                              fontSize="12"
-                              fontWeight="700"
+                              fill="white"
+                              fontSize="18"
+                              fontWeight="800"
                               className="select-none font-['SF_Pro_Display'] uppercase tracking-widest"
                             >
-                              {deadlineDate}
+                              {displayDeadline}
                             </text>
                           </>
                         );
