@@ -661,23 +661,20 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <g className={cn(mode === 'move' ? "pointer-events-auto cursor-move" : "pointer-events-none")}>
                     {/* Invisible hit areas for easier dragging */}
                     {mode === 'move' && (
-                      <>
+                      <g className="pointer-events-auto cursor-move">
                         <circle 
                           cx={numPos.x} 
                           cy={numPos.y} 
-                          r={40 * (m.numero_scale || 1)} 
+                          r={100 / zoom} 
                           fill="transparent" 
-                          className="cursor-move pointer-events-auto"
                         />
-                        <rect 
-                          x={dataPos.x - 50 * (m.data_scale || 1)} 
-                          y={dataPos.y - 30 * (m.data_scale || 1)} 
-                          width={100 * (m.data_scale || 1)} 
-                          height={60 * (m.data_scale || 1)} 
+                        <circle 
+                          cx={dataPos.x} 
+                          cy={dataPos.y} 
+                          r={100 / zoom} 
                           fill="transparent" 
-                          className="cursor-move pointer-events-auto"
                         />
-                      </>
+                      </g>
                     )}
                     {/* Slope Number */}
                     <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
