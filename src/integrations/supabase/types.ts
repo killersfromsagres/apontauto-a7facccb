@@ -7480,7 +7480,19 @@ export type Database = {
         }
       }
       gestao_overview: { Args: { p_dias?: number }; Returns: Json }
-      gestao_overview_v2: { Args: { p_dias?: number }; Returns: Json }
+      gestao_overview_v2:
+        | { Args: { p_dias?: number }; Returns: Json }
+        | {
+            Args: {
+              p_criticidade?: string
+              p_dias?: number
+              p_equipe?: string
+              p_modulo?: string
+              p_predio?: string
+              p_status?: string
+            }
+            Returns: Json
+          }
       gestao_status_canonico: { Args: { p_status: string }; Returns: string }
       get_my_allowed_menus: { Args: never; Returns: string[] }
       has_role: {
