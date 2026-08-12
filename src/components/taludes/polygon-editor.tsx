@@ -811,6 +811,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         );
                       })()}
                     </g>
+                    )}
                   </g>
 
                   {/* Edit Handles (only in Edit mode for selected) */}
