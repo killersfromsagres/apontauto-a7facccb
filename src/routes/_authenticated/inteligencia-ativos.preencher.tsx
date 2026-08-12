@@ -1010,7 +1010,7 @@ function PreencherPlanilha() {
                 disabled={busy}
                 className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-violet-500/10 to-transparent p-4 text-left transition-all hover:border-primary/60 hover:shadow-elegant disabled:opacity-60 sm:p-5"
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-white shadow-elegant">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.5)]">
                   {busy ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
