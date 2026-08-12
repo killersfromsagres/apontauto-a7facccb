@@ -750,7 +750,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     )}
 
                     {/* Status Dates */}
-                    <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
+                    {m.data_visivel !== false && (
+                      <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       {(() => {
                         const rotuloParts = m.rotulo?.split(' - ') || [];
                         const dateText = rotuloParts[1] || m.rotulo || '';
