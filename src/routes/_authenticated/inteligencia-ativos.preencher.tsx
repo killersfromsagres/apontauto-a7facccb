@@ -135,7 +135,7 @@ function LiquidPanel({
       className={cn(
         "relative overflow-hidden rounded-3xl border bg-card/60 p-5 backdrop-blur-xl sm:p-7",
         tone === "accent"
-          ? "border-primary/40 shadow-[0_0_60px_-25px_hsl(var(--primary)/0.9)]"
+          ? "border-primary/40 shadow-[0_0_60px_-25px_oklch(0.85_0.12_220/0.9)]"
           : "border-border/60",
         className,
       )}
@@ -495,17 +495,17 @@ function PreencherPlanilha() {
       description="Prédio, Andar e Ambiente resolvidos pela árvore real de ativos — sem PROCV, sem fórmula quebrada."
       actions={
         <>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/base-ativos">
               <Database className="mr-2 h-4 w-4" /> Base de Ativos
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/inteligencia-ativos/nao-encontrados">
               <Search className="mr-2 h-4 w-4" /> Não encontrados
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/inteligencia-ativos/historico">
               <History className="mr-2 h-4 w-4" /> Histórico
             </Link>
@@ -522,7 +522,7 @@ function PreencherPlanilha() {
                 className={cn(
                   "flex h-7 items-center gap-2 rounded-full border px-3 text-[11px] font-medium transition-colors sm:text-xs",
                   i === stepIndex
-                    ? "border-primary/50 bg-primary/15 text-primary"
+                    ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)]"
                     : i < stepIndex
                       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
                       : "border-border/60 text-muted-foreground",
@@ -595,7 +595,7 @@ function PreencherPlanilha() {
                 size="lg"
                 disabled={busy}
                 onClick={() => inputRef.current?.click()}
-                className="h-12 rounded-2xl bg-gradient-to-r from-primary to-violet-500 px-8 text-base font-semibold shadow-elegant hover:opacity-90"
+                className="h-12 rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_oklch(0.85_0.12_220/0.5)] px-8 text-base font-semibold hover:opacity-90 hover:shadow-[0_0_25px_-5px_oklch(0.85_0.12_220/0.6)] transition-all"
               >
                 {busy ? (
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -607,7 +607,7 @@ function PreencherPlanilha() {
               <Button
                 variant="outline"
                 onClick={downloadTemplate}
-                className="h-10 rounded-2xl border-primary/30 bg-background/40"
+                className="h-10 rounded-2xl border-primary/40 bg-background/60 backdrop-blur-md text-primary hover:bg-primary/10 transition-colors"
               >
                 <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
               </Button>
@@ -841,7 +841,12 @@ function PreencherPlanilha() {
                       key={k}
                       size="sm"
                       variant={filter === k ? "default" : "outline"}
-                      className="h-8 rounded-full px-3 text-xs"
+                      className={cn(
+                        "h-8 rounded-full px-3 text-xs transition-all",
+                        filter === k 
+                          ? "bg-primary text-primary-foreground shadow-[0_0_10px_-2px_oklch(0.85_0.12_220/0.4)]" 
+                          : "border-primary/30 text-primary hover:bg-primary/10"
+                      )}
                       onClick={() => setFilter(k)}
                     >
                       {label}
@@ -1008,9 +1013,9 @@ function PreencherPlanilha() {
                 type="button"
                 onClick={downloadProcessed}
                 disabled={busy}
-                className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/15 via-violet-500/10 to-transparent p-4 text-left transition-all hover:border-primary/60 hover:shadow-elegant disabled:opacity-60 sm:p-5"
+                className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-primary/40 bg-background/60 backdrop-blur-md p-4 text-left transition-all hover:border-primary/70 hover:shadow-[0_0_20px_-5px_oklch(0.85_0.12_220/0.3)] disabled:opacity-60 sm:p-5"
               >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-violet-500 text-white shadow-elegant">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.5)]">
                   {busy ? (
                     <Loader2 className="h-6 w-6 animate-spin" />
                   ) : (
@@ -1035,18 +1040,18 @@ function PreencherPlanilha() {
               </button>
 
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={downloadUnmatched}>
+                <Button variant="outline" onClick={downloadUnmatched} className="border-primary/40 text-primary hover:bg-primary/10">
                   <Download className="mr-2 h-4 w-4" /> Relatório de não encontrados
                 </Button>
-                <Button variant="outline" onClick={downloadTemplate}>
+                <Button variant="outline" onClick={downloadTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
                   <FileSpreadsheet className="mr-2 h-4 w-4" /> Baixar modelo de planilha
                 </Button>
-                <Button variant="outline" asChild>
+                <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
                   <Link to="/inteligencia-ativos/nao-encontrados">
                     <Search className="mr-2 h-4 w-4" /> Revisar não encontrados
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={saveTemplate}>
+                <Button variant="outline" onClick={saveTemplate} className="border-primary/40 text-primary hover:bg-primary/10">
                   <Save className="mr-2 h-4 w-4" /> Salvar mapeamento como modelo
                 </Button>
                 <Button variant="ghost" onClick={reset}>
@@ -1114,7 +1119,7 @@ function StepNav({
       <Button
         onClick={onNext}
         disabled={nextDisabled}
-        className="bg-gradient-to-r from-primary to-violet-500"
+        className="bg-primary text-primary-foreground shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)] hover:shadow-[0_0_20px_-3px_oklch(0.85_0.12_220/0.5)] transition-all"
       >
         {nextLabel} {nextIcon ?? <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
