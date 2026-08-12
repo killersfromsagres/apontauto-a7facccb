@@ -84,9 +84,13 @@ export function CentralInteligenciaView() {
 
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserName(data.user?.email?.split("@")[0] || "Gestor");
-    });
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserName(user.email?.split("@")[0] || "Gestor");
+      }
+    };
+    checkUser();
   }, []);
 
   const { data: overview, isLoading: overviewLoading, error: overviewError } = useQuery({
