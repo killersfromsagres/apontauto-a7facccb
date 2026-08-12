@@ -206,7 +206,7 @@ export function CentralInteligenciaView() {
               <AlertTriangle className="h-5 w-5" /> Erro ao carregar a página
             </h4>
             <div className="space-y-2 opacity-90 mb-4">
-              <p>Algo deu errado ao processar os dados dos gráficos.</p>
+              <p>Algo deu errado. Tente recarregar ou voltar ao dashboard.</p>
               <code className="block p-2 bg-black/20 rounded text-[10px] break-all">
                 {(overviewError as Error).message || "Erro desconhecido"}
               </code>
