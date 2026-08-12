@@ -63,8 +63,9 @@ export function CentralInteligenciaView() {
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ["gestao", "overview", 30],
     queryFn: () => fetchGestaoOverview(30),
-    refetchInterval: 10000, // Intervalo reduzido para 10s para atualização mais rápida
+    refetchInterval: 5000, // Reduzido para 5s para sincronização ultra-rápida pedida pelo usuário
     staleTime: 0,
+    gcTime: 0, // Garante que não use dados antigos em cache ao remontar
   });
 
   const { data: weather, isLoading: weatherLoading } = useWeather();
