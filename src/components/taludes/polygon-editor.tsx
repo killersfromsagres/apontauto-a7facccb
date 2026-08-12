@@ -74,10 +74,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     programado: { color: '#3b82f6', label: 'Programado' }
   };
   const [lineThickness, setLineThickness] = useState(4);
-  const [legendScale, setLegendScale] = useState(1);
-  const [activeLegendScale, setActiveLegendScale] = useState(1);
   const [numeroScale, setNumeroScale] = useState(1);
   const [dataScale, setDataScale] = useState(1);
+  const [numeroVisivel, setNumeroVisivel] = useState(true);
+  const [dataVisivel, setDataVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   
@@ -275,6 +275,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setLineThickness(m.espessura_linha || 4);
         setNumeroScale(m.numero_scale || 1);
         setDataScale(m.data_scale || 1);
+        setNumeroVisivel(m.numero_visivel !== false);
+        setDataVisivel(m.data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -292,6 +294,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setLineThickness(m.espessura_linha || 4);
         setNumeroScale(m.numero_scale || 1);
         setDataScale(m.data_scale || 1);
+        setNumeroVisivel(m.numero_visivel !== false);
+        setDataVisivel(m.data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -336,7 +340,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       cor: STATUS_CONFIG[statusType].color,
       espessura_linha: lineThickness,
       numero_scale: numeroScale,
-      data_scale: dataScale
+      data_scale: dataScale,
+      numero_visivel: numeroVisivel,
+      data_visivel: dataVisivel
     };
     await onSave(newMarcacao);
     setCurrentPoints([]);
@@ -382,21 +388,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
 
         // Draw Number Circle
-        const numRadius = 20 * (m.numero_scale || 1);
-        ctx.beginPath();
-        ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fill();
-        ctx.strokeStyle = m.cor;
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        if (m.numero_visivel !== false) {
+          const numRadius = 20 * (m.numero_scale || 1);
+          ctx.beginPath();
+          ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fill();
+          ctx.strokeStyle = m.cor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
 
-        // Draw Number Text
-        ctx.fillStyle = 'white';
-        ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(m.numero), numPos.x, numPos.y);
+          // Draw Number Text
+          ctx.fillStyle = 'white';
+          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(m.numero), numPos.x, numPos.y);
+        }
 
         // Draw Date Labels (Start/End)
         const rotuloParts = m.rotulo?.split(' - ') || [];
@@ -419,21 +427,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const rectWidth = 120 * currentDataScale;
         const rectHeight = 60 * currentDataScale;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.beginPath();
-        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = 1;
-        ctx.stroke();
+        if (m.data_visivel !== false) {
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          ctx.beginPath();
+          ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
 
-        ctx.fillStyle = 'white';
-        ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
-        
-        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
+          ctx.fillStyle = 'white';
+          ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
+          
+          ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
+        }
       });
 
       // 3. Trigger Download
@@ -596,6 +606,37 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  size="sm" 
+                  variant={numeroVisivel ? "premium" : "outline"} 
+                  className={cn("h-8 text-[10px]", !numeroVisivel && "opacity-50")}
+                  onClick={() => {
+                    const newVal = !numeroVisivel;
+                    setNumeroVisivel(newVal);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, numero_visivel: newVal } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, numero_visivel: newVal });
+                  }}
+                >
+                  {numeroVisivel ? "Ocultar Nº" : "Mostrar Nº"}
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant={dataVisivel ? "premium" : "outline"} 
+                  className={cn("h-8 text-[10px]", !dataVisivel && "opacity-50")}
+                  onClick={() => {
+                    const newVal = !dataVisivel;
+                    setDataVisivel(newVal);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, data_visivel: newVal } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, data_visivel: newVal });
+                  }}
+                >
+                  {dataVisivel ? "Ocultar Data" : "Mostrar Data"}
+                </Button>
+              </div>
+
               <div className="flex gap-2">
                 <Button 
                   size="sm" variant="outline" className="flex-1 h-8 text-[10px] border-white/5 bg-white/5"
@@ -689,23 +730,28 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       </g>
                     )}
                     {/* Slope Number */}
-                    <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
-                    <text
-                      x={numPos.x}
-                      y={numPos.y}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill="white"
-                      fontSize={28 * (m.numero_scale || 1)}
-                      fontWeight="900"
-                      className="select-none font-['SF_Pro_Display']"
-                      style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
-                    >
-                      {m.numero}
-                    </text>
+                    {m.numero_visivel !== false && (
+                      <g>
+                        <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
+                        <text
+                          x={numPos.x}
+                          y={numPos.y}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="white"
+                          fontSize={28 * (m.numero_scale || 1)}
+                          fontWeight="900"
+                          className="select-none font-['SF_Pro_Display']"
+                          style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+                        >
+                          {m.numero}
+                        </text>
+                      </g>
+                    )}
 
                     {/* Status Dates */}
-                    <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
+                    {m.data_visivel !== false && (
+                      <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       {(() => {
                         const rotuloParts = m.rotulo?.split(' - ') || [];
                         const dateText = rotuloParts[1] || m.rotulo || '';
@@ -765,6 +811,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         );
                       })()}
                     </g>
+                    )}
                   </g>
 
                   {/* Edit Handles (only in Edit mode for selected) */}
