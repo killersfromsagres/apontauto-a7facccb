@@ -16,6 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { OfflineBanner } from "@/components/offline-banner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
+import { syncPending as syncCorretiva } from "@/lib/corretiva/sync";
 
 function NotFoundComponent() {
   return (
@@ -198,6 +199,12 @@ function RootComponent() {
     void import("@/features/observability/services/error-log").then((m) =>
       m.installErrorTelemetry(),
     );
+
+    // Sync Corretiva a cada 10s
+    const iv = setInterval(() => {
+      if (navigator.onLine) syncCorretiva().catch(() => {});
+    }, 10000);
+    return () => clearInterval(iv);
   }, []);
 
   return (

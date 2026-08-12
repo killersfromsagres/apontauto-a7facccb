@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { outboxAll, outboxRemove, blobGet, blobDelete } from "./db";
 import { postImgbbForm } from "../imgbb-post";
+
 
 let isSyncing = false;
 
