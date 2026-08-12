@@ -304,6 +304,10 @@ export function GestaoView() {
     setAba("os");
   };
 
+  const setFiltroUnico = (chave: keyof GestaoFiltros, valor: any) => {
+    setFiltros((prev) => ({ ...prev, [chave]: valor }));
+  };
+
   const ctxRelatorio = () => ({
     overview: d!,
     os,
@@ -472,32 +476,58 @@ export function GestaoView() {
           </div>
         </GlassCard>
 
-        {/* Filtros globais */}
-        <GlassCard className="mb-4 space-y-3 p-3">
-          <div className="flex flex-wrap gap-1.5">
-            {PERIODOS.map((p) => (
-              <Chip
-                key={p.label}
-                ativo={filtros.dias === p.dias}
-                onClick={() => setFiltros((f) => ({ ...f, dias: p.dias }))}
-              >
-                {p.label}
-              </Chip>
-            ))}
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">Personalizado:</span>
-              <Input
-                type="number"
-                min={1}
-                max={730}
-                value={filtros.dias}
-                onChange={(e) =>
-                  setFiltros((f) => ({ ...f, dias: Math.max(1, Number(e.target.value) || 1) }))
-                }
-                className="h-9 w-20"
-              />
-              <span className="text-xs text-muted-foreground">dias</span>
+        {/* Filtros globais avançados */}
+        <div className="mb-4 grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          <GlassCard className="p-3">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Período de Análise</label>
+            <div className="flex flex-wrap gap-1.5">
+              {PERIODOS.map((p) => (
+                <Chip
+                  key={p.label}
+                  ativo={filtros.dias === p.dias}
+                  onClick={() => setFiltroUnico("dias", p.dias)}
+                >
+                  {p.label}
+                </Chip>
+              ))}
             </div>
+          </GlassCard>
+
+          <GlassCard className="p-3">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Módulo</label>
+            <div className="flex flex-wrap gap-1.5">
+              <Chip ativo={!filtros.modulo} onClick={() => setFiltroUnico("modulo", null)}>Todos</Chip>
+              {MODULOS.map(m => (
+                <Chip key={m} ativo={filtros.modulo === m} onClick={() => setFiltroUnico("modulo", m)}>{m}</Chip>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard className="p-3">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Equipe</label>
+            <select 
+              value={filtros.equipe || ""} 
+              onChange={(e) => setFiltroUnico("equipe", e.target.value || null)}
+              className="w-full bg-white/5 border border-white/10 rounded-md h-9 text-xs px-2 text-white focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Todas Equipes</option>
+              {equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+            </select>
+          </GlassCard>
+
+          <GlassCard className="p-3">
+            <label className="mb-1.5 block text-[10px] font-bold uppercase text-muted-foreground">Prédio / Local</label>
+            <select 
+              value={filtros.predio || ""} 
+              onChange={(e) => setFiltroUnico("predio", e.target.value || null)}
+              className="w-full bg-white/5 border border-white/10 rounded-md h-9 text-xs px-2 text-white focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Todos Prédios</option>
+              {predios.map(pr => <option key={pr} value={pr}>{pr}</option>)}
+            </select>
+          </GlassCard>
+        </div>
+
           </div>
           <div className="flex flex-wrap gap-1.5">
             <Chip
