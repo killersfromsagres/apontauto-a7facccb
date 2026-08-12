@@ -495,17 +495,17 @@ function PreencherPlanilha() {
       description="Prédio, Andar e Ambiente resolvidos pela árvore real de ativos — sem PROCV, sem fórmula quebrada."
       actions={
         <>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/base-ativos">
               <Database className="mr-2 h-4 w-4" /> Base de Ativos
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/inteligencia-ativos/nao-encontrados">
               <Search className="mr-2 h-4 w-4" /> Não encontrados
             </Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10">
             <Link to="/inteligencia-ativos/historico">
               <History className="mr-2 h-4 w-4" /> Histórico
             </Link>
