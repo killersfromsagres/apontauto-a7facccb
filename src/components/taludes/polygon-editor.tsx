@@ -401,7 +401,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         // Draw Date Labels (Start/End)
         const rotuloParts = m.rotulo?.split(' - ') || [];
         const dateText = rotuloParts[1] || m.rotulo || '';
-        const dataScale = m.data_scale || 1;
+        const currentDataScale = m.data_scale || 1;
         
         // Brazilian format: DD/MM
         const formatDate = (dateStr: string) => {
@@ -414,26 +414,26 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const deadlineText = m.prazo_rotulo || '';
         const displayDeadline = formatDate(deadlineText);
 
-        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        const textWidth = Math.max(ctx.measureText(displayDate).width, ctx.measureText(displayDeadline).width);
-        const rectWidth = textWidth + 20 * dataScale;
-        const rectHeight = 65 * dataScale;
+        const baseFontSize = 24;
+        const scaledFontSize = baseFontSize * currentDataScale;
+        const rectWidth = 120 * currentDataScale;
+        const rectHeight = 60 * currentDataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
+        ctx.beginPath();
+        ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
         ctx.fill();
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = 1;
         ctx.stroke();
 
         ctx.fillStyle = 'white';
+        ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * dataScale);
+        ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
         
-        ctx.fillStyle = 'white';
-        ctx.font = `800 ${24 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
-        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 12 * dataScale);
+        ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
       });
 
       // 3. Trigger Download
