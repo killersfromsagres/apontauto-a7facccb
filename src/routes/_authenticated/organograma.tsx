@@ -32,15 +32,14 @@ function OrganogramaPage() {
       const canvas = await html2canvas(chartRef.current, {
         backgroundColor: '#FFFFFF',
         scale: 2,
-        logging: true,
         useCORS: true,
-        allowTaint: true,
-        imageTimeout: 15000,
-        removeContainer: true,
+        allowTaint: false, // Alterado para false para garantir CORS
+        imageTimeout: 30000,
+        logging: true,
         scrollX: 0,
-        scrollY: 0,
-        windowWidth: chartRef.current.scrollWidth,
-        windowHeight: chartRef.current.scrollHeight,
+        scrollY: -window.scrollY, // Ajuste para o scroll atual
+        width: chartRef.current.offsetWidth,
+        height: chartRef.current.offsetHeight,
       });
       
       const link = document.createElement('a');
@@ -110,16 +109,18 @@ function OrganogramaPage() {
                   <img 
                     src="/logos/gps-logo.png" 
                     alt="Grupo GPS" 
-                    className={`h-8 object-contain transition-all ${isExporting ? '' : 'brightness-0 invert'}`}
+                    className="h-12 w-auto object-contain"
                     crossOrigin="anonymous"
+                    style={{ filter: isExporting ? 'none' : 'brightness(0) invert(1)' }}
                   />
                 </div>
                 <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
                   <img 
                     src="/logos/sw-logo.png" 
                     alt="Sherwin Williams" 
-                    className={`h-8 object-contain transition-all ${isExporting ? '' : 'brightness-0 invert'}`} 
+                    className="h-12 w-auto object-contain" 
                     crossOrigin="anonymous"
+                    style={{ filter: isExporting ? 'none' : 'brightness(0) invert(1)' }}
                   />
                 </div>
               </div>
