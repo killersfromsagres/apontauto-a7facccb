@@ -116,10 +116,11 @@ const initialChartData: ChartSeries[] = [
 
 
 const validateChartData = (data: ChartSeries[]): any => {
+  if (!Array.isArray(data) || data.length === 0) return [];
   return data.map(series => ({
-    key: series.key,
-    data: series.data.map(item => ({
-      key: item.key,
+    key: series.key || 'Sem Nome',
+    data: (Array.isArray(series.data) ? series.data : []).map(item => ({
+      key: item.key instanceof Date ? item.key : new Date(item.key),
       data: (typeof item.data !== 'number' || isNaN(item.data)) ? 0 : item.data,
     })),
   }));
