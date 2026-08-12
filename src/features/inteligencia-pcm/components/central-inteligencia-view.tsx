@@ -127,17 +127,24 @@ export function CentralInteligenciaView() {
   const chartDataReaviz = useMemo(() => {
     try {
       if (!overview?.os_mensal || !Array.isArray(overview.os_mensal) || overview.os_mensal.length === 0) {
-        return [];
+        // Mock data to prevent empty chart crashes if real data is not yet available
+        return [
+          { key: 'Chamados IA', data: [{ key: new Date(), data: 0 }] },
+          { key: 'Finalizados', data: [{ key: new Date(), data: 0 }] }
+        ];
       }
       
       const seriesIA: any = {
         key: 'Chamados IA',
         data: overview.os_mensal.map((item, index) => {
+          // Reconstruct date from the string if possible, or use index-based month offsets
           const d = new Date();
+          d.setDate(1); // Avoid month skipping on 31st
           d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+          
           return {
             key: d,
-            data: Number(item.criadas) || 0
+            data: Math.max(0, Number(item.criadas) || 0)
           };
         })
       };
@@ -146,10 +153,12 @@ export function CentralInteligenciaView() {
         key: 'Finalizados',
         data: overview.os_mensal.map((item, index) => {
           const d = new Date();
+          d.setDate(1); 
           d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+          
           return {
             key: d,
-            data: Number(item.concluidas) || 0
+            data: Math.max(0, Number(item.concluidas) || 0)
           };
         })
       };
