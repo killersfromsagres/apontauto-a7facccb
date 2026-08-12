@@ -305,7 +305,14 @@ export function GestaoView() {
   };
 
   const setFiltroUnico = (chave: keyof GestaoFiltros, valor: any) => {
-    setFiltros((prev) => ({ ...prev, [chave]: valor }));
+    setFiltros((prev) => {
+      const novos = { ...prev, [chave]: valor };
+      // Se mudar o período, limpamos os outros filtros para evitar vazios seletivos
+      if (chave === "dias") {
+        return { ...FILTROS_PADRAO, dias: valor };
+      }
+      return novos;
+    });
   };
 
   const ctxRelatorio = () => ({
