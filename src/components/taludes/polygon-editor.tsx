@@ -340,7 +340,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       cor: STATUS_CONFIG[statusType].color,
       espessura_linha: lineThickness,
       numero_scale: numeroScale,
-      data_scale: dataScale
+      data_scale: dataScale,
+      numero_visivel: numeroVisivel,
+      data_visivel: dataVisivel
     };
     await onSave(newMarcacao);
     setCurrentPoints([]);
