@@ -522,7 +522,7 @@ function PreencherPlanilha() {
                 className={cn(
                   "flex h-7 items-center gap-2 rounded-full border px-3 text-[11px] font-medium transition-colors sm:text-xs",
                   i === stepIndex
-                    ? "border-primary/50 bg-primary/15 text-primary"
+                    ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)]"
                     : i < stepIndex
                       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-500"
                       : "border-border/60 text-muted-foreground",
