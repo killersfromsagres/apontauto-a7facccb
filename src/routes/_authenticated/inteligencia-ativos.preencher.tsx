@@ -841,7 +841,12 @@ function PreencherPlanilha() {
                       key={k}
                       size="sm"
                       variant={filter === k ? "default" : "outline"}
-                      className="h-8 rounded-full px-3 text-xs"
+                      className={cn(
+                        "h-8 rounded-full px-3 text-xs transition-all",
+                        filter === k 
+                          ? "bg-primary text-primary-foreground shadow-[0_0_10px_-2px_oklch(0.85_0.12_220/0.4)]" 
+                          : "border-primary/30 text-primary hover:bg-primary/10"
+                      )}
                       onClick={() => setFilter(k)}
                     >
                       {label}
