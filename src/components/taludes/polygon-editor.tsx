@@ -74,10 +74,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     programado: { color: '#3b82f6', label: 'Programado' }
   };
   const [lineThickness, setLineThickness] = useState(4);
-  const [legendScale, setLegendScale] = useState(1);
-  const [activeLegendScale, setActiveLegendScale] = useState(1);
   const [numeroScale, setNumeroScale] = useState(1);
   const [dataScale, setDataScale] = useState(1);
+  const [numeroVisivel, setNumeroVisivel] = useState(true);
+  const [dataVisivel, setDataVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   
