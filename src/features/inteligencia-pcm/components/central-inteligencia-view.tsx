@@ -74,9 +74,10 @@ export function CentralInteligenciaView() {
   const { data: recentEvents } = useQuery({
     queryKey: ["gestao", "os-recente"],
     queryFn: () => fetchOsConsolidada({ dias: 7, modulo: null, equipe: null, predio: null, status: null, criticidade: null }),
-    select: (data) => data.slice(0, 5),
-    refetchInterval: 10000, // Intervalo reduzido para 10s
+    select: (data) => data.slice(0, 10), // Aumentado para 10 eventos recentes
+    refetchInterval: 5000, // Sincronizado com o overview em 5s
     staleTime: 0,
+    gcTime: 0,
   });
 
   const chartData = overview?.os_mensal?.map(item => ({
