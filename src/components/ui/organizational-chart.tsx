@@ -140,7 +140,8 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         },
-        body: formData
+        body: formData,
+        mode: 'cors'
       });
 
       if (!response.ok) {
@@ -179,8 +180,11 @@ export default function OrganizationalChart({ isAdmin, isExporting }: { isAdmin:
   const levels = Array.from(new Set(members.map(m => m.level))).sort((a, b) => a - b);
 
   return (
-    <div className="w-full overflow-x-auto pb-20 custom-scrollbar">
-      <div className={`flex flex-col items-center gap-16 min-w-[1100px] p-12 relative transition-colors duration-300 ${isExporting ? 'bg-white' : ''}`}>
+    <div className="w-full overflow-x-auto pb-20 custom-scrollbar flex justify-center">
+      <div 
+        id="org-chart-container"
+        className={`flex flex-col items-center gap-16 min-w-[1100px] p-12 relative transition-colors duration-300 ${isExporting ? 'bg-white text-black' : ''}`}
+      >
         
         {levels.map((level) => (
           <div key={level} className="flex flex-wrap justify-center gap-12 relative w-full">

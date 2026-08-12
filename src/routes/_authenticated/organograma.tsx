@@ -29,17 +29,26 @@ function OrganogramaPage() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      const canvas = await html2canvas(chartRef.current, {
+      // Tenta capturar o container específico para evitar problemas de scroll/offset
+      const exportTarget = document.getElementById('org-chart-container') || chartRef.current;
+      
+      const canvas = await html2canvas(exportTarget, {
         backgroundColor: '#FFFFFF',
-        scale: 2,
+        scale: 3, // Aumenta resolução
         useCORS: true,
-        allowTaint: false, // Alterado para false para garantir CORS
-        imageTimeout: 30000,
-        logging: true,
-        scrollX: 0,
-        scrollY: -window.scrollY, // Ajuste para o scroll atual
-        width: chartRef.current.offsetWidth,
-        height: chartRef.current.offsetHeight,
+        allowTaint: false,
+        imageTimeout: 90000,
+        logging: false,
+        width: exportTarget.scrollWidth,
+        height: exportTarget.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Garante que o elemento clonado esteja visível e com cores corretas
+          const el = clonedDoc.getElementById('org-chart-container');
+          if (el) {
+            el.style.backgroundColor = '#FFFFFF';
+            el.style.color = '#000000';
+          }
+        }
       });
       
       const link = document.createElement('a');
@@ -103,28 +112,6 @@ function OrganogramaPage() {
             className={`p-4 sm:p-8 transition-colors duration-300 ${isExporting ? 'bg-white' : ''}`}
           >
             <div className="mb-12 flex flex-col items-center relative">
-              {/* Logos Section */}
-              <div className="flex items-center justify-between w-full mb-8 px-4 sm:px-12">
-                <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
-                  <img 
-                    src="/logos/gps-logo.png" 
-                    alt="Grupo GPS" 
-                    className="h-12 w-auto object-contain"
-                    crossOrigin="anonymous"
-                    style={{ filter: isExporting ? 'none' : 'brightness(0) invert(1)' }}
-                  />
-                </div>
-                <div className={`p-2 rounded-xl transition-all ${isExporting ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm border border-white/10'}`}>
-                  <img 
-                    src="/logos/sw-logo.png" 
-                    alt="Sherwin Williams" 
-                    className="h-12 w-auto object-contain" 
-                    crossOrigin="anonymous"
-                    style={{ filter: isExporting ? 'none' : 'brightness(0) invert(1)' }}
-                  />
-                </div>
-              </div>
-
               <h2 className={`text-4xl font-black mb-3 tracking-tighter uppercase transition-colors ${isExporting ? 'text-slate-900' : 'text-white'}`}>
                 Organograma Demarchi
               </h2>
