@@ -113,11 +113,11 @@ const initialChartData: ChartSeries[] = [
 ];
 
 
-const validateChartData = (data: ChartSeries[]): ChartDataTypes[] => {
+const validateChartData = (data: ChartSeries[]): any[] => {
   return data.map(series => ({
-    ...series,
+    key: series.key,
     data: series.data.map(item => ({
-      ...item,
+      key: item.key,
       data: (typeof item.data !== 'number' || isNaN(item.data)) ? 0 : item.data,
     })),
   }));
@@ -181,7 +181,7 @@ export const AreaChart1: React.FC<AreaChart1Props> = ({
 
   return (
     <>
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         :root {
           --reaviz-tick-fill: #9A9AAF;
           --reaviz-gridline-stroke: #7E7E8F75;
@@ -190,7 +190,7 @@ export const AreaChart1: React.FC<AreaChart1Props> = ({
           --reaviz-tick-fill: #A0AEC0;
           --reaviz-gridline-stroke: rgba(74, 85, 104, 0.6);
         }
-      `}</style>
+      ` }} />
       <div className="flex flex-col pt-4 pb-4 bg-white dark:bg-black rounded-3xl shadow-[11px_21px_3px_rgba(0,0,0,0.06),14px_27px_7px_rgba(0,0,0,0.10),19px_38px_14px_rgba(0,0,0,0.13),27px_54px_27px_rgba(0,0,0,0.16),39px_78px_50px_rgba(0,0,0,0.20),55px_110px_86px_rgba(0,0,0,0.26)] w-full min-h-[580px] overflow-hidden transition-colors duration-300">
         <h3 className="text-3xl text-left p-7 pt-6 pb-8 font-bold text-black dark:text-white transition-colors duration-300">
           {title}
