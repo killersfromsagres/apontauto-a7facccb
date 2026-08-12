@@ -176,11 +176,17 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
 
-        if (dNum < labelHitRadius && dNum < minDistance) {
+        // Adjust hit radius based on current scale to make sure big labels are easy to grab
+        const currentNumScale = m.numero_scale || 1;
+        const currentDataScale = m.data_scale || 1;
+        const numHitRadius = (25 * currentNumScale) / zoom;
+        const dataHitRadius = (60 * currentDataScale) / zoom;
+
+        if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
           closestLabel = { id: m.id, type: 'numero' as const };
         }
-        if (dData < labelHitRadius && dData < minDistance) {
+        if (dData < dataHitRadius && dData < minDistance) {
           minDistance = dData;
           closestLabel = { id: m.id, type: 'data' as const };
         }
