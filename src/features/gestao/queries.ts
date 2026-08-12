@@ -8,8 +8,15 @@ import type {
 } from "./types";
 
 /** Visão consolidada da operação (RPC protegida por `can_access_gestao`). */
-export async function fetchGestaoOverview(dias: number): Promise<GestaoOverviewV2> {
-  const { data, error } = await supabase.rpc("gestao_overview_v2", { p_dias: dias });
+export async function fetchGestaoOverview(f: GestaoFiltros): Promise<GestaoOverviewV2> {
+  const { data, error } = await supabase.rpc("gestao_overview_v2", {
+    p_dias: f.dias,
+    p_modulo: f.modulo ?? undefined,
+    p_equipe: f.equipe ?? undefined,
+    p_predio: f.predio ?? undefined,
+    p_status: f.status ?? undefined,
+    p_criticidade: f.criticidade ?? undefined,
+  });
   if (error) throw error;
   return data as unknown as GestaoOverviewV2;
 }
