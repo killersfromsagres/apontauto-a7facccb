@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   loadEquipe,
   saveEquipe,
@@ -340,44 +341,79 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
   });
 
   const [urls, setUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState(false);
+
   useEffect(() => {
     (async () => {
-      if (!data?.fotos?.length) return;
+      if (!data?.fotos?.length) {
+        setUrls({});
+        return;
+      }
+      
+      setLoadingUrls(true);
       const next: Record<string, string> = {};
       const legacy: Foto[] = [];
+      
       for (const f of data.fotos) {
-        if (f.image_url) next[f.id] = f.image_url;
-        else if (f.storage_path) legacy.push(f);
+        if (f.image_url) {
+          next[f.id] = f.image_url;
+        } else if (f.storage_path) {
+          legacy.push(f);
+        }
       }
-      if (legacy.length) {
-        const paths = legacy.map((f) => f.storage_path as string);
-        const { data: s } = await supabase.storage
-          .from("corretiva-fotos")
-          .createSignedUrls(paths, 3600);
-        legacy.forEach((f, i) => {
-          const u = s?.[i]?.signedUrl;
-          if (u) next[f.id] = u;
-        });
-      }
-      setUrls(next);
-    })();
-  }, [data]);
 
-  const downloadPhoto = async (f: Foto, idx: number) => {
+      if (legacy.length > 0) {
+        try {
+          const paths = legacy.map((f) => f.storage_path as string);
+          const { data: s, error } = await supabase.storage
+            .from("corretiva-fotos")
+            .createSignedUrls(paths, 3600);
+            
+          if (error) throw error;
+          
+          legacy.forEach((f, i) => {
+            const u = s?.[i]?.signedUrl;
+            if (u) next[f.id] = u;
+          });
+        } catch (err) {
+          console.error("[CorretivaHistorico] Erro ao resolver URLs legadas:", err);
+        }
+      }
+      
+      setUrls(next);
+      setLoadingUrls(false);
+    })();
+  }, [data?.fotos]);
+
+  const downloadPhoto = useCallback(async (f: Foto, idx: number) => {
     const url = urls[f.id];
-    if (!url) return;
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `OS-${os?.numero_os ?? "foto"}-${idx + 1}.jpg`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      window.open(url, "_blank", "noopener");
+    if (!url) {
+      toast.error("URL da foto não disponível para download.");
+      return;
     }
-  };
+    
+    try {
+      // Tentar fetch direto para download forçado (funciona se CORS permitir)
+      const res = await fetch(url, { mode: 'cors', cache: 'no-cache' });
+      if (!res.ok) throw new Error("Fetch failed");
+      
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `OS-${os?.numero_os ?? "foto"}-${idx + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Cleanup
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+    } catch (err) {
+      console.warn("[CorretivaHistorico] Falha no download direto, tentando abrir em nova aba:", err);
+      // Fallback: abrir em nova aba se o fetch falhar (CORS)
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  }, [urls, os?.numero_os]);
 
   return (
     <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
@@ -431,9 +467,10 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           </div>
         )}
 
-        {isLoading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
+        {isLoading || loadingUrls ? (
+          <div className="p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center min-h-[200px]">
+            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
+            <p className="animate-pulse">Carregando evidências fotográficas...</p>
           </div>
         ) : (
           <div className="space-y-4">
