@@ -163,7 +163,9 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
           numero_scale: payload.numero_scale ?? 1.0,
           data_x: payload.data_x ?? null,
           data_y: payload.data_y ?? null,
-          data_scale: payload.data_scale ?? 1.0
+          data_scale: payload.data_scale ?? 1.0,
+          numero_visivel: payload.numero_visivel ?? true,
+          data_visivel: payload.data_visivel ?? true
         };
         
         console.log("Payload de inserção:", insertPayload);
