@@ -29,3 +29,9 @@ export function isPointInPolygon(point: Point, polygon: Point[]): boolean {
 export function getDistance(p1: Point, p2: Point): number {
   return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 }
+
+export function getCentroid(points: Point[]): Point {
+  if (points.length === 0) return { x: 0, y: 0 };
+  const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+  return { x: sum.x / points.length, y: sum.y / points.length };
+}
