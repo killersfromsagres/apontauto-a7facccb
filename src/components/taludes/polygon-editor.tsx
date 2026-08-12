@@ -373,8 +373,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dataScale = m.data_scale || 1;
         ctx.font = `800 ${18 * dataScale}px "SF Pro Display", system-ui, sans-serif`;
         const textWidth = ctx.measureText(dateText).width;
-        const rectWidth = textWidth + 20 * dataScale;
-        const rectHeight = 30 * dataScale;
+        const rectWidth = textWidth + 30 * dataScale;
+        const rectHeight = 40 * dataScale;
 
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
         ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 6 * dataScale);
@@ -487,7 +487,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <span className="text-blue-400 font-mono">{(numeroScale).toFixed(1)}x</span>
                 </div>
                 <input 
-                  type="range" min="0.5" max="5" step="0.1" 
+                  type="range" min="0.5" max="15" step="0.1" 
+
                   value={numeroScale} 
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
@@ -508,7 +509,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <span className="text-emerald-400 font-mono">{(dataScale).toFixed(1)}x</span>
                 </div>
                 <input 
-                  type="range" min="0.5" max="5" step="0.1" 
+                  type="range" min="0.5" max="15" step="0.1" 
                   value={dataScale} 
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
@@ -617,10 +618,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     {/* Status Date */}
                     <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       <rect 
-                        x="-55"
-                        y="-18" 
-                        width="110" 
-                        height="36" 
+                        x={-60}
+                        y={-20} 
+                        width={120} 
+                        height={40} 
+
+
 
                         rx="6" 
                         fill="rgba(0,0,0,0.85)" 
