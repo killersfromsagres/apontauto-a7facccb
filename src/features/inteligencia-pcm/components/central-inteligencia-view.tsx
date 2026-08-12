@@ -127,12 +127,18 @@ export function CentralInteligenciaView() {
             description="Chamados em espera"
           />
           <KpiMonitorCard
-            title="CORRETIVAS MÊS"
-            value={overview?.os.criadas.toString() || "0"}
-            trend="-1.8%"
+            title="CAMPO IA (MÊS)"
+            value={overview?.corretiva_novo?.criadas.toString() || overview?.os.criadas.toString() || "0"}
+            trend={(() => {
+              const atual = overview?.corretiva_novo?.criadas || 0;
+              const ant = overview?.corretiva_novo?.criadas_ant || 0;
+              if (ant === 0) return "+0%";
+              const pct = ((atual - ant) / ant) * 100;
+              return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+            })()}
             icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />}
             chartColor="#8B5CF6"
-            description="Volume de solicitações"
+            description="Execução de Campo IA"
           />
           <KpiMonitorCard
             title="MTTR MÉDIO"
@@ -196,11 +202,18 @@ export function CentralInteligenciaView() {
           <GlassCard className="relative overflow-hidden lg:col-span-2 min-h-[400px] glass-surface card-sheen">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-sm font-semibold tracking-wider text-muted-foreground">VOLUME DE CHAMADOS (MENSAL)</h3>
-                <div className="text-2xl font-bold text-white">{overview?.os.criadas || 0} Criados</div>
+                <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">Volume de Campo IA & Histórico</h3>
+                <div className="text-2xl font-bold text-white">
+                  {overview?.corretiva_novo?.criadas || 0} Criados este mês
+                </div>
               </div>
-              <div className="flex gap-2">
-                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/20">Real Time</span>
+              <div className="flex flex-col items-end">
+                <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full border border-primary/20 mb-1">
+                  Módulo Corretiva
+                </span>
+                <span className="text-[10px] text-muted-foreground uppercase">
+                  {overview?.corretiva_novo?.concluidas || 0} Finalizados
+                </span>
               </div>
             </div>
             
@@ -209,8 +222,8 @@ export function CentralInteligenciaView() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4F8CFF" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#4F8CFF" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorConcluidas" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#34d399" stopOpacity={0.3}/>
@@ -226,21 +239,34 @@ export function CentralInteligenciaView() {
                     }}
                     itemStyle={{ color: "#fff" }}
                   />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="rgba(255,255,255,0.3)" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="rgba(255,255,255,0.3)" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false}
+                  />
                   <Area 
                     type="monotone" 
                     dataKey="value" 
-                    name="Criadas"
-                    stroke="#4F8CFF" 
+                    name="Chamados IA"
+                    stroke="#8B5CF6" 
                     strokeWidth={3}
                     fillOpacity={1} 
                     fill="url(#colorValue)" 
-                    dot={{ r: 4, fill: "#52E5FF", strokeWidth: 2, stroke: "#05070C" }}
+                    dot={{ r: 4, fill: "#8B5CF6", strokeWidth: 2, stroke: "#05070C" }}
                     activeDot={{ r: 6, fill: "#fff" }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="concluidas" 
-                    name="Concluídas"
+                    name="Finalizados"
                     stroke="#34d399" 
                     strokeWidth={3}
                     fillOpacity={1} 
@@ -249,7 +275,6 @@ export function CentralInteligenciaView() {
                     activeDot={{ r: 6, fill: "#fff" }}
                   />
                 </AreaChart>
-
               </ResponsiveContainer>
             </div>
           </GlassCard>
@@ -303,17 +328,29 @@ export function CentralInteligenciaView() {
                 recentEvents.map((os) => (
                   <div key={os.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Zap className="h-4 w-4 text-primary" />
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center",
+                        os.origem === 'corretiva_novo' ? "bg-purple-500/10" : "bg-primary/10"
+                      )}>
+                        {os.origem === 'corretiva_novo' ? (
+                          <Activity className="h-4 w-4 text-purple-400" />
+                        ) : (
+                          <Zap className="h-4 w-4 text-primary" />
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">OS #{os.numero_os || os.id.slice(0, 8)}</p>
-                        <p className="text-[10px] text-muted-foreground uppercase">
-                          {os.descricao?.slice(0, 40)}... · {os.criado_em ? formatDistanceToNow(new Date(os.criado_em), { addSuffix: true, locale: ptBR }) : 'Recentemente'}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">OS #{os.numero_os || os.id.slice(0, 8)}</p>
+                          {os.status_canonico === 'concluida' && (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1 rounded uppercase font-bold">OK</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground uppercase truncate">
+                          {os.equipe} · {os.descricao?.slice(0, 30)}... · {os.criado_em ? formatDistanceToNow(new Date(os.criado_em), { addSuffix: true, locale: ptBR }) : 'Recentemente'}
                         </p>
                       </div>
                     </div>
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowUpRight className="h-4 w-4 text-muted-foreground shrink-0" />
                   </div>
                 ))
               ) : (
