@@ -7201,15 +7201,78 @@ export type Database = {
           numero_os: string | null
           origem: string | null
           patrimonio: string | null
-          pecas_pendentes: number | null
           prazo_sla: string | null
           predio: string | null
           prioridade: string | null
-          problemas: number | null
-          reincidencia: number | null
           status_canonico: string | null
           status_origem: string | null
           tecnico: string | null
+        }
+        Relationships: []
+      }
+      vw_gestao_os_corretiva_novo: {
+        Row: {
+          andar: string | null
+          ativo: string | null
+          conclusao: string | null
+          criado_em: string | null
+          criticidade: string | null
+          descricao: string | null
+          equipe: string | null
+          id: string | null
+          inicio: string | null
+          local: string | null
+          numero_os: string | null
+          origem: string | null
+          patrimonio: string | null
+          prazo_sla: string | null
+          predio: string | null
+          prioridade: string | null
+          status_canonico: string | null
+          status_origem: string | null
+          tecnico: string | null
+        }
+        Insert: {
+          andar?: string | null
+          ativo?: string | null
+          conclusao?: string | null
+          criado_em?: never
+          criticidade?: never
+          descricao?: string | null
+          equipe?: never
+          id?: never
+          inicio?: string | null
+          local?: string | null
+          numero_os?: string | null
+          origem?: never
+          patrimonio?: string | null
+          prazo_sla?: never
+          predio?: string | null
+          prioridade?: never
+          status_canonico?: never
+          status_origem?: never
+          tecnico?: string | null
+        }
+        Update: {
+          andar?: string | null
+          ativo?: string | null
+          conclusao?: string | null
+          criado_em?: never
+          criticidade?: never
+          descricao?: string | null
+          equipe?: never
+          id?: never
+          inicio?: string | null
+          local?: string | null
+          numero_os?: string | null
+          origem?: never
+          patrimonio?: string | null
+          prazo_sla?: never
+          predio?: string | null
+          prioridade?: never
+          status_canonico?: never
+          status_origem?: never
+          tecnico?: string | null
         }
         Relationships: []
       }
@@ -7376,12 +7439,12 @@ export type Database = {
       gen_material_solicitacao_numero: { Args: never; Returns: string }
       gestao_os_consolidada: {
         Args: {
-          p_criticidade?: string
           p_dias?: number
           p_equipe?: string
           p_limit?: number
-          p_modulo?: string
+          p_origem?: string
           p_predio?: string
+          p_prioridade?: string
           p_status?: string
         }
         Returns: {
@@ -7402,12 +7465,9 @@ export type Database = {
           numero_os: string | null
           origem: string | null
           patrimonio: string | null
-          pecas_pendentes: number | null
           prazo_sla: string | null
           predio: string | null
           prioridade: string | null
-          problemas: number | null
-          reincidencia: number | null
           status_canonico: string | null
           status_origem: string | null
           tecnico: string | null
