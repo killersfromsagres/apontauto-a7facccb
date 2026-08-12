@@ -29,32 +29,35 @@ function OrganogramaPage() {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      // Tenta capturar o container específico para evitar problemas de scroll/offset
       const exportTarget = document.getElementById('org-chart-container') || chartRef.current;
       
       const canvas = await html2canvas(exportTarget, {
         backgroundColor: '#FFFFFF',
-        scale: 3, // Aumenta resolução
+        scale: 2,
         useCORS: true,
         allowTaint: false,
-        imageTimeout: 90000,
+        imageTimeout: 60000,
         logging: false,
         width: exportTarget.scrollWidth,
         height: exportTarget.scrollHeight,
+        windowWidth: exportTarget.scrollWidth + 100,
+        windowHeight: exportTarget.scrollHeight + 100,
         onclone: (clonedDoc) => {
-          // Garante que o elemento clonado esteja visível e com cores corretas
           const el = clonedDoc.getElementById('org-chart-container');
           if (el) {
             el.style.backgroundColor = '#FFFFFF';
             el.style.color = '#000000';
+            el.style.padding = '40px';
+            el.style.transform = 'none';
           }
         }
       });
       
       const link = document.createElement('a');
-      link.download = `organograma-demarchi-${new Date().toISOString().split('T')[0]}.png`;
-      link.href = canvas.toDataURL('image/png');
+      link.download = `organograma-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
       link.click();
+      toast.success("Imagem baixada com sucesso!");
       toast.success("Imagem baixada com sucesso!");
     } catch (error) {
       console.error(error);
