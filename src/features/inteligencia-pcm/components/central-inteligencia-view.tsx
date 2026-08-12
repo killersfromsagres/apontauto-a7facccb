@@ -123,19 +123,26 @@ export function CentralInteligenciaView() {
     // Mapping for AreaChart1 (reaviz)
     const seriesIA: any = {
       key: 'Chamados IA',
-      data: overview.os_mensal.map(item => ({
-        key: new Date(), // Fallback since criado_em is not in type, or map from month name if possible
-
-        data: item.criadas || 0
-      }))
+      data: overview.os_mensal.map((item, index) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+        return {
+          key: d,
+          data: item.criadas || 0
+        };
+      })
     };
 
     const seriesFinalizados: any = {
       key: 'Finalizados',
-      data: overview.os_mensal.map(item => ({
-        key: new Date(),
-        data: item.concluidas || 0
-      }))
+      data: overview.os_mensal.map((item, index) => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - (overview.os_mensal!.length - 1 - index));
+        return {
+          key: d,
+          data: item.concluidas || 0
+        };
+      })
     };
 
     return [seriesIA, seriesFinalizados];
