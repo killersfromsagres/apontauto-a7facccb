@@ -26,13 +26,11 @@ function authConfig(): { url: string; key: string } | null {
   const url =
     process.env.SUPABASE_URL || 
     process.env.VITE_SUPABASE_URL || 
-    (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SUPABASE_URL : null) ||
-    "https://uthidybbrziwvktknryr.supabase.co"; // Fallback para Lovable Cloud
+    "https://uthidybbrziwvktknryr.supabase.co"; 
   const key =
     process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    (typeof import.meta !== 'undefined' ? import.meta.env?.VITE_SUPABASE_PUBLISHABLE_KEY : null) ||
-    "sb_publishable_4K0A758AP4Cr4mi6VcWwUg_rLMZi_VD"; // Fallback para Lovable Cloud
+    "sb_publishable_4K0A758AP4Cr4mi6VcWwUg_rLMZi_VD"; 
   if (!url || !key) return null;
   return { url, key };
 }
