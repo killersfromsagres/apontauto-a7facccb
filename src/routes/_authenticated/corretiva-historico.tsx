@@ -356,6 +356,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
       
       for (const f of data.fotos) {
         if (f.image_url) {
+          // Garante que o image_url é uma URL válida do ImgBB ou similar
           next[f.id] = f.image_url;
         } else if (f.storage_path) {
           legacy.push(f);
@@ -365,9 +366,10 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
       if (legacy.length > 0) {
         try {
           const paths = legacy.map((f) => f.storage_path as string);
+          // Aumentamos o tempo de expiração para 24h (86400s) para evitar expiração rápida
           const { data: s, error } = await supabase.storage
             .from("corretiva-fotos")
-            .createSignedUrls(paths, 3600);
+            .createSignedUrls(paths, 86400);
             
           if (error) throw error;
           
@@ -469,7 +471,11 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => {
-                          if (!urls[f.id]) e.preventDefault();
+                          if (!urls[f.id]) {
+                            e.preventDefault();
+                            toast.error("Aguarde o carregamento da imagem...");
+                            return;
+                          }
                         }}
                         className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
                       >
@@ -477,8 +483,9 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                           <img
                             src={urls[f.id]}
                             className="h-full w-full object-cover"
-                            alt=""
-                            loading="lazy"
+                            alt={f.legenda || `Foto ${idx + 1}`}
+                            loading="eager"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-xs text-muted-foreground">

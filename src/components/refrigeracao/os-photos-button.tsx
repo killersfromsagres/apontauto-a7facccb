@@ -37,7 +37,7 @@ async function fetchFotos(osId: string, modulo: FotosModulo): Promise<FotoRow[]>
 }
 
 async function resolveStorageUrl(path: string, modulo: FotosModulo): Promise<string | null> {
-  const { data } = await supabase.storage.from(BUCKET[modulo]).createSignedUrl(path, 3600);
+  const { data } = await supabase.storage.from(BUCKET[modulo]).createSignedUrl(path, 86400);
   return data?.signedUrl ?? null;
 }
 
@@ -189,7 +189,8 @@ export function OsPhotosButton({
                           <img
                             src={f.url}
                             alt={`Foto ${i + 1}`}
-                            loading="lazy"
+                            loading="eager"
+                            referrerPolicy="no-referrer"
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
