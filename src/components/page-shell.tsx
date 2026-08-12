@@ -46,7 +46,7 @@ export function PageShell({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 sm:h-10 sm:w-10"
+                className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 sm:h-10 sm:w-10 transition-all"
                 onClick={onBack ? handleBack : undefined}
                 asChild={!onBack}
               >

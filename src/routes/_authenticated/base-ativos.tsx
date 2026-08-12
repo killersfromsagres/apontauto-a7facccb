@@ -321,7 +321,7 @@ function BaseAtivosPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-display text-lg font-semibold">Relatório de validação</h3>
                 {validation.issues.length > 0 && (
-                  <Button size="sm" variant="outline" onClick={downloadIssues}>
+                  <Button size="sm" variant="outline" onClick={downloadIssues} className="border-primary/40 text-primary hover:bg-primary/10 transition-all">
                     <Download className="mr-2 h-4 w-4" /> Baixar inconsistências
                   </Button>
                 )}
@@ -374,6 +374,7 @@ function BaseAtivosPage() {
                 <Button
                   disabled={!isAdmin || importMut.isPending || !validation.valid.length}
                   onClick={() => importMut.mutate(false)}
+                  className="bg-primary text-primary-foreground shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)] hover:shadow-[0_0_20px_-3px_oklch(0.85_0.12_220/0.5)] transition-all"
                 >
                   {importMut.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -386,6 +387,7 @@ function BaseAtivosPage() {
                   variant="secondary"
                   disabled={!isAdmin || importMut.isPending || !validation.valid.length}
                   onClick={() => importMut.mutate(true)}
+                  className="bg-secondary text-secondary-foreground border border-primary/20 hover:bg-primary/10 hover:text-primary transition-all"
                 >
                   <Star className="mr-2 h-4 w-4" /> Importar e definir como base ativa
                 </Button>
@@ -430,6 +432,7 @@ function BaseAtivosPage() {
                       variant="outline"
                       disabled={!isAdmin || activateMut.isPending}
                       onClick={() => activateMut.mutate(c.id)}
+                      className="border-primary/40 text-primary hover:bg-primary/10 transition-all"
                     >
                       <Star className="mr-2 h-4 w-4" /> Definir como base ativa
                     </Button>

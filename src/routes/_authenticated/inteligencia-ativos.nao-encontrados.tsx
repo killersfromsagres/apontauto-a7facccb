@@ -63,7 +63,7 @@ function NaoEncontrados() {
       title="Ativos não encontrados"
       description="Fila de revisão dos códigos que o catálogo não reconheceu, com a origem exata (aba e linha)."
       actions={
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10 transition-all">
           <Link to="/inteligencia-ativos/preencher">
             <ArrowLeft className="mr-2 h-4 w-4" /> Preencher planilha
           </Link>
@@ -138,6 +138,7 @@ function NaoEncontrados() {
                         onClick={() =>
                           resolve.mutate({ id: r.id, code: drafts[r.id] ?? r.resolved_code ?? "" })
                         }
+                        className="border-primary/40 text-primary hover:bg-primary/10 transition-all"
                       >
                         <Check className="h-4 w-4" />
                       </Button>

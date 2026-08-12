@@ -37,7 +37,7 @@ function Historico() {
       title="Histórico de processamentos"
       description="Cada planilha preenchida gera um registro auditável com totais e configuração usada."
       actions={
-        <Button variant="outline" asChild>
+        <Button variant="outline" asChild className="border-primary/40 text-primary hover:bg-primary/10 transition-all">
           <Link to="/inteligencia-ativos/preencher">
             <ArrowLeft className="mr-2 h-4 w-4" /> Preencher planilha
           </Link>
