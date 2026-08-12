@@ -304,7 +304,7 @@ export function GestaoView() {
     setAba("os");
     // Scroll suave para a lista de OS
     setTimeout(() => {
-      document.querySelector('[value="os"]')?.scrollIntoView({ behavior: 'smooth' });
+      document.querySelector('[value="os"]')?.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
 
