@@ -605,6 +605,7 @@ function RefrigeracaoPage() {
           onQueued={refreshPending}
           onPatchLocal={(p) => patchLocal(selected.id, p)}
           online={online}
+          processIA={processIA}
         />
       )}
     </PageShell>
