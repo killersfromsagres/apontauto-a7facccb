@@ -5603,6 +5603,11 @@ export type Database = {
           equipe: string | null
           espessura_linha: number | null
           estado_operacional: string | null
+          icone_scale: number | null
+          icone_tipo: string | null
+          icone_visivel: boolean | null
+          icone_x: number | null
+          icone_y: number | null
           id: string
           inclinacao: number | null
           map_id: string
@@ -5650,6 +5655,11 @@ export type Database = {
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
+          icone_scale?: number | null
+          icone_tipo?: string | null
+          icone_visivel?: boolean | null
+          icone_x?: number | null
+          icone_y?: number | null
           id?: string
           inclinacao?: number | null
           map_id: string
@@ -5697,6 +5707,11 @@ export type Database = {
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
+          icone_scale?: number | null
+          icone_tipo?: string | null
+          icone_visivel?: boolean | null
+          icone_x?: number | null
+          icone_y?: number | null
           id?: string
           inclinacao?: number | null
           map_id?: string
