@@ -183,7 +183,6 @@ function RefrigeracaoPage() {
   const { isOwner } = useIsOwner();
   const processIA = useServerFn(processarDescricaoPecaIA);
   const [osList, setOsList] = useState<OsCacheRow[]>([]);
-  // ... rest of state stays the same
 
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -198,8 +197,6 @@ function RefrigeracaoPage() {
   useEffect(() => {
     setEquipe(loadEquipe());
   }, []);
-
-  const processIA = useServerFn(processarDescricaoPecaIA);
 
   const setEquipeAndPersist = (v: EquipeFiltro) => {
     setEquipe(v);
@@ -654,12 +651,14 @@ function OsDetail({
   onQueued,
   onPatchLocal,
   online,
+  processIA,
 }: {
   os: OsCacheRow;
   onBack: () => void;
   onQueued: () => void;
   onPatchLocal: (patch: Partial<OsCacheRow>) => void;
   online: boolean;
+  processIA: any;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   type Preview = { id: string; url: string; blobKey: string };
