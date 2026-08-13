@@ -363,8 +363,4 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
     mm_acumulado_3h: mm3h,
     weather_code: code,
   };
-    mm_atual: mmAtual,
-    mm_dia: mmDia,
-    weather_code: code,
-  };
 }
