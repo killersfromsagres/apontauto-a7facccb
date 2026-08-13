@@ -177,15 +177,19 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+        const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
 
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
+        const dIcone = getDistance(coords, iconePos);
 
         // Adjust hit radius based on current scale to make sure big labels are easy to grab
         const currentNumScale = m.numero_scale || 1;
         const currentDataScale = m.data_scale || 1;
+        const currentIconeScale = m.icone_scale || 1;
         const numHitRadius = (25 * currentNumScale) / zoom;
         const dataHitRadius = (60 * currentDataScale) / zoom;
+        const iconeHitRadius = (40 * currentIconeScale) / zoom;
 
         if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
@@ -194,6 +198,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (dData < dataHitRadius && dData < minDistance) {
           minDistance = dData;
           closestLabel = { id: m.id, type: 'data' as const };
+        }
+        if (m.icone_tipo && dIcone < iconeHitRadius && dIcone < minDistance) {
+          minDistance = dIcone;
+          closestLabel = { id: m.id, type: 'icone' as const };
         }
       }
 
