@@ -561,6 +561,40 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         currentY += 25;
       });
 
+      // Add Icon Legends
+      currentY += 10;
+      
+      // Tree Icon Legend
+      ctx.fillStyle = 'white';
+      ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+      ctx.fillText('Reserva Suvinil (Árvore)', legendX + 45, currentY + 6);
+      
+      // Draw small tree
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.moveTo(legendX + 26, currentY);
+      ctx.lineTo(legendX + 32, currentY + 12);
+      ctx.lineTo(legendX + 20, currentY + 12);
+      ctx.closePath();
+      ctx.fill();
+      
+      currentY += 25;
+      
+      // Interdiction Icon Legend
+      ctx.fillStyle = 'white';
+      ctx.fillText('Área Interditada', legendX + 45, currentY + 6);
+      
+      // Draw small prohibition
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(legendX + 26, currentY + 6, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(legendX + 22, currentY + 2);
+      ctx.lineTo(legendX + 30, currentY + 10);
+      ctx.stroke();
+
       // 4. Trigger Download
       const link = document.createElement('a');
       link.download = `Mapa-Taludes-${new Date().toLocaleDateString()}.png`;
