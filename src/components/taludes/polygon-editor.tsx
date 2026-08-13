@@ -900,6 +900,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           r={100 / zoom} 
                           fill="transparent" 
                         />
+                        {m.icone_tipo && (
+                          <circle 
+                            cx={iconePos.x} 
+                            cy={iconePos.y} 
+                            r={100 / zoom} 
+                            fill="transparent" 
+                          />
+                        )}
                       </g>
                     )}
                     {/* Slope Number */}
