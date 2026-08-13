@@ -555,9 +555,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Suvinil Reserve
-            ctx.fillStyle = '#166534'; // Darker green as requested (Emerald 800ish)
+            ctx.fillStyle = '#bbf7d0'; // Light Green (Green 200ish)
             ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1 * currentIconeScale;
+            ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             
             // ICone Data
@@ -1209,10 +1212,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               y="45" 
                               x="15" 
                               textAnchor="middle" 
-                              fill="#166534" 
+                              fill="#bbf7d0" 
                               fontSize="10" 
                               fontWeight="900"
                               className="font-['SF_Pro_Display']"
+                              style={{ stroke: 'black', strokeWidth: '0.5px', paintOrder: 'stroke' }}
                             >
                               RESERVA SUVINIL
                             </text>
