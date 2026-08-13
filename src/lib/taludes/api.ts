@@ -29,6 +29,11 @@ export interface TaludeMarcacao {
   prazo_rotulo?: string | null;
   numero_visivel?: boolean;
   data_visivel?: boolean;
+  icone_tipo?: 'arvore' | 'interdicao' | null;
+  icone_x?: number | null;
+  icone_y?: number | null;
+  icone_scale?: number;
+  icone_visivel?: boolean;
 }
 
 export interface TaludeMap {
