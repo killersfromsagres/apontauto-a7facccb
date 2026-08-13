@@ -721,6 +721,63 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 />
               </div>
 
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase">Ícone</span>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant={iconeTipo === 'arvore' ? "premium" : "outline"}
+                    className="flex-1 h-8 text-[10px]"
+                    onClick={() => {
+                      const newType = iconeTipo === 'arvore' ? null : 'arvore';
+                      setIconeTipo(newType);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, icone_tipo: newType });
+                    }}
+                  >
+                    <Trees className="h-3 w-3 mr-1" /> Árvore
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={iconeTipo === 'interdicao' ? "premium" : "outline"}
+                    className="flex-1 h-8 text-[10px]"
+                    onClick={() => {
+                      const newType = iconeTipo === 'interdicao' ? null : 'interdicao';
+                      setIconeTipo(newType);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, icone_tipo: newType });
+                    }}
+                  >
+                    <Ban className="h-3 w-3 mr-1" /> Interdição
+                  </Button>
+                </div>
+              </div>
+
+              {iconeTipo && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-white/70">Escala Ícone</span>
+                    <span className="text-amber-400 font-mono">{(iconeScale).toFixed(1)}x</span>
+                  </div>
+                  <input 
+                    type="range" min="0.5" max="15" step="0.1" 
+                    value={iconeScale} 
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setIconeScale(val);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_scale: val } : m));
+                    }}
+                    onMouseUp={() => {
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave(target);
+                    }}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   size="sm" 
