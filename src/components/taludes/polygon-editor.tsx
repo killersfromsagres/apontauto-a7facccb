@@ -1109,6 +1109,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             r={100 / zoom} 
                             fill="transparent" 
                           />
+                        )}
                       </g>
                     )}
                     {/* Slope Number */}
