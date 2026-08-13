@@ -356,7 +356,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   };
 
   const handleFinishDrawing = async () => {
-    if (currentPoints.length < 3) return;
+    if (currentPoints.length < 3) {
+      toast.error("Desenhe pelo menos 3 pontos para criar uma área");
+      return;
+    }
+    
+    // Auto-calculate centroid if not provided to help with initial label placement
+    const centroid = getCentroid(currentPoints);
+    
     const newMarcacao: Partial<TaludeMarcacao> = {
       rotulo: `${STATUS_CONFIG[statusType].label} - ${statusDate}`,
       polygon: currentPoints,
@@ -365,11 +372,31 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       numero_scale: numeroScale,
       data_scale: dataScale,
       numero_visivel: numeroVisivel,
-      data_visivel: dataVisivel
+      data_visivel: dataVisivel,
+      icone_tipo: iconeTipo,
+      icone_scale: iconeScale,
+      icone_visivel: iconeVisivel,
+      // Initialize label positions to centroid to avoid "missing" labels
+      numero_x: centroid.x,
+      numero_y: centroid.y,
+      data_x: centroid.x,
+      data_y: centroid.y + 30,
+      icone_x: centroid.x,
+      icone_y: centroid.y - 30
     };
-    await onSave(newMarcacao);
-    setCurrentPoints([]);
-    setMode('view');
+    
+    try {
+      toast.loading("Salvando demarcação...");
+      await onSave(newMarcacao);
+      setCurrentPoints([]);
+      setMode('view');
+      toast.dismiss();
+      toast.success("Área demarcada com sucesso");
+    } catch (error) {
+      toast.dismiss();
+      console.error("Erro ao finalizar desenho:", error);
+      toast.error("Erro ao salvar demarcação");
+    }
   };
 
   const handleExport = async () => {
