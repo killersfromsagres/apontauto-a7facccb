@@ -868,6 +868,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               const centroid = getCentroid(m.polygon);
               const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
               const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+              const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
               const isSelected = selectedMarcacaoId === m.id;
 
               return (
