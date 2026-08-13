@@ -503,6 +503,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.lineTo(-iconSize / 3, -iconSize / 6);
             ctx.closePath();
             ctx.fill();
+            // Text for Suvinil Reserve
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
           } else if (m.icone_tipo === 'interdicao') {
             // Prohibition Sign
             ctx.strokeStyle = '#ef4444'; // Red for prohibition
