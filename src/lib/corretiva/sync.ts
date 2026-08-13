@@ -93,6 +93,63 @@ export async function syncPending() {
 
          await outboxRemove(item.id);
          sent++;
+      } else if (item.kind === "material") {
+         const { 
+           descricao, 
+           equipe, 
+           solicitante, 
+           predio, 
+           local, 
+           numeroOs,
+           observacao 
+         } = item.payload;
+
+         const { data: sess } = await supabase.auth.getSession();
+         const userId = sess.session?.user?.id;
+
+         const { error } = await supabase
+           .from("material_solicitacoes")
+           .insert({
+             user_id: userId,
+             solicitante: solicitante || "Colaborador",
+             setor: equipe || null,
+             predio: predio || null,
+             local: local || null,
+             prioridade: "normal",
+             status: "enviada",
+             observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
+             enviada_em: new Date().toISOString(),
+           } as any)
+           .select("id")
+           .single();
+
+         if (error) throw error;
+         const solId = (error as any) === null ? (error as any) : (error as any); // Type safety helper for single() result if needed
+
+         // Se a inserção da solicitação funcionou, inserimos o item
+         // Note: We need the ID from the previous insert. 
+         // But supabase.select() returns the data.
+         
+         const { data: newSol } = await supabase
+           .from("material_solicitacoes")
+           .select("id")
+           .eq("observacao", `[Solicitado via OS ${numeroOs}] ${observacao || ""}`)
+           .order("created_at", { ascending: false })
+           .limit(1)
+           .single();
+
+         if (newSol) {
+           await supabase.from("material_solicitacao_itens").insert({
+             solicitacao_id: newSol.id,
+             descricao: descricao,
+             quantidade: 1,
+             unidade: "UN",
+             justificativa: `Referente à OS ${numeroOs}`
+           } as any);
+         }
+
+         await outboxRemove(item.id);
+         sent++;
       }
     } catch (err) {
       console.error(`[CorretivaSync] Erro ao sincronizar item ${item.id}:`, err);
