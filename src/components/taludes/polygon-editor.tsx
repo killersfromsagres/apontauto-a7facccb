@@ -1033,7 +1033,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       <g transform={`translate(${iconePos.x}, ${iconePos.y}) scale(${m.icone_scale || 1})`}>
                         <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
-                          <g transform="translate(-15, -15)"><Trees size={30} className="text-white fill-current" /></g>
+                          <g transform="translate(-15, -15)">
+                            <Trees size={30} className="text-white fill-current" />
+                            <text y="45" x="15" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">RESERVA SUVINIL</text>
+                          </g>
                         ) : (
                           <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
                         )}
