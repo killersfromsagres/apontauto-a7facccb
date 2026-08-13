@@ -504,8 +504,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Suvinil Reserve
-            ctx.fillStyle = 'white';
-            ctx.font = `bold ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.fillStyle = '#0f172a'; // Deep obsidian/slate for dark palette
+            ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
           } else if (m.icone_tipo === 'interdicao') {
@@ -1061,8 +1061,18 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
                           <g transform="translate(-15, -15)">
-                            <Trees size={30} className="text-white fill-current" />
-                            <text y="45" x="15" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">RESERVA SUVINIL</text>
+                            <Trees size={30} className="text-emerald-500 fill-emerald-500/20" />
+                            <text 
+                              y="45" 
+                              x="15" 
+                              textAnchor="middle" 
+                              fill="#0f172a" 
+                              fontSize="10" 
+                              fontWeight="900"
+                              className="font-['SF_Pro_Display']"
+                            >
+                              RESERVA SUVINIL
+                            </text>
                           </g>
                         ) : (
                           <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
