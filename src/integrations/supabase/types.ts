@@ -2796,6 +2796,7 @@ export type Database = {
           nome_os: string | null
           numero_os: string
           patrimonio: string | null
+          pecas_solicitadas: string | null
           predio: string | null
           solicitante: string | null
           status: Database["public"]["Enums"]["corretiva_os_status"]
@@ -2823,6 +2824,7 @@ export type Database = {
           nome_os?: string | null
           numero_os: string
           patrimonio?: string | null
+          pecas_solicitadas?: string | null
           predio?: string | null
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
@@ -2850,6 +2852,7 @@ export type Database = {
           nome_os?: string | null
           numero_os?: string
           patrimonio?: string | null
+          pecas_solicitadas?: string | null
           predio?: string | null
           solicitante?: string | null
           status?: Database["public"]["Enums"]["corretiva_os_status"]
