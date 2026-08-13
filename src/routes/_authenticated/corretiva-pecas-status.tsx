@@ -186,6 +186,60 @@ function CentralMateriaisUnificadaPage() {
           </div>
         </GlassCard>
 
+        {/* Agente IA de Processamento Visual/Texto */}
+        <GlassCard className="p-6 border-primary/20 bg-primary/5 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <BrainCircuit className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Agente IA de Processamento</h3>
+              <p className="text-xs text-muted-foreground">O agente analisa as descrições e separa itens/quantidades automaticamente.</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1">
+              <Input 
+                id="ia-input"
+                placeholder="Ex: 5 lampadas led, 2 motores weg, 10m cabo 2.5mm" 
+                className="h-12 bg-white/5 border-white/10"
+              />
+            </div>
+            <Button 
+              className="h-12 px-8 gap-2 premium shadow-lg"
+              onClick={async () => {
+                const input = document.getElementById('ia-input') as HTMLInputElement;
+                if (!input.value) return toast.error("Digite algo para a IA analisar");
+                
+                const toastId = toast.loading("Agente IA processando...");
+                try {
+                  const { items } = await processIA({ data: { descricao: input.value } });
+                  toast.success(`IA extraiu ${items.length} itens com sucesso!`, { id: toastId });
+                  console.log("[IA Results]", items);
+                  input.value = "";
+                  // Simula a adição ao histórico local para visualização (ou recarrega se salvar no DB)
+                  await loadData();
+                } catch (e) {
+                  toast.error("Erro no processamento da IA", { id: toastId });
+                }
+              }}
+            >
+              <BrainCircuit className="h-4 w-4" />
+              Processar Descrição
+            </Button>
+          </div>
+          
+          <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/5">
+            <p className="text-[10px] uppercase font-bold text-primary/70 mb-2">Exemplos que eu entendo:</p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className="text-[9px] opacity-70 cursor-pointer hover:opacity-100" onClick={() => (document.getElementById('ia-input') as HTMLInputElement).value = "10 lampadas, 2 reatores"}>"10 lampadas, 2 reatores"</Badge>
+              <Badge variant="outline" className="text-[9px] opacity-70 cursor-pointer hover:opacity-100" onClick={() => (document.getElementById('ia-input') as HTMLInputElement).value = "Motor WEG x 1, Correia A32 x 4"}>"Motor WEG x 1, Correia A32 x 4"</Badge>
+              <Badge variant="outline" className="text-[9px] opacity-70 cursor-pointer hover:opacity-100" onClick={() => (document.getElementById('ia-input') as HTMLInputElement).value = "Parafuso (20 unidades)"}>"Parafuso (20 unidades)"</Badge>
+            </div>
+          </div>
+        </GlassCard>
+
         {loading ? (
           <div className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary" /></div>
         ) : (
