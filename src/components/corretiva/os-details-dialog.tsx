@@ -199,14 +199,22 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           .select("id")
           .single();
 
-        if (!solError && solData) {
-          await supabase.from("material_solicitacao_itens").insert({
+        if (solError) {
+          console.error("[CorretivaPecas] Erro ao criar solicitação de material:", solError);
+        }
+
+        if (solData) {
+          const { error: itemError } = await supabase.from("material_solicitacao_itens").insert({
             solicitacao_id: (solData as any).id,
             descricao: pecaTexto,
             quantidade: 1,
             unidade: "UN",
             justificativa: `Referente à OS ${os.numero_os}`
           } as any);
+          
+          if (itemError) {
+            console.error("[CorretivaPecas] Erro ao criar item da solicitação:", itemError);
+          }
         }
 
         // Atualiza o histórico textual da OS
