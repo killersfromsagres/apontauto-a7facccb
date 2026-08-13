@@ -137,41 +137,51 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           attempts: 0
         });
 
-        // Atualizar cache local
         const cached = await getCachedOsList();
-        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecaTexto } : o);
+        const updated = cached.map(o => {
+          if (o.id === os.id) {
+            const hist = o.pecas_solicitadas ? `${o.pecas_solicitadas}\n${pecaTexto}` : pecaTexto;
+            return { ...o, pecas_solicitadas: hist };
+          }
+          return o;
+        });
         await cacheOsList(updated);
 
-        toast.success("Modo Offline: Solicitação de peça salva e será sincronizada.");
-        // Não fechamos o diálogo nem limpamos o estado se quisermos permitir continuar
-        // Mas o usuário pediu para registrar automaticamente sem finalizar o chamado.
-        // Já está funcionando assim (não chama onUpdate/onClose).
+        toast.success("Modo Offline: Solicitação de peça registrada localmente.");
         return;
       }
 
-      // Fluxo Online
+      const { data: current } = await supabase
+        .from("corretiva_os")
+        .select("pecas_solicitadas")
+        .eq("id", os.id)
+        .single();
+
+      const novoHistorico = current?.pecas_solicitadas 
+        ? `${current.pecas_solicitadas}\n${pecaTexto}` 
+        : pecaTexto;
+
       const { error } = await supabase
         .from("corretiva_os")
         .update({ 
-          pecas_solicitadas: pecaTexto,
+          pecas_solicitadas: novoHistorico,
           updated_at: new Date().toISOString()
         } as any)
         .eq("id", os.id);
 
       if (error) throw error;
       
-      // Atualizar cache local mesmo online para consistência
       try {
         const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
         const cached = await getCachedOsList();
-        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecaTexto } : o);
+        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: novoHistorico } : o);
         await cacheOsList(updated);
       } catch (e) {
         console.warn("Erro ao atualizar cache local:", e);
       }
 
       toast.success("Solicitação de peça registrada no histórico.");
-      if (onUpdate) onUpdate(); // Atualiza a lista por trás sem fechar
+      if (onUpdate) onUpdate();
     } catch (err: any) {
       console.error("[CorretivaPecas] Erro:", err);
       toast.error("Erro ao solicitar peças: " + (err.message || "Tente novamente"));
