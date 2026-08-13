@@ -999,9 +999,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       <g transform={`translate(${iconePos.x}, ${iconePos.y}) scale(${m.icone_scale || 1})`}>
                         <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
-                          <Trees className="text-white fill-current" style={{ width: 30, height: 30, transform: 'translate(-15px, -15px)' }} />
+                          <g transform="translate(-15, -15)"><Trees size={30} className="text-white fill-current" /></g>
                         ) : (
-                          <Ban className="text-white fill-current" style={{ width: 30, height: 30, transform: 'translate(-15px, -15px)' }} />
+                          <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
                         )}
                       </g>
                     )}
