@@ -244,10 +244,54 @@ function PecasStatusPage() {
       title="Status de Peças"
       description="Acompanhe em tempo real o andamento das suas solicitações de peças de Corretiva."
       actions={
-        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="glass" onClick={async () => {
+            const ExcelJS = await import('exceljs');
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Status de Pecas');
+            
+            worksheet.columns = [
+              { header: 'OS', key: 'os', width: 10 },
+              { header: 'Equipe', key: 'equipe', width: 15 },
+              { header: 'Peça', key: 'peca', width: 30 },
+              { header: 'Qtd', key: 'qtd', width: 5 },
+              { header: 'Status', key: 'status', width: 15 },
+              { header: 'Prédio', key: 'predio', width: 15 },
+              { header: 'Local', key: 'local', width: 20 },
+              { header: 'Data Pedido', key: 'data', width: 20 }
+            ];
+
+            filtered.forEach(p => {
+              const os = osById.get(p.os_id);
+              worksheet.addRow({
+                os: os?.numero_os || '',
+                equipe: os?.equipe || '',
+                peca: p.descricao,
+                qtd: p.quantidade,
+                status: STATUS_META[p.status_gestor]?.label || p.status_gestor,
+                predio: os?.predio || '',
+                local: os?.local || '',
+                data: new Date(p.created_at).toLocaleString('pt-BR')
+              });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Status_Pecas_Corretiva_${new Date().toISOString().split('T')[0]}.xlsx`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}>
+            <Package className="mr-2 h-4 w-4" />
+            Exportar Excel
+          </Button>
+          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        </div>
       }
     >
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
