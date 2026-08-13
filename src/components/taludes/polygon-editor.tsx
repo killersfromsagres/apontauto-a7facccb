@@ -911,7 +911,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <polygon
                     points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                     fill={m.cor}
-                    fillOpacity={isSelected ? 0.4 : 0.25}
+                    fillOpacity={m.icone_tipo === 'arvore' ? (isSelected ? 0.6 : 0.4) : (isSelected ? 0.4 : 0.25)}
                     stroke={m.cor}
                     strokeWidth={(m.espessura_linha || 4) / zoom}
                     className="pointer-events-auto cursor-pointer"
