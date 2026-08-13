@@ -80,6 +80,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [dataScale, setDataScale] = useState(1);
   const [numeroVisivel, setNumeroVisivel] = useState(true);
   const [dataVisivel, setDataVisivel] = useState(true);
+  const [iconeTipo, setIconeTipo] = useState<'arvore' | 'interdicao' | null>(null);
+  const [iconeScale, setIconeScale] = useState(1);
+  const [iconeVisivel, setIconeVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   
