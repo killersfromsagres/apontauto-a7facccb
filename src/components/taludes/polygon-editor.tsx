@@ -446,7 +446,48 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       });
 
-      // 3. Trigger Download
+      // 3. Draw Legend (Bottom-Left)
+      const legendX = 20;
+      const legendY = imageHeight - 180;
+      const legendWidth = 240;
+      const legendHeight = 160;
+
+      // Legend Background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(legendX, legendY, legendWidth, legendHeight, 12);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Legend Title
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 16px "SF Pro Display", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('LEGENDA STATUS', legendX + 20, legendY + 15);
+
+      // Legend Items
+      let currentY = legendY + 50;
+      Object.entries(STATUS_CONFIG).forEach(([key, cfg]) => {
+        // Color Box
+        ctx.fillStyle = cfg.color;
+        ctx.beginPath();
+        ctx.roundRect(legendX + 20, currentY, 12, 12, 3);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(cfg.label, legendX + 45, currentY + 6);
+
+        currentY += 25;
+      });
+
+      // 4. Trigger Download
       const link = document.createElement('a');
       link.download = `Mapa-Taludes-${new Date().toLocaleDateString()}.png`;
       link.href = canvas.toDataURL('image/png', 1.0);
