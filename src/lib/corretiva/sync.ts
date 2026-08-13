@@ -65,9 +65,15 @@ export async function syncPending() {
          sent++;
       } else if (item.kind === "peca") {
          const { pecas } = item.payload;
+         const { data: currentOs } = await (supabase.from("corretiva_os").select("pecas_solicitadas").eq("id", item.osId).single() as any);
+         const currentHistory = currentOs?.pecas_solicitadas || "";
+         const novoHistorico = currentHistory
+           ? `${currentHistory}\n${pecas}` 
+           : pecas;
+           
          const { error } = await supabase
             .from("corretiva_os")
-            .update({ pecas_solicitadas: pecas, updated_at: new Date().toISOString() } as any)
+            .update({ pecas_solicitadas: novoHistorico, updated_at: new Date().toISOString() } as any)
             .eq("id", item.osId);
          
          if (error) throw error;

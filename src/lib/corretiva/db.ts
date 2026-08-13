@@ -38,6 +38,7 @@ export type OsCacheRow = {
   solicitante?: string | null;
   data_criacao?: string | null;
   material_status?: string | null;
+  pecas_solicitadas?: string | null;
 };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
