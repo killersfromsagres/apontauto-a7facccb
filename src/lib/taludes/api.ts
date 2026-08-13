@@ -34,6 +34,11 @@ export interface TaludeMarcacao {
   icone_y?: number | null;
   icone_scale?: number;
   icone_visivel?: boolean;
+  icone_data_x?: number | null;
+  icone_data_y?: number | null;
+  icone_data_scale?: number;
+  icone_data_visivel?: boolean;
+  icone_data_texto?: string | null;
 }
 
 export interface TaludeMap {
@@ -175,7 +180,12 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
           icone_x: payload.icone_x ?? null,
           icone_y: payload.icone_y ?? null,
           icone_scale: payload.icone_scale ?? 1.0,
-          icone_visivel: payload.icone_visivel ?? true
+          icone_visivel: payload.icone_visivel ?? true,
+          icone_data_x: payload.icone_data_x ?? null,
+          icone_data_y: payload.icone_data_y ?? null,
+          icone_data_scale: payload.icone_data_scale ?? 1.0,
+          icone_data_visivel: payload.icone_data_visivel ?? true,
+          icone_data_texto: payload.icone_data_texto ?? null
         };
         
         console.log("Payload de inserção:", insertPayload);

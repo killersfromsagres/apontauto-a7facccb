@@ -62,7 +62,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedMarcacaoId, setSelectedMarcacaoId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<{ marcacaoId: string, pointIndex: number } | null>(null);
-  const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' | 'icone' } | null>(null);
+  const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' | 'icone' | 'icone_data' } | null>(null);
   const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusText, setStatusText] = useState('Programado');
@@ -83,6 +83,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [iconeTipo, setIconeTipo] = useState<'arvore' | 'interdicao' | null>(null);
   const [iconeScale, setIconeScale] = useState(1);
   const [iconeVisivel, setIconeVisivel] = useState(true);
+  const [iconeDataTexto, setIconeDataTexto] = useState<string>('');
+  const [iconeDataScale, setIconeDataScale] = useState(1);
+  const [iconeDataVisivel, setIconeDataVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   
@@ -178,18 +181,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
         const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
+        const iconeDataPos = { x: m.icone_data_x ?? centroid.x, y: m.icone_data_y ?? (centroid.y + 60) };
 
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
         const dIcone = getDistance(coords, iconePos);
+        const dIconeData = getDistance(coords, iconeDataPos);
 
         // Adjust hit radius based on current scale to make sure big labels are easy to grab
         const currentNumScale = m.numero_scale || 1;
         const currentDataScale = m.data_scale || 1;
         const currentIconeScale = m.icone_scale || 1;
+        const currentIconeDataScale = m.icone_data_scale || 1;
         const numHitRadius = (25 * currentNumScale) / zoom;
         const dataHitRadius = (60 * currentDataScale) / zoom;
         const iconeHitRadius = (40 * currentIconeScale) / zoom;
+        const iconeDataHitRadius = (60 * currentIconeDataScale) / zoom;
 
         if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
@@ -202,6 +209,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (m.icone_tipo && dIcone < iconeHitRadius && dIcone < minDistance) {
           minDistance = dIcone;
           closestLabel = { id: m.id, type: 'icone' as const };
+        }
+        if (m.icone_tipo && dIconeData < iconeDataHitRadius && dIconeData < minDistance) {
+          minDistance = dIconeData;
+          closestLabel = { id: m.id, type: 'icone_data' as const };
         }
       }
 
@@ -246,6 +257,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             return { ...m, data_x: coords.x, data_y: coords.y };
           } else if (draggedLabel.type === 'icone') {
             return { ...m, icone_x: coords.x, icone_y: coords.y };
+          } else if (draggedLabel.type === 'icone_data') {
+            return { ...m, icone_data_x: coords.x, icone_data_y: coords.y };
           }
         }
         return m;
@@ -296,6 +309,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setIconeTipo(m.icone_tipo || null);
         setIconeScale(m.icone_scale || 1);
         setIconeVisivel(m.icone_visivel !== false);
+        setIconeDataTexto(m.icone_data_texto || '');
+        setIconeDataScale(m.icone_data_scale || 1);
+        setIconeDataVisivel(m.icone_data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -318,6 +334,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setIconeTipo(m.icone_tipo || null);
         setIconeScale(m.icone_scale || 1);
         setIconeVisivel(m.icone_visivel !== false);
+        setIconeDataTexto(m.icone_data_texto || '');
+        setIconeDataScale(m.icone_data_scale || 1);
+        setIconeDataVisivel(m.icone_data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -382,7 +401,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       data_x: centroid.x,
       data_y: centroid.y + 30,
       icone_x: centroid.x,
-      icone_y: centroid.y - 30
+      icone_y: centroid.y - 30,
+      icone_data_x: centroid.x,
+      icone_data_y: centroid.y + 60,
+      icone_data_visivel: true
     };
     
     try {
@@ -437,6 +459,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
         const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
+        const iconeDataPos = { x: m.icone_data_x ?? centroid.x, y: m.icone_data_y ?? (centroid.y + 60) };
 
         // Draw Number Circle
         if (m.numero_visivel !== false) {
@@ -532,10 +555,33 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Suvinil Reserve
-            ctx.fillStyle = '#0f172a'; // Deep obsidian/slate for dark palette
+            ctx.fillStyle = '#166534'; // Darker green as requested (Emerald 800ish)
             ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
+            
+            // ICone Data
+            if (m.icone_data_visivel !== false && m.icone_data_texto) {
+              const currentIconeDataScale = m.icone_data_scale || 1;
+              const scaledIconeDataFontSize = 24 * currentIconeDataScale;
+              
+              // We need to calculate position relative to translate(iconePos.x, iconePos.y)
+              // Or better, restore and draw separately to avoid double scaling if needed
+              // But for now let's draw relative
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+              const idRectW = 120 * currentIconeDataScale;
+              const idRectH = 40 * currentIconeDataScale;
+              const relX = iconeDataPos.x - iconePos.x;
+              const relY = iconeDataPos.y - iconePos.y;
+
+              ctx.beginPath();
+              ctx.roundRect(relX - idRectW / 2, relY - idRectH / 2, idRectW, idRectH, 6 * currentIconeDataScale);
+              ctx.fill();
+              
+              ctx.fillStyle = 'white';
+              ctx.font = `900 ${scaledIconeDataFontSize}px "SF Pro Display", system-ui, sans-serif`;
+              ctx.fillText(m.icone_data_texto, relX, relY + 2);
+            }
           } else if (m.icone_tipo === 'interdicao') {
             // Prohibition Sign
             ctx.strokeStyle = '#ef4444'; // Red for prohibition
@@ -867,6 +913,63 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   >
                     {iconeVisivel ? "Ocultar Ícone" : "Mostrar Ícone"}
                   </Button>
+
+                  {iconeTipo === 'arvore' && (
+                    <div className="space-y-3 pt-3 border-t border-white/5 mt-3 animate-in fade-in">
+                      <span className="text-[10px] text-emerald-400 uppercase font-bold">Data da Reserva</span>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text"
+                          placeholder="Ex: 12/08"
+                          value={iconeDataTexto}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setIconeDataTexto(val);
+                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_texto: val } : m));
+                          }}
+                          onBlur={() => {
+                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                            if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
+                          }}
+                          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none"
+                        />
+                        <Button 
+                          size="icon" 
+                          variant={iconeDataVisivel ? "premium" : "outline"} 
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const newVal = !iconeDataVisivel;
+                            setIconeDataVisivel(newVal);
+                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_visivel: newVal } : m));
+                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                            if (target) onSave({ ...target, icone_data_visivel: newVal });
+                          }}
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-white/60">Escala Data Reserva</span>
+                          <span className="text-emerald-400 font-mono font-bold">{(iconeDataScale).toFixed(1)}x</span>
+                        </div>
+                        <input 
+                          type="range" min="0.5" max="15" step="0.1" 
+                          value={iconeDataScale} 
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            setIconeDataScale(val);
+                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_scale: val } : m));
+                          }}
+                          onMouseUp={() => {
+                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                            if (target) onSave(target);
+                          }}
+                          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -907,12 +1010,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   onClick={() => {
                     setLocalMarcacoes(prev => prev.map(m => {
                       if (m.id === selectedMarcacaoId) {
-                        return { ...m, numero_x: null, numero_y: null, data_x: null, data_y: null };
+                        return { ...m, numero_x: null, numero_y: null, data_x: null, data_y: null, icone_x: null, icone_y: null, icone_data_x: null, icone_data_y: null };
                       }
                       return m;
                     }));
                     const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                    if (target) onSave({ ...target, numero_x: null, numero_y: null, data_x: null, data_y: null });
+                    if (target) onSave({ ...target, numero_x: null, numero_y: null, data_x: null, data_y: null, icone_x: null, icone_y: null, icone_data_x: null, icone_data_y: null });
                     toast.info("Legendas resetadas");
                   }}
                 >
@@ -961,6 +1064,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
               const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
               const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
+              const iconeDataPos = { x: m.icone_data_x ?? centroid.x, y: m.icone_data_y ?? (centroid.y + 60) };
               const isSelected = selectedMarcacaoId === m.id;
 
               return (
@@ -996,6 +1100,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           <circle 
                             cx={iconePos.x} 
                             cy={iconePos.y} 
+                            r={100 / zoom} 
+                            fill="transparent" 
+                          />
+                        )}
+                        {m.icone_tipo && (
+                          <circle 
+                            cx={iconeDataPos.x} 
+                            cy={iconeDataPos.y} 
                             r={100 / zoom} 
                             fill="transparent" 
                           />
@@ -1097,13 +1209,41 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               y="45" 
                               x="15" 
                               textAnchor="middle" 
-                              fill="#0f172a" 
+                              fill="#166534" 
                               fontSize="10" 
                               fontWeight="900"
                               className="font-['SF_Pro_Display']"
                             >
                               RESERVA SUVINIL
                             </text>
+                            
+                            {/* Icon Date Label (SVG) */}
+                            {m.icone_data_visivel !== false && m.icone_data_texto && (
+                              <g transform={`translate(${iconeDataPos.x - iconePos.x}, ${iconeDataPos.y - iconePos.y}) scale(${m.icone_data_scale || 1})`}>
+                                <rect 
+                                   x="-60"
+                                   y="-20" 
+                                   width="120" 
+                                   height="40" 
+                                   rx="6" 
+                                   fill="rgba(0,0,0,0.85)" 
+                                   stroke="rgba(255,255,255,0.15)" 
+                                   strokeWidth="1"
+                                 />
+                                 <text
+                                   x="0"
+                                   y="2"
+                                   textAnchor="middle"
+                                   dominantBaseline="middle"
+                                   fill="white"
+                                   fontSize="24"
+                                   fontWeight="900"
+                                   className="select-none font-['SF_Pro_Display']"
+                                 >
+                                   {m.icone_data_texto}
+                                 </text>
+                              </g>
+                            )}
                           </g>
                         ) : (
                           <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
