@@ -151,14 +151,15 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         return;
       }
 
-      const { data: current } = await supabase
+      const { data: current } = await (supabase
         .from("corretiva_os")
         .select("pecas_solicitadas")
         .eq("id", os.id)
-        .single();
+        .single() as any);
 
-      const novoHistorico = current?.pecas_solicitadas 
-        ? `${current.pecas_solicitadas}\n${pecaTexto}` 
+      const currentHistory = current?.pecas_solicitadas || "";
+      const novoHistorico = currentHistory
+        ? `${currentHistory}\n${pecaTexto}`
         : pecaTexto;
 
       const { error } = await supabase
