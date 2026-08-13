@@ -631,10 +631,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         </div>
 
         {selectedMarcacaoId && (
-          <div className="bg-black/80 p-3 rounded-xl backdrop-blur-md border border-white/10 shadow-2xl flex flex-col gap-3 min-w-[200px] animate-in slide-in-from-left-2">
+          <div className="bg-black/90 p-3 rounded-xl backdrop-blur-xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col gap-3 min-w-[240px] animate-in slide-in-from-left-2 overflow-y-auto max-h-[80vh]">
             <div className="flex justify-between items-center border-b border-white/10 pb-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Configurar Legenda</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSelectedMarcacaoId(null)}>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">Configurar Legenda</span>
+              <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-white/10" onClick={() => setSelectedMarcacaoId(null)}>
                 <X className="h-3 w-3" />
               </Button>
             </div>
@@ -760,45 +760,53 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 />
               </div>
 
-              <div className="space-y-2">
-                <span className="text-[10px] text-white/70 uppercase">Ícone</span>
-                <div className="flex gap-2">
+              <div className="space-y-3 pt-2 border-t border-white/5">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-tight">Ícones Operacionais</span>
+                <div className="grid grid-cols-2 gap-2">
                   <Button 
                     size="sm" 
                     variant={iconeTipo === 'arvore' ? "premium" : "outline"}
-                    className="flex-1 h-8 text-[10px]"
+                    className={cn(
+                      "flex-1 h-9 text-[10px] transition-all",
+                      iconeTipo === 'arvore' ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" : "border-white/5 bg-white/5"
+                    )}
                     onClick={() => {
                       const newType = iconeTipo === 'arvore' ? null : 'arvore';
                       setIconeTipo(newType);
                       setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, icone_tipo: newType });
+                      if (newType) toast.success("Ícone de Árvore ativado");
                     }}
                   >
-                    <Trees className="h-3 w-3 mr-1" /> Árvore
+                    <Trees className="h-3.5 w-3.5 mr-1.5" /> Árvore
                   </Button>
                   <Button 
                     size="sm" 
                     variant={iconeTipo === 'interdicao' ? "premium" : "outline"}
-                    className="flex-1 h-8 text-[10px]"
+                    className={cn(
+                      "flex-1 h-9 text-[10px] transition-all",
+                      iconeTipo === 'interdicao' ? "bg-red-500/20 border-red-500 text-red-400" : "border-white/5 bg-white/5"
+                    )}
                     onClick={() => {
                       const newType = iconeTipo === 'interdicao' ? null : 'interdicao';
                       setIconeTipo(newType);
                       setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, icone_tipo: newType });
+                      if (newType) toast.error("Alerta de Interdição ativado");
                     }}
                   >
-                    <Ban className="h-3 w-3 mr-1" /> Interdição
+                    <Ban className="h-3.5 w-3.5 mr-1.5" /> Interdição
                   </Button>
                 </div>
               </div>
 
               {iconeTipo && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-[10px]">
-                    <span className="text-white/70">Escala Ícone</span>
-                    <span className="text-amber-400 font-mono">{(iconeScale).toFixed(1)}x</span>
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                  <div className="flex justify-between items-center text-[10px]">
+                    <span className="text-white/60">Tamanho do Ícone</span>
+                    <span className="text-amber-400 font-mono font-bold bg-amber-400/10 px-1.5 py-0.5 rounded">{(iconeScale).toFixed(1)}x</span>
                   </div>
                   <input 
                     type="range" min="0.5" max="15" step="0.1" 
@@ -812,8 +820,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave(target);
                     }}
-                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
+                  <Button 
+                    size="sm" 
+                    variant={iconeVisivel ? "premium" : "outline"} 
+                    className={cn("w-full h-8 text-[10px] mt-1", !iconeVisivel && "opacity-50")}
+                    onClick={() => {
+                      const newVal = !iconeVisivel;
+                      setIconeVisivel(newVal);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_visivel: newVal } : m));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, icone_visivel: newVal });
+                    }}
+                  >
+                    {iconeVisivel ? "Ocultar Ícone" : "Mostrar Ícone"}
+                  </Button>
                 </div>
               )}
 
