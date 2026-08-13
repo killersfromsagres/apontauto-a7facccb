@@ -123,7 +123,30 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const pecaTexto = pecas.trim();
     
     try {
-      // Suporte Offline para Solicitação de Peças
+      // 1. Registro em corretiva_pecas para o módulo de status
+      const { data: sess } = await supabase.auth.getSession();
+      const userId = sess.session?.user?.id;
+
+      if (navigator.onLine) {
+        const { error: pError } = await supabase
+          .from("corretiva_pecas")
+          .insert({
+            os_id: os.id,
+            descricao: pecaTexto,
+            quantidade: 1, // Default
+            urgencia: "Media",
+            status_gestor: "pendente",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any);
+        
+        if (pError) {
+          console.error("[CorretivaPecas] Erro ao inserir em corretiva_pecas:", pError);
+          // Não lançamos erro aqui para não travar o log principal, mas avisamos
+        }
+      }
+
+      // 2. Registro no histórico textual da OS (mantendo compatibilidade offline)
       if (!navigator.onLine) {
         const { outboxAdd, getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
         
@@ -147,7 +170,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         });
         await cacheOsList(updated);
 
-        toast.success("Modo Offline: Solicitação de peça registrada localmente.");
+        toast.success("Modo Offline: Solicitação registrada localmente.");
         return;
       }
 
@@ -181,7 +204,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         console.warn("Erro ao atualizar cache local:", e);
       }
 
-      toast.success("Solicitação de peça registrada no histórico.");
+      toast.success("Solicitação de peça registrada no histórico e enviada para status.");
       if (onUpdate) onUpdate();
     } catch (err: any) {
       console.error("[CorretivaPecas] Erro:", err);

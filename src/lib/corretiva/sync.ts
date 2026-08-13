@@ -65,18 +65,32 @@ export async function syncPending() {
          sent++;
       } else if (item.kind === "peca") {
          const { pecas } = item.payload;
+         
+         // 1. Registrar no histórico da OS
          const { data: currentOs } = await (supabase.from("corretiva_os").select("pecas_solicitadas").eq("id", item.osId).single() as any);
          const currentHistory = currentOs?.pecas_solicitadas || "";
          const novoHistorico = currentHistory
            ? `${currentHistory}\n${pecas}` 
            : pecas;
-           
-         const { error } = await supabase
+            
+         await supabase
             .from("corretiva_os")
             .update({ pecas_solicitadas: novoHistorico, updated_at: new Date().toISOString() } as any)
             .eq("id", item.osId);
          
-         if (error) throw error;
+         // 2. Registrar na tabela de status de peças
+         await supabase
+           .from("corretiva_pecas")
+           .insert({
+             os_id: item.osId,
+             descricao: pecas,
+             quantidade: 1,
+             urgencia: "Media",
+             status_gestor: "pendente",
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
+           } as any);
+
          await outboxRemove(item.id);
          sent++;
       }
