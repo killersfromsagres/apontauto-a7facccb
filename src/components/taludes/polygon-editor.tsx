@@ -23,7 +23,9 @@ import {
   PauseCircle,
   AlertCircle,
   CloudRain,
-  Move
+  Move,
+  Trees,
+  Ban
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -60,7 +62,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedMarcacaoId, setSelectedMarcacaoId] = useState<string | null>(null);
   const [draggedPointIndex, setDraggedPointIndex] = useState<{ marcacaoId: string, pointIndex: number } | null>(null);
-  const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' } | null>(null);
+  const [draggedLabel, setDraggedLabel] = useState<{ marcacaoId: string, type: 'numero' | 'data' | 'icone' } | null>(null);
   const [currentColor, setCurrentColor] = useState('#f59e0b');
   const [statusDate, setStatusDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [statusText, setStatusText] = useState('Programado');
@@ -78,6 +80,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [dataScale, setDataScale] = useState(1);
   const [numeroVisivel, setNumeroVisivel] = useState(true);
   const [dataVisivel, setDataVisivel] = useState(true);
+  const [iconeTipo, setIconeTipo] = useState<'arvore' | 'interdicao' | null>(null);
+  const [iconeScale, setIconeScale] = useState(1);
+  const [iconeVisivel, setIconeVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   
@@ -172,15 +177,19 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+        const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
 
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
+        const dIcone = getDistance(coords, iconePos);
 
         // Adjust hit radius based on current scale to make sure big labels are easy to grab
         const currentNumScale = m.numero_scale || 1;
         const currentDataScale = m.data_scale || 1;
+        const currentIconeScale = m.icone_scale || 1;
         const numHitRadius = (25 * currentNumScale) / zoom;
         const dataHitRadius = (60 * currentDataScale) / zoom;
+        const iconeHitRadius = (40 * currentIconeScale) / zoom;
 
         if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
@@ -189,6 +198,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (dData < dataHitRadius && dData < minDistance) {
           minDistance = dData;
           closestLabel = { id: m.id, type: 'data' as const };
+        }
+        if (m.icone_tipo && dIcone < iconeHitRadius && dIcone < minDistance) {
+          minDistance = dIcone;
+          closestLabel = { id: m.id, type: 'icone' as const };
         }
       }
 
@@ -229,8 +242,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (m.id === draggedLabel.marcacaoId) {
           if (draggedLabel.type === 'numero') {
             return { ...m, numero_x: coords.x, numero_y: coords.y };
-          } else {
+          } else if (draggedLabel.type === 'data') {
             return { ...m, data_x: coords.x, data_y: coords.y };
+          } else if (draggedLabel.type === 'icone') {
+            return { ...m, icone_x: coords.x, icone_y: coords.y };
           }
         }
         return m;
@@ -268,8 +283,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       const centroid = getCentroid(m.polygon);
       const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
       const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+      const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
 
-      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius) {
+      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius || (m.icone_tipo && getDistance(coords, iconePos) < labelHitRadius)) {
         setSelectedMarcacaoId(m.id);
         setCurrentColor(m.cor);
         setLineThickness(m.espessura_linha || 4);
@@ -277,6 +293,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setDataScale(m.data_scale || 1);
         setNumeroVisivel(m.numero_visivel !== false);
         setDataVisivel(m.data_visivel !== false);
+        setIconeTipo(m.icone_tipo || null);
+        setIconeScale(m.icone_scale || 1);
+        setIconeVisivel(m.icone_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -296,6 +315,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setDataScale(m.data_scale || 1);
         setNumeroVisivel(m.numero_visivel !== false);
         setDataVisivel(m.data_visivel !== false);
+        setIconeTipo(m.icone_tipo || null);
+        setIconeScale(m.icone_scale || 1);
+        setIconeVisivel(m.icone_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
@@ -386,6 +408,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+        const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
 
         // Draw Number Circle
         if (m.numero_visivel !== false) {
@@ -444,13 +467,69 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           
           ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
         }
+
+        // Draw Icons (Arvore / Interdicao)
+        if (m.icone_tipo && m.icone_visivel !== false) {
+          const currentIconeScale = m.icone_scale || 1;
+          const iconSize = 40 * currentIconeScale;
+          
+          ctx.save();
+          ctx.translate(iconePos.x, iconePos.y);
+          
+          // Icon Background Circle
+          ctx.beginPath();
+          ctx.arc(0, 0, iconSize / 2 + 10, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fill();
+          ctx.strokeStyle = m.cor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Simplified SVG paths for icons (since we can't easily use Lucide components in Canvas context)
+          ctx.fillStyle = m.cor;
+          if (m.icone_tipo === 'arvore') {
+            // Tree Shape
+            ctx.beginPath();
+            ctx.moveTo(0, -iconSize / 2);
+            ctx.lineTo(iconSize / 3, -iconSize / 6);
+            ctx.lineTo(iconSize / 6, -iconSize / 6);
+            ctx.lineTo(iconSize / 2, iconSize / 6);
+            ctx.lineTo(iconSize / 4, iconSize / 6);
+            ctx.lineTo(iconSize / 2, iconSize / 2);
+            ctx.lineTo(-iconSize / 2, iconSize / 2);
+            ctx.lineTo(-iconSize / 4, iconSize / 6);
+            ctx.lineTo(-iconSize / 2, iconSize / 6);
+            ctx.lineTo(-iconSize / 6, -iconSize / 6);
+            ctx.lineTo(-iconSize / 3, -iconSize / 6);
+            ctx.closePath();
+            ctx.fill();
+            // Text for Suvinil Reserve
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
+          } else if (m.icone_tipo === 'interdicao') {
+            // Prohibition Sign
+            ctx.strokeStyle = '#ef4444'; // Red for prohibition
+            ctx.lineWidth = 4 * currentIconeScale;
+            ctx.beginPath();
+            ctx.arc(0, 0, iconSize / 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-iconSize / 2.5, -iconSize / 2.5);
+            ctx.lineTo(iconSize / 2.5, iconSize / 2.5);
+            ctx.stroke();
+          }
+          
+          ctx.restore();
+        }
       });
 
       // 3. Draw Legend (Bottom-Left)
       const legendX = 20;
-      const legendY = imageHeight - 180;
+      const legendY = imageHeight - 240;
       const legendWidth = 240;
-      const legendHeight = 160;
+      const legendHeight = 220;
 
       // Legend Background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
@@ -486,6 +565,40 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         currentY += 25;
       });
+
+      // Add Icon Legends
+      currentY += 10;
+      
+      // Tree Icon Legend
+      ctx.fillStyle = 'white';
+      ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+      ctx.fillText('Reserva Suvinil (Árvore)', legendX + 45, currentY + 6);
+      
+      // Draw small tree
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.moveTo(legendX + 26, currentY);
+      ctx.lineTo(legendX + 32, currentY + 12);
+      ctx.lineTo(legendX + 20, currentY + 12);
+      ctx.closePath();
+      ctx.fill();
+      
+      currentY += 25;
+      
+      // Interdiction Icon Legend
+      ctx.fillStyle = 'white';
+      ctx.fillText('Área Interditada', legendX + 45, currentY + 6);
+      
+      // Draw small prohibition
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(legendX + 26, currentY + 6, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(legendX + 22, currentY + 2);
+      ctx.lineTo(legendX + 30, currentY + 10);
+      ctx.stroke();
 
       // 4. Trigger Download
       const link = document.createElement('a');
@@ -647,6 +760,63 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 />
               </div>
 
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase">Ícone</span>
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant={iconeTipo === 'arvore' ? "premium" : "outline"}
+                    className="flex-1 h-8 text-[10px]"
+                    onClick={() => {
+                      const newType = iconeTipo === 'arvore' ? null : 'arvore';
+                      setIconeTipo(newType);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, icone_tipo: newType });
+                    }}
+                  >
+                    <Trees className="h-3 w-3 mr-1" /> Árvore
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant={iconeTipo === 'interdicao' ? "premium" : "outline"}
+                    className="flex-1 h-8 text-[10px]"
+                    onClick={() => {
+                      const newType = iconeTipo === 'interdicao' ? null : 'interdicao';
+                      setIconeTipo(newType);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave({ ...target, icone_tipo: newType });
+                    }}
+                  >
+                    <Ban className="h-3 w-3 mr-1" /> Interdição
+                  </Button>
+                </div>
+              </div>
+
+              {iconeTipo && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-white/70">Escala Ícone</span>
+                    <span className="text-amber-400 font-mono">{(iconeScale).toFixed(1)}x</span>
+                  </div>
+                  <input 
+                    type="range" min="0.5" max="15" step="0.1" 
+                    value={iconeScale} 
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      setIconeScale(val);
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_scale: val } : m));
+                    }}
+                    onMouseUp={() => {
+                      const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                      if (target) onSave(target);
+                    }}
+                    className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <Button 
                   size="sm" 
@@ -737,6 +907,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               const centroid = getCentroid(m.polygon);
               const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
               const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+              const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
               const isSelected = selectedMarcacaoId === m.id;
 
               return (
@@ -745,7 +916,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   <polygon
                     points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                     fill={m.cor}
-                    fillOpacity={isSelected ? 0.4 : 0.25}
+                    fillOpacity={m.icone_tipo === 'arvore' ? (isSelected ? 0.6 : 0.4) : (isSelected ? 0.4 : 0.25)}
                     stroke={m.cor}
                     strokeWidth={(m.espessura_linha || 4) / zoom}
                     className="pointer-events-auto cursor-pointer"
@@ -768,6 +939,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           r={100 / zoom} 
                           fill="transparent" 
                         />
+                        {m.icone_tipo && (
+                          <circle 
+                            cx={iconePos.x} 
+                            cy={iconePos.y} 
+                            r={100 / zoom} 
+                            fill="transparent" 
+                          />
+                        )}
                       </g>
                     )}
                     {/* Slope Number */}
@@ -852,6 +1031,21 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         );
                       })()}
                     </g>
+                    )}
+
+                    {/* Icons (Arvore / Interdicao) */}
+                    {m.icone_tipo && m.icone_visivel !== false && (
+                      <g transform={`translate(${iconePos.x}, ${iconePos.y}) scale(${m.icone_scale || 1})`}>
+                        <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
+                        {m.icone_tipo === 'arvore' ? (
+                          <g transform="translate(-15, -15)">
+                            <Trees size={30} className="text-white fill-current" />
+                            <text y="45" x="15" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">RESERVA SUVINIL</text>
+                          </g>
+                        ) : (
+                          <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
+                        )}
+                      </g>
                     )}
                   </g>
 
