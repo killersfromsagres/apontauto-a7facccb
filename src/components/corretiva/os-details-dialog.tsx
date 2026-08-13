@@ -118,45 +118,63 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
       toast.error("Descreva as peças necessárias.");
       return;
     }
+    
     setLoading(true);
+    const pecaTexto = pecas.trim();
+    
     try {
       // Suporte Offline para Solicitação de Peças
       if (!navigator.onLine) {
-        const { outboxAdd } = await import("@/lib/corretiva/db");
+        const { outboxAdd, getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        
         await outboxAdd({
           id: crypto.randomUUID(),
           kind: "peca",
           osId: os.id,
           numeroOs: os.numero_os,
-          payload: { pecas: pecas.trim() },
+          payload: { pecas: pecaTexto },
           createdAt: Date.now(),
           attempts: 0
         });
 
         // Atualizar cache local
-        try {
-          const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-          const cached = await getCachedOsList();
-          const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecas.trim() } : o);
-          await cacheOsList(updated);
-        } catch (e) {
-          console.warn("Erro ao atualizar cache local:", e);
-        }
+        const cached = await getCachedOsList();
+        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecaTexto } : o);
+        await cacheOsList(updated);
 
         toast.success("Modo Offline: Solicitação de peça salva e será sincronizada.");
+        // Não fechamos o diálogo nem limpamos o estado se quisermos permitir continuar
+        // Mas o usuário pediu para registrar automaticamente sem finalizar o chamado.
+        // Já está funcionando assim (não chama onUpdate/onClose).
         return;
       }
 
+      // Fluxo Online
       const { error } = await supabase
         .from("corretiva_os")
-        .update({ pecas_solicitadas: pecas.trim() } as any)
+        .update({ 
+          pecas_solicitadas: pecaTexto,
+          updated_at: new Date().toISOString()
+        } as any)
         .eq("id", os.id);
 
       if (error) throw error;
-      toast.success("Solicitação de peça enviada com sucesso.");
+      
+      // Atualizar cache local mesmo online para consistência
+      try {
+        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        const cached = await getCachedOsList();
+        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecaTexto } : o);
+        await cacheOsList(updated);
+      } catch (e) {
+        console.warn("Erro ao atualizar cache local:", e);
+      }
+
+      toast.success("Solicitação de peça registrada no histórico.");
+      if (onUpdate) onUpdate(); // Atualiza a lista por trás sem fechar
     } catch (err: any) {
       console.error("[CorretivaPecas] Erro:", err);
-      toast.error("Erro ao solicitar peças.");
+      toast.error("Erro ao solicitar peças: " + (err.message || "Tente novamente"));
     } finally {
       setLoading(false);
     }
