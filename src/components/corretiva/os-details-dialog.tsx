@@ -336,7 +336,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     variant="glass" 
                     size="icon" 
                     className="h-11 w-11 shrink-0" 
-                    onClick={handleSolicitarPeca}
+                    onClick={async () => {
+                      await handleSolicitarPeca();
+                      setPecas(""); // Limpa o campo após registrar automaticamente
+                    }}
                     disabled={loading}
                   >
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4 text-white" />}
