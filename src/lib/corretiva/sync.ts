@@ -54,10 +54,10 @@ export async function syncPending() {
           sent++;
         }
       } else if (item.kind === "status") {
-         const { status } = item.payload;
+         const payload = item.payload;
          const { error } = await supabase
             .from("corretiva_os")
-            .update({ status, updated_at: new Date().toISOString() } as any)
+            .update({ ...payload, updated_at: new Date().toISOString() } as any)
             .eq("id", item.osId);
          
          if (error) throw error;
