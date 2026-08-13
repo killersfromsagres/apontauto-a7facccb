@@ -199,6 +199,8 @@ function RefrigeracaoPage() {
     setEquipe(loadEquipe());
   }, []);
 
+  const processIA = useServerFn(processarDescricaoPecaIA);
+
   const setEquipeAndPersist = (v: EquipeFiltro) => {
     setEquipe(v);
     saveEquipe(v);
