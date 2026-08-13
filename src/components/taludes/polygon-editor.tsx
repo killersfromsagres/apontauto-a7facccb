@@ -331,13 +331,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (mode === 'draw') {
       if (currentPoints.length > 2) {
         const dist = getDistance(coords, currentPoints[0]);
-        if (dist < 20 / zoom) {
+        if (dist < 30 / zoom) { // Increased hit radius for mobile/easy closing
           handleFinishDrawing();
           return;
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
     } else {
+      // If we clicked empty space and didn't hit any label, deselect
       setSelectedMarcacaoId(null);
     }
   };
