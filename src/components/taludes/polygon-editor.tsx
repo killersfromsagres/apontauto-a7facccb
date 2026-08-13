@@ -331,13 +331,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (mode === 'draw') {
       if (currentPoints.length > 2) {
         const dist = getDistance(coords, currentPoints[0]);
-        if (dist < 20 / zoom) {
+        if (dist < 30 / zoom) { // Increased hit radius for mobile/easy closing
           handleFinishDrawing();
           return;
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
     } else {
+      // If we clicked empty space and didn't hit any label, deselect
       setSelectedMarcacaoId(null);
     }
   };
@@ -355,7 +356,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   };
 
   const handleFinishDrawing = async () => {
-    if (currentPoints.length < 3) return;
+    if (currentPoints.length < 3) {
+      toast.error("Desenhe pelo menos 3 pontos para criar uma área");
+      return;
+    }
+    
+    // Auto-calculate centroid if not provided to help with initial label placement
+    const centroid = getCentroid(currentPoints);
+    
     const newMarcacao: Partial<TaludeMarcacao> = {
       rotulo: `${STATUS_CONFIG[statusType].label} - ${statusDate}`,
       polygon: currentPoints,
@@ -364,11 +372,31 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       numero_scale: numeroScale,
       data_scale: dataScale,
       numero_visivel: numeroVisivel,
-      data_visivel: dataVisivel
+      data_visivel: dataVisivel,
+      icone_tipo: iconeTipo,
+      icone_scale: iconeScale,
+      icone_visivel: iconeVisivel,
+      // Initialize label positions to centroid to avoid "missing" labels
+      numero_x: centroid.x,
+      numero_y: centroid.y,
+      data_x: centroid.x,
+      data_y: centroid.y + 30,
+      icone_x: centroid.x,
+      icone_y: centroid.y - 30
     };
-    await onSave(newMarcacao);
-    setCurrentPoints([]);
-    setMode('view');
+    
+    try {
+      toast.loading("Salvando demarcação...");
+      await onSave(newMarcacao);
+      setCurrentPoints([]);
+      setMode('view');
+      toast.dismiss();
+      toast.success("Área demarcada com sucesso");
+    } catch (error) {
+      toast.dismiss();
+      console.error("Erro ao finalizar desenho:", error);
+      toast.error("Erro ao salvar demarcação");
+    }
   };
 
   const handleExport = async () => {
@@ -504,8 +532,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Suvinil Reserve
-            ctx.fillStyle = 'white';
-            ctx.font = `bold ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.fillStyle = '#0f172a'; // Deep obsidian/slate for dark palette
+            ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
           } else if (m.icone_tipo === 'interdicao') {
@@ -775,8 +803,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       setIconeTipo(newType);
                       setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                      if (target) onSave({ ...target, icone_tipo: newType });
-                      if (newType) toast.success("Ícone de Árvore ativado");
+                      if (target) {
+                        onSave({ ...target, icone_tipo: newType });
+                        if (newType) toast.success("Ícone de Árvore ativado");
+                        else toast.info("Ícone removido");
+                      }
                     }}
                   >
                     <Trees className="h-3.5 w-3.5 mr-1.5" /> Árvore
@@ -1061,8 +1092,18 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
                           <g transform="translate(-15, -15)">
-                            <Trees size={30} className="text-white fill-current" />
-                            <text y="45" x="15" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">RESERVA SUVINIL</text>
+                            <Trees size={30} className="text-emerald-500 fill-emerald-500/20" />
+                            <text 
+                              y="45" 
+                              x="15" 
+                              textAnchor="middle" 
+                              fill="#0f172a" 
+                              fontSize="10" 
+                              fontWeight="900"
+                              className="font-['SF_Pro_Display']"
+                            >
+                              RESERVA SUVINIL
+                            </text>
                           </g>
                         ) : (
                           <g transform="translate(-15, -15)"><Ban size={30} className="text-white fill-current" /></g>
