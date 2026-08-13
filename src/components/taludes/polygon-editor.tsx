@@ -522,9 +522,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
       // 3. Draw Legend (Bottom-Left)
       const legendX = 20;
-      const legendY = imageHeight - 180;
+      const legendY = imageHeight - 240;
       const legendWidth = 240;
-      const legendHeight = 160;
+      const legendHeight = 220;
 
       // Legend Background
       ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
