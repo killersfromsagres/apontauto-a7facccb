@@ -19,9 +19,9 @@ const FALLBACK_ENDPOINT =
   "https://api.open-meteo.com/v1/forecast" +
   `?latitude=${WEATHER_LOCATION.latitude}` +
   `&longitude=${WEATHER_LOCATION.longitude}` +
-  "&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m,rain,is_day" +
-  "&hourly=temperature_2m,apparent_temperature,precipitation_probability,rain,weather_code,cloud_cover,wind_speed_10m" +
-  "&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,rain_sum,wind_speed_10m_max" +
+  `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,cloud_cover,wind_speed_10m,wind_gusts_10m,precipitation,rain,is_day` +
+  `&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,rain,weather_code,cloud_cover,wind_speed_10m` +
+  `&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,precipitation_sum,rain_sum,wind_speed_10m_max` +
   "&forecast_days=7" +
   `&timezone=${encodeURIComponent(WEATHER_LOCATION.timezone)}` +
   "&utm_source=apontauto.lovable.app";
@@ -35,6 +35,7 @@ export type WeatherCurrent = {
   wind_speed_10m: number;
   wind_gusts_10m: number;
   rain: number;
+  precipitation: number;
   is_day: number;
 };
 
@@ -43,6 +44,7 @@ export type WeatherHourly = {
   temperature_2m: number[];
   apparent_temperature: number[];
   precipitation_probability: number[];
+  precipitation: number[];
   rain: number[];
   weather_code: number[];
   cloud_cover: number[];
@@ -57,6 +59,7 @@ export type WeatherDaily = {
   apparent_temperature_max: number[];
   apparent_temperature_min: number[];
   precipitation_probability_max: number[];
+  precipitation_sum: number[];
   rain_sum: number[];
   wind_speed_10m_max: number[];
 };
@@ -259,8 +262,9 @@ export type RainDetection = {
   intensity: RainIntensity | null;
   label: string;
   emoji: string;
-  mm_atual: number; // mm na última hora
-  mm_dia: number; // acumulado do dia
+  mm_atual: number; // mm na última hora (precipitation)
+  mm_dia: number; // acumulado do dia (precipitation_sum)
+  mm_acumulado_3h: number; // acumulado últimas 3h
   weather_code: number | null;
 };
 
@@ -308,20 +312,29 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
       emoji: "—",
       mm_atual: 0,
       mm_dia: 0,
+      mm_acumulado_3h: 0,
       weather_code: null,
     };
   }
   const code = data.current?.weather_code ?? null;
   const bucket = weatherCodeInfo(code).bucket;
-  const mmAtual = Math.max(0, Number(data.current?.rain ?? 0));
-  const mmDia = Math.max(0, Number(data.daily?.rain_sum?.[0] ?? 0));
+  const mmAtual = Math.max(0, Number(data.current?.precipitation ?? data.current?.rain ?? 0));
+  const mmDia = Math.max(
+    0,
+    Number(data.daily?.precipitation_sum?.[0] ?? data.daily?.rain_sum?.[0] ?? 0),
+  );
 
-  // Última hora do array hourly, se disponível — captura chuva iniciando.
+  // Cálculo acumulado 3h
   const nowHour = new Date().getHours();
-  const hourlyRain = Number(data.hourly?.rain?.[nowHour] ?? 0);
+  const hourlyPrecip = data.hourly?.precipitation || data.hourly?.rain || [];
+  const mm3h = hourlyPrecip
+    .slice(Math.max(0, nowHour - 2), nowHour + 1)
+    .reduce((a, b) => a + (b || 0), 0);
+
+  const hourlyRain = Number(hourlyPrecip[nowHour] ?? 0);
   const mmReferencia = Math.max(mmAtual, hourlyRain);
 
-  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.05;
+  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.01; // Sensibilidade aumentada para 0.01mm
 
   if (!chuvaAtiva) {
     return {
@@ -331,6 +344,7 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
       emoji: "☀",
       mm_atual: mmAtual,
       mm_dia: mmDia,
+      mm_acumulado_3h: mm3h,
       weather_code: code,
     };
   }
@@ -346,6 +360,7 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
     emoji: meta.emoji,
     mm_atual: mmAtual,
     mm_dia: mmDia,
+    mm_acumulado_3h: mm3h,
     weather_code: code,
   };
 }

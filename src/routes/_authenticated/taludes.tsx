@@ -23,8 +23,17 @@ import {
   LayoutGrid,
   Info,
   Upload,
-  Plus
+  Plus,
+  RefreshCw
 } from "lucide-react";
+import { useWeather } from "@/hooks/use-weather";
+import { 
+  detectRain, 
+  weatherCodeInfo, 
+  situationStatus, 
+  WEATHER_LOCATION 
+} from "@/lib/weather/open-meteo";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -316,53 +325,182 @@ function TaludesPage() {
 }
 
 function WeatherWidget() {
+  const { data, isLoading, isError, refetch } = useWeather();
+
+  if (isLoading) {
+    return (
+      <GlassCard className="p-4 bg-blue-500/5 animate-pulse">
+        <div className="h-20 w-full bg-white/5 rounded-lg mb-4" />
+        <div className="grid grid-cols-3 gap-2">
+          <div className="h-10 bg-white/5 rounded" />
+          <div className="h-10 bg-white/5 rounded" />
+          <div className="h-10 bg-white/5 rounded" />
+        </div>
+      </GlassCard>
+    );
+  }
+
+  if (isError || !data) {
+    return (
+      <GlassCard className="p-4 border-red-500/20 bg-red-500/5">
+        <div className="flex flex-col items-center justify-center text-center py-4">
+          <AlertTriangle className="h-8 w-8 text-red-400 mb-2" />
+          <p className="text-xs text-red-200">Erro ao carregar clima</p>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="mt-2 text-[10px] hover:bg-white/5" 
+            onClick={() => refetch()}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" /> Tentar novamente
+          </Button>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  const current = data.current;
+  const chuva = detectRain(data);
+  const info = weatherCodeInfo(current.weather_code);
+
   return (
-    <GlassCard className="p-4 bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+    <GlassCard className={cn(
+      "p-4 bg-gradient-to-br border-white/10 transition-all duration-500",
+      chuva.detected 
+        ? "from-red-500/20 to-slate-900/40 border-red-500/30" 
+        : "from-blue-500/15 to-slate-900/40 border-blue-500/20"
+    )}>
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h2 className="text-2xl font-bold">24°C</h2>
-          <p className="text-xs text-muted-foreground">Demarchi, São Bernardo do Campo</p>
+          <div className="flex items-baseline gap-2">
+            <h2 className="text-3xl font-black tracking-tighter tabular-nums">
+              {Math.round(current.temperature_2m)}°
+            </h2>
+            <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Celsius</span>
+          </div>
+          <p className="text-[10px] font-medium text-muted-foreground mt-1 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+            {WEATHER_LOCATION.bairro}, {WEATHER_LOCATION.cidade}
+          </p>
         </div>
-        <CloudRain className="h-8 w-8 text-blue-400" />
+        <div className="flex flex-col items-end">
+          <span className="text-2xl" title={info.label}>{info.emoji}</span>
+          <span className="text-[9px] font-bold text-white/30 uppercase mt-1 tracking-tighter">
+            {info.label}
+          </span>
+        </div>
       </div>
       
-      <div className="grid grid-cols-3 gap-4">
-        <div className="text-center">
-          <Droplets className="h-4 w-4 mx-auto mb-1 text-blue-300" />
-          <p className="text-[10px] text-muted-foreground uppercase">Umidade</p>
-          <p className="text-sm font-semibold">68%</p>
+      <div className="grid grid-cols-3 gap-3">
+        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
+          <Droplets className="h-3.5 w-3.5 mb-1.5 text-blue-400" />
+          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Umidade</p>
+          <p className="text-xs font-black tabular-nums">{Math.round(current.relative_humidity_2m)}%</p>
         </div>
-        <div className="text-center">
-          <Wind className="h-4 w-4 mx-auto mb-1 text-blue-300" />
-          <p className="text-[10px] text-muted-foreground uppercase">Vento</p>
-          <p className="text-sm font-semibold">12km/h</p>
+        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
+          <Wind className="h-3.5 w-3.5 mb-1.5 text-blue-400" />
+          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Vento</p>
+          <p className="text-xs font-black tabular-nums">{Math.round(current.wind_speed_10m)}<span className="text-[8px] ml-0.5">km/h</span></p>
         </div>
-        <div className="text-center">
-          <CloudRain className="h-4 w-4 mx-auto mb-1 text-blue-300" />
-          <p className="text-[10px] text-muted-foreground uppercase">Chuva</p>
-          <p className="text-sm font-semibold">2.4mm</p>
+        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
+          <CloudRain className={cn("h-3.5 w-3.5 mb-1.5", chuva.detected ? "text-red-400 animate-bounce" : "text-blue-400")} />
+          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Chuva</p>
+          <p className="text-xs font-black tabular-nums">{chuva.mm_atual.toFixed(1)}<span className="text-[8px] ml-0.5">mm</span></p>
         </div>
       </div>
+
+      {chuva.detected && (
+        <div className="mt-4 p-2 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+          <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />
+          <p className="text-[10px] font-bold text-red-200 leading-tight">
+            {chuva.label.toUpperCase()} DETECTADA: OPERAÇÃO SUSPENSA
+          </p>
+        </div>
+      )}
     </GlassCard>
   );
 }
 
 function AlertsWidget() {
+  const { data } = useWeather();
+  
+  if (!data) return null;
+
+  const probHoje = data.daily.precipitation_probability_max[0] ?? 0;
+  const chuva = detectRain(data);
+  const status = situationStatus(probHoje);
+  
+  // Alertas inteligentes
+  const alerts = [];
+  
+  if (chuva.detected) {
+    alerts.push({
+      id: 'rain-now',
+      title: `Chuva em curso: ${chuva.label}`,
+      desc: `Precipitação de ${chuva.mm_atual.toFixed(1)}mm detectada. Pare todas as atividades.`,
+      variant: 'danger'
+    });
+  } else if (probHoje >= 60) {
+    alerts.push({
+      id: 'high-prob',
+      title: 'Risco Elevado de Chuva',
+      desc: `Probabilidade de ${probHoje}% para hoje. Monitore constantemente.`,
+      variant: 'warning'
+    });
+  }
+
+  if (chuva.mm_acumulado_3h > 5) {
+    alerts.push({
+      id: 'soil-saturation',
+      title: 'Saturação do Solo',
+      desc: `Acumulado de ${chuva.mm_acumulado_3h.toFixed(1)}mm nas últimas 3h. Risco de deslizamento aumentado.`,
+      variant: 'danger'
+    });
+  } else {
+    alerts.push({
+      id: 'soil-stable',
+      title: 'Nível do Solo: Estável',
+      desc: 'Monitoramento de umidade dentro da normalidade operacional.',
+      variant: 'info'
+    });
+  }
+
   return (
-    <GlassCard className="p-4 border-amber-500/30 bg-amber-500/5">
-      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-amber-400">
-        <AlertTriangle className="h-4 w-4" />
-        Alertas Climáticos
+    <GlassCard className="p-4 border-white/5 bg-white/2 shadow-inner">
+      <h3 className="text-[11px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 text-white/60">
+        <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+        Centro de Alertas
       </h3>
       <div className="space-y-3">
-        <div className="p-2 rounded bg-white/5 border border-white/5">
-          <p className="text-xs font-medium text-amber-200">Atenção: Chuva Moderada</p>
-          <p className="text-[10px] text-muted-foreground">Previsão de 5mm para os próximos 30min.</p>
-        </div>
-        <div className="p-2 rounded bg-white/5 border border-white/5">
-          <p className="text-xs font-medium text-blue-200">Nível do Solo: Estável</p>
-          <p className="text-[10px] text-muted-foreground">Monitoramento de umidade dentro da normalidade.</p>
-        </div>
+        {alerts.map(alert => (
+          <div 
+            key={alert.id}
+            className={cn(
+              "p-3 rounded-xl border transition-all duration-300",
+              alert.variant === 'danger' ? "bg-red-500/10 border-red-500/20" : 
+              alert.variant === 'warning' ? "bg-amber-500/10 border-amber-500/20" :
+              "bg-white/5 border-white/5"
+            )}
+          >
+            <p className={cn(
+              "text-[10px] font-black uppercase tracking-tight",
+              alert.variant === 'danger' ? "text-red-400" : 
+              alert.variant === 'warning' ? "text-amber-400" :
+              "text-blue-400"
+            )}>
+              {alert.title}
+            </p>
+            <p className="text-[10px] text-muted-foreground mt-1 leading-relaxed font-medium">
+              {alert.desc}
+            </p>
+          </div>
+        ))}
+        
+        {alerts.length === 0 && (
+          <div className="py-6 text-center">
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Sem alertas críticos</p>
+          </div>
+        )}
       </div>
     </GlassCard>
   );
