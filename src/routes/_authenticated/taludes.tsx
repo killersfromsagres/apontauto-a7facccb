@@ -24,7 +24,6 @@ import {
   Info,
   Upload,
   Plus,
-  Trash2,
   RefreshCw
 } from "lucide-react";
 import { useWeather } from "@/hooks/use-weather";
@@ -34,6 +33,7 @@ import {
   situationStatus, 
   WEATHER_LOCATION 
 } from "@/lib/weather/open-meteo";
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";

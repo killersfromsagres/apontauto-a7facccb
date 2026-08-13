@@ -318,15 +318,23 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
   }
   const code = data.current?.weather_code ?? null;
   const bucket = weatherCodeInfo(code).bucket;
-  const mmAtual = Math.max(0, Number(data.current?.rain ?? 0));
-  const mmDia = Math.max(0, Number(data.daily?.rain_sum?.[0] ?? 0));
+  const mmAtual = Math.max(0, Number(data.current?.precipitation ?? data.current?.rain ?? 0));
+  const mmDia = Math.max(
+    0,
+    Number(data.daily?.precipitation_sum?.[0] ?? data.daily?.rain_sum?.[0] ?? 0),
+  );
 
-  // Última hora do array hourly, se disponível — captura chuva iniciando.
+  // Cálculo acumulado 3h
   const nowHour = new Date().getHours();
-  const hourlyRain = Number(data.hourly?.rain?.[nowHour] ?? 0);
+  const hourlyPrecip = data.hourly?.precipitation || data.hourly?.rain || [];
+  const mm3h = hourlyPrecip
+    .slice(Math.max(0, nowHour - 2), nowHour + 1)
+    .reduce((a, b) => a + (b || 0), 0);
+
+  const hourlyRain = Number(hourlyPrecip[nowHour] ?? 0);
   const mmReferencia = Math.max(mmAtual, hourlyRain);
 
-  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.05;
+  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.01; // Sensibilidade aumentada para 0.01mm
 
   if (!chuvaAtiva) {
     return {
@@ -336,6 +344,7 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
       emoji: "☀",
       mm_atual: mmAtual,
       mm_dia: mmDia,
+      mm_acumulado_3h: mm3h,
       weather_code: code,
     };
   }
@@ -349,6 +358,11 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
     intensity,
     label: meta.label,
     emoji: meta.emoji,
+    mm_atual: mmAtual,
+    mm_dia: mmDia,
+    mm_acumulado_3h: mm3h,
+    weather_code: code,
+  };
     mm_atual: mmAtual,
     mm_dia: mmDia,
     weather_code: code,
