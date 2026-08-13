@@ -283,8 +283,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       const centroid = getCentroid(m.polygon);
       const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
       const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
+      const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
 
-      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius) {
+      if (getDistance(coords, numPos) < labelHitRadius || getDistance(coords, dataPos) < labelHitRadius || (m.icone_tipo && getDistance(coords, iconePos) < labelHitRadius)) {
         setSelectedMarcacaoId(m.id);
         setCurrentColor(m.cor);
         setLineThickness(m.espessura_linha || 4);
@@ -292,6 +293,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setDataScale(m.data_scale || 1);
         setNumeroVisivel(m.numero_visivel !== false);
         setDataVisivel(m.data_visivel !== false);
+        setIconeTipo(m.icone_tipo || null);
+        setIconeScale(m.icone_scale || 1);
+        setIconeVisivel(m.icone_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
