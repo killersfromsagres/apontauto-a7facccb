@@ -114,20 +114,48 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   };
 
   const handleSolicitarPeca = async () => {
-    if (!pecas) {
+    if (!pecas.trim()) {
       toast.error("Descreva as peças necessárias.");
       return;
     }
     setLoading(true);
     try {
+      // Suporte Offline para Solicitação de Peças
+      if (!navigator.onLine) {
+        const { outboxAdd } = await import("@/lib/corretiva/db");
+        await outboxAdd({
+          id: crypto.randomUUID(),
+          kind: "peca",
+          osId: os.id,
+          numeroOs: os.numero_os,
+          payload: { pecas: pecas.trim() },
+          createdAt: Date.now(),
+          attempts: 0
+        });
+
+        // Atualizar cache local
+        try {
+          const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+          const cached = await getCachedOsList();
+          const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: pecas.trim() } : o);
+          await cacheOsList(updated);
+        } catch (e) {
+          console.warn("Erro ao atualizar cache local:", e);
+        }
+
+        toast.success("Modo Offline: Solicitação de peça salva e será sincronizada.");
+        return;
+      }
+
       const { error } = await supabase
         .from("corretiva_os")
-        .update({ pecas_solicitadas: pecas } as any)
+        .update({ pecas_solicitadas: pecas.trim() } as any)
         .eq("id", os.id);
 
       if (error) throw error;
-      toast.success("Solicitação de peça registrada.");
-    } catch (err) {
+      toast.success("Solicitação de peça enviada com sucesso.");
+    } catch (err: any) {
+      console.error("[CorretivaPecas] Erro:", err);
       toast.error("Erro ao solicitar peças.");
     } finally {
       setLoading(false);
@@ -300,12 +328,55 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
               <div className="space-y-2">
                 <Label className="text-xs font-bold text-white/70">Observações de Campo</Label>
-                <Textarea 
-                  placeholder="Relate o que foi feito no local..."
-                  value={observacao}
-                  onChange={(e) => setObservacao(e.target.value)}
-                  className="bg-white/5 border-white/10 min-h-[90px] text-sm focus:ring-primary/50 resize-none text-white"
-                />
+                <div className="flex gap-2">
+                  <Textarea 
+                    placeholder="Relate o que foi feito no local..."
+                    value={observacao}
+                    onChange={(e) => setObservacao(e.target.value)}
+                    className="bg-white/5 border-white/10 min-h-[90px] text-sm focus:ring-primary/50 resize-none text-white flex-1"
+                  />
+                  <Button 
+                    variant="glass" 
+                    size="icon" 
+                    className="h-[90px] w-11 shrink-0" 
+                    onClick={async () => {
+                      if (!observacao.trim()) {
+                        toast.error("Descreva a observação.");
+                        return;
+                      }
+                      setLoading(true);
+                      try {
+                        if (!navigator.onLine) {
+                          const { outboxAdd } = await import("@/lib/corretiva/db");
+                          await outboxAdd({
+                            id: crypto.randomUUID(),
+                            kind: "status", // Reuse status sync or create new kind
+                            osId: os.id,
+                            numeroOs: os.numero_os,
+                            payload: { observacao_conclusao: observacao.trim() },
+                            createdAt: Date.now(),
+                            attempts: 0
+                          });
+                          toast.success("Observação salva offline.");
+                          return;
+                        }
+                        const { error } = await supabase
+                          .from("corretiva_os")
+                          .update({ observacao_conclusao: observacao.trim() } as any)
+                          .eq("id", os.id);
+                        if (error) throw error;
+                        toast.success("Observação salva.");
+                      } catch (err) {
+                        toast.error("Erro ao salvar observação.");
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                  </Button>
+                </div>
               </div>
 
               <div className="space-y-4">
