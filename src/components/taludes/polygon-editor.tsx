@@ -190,9 +190,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const currentNumScale = m.numero_scale || 1;
         const currentDataScale = m.data_scale || 1;
         const currentIconeScale = m.icone_scale || 1;
+        const currentIconeDataScale = m.icone_data_scale || 1;
         const numHitRadius = (25 * currentNumScale) / zoom;
         const dataHitRadius = (60 * currentDataScale) / zoom;
         const iconeHitRadius = (40 * currentIconeScale) / zoom;
+        const iconeDataHitRadius = (60 * currentIconeDataScale) / zoom;
 
         if (dNum < numHitRadius && dNum < minDistance) {
           minDistance = dNum;
@@ -205,6 +207,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (m.icone_tipo && dIcone < iconeHitRadius && dIcone < minDistance) {
           minDistance = dIcone;
           closestLabel = { id: m.id, type: 'icone' as const };
+        }
+        if (m.icone_tipo && dIconeData < iconeDataHitRadius && dIconeData < minDistance) {
+          minDistance = dIconeData;
+          closestLabel = { id: m.id, type: 'icone_data' as const };
         }
       }
 
@@ -301,6 +307,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setIconeTipo(m.icone_tipo || null);
         setIconeScale(m.icone_scale || 1);
         setIconeVisivel(m.icone_visivel !== false);
+        setIconeDataTexto(m.icone_data_texto || '');
+        setIconeDataScale(m.icone_data_scale || 1);
+        setIconeDataVisivel(m.icone_data_visivel !== false);
         setStatusDate(m.rotulo?.split(' - ')[1] || new Date().toISOString().split('T')[0]);
         setPrazoDate(m.prazo_rotulo || new Date().toISOString().split('T')[0]);
         const fullRotulo = m.rotulo || '';
