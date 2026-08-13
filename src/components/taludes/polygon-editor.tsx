@@ -556,7 +556,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Suvinil Reserve
-            ctx.fillStyle = '#bbf7d0'; // Light Green (Green 200ish)
+            ctx.fillStyle = '#065f46'; // Verde Escuro (Emerald 800ish)
             ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
             ctx.strokeStyle = 'black';
