@@ -467,6 +467,57 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           
           ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
         }
+
+        // Draw Icons (Arvore / Interdicao)
+        if (m.icone_tipo && m.icone_visivel !== false) {
+          const currentIconeScale = m.icone_scale || 1;
+          const iconSize = 40 * currentIconeScale;
+          
+          ctx.save();
+          ctx.translate(iconePos.x, iconePos.y);
+          
+          // Icon Background Circle
+          ctx.beginPath();
+          ctx.arc(0, 0, iconSize / 2 + 10, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fill();
+          ctx.strokeStyle = m.cor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Simplified SVG paths for icons (since we can't easily use Lucide components in Canvas context)
+          ctx.fillStyle = m.cor;
+          if (m.icone_tipo === 'arvore') {
+            // Tree Shape
+            ctx.beginPath();
+            ctx.moveTo(0, -iconSize / 2);
+            ctx.lineTo(iconSize / 3, -iconSize / 6);
+            ctx.lineTo(iconSize / 6, -iconSize / 6);
+            ctx.lineTo(iconSize / 2, iconSize / 6);
+            ctx.lineTo(iconSize / 4, iconSize / 6);
+            ctx.lineTo(iconSize / 2, iconSize / 2);
+            ctx.lineTo(-iconSize / 2, iconSize / 2);
+            ctx.lineTo(-iconSize / 4, iconSize / 6);
+            ctx.lineTo(-iconSize / 2, iconSize / 6);
+            ctx.lineTo(-iconSize / 6, -iconSize / 6);
+            ctx.lineTo(-iconSize / 3, -iconSize / 6);
+            ctx.closePath();
+            ctx.fill();
+          } else if (m.icone_tipo === 'interdicao') {
+            // Prohibition Sign
+            ctx.strokeStyle = '#ef4444'; // Red for prohibition
+            ctx.lineWidth = 4 * currentIconeScale;
+            ctx.beginPath();
+            ctx.arc(0, 0, iconSize / 2, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(-iconSize / 2.5, -iconSize / 2.5);
+            ctx.lineTo(iconSize / 2.5, iconSize / 2.5);
+            ctx.stroke();
+          }
+          
+          ctx.restore();
+        }
       });
 
       // 3. Draw Legend (Bottom-Left)
