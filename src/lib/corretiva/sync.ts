@@ -63,6 +63,16 @@ export async function syncPending() {
          if (error) throw error;
          await outboxRemove(item.id);
          sent++;
+      } else if (item.kind === "peca") {
+         const { pecas } = item.payload;
+         const { error } = await supabase
+            .from("corretiva_os")
+            .update({ pecas_solicitadas: pecas, updated_at: new Date().toISOString() } as any)
+            .eq("id", item.osId);
+         
+         if (error) throw error;
+         await outboxRemove(item.id);
+         sent++;
       }
     } catch (err) {
       console.error(`[CorretivaSync] Erro ao sincronizar item ${item.id}:`, err);
