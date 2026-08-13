@@ -242,8 +242,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         if (m.id === draggedLabel.marcacaoId) {
           if (draggedLabel.type === 'numero') {
             return { ...m, numero_x: coords.x, numero_y: coords.y };
-          } else {
+          } else if (draggedLabel.type === 'data') {
             return { ...m, data_x: coords.x, data_y: coords.y };
+          } else if (draggedLabel.type === 'icone') {
+            return { ...m, icone_x: coords.x, icone_y: coords.y };
           }
         }
         return m;
