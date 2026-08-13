@@ -118,6 +118,47 @@ async function sendOne(item: OutboxItem): Promise<void> {
     await blobDelete(blobKey);
     return;
   }
+  if (item.kind === "material") {
+    const { 
+      descricao, 
+      equipe, 
+      solicitante, 
+      predio, 
+      local, 
+      numeroOs,
+      observacao 
+    } = item.payload;
+
+    const { data: solData, error } = await supabase
+      .from("material_solicitacoes")
+      .insert({
+        user_id: uid,
+        solicitante: solicitante || "Colaborador",
+        setor: equipe || null,
+        predio: predio || null,
+        local: local || null,
+        prioridade: "normal",
+        status: "enviada",
+        observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
+        enviada_em: new Date().toISOString(),
+      } as any)
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    
+    const solId = (solData as any)?.id;
+    if (solId) {
+      await supabase.from("material_solicitacao_itens").insert({
+        solicitacao_id: solId,
+        descricao: descricao,
+        quantidade: item.payload.quantidade || 1,
+        unidade: "UN",
+        justificativa: `Referente à OS ${numeroOs}`
+      } as any);
+    }
+    return;
+  }
   throw new Error(`Tipo desconhecido: ${(item as any).kind}`);
 }
 

@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +27,7 @@ interface OsDetailsDialogProps {
 }
 
 export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDialogProps) {
+  const processIA = useServerFn(processarDescricaoPecaIA);
   const [loading, setLoading] = useState(false);
   const [photoBefore, setPhotoBefore] = useState<string | null>(null);
   const [photoAfter, setPhotoAfter] = useState<string | null>(null);
@@ -130,19 +133,27 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                       sess.session?.user?.email?.split('@')[0] || 
                       "Colaborador";
 
-      // 1. Registro em corretiva_pecas para o módulo de status (Rastreamento interno do módulo Corretiva)
+      // AGENTE IA: Processar descrição para extrair quantidade e itens
+      const { items } = await processIA({ data: { descricao: pecaTexto } });
+
+      // Registro para cada item extraído pela IA (ou o texto original se falhar)
+      const logs = items.length > 0 ? items : [{ item: pecaTexto, qtd: 1 }];
+
+      // 1. Registro em corretiva_pecas para o módulo de status (Registro instantâneo)
       if (navigator.onLine) {
-        await supabase
-          .from("corretiva_pecas")
-          .insert({
-            os_id: os.id,
-            descricao: pecaTexto,
-            quantidade: 1,
-            urgencia: "Media",
-            status_gestor: "pendente",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          } as any);
+        for (const log of logs) {
+          await supabase
+            .from("corretiva_pecas")
+            .insert({
+              os_id: os.id,
+              descricao: log.item,
+              quantidade: log.qtd,
+              urgencia: "Media",
+              status_gestor: "pendente",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            } as any);
+        }
       }
 
       // 2. Integração com Controle de Materiais (Requisito: Registro automático em Controle-Materiais)
