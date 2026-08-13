@@ -181,10 +181,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
         const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
+        const iconeDataPos = { x: m.icone_data_x ?? centroid.x, y: m.icone_data_y ?? (centroid.y + 60) };
 
         const dNum = getDistance(coords, numPos);
         const dData = getDistance(coords, dataPos);
         const dIcone = getDistance(coords, iconePos);
+        const dIconeData = getDistance(coords, iconeDataPos);
 
         // Adjust hit radius based on current scale to make sure big labels are easy to grab
         const currentNumScale = m.numero_scale || 1;
