@@ -446,7 +446,48 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       });
 
-      // 3. Trigger Download
+      // 3. Draw Legend (Bottom-Left)
+      const legendX = 20;
+      const legendY = imageHeight - 180;
+      const legendWidth = 240;
+      const legendHeight = 160;
+
+      // Legend Background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.beginPath();
+      ctx.roundRect(legendX, legendY, legendWidth, legendHeight, 12);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Legend Title
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 16px "SF Pro Display", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('LEGENDA STATUS', legendX + 20, legendY + 15);
+
+      // Legend Items
+      let currentY = legendY + 50;
+      Object.entries(STATUS_CONFIG).forEach(([key, cfg]) => {
+        // Color Box
+        ctx.fillStyle = cfg.color;
+        ctx.beginPath();
+        ctx.roundRect(legendX + 20, currentY, 12, 12, 3);
+        ctx.fill();
+
+        // Label
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(cfg.label, legendX + 45, currentY + 6);
+
+        currentY += 25;
+      });
+
+      // 4. Trigger Download
       const link = document.createElement('a');
       link.download = `Mapa-Taludes-${new Date().toLocaleDateString()}.png`;
       link.href = canvas.toDataURL('image/png', 1.0);
@@ -832,18 +873,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             })}
 
             {/* Current Drawing Points */}
-            {mode === 'draw' && currentPoints.length > 0 && (
+            {mode === 'draw' && (
               <g>
-                <polyline
-                  points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                  fill="none"
-                  stroke={currentColor}
-                  strokeWidth={lineThickness / zoom}
-                  strokeDasharray="5,5"
-                />
-                {currentPoints.map((p, idx) => (
-                  <circle key={idx} cx={p.x} cy={p.y} r={4 / zoom} fill={currentColor} />
-                ))}
+                {currentPoints.length > 0 && (
+                  <>
+                    <polyline
+                      points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                      fill="none"
+                      stroke={currentColor}
+                      strokeWidth={lineThickness / zoom}
+                      strokeDasharray="5,5"
+                    />
+                    {currentPoints.map((p, idx) => (
+                      <circle key={idx} cx={p.x} cy={p.y} r={6 / zoom} fill={currentColor} stroke="white" strokeWidth={1/zoom} />
+                    ))}
+                  </>
+                )}
+                
                 {hoverPoint && currentPoints.length > 0 && (
                   <line
                     x1={currentPoints[currentPoints.length - 1].x}
@@ -853,8 +899,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     stroke={currentColor}
                     strokeWidth={lineThickness / zoom}
                     strokeDasharray="5,5"
-                    opacity={0.5}
+                    opacity={0.8}
                   />
+                )}
+                
+                {/* Visual feedback for the very first point to start drawing */}
+                {hoverPoint && currentPoints.length === 0 && (
+                  <circle cx={hoverPoint.x} cy={hoverPoint.y} r={6 / zoom} fill={currentColor} opacity={0.5} />
                 )}
               </g>
             )}
