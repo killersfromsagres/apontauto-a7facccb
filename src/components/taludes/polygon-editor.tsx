@@ -559,7 +559,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.fillStyle = '#065f46'; // Verde Escuro (Emerald 800ish)
             ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'black';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = 1 * currentIconeScale;
             ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
