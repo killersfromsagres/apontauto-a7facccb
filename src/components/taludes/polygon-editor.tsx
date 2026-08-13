@@ -803,8 +803,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       setIconeTipo(newType);
                       setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                      if (target) onSave({ ...target, icone_tipo: newType });
-                      if (newType) toast.success("Ícone de Árvore ativado");
+                      if (target) {
+                        onSave({ ...target, icone_tipo: newType });
+                        if (newType) toast.success("Ícone de Árvore ativado");
+                        else toast.info("Ícone removido");
+                      }
                     }}
                   >
                     <Trees className="h-3.5 w-3.5 mr-1.5" /> Árvore
