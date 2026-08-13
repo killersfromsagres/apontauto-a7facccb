@@ -73,6 +73,8 @@ import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { RefrigImportDialog } from "@/components/refrigeracao/refrig-import-dialog";
 import { useIsOwner } from "@/hooks/use-is-owner";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useServerFn } from "@tanstack/react-start";
+import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 
 import {
   EQUIPES_REFRIGERACAO,
@@ -179,7 +181,10 @@ async function getSyncFailureMessage(result: SyncResultLike): Promise<string> {
 function RefrigeracaoPage() {
   const online = useOnlineStatus();
   const { isOwner } = useIsOwner();
+  const processIA = useServerFn(processarDescricaoPecaIA);
   const [osList, setOsList] = useState<OsCacheRow[]>([]);
+  // ... rest of state stays the same
+
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState(0);

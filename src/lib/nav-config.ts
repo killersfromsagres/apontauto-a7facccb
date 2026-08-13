@@ -193,10 +193,11 @@ export const sections: MenuSection[] = [
       },
       {
         key: "refrigeracao-pecas-status",
-        title: "Refrigeração — Status de Peças",
-        short: "Peças",
-        url: "/refrigeracao-pecas-status",
+        title: "Central de Materiais",
+        short: "Materiais",
+        url: "/corretiva-pecas-status",
         icon: PackageOpen,
+        keywords: ["materiais", "unificada", "peças", "solicitações", "central"],
       },
       {
         key: "refrigeracao-historico",
@@ -238,11 +239,11 @@ export const sections: MenuSection[] = [
       },
       {
         key: "corretiva-pecas-status",
-        title: "Status de Peças",
-        short: "Peças",
+        title: "Central de Materiais",
+        short: "Materiais",
         url: "/corretiva-pecas-status",
         icon: PackageOpen,
-        keywords: ["materiais", "solicitação", "aprovação"],
+        keywords: ["materiais", "unificada", "peças", "solicitações", "central"],
       },
       {
         key: "corretiva-historico",

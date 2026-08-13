@@ -4,481 +4,244 @@ import { toast } from "sonner";
 import {
   Package,
   RefreshCw,
-  Clock,
-  Search as SearchIcon,
-  CheckCircle2,
-  XCircle,
+  Search,
+  FileSpreadsheet,
+  BrainCircuit,
   Loader2,
-  Sparkles,
-  AlertTriangle,
+  Filter,
+  ArrowUpDown,
+  History,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsAdmin } from "@/hooks/use-is-admin";
+import { cn } from "@/lib/utils";
+import { useServerFn } from "@tanstack/react-start";
+import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 
 export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
-  component: PecasStatusPage,
+  component: CentralMateriaisUnificadaPage,
   head: () => ({
     meta: [
-      { title: "Status de Peças · Corretiva — Apont Auto" },
-      {
-        name: "description",
-        content:
-          "Acompanhe em tempo real o andamento das solicitações de peças de Corretiva — do pedido ao aprovado.",
-      },
-      { property: "og:title", content: "Status de Peças · Corretiva" },
-      {
-        property: "og:description",
-        content: "Acompanhamento em tempo real das solicitações de peças.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { title: "Central Unificada de Materiais · Apont Auto" },
+      { property: "og:title", content: "Central Unificada de Materiais" },
     ],
   }),
 });
 
-type StatusGestor = "pendente" | "em_analise" | "aprovado" | "rejeitado" | "concluido";
-
-type PecaRow = {
-  id: string;
-  os_id: string;
-  descricao: string;
-  quantidade: number;
-  urgencia: string;
-  observacao: string | null;
-  status_gestor: StatusGestor;
-  created_at: string;
-  updated_at: string;
-};
-
-type OsRow = {
-  id: string;
-  numero_os: string;
-  nome_os: string | null;
-  predio: string | null;
-  andar: string | null;
-  local: string | null;
-  equipe: string | null;
-};
-
-const STATUS_META: Record<
-  StatusGestor,
-  { label: string; badge: string; icon: typeof Package; order: number }
-> = {
-  pendente: {
-    label: "Pendente",
-    badge: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300",
-    icon: Clock,
-    order: 0,
-  },
-  em_analise: {
-    label: "Em análise",
-    badge: "bg-sky-500/15 text-sky-700 border-sky-500/30 dark:text-sky-300",
-    icon: Loader2,
-    order: 1,
-  },
-  aprovado: {
-    label: "Aprovado",
-    badge: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-300",
-    icon: CheckCircle2,
-    order: 2,
-  },
-  rejeitado: {
-    label: "Rejeitado",
-    badge: "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300",
-    icon: XCircle,
-    order: 3,
-  },
-  concluido: {
-    label: "Concluído",
-    badge: "bg-violet-500/15 text-violet-700 border-violet-500/30 dark:text-violet-300",
-    icon: Sparkles,
-    order: 4,
-  },
-};
-
-const STAGES: StatusGestor[] = ["pendente", "em_analise", "aprovado", "concluido"];
-
-function urgencyBadge(u: string): string {
-  const k = (u ?? "").toLowerCase();
-  if (k === "alta") return "bg-rose-500/15 text-rose-700 border-rose-500/30 dark:text-rose-300";
-  if (k === "media" || k === "média")
-    return "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300";
-  return "bg-slate-500/15 text-slate-700 border-slate-500/30 dark:text-slate-300";
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const s = Math.round(diff / 1000);
-  if (s < 60) return `${s}s atrás`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}min atrás`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h atrás`;
-  const d = Math.round(h / 24);
-  return `${d}d atrás`;
-}
-
-function PecasStatusPage() {
-  const [pecas, setPecas] = useState<PecaRow[]>([]);
-  const [osById, setOsById] = useState<Map<string, OsRow>>(new Map());
+function CentralMateriaisUnificadaPage() {
+  const { isAdmin } = useIsAdmin();
+  const [pecas, setPecas] = useState<any[]>([]);
+  const [osById, setOsById] = useState<Map<string, any>>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"todos" | StatusGestor>("todos");
+  const [fOrigem, setFOrigem] = useState<"todas" | "refrigeracao" | "corretiva">("todas");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  
+  const processIA = useServerFn(processarDescricaoPecaIA);
 
-  const load = async () => {
+  const loadData = async () => {
     setLoading(true);
-    const { data: pcs, error } = await supabase
-      .from("corretiva_pecas")
-      .select(
-        "id, os_id, descricao, quantidade, urgencia, observacao, status_gestor, created_at, updated_at",
-      )
-      .order("updated_at", { ascending: false })
-      .limit(500);
-    if (error) {
-      toast.error(`Erro ao carregar: ${error.message}`);
-      setLoading(false);
-      return;
-    }
-    const rows = (pcs ?? []) as PecaRow[];
-    setPecas(rows);
-    const ids = Array.from(new Set(rows.map((r) => r.os_id)));
-    if (ids.length > 0) {
-      const { data: os } = await supabase
-        .from("corretiva_os")
-        .select("id, numero_os, nome_os, predio, andar, local, equipe")
-        .in("id", ids);
-      const m = new Map<string, OsRow>();
-      (os ?? []).forEach((o: any) => m.set(o.id, o));
+    try {
+      const [rRes, cRes] = await Promise.all([
+        supabase.from("refrigeracao_pecas").select("*").order("created_at", { ascending: false }),
+        supabase.from("corretiva_pecas").select("*").order("created_at", { ascending: false }),
+      ]);
+
+      const rData = (rRes.data || []).map(p => ({ ...p, origem: "refrigeracao" }));
+      const cData = (cRes.data || []).map(p => ({ ...p, origem: "corretiva" }));
+      const all = [...rData, ...cData].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setPecas(all);
+
+      const rIds = Array.from(new Set(rData.map(p => p.os_id)));
+      const cIds = Array.from(new Set(cData.map(p => p.os_id)));
+
+      const [rOs, cOs] = await Promise.all([
+        rIds.length ? supabase.from("refrigeracao_os").select("*").in("id", rIds) : { data: [] },
+        cIds.length ? supabase.from("corretiva_os").select("*").in("id", cIds) : { data: [] },
+      ]);
+
+      const m = new Map();
+      (rOs.data || []).forEach(o => m.set(o.id, { ...o, origem: "refrigeracao" }));
+      (cOs.data || []).forEach(o => m.set(o.id, { ...o, origem: "corretiva" }));
       setOsById(m);
-    } else {
-      setOsById(new Map());
+    } catch (err: any) {
+      toast.error("Erro ao carregar materiais: " + err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
-  useEffect(() => {
-    const channel = supabase
-      .channel("corretiva_pecas_status")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "corretiva_pecas" },
-        (payload) => {
-          const oldRow = payload.old as PecaRow | null;
-          const newRow = payload.new as PecaRow | null;
-          setPecas((prev) => {
-            if (payload.eventType === "INSERT" && newRow) {
-              if (prev.some((p) => p.id === newRow.id)) return prev;
-              return [newRow, ...prev];
-            }
-            if (payload.eventType === "UPDATE" && newRow) {
-              if (oldRow && newRow.status_gestor !== oldRow.status_gestor) {
-                const meta = STATUS_META[newRow.status_gestor];
-                toast.success(
-                  `Peça “${newRow.descricao}” agora está: ${meta?.label ?? newRow.status_gestor}`,
-                );
-              }
-              return prev.map((p) => (p.id === newRow.id ? { ...p, ...newRow } : p));
-            }
-            if (payload.eventType === "DELETE" && oldRow) {
-              return prev.filter((p) => p.id !== oldRow.id);
-            }
-            return prev;
-          });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return pecas.filter((p) => {
-      if (statusFilter !== "todos" && p.status_gestor !== statusFilter) return false;
-      if (!q) return true;
+    const q = search.toLowerCase();
+    return pecas.filter(p => {
+      if (fOrigem !== "todas" && p.origem !== fOrigem) return false;
       const os = osById.get(p.os_id);
-      const hay = [
-        p.descricao,
-        p.observacao ?? "",
-        os?.numero_os ?? "",
-        os?.nome_os ?? "",
-        os?.predio ?? "",
-        os?.local ?? "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
+      return (
+        !q ||
+        p.descricao?.toLowerCase().includes(q) ||
+        os?.numero_os?.toLowerCase().includes(q) ||
+        os?.nome_os?.toLowerCase().includes(q) ||
+        os?.predio?.toLowerCase().includes(q)
+      );
     });
-  }, [pecas, osById, search, statusFilter]);
+  }, [pecas, search, fOrigem, osById]);
 
-  const counts = useMemo(() => {
-    const c: Record<StatusGestor, number> = {
-      pendente: 0,
-      em_analise: 0,
-      aprovado: 0,
-      rejeitado: 0,
-      concluido: 0,
-    };
-    for (const p of pecas) c[p.status_gestor] = (c[p.status_gestor] ?? 0) + 1;
-    return c;
-  }, [pecas]);
+  const exportExcel = async () => {
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Solicitações de Materiais');
+    
+    worksheet.columns = [
+      { header: 'Data', key: 'data', width: 18 },
+      { header: 'Origem', key: 'origem', width: 15 },
+      { header: 'OS', key: 'os', width: 12 },
+      { header: 'Descrição Peça', key: 'peca', width: 40 },
+      { header: 'Qtd', key: 'qtd', width: 8 },
+      { header: 'Equipe', key: 'equipe', width: 20 },
+      { header: 'Localização', key: 'local', width: 30 },
+      { header: 'Solicitante', key: 'solicitante', width: 20 },
+    ];
+
+    filtered.forEach(p => {
+      const os = osById.get(p.os_id);
+      worksheet.addRow({
+        data: new Date(p.created_at).toLocaleString('pt-BR'),
+        origem: p.origem === 'refrigeracao' ? 'Refrigeração' : 'Corretiva',
+        os: os?.numero_os || '—',
+        peca: p.descricao,
+        qtd: p.quantidade || 1,
+        equipe: os?.equipe || '—',
+        local: `${os?.predio || ''} ${os?.andar || ''} ${os?.local || ''}`.trim(),
+        solicitante: os?.solicitante || '—',
+      });
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Central_Materiais_Unificada_${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.click();
+  };
 
   return (
     <PageShell
-      title="Status de Peças"
-      description="Acompanhe em tempo real o andamento das suas solicitações de peças de Corretiva."
+      title="Central Unificada de Materiais"
+      description="Visão consolidada de todas as peças solicitadas em Refrigeração e Corretiva."
       actions={
         <div className="flex gap-2">
-          <Button size="sm" variant="glass" onClick={async () => {
-            const ExcelJS = await import('exceljs');
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Status de Pecas');
-            
-            worksheet.columns = [
-              { header: 'OS', key: 'os', width: 10 },
-              { header: 'Equipe', key: 'equipe', width: 15 },
-              { header: 'Peça', key: 'peca', width: 30 },
-              { header: 'Qtd', key: 'qtd', width: 5 },
-              { header: 'Status', key: 'status', width: 15 },
-              { header: 'Prédio', key: 'predio', width: 15 },
-              { header: 'Local', key: 'local', width: 20 },
-              { header: 'Data Pedido', key: 'data', width: 20 }
-            ];
-
-            filtered.forEach(p => {
-              const os = osById.get(p.os_id);
-              worksheet.addRow({
-                os: os?.numero_os || '',
-                equipe: os?.equipe || '',
-                peca: p.descricao,
-                qtd: p.quantidade,
-                status: STATUS_META[p.status_gestor]?.label || p.status_gestor,
-                predio: os?.predio || '',
-                local: os?.local || '',
-                data: new Date(p.created_at).toLocaleString('pt-BR')
-              });
-            });
-
-            const buffer = await workbook.xlsx.writeBuffer();
-            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Status_Pecas_Corretiva_${new Date().toISOString().split('T')[0]}.xlsx`;
-            a.click();
-            window.URL.revokeObjectURL(url);
-          }}>
-            <Package className="mr-2 h-4 w-4" />
-            Exportar Excel
+          <Button variant="glass" size="sm" onClick={exportExcel} disabled={loading || !filtered.length}>
+            <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+            Exportar compras
           </Button>
-          <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
+            <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
             Atualizar
           </Button>
         </div>
       }
     >
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
-        {(Object.keys(STATUS_META) as StatusGestor[]).map((k) => {
-          const meta = STATUS_META[k];
-          const Icon = meta.icon;
-          const active = statusFilter === k;
-          return (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setStatusFilter(active ? "todos" : k)}
-              className={`group text-left transition ${
-                active ? "scale-[1.02]" : "hover:scale-[1.01]"
-              }`}
-            >
-              <GlassCard className={`p-2 sm:p-3 ${active ? "ring-2 ring-primary/60" : ""}`}>
-                <div className="flex items-center justify-between gap-1">
-                  <span className="truncate text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
-                    {meta.label}
-                  </span>
-                  <Icon className="h-3 w-3 shrink-0 text-muted-foreground sm:h-3.5 sm:w-3.5" />
-                </div>
-                <div className="mt-0.5 text-lg font-semibold tabular-nums sm:text-xl">
-                  {counts[k]}
-                </div>
-              </GlassCard>
-            </button>
-          );
-        })}
-      </div>
-
-      <GlassCard className="mt-4 p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex flex-1 items-center gap-2">
-            <SearchIcon className="h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por peça, OS, prédio, local…"
-              className="h-11 text-base"
-            />
+      <div className="space-y-6">
+        <GlassCard className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por peça, OS, prédio..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 h-11"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant={fOrigem === 'todas' ? 'secondary' : 'glass'} 
+                onClick={() => setFOrigem('todas')}
+                size="sm"
+              >Todas</Button>
+              <Button 
+                variant={fOrigem === 'refrigeracao' ? 'secondary' : 'glass'} 
+                onClick={() => setFOrigem('refrigeracao')}
+                size="sm"
+              >Refrigeração</Button>
+              <Button 
+                variant={fOrigem === 'corretiva' ? 'secondary' : 'glass'} 
+                onClick={() => setFOrigem('corretiva')}
+                size="sm"
+              >Corretiva</Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:min-w-[220px]">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Status
-            </span>
-            <Select
-              value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as "todos" | StatusGestor)}
-            >
-              <SelectTrigger className="h-11 flex-1 text-base sm:w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                {(Object.keys(STATUS_META) as StatusGestor[]).map((k) => (
-                  <SelectItem key={k} value={k}>
-                    {STATUS_META[k].label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </GlassCard>
+        </GlassCard>
 
-      <div className="mt-4 space-y-3">
         {loading ? (
-          <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando solicitações…
-          </GlassCard>
-        ) : filtered.length === 0 ? (
-          <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-            <Package className="mx-auto mb-2 h-6 w-6" />
-            {pecas.length === 0
-              ? "Nenhuma solicitação de peça ainda."
-              : "Nenhuma solicitação encontrada com esses filtros."}
-          </GlassCard>
+          <div className="py-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary" /></div>
         ) : (
-          filtered.map((p) => {
-            const os = osById.get(p.os_id);
-            const meta = STATUS_META[p.status_gestor];
-            const Icon = meta.icon;
-            const stageIdx = STAGES.indexOf(p.status_gestor);
-            const rejected = p.status_gestor === "rejeitado";
-            return (
-              <GlassCard key={p.id} className="overflow-hidden p-0">
-                <div className="flex flex-wrap items-start justify-between gap-3 border-b p-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-sm font-semibold">
-                        OS {os?.numero_os ?? "?"}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] ${urgencyBadge(p.urgencia)}`}
-                      >
-                        {p.urgencia}
-                      </Badge>
-                      {os?.equipe && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          {os.equipe}
+          <div className="space-y-3">
+            {filtered.map(p => {
+              const os = osById.get(p.os_id);
+              return (
+                <GlassCard key={`${p.origem}-${p.id}`} className="p-4 hover:bg-white/5 transition-all">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="outline" className={cn(
+                          "text-[10px] font-bold uppercase",
+                          p.origem === 'refrigeracao' ? "border-sky-500/50 text-sky-400" : "border-orange-500/50 text-orange-400"
+                        )}>
+                          {p.origem === 'refrigeracao' ? 'Refrigeração' : 'Corretiva'}
                         </Badge>
-                      )}
-                    </div>
-                    <div className="mt-1 text-base font-medium">{p.descricao}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Qtd {p.quantidade}
-                      {os?.nome_os ? ` · ${os.nome_os}` : ""}
-                      {[os?.predio, os?.andar, os?.local].filter(Boolean).join(" · ")
-                        ? ` · ${[os?.predio, os?.andar, os?.local].filter(Boolean).join(" · ")}`
-                        : ""}
-                    </div>
-                    {p.observacao && (
-                      <div className="mt-2 rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
-                        “{p.observacao}”
+                        <Badge variant="secondary" className="font-mono text-[10px]">
+                          OS {os?.numero_os || '—'}
+                        </Badge>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(p.created_at).toLocaleString('pt-BR')}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  <Badge
-                    variant="outline"
-                    className={`shrink-0 gap-1 px-1.5 py-0.5 text-[10px] sm:gap-1.5 sm:px-2.5 sm:py-1 sm:text-xs ${meta.badge}`}
-                  >
-                    <Icon
-                      className={`h-3 w-3 sm:h-3.5 sm:w-3.5 ${
-                        p.status_gestor === "em_analise" ? "animate-spin" : ""
-                      }`}
-                    />
-                    <span>{meta.label}</span>
-                  </Badge>
-                </div>
-
-                <div className="p-4">
-                  {rejected ? (
-                    <div className="flex items-center gap-2 rounded-md border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-700 dark:text-rose-300">
-                      <AlertTriangle className="h-4 w-4" />
-                      Solicitação rejeitada pelo gestor.
+                      <div className="flex items-start gap-3">
+                        <Package className="h-5 w-5 mt-0.5 text-primary/70 shrink-0" />
+                        <div>
+                          <p className="font-bold text-lg leading-tight">{p.descricao}</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {os?.predio} · {os?.andar} · {os?.local}
+                          </p>
+                          <p className="text-[11px] text-primary/60 font-medium italic mt-0.5">
+                            Solicitante: {os?.solicitante || 'Não informado'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      {STAGES.map((s, i) => {
-                        const done = i <= stageIdx;
-                        const active = i === stageIdx;
-                        const m = STATUS_META[s];
-                        return (
-                          <div key={s} className="flex flex-1 items-center gap-1 sm:gap-2">
-                            <div className="flex min-w-0 flex-col items-center gap-1">
-                              <div
-                                className={`flex h-5 w-5 items-center justify-center rounded-full border text-[9px] font-semibold transition sm:h-7 sm:w-7 sm:text-[11px] ${
-                                  done
-                                    ? "border-primary bg-primary text-primary-foreground"
-                                    : "border-border bg-muted text-muted-foreground"
-                                } ${active ? "ring-2 ring-primary/40" : ""}`}
-                              >
-                                {i + 1}
-                              </div>
-                              <span
-                                className={`whitespace-nowrap text-[8px] uppercase tracking-wider sm:text-[10px] ${
-                                  done ? "text-foreground" : "text-muted-foreground"
-                                }`}
-                              >
-                                {m.label}
-                              </span>
-                            </div>
-                            {i < STAGES.length - 1 && (
-                              <div
-                                className={`h-0.5 flex-1 rounded-full transition ${
-                                  i < stageIdx ? "bg-primary" : "bg-border"
-                                }`}
-                              />
-                            )}
-                          </div>
-                        );
-                      })}
+                    
+                    <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/5">
+                      <div className="text-center px-4 border-r border-white/10">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Qtd</p>
+                        <p className="text-2xl font-black text-white">{p.quantidade || 1}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Equipe</p>
+                        <p className="font-bold text-white whitespace-nowrap">{os?.equipe || '—'}</p>
+                        <Badge variant="outline" className="mt-1 bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px]">
+                          IA: Identificado
+                        </Badge>
+                      </div>
                     </div>
-                  )}
-
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                    <span>Enviada {timeAgo(p.created_at)}</span>
-                    <span>Atualizada {timeAgo(p.updated_at)}</span>
                   </div>
-                </div>
-              </GlassCard>
-            );
-          })
+                </GlassCard>
+              );
+            })}
+          </div>
         )}
       </div>
     </PageShell>
