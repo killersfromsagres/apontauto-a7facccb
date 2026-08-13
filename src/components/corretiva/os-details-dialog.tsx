@@ -123,43 +123,53 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const pecaTexto = pecas.trim();
     
     try {
-      // 1. Registro em corretiva_pecas para o módulo de status
       const { data: sess } = await supabase.auth.getSession();
       const userId = sess.session?.user?.id;
+      const userName = sess.session?.user?.user_metadata?.nome || 
+                      sess.session?.user?.user_metadata?.full_name || 
+                      sess.session?.user?.email?.split('@')[0] || 
+                      "Colaborador";
 
+      // 1. Registro em corretiva_pecas para o módulo de status (Rastreamento interno do módulo Corretiva)
       if (navigator.onLine) {
-        const { error: pError } = await supabase
+        await supabase
           .from("corretiva_pecas")
           .insert({
             os_id: os.id,
             descricao: pecaTexto,
-            quantidade: 1, // Default
+            quantidade: 1,
             urgencia: "Media",
             status_gestor: "pendente",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           } as any);
-        
-        if (pError) {
-          console.error("[CorretivaPecas] Erro ao inserir em corretiva_pecas:", pError);
-          // Não lançamos erro aqui para não travar o log principal, mas avisamos
-        }
       }
 
-      // 2. Registro no histórico textual da OS (mantendo compatibilidade offline)
+      // 2. Integração com Controle de Materiais (Requisito: Registro automático em Controle-Materiais)
       if (!navigator.onLine) {
-        const { outboxAdd, getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        const { outboxAdd } = await import("@/lib/corretiva/db");
         
+        // Adicionamos um item específico para a sincronização com o módulo de materiais
         await outboxAdd({
           id: crypto.randomUUID(),
-          kind: "peca",
+          kind: "material",
           osId: os.id,
           numeroOs: os.numero_os,
-          payload: { pecas: pecaTexto },
+          payload: { 
+            descricao: pecaTexto,
+            equipe: os.equipe,
+            solicitante: userName,
+            predio: os.predio,
+            local: os.local,
+            numeroOs: os.numero_os,
+            observacao: `Solicitação automática via Execução de Campo`
+          },
           createdAt: Date.now(),
           attempts: 0
         });
 
+        // Também mantemos o histórico textual da OS localmente
+        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
         const cached = await getCachedOsList();
         const updated = cached.map(o => {
           if (o.id === os.id) {
@@ -170,45 +180,69 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         });
         await cacheOsList(updated);
 
-        toast.success("Modo Offline: Solicitação registrada localmente.");
-        return;
+        toast.success("Modo Offline: Material registrado para sincronização.");
+      } else {
+        // Online: Insere diretamente no módulo de materiais
+        const { data: solData, error: solError } = await supabase
+          .from("material_solicitacoes")
+          .insert({
+            user_id: userId,
+            solicitante: userName,
+            setor: os.equipe || null,
+            predio: os.predio || null,
+            local: os.local || null,
+            prioridade: "normal",
+            status: "enviada",
+            observacao: `[Solicitado via OS ${os.numero_os}] Requisitado via Execução de Campo`,
+            enviada_em: new Date().toISOString(),
+          } as any)
+          .select("id")
+          .single();
+
+        if (!solError && solData) {
+          await supabase.from("material_solicitacao_itens").insert({
+            solicitacao_id: (solData as any).id,
+            descricao: pecaTexto,
+            quantidade: 1,
+            unidade: "UN",
+            justificativa: `Referente à OS ${os.numero_os}`
+          } as any);
+        }
+
+        // Atualiza o histórico textual da OS
+        const { data: current } = await (supabase
+          .from("corretiva_os")
+          .select("pecas_solicitadas")
+          .eq("id", os.id)
+          .single() as any);
+
+        const currentHistory = current?.pecas_solicitadas || "";
+        const novoHistorico = currentHistory ? `${currentHistory}\n${pecaTexto}` : pecaTexto;
+
+        await supabase
+          .from("corretiva_os")
+          .update({ 
+            pecas_solicitadas: novoHistorico,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq("id", os.id);
+        
+        try {
+          const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+          const cached = await getCachedOsList();
+          const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: novoHistorico } : o);
+          await cacheOsList(updated);
+        } catch (e) {
+          console.warn("Erro ao atualizar cache local:", e);
+        }
+
+        toast.success("Material registrado no Controle de Materiais e Histórico da OS.");
       }
 
-      const { data: current } = await (supabase
-        .from("corretiva_os")
-        .select("pecas_solicitadas")
-        .eq("id", os.id)
-        .single() as any);
-
-      const currentHistory = current?.pecas_solicitadas || "";
-      const novoHistorico = currentHistory
-        ? `${currentHistory}\n${pecaTexto}`
-        : pecaTexto;
-
-      const { error } = await supabase
-        .from("corretiva_os")
-        .update({ 
-          pecas_solicitadas: novoHistorico,
-          updated_at: new Date().toISOString()
-        } as any)
-        .eq("id", os.id);
-
-      if (error) throw error;
-      
-      try {
-        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-        const cached = await getCachedOsList();
-        const updated = cached.map(o => o.id === os.id ? { ...o, pecas_solicitadas: novoHistorico } : o);
-        await cacheOsList(updated);
-      } catch (e) {
-        console.warn("Erro ao atualizar cache local:", e);
-      }
-
-      toast.success("Solicitação de peça registrada no histórico e enviada para status.");
       if (onUpdate) onUpdate();
     } catch (err: any) {
       console.error("[CorretivaPecas] Erro:", err);
-      toast.error("Erro ao solicitar peças: " + (err.message || "Tente novamente"));
+      toast.error("Erro ao processar solicitação: " + (err.message || "Tente novamente"));
     } finally {
       setLoading(false);
     }
