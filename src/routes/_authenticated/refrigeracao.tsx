@@ -942,6 +942,9 @@ function OsDetail({
 
   const saveAll = async () => {
     const items: OutboxItem[] = [];
+    const userId = (await supabase.auth.getSession()).data.session?.user?.id;
+    const userName = (await supabase.auth.getSession()).data.session?.user?.user_metadata?.nome || "Colaborador";
+
     for (const p of previews) {
       items.push({
         id: p.id,
@@ -956,23 +959,61 @@ function OsDetail({
 
     for (const p of pecas) {
       if (!p.descricao.trim()) continue;
-      items.push({
-        id: p.id,
-        kind: "peca",
-        osId: os.id,
-        numeroOs: os.numero_os,
-        payload: {
-          descricao: p.descricao.trim(),
-          quantidade: Number(p.quantidade) || 1,
+      
+      // AGENTE IA: Processar descrição da peça para extrair itens e quantidades
+      let processedItems = [{ item: p.descricao.trim(), qtd: Number(p.quantidade) || 1 }];
+      try {
+        if (online) {
+          const { items: extracted } = await processIA({ data: { descricao: p.descricao.trim() } });
+          if (extracted && extracted.length > 0) {
+            processedItems = extracted;
+          }
+        }
+      } catch (e) {
+        console.warn("[RefrigIA] Erro ao processar IA, usando fallback manual:", e);
+      }
+
+      for (const item of processedItems) {
+        const payload = {
+          descricao: item.item,
+          quantidade: item.qtd,
           urgencia: p.urgencia,
           observacao: p.observacao.trim() || null,
           patrimonio: (p.patrimonio || patrim || os.patrimonio || "").trim() || null,
           modelo: p.modelo.trim() || null,
           btus: p.btus.trim() || null,
-        },
-        createdAt: Date.now(),
-        attempts: 0,
-      });
+        };
+
+        // 1. Registro em refrigeracao_pecas (Outbox normal)
+        items.push({
+          id: uuid(),
+          kind: "peca",
+          osId: os.id,
+          numeroOs: os.numero_os,
+          payload,
+          createdAt: Date.now(),
+          attempts: 0,
+        });
+
+        // 2. Registro em material_solicitacoes (Integração unificada)
+        items.push({
+          id: uuid(),
+          kind: "material", // Apenas trataremos isso no sync.ts da Refrigeração também
+          osId: os.id,
+          numeroOs: os.numero_os,
+          payload: {
+            ...payload,
+            equipe: os.equipe,
+            solicitante: userName,
+            predio: os.predio,
+            local: os.local,
+            numeroOs: os.numero_os,
+            observacao: `[Refrigeração OS ${os.numero_os}] ${p.observacao || ""}`
+          },
+          createdAt: Date.now(),
+          attempts: 0,
+        });
+      }
     }
 
     for (const pr of problemas) {
