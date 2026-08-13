@@ -419,6 +419,14 @@ export const sections: MenuSection[] = [
         keywords: ["peças", "compras", "centro de custo", "facilities"],
       },
       {
+        key: "central-materiais-unificada",
+        title: "Central de Materiais Solicitados",
+        short: "Central",
+        url: "/corretiva-pecas-status",
+        icon: PackageOpen,
+        keywords: ["central", "unificada", "materiais", "peças", "solicitações", "compras"],
+      },
+      {
         key: "lavanderia",
         title: "Controle de Lavanderia",
         short: "Lavanderia",
