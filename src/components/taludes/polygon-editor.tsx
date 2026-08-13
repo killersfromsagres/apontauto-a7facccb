@@ -873,18 +873,23 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             })}
 
             {/* Current Drawing Points */}
-            {mode === 'draw' && currentPoints.length > 0 && (
+            {mode === 'draw' && (
               <g>
-                <polyline
-                  points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
-                  fill="none"
-                  stroke={currentColor}
-                  strokeWidth={lineThickness / zoom}
-                  strokeDasharray="5,5"
-                />
-                {currentPoints.map((p, idx) => (
-                  <circle key={idx} cx={p.x} cy={p.y} r={4 / zoom} fill={currentColor} />
-                ))}
+                {currentPoints.length > 0 && (
+                  <>
+                    <polyline
+                      points={currentPoints.map(p => `${p.x},${p.y}`).join(' ')}
+                      fill="none"
+                      stroke={currentColor}
+                      strokeWidth={lineThickness / zoom}
+                      strokeDasharray="5,5"
+                    />
+                    {currentPoints.map((p, idx) => (
+                      <circle key={idx} cx={p.x} cy={p.y} r={6 / zoom} fill={currentColor} stroke="white" strokeWidth={1/zoom} />
+                    ))}
+                  </>
+                )}
+                
                 {hoverPoint && currentPoints.length > 0 && (
                   <line
                     x1={currentPoints[currentPoints.length - 1].x}
@@ -894,8 +899,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     stroke={currentColor}
                     strokeWidth={lineThickness / zoom}
                     strokeDasharray="5,5"
-                    opacity={0.5}
+                    opacity={0.8}
                   />
+                )}
+                
+                {/* Visual feedback for the very first point to start drawing */}
+                {hoverPoint && currentPoints.length === 0 && (
+                  <circle cx={hoverPoint.x} cy={hoverPoint.y} r={6 / zoom} fill={currentColor} opacity={0.5} />
                 )}
               </g>
             )}
