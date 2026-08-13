@@ -5603,6 +5603,11 @@ export type Database = {
           equipe: string | null
           espessura_linha: number | null
           estado_operacional: string | null
+          icone_data_scale: number | null
+          icone_data_texto: string | null
+          icone_data_visivel: boolean | null
+          icone_data_x: number | null
+          icone_data_y: number | null
           icone_scale: number | null
           icone_tipo: string | null
           icone_visivel: boolean | null
@@ -5655,6 +5660,11 @@ export type Database = {
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
+          icone_data_scale?: number | null
+          icone_data_texto?: string | null
+          icone_data_visivel?: boolean | null
+          icone_data_x?: number | null
+          icone_data_y?: number | null
           icone_scale?: number | null
           icone_tipo?: string | null
           icone_visivel?: boolean | null
@@ -5707,6 +5717,11 @@ export type Database = {
           equipe?: string | null
           espessura_linha?: number | null
           estado_operacional?: string | null
+          icone_data_scale?: number | null
+          icone_data_texto?: string | null
+          icone_data_visivel?: boolean | null
+          icone_data_x?: number | null
+          icone_data_y?: number | null
           icone_scale?: number | null
           icone_tipo?: string | null
           icone_visivel?: boolean | null
