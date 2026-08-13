@@ -38,6 +38,7 @@ export function matchEquipe(osEquipe: string | null | undefined, filtro: EquipeF
  *  Elétrica    → verde fluorescente
  *  Pintura     → rosa fluorescente
  *  Refrigeração→ azul bebê fluorescente (corretiva, não preventiva)
+ *  Limpeza     → azul fluorescente
  */
 export type EquipeStyles = { row: string; dot: string; badge: string };
 
@@ -78,6 +79,12 @@ const STYLES: Record<string, EquipeStyles> = {
     badge:
       "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-400/20 dark:text-sky-200 dark:border-sky-300/50 dark:shadow-[0_0_10px_-2px_rgba(125,211,252,0.75)]",
   },
+  limpeza: {
+    row: "border-l-4 border-cyan-400 bg-cyan-50/70 hover:bg-cyan-100/70 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20",
+    dot: "bg-cyan-400 shadow-[0_0_8px_2px_rgba(34,211,238,0.85)]",
+    badge:
+      "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-200 dark:border-cyan-400/50 dark:shadow-[0_0_10px_-2px_rgba(34,211,238,0.7)]",
+  },
 };
 
 const NEUTRAL: EquipeStyles = {
@@ -98,10 +105,6 @@ export function equipeStyles(equipe: string | null | undefined): EquipeStyles {
   if (n.includes("refrig") || n.includes("ar condicionado") || n.includes("climatiza"))
     return STYLES.refrigeracao;
   if (n.includes("limpeza") || n.includes("higien") || n.includes("conserva") || n.includes("orcamento") || n.includes("compra") || n.includes("gerencia"))
-    return {
-      row: "border-l-4 border-cyan-400 bg-cyan-50/70 hover:bg-cyan-100/70 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20",
-      dot: "bg-cyan-400 shadow-[0_0_8px_2px_rgba(34,211,238,0.85)]",
-      badge: "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-200 dark:border-cyan-400/50"
-    };
+    return STYLES.limpeza;
   return NEUTRAL;
 }

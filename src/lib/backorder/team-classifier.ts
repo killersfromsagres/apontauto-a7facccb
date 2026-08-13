@@ -3,8 +3,7 @@
 // Retorna uma das 5 equipes do processo e um flag de baixa confiança.
 //
 // Equipes finais alinhadas ao processo do usuário:
-//   Chaveiro, Civil, Refrigeração, Hidráulica, Elétrica
-// (Pintura/Demarcação/Gerenciamento são absorvidos em Civil, conforme o
+//   Chaveiro, Civil, Refrigeração, Hidráulica, Elétrica, Pintura, Limpeza
 //  critério manual: pintura e demarcação de piso viram Civil.)
 
 import type { Categoria } from "./classify";

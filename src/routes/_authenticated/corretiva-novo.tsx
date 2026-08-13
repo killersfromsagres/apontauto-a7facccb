@@ -211,7 +211,7 @@ function CorretivaNovoPage() {
                   >
                     Todas as Equipes
                   </DropdownMenuItem>
-                  {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração"].map((e) => (
+                  {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração", "Limpeza"].map((e) => (
                     <DropdownMenuItem
                       key={e}
                       onClick={() => setEquipe(e as any)}

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft, LayoutGrid, Zap, Droplets, Hammer, Key, Paintbrush, Snowflake } from "lucide-react";
+import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft, LayoutGrid, Zap, Droplets, Hammer, Key, Paintbrush, Snowflake, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,7 +244,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         { name: "Civil", icon: Hammer, color: "text-emerald-400" },
                         { name: "Chaveiro", icon: Key, color: "text-purple-400" },
                         { name: "Pintura", icon: Paintbrush, color: "text-pink-400" },
-                        { name: "Refrigeração", icon: Snowflake, color: "text-cyan-400" }
+                        { name: "Refrigeração", icon: Snowflake, color: "text-cyan-400" },
+                        { name: "Limpeza", icon: Trash2, color: "text-cyan-300" }
                       ].map((team) => (
                         <DropdownMenuItem
                           key={team.name}
