@@ -1217,7 +1217,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               fontSize="10" 
                               fontWeight="900"
                               className="font-['SF_Pro_Display']"
-                              style={{ stroke: 'black', strokeWidth: '0.5px', paintOrder: 'stroke' }}
+                              style={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: '0.2px', paintOrder: 'stroke' }}
                             >
                               RESERVA SUVINIL
                             </text>
