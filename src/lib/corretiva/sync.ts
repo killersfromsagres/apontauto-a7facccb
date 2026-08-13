@@ -107,46 +107,56 @@ export async function syncPending() {
          const { data: sess } = await supabase.auth.getSession();
          const userId = sess.session?.user?.id;
 
-         const { error } = await supabase
-           .from("material_solicitacoes")
-           .insert({
-             user_id: userId,
-             solicitante: solicitante || "Colaborador",
-             setor: equipe || null,
-             predio: predio || null,
-             local: local || null,
-             prioridade: "normal",
-             status: "enviada",
-             observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
-             enviada_em: new Date().toISOString(),
-           } as any)
-           .select("id")
-           .single();
+          const { data: solData, error } = await supabase
+            .from("material_solicitacoes")
+            .insert({
+              user_id: userId,
+              solicitante: solicitante || "Colaborador",
+              setor: equipe || null,
+              predio: predio || null,
+              local: local || null,
+              prioridade: "normal",
+              status: "enviada",
+              observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
+              enviada_em: new Date().toISOString(),
+            } as any)
+            .select("id")
+            .single();
 
-         if (error) throw error;
-         const solId = (error as any) === null ? (error as any) : (error as any); // Type safety helper for single() result if needed
+          if (error) throw error;
+          
+          // Se a inserção da solicitação funcionou, inserimos o item
+          // Usamos o ID retornado pela inserção (usando select na inserção acima)
+          const solId = (solData as any)?.id;
+          
+          if (solId) {
+            await supabase.from("material_solicitacao_itens").insert({
+              solicitacao_id: solId,
+              descricao: descricao,
+              quantidade: 1,
+              unidade: "UN",
+              justificativa: `Referente à OS ${numeroOs}`
+            } as any);
+          } else {
+            // Fallback caso o select falhe por algum motivo, tentamos buscar a última
+            const { data: newSol } = await supabase
+              .from("material_solicitacoes")
+              .select("id")
+              .eq("observacao", `[Solicitado via OS ${numeroOs}] ${observacao || ""}`)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .single();
 
-         // Se a inserção da solicitação funcionou, inserimos o item
-         // Note: We need the ID from the previous insert. 
-         // But supabase.select() returns the data.
-         
-         const { data: newSol } = await supabase
-           .from("material_solicitacoes")
-           .select("id")
-           .eq("observacao", `[Solicitado via OS ${numeroOs}] ${observacao || ""}`)
-           .order("created_at", { ascending: false })
-           .limit(1)
-           .single();
-
-         if (newSol) {
-           await supabase.from("material_solicitacao_itens").insert({
-             solicitacao_id: newSol.id,
-             descricao: descricao,
-             quantidade: 1,
-             unidade: "UN",
-             justificativa: `Referente à OS ${numeroOs}`
-           } as any);
-         }
+            if (newSol) {
+              await supabase.from("material_solicitacao_itens").insert({
+                solicitacao_id: newSol.id,
+                descricao: descricao,
+                quantidade: 1,
+                unidade: "UN",
+                justificativa: `Referente à OS ${numeroOs}`
+              } as any);
+            }
+          }
 
          await outboxRemove(item.id);
          sent++;
