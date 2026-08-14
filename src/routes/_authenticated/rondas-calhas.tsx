@@ -67,8 +67,10 @@ function RondasCalhasPage() {
       await saveRondasFn({ data });
       toast.success(`${data.length} preventivas de calha importadas com sucesso!`, { id });
       loadData();
-    } catch (err) {
-      toast.error("Erro ao importar planilha.", { id });
+    } catch (err: any) {
+      console.error("Erro na importação de rondas:", err);
+      const errorMessage = err?.message || "Erro desconhecido ao processar planilha.";
+      toast.error(`Falha na importação: ${errorMessage}`, { id });
     } finally {
       setIsImporting(false);
     }
