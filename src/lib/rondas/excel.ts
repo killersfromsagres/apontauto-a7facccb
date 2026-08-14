@@ -13,8 +13,6 @@ export async function readRondasExcel(file: File): Promise<RondaInput[]> {
 
         const mesReferencia = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-        const mesReferencia = new Date().toISOString().slice(0, 7); // YYYY-MM
-
         // Filtramos as preventivas que contém "calha" no nome ou descrição
         const filtered = rows
           .filter((r) => {
