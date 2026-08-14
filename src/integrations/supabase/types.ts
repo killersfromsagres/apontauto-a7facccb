@@ -3618,6 +3618,7 @@ export type Database = {
           meses_status: Json
           observacoes: string | null
           periodicidade: string
+          precisa_andaime: boolean | null
           predio: string | null
           proxima_execucao: string
           responsavel: string | null
@@ -3636,6 +3637,7 @@ export type Database = {
           meses_status?: Json
           observacoes?: string | null
           periodicidade: string
+          precisa_andaime?: boolean | null
           predio?: string | null
           proxima_execucao: string
           responsavel?: string | null
@@ -3654,6 +3656,7 @@ export type Database = {
           meses_status?: Json
           observacoes?: string | null
           periodicidade?: string
+          precisa_andaime?: boolean | null
           predio?: string | null
           proxima_execucao?: string
           responsavel?: string | null
