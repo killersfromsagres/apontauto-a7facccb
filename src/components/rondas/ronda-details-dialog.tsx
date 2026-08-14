@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Camera, ImageIcon, Loader2, CheckCircle2 } from "lucide-react";
+import { Camera, ImageIcon, Loader2, CheckCircle2, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
@@ -145,9 +145,21 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
               </Button>
             </div>
             {fotos.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto py-2">
+              <div className="flex gap-2 overflow-x-auto py-2 scrollbar-hide">
                 {fotos.map((url, i) => (
-                  <img key={i} src={url} alt="Evidência" className="w-16 h-16 object-cover rounded-lg border border-white/10" />
+                  <div key={i} className="relative group shrink-0">
+                    <img 
+                      src={url} 
+                      alt="Evidência" 
+                      className="w-20 h-20 object-cover rounded-xl border border-white/10 shadow-lg" 
+                    />
+                    <button
+                      onClick={() => setFotos(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-xl hover:bg-red-600 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
