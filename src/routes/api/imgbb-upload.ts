@@ -89,7 +89,11 @@ export const Route = createFileRoute("/api/imgbb-upload")({
           return Response.json({ error: "Módulo de origem obrigatório" }, { status: 400 });
         }
         if (!(await callerCanAccessModule(request, moduleKey, "create"))) {
-          return forbidden(moduleKey, "create");
+          // Fallback: se o moduleKey termina com '-grp', tenta sem o sufixo
+          const fallbackKey = moduleKey.endsWith("-grp") ? moduleKey.slice(0, -4) : null;
+          if (!fallbackKey || !(await callerCanAccessModule(request, fallbackKey, "create"))) {
+            return forbidden(moduleKey, "create");
+          }
         }
 
         const file = form.get("image");
