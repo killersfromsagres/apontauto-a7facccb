@@ -149,7 +149,7 @@ export const statusMeta: Record<
 
 export async function listLegalItems(): Promise<LegalItem[]> {
   const { data, error } = await supabase
-    .from("legal_items" as never)
+    .from("legal_items" as any)
     .select("*")
     .order("proxima_execucao", { ascending: true });
   if (error) throw error;
@@ -161,7 +161,7 @@ export async function createLegalItem(
 ): Promise<LegalItem> {
   const { data: userRes } = await supabase.auth.getUser();
   const { data, error } = await supabase
-    .from("legal_items" as never)
+    .from("legal_items" as any)
     .insert({
       titulo: input.titulo,
       descricao: input.descricao || null,
@@ -176,7 +176,7 @@ export async function createLegalItem(
       concluido: input.concluido,
       precisa_andaime: input.precisaAndaime,
       created_by: userRes.user?.id ?? null,
-    } as never)
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
@@ -198,15 +198,15 @@ export async function updateLegalItem(id: string, patch: Partial<LegalItem>): Pr
   if (patch.concluido !== undefined) payload.concluido = patch.concluido;
   if (patch.precisaAndaime !== undefined) payload.precisa_andaime = patch.precisaAndaime;
   const { error } = await supabase
-    .from("legal_items" as never)
-    .update(payload as never)
+    .from("legal_items" as any)
+    .update(payload as any)
     .eq("id", id);
   if (error) throw error;
 }
 
 export async function deleteLegalItem(id: string): Promise<void> {
   const { error } = await supabase
-    .from("legal_items" as never)
+    .from("legal_items" as any)
     .delete()
     .eq("id", id);
   if (error) throw error;
@@ -215,11 +215,11 @@ export async function deleteLegalItem(id: string): Promise<void> {
 /** Marca como concluído: grava execução, atualiza última e recalcula próxima. */
 export async function completeLegalItem(item: LegalItem, date = todayISO()): Promise<void> {
   const { data: userRes } = await supabase.auth.getUser();
-  const { error: execErr } = await supabase.from("legal_item_executions" as never).insert({
+  const { error: execErr } = await supabase.from("legal_item_executions" as any).insert({
     item_id: item.id,
     data_execucao: date,
     executado_por: userRes.user?.id ?? null,
-  } as never);
+  } as any);
   if (execErr) throw execErr;
 
   const next = addMonths(date, monthsFor(item.periodicidade));
@@ -234,7 +234,7 @@ export async function completeLegalItem(item: LegalItem, date = todayISO()): Pro
 // ---------- Executions (para preencher mapa mensal) ----------
 export async function listExecutions(): Promise<LegalExecution[]> {
   const { data, error } = await supabase
-    .from("legal_item_executions" as never)
+    .from("legal_item_executions" as any)
     .select("id, item_id, data_execucao, observacao");
   if (error) throw error;
   return (
@@ -255,7 +255,7 @@ export async function listExecutions(): Promise<LegalExecution[]> {
 // ---------- Attachments ----------
 export async function listAttachments(itemId: string): Promise<LegalAttachment[]> {
   const { data, error } = await supabase
-    .from("legal_item_attachments" as never)
+    .from("legal_item_attachments" as any)
     .select("*")
     .eq("item_id", itemId)
     .order("created_at", { ascending: false });
@@ -282,7 +282,7 @@ export async function listAttachments(itemId: string): Promise<LegalAttachment[]
 }
 
 export async function countAttachments(): Promise<Record<string, number>> {
-  const { data, error } = await supabase.from("legal_item_attachments" as never).select("item_id");
+  const { data, error } = await supabase.from("legal_item_attachments" as any).select("item_id");
   if (error) throw error;
   const map: Record<string, number> = {};
   for (const row of (data as unknown as Array<{ item_id: string }>) ?? []) {
@@ -316,7 +316,7 @@ export async function uploadAttachment(item: LegalItem, file: File): Promise<Leg
   if (upErr) throw upErr;
 
   const { data, error } = await supabase
-    .from("legal_item_attachments" as never)
+    .from("legal_item_attachments" as any)
     .insert({
       item_id: item.id,
       storage_path: path,
@@ -324,7 +324,7 @@ export async function uploadAttachment(item: LegalItem, file: File): Promise<Leg
       mime_type: file.type || null,
       size_bytes: file.size,
       uploaded_by: userRes.user?.id ?? null,
-    } as never)
+    } as any)
     .select("*")
     .single();
   if (error) throw error;
@@ -359,7 +359,7 @@ export async function signedUrl(path: string, expiresInSec = 3600): Promise<stri
 export async function deleteAttachment(att: LegalAttachment): Promise<void> {
   await supabase.storage.from("legal-certificates").remove([att.storagePath]);
   const { error } = await supabase
-    .from("legal_item_attachments" as never)
+    .from("legal_item_attachments" as any)
     .delete()
     .eq("id", att.id);
   if (error) throw error;
