@@ -5,11 +5,11 @@ import { RondaInput } from "./types";
 export const saveRondasFromExcel = createServerFn({ method: "POST" })
   .validator((data: RondaInput[]) => data)
   .handler(async ({ data }) => {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("rondas_calhas")
       .insert(data.map(item => ({
         ...item,
-        status: 'pendente' as any
+        status: 'pendente'
       })));
     
     if (error) throw new Error(error.message);
@@ -20,11 +20,11 @@ export const updateRonda = createServerFn({ method: "POST" })
   .validator((data: any) => data)
   .handler(async ({ data }) => {
     const { id, ...updates } = data;
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from("rondas_calhas")
       .update({
         ...updates,
-        status: 'concluido' as any,
+        status: 'concluido',
         realizado_em: new Date().toISOString(),
         updated_at: new Date().toISOString()
       })
