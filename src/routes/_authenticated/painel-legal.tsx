@@ -32,6 +32,7 @@ import {
   Star,
   Eye,
   EyeOff,
+  HardHat,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -47,7 +48,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -791,7 +794,15 @@ function ListView({
                           <span
                             className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", statusMeta[st].dot)}
                           />
-                          <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} />
+                          <div className="flex flex-col gap-1">
+                            <TaskNameButton titulo={it.titulo} onClick={() => onAttach(it)} />
+                            {it.precisaAndaime && (
+                              <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400/90">
+                                <HardHat className="h-3 w-3" />
+                                <span>REQUER ANDAIME</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </Td>
                       <Td>
@@ -887,6 +898,14 @@ function ListView({
                         <MiniInfo label="Próxima" value={fmt(it.proximaExecucao)} />
                         <MiniInfo label="Agenda" value={fmt(it.agendamento)} />
                       </div>
+                      {it.precisaAndaime && (
+                        <div className="mt-3 flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-2 py-1.5">
+                          <HardHat className="h-3.5 w-3.5 text-amber-400" />
+                          <span className="text-[11px] font-bold text-amber-200">
+                            REQUER MONTAGEM DE ANDAIME
+                          </span>
+                        </div>
+                      )}
                       {it.observacoes && (
                         <p className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-border/40 bg-muted/20 p-2 text-xs leading-relaxed text-muted-foreground">
                           {it.observacoes}
@@ -1364,6 +1383,7 @@ function LegalItemForm({
   const [ultimaExecucao, setUltimaExecucao] = useState<string>("");
   const [agendamento, setAgendamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [precisaAndaime, setPrecisaAndaime] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useMemo(() => {
@@ -1376,6 +1396,7 @@ function LegalItemForm({
       setUltimaExecucao(editing.ultimaExecucao ?? "");
       setAgendamento(editing.agendamento ?? "");
       setObservacoes(editing.observacoes);
+      setPrecisaAndaime(editing.precisaAndaime);
     } else {
       setTitulo("");
       setEmpresa("");
@@ -1385,6 +1406,7 @@ function LegalItemForm({
       setUltimaExecucao("");
       setAgendamento("");
       setObservacoes("");
+      setPrecisaAndaime(false);
     }
   }, [editing, open]);
 
@@ -1413,6 +1435,7 @@ function LegalItemForm({
           proximaExecucao: proxima,
           agendamento: agendamento || null,
           observacoes,
+          precisaAndaime,
         });
         toast.success("Item atualizado. Próxima execução agendada.");
       } else {
@@ -1428,6 +1451,7 @@ function LegalItemForm({
           agendamento: agendamento || null,
           responsavel: "",
           concluido: false,
+          precisaAndaime,
         });
         toast.success("Item criado e agendado.");
       }
@@ -1537,6 +1561,26 @@ function LegalItemForm({
               />
             </div>
           </div>
+
+          <div className="flex items-center space-x-2 rounded-lg border border-border/40 bg-muted/10 p-3">
+            <Checkbox
+              id="andaime"
+              checked={precisaAndaime}
+              onCheckedChange={(c) => setPrecisaAndaime(!!c)}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="andaime"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Necessita montagem de andaime
+              </Label>
+              <p className="text-[11px] text-muted-foreground">
+                Marque se o item requer estrutura de andaime para execução.
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="obs">Observações</Label>
             <Textarea

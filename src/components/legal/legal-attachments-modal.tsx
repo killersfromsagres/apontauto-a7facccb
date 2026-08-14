@@ -2,7 +2,7 @@ import { useConfirm } from "@/components/ui/use-confirm";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Paperclip, Upload, ExternalLink, Trash2, FileText, Loader2 } from "lucide-react";
+import { Paperclip, Upload, ExternalLink, Trash2, FileText, Loader2, History, HardHat } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -98,9 +98,21 @@ export function LegalAttachmentsModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Paperclip className="h-4 w-4" />
-            Certificados — {item?.titulo}
+            Certificados e Histórico — {item?.titulo}
           </DialogTitle>
         </DialogHeader>
+
+        {item?.precisaAndaime && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+            <HardHat className="h-5 w-5 text-amber-400" />
+            <div>
+              <p className="text-sm font-bold text-amber-200">REQUER MONTAGEM DE ANDAIME</p>
+              <p className="text-xs text-amber-200/70">
+                Este item está sinalizado como necessitando de estrutura de andaime.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4">
@@ -142,7 +154,7 @@ export function LegalAttachmentsModal({
 
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Histórico de anexos
+              Histórico e Certificados Guardados
             </p>
             {isLoading ? (
               <p className="text-sm text-muted-foreground">Carregando…</p>
