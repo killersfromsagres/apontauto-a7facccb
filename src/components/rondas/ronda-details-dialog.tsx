@@ -32,12 +32,12 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     setLoading(true);
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("module", "rondas-calhas");
+    formData.append("module", "rondas-calhas"); // Usando a chave do item (sem -grp) que é o padrão para permissões
     formData.append("entity_type", "ronda");
     formData.append("entity_id", ronda.id);
 
     try {
-      const session = (await supabase.auth.getSession()).data.session;
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch("/api/imgbb-upload", {
         method: "POST",
         headers: {
@@ -45,6 +45,12 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
         },
         body: formData,
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: "Erro desconhecido no servidor" }));
+        throw new Error(errorData.error || `Erro HTTP ${res.status}`);
+      }
+
       const data = await res.json();
       if (data.url) {
         setFotos((prev) => [...prev, data.url]);
