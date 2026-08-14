@@ -32,6 +32,7 @@ import {
   Star,
   Eye,
   EyeOff,
+  HardHat,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";

@@ -2,7 +2,7 @@ import { useConfirm } from "@/components/ui/use-confirm";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Paperclip, Upload, ExternalLink, Trash2, FileText, Loader2, History } from "lucide-react";
+import { Paperclip, Upload, ExternalLink, Trash2, FileText, Loader2, History, HardHat } from "lucide-react";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
