@@ -182,13 +182,24 @@ function HistoricoPage() {
             </Select>
           </div>
           <div className="flex flex-1 items-center gap-2">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar OS, ativo, equipamento…"
-              className="h-11 text-base"
-            />
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar OS, ativo, equipamento…"
+                className="h-11 pl-9 text-base"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => exportCorretivaHistoricoToExcel(filtered)}
+              disabled={filtered.length === 0}
+              className="h-11 gap-2 border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Exportar Excel</span>
+            </Button>
           </div>
         </div>
         {equipe !== "todas" && (
