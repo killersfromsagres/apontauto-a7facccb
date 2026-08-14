@@ -5115,6 +5115,48 @@ export type Database = {
         }
         Relationships: []
       }
+      rondas_calhas: {
+        Row: {
+          created_at: string | null
+          fotos: string[] | null
+          id: string
+          mes_referencia: string
+          predio: string
+          preventiva_nome: string
+          problemas_identificados: string | null
+          realizado_em: string | null
+          realizado_por: string | null
+          status: Database["public"]["Enums"]["ronda_status"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fotos?: string[] | null
+          id?: string
+          mes_referencia: string
+          predio: string
+          preventiva_nome: string
+          problemas_identificados?: string | null
+          realizado_em?: string | null
+          realizado_por?: string | null
+          status?: Database["public"]["Enums"]["ronda_status"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fotos?: string[] | null
+          id?: string
+          mes_referencia?: string
+          predio?: string
+          preventiva_nome?: string
+          problemas_identificados?: string | null
+          realizado_em?: string | null
+          realizado_por?: string | null
+          status?: Database["public"]["Enums"]["ronda_status"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       spreadsheet_jobs: {
         Row: {
           catalog_id: string | null
@@ -7739,6 +7781,7 @@ export type Database = {
       refrigeracao_os_status: "aberta" | "em_andamento" | "resolvida"
       refrigeracao_status_gestor: "novo" | "visto" | "andamento" | "resolvido"
       refrigeracao_urgencia: "baixa" | "media" | "alta" | "urgente"
+      ronda_status: "pendente" | "concluido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7949,6 +7992,7 @@ export const Constants = {
       refrigeracao_os_status: ["aberta", "em_andamento", "resolvida"],
       refrigeracao_status_gestor: ["novo", "visto", "andamento", "resolvido"],
       refrigeracao_urgencia: ["baixa", "media", "alta", "urgente"],
+      ronda_status: ["pendente", "concluido"],
     },
   },
 } as const
