@@ -16,6 +16,7 @@ export interface LegalItem {
   agendamento: string | null; // YYYY-MM-DD
   responsavel: string;
   concluido: boolean;
+  precisaAndaime: boolean;
   createdAt: number;
 }
 
@@ -49,6 +50,7 @@ interface Row {
   agendamento: string | null;
   responsavel: string | null;
   concluido: boolean;
+  precisa_andaime: boolean;
   created_at: string;
 }
 
@@ -66,6 +68,7 @@ function fromRow(r: Row): LegalItem {
     agendamento: r.agendamento,
     responsavel: r.responsavel ?? "",
     concluido: r.concluido,
+    precisaAndaime: r.precisa_andaime ?? false,
     createdAt: new Date(r.created_at).getTime(),
   };
 }
@@ -171,6 +174,7 @@ export async function createLegalItem(
       agendamento: input.agendamento,
       responsavel: input.responsavel || null,
       concluido: input.concluido,
+      precisa_andaime: input.precisaAndaime,
       created_by: userRes.user?.id ?? null,
     } as never)
     .select("*")
@@ -192,6 +196,7 @@ export async function updateLegalItem(id: string, patch: Partial<LegalItem>): Pr
   if (patch.agendamento !== undefined) payload.agendamento = patch.agendamento;
   if (patch.responsavel !== undefined) payload.responsavel = patch.responsavel || null;
   if (patch.concluido !== undefined) payload.concluido = patch.concluido;
+  if (patch.precisaAndaime !== undefined) payload.precisa_andaime = patch.precisaAndaime;
   const { error } = await supabase
     .from("legal_items" as never)
     .update(payload as never)
