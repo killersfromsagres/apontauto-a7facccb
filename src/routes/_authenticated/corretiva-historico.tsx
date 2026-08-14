@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Link as LinkIcon,
   PenLine,
+  FileSpreadsheet,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -39,6 +40,7 @@ import {
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { isPreventiva } from "@/lib/corretiva/preventiva-import";
 import { cn } from "@/lib/utils";
+import { exportCorretivaHistoricoToExcel } from "@/lib/corretiva/excel-export";
 
 export const Route = createFileRoute("/_authenticated/corretiva-historico")({
   component: HistoricoPage,
