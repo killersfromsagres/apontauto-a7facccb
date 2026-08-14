@@ -5119,6 +5119,8 @@ export type Database = {
         Row: {
           created_at: string | null
           fotos: string[] | null
+          fotos_antes: string[] | null
+          fotos_depois: string[] | null
           id: string
           mes_referencia: string
           predio: string
@@ -5132,6 +5134,8 @@ export type Database = {
         Insert: {
           created_at?: string | null
           fotos?: string[] | null
+          fotos_antes?: string[] | null
+          fotos_depois?: string[] | null
           id?: string
           mes_referencia: string
           predio: string
@@ -5145,6 +5149,8 @@ export type Database = {
         Update: {
           created_at?: string | null
           fotos?: string[] | null
+          fotos_antes?: string[] | null
+          fotos_depois?: string[] | null
           id?: string
           mes_referencia?: string
           predio?: string
