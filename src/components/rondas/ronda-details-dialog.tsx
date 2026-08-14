@@ -36,6 +36,7 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     formData.append("entity_type", "ronda");
     formData.append("entity_id", ronda.id);
 
+    try {
       const session = (await supabase.auth.getSession()).data.session;
       const res = await fetch("/api/imgbb-upload", {
         method: "POST",
