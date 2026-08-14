@@ -16,15 +16,24 @@ export async function readRondasExcel(file: File): Promise<RondaInput[]> {
         // Filtramos as preventivas que contém "calha" no nome
         const filtered = rows
           .filter((r) => {
-            const nome = String(r.Nome || r.preventiva_nome || r.Descricao || r.Descriçāo || r["Descrição OS"] || "").toLowerCase();
-            const osDesc = String(r["Descricao OS"] || r["Descriçāo OS"] || r.Servico || r.Serviço || "").toLowerCase();
-            return nome.includes("calha") || osDesc.includes("calha");
+            const rowValues = Object.values(r).map(v => String(v).toLowerCase());
+            return rowValues.some(v => v.includes("calha"));
           })
-          .map((r) => ({
-            predio: String(r.Predio || r.Prédio || r.Localizacao || r.Localização || r.Local || r.Andar || "Não Identificado"),
-            preventiva_nome: String(r.Nome || r.preventiva_nome || r.Descricao || r.Descriçāo || r["Descrição OS"] || "Ronda de Calha"),
-            mes_referencia: mesReferencia,
-          }));
+          .map((r) => {
+            // Mapeamento inteligente de prédio/local
+            const predio = r.Predio || r.Prédio || r.Localizacao || r.Localização || r.Local || r.Andar || r.Edificio || r.Edifício || 
+                          r.PREDIO || r.LOCAL || r.LOCALIZACAO || "Não Identificado";
+            
+            // Mapeamento inteligente de nome da preventiva/descrição
+            const nome = r.Nome || r.preventiva_nome || r.Descricao || r.Descriçāo || r["Descrição OS"] || r["Descricao OS"] || 
+                        r.Servico || r.Serviço || r.NOME || r.DESCRICAO || "Ronda de Calha";
+
+            return {
+              predio: String(predio),
+              preventiva_nome: String(nome),
+              mes_referencia: mesReferencia,
+            };
+          });
 
         resolve(filtered);
       } catch (err) {
