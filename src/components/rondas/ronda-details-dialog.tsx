@@ -32,7 +32,7 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     setLoading(true);
     const formData = new FormData();
     formData.append("image", file);
-    formData.append("module", "rondas-calhas-grp"); // Usando a chave correta da seção no nav-config
+    formData.append("module", "rondas-calhas"); // Usando a chave do item (sem -grp) que é o padrão para permissões
     formData.append("entity_type", "ronda");
     formData.append("entity_id", ronda.id);
 
