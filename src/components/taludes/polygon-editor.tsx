@@ -555,14 +555,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.lineTo(-iconSize / 3, -iconSize / 6);
             ctx.closePath();
             ctx.fill();
-            // Text for Suvinil Reserve
-            ctx.fillStyle = '#065f46'; // Verde Escuro (Emerald 800ish)
+            // Text for Eco+ Space
+            ctx.fillStyle = '#064e3b'; // Darker green (emerald 900)
             ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             ctx.lineWidth = 1 * currentIconeScale;
-            ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
-            ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
+            ctx.strokeText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
+            ctx.fillText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
             
             // ICone Data
             if (m.icone_data_visivel !== false && m.icone_data_texto) {
@@ -650,7 +650,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       // Tree Icon Legend
       ctx.fillStyle = 'white';
       ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
-      ctx.fillText('Reserva Suvinil (Árvore)', legendX + 45, currentY + 6);
+      ctx.fillText('Espaço ECO+ (Árvore)', legendX + 45, currentY + 6);
       
       // Draw small tree
       ctx.fillStyle = '#10b981';
@@ -931,6 +931,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             setIconeDataTexto(val);
                             setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_texto: val } : m));
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                              if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
+                            }
+                          }}
                           onBlur={() => {
                             const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                             if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
@@ -1208,18 +1214,18 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
                           <g transform="translate(-15, -15)">
-                            <Trees size={30} className="text-emerald-500 fill-emerald-500/20" />
+                            <Trees size={30} className="text-emerald-400 fill-emerald-500/30 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
                             <text 
-                              y="45" 
+                              y="48" 
                               x="15" 
                               textAnchor="middle" 
-                              fill="#065f46" 
-                              fontSize="10" 
+                              fill="#064e3b" 
+                              fontSize="11" 
                               fontWeight="900"
                               className="font-['SF_Pro_Display']"
-                              style={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: '0.2px', paintOrder: 'stroke' }}
+                              style={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: '0.4px', paintOrder: 'stroke' }}
                             >
-                              RESERVA SUVINIL
+                              ESPAÇO ECO+
                             </text>
                             
                             {/* Icon Date Label (SVG) */}
