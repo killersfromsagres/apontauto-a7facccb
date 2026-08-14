@@ -29,12 +29,12 @@ export const reclassifyAllOsWithAi = createServerFn({ method: "POST" })
 
     // 2. Classificar cada OS
     for (const os of osList) {
-      const texto = [os.nome_os, os.equipamento, os.ativo].filter(Boolean).join(" ");
+      const texto = [os.nome_os, os.equipamento, os.ativo, os.local].filter(Boolean).join(" ");
       const result = classifyTeamByText(texto);
       
       // Só atualizar se a equipe sugerida for diferente da atual
-      // Normalizamos para comparação
-      const currentEquipe = os.equipe?.trim();
+      // Normalizamos para comparação e tratamos valores nulos
+      const currentEquipe = os.equipe?.trim() || "";
       const newEquipe = result.equipe;
 
       if (currentEquipe !== newEquipe) {
