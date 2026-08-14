@@ -4,7 +4,7 @@ import { RondaCalha } from "./types";
 
 export async function generateRondaPDF(ronda: RondaCalha) {
   const doc = new jsPDF();
-  const primaryColor = [59, 130, 246]; // #3B82F6 (Primary Blue)
+  const primaryColor: [number, number, number] = [59, 130, 246]; // #3B82F6 (Primary Blue)
   
   // Header
   doc.setFillColor(15, 23, 42); // #0F172A
