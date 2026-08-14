@@ -16,6 +16,8 @@ import {
   ArrowUpDown,
   History,
   Clock,
+  Brain,
+  Sparkles,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -36,6 +38,7 @@ import { equipeStyles, matchEquipe, type EquipeFiltro } from "@/lib/corretiva/eq
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
+import { reclassifyAllOsWithAi } from "@/lib/corretiva/ai-reclassifier.functions";
 
 export const Route = createFileRoute("/_authenticated/corretiva-novo")({
   component: CorretivaNovoPage,
@@ -52,6 +55,7 @@ function CorretivaNovoPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedOs, setSelectedOs] = useState<any | null>(null);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
+  const [isReclassifying, setIsReclassifying] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -140,6 +144,28 @@ function CorretivaNovoPage() {
     }
   };
 
+  const handleAiReclassify = async () => {
+    if (!isAdmin) return;
+    
+    setIsReclassifying(true);
+    const id = toast.loading("Agente IA analisando e reclassificando equipes...");
+    
+    try {
+      const result = await reclassifyAllOsWithAi();
+      if (result.success) {
+        toast.success(`Sucesso! ${result.count} OS foram reclassificadas inteligentemente.`, { id });
+        await loadData();
+      } else {
+        toast.error("Ocorreu um problema durante a reclassificação.", { id });
+      }
+    } catch (error: any) {
+      console.error("[CorretivaNovo] Erro na reclassificação IA:", error);
+      toast.error("Falha ao acionar o agente de reclassificação.", { id });
+    } finally {
+      setIsReclassifying(false);
+    }
+  };
+
   return (
     <PageShell
       title="Programação de Corretivas"
@@ -147,7 +173,23 @@ function CorretivaNovoPage() {
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
-            <PreventivaImportDialog mode="corretiva" onDone={loadData} />
+            <>
+              <Button
+                variant="glass"
+                size="sm"
+                className="gap-2 border-primary/20 hover:border-primary/50 text-primary-glow"
+                onClick={handleAiReclassify}
+                disabled={isReclassifying}
+              >
+                {isReclassifying ? (
+                  <Sparkles className="h-4 w-4 animate-pulse" />
+                ) : (
+                  <Brain className="h-4 w-4" />
+                )}
+                Agente IA
+              </Button>
+              <PreventivaImportDialog mode="corretiva" onDone={loadData} />
+            </>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
