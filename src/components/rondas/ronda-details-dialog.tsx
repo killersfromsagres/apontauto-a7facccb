@@ -36,13 +36,11 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     formData.append("entity_type", "ronda");
     formData.append("entity_id", ronda.id);
 
-    try {
+      const session = (await supabase.auth.getSession()).data.session;
       const res = await fetch("/api/imgbb-upload", {
         method: "POST",
         headers: {
-          // A sessão Supabase é injetada automaticamente se o middleware estiver ativo no start.ts
-          // mas como usamos fetch direto, precisamos garantir que o header Authorization esteja presente.
-          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+          "Authorization": `Bearer ${session?.access_token || ""}`,
         },
         body: formData,
       });
@@ -51,7 +49,7 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
         setFotos((prev) => [...prev, data.url]);
         toast.success("Foto anexada com sucesso!");
       } else {
-        toast.error("Erro ao fazer upload: URL não retornada.");
+        toast.error(`Erro ao fazer upload: ${data.error || "URL não retornada"}.`);
       }
     } catch (err) {
       toast.error("Erro ao fazer upload da imagem.");
