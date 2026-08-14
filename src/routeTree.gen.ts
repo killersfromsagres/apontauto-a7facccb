@@ -70,6 +70,7 @@ import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authen
 import { Route as ApiPublicManualRouteImport } from './routes/api/public/manual'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
+import { Route as AuthenticatedRondasCalhasHistoricoRouteImport } from './routes/_authenticated/rondas-calhas.historico'
 import { Route as AuthenticatedInteligenciaAtivosPreencherRouteImport } from './routes/_authenticated/inteligencia-ativos.preencher'
 import { Route as AuthenticatedInteligenciaAtivosNaoEncontradosRouteImport } from './routes/_authenticated/inteligencia-ativos.nao-encontrados'
 import { Route as AuthenticatedInteligenciaAtivosHistoricoRouteImport } from './routes/_authenticated/inteligencia-ativos.historico'
@@ -433,6 +434,12 @@ const ApiPublicClimaRoute = ApiPublicClimaRouteImport.update({
   path: '/api/public/clima',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRondasCalhasHistoricoRoute =
+  AuthenticatedRondasCalhasHistoricoRouteImport.update({
+    id: '/historico',
+    path: '/historico',
+    getParentRoute: () => AuthenticatedRondasCalhasRoute,
+  } as any)
 const AuthenticatedInteligenciaAtivosPreencherRoute =
   AuthenticatedInteligenciaAtivosPreencherRouteImport.update({
     id: '/inteligencia-ativos/preencher',
@@ -632,7 +639,7 @@ export interface FileRoutesByFullPath {
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/rondas-calhas': typeof AuthenticatedRondasCalhasRoute
+  '/rondas-calhas': typeof AuthenticatedRondasCalhasRouteWithChildren
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
   '/taludes': typeof AuthenticatedTaludesRoute
@@ -646,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
+  '/rondas-calhas/historico': typeof AuthenticatedRondasCalhasHistoricoRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
@@ -719,7 +727,7 @@ export interface FileRoutesByTo {
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/rondas-calhas': typeof AuthenticatedRondasCalhasRoute
+  '/rondas-calhas': typeof AuthenticatedRondasCalhasRouteWithChildren
   '/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
   '/taludes': typeof AuthenticatedTaludesRoute
@@ -732,6 +740,7 @@ export interface FileRoutesByTo {
   '/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
+  '/rondas-calhas/historico': typeof AuthenticatedRondasCalhasHistoricoRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
@@ -807,7 +816,7 @@ export interface FileRoutesById {
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
   '/_authenticated/refrigeracao-historico-permanente': typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   '/_authenticated/refrigeracao-pecas-status': typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  '/_authenticated/rondas-calhas': typeof AuthenticatedRondasCalhasRoute
+  '/_authenticated/rondas-calhas': typeof AuthenticatedRondasCalhasRouteWithChildren
   '/_authenticated/seguranca-trabalho': typeof AuthenticatedSegurancaTrabalhoRoute
   '/_authenticated/solicitacao-materiais': typeof AuthenticatedSolicitacaoMateriaisRoute
   '/_authenticated/taludes': typeof AuthenticatedTaludesRoute
@@ -821,6 +830,7 @@ export interface FileRoutesById {
   '/_authenticated/inteligencia-ativos/historico': typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   '/_authenticated/inteligencia-ativos/nao-encontrados': typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   '/_authenticated/inteligencia-ativos/preencher': typeof AuthenticatedInteligenciaAtivosPreencherRoute
+  '/_authenticated/rondas-calhas/historico': typeof AuthenticatedRondasCalhasHistoricoRoute
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
@@ -910,6 +920,7 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
+    | '/rondas-calhas/historico'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
@@ -996,6 +1007,7 @@ export interface FileRouteTypes {
     | '/inteligencia-ativos/historico'
     | '/inteligencia-ativos/nao-encontrados'
     | '/inteligencia-ativos/preencher'
+    | '/rondas-calhas/historico'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
@@ -1084,6 +1096,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inteligencia-ativos/historico'
     | '/_authenticated/inteligencia-ativos/nao-encontrados'
     | '/_authenticated/inteligencia-ativos/preencher'
+    | '/_authenticated/rondas-calhas/historico'
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
@@ -1564,6 +1577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicClimaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/rondas-calhas/historico': {
+      id: '/_authenticated/rondas-calhas/historico'
+      path: '/historico'
+      fullPath: '/rondas-calhas/historico'
+      preLoaderRoute: typeof AuthenticatedRondasCalhasHistoricoRouteImport
+      parentRoute: typeof AuthenticatedRondasCalhasRoute
+    }
     '/_authenticated/inteligencia-ativos/preencher': {
       id: '/_authenticated/inteligencia-ativos/preencher'
       path: '/inteligencia-ativos/preencher'
@@ -1805,6 +1825,21 @@ const AuthenticatedAbastecimentoRouteWithChildren =
     AuthenticatedAbastecimentoRouteChildren,
   )
 
+interface AuthenticatedRondasCalhasRouteChildren {
+  AuthenticatedRondasCalhasHistoricoRoute: typeof AuthenticatedRondasCalhasHistoricoRoute
+}
+
+const AuthenticatedRondasCalhasRouteChildren: AuthenticatedRondasCalhasRouteChildren =
+  {
+    AuthenticatedRondasCalhasHistoricoRoute:
+      AuthenticatedRondasCalhasHistoricoRoute,
+  }
+
+const AuthenticatedRondasCalhasRouteWithChildren =
+  AuthenticatedRondasCalhasRoute._addFileChildren(
+    AuthenticatedRondasCalhasRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAbastecimentoRoute: typeof AuthenticatedAbastecimentoRouteWithChildren
   AuthenticatedAgenteIaRoute: typeof AuthenticatedAgenteIaRoute
@@ -1847,7 +1882,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
   AuthenticatedRefrigeracaoHistoricoPermanenteRoute: typeof AuthenticatedRefrigeracaoHistoricoPermanenteRoute
   AuthenticatedRefrigeracaoPecasStatusRoute: typeof AuthenticatedRefrigeracaoPecasStatusRoute
-  AuthenticatedRondasCalhasRoute: typeof AuthenticatedRondasCalhasRoute
+  AuthenticatedRondasCalhasRoute: typeof AuthenticatedRondasCalhasRouteWithChildren
   AuthenticatedSegurancaTrabalhoRoute: typeof AuthenticatedSegurancaTrabalhoRoute
   AuthenticatedSolicitacaoMateriaisRoute: typeof AuthenticatedSolicitacaoMateriaisRoute
   AuthenticatedTaludesRoute: typeof AuthenticatedTaludesRoute
@@ -1906,7 +1941,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedRefrigeracaoHistoricoPermanenteRoute,
   AuthenticatedRefrigeracaoPecasStatusRoute:
     AuthenticatedRefrigeracaoPecasStatusRoute,
-  AuthenticatedRondasCalhasRoute: AuthenticatedRondasCalhasRoute,
+  AuthenticatedRondasCalhasRoute: AuthenticatedRondasCalhasRouteWithChildren,
   AuthenticatedSegurancaTrabalhoRoute: AuthenticatedSegurancaTrabalhoRoute,
   AuthenticatedSolicitacaoMateriaisRoute:
     AuthenticatedSolicitacaoMateriaisRoute,
