@@ -32,10 +32,18 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     setLoading(true);
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("module", "rondas-calhas");
+    formData.append("entity_type", "ronda");
+    formData.append("entity_id", ronda.id);
 
     try {
       const res = await fetch("/api/imgbb-upload", {
         method: "POST",
+        headers: {
+          // A sessão Supabase é injetada automaticamente se o middleware estiver ativo no start.ts
+          // mas como usamos fetch direto, precisamos garantir que o header Authorization esteja presente.
+          "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
         body: formData,
       });
       const data = await res.json();
