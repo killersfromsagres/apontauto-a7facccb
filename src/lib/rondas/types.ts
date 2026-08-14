@@ -9,6 +9,8 @@ export interface RondaCalha {
     realizado_em?: string;
     problemas_identificados?: string;
     fotos: string[];
+    fotos_antes?: string[];
+    fotos_depois?: string[];
     mes_referencia: string;
     created_at: string;
 }
