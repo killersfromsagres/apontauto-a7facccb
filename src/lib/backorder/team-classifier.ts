@@ -452,17 +452,17 @@ export function classifyTeamByText(nome: string): TeamClassificationResult {
 
   for (const rule of RULES) {
     for (const termo of rule.termos) {
-      const t = ` ${termo} `;
-      if (text.includes(t)) scores[rule.equipe] += rule.peso;
+      const t = norm(termo).trim();
+      if (text.includes(` ${t} `)) scores[rule.equipe] += rule.peso;
     }
   }
 
   // Locks contextuais.
-  if (REFRIG_LOCK.some((k) => text.includes(` ${k} `))) {
+  if (REFRIG_LOCK.some((k) => text.includes(` ${norm(k).trim()} `))) {
     scores.Refrigeração += 6;
     scores.Elétrica = Math.max(0, scores.Elétrica - 3);
   }
-  if (HIDR_LOCK.some((k) => text.includes(` ${k} `))) {
+  if (HIDR_LOCK.some((k) => text.includes(` ${norm(k).trim()} `))) {
     scores.Hidráulica += 3;
   }
   if (forceEletrico) {
