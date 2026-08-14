@@ -297,6 +297,30 @@ export const sections: MenuSection[] = [
   },
   {
     kind: "group",
+    key: "rondas-calhas-grp",
+    title: "Rondas e Inspeções",
+    icon: ShieldCheck,
+    items: [
+      {
+        key: "rondas-calhas",
+        title: "Rondas de Calhas",
+        short: "Rondas",
+        url: "/rondas-calhas",
+        icon: ClipboardCheck,
+        keywords: ["ronda", "inspeção", "calha", "prédio", "preventiva"],
+      },
+      {
+        key: "rondas-calhas-historico",
+        title: "Histórico de Rondas",
+        short: "Histórico",
+        url: "/rondas-calhas/historico",
+        icon: ScrollText,
+        keywords: ["histórico", "ronda", "concluída", "relatório", "certificado"],
+      },
+    ],
+  },
+  {
+    kind: "group",
     key: "ativos-grp",
     title: "Ativos e Confiabilidade",
     icon: Boxes,
