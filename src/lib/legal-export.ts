@@ -41,6 +41,7 @@ export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[
       "Próxima Execução": it.proximaExecucao ?? "",
       Agendamento: it.agendamento ?? "",
       Periodicidade: it.periodicidade,
+      Andaime: it.precisaAndaime ? "SIM" : "NÃO",
       Status: statusOf(it),
       ...monthCols,
       Observações: it.observacoes,
@@ -82,7 +83,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
 
   // Tabela
   const head = [
-    ["Tarefa", "Empresa", "Prédio", "Última", "Próxima", "Period.", "Status", ...MONTHS],
+    ["Tarefa", "Empresa", "Prédio", "Andaime", "Última", "Próxima", "Period.", "Status", ...MONTHS],
   ];
   const body = items.map((it) => {
     const cells = buildMonthMap(it, execs, year);
@@ -90,6 +91,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       it.titulo,
       it.empresa || "—",
       it.predio || "—",
+      it.precisaAndaime ? "SIM" : "—",
       fmt(it.ultimaExecucao),
       fmt(it.proximaExecucao),
       it.periodicidade,
@@ -120,17 +122,18 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { cellWidth: 130, fontStyle: "bold" },
-      1: { cellWidth: 90 },
-      2: { cellWidth: 70 },
-      3: { cellWidth: 55, halign: "center" },
-      4: { cellWidth: 55, halign: "center" },
-      5: { cellWidth: 55, halign: "center" },
-      6: { cellWidth: 55, halign: "center" },
+      0: { cellWidth: 120, fontStyle: "bold" },
+      1: { cellWidth: 80 },
+      2: { cellWidth: 60 },
+      3: { cellWidth: 40, halign: "center" }, // Andaime
+      4: { cellWidth: 50, halign: "center" }, // Última
+      5: { cellWidth: 50, halign: "center" }, // Próxima
+      6: { cellWidth: 50, halign: "center" }, // Period.
+      7: { cellWidth: 50, halign: "center" }, // Status
     },
     didParseCell: (data: any) => {
       // Meses coloridos
-      if (data.section === "body" && data.column.index >= 7) {
+      if (data.section === "body" && data.column.index >= 8) {
         const v = String(data.cell.raw ?? "");
         if (v === "✓") {
           data.cell.styles.fillColor = [220, 252, 231];
@@ -144,7 +147,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
         }
         data.cell.styles.halign = "center";
       }
-      if (data.section === "body" && data.column.index === 6) {
+      if (data.section === "body" && data.column.index === 7) {
         const s = String(data.cell.raw ?? "");
         if (s === "Vencido") {
           data.cell.styles.fillColor = [254, 226, 226];
