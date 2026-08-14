@@ -12,7 +12,7 @@ export const reclassifyAllOsWithAi = createServerFn({ method: "POST" })
     // 1. Buscar todas as OS que não estão concluídas
     const { data: osList, error: fetchError } = await supabase
       .from("corretiva_os")
-      .select("id, nome_os, equipamento, ativo, equipe")
+      .select("id, nome_os, equipamento, ativo, equipe, local")
       .neq("status", "concluida");
 
     if (fetchError) {
