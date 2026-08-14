@@ -851,10 +851,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     onClick={() => {
                       const newType = iconeTipo === 'arvore' ? null : 'arvore';
                       setIconeTipo(newType);
-                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType } : m));
+                      setIconeVisivel(true); // Auto-show icon when selected
+                      setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType, icone_visivel: true } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) {
-                        onSave({ ...target, icone_tipo: newType });
+                        onSave({ ...target, icone_tipo: newType, icone_visivel: true });
                         if (newType) toast.success("Ícone de Árvore ativado");
                         else toast.info("Ícone removido");
                       }
@@ -1229,7 +1230,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             </text>
                             
                             {/* Icon Date Label (SVG) */}
-                            {m.icone_data_visivel !== false && m.icone_data_texto && (
+                            {m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
                               <g transform={`translate(${iconeDataPos.x - iconePos.x}, ${iconeDataPos.y - iconePos.y}) scale(${m.icone_data_scale || 1})`}>
                                 <rect 
                                    x="-60"
