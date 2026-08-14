@@ -170,10 +170,17 @@ export const Route = createFileRoute("/api/imgbb-upload")({
 
         const json = (await res.json().catch(() => null)) as any;
         if (!res.ok || !json?.success || !json?.data?.url) {
-          console.error("[ImgBBUploadProxy] Erro na resposta upstream:", { status: res.status, json });
+          console.error("[ImgBBUploadProxy] Erro na resposta upstream:", { 
+            status: res.status, 
+            json,
+            upstream_error: json?.error?.message || json?.message 
+          });
           return Response.json(
-            { error: json?.error?.message || json?.message || `Serviço de imagens retornou ${res.status}` },
-            { status: 502 },
+            { 
+              error: json?.error?.message || json?.message || `O serviço de imagens retornou um erro (Status ${res.status}).`,
+              detail: json 
+            },
+            { status: res.status === 200 ? 502 : res.status },
           );
         }
 
