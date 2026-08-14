@@ -30,7 +30,7 @@ function RondasCalhasPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("rondas_calhas")
         .select("*")
         .eq("status", "pendente")

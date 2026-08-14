@@ -59,10 +59,12 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     setLoading(true);
     try {
       await updateRondaFn({
-        id: ronda.id,
-        realizado_por: realizadoPor,
-        problemas_identificados: problemas,
-        fotos: fotos,
+        data: {
+          id: ronda.id,
+          realizado_por: realizadoPor,
+          problemas_identificados: problemas,
+          fotos: fotos,
+        },
       });
       toast.success("Ronda concluída!");
       onUpdate();
