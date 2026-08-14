@@ -32,10 +32,17 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
     setLoading(true);
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("module", "rondas-calhas");
+    formData.append("entity_type", "ronda");
+    formData.append("entity_id", ronda.id);
 
     try {
+      const session = (await supabase.auth.getSession()).data.session;
       const res = await fetch("/api/imgbb-upload", {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session?.access_token || ""}`,
+        },
         body: formData,
       });
       const data = await res.json();
@@ -43,7 +50,7 @@ export function RondaDetailsDialog({ ronda, isOpen, onClose, onUpdate }: RondaDe
         setFotos((prev) => [...prev, data.url]);
         toast.success("Foto anexada com sucesso!");
       } else {
-        toast.error("Erro ao fazer upload: URL não retornada.");
+        toast.error(`Erro ao fazer upload: ${data.error || "URL não retornada"}.`);
       }
     } catch (err) {
       toast.error("Erro ao fazer upload da imagem.");
