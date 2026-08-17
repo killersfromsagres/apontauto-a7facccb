@@ -67,6 +67,7 @@ import { Route as AuthenticatedAuditoriaRouteImport } from './routes/_authentica
 import { Route as AuthenticatedApontamentosRouteImport } from './routes/_authenticated/apontamentos'
 import { Route as AuthenticatedAgenteIaRouteImport } from './routes/_authenticated/agente-ia'
 import { Route as AuthenticatedAbastecimentoRouteImport } from './routes/_authenticated/abastecimento'
+import { Route as AuthenticatedPreventivaAutomacaoIndexRouteImport } from './routes/_authenticated/preventiva-automacao/index'
 import { Route as ApiPublicManualRouteImport } from './routes/api/public/manual'
 import { Route as ApiPublicClimaForecastRouteImport } from './routes/api/public/clima-forecast'
 import { Route as ApiPublicClimaRouteImport } from './routes/api/public/clima'
@@ -419,6 +420,12 @@ const AuthenticatedAbastecimentoRoute =
     path: '/abastecimento',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPreventivaAutomacaoIndexRoute =
+  AuthenticatedPreventivaAutomacaoIndexRouteImport.update({
+    id: '/preventiva-automacao/',
+    path: '/preventiva-automacao/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicManualRoute = ApiPublicManualRouteImport.update({
   id: '/api/public/manual',
   path: '/api/public/manual',
@@ -657,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
+  '/preventiva-automacao/': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -744,6 +752,7 @@ export interface FileRoutesByTo {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
+  '/preventiva-automacao': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -834,6 +843,7 @@ export interface FileRoutesById {
   '/api/public/clima': typeof ApiPublicClimaRoute
   '/api/public/clima-forecast': typeof ApiPublicClimaForecastRoute
   '/api/public/manual': typeof ApiPublicManualRoute
+  '/_authenticated/preventiva-automacao/': typeof AuthenticatedPreventivaAutomacaoIndexRoute
   '/_authenticated/abastecimento/agua/bags': typeof AuthenticatedAbastecimentoAguaBagsRoute
   '/_authenticated/abastecimento/agua/configuracoes': typeof AuthenticatedAbastecimentoAguaConfiguracoesRoute
   '/_authenticated/abastecimento/agua/evidencias': typeof AuthenticatedAbastecimentoAguaEvidenciasRoute
@@ -924,6 +934,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
+    | '/preventiva-automacao/'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -1011,6 +1022,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
+    | '/preventiva-automacao'
     | '/abastecimento/agua/bags'
     | '/abastecimento/agua/configuracoes'
     | '/abastecimento/agua/evidencias'
@@ -1100,6 +1112,7 @@ export interface FileRouteTypes {
     | '/api/public/clima'
     | '/api/public/clima-forecast'
     | '/api/public/manual'
+    | '/_authenticated/preventiva-automacao/'
     | '/_authenticated/abastecimento/agua/bags'
     | '/_authenticated/abastecimento/agua/configuracoes'
     | '/_authenticated/abastecimento/agua/evidencias'
@@ -1556,6 +1569,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAbastecimentoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/preventiva-automacao/': {
+      id: '/_authenticated/preventiva-automacao/'
+      path: '/preventiva-automacao'
+      fullPath: '/preventiva-automacao/'
+      preLoaderRoute: typeof AuthenticatedPreventivaAutomacaoIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/manual': {
       id: '/api/public/manual'
       path: '/api/public/manual'
@@ -1891,6 +1911,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInteligenciaAtivosHistoricoRoute: typeof AuthenticatedInteligenciaAtivosHistoricoRoute
   AuthenticatedInteligenciaAtivosNaoEncontradosRoute: typeof AuthenticatedInteligenciaAtivosNaoEncontradosRoute
   AuthenticatedInteligenciaAtivosPreencherRoute: typeof AuthenticatedInteligenciaAtivosPreencherRoute
+  AuthenticatedPreventivaAutomacaoIndexRoute: typeof AuthenticatedPreventivaAutomacaoIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -1954,6 +1975,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
     AuthenticatedInteligenciaAtivosNaoEncontradosRoute,
   AuthenticatedInteligenciaAtivosPreencherRoute:
     AuthenticatedInteligenciaAtivosPreencherRoute,
+  AuthenticatedPreventivaAutomacaoIndexRoute:
+    AuthenticatedPreventivaAutomacaoIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

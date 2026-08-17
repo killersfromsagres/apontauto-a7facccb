@@ -4564,6 +4564,57 @@ export type Database = {
         }
         Relationships: []
       }
+      preventiva_programacao_historico: {
+        Row: {
+          configuracao: Json
+          created_at: string | null
+          criado_por: string | null
+          id: string
+          nome_arquivo: string
+          resumo_equipes: Json | null
+          total_os: number | null
+        }
+        Insert: {
+          configuracao: Json
+          created_at?: string | null
+          criado_por?: string | null
+          id?: string
+          nome_arquivo: string
+          resumo_equipes?: Json | null
+          total_os?: number | null
+        }
+        Update: {
+          configuracao?: Json
+          created_at?: string | null
+          criado_por?: string | null
+          id?: string
+          nome_arquivo?: string
+          resumo_equipes?: Json | null
+          total_os?: number | null
+        }
+        Relationships: []
+      }
+      preventiva_servicos_config: {
+        Row: {
+          equipe: string
+          id: string
+          prioridade: number | null
+          termo: string
+        }
+        Insert: {
+          equipe: string
+          id?: string
+          prioridade?: number | null
+          termo: string
+        }
+        Update: {
+          equipe?: string
+          id?: string
+          prioridade?: number | null
+          termo?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           allowed_menus: string[] | null

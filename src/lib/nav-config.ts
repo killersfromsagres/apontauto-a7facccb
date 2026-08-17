@@ -110,7 +110,19 @@ export const sections: MenuSection[] = [
         short: "Início",
         url: "/",
         icon: BrainCircuit,
-        keywords: ["home", "início", "kpi", "dashboard", "gestão", "indicadores", "pcm", "inteligência"],
+        keywords: [
+          "home",
+          "início",
+          "kpi",
+          "dashboard",
+          "gestão",
+          "indicadores",
+          "pcm",
+          "inteligência",
+          "automação",
+          "preventiva",
+        ],
+
       },
     ],
   },
@@ -293,8 +305,17 @@ export const sections: MenuSection[] = [
         icon: CalendarDays,
         keywords: ["semanal", "preventiva", "backorder", "agendamento", "equipes"],
       },
+      {
+        key: "preventiva-automacao",
+        title: "Automação de Preventivas",
+        short: "Auto",
+        url: "/preventiva-automacao",
+        icon: BrainCircuit,
+        keywords: ["automática", "preventiva", "geração", "ativos", "pcm"],
+      },
     ],
   },
+
   {
     kind: "group",
     key: "rondas-calhas-grp",
