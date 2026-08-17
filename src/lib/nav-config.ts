@@ -293,8 +293,17 @@ export const sections: MenuSection[] = [
         icon: CalendarDays,
         keywords: ["semanal", "preventiva", "backorder", "agendamento", "equipes"],
       },
+      {
+        key: "preventiva-automacao",
+        title: "Automação de Preventivas",
+        short: "Auto",
+        url: "/preventiva-automacao",
+        icon: BrainCircuit,
+        keywords: ["automática", "preventiva", "geração", "ativos", "pcm"],
+      },
     ],
   },
+
   {
     kind: "group",
     key: "rondas-calhas-grp",

@@ -58,3 +58,29 @@ export const saveProgramacaoHistory = createServerFn({ method: "POST" })
     return inserted;
   });
 
+export const getProgramacaoHistory = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    
+    const { data, error } = await supabaseAdmin
+      .from("preventiva_programacao_historico" as any)
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+    return data;
+  });
+
+export const getTriageConfig = createServerFn({ method: "GET" })
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    
+    const { data, error } = await supabaseAdmin
+      .from("preventiva_servicos_config" as any)
+      .select("*")
+      .order("prioridade", { ascending: false });
+
+    if (error) throw error;
+    return data;
+  });
