@@ -3,7 +3,7 @@ import { PageShell } from "@/components/page-shell";
 import { AutomacaoPreventivaMain } from "@/components/preventiva-automacao/automacao-preventiva-main";
 import { CalendarRange, Sparkles } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/preventiva-automacao")({
+export const Route = createFileRoute("/_authenticated/preventiva-automacao/")({
   component: PreventivaAutomacaoPage,
 });
 
