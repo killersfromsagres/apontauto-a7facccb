@@ -8,17 +8,16 @@ export const getAssetTree = createServerFn({ method: "GET" })
   .handler(async () => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     
-    // Busca prédios, andares e locais únicos da base de ativos
+    // @ts-ignore - a tabela será detectada após a regeneração dos tipos, mas usamos cast por enquanto
     const { data, error } = await supabaseAdmin
-      .from("agua_filtro_ativos")
-      .select("predio, andar_setor, local_instalacao")
-      .not("predio", "is", null);
+      .from("agua_filtro_ativos" as any)
+      .select("predio, andar_setor, local_instalacao");
 
     if (error) throw error;
 
     const tree: Record<string, Record<string, string[]>> = {};
 
-    data?.forEach(item => {
+    (data as any[])?.forEach(item => {
       const p = item.predio || "Sem Prédio";
       const a = item.andar_setor || "Térreo";
       const l = item.local_instalacao || "Geral";
@@ -43,8 +42,9 @@ export const saveProgramacaoHistory = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     
+    // @ts-ignore - bypass type mismatch until schema re-gen
     const { data: inserted, error } = await supabaseAdmin
-      .from("preventiva_programacao_historico")
+      .from("preventiva_programacao_historico" as any)
       .insert({
         nome_arquivo: data.nome_arquivo,
         configuracao: data.configuracao,
@@ -57,3 +57,4 @@ export const saveProgramacaoHistory = createServerFn({ method: "POST" })
     if (error) throw error;
     return inserted;
   });
+
