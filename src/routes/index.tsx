@@ -1,4 +1,6 @@
+// Módulo de Automação de Preventivas implementado em /preventiva-automacao
 import {
+
   createFileRoute,
   Outlet,
   redirect,
