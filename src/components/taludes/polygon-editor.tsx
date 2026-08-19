@@ -548,10 +548,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const deadlineText = m.prazo_rotulo || '';
         const displayDeadline = formatDate(deadlineText);
 
-        const baseFontSize = 24;
+        const baseFontSize = 28;
         const scaledFontSize = baseFontSize * currentDataScale;
-        const rectWidth = 120 * currentDataScale;
-        const rectHeight = 60 * currentDataScale;
+        const rectWidth = 140 * currentDataScale;
+        const rectHeight = 70 * currentDataScale;
 
         if (m.data_visivel !== false) {
           ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
