@@ -391,9 +391,9 @@ export function AutomacaoPreventivaMain() {
 
       <div className="md:col-span-4 space-y-6">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6 text-emerald-400">
-            <History className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Histórico Recente</h2>
+          <div className="flex items-center gap-2 mb-6 text-cyan-400">
+            <History className="w-6 h-6" />
+            <h2 className="text-xl font-black uppercase tracking-tighter italic">Log de Geração</h2>
           </div>
 
           <div className="space-y-4">
