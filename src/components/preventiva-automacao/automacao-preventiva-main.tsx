@@ -368,24 +368,20 @@ export function AutomacaoPreventivaMain() {
             </div>
 
             <Button 
-              className="w-full h-12 text-lg font-bold shadow-elegant group relative overflow-hidden"
+              className="w-full h-14 text-lg font-black shadow-[0_0_20px_rgba(34,211,238,0.3)] group relative overflow-hidden bg-cyan-400 hover:bg-cyan-500 text-black border-none transition-all duration-500 rounded-2xl"
               disabled={isGenerating || selectedLocations.size === 0}
               onClick={handleGenerate}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               {isGenerating ? (
-                <span className="flex items-center gap-2">
-                  <motion.div 
-                    animate={{ rotate: 360 }} 
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                  >
-                    <Play className="w-5 h-5" />
-                  </motion.div>
-                  Processando...
+                <span className="flex items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Sincronizando...
                 </span>
               ) : (
-                <span className="flex items-center gap-2">
-                  <Play className="w-5 h-5 fill-current" />
-                  Gerar Programação Automática
+                <span className="flex items-center gap-3">
+                  <Play className="w-6 h-6 fill-current" />
+                  INICIAR AUTOMAÇÃO PREVENTIVA
                 </span>
               )}
             </Button>
