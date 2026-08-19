@@ -134,9 +134,11 @@ function UsuariosPage() {
       title="Gerenciamento de Usuários"
       description="Seção administrativa para criação de contas, definição de logins e gerenciamento granular de permissões de acesso."
     >
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ProvisionEncarregadosButton />
+        <ProvisionChamadosButton />
       </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
 
         <CreateUserCard />
