@@ -608,12 +608,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.fill();
             // Text for Eco+ Space
             ctx.fillStyle = 'white';
-            ctx.font = `900 ${12 * currentIconeScale}px "Inter", sans-serif`;
+            ctx.font = `900 ${14 * currentIconeScale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 2.5 * currentIconeScale;
-            ctx.strokeText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
-            ctx.fillText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
+            ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
+            ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             
             // ICone Data
             if (m.icone_data_visivel !== false && m.icone_data_texto) {
