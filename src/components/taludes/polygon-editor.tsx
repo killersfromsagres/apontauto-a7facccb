@@ -671,7 +671,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
       // Legend Title
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 16px "SF Pro Display", system-ui, sans-serif';
+      ctx.font = 'bold 16px "Inter", system-ui, sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText('LEGENDA STATUS', legendX + 20, legendY + 15);
