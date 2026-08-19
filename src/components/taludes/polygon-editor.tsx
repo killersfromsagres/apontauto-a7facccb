@@ -1306,8 +1306,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               ESPAÇO ECO+
                             </text>
                             
-                            {/* Icon Date Label (SVG) */}
-                            {m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
+                            {/* Icon Date Label (SVG) - Hidden by user request */}
+                            {false && m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
                               <g transform={`translate(${iconeDataPos.x - iconePos.x}, ${iconeDataPos.y - iconePos.y}) scale(${m.icone_data_scale || 1})`}>
                                 <rect 
                                    x="-60"
@@ -1327,7 +1327,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                    fill="white"
                                    fontSize="24"
                                    fontWeight="900"
-                                   className="select-none font-['SF_Pro_Display']"
+                                   className="select-none font-['Inter']"
                                  >
                                    {m.icone_data_texto}
                                  </text>
