@@ -86,7 +86,7 @@ function detectCategoria(raw: string): Categoria {
   if (n.includes("JARDIN") || n.includes("PAISAG")) return "JARDINAGEM E PAISAGISMO";
   if (n.includes("LIMPEZ")) return "LIMPEZA";
   if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("PINTURA") || n.includes("ALVENARIA") || n.includes("TELHADO") || n.includes("PORTA") || n.includes("FECHADURA") || n.includes("PISO") || n.includes("PAREDE")) return "CIVIL";
-  if (n.includes("HIDR")) return "CIVIL"; // Mapeia Hidráulica para Civil para que o triage faça a separação correta
+  if (n.includes("HIDR")) return "CIVIL"; // Mapeia Hidráulica para Civil para que o triage faça a separação específica para a equipe de HIDRÁULICA
   if (n.includes("OUTRO") || n.includes("DIVERSOS")) return "OUTROS";
   return "OUTROS";
 }
