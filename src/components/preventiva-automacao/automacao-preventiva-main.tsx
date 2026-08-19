@@ -1,11 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
-import { getAssetTree, getProgramacaoHistory } from "@/lib/preventiva/automacao/actions.functions";
-import { useState } from "react";
+import { getAssetTree, getProgramacaoHistory, saveProgramacaoHistory } from "@/lib/preventiva/automacao/actions.functions";
+import { useState, useRef } from "react";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { CalendarIcon, ChevronRight, ChevronDown, Download, History, Play, Layers } from "lucide-react";
+import { 
+  CalendarIcon, 
+  ChevronRight, 
+  ChevronDown, 
+  Download, 
+  History, 
+  Play, 
+  Layers,
+  Upload,
+  FileSpreadsheet,
+  Zap,
+  Loader2,
+  Trash2
+} from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -13,12 +26,20 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { readPreventivaFiles } from "@/lib/preventiva/reader";
+import { triage, type Equipe } from "@/lib/preventiva/triage";
+import { intelligentSchedule } from "@/lib/preventiva/automacao/intelligent-scheduler";
+import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
+import { saveAs } from "file-saver";
 
 export function AutomacaoPreventivaMain() {
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [expandedPredios, setExpandedPredios] = useState<Set<string>>(new Set());
   const [isGenerating, setIsGenerating] = useState(false);
+  const [importType, setImportType] = useState<"CIVIL-HIDR-CHAV" | "REFRIG" | "ELETRICA" | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: tree, isLoading: loadingTree } = useQuery({
     queryKey: ["asset-tree"],
@@ -51,9 +72,9 @@ export function AutomacaoPreventivaMain() {
     }
     setIsGenerating(true);
     try {
-      // Simulação de geração para UI
+      // Futura implementação: gerar a partir da árvore (hoje gera a partir de planilhas)
       await new Promise(r => setTimeout(r, 2000));
-      toast.success("Programação gerada com sucesso!");
+      toast.info("A geração via árvore está sendo integrada com o motor de planilhas.");
       refetchHistory();
     } catch (e) {
       toast.error("Erro ao gerar programação");
@@ -62,14 +83,168 @@ export function AutomacaoPreventivaMain() {
     }
   };
 
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !importType) return;
+
+    setIsGenerating(true);
+    const toastId = toast.loading("Processando planilhas...");
+    
+    try {
+      // 1. Ler arquivos
+      const result = await readPreventivaFiles(files);
+      
+      // 2. Triagem (Triage)
+      const triaged = triage(result.rows);
+      
+      // 3. Filtrar por tipo de importação
+      let filtered = triaged;
+      if (importType === "CIVIL-HIDR-CHAV") {
+        filtered = triaged.filter(os => ["CIVIL", "CHAVEIRO", "HIDRÁULICA"].includes(os.equipe));
+      } else if (importType === "REFRIG") {
+        filtered = triaged.filter(os => os.equipe.startsWith("CLIMATIZAÇÃO E REFRIGERAÇÃO"));
+      } else if (importType === "ELETRICA") {
+        filtered = triaged.filter(os => os.equipe === "ELÉTRICA");
+      }
+
+      if (filtered.length === 0) {
+        toast.error("Nenhuma OS encontrada para os critérios selecionados.", { id: toastId });
+        return;
+      }
+
+      // 4. Programação Inteligente (Scheduler)
+      const schedule = intelligentSchedule(filtered, startDate);
+
+      // 5. Gerar Excel para cada semana
+      for (const bucket of schedule.buckets) {
+        if (bucket.os.length === 0) continue;
+
+        const bucketsPorEquipe = new Map<Equipe, any>();
+        // Agrupa por equipe dentro do bucket da semana
+        const equipesUnicas = Array.from(new Set(bucket.os.map(o => o.equipe)));
+        equipesUnicas.forEach(eq => {
+          const osDaEquipe = bucket.os.filter(o => o.equipe === eq);
+          const porDiaDaEquipe = bucket.porDia.map(diaList => diaList.filter(o => o.equipe === eq));
+          bucketsPorEquipe.set(eq as Equipe, {
+            week: bucket.week,
+            os: osDaEquipe,
+            porDia: porDiaDaEquipe
+          });
+        });
+
+        const blob = await generateWeeklyProgramacao({
+          titulo: `AUTOMAÇÃO - ${importType}`,
+          week: bucket.week,
+          bucketsPorEquipe,
+          ativoIndex: result.ativoIndex
+        });
+
+        const fileName = `Programacao_${importType}_${bucket.week.label}_${format(new Date(), "yyyyMMdd_HHmm")}.xlsx`;
+        saveAs(blob, fileName);
+
+        // Salvar histórico
+        await saveProgramacaoHistory({
+          nome_arquivo: fileName,
+          configuracao: {
+            tipo: importType,
+            data_inicio: startDate.toISOString(),
+            filtros: Array.from(selectedLocations)
+          },
+          total_os: bucket.os.length,
+          resumo_equipes: schedule.resumoEquipes
+        });
+      }
+
+      toast.success("Programação gerada e baixada com sucesso!", { id: toastId });
+      refetchHistory();
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Erro: ${err.message || "Falha na geração"}`, { id: toastId });
+    } finally {
+      setIsGenerating(false);
+      setImportType(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const triggerImport = (type: typeof importType) => {
+    setImportType(type);
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="grid gap-6 md:grid-cols-12">
       <div className="md:col-span-8 space-y-6">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6 text-primary">
-            <Layers className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Configurar Geração</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2 text-primary">
+              <Zap className="w-5 h-5 fill-primary/20" />
+              <h2 className="text-xl font-semibold">Importação e Geração Rápida</h2>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400">
+              <Sparkles className="w-3 h-3" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Motor IA Otimizado</span>
+            </div>
           </div>
+
+          <input 
+            type="file" 
+            multiple 
+            accept=".xlsx,.xls" 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleFileImport}
+          />
+
+          <div className="grid gap-4 sm:grid-cols-3 mb-8">
+            <Button
+              variant="glass"
+              className="h-24 flex-col gap-2 border-primary/20 hover:border-primary/50 group relative overflow-hidden"
+              onClick={() => triggerImport("CIVIL-HIDR-CHAV")}
+              disabled={isGenerating}
+            >
+              <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
+              <Layers className="w-6 h-6 text-primary" />
+              <div className="text-center">
+                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
+                <div className="text-[10px] text-muted-foreground">Civil / Hidr / Chav</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="glass"
+              className="h-24 flex-col gap-2 border-blue-500/20 hover:border-blue-500/50 group relative overflow-hidden"
+              onClick={() => triggerImport("REFRIG")}
+              disabled={isGenerating}
+            >
+              <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors" />
+              <Zap className="w-6 h-6 text-blue-400" />
+              <div className="text-center">
+                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
+                <div className="text-[10px] text-muted-foreground">Refrigeração</div>
+              </div>
+            </Button>
+
+            <Button
+              variant="glass"
+              className="h-24 flex-col gap-2 border-amber-500/20 hover:border-amber-500/50 group relative overflow-hidden"
+              onClick={() => triggerImport("ELETRICA")}
+              disabled={isGenerating}
+            >
+              <div className="absolute inset-0 bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors" />
+              <Play className="w-6 h-6 text-amber-400" />
+              <div className="text-center">
+                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
+                <div className="text-[10px] text-muted-foreground">Elétrica</div>
+              </div>
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2 mb-6 text-primary/70">
+            <Layers className="w-4 h-4" />
+            <h2 className="text-sm font-semibold uppercase tracking-widest">Configurar Árvore de Ativos</h2>
+          </div>
+
 
           <div className="space-y-6">
             <div className="space-y-2">
