@@ -225,9 +225,11 @@ function ProvisionChamadosButton() {
         Provisionar Cliente
       </Button>
     </GlassCard>
-
+  );
+}
 
 function CreateUserCard() {
+
 
   const qc = useQueryClient();
   const create = useServerFn(createAppUser);
