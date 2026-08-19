@@ -36,6 +36,7 @@ export function brHolidays(year: number): Set<string> {
     new Date(year, 0, 1), // Confraternização
     new Date(year, 3, 21), // Tiradentes
     new Date(year, 4, 1), // Trabalho
+    new Date(year, 7, 20), // Aniversário da Cidade (20 de Agosto) - Feriado Municipal
     new Date(year, 8, 7), // Independência
     new Date(year, 9, 12), // N. Sra. Aparecida
     new Date(year, 10, 2), // Finados
