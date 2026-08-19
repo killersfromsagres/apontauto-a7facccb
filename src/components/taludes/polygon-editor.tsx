@@ -1186,7 +1186,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       </g>
                     )}
                     {/* Slope Number */}
-                    {(m.numero_visivel !== false) && (
+                    {m.numero_visivel !== false && (
+
 
                       <g>
                         <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
