@@ -43,8 +43,8 @@ type EditorMode = 'view' | 'draw' | 'edit' | 'move';
 
 interface HistoryState {
   marcacoes: TaludeMarcacao[];
-  currentPoints: Point[];
 }
+
 
 export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   imageUrl,
@@ -88,6 +88,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [iconeDataVisivel, setIconeDataVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
+  const [history, setHistory] = useState<HistoryState[]>([]);
+
   
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -420,7 +422,53 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       console.error("Erro ao finalizar desenho:", error);
       toast.error("Erro ao salvar demarcação");
     }
+    }
   };
+
+  const handleDelete = async (id: string) => {
+    // Save state before deleting
+    setHistory(prev => [...prev, { marcacoes: [...localMarcacoes] }].slice(-10));
+    
+    try {
+      await onDelete(id);
+      setSelectedMarcacaoId(null);
+      toast.success("Demarcação excluída");
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+      toast.error("Erro ao excluir demarcação");
+      // Remove from history if failed to delete actually? 
+      // Actually, onDelete should update the parent state which updates initialMarcacoes
+    }
+  };
+
+  const handleUndo = async () => {
+    if (history.length === 0) return;
+    
+    const lastState = history[history.length - 1];
+    const newHistory = history.slice(0, -1);
+    
+    // Find what was deleted
+    const currentIds = new Set(localMarcacoes.map(m => m.id));
+    const deleted = lastState.marcacoes.filter(m => !currentIds.has(m.id));
+    
+    if (deleted.length > 0) {
+      toast.loading("Restaurando demarcação...");
+      try {
+        for (const m of deleted) {
+          const { id, ...rest } = m;
+          await onSave(rest);
+        }
+        setHistory(newHistory);
+        toast.dismiss();
+        toast.success("Demarcação restaurada");
+      } catch (error) {
+        toast.dismiss();
+        console.error("Erro ao restaurar:", error);
+        toast.error("Erro ao restaurar demarcação");
+      }
+    }
+  };
+
 
   const handleExport = async () => {
     if (!imgRef.current) return;
