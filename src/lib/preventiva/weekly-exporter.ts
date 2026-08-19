@@ -126,6 +126,7 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
         const ativoFound = entry?.ativo || "";
         const equipFound = entry?.equipamento || "";
         const baseAtivo = ativoFound || ativoValue || "";
+        
         if (baseAtivo) {
           ativoValue = baseAtivo;
         } else if (equipFound) {
@@ -134,9 +135,13 @@ export async function generateWeeklyProgramacao(input: WeeklyExportInput): Promi
           ativoValue = "Ativo não localizado";
           ativoNaoLocalizado = true;
         }
-        // Equipamento de climatização vai para a coluna "Outros"
-        if (equipFound && equipFound !== ativoValue) {
-          outrosValue = outrosValue ? `${equipFound} · ${outrosValue}` : equipFound;
+
+        // Prioriza o equipamento da planilha importada na coluna "Outros" para Refrigeração
+        const equipFromSheet = os.equipamento;
+        if (equipFromSheet) {
+          outrosValue = equipFromSheet;
+        } else if (equipFound) {
+          outrosValue = equipFound;
         }
       }
 
