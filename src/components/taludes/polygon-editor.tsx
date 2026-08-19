@@ -700,7 +700,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       
       // Tree Icon Legend
       ctx.fillStyle = 'white';
-      ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+      ctx.font = '500 14px "Inter", system-ui, sans-serif';
       ctx.fillText('Espaço ECO+ (Árvore)', legendX + 45, currentY + 6);
       
       // Draw small tree
