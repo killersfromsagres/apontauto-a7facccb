@@ -7714,6 +7714,7 @@ export type Database = {
         Returns: boolean
       }
       pcm_fill_metrics: { Args: never; Returns: Json }
+      provision_chamados_client_login: { Args: never; Returns: Json }
       provision_encarregados_login: {
         Args: { _admin_id: string; _password: string }
         Returns: Json
