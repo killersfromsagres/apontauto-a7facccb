@@ -687,7 +687,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Label
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+        ctx.font = '500 14px "Inter", system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(cfg.label, legendX + 45, currentY + 6);
