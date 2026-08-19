@@ -563,7 +563,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           ctx.stroke();
 
           ctx.fillStyle = 'white';
-          ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.font = `900 ${scaledFontSize}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
