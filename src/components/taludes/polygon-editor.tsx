@@ -634,8 +634,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               ctx.fill();
               
               ctx.fillStyle = 'white';
-              ctx.font = `900 ${scaledIconeDataFontSize}px "SF Pro Display", system-ui, sans-serif`;
-              ctx.fillText(m.icone_data_texto, relX, relY + 2);
+              ctx.font = `900 ${scaledIconeDataFontSize}px "Inter", system-ui, sans-serif`;
+              // Hidden by user request: ctx.fillText(m.icone_data_texto, relX, relY + 2);
             }
           } else if (m.icone_tipo === 'interdicao') {
             // Prohibition Sign
