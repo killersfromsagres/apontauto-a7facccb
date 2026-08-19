@@ -105,6 +105,9 @@ const MENU_LABELS: Record<MenuKey, string> = {
   "backorder-mensal": "Backorder Mensal",
   taludes: "Demarcação de Taludes",
   "reclassificar-equipe": "Encarregados: Reclassificar Equipe Manualmente",
+  "preventiva-automacao": "Automação de Preventivas",
+  "rondas-calhas": "Rondas de Calhas",
+  "rondas-calhas-historico": "Histórico de Rondas",
 };
 
 function UsuariosPage() {
