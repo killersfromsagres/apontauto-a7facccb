@@ -86,6 +86,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [iconeDataTexto, setIconeDataTexto] = useState<string>('');
   const [iconeDataScale, setIconeDataScale] = useState(1);
   const [iconeDataVisivel, setIconeDataVisivel] = useState(true);
+  const [numeroEditavel, setNumeroEditavel] = useState<number>(0);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   const [history, setHistory] = useState<HistoryState[]>([]);
@@ -305,6 +306,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setCurrentColor(m.cor);
         setLineThickness(m.espessura_linha || 4);
         setNumeroScale(m.numero_scale || 1);
+        setNumeroEditavel(m.numero || 0);
         setDataScale(m.data_scale || 1);
         setNumeroVisivel(m.numero_visivel !== false);
         setDataVisivel(m.data_visivel !== false);
@@ -330,6 +332,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         setCurrentColor(m.cor);
         setLineThickness(m.espessura_linha || 4);
         setNumeroScale(m.numero_scale || 1);
+        setNumeroEditavel(m.numero || 0);
         setDataScale(m.data_scale || 1);
         setNumeroVisivel(m.numero_visivel !== false);
         setDataVisivel(m.data_visivel !== false);
@@ -780,6 +783,24 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             </div>
             
             <div className="space-y-4">
+              <div className="space-y-2">
+                <span className="text-[10px] text-white/70 uppercase font-bold">Numeração do Talude</span>
+                <input 
+                  type="number"
+                  value={numeroEditavel}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    setNumeroEditavel(val);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, numero: val } : m));
+                  }}
+                  onBlur={() => {
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, numero: numeroEditavel });
+                  }}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                />
+              </div>
+
               <div className="space-y-2">
                 <span className="text-[10px] text-white/70 uppercase">Status da Atividade</span>
                 <div className="grid grid-cols-2 gap-2">
