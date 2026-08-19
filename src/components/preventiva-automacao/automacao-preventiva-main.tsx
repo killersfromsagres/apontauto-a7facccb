@@ -182,9 +182,9 @@ export function AutomacaoPreventivaMain() {
       <div className="md:col-span-8 space-y-6">
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2 text-primary">
-              <Zap className="w-5 h-5 fill-primary/20" />
-              <h2 className="text-xl font-semibold">Importação e Geração Rápida</h2>
+            <div className="flex items-center gap-2 text-cyan-400">
+              <Zap className="w-6 h-6 fill-cyan-400/20 animate-pulse" />
+              <h2 className="text-xl font-black tracking-tighter uppercase italic">Programação Inteligente</h2>
             </div>
             <motion.div 
               whileHover={{ scale: 1.05 }}
