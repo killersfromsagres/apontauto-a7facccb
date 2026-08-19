@@ -409,7 +409,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       icone_y: centroid.y - 30,
       icone_data_x: centroid.x,
       icone_data_y: centroid.y + 60,
-      icone_data_visivel: true,
+      icone_data_visivel: false, // Default to false when adding a tree/icon
       icone_data_texto: iconeTipo === 'arvore' ? iconeDataTexto : null
     };
     
