@@ -1209,7 +1209,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           fill="white"
                           fontSize={28 * (m.numero_scale || 1)}
                           fontWeight="900"
-                          className="select-none font-['SF_Pro_Display']"
+                          className="select-none font-['Inter']"
                           style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
                         >
                           {m.numero}
