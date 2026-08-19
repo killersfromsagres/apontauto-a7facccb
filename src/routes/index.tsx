@@ -129,7 +129,12 @@ function AuthenticatedLayout() {
   const { access, loading } = useMyAccess();
   const canRender = canRenderPath(pathname, access, loading);
   const noMenus = !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
+  
+  // Login exclusivo de chamados (apenas dashboard-chamados e corretiva-historico)
+  const isChamadosClient = !access.isAdmin && access.allowed?.includes("dashboard-chamados") && access.allowed?.length <= 3;
+  
   const isIndex = pathname === "/" || pathname === "" || pathname === "/_authenticated" || pathname === "/_authenticated/";
+
 
   return (
     <SidebarProvider>
@@ -139,8 +144,9 @@ function AuthenticatedLayout() {
           <AppHeader />
           <AccessGuard />
           <main id="conteudo-principal" tabIndex={-1} className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]">
-            {canRender ? (isIndex ? <CentralInteligenciaView /> : <Outlet />) : <AccessFallback loading={loading} noMenus={noMenus} />}
+            {canRender ? (isIndex ? (isChamadosClient ? <CentralInteligenciaView variant="chamados" /> : <CentralInteligenciaView />) : <Outlet />) : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
+
           <MobileTabBar />
           <ForcePasswordChange />
         </SidebarInset>

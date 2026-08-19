@@ -41,6 +41,8 @@ import {
   setUserAllowedMenus,
   MENU_KEYS,
   provisionEncarregadosUser,
+  provisionChamadosClientLogin,
+
   type MenuKey,
 } from "@/lib/users.functions";
 
@@ -186,6 +188,44 @@ function ProvisionEncarregadosButton() {
     </GlassCard>
   );
 }
+
+function ProvisionChamadosButton() {
+  const provision = useServerFn(provisionChamadosClientLogin);
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+
+  const handleProvision = async () => {
+    setLoading(true);
+    try {
+      await provision();
+      toast.success(`Login "chamados" provisionado com sucesso!`);
+      qc.invalidateQueries({ queryKey: ["app-users"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao provisionar login de chamados");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <GlassCard className="flex flex-col sm:flex-row items-center justify-between gap-4 border-emerald-500/20 bg-emerald-500/5">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-emerald-500 uppercase tracking-wider">Acesso de Monitoramento (Cliente)</h3>
+        <p className="text-xs text-muted-foreground max-w-md">
+          Provisiona o login <strong>chamados</strong> (senha: 123456) com acesso exclusivo para visualização da programação de corretivas e histórico.
+        </p>
+      </div>
+      <Button 
+        onClick={handleProvision} 
+        disabled={loading} 
+        variant="outline" 
+        className="w-full sm:w-auto border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Activity className="h-4 w-4 mr-2" />}
+        Provisionar Cliente
+      </Button>
+    </GlassCard>
+
 
 function CreateUserCard() {
 
