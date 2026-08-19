@@ -1122,9 +1122,35 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       handleDelete(selectedMarcacaoId);
                     }
                   }}
-
                 >
-                  <Trash2 className="h-3 w-3 mr-1" /> Excluir
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir Área
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/5">
+                <Button 
+                  size="sm" variant="outline" className="h-8 text-[10px] border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => {
+                    setNumeroVisivel(false);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, numero_visivel: false } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, numero_visivel: false });
+                    toast.info("Numeração removida (oculta)");
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir Nº
+                </Button>
+                <Button 
+                  size="sm" variant="outline" className="h-8 text-[10px] border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => {
+                    setDataVisivel(false);
+                    setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, data_visivel: false } : m));
+                    const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
+                    if (target) onSave({ ...target, data_visivel: false });
+                    toast.info("Data removida (oculta)");
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" /> Excluir Data
                 </Button>
               </div>
             </div>
