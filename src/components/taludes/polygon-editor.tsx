@@ -1331,11 +1331,16 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               y="48" 
                               x="15" 
                               textAnchor="middle" 
-                              fill="#064e3b" 
+                              fill="white" 
                               fontSize="11" 
                               fontWeight="900"
-                              className="font-['SF_Pro_Display']"
-                              style={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: '0.4px', paintOrder: 'stroke' }}
+                              className="font-['Inter']"
+                              style={{ 
+                                stroke: 'black', 
+                                strokeWidth: '1.2px', 
+                                paintOrder: 'stroke',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                              }}
                             >
                               ESPAÇO ECO+
                             </text>
