@@ -669,6 +669,9 @@ const RESTRICTED_KEYS = [
   "refrigeracao",
   "refrigeracao-pecas-status",
   "refrigeracao-historico",
+  "preventiva-automacao",
+  "rondas-calhas",
+  "rondas-calhas-historico",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */

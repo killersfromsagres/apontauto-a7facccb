@@ -226,6 +226,9 @@ export const MENU_KEYS = [
   "taludes",
   "imagens-migrar",
   "reclassificar-equipe",
+  "preventiva-automacao",
+  "rondas-calhas",
+  "rondas-calhas-historico",
 ] as const;
 
 export type MenuKey = (typeof MENU_KEYS)[number];
