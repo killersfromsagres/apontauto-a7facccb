@@ -186,10 +186,13 @@ export function AutomacaoPreventivaMain() {
               <Zap className="w-5 h-5 fill-primary/20" />
               <h2 className="text-xl font-semibold">Importação e Geração Rápida</h2>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400">
-              <Sparkles className="w-3 h-3" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Motor IA Otimizado</span>
-            </div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-4 py-1.5 bg-cyan-400/10 backdrop-blur-md rounded-full border border-cyan-400/30 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Motor IA Ativo</span>
+            </motion.div>
           </div>
 
           <input 
