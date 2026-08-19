@@ -254,9 +254,9 @@ export function AutomacaoPreventivaMain() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 mb-6 text-primary/70">
-            <Layers className="w-4 h-4" />
-            <h2 className="text-sm font-semibold uppercase tracking-widest">Configurar Árvore de Ativos</h2>
+          <div className="flex items-center gap-2 mb-6 text-cyan-400/70 border-b border-cyan-400/10 pb-4">
+            <Layers className="w-5 h-5" />
+            <h2 className="text-sm font-black uppercase tracking-[0.3em]">Árvore de Ativos Operacional</h2>
           </div>
 
 
