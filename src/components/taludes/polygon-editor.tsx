@@ -750,10 +750,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <Button variant={mode === 'edit' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('edit')} className="h-9 w-9" title="Editar Pontos"><PenTool className="h-4 w-4" /></Button>
           <Button variant={mode === 'move' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('move')} className="h-9 w-9" title="Mover Legendas"><Move className="h-4 w-4" /></Button>
           <div className="w-px h-6 bg-white/10 self-center mx-1" />
+          {history.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleUndo} 
+              className="h-9 w-9 text-amber-400 hover:bg-amber-400/10" 
+              title="Desfazer Exclusão"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z * 1.25, 20))} className="h-9 w-9"><ZoomIn className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.25, 0.05))} className="h-9 w-9"><ZoomOut className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={fitToView} className="h-9 w-9" title="Resetar Visualização"><Maximize className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={handleExport} className="h-9 w-9 text-emerald-400" title="Exportar Mapa"><Download className="h-4 w-4" /></Button>
+
         </div>
 
         {selectedMarcacaoId && (
