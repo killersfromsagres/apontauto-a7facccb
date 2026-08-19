@@ -1004,29 +1004,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
                   {iconeTipo === 'arvore' && (
                     <div className="space-y-3 pt-3 border-t border-white/5 mt-3 animate-in fade-in">
-                      <span className="text-[10px] text-emerald-400 uppercase font-bold">Data da Reserva</span>
                       <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          placeholder="Ex: 12/08"
-                          value={iconeDataTexto}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setIconeDataTexto(val);
-                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_texto: val } : m));
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                              if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
-                            }
-                          }}
-                          onBlur={() => {
-                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                            if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
-                          }}
-                          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none"
-                        />
                         <Button 
                           size="icon" 
                           variant={iconeDataVisivel ? "premium" : "outline"} 
@@ -1041,26 +1019,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         >
                           <Calendar className="h-3.5 w-3.5" />
                         </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-[10px]">
-                          <span className="text-white/60">Escala Data Reserva</span>
-                          <span className="text-emerald-400 font-mono font-bold">{(iconeDataScale).toFixed(1)}x</span>
+                        <div className="flex-1 flex items-center">
+                          <span className="text-[10px] text-white/50 italic">Data oculta (conforme solicitado)</span>
                         </div>
-                        <input 
-                          type="range" min="0.5" max="15" step="0.1" 
-                          value={iconeDataScale} 
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            setIconeDataScale(val);
-                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_scale: val } : m));
-                          }}
-                          onMouseUp={() => {
-                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                            if (target) onSave(target);
-                          }}
-                          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                        />
                       </div>
                     </div>
                   )}
