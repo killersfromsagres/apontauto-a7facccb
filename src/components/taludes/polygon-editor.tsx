@@ -526,7 +526,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
           // Draw Number Text
           ctx.fillStyle = 'white';
-          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "Inter", system-ui, sans-serif`;
+          ctx.font = `800 ${32 * (m.numero_scale || 1)}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(m.numero), numPos.x, numPos.y);
@@ -548,10 +548,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const deadlineText = m.prazo_rotulo || '';
         const displayDeadline = formatDate(deadlineText);
 
-        const baseFontSize = 24;
+        const baseFontSize = 28;
         const scaledFontSize = baseFontSize * currentDataScale;
-        const rectWidth = 120 * currentDataScale;
-        const rectHeight = 60 * currentDataScale;
+        const rectWidth = 140 * currentDataScale;
+        const rectHeight = 70 * currentDataScale;
 
         if (m.data_visivel !== false) {
           ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
@@ -608,12 +608,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.fill();
             // Text for Eco+ Space
             ctx.fillStyle = 'white';
-            ctx.font = `900 ${12 * currentIconeScale}px "Inter", sans-serif`;
+            ctx.font = `900 ${14 * currentIconeScale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
             ctx.strokeStyle = 'black';
             ctx.lineWidth = 2.5 * currentIconeScale;
-            ctx.strokeText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
-            ctx.fillText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
+            ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
+            ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             
             // ICone Data
             if (m.icone_data_visivel !== false && m.icone_data_texto) {
@@ -1207,7 +1207,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           textAnchor="middle"
                           dominantBaseline="middle"
                           fill="white"
-                          fontSize={28 * (m.numero_scale || 1)}
+                          fontSize={32 * (m.numero_scale || 1)}
                           fontWeight="900"
                           className="select-none font-['Inter']"
                           style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
@@ -1234,9 +1234,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         const deadlineText = m.prazo_rotulo || '';
                         const displayDeadline = formatDate(deadlineText);
 
-                        const baseFontSize = 24;
-                        const labelWidth = 120;
-                        const labelHeight = 60;
+                        const baseFontSize = 28;
+                        const labelWidth = 140;
+                        const labelHeight = 70;
 
                         return (
                           <g>
@@ -1293,7 +1293,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               x="15" 
                               textAnchor="middle" 
                               fill="white" 
-                              fontSize="11" 
+                              fontSize="13" 
                               fontWeight="900"
                               className="font-['Inter']"
                               style={{ 
@@ -1303,7 +1303,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                 textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                               }}
                             >
-                              ESPAÇO ECO+
+                              RESERVA SUVINIL
                             </text>
                             
                             {/* Icon Date Label (SVG) - Hidden by user request */}
