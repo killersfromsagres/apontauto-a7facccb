@@ -1259,7 +1259,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                fill="white"
                                fontSize={baseFontSize}
                                fontWeight="900"
-                               className="select-none font-['SF_Pro_Display'] tracking-tight"
+                        className="select-none font-['Inter'] tracking-tight"
                              >
                                {displayDate}
                              </text>
