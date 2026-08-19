@@ -43,8 +43,8 @@ type EditorMode = 'view' | 'draw' | 'edit' | 'move';
 
 interface HistoryState {
   marcacoes: TaludeMarcacao[];
-  currentPoints: Point[];
 }
+
 
 export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   imageUrl,
@@ -88,6 +88,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [iconeDataVisivel, setIconeDataVisivel] = useState(true);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
+  const [history, setHistory] = useState<HistoryState[]>([]);
+
   
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -422,6 +424,52 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     }
   };
 
+
+  const handleDelete = async (id: string) => {
+    // Save state before deleting
+    setHistory(prev => [...prev, { marcacoes: [...localMarcacoes] }].slice(-10));
+    
+    try {
+      await onDelete(id);
+      setSelectedMarcacaoId(null);
+      toast.success("Demarcação excluída");
+    } catch (error) {
+      console.error("Erro ao excluir:", error);
+      toast.error("Erro ao excluir demarcação");
+      // Remove from history if failed to delete actually? 
+      // Actually, onDelete should update the parent state which updates initialMarcacoes
+    }
+  };
+
+  const handleUndo = async () => {
+    if (history.length === 0) return;
+    
+    const lastState = history[history.length - 1];
+    const newHistory = history.slice(0, -1);
+    
+    // Find what was deleted
+    const currentIds = new Set(localMarcacoes.map(m => m.id));
+    const deleted = lastState.marcacoes.filter(m => !currentIds.has(m.id));
+    
+    if (deleted.length > 0) {
+      toast.loading("Restaurando demarcação...");
+      try {
+        for (const m of deleted) {
+          const { id, ...rest } = m;
+          await onSave(rest);
+        }
+        setHistory(newHistory);
+        toast.dismiss();
+        toast.success("Demarcação restaurada");
+      } catch (error) {
+        toast.dismiss();
+        console.error("Erro ao restaurar:", error);
+        toast.error("Erro ao restaurar demarcação");
+      }
+    }
+  };
+
+
   const handleExport = async () => {
     if (!imgRef.current) return;
     
@@ -702,10 +750,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           <Button variant={mode === 'edit' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('edit')} className="h-9 w-9" title="Editar Pontos"><PenTool className="h-4 w-4" /></Button>
           <Button variant={mode === 'move' ? 'premium' : 'ghost'} size="icon" onClick={() => setMode('move')} className="h-9 w-9" title="Mover Legendas"><Move className="h-4 w-4" /></Button>
           <div className="w-px h-6 bg-white/10 self-center mx-1" />
+          {history.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleUndo} 
+              className="h-9 w-9 text-amber-400 hover:bg-amber-400/10" 
+              title="Desfazer Exclusão"
+            >
+              <Undo2 className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.min(z * 1.25, 20))} className="h-9 w-9"><ZoomIn className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={() => setZoom(z => Math.max(z / 1.25, 0.05))} className="h-9 w-9"><ZoomOut className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={fitToView} className="h-9 w-9" title="Resetar Visualização"><Maximize className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={handleExport} className="h-9 w-9 text-emerald-400" title="Exportar Mapa"><Download className="h-4 w-4" /></Button>
+
         </div>
 
         {selectedMarcacaoId && (
@@ -1036,10 +1096,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   size="sm" variant="destructive" className="flex-1 h-8 text-[10px]"
                   onClick={() => {
                     if (selectedMarcacaoId) {
-                      onDelete(selectedMarcacaoId);
-                      setSelectedMarcacaoId(null);
+                      handleDelete(selectedMarcacaoId);
                     }
                   }}
+
                 >
                   <Trash2 className="h-3 w-3 mr-1" /> Excluir
                 </Button>
@@ -1127,6 +1187,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     )}
                     {/* Slope Number */}
                     {m.numero_visivel !== false && (
+
+
                       <g>
                         <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
                         <text
