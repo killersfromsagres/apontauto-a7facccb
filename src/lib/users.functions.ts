@@ -112,9 +112,13 @@ export const provisionChamadosClientLogin = createServerFn({ method: "POST" })
   .middleware([requireUsersAuth])
   .handler(async ({ context }) => {
     await assertCallerIsAdmin(context.supabase, context.userId);
-    const { error } = await context.supabase.rpc("provision_chamados_client_login" as any);
-    if (error) throw new Error(error.message);
-    return { ok: true };
+    // Use type casting to bypass the stale generated types until the next sync
+    const { data, error } = await (context.supabase.rpc as any)("provision_chamados_client_login");
+    if (error) {
+      console.error("Erro RPC provision_chamados_client_login:", error);
+      throw new Error(error.message);
+    }
+    return (data as any) || { ok: true };
   });
 
 export const updateMemberOrder = createServerFn({ method: "POST" })
