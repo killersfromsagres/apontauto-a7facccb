@@ -554,12 +554,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const rectHeight = 70 * currentDataScale;
 
         if (m.data_visivel !== false) {
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
           ctx.beginPath();
           ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
           ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = 1.5;
           ctx.stroke();
 
           ctx.fillStyle = 'white';
@@ -582,7 +582,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           // Icon Background Circle
           ctx.beginPath();
           ctx.arc(0, 0, iconSize / 2 + 10, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
           ctx.fill();
           ctx.strokeStyle = m.cor;
           ctx.lineWidth = 2;
@@ -631,6 +631,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
               ctx.beginPath();
               ctx.roundRect(relX - idRectW / 2, relY - idRectH / 2, idRectW, idRectH, 6 * currentIconeDataScale);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
               ctx.fill();
               
               ctx.fillStyle = 'white';
@@ -1246,10 +1247,10 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                width={labelWidth} 
                                height={labelHeight} 
                                rx="8" 
-                               fill="rgba(0,0,0,0.85)" 
-                               stroke="rgba(255,255,255,0.15)" 
-                               strokeWidth="1"
-                               className="backdrop-blur-sm"
+                               fill="rgba(255,255,255,0.15)" 
+                               stroke="rgba(255,255,255,0.25)" 
+                               strokeWidth="1.5"
+                               className="backdrop-blur-md"
                              />
                              <text
                                x="0"
@@ -1284,7 +1285,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     {/* Icons (Arvore / Interdicao) */}
                     {m.icone_tipo && m.icone_visivel !== false && (
                       <g transform={`translate(${iconePos.x}, ${iconePos.y}) scale(${m.icone_scale || 1})`}>
-                        <circle cx="0" cy="0" r="30" fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth="2" />
+                        <circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.15)" className="backdrop-blur-md" stroke={m.cor} strokeWidth="2" />
                         {m.icone_tipo === 'arvore' ? (
                           <g transform="translate(-15, -15)">
                             <Trees size={30} className="text-emerald-400 fill-emerald-500/30 drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
@@ -1315,10 +1316,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                    width="120" 
                                    height="40" 
                                    rx="6" 
-                                   fill="rgba(0,0,0,0.85)" 
-                                   stroke="rgba(255,255,255,0.15)" 
-                                   strokeWidth="1"
-                                 />
+                                    fill="rgba(255,255,255,0.15)" 
+                                    className="backdrop-blur-md"
+                                    stroke="rgba(255,255,255,0.25)" 
+                                    strokeWidth="1.5"
+                                  />
                                  <text
                                    x="0"
                                    y="2"
