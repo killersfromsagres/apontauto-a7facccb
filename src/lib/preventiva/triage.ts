@@ -141,6 +141,8 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     } else if (cat === "ELÉTRICA") {
       out.push({ ...r, equipe: "ELÉTRICA" });
     } else if (cat === "CIVIL") {
+      // Regra: Se for HIDRÁULICA (pelas keywords ou se já foi pré-classificado como tal),
+      // aloca para HIDRÁULICA e remove de CIVIL/CHAVEIRO.
       if (isHidraulica(r)) {
         out.push({ ...r, equipe: "HIDRÁULICA" });
       } else {
@@ -154,6 +156,7 @@ export function triage(rows: RawRow[]): TriagedOS[] {
       } else if (bag.includes("ELETR")) {
         out.push({ ...r, equipe: "ELÉTRICA" });
       } else if (bag.includes("HIDR")) {
+        // Se encontrar HIDR no nome da OS, vai direto para HIDRÁULICA
         out.push({ ...r, equipe: "HIDRÁULICA" });
       } else if (bag.includes("CIVIL") || bag.includes("PINTURA")) {
         civilPool.push(r);
@@ -162,12 +165,15 @@ export function triage(rows: RawRow[]): TriagedOS[] {
   }
 
   civilPool.forEach((r) => {
-    // Balanceamento entre Civil e Chaveiro baseado em palavras-chave se possível
+    // Balanceamento entre Civil e Chaveiro baseado em palavras-chave
     const bag = norm(`${r.nomeOS} ${r.descricao}`);
-    if (bag.includes("CHAVE") || bag.includes("PORTA") || bag.includes("FECHADURA")) {
+    
+    // Verificação extra de segurança para garantir que nada de hidráulica escape para chaveiro/civil
+    if (isHidraulica(r) || bag.includes("HIDR")) {
+      out.push({ ...r, equipe: "HIDRÁULICA" });
+    } else if (bag.includes("CHAVE") || bag.includes("PORTA") || bag.includes("FECHADURA")) {
       out.push({ ...r, equipe: "CHAVEIRO" });
     } else {
-      // Pedido do usuário: Se não for chaveiro, vai para CIVIL
       out.push({ ...r, equipe: "CIVIL" });
     }
   });
