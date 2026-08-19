@@ -192,7 +192,7 @@ export function CentralInteligenciaView({ variant }: { variant?: "default" | "ch
         <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2", variant === "chamados" ? "lg:grid-cols-4" : "lg:grid-cols-5")}>
            <KpiMonitorCard title="SLA GLOBAL" value={overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%"} icon={<Zap className="h-5 w-5 text-[#4F8CFF]" />} description="Eficiência de atendimento" />
            <KpiMonitorCard title="BACKORDER" value={overview?.os.backlog.toString() || "0"} icon={<ClipboardList className="h-5 w-5 text-[#52E5FF]" />} description="Chamados em espera" />
-           <KpiMonitorCard title="CAMPO IA" value={overview?.corretiva_novo?.criadas.toString() || "0"} icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />} description="Execução Campo IA" />
+           <KpiMonitorCard title="CAMPO" value={overview?.corretiva_novo?.criadas.toString() || "0"} icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />} description="Execução de Campo" />
            {variant !== "chamados" && <KpiMonitorCard title="MTTR" value={`${mttrGlobal.toFixed(1)}h`} icon={<Clock className="h-5 w-5 text-[#34d399]" />} description="Tempo de reparo" />}
            <KpiMonitorCard title="ALERTAS" value={overview?.os.criticas.toString() || "0"} icon={<AlertTriangle className="h-5 w-5 text-rose-500" />} description="Prioridade Alta" />
         </div>

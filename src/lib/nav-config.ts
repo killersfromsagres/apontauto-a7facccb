@@ -235,7 +235,7 @@ export const sections: MenuSection[] = [
     items: [
       {
         key: "corretiva-novo",
-        title: "Execução de Campo (IA)",
+        title: "Execução de Campo",
         short: "Campo",
         url: "/corretiva-novo",
         icon: Wrench,

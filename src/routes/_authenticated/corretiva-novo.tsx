@@ -169,7 +169,7 @@ function CorretivaNovoPage() {
   return (
     <PageShell
       title="Programação de Corretivas"
-      description="Sistema inteligente com classificação automática por IA."
+      description="Sistema chamados de Corretivas."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
