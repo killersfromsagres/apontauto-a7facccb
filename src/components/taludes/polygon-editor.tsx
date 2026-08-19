@@ -422,8 +422,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       console.error("Erro ao finalizar desenho:", error);
       toast.error("Erro ao salvar demarcação");
     }
-    }
   };
+
 
   const handleDelete = async (id: string) => {
     // Save state before deleting
