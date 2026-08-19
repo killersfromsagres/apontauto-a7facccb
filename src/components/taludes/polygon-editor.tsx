@@ -1234,9 +1234,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         const deadlineText = m.prazo_rotulo || '';
                         const displayDeadline = formatDate(deadlineText);
 
-                        const baseFontSize = 24;
-                        const labelWidth = 120;
-                        const labelHeight = 60;
+                        const baseFontSize = 28;
+                        const labelWidth = 140;
+                        const labelHeight = 70;
 
                         return (
                           <g>
