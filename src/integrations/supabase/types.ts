@@ -7662,6 +7662,7 @@ export type Database = {
           p_modulo?: string
           p_predio?: string
           p_status?: string
+          p_variant?: string
         }
         Returns: Json
       }
