@@ -66,9 +66,14 @@ export function CentralInteligenciaView({ variant }: { variant?: "default" | "ch
   const { data: overview, isLoading: overviewLoading, error: overviewError, refetch: refetchOverview } = useQuery({
     queryKey: ["gestao", "overview", filtros],
     queryFn: async () => {
-      const data = await fetchGestaoOverview(filtros, variant);
-      if (!data) throw new Error("O servidor retornou um conjunto de dados vazio.");
-      return data;
+      try {
+        const data = await fetchGestaoOverview(filtros, variant);
+        if (!data) throw new Error("O servidor retornou um conjunto de dados vazio.");
+        return data;
+      } catch (err: any) {
+        console.error("fetchGestaoOverview error:", err);
+        throw err;
+      }
     },
     refetchInterval: 10000, 
     staleTime: 5000,
