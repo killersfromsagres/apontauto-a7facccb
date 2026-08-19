@@ -147,7 +147,7 @@ export function triage(rows: RawRow[]): TriagedOS[] {
         civilPool.push(r);
       }
     } else {
-      // Tenta classificar pelo nome da OS se for OUTROS
+      // Tenta classificar pelo nome da OS se for OUTROS ou categorias genéricas
       const bag = norm(`${r.nomeOS} ${r.descricao} ${r.arquivo}`);
       if (bag.includes("CLIMAT") || bag.includes("REFRIG") || bag.includes("AR CONDIC")) {
         out.push({ ...r, equipe: refrigTeamForPredio(r.predio) });
@@ -161,13 +161,14 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     }
   }
 
-  civilPool.forEach((r, i) => {
+  civilPool.forEach((r) => {
     // Balanceamento entre Civil e Chaveiro baseado em palavras-chave se possível
     const bag = norm(`${r.nomeOS} ${r.descricao}`);
     if (bag.includes("CHAVE") || bag.includes("PORTA") || bag.includes("FECHADURA")) {
       out.push({ ...r, equipe: "CHAVEIRO" });
     } else {
-      out.push({ ...r, equipe: i % 2 === 0 ? "CIVIL" : "CHAVEIRO" });
+      // Pedido do usuário: Se não for chaveiro, vai para CIVIL
+      out.push({ ...r, equipe: "CIVIL" });
     }
   });
 
