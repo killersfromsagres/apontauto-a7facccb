@@ -146,9 +146,6 @@ export function triage(rows: RawRow[]): TriagedOS[] {
       } else {
         civilPool.push(r);
       }
-    } else if (cat === "HIDRÁULICA") {
-      // Se a categoria já for Hidráulica, garante que vá para a equipe correta
-      out.push({ ...r, equipe: "HIDRÁULICA" });
     } else {
       // Tenta classificar pelo nome da OS se for OUTROS ou categorias genéricas
       const bag = norm(`${r.nomeOS} ${r.descricao} ${r.arquivo}`);
