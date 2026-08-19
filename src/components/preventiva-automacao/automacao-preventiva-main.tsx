@@ -178,7 +178,7 @@ export function AutomacaoPreventivaMain() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-12">
+    <div className="grid gap-6 md:grid-cols-12 max-w-7xl mx-auto">
       <div className="md:col-span-8 space-y-6">
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
