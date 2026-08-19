@@ -409,7 +409,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       icone_y: centroid.y - 30,
       icone_data_x: centroid.x,
       icone_data_y: centroid.y + 60,
-      icone_data_visivel: true,
+      icone_data_visivel: false, // Default to false when adding a tree/icon
       icone_data_texto: iconeTipo === 'arvore' ? iconeDataTexto : null
     };
     
@@ -526,7 +526,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
           // Draw Number Text
           ctx.fillStyle = 'white';
-          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(m.numero), numPos.x, numPos.y);
@@ -563,7 +563,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           ctx.stroke();
 
           ctx.fillStyle = 'white';
-          ctx.font = `900 ${scaledFontSize}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.font = `900 ${scaledFontSize}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
@@ -607,11 +607,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Eco+ Space
-            ctx.fillStyle = '#064e3b'; // Darker green (emerald 900)
-            ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.fillStyle = 'white';
+            ctx.font = `900 ${12 * currentIconeScale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1 * currentIconeScale;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2.5 * currentIconeScale;
             ctx.strokeText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
             ctx.fillText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
             
@@ -634,8 +634,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               ctx.fill();
               
               ctx.fillStyle = 'white';
-              ctx.font = `900 ${scaledIconeDataFontSize}px "SF Pro Display", system-ui, sans-serif`;
-              ctx.fillText(m.icone_data_texto, relX, relY + 2);
+              ctx.font = `900 ${scaledIconeDataFontSize}px "Inter", system-ui, sans-serif`;
+              // Hidden by user request: ctx.fillText(m.icone_data_texto, relX, relY + 2);
             }
           } else if (m.icone_tipo === 'interdicao') {
             // Prohibition Sign
@@ -671,7 +671,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
       // Legend Title
       ctx.fillStyle = 'white';
-      ctx.font = 'bold 16px "SF Pro Display", system-ui, sans-serif';
+      ctx.font = 'bold 16px "Inter", system-ui, sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText('LEGENDA STATUS', legendX + 20, legendY + 15);
@@ -687,7 +687,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
         // Label
         ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+        ctx.font = '500 14px "Inter", system-ui, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(cfg.label, legendX + 45, currentY + 6);
@@ -700,7 +700,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       
       // Tree Icon Legend
       ctx.fillStyle = 'white';
-      ctx.font = '500 14px "SF Pro Display", system-ui, sans-serif';
+      ctx.font = '500 14px "Inter", system-ui, sans-serif';
       ctx.fillText('Espaço ECO+ (Árvore)', legendX + 45, currentY + 6);
       
       // Draw small tree
@@ -1004,29 +1004,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
                   {iconeTipo === 'arvore' && (
                     <div className="space-y-3 pt-3 border-t border-white/5 mt-3 animate-in fade-in">
-                      <span className="text-[10px] text-emerald-400 uppercase font-bold">Data da Reserva</span>
                       <div className="flex gap-2">
-                        <input 
-                          type="text"
-                          placeholder="Ex: 12/08"
-                          value={iconeDataTexto}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setIconeDataTexto(val);
-                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_texto: val } : m));
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                              if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
-                            }
-                          }}
-                          onBlur={() => {
-                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                            if (target) onSave({ ...target, icone_data_texto: iconeDataTexto });
-                          }}
-                          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none"
-                        />
                         <Button 
                           size="icon" 
                           variant={iconeDataVisivel ? "premium" : "outline"} 
@@ -1041,26 +1019,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                         >
                           <Calendar className="h-3.5 w-3.5" />
                         </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-[10px]">
-                          <span className="text-white/60">Escala Data Reserva</span>
-                          <span className="text-emerald-400 font-mono font-bold">{(iconeDataScale).toFixed(1)}x</span>
+                        <div className="flex-1 flex items-center">
+                          <span className="text-[10px] text-white/50 italic">Data oculta (conforme solicitado)</span>
                         </div>
-                        <input 
-                          type="range" min="0.5" max="15" step="0.1" 
-                          value={iconeDataScale} 
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            setIconeDataScale(val);
-                            setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_data_scale: val } : m));
-                          }}
-                          onMouseUp={() => {
-                            const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
-                            if (target) onSave(target);
-                          }}
-                          className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                        />
                       </div>
                     </div>
                   )}
@@ -1248,7 +1209,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                           fill="white"
                           fontSize={28 * (m.numero_scale || 1)}
                           fontWeight="900"
-                          className="select-none font-['SF_Pro_Display']"
+                          className="select-none font-['Inter']"
                           style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
                         >
                           {m.numero}
@@ -1298,7 +1259,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                fill="white"
                                fontSize={baseFontSize}
                                fontWeight="900"
-                               className="select-none font-['SF_Pro_Display'] tracking-tight"
+                        className="select-none font-['Inter'] tracking-tight"
                              >
                                {displayDate}
                              </text>
@@ -1310,7 +1271,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                fill="white"
                                fontSize={baseFontSize}
                                fontWeight="900"
-                               className="select-none font-['SF_Pro_Display'] tracking-tight"
+                                className="select-none font-['Inter'] tracking-tight"
                              >
                                {displayDeadline || displayDate}
                              </text>
@@ -1331,17 +1292,22 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                               y="48" 
                               x="15" 
                               textAnchor="middle" 
-                              fill="#064e3b" 
+                              fill="white" 
                               fontSize="11" 
                               fontWeight="900"
-                              className="font-['SF_Pro_Display']"
-                              style={{ stroke: 'rgba(255,255,255,0.4)', strokeWidth: '0.4px', paintOrder: 'stroke' }}
+                              className="font-['Inter']"
+                              style={{ 
+                                stroke: 'black', 
+                                strokeWidth: '1.2px', 
+                                paintOrder: 'stroke',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                              }}
                             >
                               ESPAÇO ECO+
                             </text>
                             
-                            {/* Icon Date Label (SVG) */}
-                            {m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
+                            {/* Icon Date Label (SVG) - Hidden by user request */}
+                            {false && m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
                               <g transform={`translate(${iconeDataPos.x - iconePos.x}, ${iconeDataPos.y - iconePos.y}) scale(${m.icone_data_scale || 1})`}>
                                 <rect 
                                    x="-60"
@@ -1361,7 +1327,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                    fill="white"
                                    fontSize="24"
                                    fontWeight="900"
-                                   className="select-none font-['SF_Pro_Display']"
+                                   className="select-none font-['Inter']"
                                  >
                                    {m.icone_data_texto}
                                  </text>
