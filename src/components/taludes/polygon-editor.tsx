@@ -607,11 +607,11 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.closePath();
             ctx.fill();
             // Text for Eco+ Space
-            ctx.fillStyle = '#064e3b'; // Darker green (emerald 900)
-            ctx.font = `900 ${12 * currentIconeScale}px "SF Pro Display", sans-serif`;
+            ctx.fillStyle = 'white';
+            ctx.font = `900 ${12 * currentIconeScale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1 * currentIconeScale;
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2.5 * currentIconeScale;
             ctx.strokeText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
             ctx.fillText('ESPAÇO ECO+', 0, iconSize / 2 + 25);
             
