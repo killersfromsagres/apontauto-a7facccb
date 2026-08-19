@@ -396,9 +396,9 @@ export function AutomacaoPreventivaMain() {
             <h2 className="text-xl font-black uppercase tracking-tighter italic">Log de Geração</h2>
           </div>
 
-          <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar space-y-3">
+          <div className="space-y-4">
             {history?.length === 0 ? (
-              <div className="text-center py-6 text-muted-foreground border-2 border-dashed border-white/5 rounded-2xl text-xs">
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-white/5 rounded-2xl">
                 Nenhuma geração encontrada
               </div>
             ) : (
@@ -407,33 +407,23 @@ export function AutomacaoPreventivaMain() {
                   key={item.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-400/50 transition-all group relative overflow-hidden"
+                  className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-primary/50 transition-all group"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-[11px] truncate text-white/90 leading-none mb-1.5">{item.nome_arquivo}</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded border border-white/5">
-                          {format(new Date(item.created_at), "dd/MM HH:mm")}
-                        </span>
-                        <span className="text-[9px] font-black text-cyan-400/80 uppercase tracking-tighter">
-                          {item.total_os} OS Processadas
-                        </span>
-                      </div>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="font-medium text-sm truncate max-w-[150px]">{item.nome_arquivo}</div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {format(new Date(item.created_at), "dd/MM HH:mm")}
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 rounded-lg hover:bg-cyan-400 hover:text-black transition-all shrink-0"
-                      onClick={() => {
-                        toast.info("Iniciando download...");
-                        // O download real dependeria da URL salva ou regeneração, 
-                        // aqui mantemos a interface compacta conforme solicitado.
-                      }}
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
                   </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                      {item.total_os} OS
+                    </span>
+                  </div>
+                  <Button variant="outline" size="sm" className="w-full h-8 text-xs gap-2 group-hover:bg-primary group-hover:text-white transition-colors">
+                    <Download className="w-3 h-3" />
+                    Baixar Novamente
+                  </Button>
                 </motion.div>
               ))
             )}
