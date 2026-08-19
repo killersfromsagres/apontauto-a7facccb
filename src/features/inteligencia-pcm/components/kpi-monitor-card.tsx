@@ -75,7 +75,7 @@ export function KpiMonitorCard({
           <div 
             className="h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_8px_var(--chart-color)]"
             style={{ 
-              width: typeof value === 'number' ? `${Math.min(value, 100)}%` : '70%',
+              width: typeof value === 'number' ? `${Math.min(Math.max(0, value), 100)}%` : '70%',
               backgroundColor: chartColor,
               // @ts-ignore
               '--chart-color': chartColor
