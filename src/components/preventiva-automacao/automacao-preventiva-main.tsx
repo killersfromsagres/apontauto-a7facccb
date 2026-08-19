@@ -178,18 +178,21 @@ export function AutomacaoPreventivaMain() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-12">
+    <div className="grid gap-6 md:grid-cols-12 max-w-7xl mx-auto">
       <div className="md:col-span-8 space-y-6">
         <GlassCard className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2 text-primary">
-              <Zap className="w-5 h-5 fill-primary/20" />
-              <h2 className="text-xl font-semibold">Importação e Geração Rápida</h2>
+            <div className="flex items-center gap-2 text-cyan-400">
+              <Zap className="w-6 h-6 fill-cyan-400/20 animate-pulse" />
+              <h2 className="text-xl font-black tracking-tighter uppercase italic">Programação Inteligente</h2>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20 text-emerald-400">
-              <Sparkles className="w-3 h-3" />
-              <span className="text-[10px] font-bold uppercase tracking-wider">Motor IA Otimizado</span>
-            </div>
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-4 py-1.5 bg-cyan-400/10 backdrop-blur-md rounded-full border border-cyan-400/30 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Motor IA Ativo</span>
+            </motion.div>
           </div>
 
           <input 
@@ -204,50 +207,56 @@ export function AutomacaoPreventivaMain() {
           <div className="grid gap-4 sm:grid-cols-3 mb-8">
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-primary/20 hover:border-primary/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("CIVIL-HIDR-CHAV")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
-              <Layers className="w-6 h-6 text-primary" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Civil / Hidr / Chav</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <FileSpreadsheet className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Civil / Hidr / Chav</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Triagem Inteligente</div>
               </div>
             </Button>
 
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-blue-500/20 hover:border-blue-500/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("REFRIG")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors" />
-              <Zap className="w-6 h-6 text-blue-400" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Refrigeração</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <Zap className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Refrigeração</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Controle de Clima</div>
               </div>
             </Button>
 
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-amber-500/20 hover:border-amber-500/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("ELETRICA")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors" />
-              <Play className="w-6 h-6 text-amber-400" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Elétrica</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <Zap className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Elétrica</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Carga & Potência</div>
               </div>
             </Button>
           </div>
 
-          <div className="flex items-center gap-2 mb-6 text-primary/70">
-            <Layers className="w-4 h-4" />
-            <h2 className="text-sm font-semibold uppercase tracking-widest">Configurar Árvore de Ativos</h2>
+          <div className="flex items-center gap-2 mb-6 text-cyan-400/70 border-b border-cyan-400/10 pb-4">
+            <Layers className="w-5 h-5" />
+            <h2 className="text-sm font-black uppercase tracking-[0.3em]">Árvore de Ativos Operacional</h2>
           </div>
 
 
@@ -359,24 +368,20 @@ export function AutomacaoPreventivaMain() {
             </div>
 
             <Button 
-              className="w-full h-12 text-lg font-bold shadow-elegant group relative overflow-hidden"
+              className="w-full h-14 text-lg font-black shadow-[0_0_20px_rgba(34,211,238,0.3)] group relative overflow-hidden bg-cyan-400 hover:bg-cyan-500 text-black border-none transition-all duration-500 rounded-2xl"
               disabled={isGenerating || selectedLocations.size === 0}
               onClick={handleGenerate}
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               {isGenerating ? (
-                <span className="flex items-center gap-2">
-                  <motion.div 
-                    animate={{ rotate: 360 }} 
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                  >
-                    <Play className="w-5 h-5" />
-                  </motion.div>
-                  Processando...
+                <span className="flex items-center gap-3">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  Sincronizando...
                 </span>
               ) : (
-                <span className="flex items-center gap-2">
-                  <Play className="w-5 h-5 fill-current" />
-                  Gerar Programação Automática
+                <span className="flex items-center gap-3">
+                  <Play className="w-6 h-6 fill-current" />
+                  INICIAR AUTOMAÇÃO PREVENTIVA
                 </span>
               )}
             </Button>
@@ -386,9 +391,9 @@ export function AutomacaoPreventivaMain() {
 
       <div className="md:col-span-4 space-y-6">
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 mb-6 text-emerald-400">
-            <History className="w-5 h-5" />
-            <h2 className="text-xl font-semibold">Histórico Recente</h2>
+          <div className="flex items-center gap-2 mb-6 text-cyan-400">
+            <History className="w-6 h-6" />
+            <h2 className="text-xl font-black uppercase tracking-tighter italic">Log de Geração</h2>
           </div>
 
           <div className="space-y-4">
