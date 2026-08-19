@@ -526,7 +526,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
           // Draw Number Text
           ctx.fillStyle = 'white';
-          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "SF Pro Display", system-ui, sans-serif`;
+          ctx.font = `800 ${28 * (m.numero_scale || 1)}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(String(m.numero), numPos.x, numPos.y);
