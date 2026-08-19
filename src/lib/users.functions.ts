@@ -108,6 +108,15 @@ const requireUsersAuth = createMiddleware({ type: "function" }).server(async ({ 
   });
 });
 
+export const provisionChamadosClientLogin = createServerFn({ method: "POST" })
+  .middleware([requireUsersAuth])
+  .handler(async ({ context }) => {
+    await assertCallerIsAdmin(context.supabase, context.userId);
+    const { error } = await context.supabase.rpc("provision_chamados_client_login" as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const updateMemberOrder = createServerFn({ method: "POST" })
   .middleware([requireUsersAuth])
   .validator((data: unknown) => {
@@ -171,6 +180,7 @@ export const addOrganizationalMember = createServerFn({ method: "POST" })
 
 export const MENU_KEYS = [
   "dashboard",
+  "dashboard-chamados",
   "avaliacao-chamados",
   "programacao-gps",
   "backlog-inteligente",
@@ -217,6 +227,7 @@ export const MENU_KEYS = [
   "imagens-migrar",
   "reclassificar-equipe",
 ] as const;
+
 export type MenuKey = (typeof MENU_KEYS)[number];
 
 export function loginToEmail(login: string) {

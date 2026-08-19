@@ -40,7 +40,7 @@ const AreaChart1 = lazy(() => import("@/components/ui/area-chart-1"));
 
 const CORES = ["#4F8CFF", "#52E5FF", "#8B5CF6", "#34d399", "#f59e0b", "#f87171"];
 
-export function CentralInteligenciaView() {
+export function CentralInteligenciaView({ variant }: { variant?: "default" | "chamados" }) {
   const [userName, setUserName] = useState<string | null>(null);
   const [filtros, setFiltros] = useState({
     dias: 30,
@@ -57,7 +57,7 @@ export function CentralInteligenciaView() {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        setUserName(user.email?.split("@")[0] || "Gestor");
+        setUserName(user.email?.split("@")[0] || (variant === "chamados" ? "Cliente" : "Gestor"));
       }
     };
     checkUser();
@@ -66,7 +66,7 @@ export function CentralInteligenciaView() {
   const { data: overview, isLoading: overviewLoading, error: overviewError, refetch: refetchOverview } = useQuery({
     queryKey: ["gestao", "overview", filtros],
     queryFn: async () => {
-      const data = await fetchGestaoOverview(filtros);
+      const data = await fetchGestaoOverview(filtros, variant);
       if (!data) throw new Error("O servidor retornou um conjunto de dados vazio.");
       return data;
     },
@@ -139,9 +139,10 @@ export function CentralInteligenciaView() {
 
   return (
     <PageShell
-      title="Menu Inicial"
-      eyebrow="Operação Premium em Tempo Real"
-      description={`Olá, ${userName}. Sistema operando em modo de alta performance.`}
+      title={variant === "chamados" ? "Monitoramento de Chamados" : "Menu Inicial"}
+      eyebrow={variant === "chamados" ? "Painel do Cliente" : "Operação Premium em Tempo Real"}
+      description={variant === "chamados" ? `Olá, ${userName}. Acompanhe o andamento da sua programação.` : `Olá, ${userName}. Sistema operando em modo de alta performance.`}
+
     >
       <div className="space-y-6">
         {overviewError && (
@@ -188,13 +189,14 @@ export function CentralInteligenciaView() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className={cn("grid grid-cols-1 gap-4 sm:grid-cols-2", variant === "chamados" ? "lg:grid-cols-4" : "lg:grid-cols-5")}>
            <KpiMonitorCard title="SLA GLOBAL" value={overview ? `${Math.round((overview.os.sla_ok / (overview.os.concluidas || 1)) * 100)}%` : "0%"} icon={<Zap className="h-5 w-5 text-[#4F8CFF]" />} description="Eficiência de atendimento" />
            <KpiMonitorCard title="BACKORDER" value={overview?.os.backlog.toString() || "0"} icon={<ClipboardList className="h-5 w-5 text-[#52E5FF]" />} description="Chamados em espera" />
            <KpiMonitorCard title="CAMPO IA" value={overview?.corretiva_novo?.criadas.toString() || "0"} icon={<Activity className="h-5 w-5 text-[#8B5CF6]" />} description="Execução Campo IA" />
-           <KpiMonitorCard title="MTTR" value={`${mttrGlobal.toFixed(1)}h`} icon={<Clock className="h-5 w-5 text-[#34d399]" />} description="Tempo de reparo" />
+           {variant !== "chamados" && <KpiMonitorCard title="MTTR" value={`${mttrGlobal.toFixed(1)}h`} icon={<Clock className="h-5 w-5 text-[#34d399]" />} description="Tempo de reparo" />}
            <KpiMonitorCard title="ALERTAS" value={overview?.os.criticas.toString() || "0"} icon={<AlertTriangle className="h-5 w-5 text-rose-500" />} description="Prioridade Alta" />
         </div>
+
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           <GlassCard className="lg:col-span-3 p-0 overflow-hidden border-primary/20 bg-primary/5 min-h-[620px]">

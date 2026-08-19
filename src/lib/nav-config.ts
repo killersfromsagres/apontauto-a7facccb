@@ -650,7 +650,9 @@ export function menuKeysForPath(pathname: string): string[] | null {
 
 /** Módulos sensíveis: exigem liberação explícita (igual ao banco). */
 const RESTRICTED_KEYS = [
+  "dashboard-chamados",
   "abastecimento",
+
   "avaliacao-chamados",
   "abastecimento-agua",
   "agua-execucao",
@@ -681,8 +683,9 @@ const QUICK_KEYS = [
   "seguranca-trabalho",
   "lavanderia",
   "preventiva-ac",
-  
   "dashboard-chamados",
+  "dashboard-chamados",
+
   "painel-legal",
   "capacidade",
   "confiabilidade",
@@ -725,7 +728,9 @@ export function canSeeMenuItem(
   if (key === "pesquisa") return true;
   if (key === "favoritos") return true;
   if (key === "notificacoes") return true;
-  if (key === "dashboard") return true; // Garante visibilidade do Menu Inicial
+  if (key === "dashboard") return true;
+  if (key === "dashboard-chamados") return allowed?.includes("dashboard-chamados") ?? false;
+
   
   if (key === "imagens") return false; // isAdmin já retornou true acima
   if (key === "configuracoes") return false;

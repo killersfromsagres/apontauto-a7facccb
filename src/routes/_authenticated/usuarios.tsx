@@ -13,7 +13,9 @@ import {
   PowerOff,
   Save,
   Search,
+  Activity,
 } from "lucide-react";
+
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -41,6 +43,8 @@ import {
   setUserAllowedMenus,
   MENU_KEYS,
   provisionEncarregadosUser,
+  provisionChamadosClientLogin,
+
   type MenuKey,
 } from "@/lib/users.functions";
 
@@ -54,7 +58,9 @@ type Role = "admin" | "user";
 
 const MENU_LABELS: Record<MenuKey, string> = {
   dashboard: "Menu Inicial (BI)",
+  "dashboard-chamados": "Menu Inicial (Monitoramento Cliente)",
   "programacao-gps": "Programação GPS",
+
   "backlog-inteligente": "Backlog Inteligente",
   capacidade: "Capacidade das Equipes",
   apontamentos: "Apontamentos de OS",
@@ -132,9 +138,11 @@ function UsuariosPage() {
       title="Gerenciamento de Usuários"
       description="Seção administrativa para criação de contas, definição de logins e gerenciamento granular de permissões de acesso."
     >
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4">
         <ProvisionEncarregadosButton />
+        <ProvisionChamadosButton />
       </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
 
         <CreateUserCard />
@@ -183,7 +191,47 @@ function ProvisionEncarregadosButton() {
   );
 }
 
+function ProvisionChamadosButton() {
+  const provision = useServerFn(provisionChamadosClientLogin);
+  const [loading, setLoading] = useState(false);
+  const qc = useQueryClient();
+
+  const handleProvision = async () => {
+    setLoading(true);
+    try {
+      await provision();
+      toast.success(`Login "chamados" provisionado com sucesso!`);
+      qc.invalidateQueries({ queryKey: ["app-users"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha ao provisionar login de chamados");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <GlassCard className="flex flex-col sm:flex-row items-center justify-between gap-4 border-emerald-500/20 bg-emerald-500/5">
+      <div className="space-y-1">
+        <h3 className="text-sm font-semibold text-emerald-500 uppercase tracking-wider">Acesso de Monitoramento (Cliente)</h3>
+        <p className="text-xs text-muted-foreground max-w-md">
+          Provisiona o login <strong>chamados</strong> (senha: 123456) com acesso exclusivo para visualização da programação de corretivas e histórico.
+        </p>
+      </div>
+      <Button 
+        onClick={handleProvision} 
+        disabled={loading} 
+        variant="outline" 
+        className="w-full sm:w-auto border-emerald-500/30 hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      >
+        {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Activity className="h-4 w-4 mr-2" />}
+        Provisionar Cliente
+      </Button>
+    </GlassCard>
+  );
+}
+
 function CreateUserCard() {
+
 
   const qc = useQueryClient();
   const create = useServerFn(createAppUser);

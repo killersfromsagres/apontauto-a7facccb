@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 /** Visão consolidada da operação (RPC protegida por `can_access_gestao`). */
-export async function fetchGestaoOverview(f: GestaoFiltros): Promise<GestaoOverviewV2> {
+export async function fetchGestaoOverview(f: GestaoFiltros, variant?: "default" | "chamados"): Promise<GestaoOverviewV2> {
   const { data, error } = await supabase.rpc("gestao_overview_v2", {
     p_dias: f.dias,
     p_modulo: f.modulo ?? undefined,
@@ -16,7 +16,9 @@ export async function fetchGestaoOverview(f: GestaoFiltros): Promise<GestaoOverv
     p_predio: f.predio ?? undefined,
     p_status: f.status ?? undefined,
     p_criticidade: f.criticidade ?? undefined,
+    p_variant: variant || "default",
   });
+
   if (error) throw error;
   return data as unknown as GestaoOverviewV2;
 }
