@@ -207,43 +207,49 @@ export function AutomacaoPreventivaMain() {
           <div className="grid gap-4 sm:grid-cols-3 mb-8">
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-primary/20 hover:border-primary/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("CIVIL-HIDR-CHAV")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-primary/5 group-hover:bg-primary/10 transition-colors" />
-              <Layers className="w-6 h-6 text-primary" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Civil / Hidr / Chav</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <FileSpreadsheet className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Civil / Hidr / Chav</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Triagem Inteligente</div>
               </div>
             </Button>
 
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-blue-500/20 hover:border-blue-500/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("REFRIG")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-blue-500/5 group-hover:bg-blue-500/10 transition-colors" />
-              <Zap className="w-6 h-6 text-blue-400" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Refrigeração</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <Zap className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Refrigeração</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Controle de Clima</div>
               </div>
             </Button>
 
             <Button
               variant="glass"
-              className="h-24 flex-col gap-2 border-amber-500/20 hover:border-amber-500/50 group relative overflow-hidden"
+              className="h-28 flex-col gap-3 border-cyan-400/20 hover:border-cyan-400/60 group relative overflow-hidden bg-cyan-400/5 hover:bg-cyan-400/10 transition-all duration-300"
               onClick={() => triggerImport("ELETRICA")}
               disabled={isGenerating}
             >
-              <div className="absolute inset-0 bg-amber-500/5 group-hover:bg-amber-500/10 transition-colors" />
-              <Play className="w-6 h-6 text-amber-400" />
-              <div className="text-center">
-                <div className="text-xs font-bold uppercase tracking-tighter">Importar</div>
-                <div className="text-[10px] text-muted-foreground">Elétrica</div>
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-3 rounded-2xl bg-cyan-400/10 text-cyan-400 group-hover:scale-110 transition-transform duration-300 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                <Zap className="w-7 h-7" />
+              </div>
+              <div className="text-center z-10">
+                <div className="text-[11px] font-black uppercase tracking-widest text-cyan-400/90">Elétrica</div>
+                <div className="text-[9px] text-muted-foreground font-medium mt-1">Carga & Potência</div>
               </div>
             </Button>
           </div>
