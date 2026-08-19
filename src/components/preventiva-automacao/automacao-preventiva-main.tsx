@@ -17,7 +17,8 @@ import {
   FileSpreadsheet,
   Zap,
   Loader2,
-  Trash2
+  Trash2,
+  Sparkles
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -31,6 +32,7 @@ import { triage, type Equipe } from "@/lib/preventiva/triage";
 import { intelligentSchedule } from "@/lib/preventiva/automacao/intelligent-scheduler";
 import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import { saveAs } from "file-saver";
+import { useServerFn } from "@tanstack/react-start";
 
 export function AutomacaoPreventivaMain() {
   const [selectedLocations, setSelectedLocations] = useState<Set<string>>(new Set());
@@ -40,6 +42,7 @@ export function AutomacaoPreventivaMain() {
   const [importType, setImportType] = useState<"CIVIL-HIDR-CHAV" | "REFRIG" | "ELETRICA" | null>(null);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveHistory = useServerFn(saveProgramacaoHistory);
 
   const { data: tree, isLoading: loadingTree } = useQuery({
     queryKey: ["asset-tree"],
@@ -143,15 +146,17 @@ export function AutomacaoPreventivaMain() {
         saveAs(blob, fileName);
 
         // Salvar histórico
-        await saveProgramacaoHistory({
-          nome_arquivo: fileName,
-          configuracao: {
-            tipo: importType,
-            data_inicio: startDate.toISOString(),
-            filtros: Array.from(selectedLocations)
-          },
-          total_os: bucket.os.length,
-          resumo_equipes: schedule.resumoEquipes
+        await saveHistory({
+          data: {
+            nome_arquivo: fileName,
+            configuracao: {
+              tipo: importType,
+              data_inicio: startDate.toISOString(),
+              filtros: Array.from(selectedLocations)
+            },
+            total_os: bucket.os.length,
+            resumo_equipes: schedule.resumoEquipes
+          }
         });
       }
 
