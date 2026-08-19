@@ -1303,7 +1303,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                 textShadow: '0 1px 2px rgba(0,0,0,0.5)'
                               }}
                             >
-                              ESPAÇO ECO+
+                              RESERVA SUVINIL
                             </text>
                             
                             {/* Icon Date Label (SVG) - Hidden by user request */}
