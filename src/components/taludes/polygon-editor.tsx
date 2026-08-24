@@ -257,7 +257,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (mode === 'move' && e.button === 0) {
       // Check for label hits - expand hit area significantly
       const labelHitRadius = 100 / zoom; 
-      
       let closestLabel = null;
       let minDistance = Infinity;
 
@@ -557,56 +556,64 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   const handleExport = async () => {
     if (!imgRef.current) return;
-    
-    toast.loading("Gerando imagem de alta resolução...");
-    
+
+    const exportToastId = toast.loading("Gerando mapa HD com legenda premium...");
+
     try {
+      const exportScale = 1.25;
       const canvas = document.createElement('canvas');
-      canvas.width = imageWidth;
-      canvas.height = imageHeight;
+      canvas.width = Math.round(imageWidth * exportScale);
+      canvas.height = Math.round(imageHeight * exportScale);
+
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Could not get canvas context");
 
-      // 1. Draw Background Image
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.scale(exportScale, exportScale);
+
+      // 1. Background em resolução ampliada. As coordenadas continuam no espaço original
+      // do mapa para preservar com precisão todas as demarcações e posições manuais.
       ctx.drawImage(imgRef.current, 0, 0, imageWidth, imageHeight);
 
-      // 2. Draw Polygons and Labels
+      // 2. Polígonos e legendas individuais.
       localMarcacoes.forEach(m => {
         if (!m.visivel) return;
 
-        // Draw Polygon
         ctx.beginPath();
         m.polygon.forEach((p, i) => {
           if (i === 0) ctx.moveTo(p.x, p.y);
           else ctx.lineTo(p.x, p.y);
         });
         ctx.closePath();
-        
+
         ctx.fillStyle = `${m.cor}${Math.round((m.opacidade || 0.3) * 255).toString(16).padStart(2, '0')}`;
         ctx.fill();
         ctx.strokeStyle = m.cor;
         ctx.lineWidth = m.espessura_linha || 4;
         ctx.stroke();
 
-        // Calculate Label Positions
         const centroid = getCentroid(m.polygon);
         const numPos = { x: m.numero_x ?? centroid.x, y: m.numero_y ?? centroid.y };
         const dataPos = { x: m.data_x ?? centroid.x, y: m.data_y ?? (centroid.y + 30) };
         const iconePos = { x: m.icone_x ?? centroid.x, y: m.icone_y ?? (centroid.y - 30) };
         const iconeDataPos = { x: m.icone_data_x ?? centroid.x, y: m.icone_data_y ?? (centroid.y + 60) };
 
-        // Draw Number Circle
         if (m.numero_visivel !== false) {
           const numRadius = 20 * (m.numero_scale || 1);
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+          ctx.shadowBlur = 10;
           ctx.beginPath();
           ctx.arc(numPos.x, numPos.y, numRadius, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          ctx.fillStyle = 'rgba(2, 6, 23, 0.88)';
           ctx.fill();
+          ctx.shadowBlur = 0;
           ctx.strokeStyle = m.cor;
           ctx.lineWidth = 2;
           ctx.stroke();
+          ctx.restore();
 
-          // Draw Number Text
           ctx.fillStyle = 'white';
           ctx.font = `800 ${32 * (m.numero_scale || 1)}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
@@ -614,16 +621,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           ctx.fillText(String(m.numero), numPos.x, numPos.y);
         }
 
-        // Draw Date Labels (Start/End)
         const rotuloParts = m.rotulo?.split(' - ') || [];
         const dateText = rotuloParts[1] || m.rotulo || '';
         const currentDataScale = m.data_scale || 1;
-        
-        // Brazilian format: DD/MM
+
         const formatDate = (dateStr: string) => {
           if (!dateStr || !dateStr.includes('-')) return dateStr;
-          const [y, m, d] = dateStr.split('-');
-          return `${d}/${m}`;
+          const [y, mm, d] = dateStr.split('-');
+          return `${d}/${mm}`;
         };
 
         const displayDate = formatDate(dateText);
@@ -636,44 +641,46 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const rectHeight = 70 * currentDataScale;
 
         if (m.data_visivel !== false) {
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 10 * currentDataScale;
           ctx.fillStyle = dateBackgroundFill;
           ctx.beginPath();
           ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
           ctx.fill();
+          ctx.shadowBlur = 0;
           ctx.strokeStyle = dateBorderFill;
           ctx.lineWidth = 1.5;
           ctx.stroke();
+          ctx.restore();
 
           ctx.fillStyle = dateTextFill;
           ctx.font = `900 ${scaledFontSize}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(displayDate, dataPos.x, dataPos.y - 12 * currentDataScale);
-          
           ctx.fillText(displayDeadline || displayDate, dataPos.x, dataPos.y + 14 * currentDataScale);
         }
 
-        // Draw Icons (Arvore / Interdicao)
         if (m.icone_tipo && m.icone_visivel !== false) {
           const currentIconeScale = m.icone_scale || 1;
           const iconSize = 40 * currentIconeScale;
-          
+
           ctx.save();
           ctx.translate(iconePos.x, iconePos.y);
-          
-          // Icon Background Circle
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+          ctx.shadowBlur = 10;
           ctx.beginPath();
           ctx.arc(0, 0, iconSize / 2 + 10, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
           ctx.fill();
+          ctx.shadowBlur = 0;
           ctx.strokeStyle = m.cor;
           ctx.lineWidth = 2;
           ctx.stroke();
 
-          // Simplified SVG paths for icons (since we can't easily use Lucide components in Canvas context)
           ctx.fillStyle = m.cor;
           if (m.icone_tipo === 'arvore') {
-            // Tree Shape
             ctx.beginPath();
             ctx.moveTo(0, -iconSize / 2);
             ctx.lineTo(iconSize / 3, -iconSize / 6);
@@ -688,24 +695,18 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.lineTo(-iconSize / 3, -iconSize / 6);
             ctx.closePath();
             ctx.fill();
-            // Text for Eco+ Space
+
             ctx.fillStyle = 'white';
             ctx.font = `900 ${14 * currentIconeScale}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
-            ctx.strokeStyle = 'black';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.95)';
             ctx.lineWidth = 2.5 * currentIconeScale;
             ctx.strokeText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
             ctx.fillText('RESERVA SUVINIL', 0, iconSize / 2 + 25);
-            
-            // ICone Data
+
             if (m.icone_data_visivel !== false && m.icone_data_texto) {
               const currentIconeDataScale = m.icone_data_scale || 1;
               const scaledIconeDataFontSize = 24 * currentIconeDataScale;
-              
-              // We need to calculate position relative to translate(iconePos.x, iconePos.y)
-              // Or better, restore and draw separately to avoid double scaling if needed
-              // But for now let's draw relative
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
               const idRectW = 120 * currentIconeDataScale;
               const idRectH = 40 * currentIconeDataScale;
               const relX = iconeDataPos.x - iconePos.x;
@@ -713,16 +714,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
               ctx.beginPath();
               ctx.roundRect(relX - idRectW / 2, relY - idRectH / 2, idRectW, idRectH, 6 * currentIconeDataScale);
-              ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
+              ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
               ctx.fill();
-              
               ctx.fillStyle = 'white';
               ctx.font = `900 ${scaledIconeDataFontSize}px "Inter", system-ui, sans-serif`;
-              // Hidden by user request: ctx.fillText(m.icone_data_texto, relX, relY + 2);
+              // Data do ícone segue oculta conforme a configuração atual do editor.
             }
           } else if (m.icone_tipo === 'interdicao') {
-            // Prohibition Sign
-            ctx.strokeStyle = '#ef4444'; // Red for prohibition
+            ctx.strokeStyle = '#ef4444';
             ctx.lineWidth = 4 * currentIconeScale;
             ctx.beginPath();
             ctx.arc(0, 0, iconSize / 2, 0, Math.PI * 2);
@@ -732,98 +731,207 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
             ctx.lineTo(iconSize / 2.5, iconSize / 2.5);
             ctx.stroke();
           }
-          
+
           ctx.restore();
         }
       });
 
-      // 3. Draw Legend (Bottom-Left)
-      const legendX = 20;
-      const legendY = imageHeight - 240;
-      const legendWidth = 240;
-      const legendHeight = 220;
+      // 3. Legenda operacional premium.
+      const visibleMarcacoes = localMarcacoes.filter(m => m.visivel);
+      const statusEntries = Object.entries(STATUS_CONFIG);
+      const statusCounts = statusEntries.map(([_, cfg]) => ({
+        ...cfg,
+        count: visibleMarcacoes.filter(m => (m.rotulo || '').includes(cfg.label)).length
+      }));
 
-      // Legend Background
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+      const legendMargin = Math.max(34, Math.min(54, imageWidth * 0.012));
+      const legendWidth = Math.min(520, Math.max(430, imageWidth * 0.135));
+      const legendHeight = 352;
+      const legendX = legendMargin;
+      const legendY = Math.max(legendMargin, imageHeight - legendHeight - legendMargin);
+      const panelRadius = 24;
+      const innerX = legendX + 28;
+      const innerWidth = legendWidth - 56;
+
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 28;
+      ctx.shadowOffsetY = 10;
+      const panelGradient = ctx.createLinearGradient(legendX, legendY, legendX + legendWidth, legendY + legendHeight);
+      panelGradient.addColorStop(0, 'rgba(15, 23, 42, 0.97)');
+      panelGradient.addColorStop(0.55, 'rgba(8, 15, 30, 0.96)');
+      panelGradient.addColorStop(1, 'rgba(2, 6, 23, 0.98)');
+      ctx.fillStyle = panelGradient;
       ctx.beginPath();
-      ctx.roundRect(legendX, legendY, legendWidth, legendHeight, 12);
+      ctx.roundRect(legendX, legendY, legendWidth, legendHeight, panelRadius);
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.lineWidth = 1;
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.30)';
+      ctx.lineWidth = 1.5;
       ctx.stroke();
+      ctx.restore();
 
-      // Legend Title
-      ctx.fillStyle = 'white';
-      ctx.font = 'bold 16px "Inter", system-ui, sans-serif';
+      const accentGradient = ctx.createLinearGradient(legendX, legendY, legendX + legendWidth, legendY);
+      accentGradient.addColorStop(0, '#38bdf8');
+      accentGradient.addColorStop(0.5, '#60a5fa');
+      accentGradient.addColorStop(1, '#a78bfa');
+      ctx.fillStyle = accentGradient;
+      ctx.beginPath();
+      ctx.roundRect(legendX + 18, legendY + 15, legendWidth - 36, 4, 2);
+      ctx.fill();
+
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText('LEGENDA STATUS', legendX + 20, legendY + 15);
+      ctx.fillStyle = 'rgba(125, 211, 252, 0.95)';
+      ctx.font = '800 12px "Inter", system-ui, sans-serif';
+      ctx.fillText('APONT AUTO  •  DEMARCAÇÃO DE TALUDES', innerX, legendY + 34);
 
-      // Legend Items
-      let currentY = legendY + 50;
-      Object.entries(STATUS_CONFIG).forEach(([key, cfg]) => {
-        // Color Box
-        ctx.fillStyle = cfg.color;
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = '900 25px "Inter", system-ui, sans-serif';
+      ctx.fillText('Legenda operacional', innerX, legendY + 54);
+
+      const hdBadgeText = 'PNG HD  •  125%';
+      ctx.font = '800 11px "Inter", system-ui, sans-serif';
+      const hdBadgeWidth = ctx.measureText(hdBadgeText).width + 24;
+      const hdBadgeX = legendX + legendWidth - hdBadgeWidth - 26;
+      const hdBadgeY = legendY + 55;
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.beginPath();
+      ctx.roundRect(hdBadgeX, hdBadgeY, hdBadgeWidth, 25, 12.5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#bae6fd';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(hdBadgeText, hdBadgeX + hdBadgeWidth / 2, hdBadgeY + 12.5);
+
+      const cardsTop = legendY + 104;
+      const cardGap = 12;
+      const cardWidth = (innerWidth - cardGap) / 2;
+      const cardHeight = 57;
+
+      statusCounts.forEach((status, index) => {
+        const column = index % 2;
+        const row = Math.floor(index / 2);
+        const cardX = innerX + column * (cardWidth + cardGap);
+        const cardY = cardsTop + row * (cardHeight + 10);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.045)';
         ctx.beginPath();
-        ctx.roundRect(legendX + 20, currentY, 12, 12, 3);
+        ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 12);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.14)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = status.color;
+        ctx.beginPath();
+        ctx.roundRect(cardX + 12, cardY + 12, 5, cardHeight - 24, 2.5);
         ctx.fill();
 
-        // Label
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-        ctx.font = '500 14px "Inter", system-ui, sans-serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(cfg.label, legendX + 45, currentY + 6);
+        ctx.beginPath();
+        ctx.arc(cardX + 31, cardY + 20, 5, 0, Math.PI * 2);
+        ctx.fill();
 
-        currentY += 25;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '800 14px "Inter", system-ui, sans-serif';
+        ctx.fillText(status.label, cardX + 43, cardY + 10);
+
+        ctx.fillStyle = 'rgba(203, 213, 225, 0.72)';
+        ctx.font = '600 11px "Inter", system-ui, sans-serif';
+        ctx.fillText(`${status.count} ${status.count === 1 ? 'área' : 'áreas'}`, cardX + 43, cardY + 33);
       });
 
-      // Add Icon Legends
-      currentY += 10;
-      
-      // Tree Icon Legend
-      ctx.fillStyle = 'white';
-      ctx.font = '500 14px "Inter", system-ui, sans-serif';
-      ctx.fillText('Espaço ECO+ (Árvore)', legendX + 45, currentY + 6);
-      
-      // Draw small tree
-      ctx.fillStyle = '#10b981';
+      const iconSectionY = cardsTop + (cardHeight * 2) + 30;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(legendX + 26, currentY);
-      ctx.lineTo(legendX + 32, currentY + 12);
-      ctx.lineTo(legendX + 20, currentY + 12);
-      ctx.closePath();
-      ctx.fill();
-      
-      currentY += 25;
-      
-      // Interdiction Icon Legend
-      ctx.fillStyle = 'white';
-      ctx.fillText('Área Interditada', legendX + 45, currentY + 6);
-      
-      // Draw small prohibition
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(legendX + 26, currentY + 6, 6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(legendX + 22, currentY + 2);
-      ctx.lineTo(legendX + 30, currentY + 10);
+      ctx.moveTo(innerX, iconSectionY - 9);
+      ctx.lineTo(innerX + innerWidth, iconSectionY - 9);
       ctx.stroke();
 
-      // 4. Trigger Download
+      const drawTreeLegend = (x: number, y: number) => {
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.moveTo(x, y - 9);
+        ctx.lineTo(x + 10, y + 7);
+        ctx.lineTo(x + 4, y + 7);
+        ctx.lineTo(x + 8, y + 14);
+        ctx.lineTo(x - 8, y + 14);
+        ctx.lineTo(x - 4, y + 7);
+        ctx.lineTo(x - 10, y + 7);
+        ctx.closePath();
+        ctx.fill();
+      };
+
+      const drawBanLegend = (x: number, y: number) => {
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(x, y + 3, 10, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 7, y - 4);
+        ctx.lineTo(x + 7, y + 10);
+        ctx.stroke();
+      };
+
+      const iconColumnWidth = innerWidth / 2;
+      drawTreeLegend(innerX + 12, iconSectionY + 4);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = '700 12px "Inter", system-ui, sans-serif';
+      ctx.fillText('Reserva Suvinil', innerX + 34, iconSectionY + 7);
+
+      drawBanLegend(innerX + iconColumnWidth + 12, iconSectionY + 4);
+      ctx.fillText('Área interditada', innerX + iconColumnWidth + 34, iconSectionY + 7);
+
+      const generatedAt = new Date();
+      const generatedLabel = generatedAt.toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      const footerY = legendY + legendHeight - 36;
+      ctx.fillStyle = 'rgba(148, 163, 184, 0.72)';
+      ctx.font = '600 11px "Inter", system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`Áreas visíveis: ${visibleMarcacoes.length}`, innerX, footerY);
+      ctx.textAlign = 'right';
+      ctx.fillText(`Emitido em ${generatedLabel}`, legendX + legendWidth - 28, footerY);
+
+      // 4. Geração por Blob evita uma string base64 muito grande em mapas de alta resolução.
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error('Não foi possível gerar o PNG'));
+        }, 'image/png', 1);
+      });
+
+      const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `Mapa-Taludes-${new Date().toLocaleDateString()}.png`;
-      link.href = canvas.toDataURL('image/png', 1.0);
+      const fileDate = new Date().toISOString().slice(0, 10);
+      link.download = `Mapa-Taludes-HD-${fileDate}.png`;
+      link.href = objectUrl;
+      document.body.appendChild(link);
       link.click();
-      
-      toast.dismiss();
-      toast.success("Mapa exportado com sucesso!");
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+
+      toast.success("Mapa HD exportado com legenda premium!", { id: exportToastId });
     } catch (err) {
       console.error("Erro na exportação:", err);
-      toast.dismiss();
-      toast.error("Erro ao exportar mapa");
+      toast.error("Erro ao exportar mapa", { id: exportToastId });
     }
   };
 
