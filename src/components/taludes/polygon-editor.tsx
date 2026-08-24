@@ -45,6 +45,29 @@ interface HistoryState {
   marcacoes: TaludeMarcacao[];
 }
 
+interface DateColorSettings {
+  textColor: string;
+  backgroundColor: string;
+  customized: boolean;
+}
+
+const DATE_COLOR_STORAGE_KEY = 'apontauto:taludes:date-colors';
+const DEFAULT_DATE_TEXT_COLOR = '#ffffff';
+const DEFAULT_DATE_BACKGROUND_COLOR = '#ffffff';
+
+const hexToRgba = (hex: string, alpha: number) => {
+  const normalized = hex.replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+    return `rgba(255, 255, 255, ${alpha})`;
+  }
+
+  const value = Number.parseInt(normalized, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 
 export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   imageUrl,
@@ -87,6 +110,9 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const [iconeDataScale, setIconeDataScale] = useState(1);
   const [iconeDataVisivel, setIconeDataVisivel] = useState(true);
   const [numeroEditavel, setNumeroEditavel] = useState<number>(0);
+  const [dateTextColor, setDateTextColor] = useState(DEFAULT_DATE_TEXT_COLOR);
+  const [dateBackgroundColor, setDateBackgroundColor] = useState(DEFAULT_DATE_BACKGROUND_COLOR);
+  const [hasCustomDateColors, setHasCustomDateColors] = useState(false);
   
   const [localMarcacoes, setLocalMarcacoes] = useState<TaludeMarcacao[]>(initialMarcacoes);
   const [history, setHistory] = useState<HistoryState[]>([]);
@@ -100,6 +126,62 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   useEffect(() => {
     setLocalMarcacoes(initialMarcacoes);
   }, [initialMarcacoes]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const stored = window.localStorage.getItem(DATE_COLOR_STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored) as Partial<DateColorSettings>;
+      const validText = typeof parsed.textColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(parsed.textColor);
+      const validBackground = typeof parsed.backgroundColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(parsed.backgroundColor);
+
+      if (validText) setDateTextColor(parsed.textColor!);
+      if (validBackground) setDateBackgroundColor(parsed.backgroundColor!);
+      setHasCustomDateColors(Boolean(parsed.customized && validText && validBackground));
+    } catch (error) {
+      console.warn('Não foi possível carregar as cores das datas:', error);
+    }
+  }, []);
+
+  const persistDateColors = useCallback((textColor: string, backgroundColor: string) => {
+    setHasCustomDateColors(true);
+    if (typeof window === 'undefined') return;
+
+    const settings: DateColorSettings = {
+      textColor,
+      backgroundColor,
+      customized: true
+    };
+
+    try {
+      window.localStorage.setItem(DATE_COLOR_STORAGE_KEY, JSON.stringify(settings));
+    } catch (error) {
+      console.warn('Não foi possível salvar as cores das datas:', error);
+    }
+  }, []);
+
+  const resetDateColors = useCallback(() => {
+    setDateTextColor(DEFAULT_DATE_TEXT_COLOR);
+    setDateBackgroundColor(DEFAULT_DATE_BACKGROUND_COLOR);
+    setHasCustomDateColors(false);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(DATE_COLOR_STORAGE_KEY);
+    }
+
+    toast.success('Cores da data restauradas');
+  }, []);
+
+  const dateTextFill = hasCustomDateColors ? dateTextColor : 'white';
+  const dateBackgroundFill = hasCustomDateColors
+    ? hexToRgba(dateBackgroundColor, 0.82)
+    : 'rgba(255,255,255,0.15)';
+  const dateBorderFill = hasCustomDateColors
+    ? hexToRgba(dateTextColor, 0.45)
+    : 'rgba(255,255,255,0.25)';
 
   const fitToView = useCallback(() => {
     if (containerRef.current) {
@@ -554,15 +636,15 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const rectHeight = 70 * currentDataScale;
 
         if (m.data_visivel !== false) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'; // Glass effect
+          ctx.fillStyle = dateBackgroundFill;
           ctx.beginPath();
           ctx.roundRect(dataPos.x - rectWidth / 2, dataPos.y - rectHeight / 2, rectWidth, rectHeight, 8 * currentDataScale);
           ctx.fill();
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+          ctx.strokeStyle = dateBorderFill;
           ctx.lineWidth = 1.5;
           ctx.stroke();
 
-          ctx.fillStyle = 'white';
+          ctx.fillStyle = dateTextFill;
           ctx.font = `900 ${scaledFontSize}px "Inter", system-ui, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -877,6 +959,71 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.035] p-3 shadow-inner">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-cyan-300">Cores da Data</span>
+                    <span className="text-[9px] text-white/45">Aplica no mapa e na exportação PNG</span>
+                  </div>
+                  <div
+                    className="flex min-w-[72px] items-center justify-center rounded-lg border px-2 py-1 text-[10px] font-black shadow-lg"
+                    style={{
+                      color: dateTextFill,
+                      backgroundColor: dateBackgroundFill,
+                      borderColor: dateBorderFill
+                    }}
+                  >
+                    24/08
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="space-y-1.5 rounded-lg border border-white/5 bg-black/20 p-2">
+                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-white/55">Cor do texto</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={dateTextColor}
+                        onChange={(e) => {
+                          const nextColor = e.target.value;
+                          setDateTextColor(nextColor);
+                          persistDateColors(nextColor, dateBackgroundColor);
+                        }}
+                        className="h-8 w-9 cursor-pointer rounded-md border border-white/15 bg-transparent p-0.5"
+                        aria-label="Selecionar cor do texto da data"
+                      />
+                      <span className="truncate font-mono text-[9px] uppercase text-white/55">{dateTextColor}</span>
+                    </div>
+                  </label>
+
+                  <label className="space-y-1.5 rounded-lg border border-white/5 bg-black/20 p-2">
+                    <span className="block text-[9px] font-semibold uppercase tracking-wide text-white/55">Cor do campo</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={dateBackgroundColor}
+                        onChange={(e) => {
+                          const nextColor = e.target.value;
+                          setDateBackgroundColor(nextColor);
+                          persistDateColors(dateTextColor, nextColor);
+                        }}
+                        className="h-8 w-9 cursor-pointer rounded-md border border-white/15 bg-transparent p-0.5"
+                        aria-label="Selecionar cor do campo da data"
+                      />
+                      <span className="truncate font-mono text-[9px] uppercase text-white/55">{dateBackgroundColor}</span>
+                    </div>
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={resetDateColors}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-[9px] font-semibold uppercase tracking-wide text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                >
+                  Restaurar cores padrão
+                </button>
               </div>
 
               <div className="space-y-2">
@@ -1247,8 +1394,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                width={labelWidth} 
                                height={labelHeight} 
                                rx="8" 
-                               fill="rgba(255,255,255,0.15)" 
-                               stroke="rgba(255,255,255,0.25)" 
+                               fill={dateBackgroundFill}
+                               stroke={dateBorderFill}
                                strokeWidth="1.5"
                                className="backdrop-blur-md"
                              />
@@ -1257,7 +1404,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                y="-12"
                                textAnchor="middle"
                                dominantBaseline="middle"
-                               fill="white"
+                               fill={dateTextFill}
                                fontSize={baseFontSize}
                                fontWeight="900"
                         className="select-none font-['Inter'] tracking-tight"
@@ -1269,7 +1416,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                y="14"
                                textAnchor="middle"
                                dominantBaseline="middle"
-                               fill="white"
+                               fill={dateTextFill}
                                fontSize={baseFontSize}
                                fontWeight="900"
                                 className="select-none font-['Inter'] tracking-tight"
