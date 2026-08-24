@@ -836,7 +836,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               <div className="space-y-2">
                 <span className="text-[10px] text-white/70 uppercase">Data do Status</span>
                 <div className="relative">
-                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/70" />
                   <input 
                     type="date" 
                     value={statusDate}
@@ -851,7 +851,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, rotulo: `${STATUS_CONFIG[statusType].label} - ${newDate}` });
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
                 </div>
               </div>
@@ -859,7 +859,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               <div className="space-y-2">
                 <span className="text-[10px] text-white/70 uppercase">Data Prazo (Manual)</span>
                 <div className="relative">
-                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/70" />
                   <input 
                     type="date" 
                     value={prazoDate}
@@ -874,7 +874,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, prazo_rotulo: newDate });
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
                 </div>
               </div>
