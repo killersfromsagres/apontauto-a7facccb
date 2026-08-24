@@ -9,6 +9,9 @@ import {
   FileSpreadsheet,
   Printer,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Check,
   Filter,
   LayoutGrid,
   List,
@@ -70,7 +73,7 @@ function CorretivaNovoPage() {
 
       if (error) {
         console.error("[CorretivaNovo] Erro Supabase:", error);
-        
+
         // Se der erro de permissão ou conexão, tentar ler do cache local (IndexedDB)
         console.log("[CorretivaNovo] Tentando carregar do cache local devido a erro...");
         const { getCachedOsList } = await import("@/lib/corretiva/db");
@@ -86,11 +89,11 @@ function CorretivaNovoPage() {
         console.log(`[CorretivaNovo] Sucesso: ${data?.length || 0} OS carregadas.`);
         const list = data || [];
         setOsList(list);
-        
+
         // Atualizar cache local em background
         if (list.length > 0) {
           const { cacheOsList } = await import("@/lib/corretiva/db");
-          cacheOsList(list).catch(err => console.error("[CorretivaNovo] Erro ao cachear:", err));
+          cacheOsList(list).catch((err) => console.error("[CorretivaNovo] Erro ao cachear:", err));
         }
       }
     } catch (error: any) {
@@ -106,23 +109,40 @@ function CorretivaNovoPage() {
   }, []);
 
   const filtered = useMemo(() => {
-    return osList.filter((o) => {
-      const matchesSearch = 
-        !search ||
-        o.numero_os?.toLowerCase().includes(search.toLowerCase()) ||
-        o.ativo?.toLowerCase().includes(search.toLowerCase()) ||
-        o.local?.toLowerCase().includes(search.toLowerCase()) ||
-        o.nome_os?.toLowerCase().includes(search.toLowerCase());
-      
-      const matchesEquipe = matchEquipe(o.equipe, equipe);
-      
-      return matchesSearch && matchesEquipe;
-    }).sort((a, b) => {
-      const dateA = new Date(a.data_criacao || 0).getTime();
-      const dateB = new Date(b.data_criacao || 0).getTime();
-      return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
-    });
+    return osList
+      .filter((o) => {
+        const matchesSearch =
+          !search ||
+          o.numero_os?.toLowerCase().includes(search.toLowerCase()) ||
+          o.ativo?.toLowerCase().includes(search.toLowerCase()) ||
+          o.local?.toLowerCase().includes(search.toLowerCase()) ||
+          o.nome_os?.toLowerCase().includes(search.toLowerCase());
+
+        const matchesEquipe = matchEquipe(o.equipe, equipe);
+
+        return matchesSearch && matchesEquipe;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.data_criacao || 0).getTime();
+        const dateB = new Date(b.data_criacao || 0).getTime();
+        return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
+      });
   }, [osList, search, equipe, sortOrder]);
+
+  const selectedIndex = selectedOs
+    ? filtered.findIndex((item) => item.id === selectedOs.id)
+    : -1;
+  const hasPreviousOs = selectedIndex > 0;
+  const hasNextOs = selectedIndex >= 0 && selectedIndex < filtered.length - 1;
+
+  const navigateSelectedOs = (direction: -1 | 1) => {
+    if (selectedIndex < 0) return;
+
+    const nextIndex = selectedIndex + direction;
+    if (nextIndex < 0 || nextIndex >= filtered.length) return;
+
+    setSelectedOs(filtered[nextIndex]);
+  };
 
   const exportExcelByTeam = async () => {
     const pendentes = filtered.filter((o) => o.status !== "concluida");
@@ -148,10 +168,10 @@ function CorretivaNovoPage() {
 
   const handleAiReclassify = async () => {
     if (!isAdmin) return;
-    
+
     setIsReclassifying(true);
     const id = toast.loading("Agente IA analisando e reclassificando equipes...");
-    
+
     try {
       const result = await reclassifyAllOsWithAi();
       if (result.success) {
@@ -227,15 +247,15 @@ function CorretivaNovoPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-            
+
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="glass" 
+                  <Button
+                    variant="glass"
                     className={cn(
                       "h-11 px-6 rounded-full gap-2 border-white/10 transition-all duration-300",
-                      equipe !== "todas" && equipeStyles(equipe as any).badge
+                      equipe !== "todas" && equipeStyles(equipe as any).badge,
                     )}
                   >
                     <Filter className="h-4 w-4" />
@@ -246,11 +266,11 @@ function CorretivaNovoPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setEquipe("todas")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer transition-colors",
-                      equipe === "todas" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                      equipe === "todas" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     Todas as Equipes
@@ -261,9 +281,9 @@ function CorretivaNovoPage() {
                       onClick={() => setEquipe(e as any)}
                       className={cn(
                         "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center justify-between group transition-all",
-                        equipe === e 
-                          ? cn("text-white", equipeStyles(e as any).badge.replace('shadow-lg', ''))
-                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                        equipe === e
+                          ? cn("text-white", equipeStyles(e as any).badge.replace("shadow-lg", ""))
+                          : "text-white/60 hover:bg-white/5 hover:text-white",
                       )}
                     >
                       <span>{e}</span>
@@ -285,21 +305,21 @@ function CorretivaNovoPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setSortOrder("recent")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
-                      sortOrder === "recent" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                      sortOrder === "recent" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <Clock className="h-4 w-4" />
                     Mais Recentes
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => setSortOrder("oldest")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
-                      sortOrder === "oldest" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white"
+                      sortOrder === "oldest" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <History className="h-4 w-4" />
@@ -309,23 +329,23 @@ function CorretivaNovoPage() {
               </DropdownMenu>
 
               <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/10">
-              <Button
-                variant={viewMode === "grid" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("grid")}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "list" ? "secondary" : "ghost"}
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setViewMode("list")}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </GlassCard>
@@ -355,58 +375,80 @@ function CorretivaNovoPage() {
             <p className="text-muted-foreground">Nenhuma OS corresponde aos filtros aplicados.</p>
           </div>
         ) : (
-          <div className={cn(
-            viewMode === "grid" 
-              ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4" 
-              : "flex flex-col gap-2 md:gap-3"
-          )}>
+          <div
+            className={cn(
+              viewMode === "grid"
+                ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4"
+                : "flex flex-col gap-2 md:gap-3",
+            )}
+          >
             {filtered.map((os) => (
-              <GlassCard 
-                key={os.id} 
+              <GlassCard
+                key={os.id}
                 className={cn(
-                  "p-4 group cursor-pointer hover:bg-white/[0.07] transition-all", 
-                  viewMode === "list" && "flex items-center gap-4 py-3"
+                  "p-4 group cursor-pointer hover:bg-white/[0.07] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15",
+                  viewMode === "list" && "flex items-center gap-4 py-3",
                 )}
                 onClick={() => setSelectedOs(os)}
               >
                 <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline" className={cn("font-mono text-[10px] md:text-xs", equipeStyles(os.equipe).badge)}>
-                      OS {os.numero_os}
-                    </Badge>
-                    <Badge 
-                      variant={os.status === 'concluida' ? 'secondary' : 'outline'} 
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <Badge
+                      variant="outline"
                       className={cn(
-                        "text-[9px] md:text-[10px] uppercase font-bold",
-                        os.status === 'concluida' ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "opacity-70"
+                        "font-mono text-xs md:text-sm font-semibold tracking-wide px-2.5 py-1",
+                        equipeStyles(os.equipe).badge,
                       )}
                     >
-                      {os.status === 'concluida' ? 'Concluída' : (os.equipe || "Sem Equipe")}
+                      OS {os.numero_os}
+                    </Badge>
+                    <Badge
+                      variant={os.status === "concluida" ? "secondary" : "outline"}
+                      className={cn(
+                        "text-[9px] md:text-[10px] uppercase font-bold gap-1.5 whitespace-nowrap",
+                        os.status === "concluida"
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                          : "opacity-70",
+                      )}
+                    >
+                      {os.status === "concluida" && (
+                        <span
+                          className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
+                          aria-hidden="true"
+                        >
+                          <span className="absolute inset-0 rounded-full border border-emerald-300/40 animate-pulse" />
+                          <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
+                        </span>
+                      )}
+                      {os.status === "concluida" ? "Concluída" : (os.equipe || "Sem Equipe")}
                     </Badge>
                   </div>
-                  <h3 className="font-bold text-sm md:text-base leading-tight group-hover:text-primary transition-colors mb-2 text-white line-clamp-2">
+
+                  <h3 className="font-bold text-sm md:text-base leading-tight group-hover:text-primary transition-colors mb-3 text-white line-clamp-2">
                     {os.nome_os || "Sem descrição"}
                   </h3>
-                  <div className="space-y-1.5 mt-auto">
-                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+
+                  <div className="grid gap-1.5 mt-auto">
+                    <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90">
+                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/25" />
                       <span className="truncate"><span className="opacity-60">Prédio/Andar:</span> {os.predio} - {os.andar}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90">
-                      <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                    <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90">
+                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/25" />
                       <span className="truncate"><span className="opacity-60">Ambiente:</span> {os.local}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] md:text-xs text-muted-foreground/90 italic">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary/40" />
+                    <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.035] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90 italic">
+                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-primary/50" />
                       <span className="truncate text-primary-glow/80"><span className="opacity-60">Solicitante:</span> {os.solicitante || "Não inf."}</span>
                     </div>
                     {os.data_criacao && (
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70">
-                        <div className="w-1.5 h-1.5 rounded-full bg-white/10" />
-                        <span><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                      <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1.5 text-[10px] text-muted-foreground/70">
+                        <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/15" />
+                        <span className="truncate"><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
                       </div>
                     )}
                   </div>
+
                   {os.pecas_solicitadas && (
                     <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-400/80">
                       <Package className="h-3 w-3" />
@@ -419,10 +461,43 @@ function CorretivaNovoPage() {
           </div>
         )}
       </div>
+
+      {selectedOs && selectedIndex >= 0 && filtered.length > 1 && (
+        <div className="fixed inset-0 z-[10020] pointer-events-none flex items-center justify-center" aria-hidden="false">
+          <div className="w-[calc(100%-1.5rem)] md:w-full max-w-lg px-2 flex items-center justify-between">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="pointer-events-auto h-9 w-9 rounded-full border border-white/10 bg-black/55 text-white/70 shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-white/10 hover:text-white hover:scale-105 disabled:opacity-20"
+              onClick={() => navigateSelectedOs(-1)}
+              disabled={!hasPreviousOs}
+              aria-label="Abrir chamado anterior"
+              title="Chamado anterior"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="pointer-events-auto h-9 w-9 rounded-full border border-white/10 bg-black/55 text-white/70 shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-white/10 hover:text-white hover:scale-105 disabled:opacity-20"
+              onClick={() => navigateSelectedOs(1)}
+              disabled={!hasNextOs}
+              aria-label="Abrir próximo chamado"
+              title="Próximo chamado"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {selectedOs && (
-        <OsDetailsDialog 
-          os={{...selectedOs, isAdmin, allowedMenus: access.allowed || []}} 
-          isOpen={!!selectedOs} 
+        <OsDetailsDialog
+          key={selectedOs.id}
+          os={{ ...selectedOs, isAdmin, allowedMenus: access.allowed || [] }}
+          isOpen={!!selectedOs}
           onClose={() => setSelectedOs(null)}
           onUpdate={loadData}
         />
