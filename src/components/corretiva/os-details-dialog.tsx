@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft, LayoutGrid, Zap, Droplets, Hammer, Key, Paintbrush, Snowflake, Trash2 } from "lucide-react";
+import { Camera, Package, CheckCircle2, X, Loader2, ArrowRightLeft, LayoutGrid, Zap, Droplets, Hammer, Key, Paintbrush, Snowflake, Trash2, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,14 +26,25 @@ interface OsDetailsDialogProps {
   onUpdate: () => void;
 }
 
+type MaterialPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
+const MAX_MATERIAL_PHOTOS = 8;
+const MAX_MATERIAL_PHOTO_SIZE = 10 * 1024 * 1024;
+
 export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDialogProps) {
   const processIA = useServerFn(processarDescricaoPecaIA);
   const [loading, setLoading] = useState(false);
   const [photoBefore, setPhotoBefore] = useState<string | null>(null);
   const [photoAfter, setPhotoAfter] = useState<string | null>(null);
-  const [pecas, setPecas] = useState(os.pecas_solicitadas || "");
+  const [pecas, setPecas] = useState("");
+  const [materialPhotos, setMaterialPhotos] = useState<MaterialPhoto[]>([]);
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
+  const hasMaterialDraft = pecas.trim().length > 0;
 
   useEffect(() => {
     const handleStatus = () => setOfflineMode(!navigator.onLine);
@@ -44,6 +55,95 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
       window.removeEventListener('offline', handleStatus);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setPecas("");
+    setMaterialPhotos((current) => {
+      current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      return [];
+    });
+  }, [isOpen, os.id]);
+
+  const clearMaterialDraft = () => {
+    setPecas("");
+    setMaterialPhotos((current) => {
+      current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      return [];
+    });
+  };
+
+  const removeMaterialPhoto = (photoId: string) => {
+    setMaterialPhotos((current) => {
+      const photo = current.find((item) => item.id === photoId);
+      if (photo) URL.revokeObjectURL(photo.previewUrl);
+      return current.filter((item) => item.id !== photoId);
+    });
+  };
+
+  const handleMaterialPhotosSelected = (files: FileList | null) => {
+    if (!files?.length) return;
+
+    const availableSlots = Math.max(0, MAX_MATERIAL_PHOTOS - materialPhotos.length);
+    if (availableSlots === 0) {
+      toast.warning(`Você pode anexar no máximo ${MAX_MATERIAL_PHOTOS} fotos por pedido.`);
+      return;
+    }
+
+    const selected = Array.from(files);
+    const validImages = selected.filter((file) => {
+      if (!file.type.startsWith("image/")) return false;
+      if (file.size > MAX_MATERIAL_PHOTO_SIZE) {
+        toast.warning(`${file.name} ultrapassa o limite de 10 MB e não foi anexada.`);
+        return false;
+      }
+      return true;
+    });
+
+    const accepted = validImages.slice(0, availableSlots);
+    if (validImages.length > availableSlots) {
+      toast.warning(`Foram anexadas ${availableSlots} foto(s). O limite é de ${MAX_MATERIAL_PHOTOS} por pedido.`);
+    }
+
+    if (!accepted.length) return;
+
+    setMaterialPhotos((current) => [
+      ...current,
+      ...accepted.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+
+    toast.success(`${accepted.length} foto(s) adicionada(s) ao pedido de material.`);
+  };
+
+  const queueMaterialPhotos = async (requestRef: string, description: string) => {
+    if (!materialPhotos.length) return 0;
+
+    const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
+    const safeDescription = description.replace(/\s+/g, " ").slice(0, 120);
+
+    for (const [index, photo] of materialPhotos.entries()) {
+      const blobKey = `os-${os.id}-material-${requestRef}-${Date.now()}-${index}`;
+      await blobPut(blobKey, photo.file);
+      await outboxAdd({
+        id: crypto.randomUUID(),
+        kind: "foto",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: {
+          blobKey,
+          legenda: `Pedido de material • ${requestRef} • ${safeDescription}`,
+        },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+    }
+
+    return materialPhotos.length;
+  };
 
   const handleFinish = async (withPhoto: boolean) => {
     const hasSpecialPermission = os?.allowedMenus?.includes("corretiva-concluir-sem-foto-especial");
@@ -116,14 +216,18 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     }
   };
 
-  const handleSolicitarPeca = async () => {
+  const handleSolicitarPeca = async (): Promise<boolean> => {
     if (!pecas.trim()) {
       toast.error("Descreva as peças necessárias.");
-      return;
+      return false;
     }
     
     setLoading(true);
     const pecaTexto = pecas.trim();
+    const requestRef = `MAT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+    const attachmentSummary = materialPhotos.length > 0
+      ? `${materialPhotos.length} foto(s) vinculada(s)`
+      : "sem fotos";
     
     try {
       const { data: sess } = await supabase.auth.getSession();
@@ -173,7 +277,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             predio: os.predio,
             local: os.local,
             numeroOs: os.numero_os,
-            observacao: `Solicitação automática via Execução de Campo`
+            observacao: `Solicitação automática via Execução de Campo • Ref. ${requestRef} • ${attachmentSummary}`
           },
           createdAt: Date.now(),
           attempts: 0
@@ -191,7 +295,17 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
         });
         await cacheOsList(updated);
 
-        toast.success("Modo Offline: Material registrado para sincronização.");
+        try {
+          const queuedPhotos = await queueMaterialPhotos(requestRef, pecaTexto);
+          toast.success(
+            queuedPhotos > 0
+              ? `Pedido ${requestRef} e ${queuedPhotos} foto(s) salvos para sincronização.`
+              : `Pedido ${requestRef} salvo para sincronização.`,
+          );
+        } catch (photoError) {
+          console.error("[CorretivaPecas] Falha ao preparar fotos offline:", photoError);
+          toast.warning(`Pedido ${requestRef} salvo, mas não foi possível preparar todas as fotos.`);
+        }
       } else {
         // Online: Insere diretamente no módulo de materiais
         const { data: solData, error: solError } = await supabase
@@ -204,15 +318,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             local: os.local || null,
             prioridade: "normal",
             status: "enviada",
-            observacao: `[Solicitado via OS ${os.numero_os}] Requisitado via Execução de Campo`,
+            observacao: `[Solicitado via OS ${os.numero_os}] Requisitado via Execução de Campo • Ref. ${requestRef} • ${attachmentSummary}`,
             enviada_em: new Date().toISOString(),
           } as any)
           .select("id")
           .single();
 
-        if (solError) {
-          console.error("[CorretivaPecas] Erro ao criar solicitação de material:", solError);
-        }
+        if (solError) throw solError;
 
         if (solData) {
           const { error: itemError } = await supabase.from("material_solicitacao_itens").insert({
@@ -220,7 +332,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             descricao: pecaTexto,
             quantidade: 1,
             unidade: "UN",
-            justificativa: `Referente à OS ${os.numero_os}`
+            justificativa: `Referente à OS ${os.numero_os} • Ref. ${requestRef}`
           } as any);
           
           if (itemError) {
@@ -255,13 +367,34 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           console.warn("Erro ao atualizar cache local:", e);
         }
 
-        toast.success("Material registrado no Controle de Materiais e Histórico da OS.");
+        let queuedPhotos = 0;
+        if (materialPhotos.length > 0) {
+          try {
+            queuedPhotos = await queueMaterialPhotos(requestRef, pecaTexto);
+            const { syncPending } = await import("@/lib/corretiva/sync");
+            const syncResult = await syncPending();
+            if (syncResult.failed > 0) {
+              toast.warning(`Pedido ${requestRef} salvo. Algumas fotos permaneceram na fila para nova sincronização.`);
+            }
+          } catch (photoError) {
+            console.error("[CorretivaPecas] Falha ao anexar fotos:", photoError);
+            toast.warning(`Pedido ${requestRef} salvo, mas algumas fotos não puderam ser anexadas agora.`);
+          }
+        }
+
+        if (queuedPhotos === 0) {
+          toast.success(`Material registrado no Controle de Materiais. Ref. ${requestRef}`);
+        } else {
+          toast.success(`Pedido ${requestRef} registrado com ${queuedPhotos} foto(s) anexada(s).`);
+        }
       }
 
       if (onUpdate) onUpdate();
+      return true;
     } catch (err: any) {
       console.error("[CorretivaPecas] Erro:", err);
       toast.error("Erro ao processar solicitação: " + (err.message || "Tente novamente"));
+      return false;
     } finally {
       setLoading(false);
     }
@@ -411,26 +544,119 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
             <div className="space-y-5">
               <div className="space-y-2">
-                <Label className="text-xs font-bold text-white/70">Solicitar Peças / Materiais</Label>
+                <div className="flex items-center justify-between gap-3">
+                  <Label className="text-xs font-bold text-white/70">Solicitar Peças / Materiais</Label>
+                  {hasMaterialDraft && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400 animate-pulse">
+                      Clique no ✓ verde para anexar
+                    </span>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Input 
                     placeholder="Ex: Lâmpada LED 9W..." 
                     value={pecas}
                     onChange={(e) => setPecas(e.target.value)}
-                    className="bg-white/5 border-white/10 h-11 text-sm focus:ring-primary/50 text-white"
+                    className={cn(
+                      "bg-white/5 border-white/10 h-11 text-sm focus:ring-primary/50 text-white transition-all",
+                      hasMaterialDraft && "border-emerald-500/40 focus-visible:ring-emerald-500/30"
+                    )}
                   />
                   <Button 
                     variant="glass" 
                     size="icon" 
-                    className="h-11 w-11 shrink-0" 
+                    className={cn(
+                      "h-11 w-11 shrink-0 transition-all duration-300",
+                      hasMaterialDraft && !loading && "border-emerald-400/70 bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.35)] animate-pulse hover:bg-emerald-500/30"
+                    )}
                     onClick={async () => {
-                      await handleSolicitarPeca();
-                      setPecas(""); // Limpa o campo após registrar automaticamente
+                      const success = await handleSolicitarPeca();
+                      if (success) clearMaterialDraft();
                     }}
-                    disabled={loading}
+                    disabled={loading || !hasMaterialDraft}
+                    aria-label={hasMaterialDraft ? "Anexar pedido de material" : "Descreva o material para habilitar o pedido"}
+                    title={hasMaterialDraft ? "Clique para anexar o pedido de material" : "Descreva o material necessário"}
                   >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Package className="h-4 w-4 text-white" />}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : hasMaterialDraft ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-300 animate-pulse" />
+                    ) : (
+                      <Package className="h-4 w-4 text-white/60" />
+                    )}
                   </Button>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-white">Fotos do pedido</p>
+                      <p className="text-[9px] text-white/45">
+                        Selecione várias imagens da galeria. Elas serão vinculadas automaticamente ao pedido.
+                      </p>
+                    </div>
+                    <label
+                      className={cn(
+                        "shrink-0 inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 text-[10px] font-bold text-blue-300 transition-all hover:border-blue-400/50 hover:bg-blue-500/15",
+                        loading && "pointer-events-none opacity-50"
+                      )}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="sr-only"
+                        disabled={loading}
+                        onChange={(e) => {
+                          handleMaterialPhotosSelected(e.target.files);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                      <ImagePlus className="h-4 w-4" />
+                      Galeria
+                    </label>
+                  </div>
+
+                  {materialPhotos.length > 0 ? (
+                    <>
+                      <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                        {materialPhotos.map((photo, index) => (
+                          <div
+                            key={photo.id}
+                            className="group relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/20"
+                          >
+                            <img
+                              src={photo.previewUrl}
+                              alt={`Foto ${index + 1} do pedido de material`}
+                              className="h-full w-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeMaterialPhoto(photo.id)}
+                              disabled={loading}
+                              className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/75 text-white transition-all hover:bg-red-500 disabled:opacity-50"
+                              aria-label={`Remover foto ${index + 1}`}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 text-[9px]">
+                        <span className="font-semibold text-emerald-400">
+                          {materialPhotos.length} foto(s) pronta(s) para anexar
+                        </span>
+                        <span className="text-white/35">Máx. {MAX_MATERIAL_PHOTOS} • 10 MB por foto</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 rounded-xl border border-dashed border-white/10 bg-black/10 px-3 py-2.5">
+                      <LayoutGrid className="h-4 w-4 shrink-0 text-blue-400/70" />
+                      <p className="text-[9px] text-white/40">
+                        Nenhuma foto selecionada. O pedido também pode ser enviado sem imagens.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
