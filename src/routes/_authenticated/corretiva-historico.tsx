@@ -1,19 +1,25 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Search,
-  Camera,
-  Package,
   AlertTriangle,
-  Loader2,
+  Building2,
+  CalendarClock,
+  Camera,
   CheckCircle2,
-  XCircle,
+  ChevronRight,
+  Cpu,
   Download,
   ExternalLink,
-  Link as LinkIcon,
-  PenLine,
   FileSpreadsheet,
+  Layers3,
+  Loader2,
+  MapPin,
+  Package,
+  PenLine,
+  Search,
+  UserRound,
+  XCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -27,7 +33,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -66,6 +78,7 @@ type OsRow = {
   updated_at: string;
   solicitante: string | null;
 };
+
 type Foto = {
   id: string;
   storage_path: string | null;
@@ -73,6 +86,7 @@ type Foto = {
   created_at: string;
   legenda: string | null;
 };
+
 type Peca = {
   id: string;
   descricao: string;
@@ -82,11 +96,55 @@ type Peca = {
   modelo: string | null;
   created_at: string;
 };
-type Problema = { id: string; descricao: string; gravidade: string; created_at: string };
+
+type Problema = {
+  id: string;
+  descricao: string;
+  gravidade: string;
+  created_at: string;
+};
+
+const formatDateTime = (value: string | null | undefined) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+function SectionCard({
+  title,
+  icon,
+  count,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  count?: number;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border/60 bg-card/35 shadow-[0_16px_40px_-34px_rgba(0,0,0,0.75)]">
+      <div className="flex min-h-12 items-center gap-2 border-b border-border/50 bg-muted/20 px-4 py-3">
+        <span className="text-primary">{icon}</span>
+        <h4 className="text-xs font-bold uppercase tracking-[0.14em] text-foreground/80">{title}</h4>
+        {typeof count === "number" && (
+          <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full border border-border/60 bg-background/70 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground">
+            {count}
+          </span>
+        )}
+      </div>
+      <div className="p-4">{children}</div>
+    </section>
+  );
+}
 
 function HistoricoPage() {
-  const [urls, setUrls] = useState<Record<string, string>>({});
-
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<OsRow | null>(null);
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
@@ -99,12 +157,12 @@ function HistoricoPage() {
       .from("corretiva_equipes")
       .select("nome")
       .order("nome")
-      .then(({ data }) => setEquipes((data ?? []).map((r: any) => r.nome as string)));
+      .then(({ data }) => setEquipes((data ?? []).map((row: any) => row.nome as string)));
   }, []);
 
-  const setEquipeAndPersist = (v: EquipeFiltro) => {
-    setEquipe(v);
-    saveEquipe(v);
+  const setEquipeAndPersist = (value: EquipeFiltro) => {
+    setEquipe(value);
+    saveEquipe(value);
   };
 
   const { data: rows = [], isLoading } = useQuery({
@@ -124,197 +182,256 @@ function HistoricoPage() {
   });
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return rows.filter((o) => {
-      const prev = isPreventiva(o.tipo);
-      if (aba === "backorder" ? !prev : prev) return false;
-      if (!matchEquipe(o.equipe, equipe)) return false;
-      if (!q) return true;
-      return [o.numero_os, o.nome_os, o.ativo, o.equipamento, o.predio, o.local]
+    const query = search.trim().toLowerCase();
+    return rows.filter((os) => {
+      const preventiva = isPreventiva(os.tipo);
+      if (aba === "backorder" ? !preventiva : preventiva) return false;
+      if (!matchEquipe(os.equipe, equipe)) return false;
+      if (!query) return true;
+
+      return [os.numero_os, os.nome_os, os.ativo, os.equipamento, os.predio, os.local]
         .filter(Boolean)
-        .some((v) => (v as string).toLowerCase().includes(q));
+        .some((value) => (value as string).toLowerCase().includes(query));
     });
   }, [rows, search, equipe, aba]);
 
+  const metrics = useMemo(() => {
+    const concluidas = filtered.filter((os) => os.status === "concluida").length;
+    const canceladas = filtered.filter((os) => os.status === "cancelada").length;
+    const rubricadas = filtered.filter((os) => Boolean(os.assinatura_url)).length;
+    return { total: filtered.length, concluidas, canceladas, rubricadas };
+  }, [filtered]);
+
   return (
     <PageShell
-      title={aba === "backorder" ? "Histórico de OS — Backorders" : "Histórico de OS — Programação"}
-      description="Ordens de serviço concluídas e canceladas."
+      title="Histórico de execução"
+      description="Consulte chamados finalizados e cancelados com evidências, materiais e rastreabilidade da execução."
     >
-      <GlassCard className="p-4">
-        <div className="mb-3 inline-flex rounded-xl border border-border/50 bg-muted/40 p-1">
-          {([
-            { k: "corretiva", label: "Corretivas" },
-            { k: "backorder", label: "Backorders" },
-          ] as const).map((t) => (
-            <button
-              key={t.k}
-              type="button"
-              onClick={() => setAba(t.k)}
-              className={cn(
-                "min-h-11 rounded-lg px-4 text-sm font-medium transition-all",
-                aba === t.k
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2 sm:min-w-[240px]">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Minha equipe
-            </span>
-            <Select value={equipe} onValueChange={(v) => setEquipeAndPersist(v as EquipeFiltro)}>
-              <SelectTrigger className="h-11 flex-1 text-base sm:w-[200px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas as equipes</SelectItem>
-                {equipes.map((e) => (
-                  <SelectItem key={e} value={e}>
-                    {e}
-                  </SelectItem>
+      <GlassCard className="overflow-hidden p-0 active:scale-100">
+        <div className="border-b border-border/50 bg-gradient-to-b from-muted/25 to-transparent px-4 py-4 sm:px-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex rounded-xl border border-border/60 bg-background/55 p-1 shadow-inner">
+                {([
+                  { key: "corretiva", label: "Corretivas" },
+                  { key: "backorder", label: "Backorders" },
+                ] as const).map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setAba(tab.key)}
+                    aria-pressed={aba === tab.key}
+                    className={cn(
+                      "min-h-10 rounded-lg border px-4 text-sm font-semibold transition-[background-color,border-color,color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-100 motion-reduce:transition-none",
+                      aba === tab.key
+                        ? "border-primary/20 bg-primary/12 text-foreground shadow-[0_8px_22px_-18px_hsl(var(--primary))]"
+                        : "border-transparent text-muted-foreground hover:bg-muted/45 hover:text-foreground",
+                    )}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar OS, ativo, equipamento…"
-                className="h-11 pl-9 text-base"
-              />
+              </div>
+              <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Selecione um chamado para abrir a visão completa da execução sem alterar o estado da lista.
+              </p>
             </div>
+
             <Button
               variant="outline"
               onClick={() => exportCorretivaHistoricoToExcel(filtered)}
               disabled={filtered.length === 0}
-              className="h-11 gap-2 border-emerald-500/20 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
+              className="h-11 gap-2 rounded-xl border-emerald-500/25 bg-emerald-500/10 px-4 text-emerald-700 shadow-none transition-[background-color,border-color,color] hover:border-emerald-500/40 hover:bg-emerald-500/15 dark:text-emerald-300 active:scale-100 motion-reduce:transition-none"
             >
               <FileSpreadsheet className="h-4 w-4" />
-              <span className="hidden sm:inline">Exportar Excel</span>
+              Exportar Excel
             </Button>
           </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { label: "Exibidos", value: metrics.total, className: "text-foreground" },
+              { label: "Finalizados", value: metrics.concluidas, className: "text-emerald-500" },
+              { label: "Cancelados", value: metrics.canceladas, className: "text-destructive" },
+              { label: "Rubricados", value: metrics.rubricadas, className: "text-primary" },
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-xl border border-border/50 bg-background/45 px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  {metric.label}
+                </p>
+                <p className={cn("mt-1 text-xl font-black tabular-nums", metric.className)}>{metric.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <div className="grid gap-3 border-b border-border/50 bg-background/25 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.35fr)] sm:p-5">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar OS, ativo, equipamento, prédio ou local…"
+              className="premium-input h-11 rounded-xl pl-10 text-sm sm:text-base"
+            />
+          </div>
+          <Select value={equipe} onValueChange={(value) => setEquipeAndPersist(value as EquipeFiltro)}>
+            <SelectTrigger className="premium-input h-11 rounded-xl text-sm">
+              <SelectValue placeholder="Todas as equipes" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as equipes</SelectItem>
+              {equipes.map((team) => (
+                <SelectItem key={team} value={team}>
+                  {team}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {equipe !== "todas" && (
-          <div className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary" className="text-[10px]">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/40 bg-primary/[0.035] px-4 py-2.5 text-xs text-muted-foreground sm:px-5">
+            <span>Filtro ativo:</span>
+            <Badge variant="secondary" className="rounded-lg text-[10px]">
               {equipe}
             </Badge>
-            <span>Mostrando apenas OS desta equipe.</span>
             <button
               type="button"
               onClick={() => setEquipeAndPersist("todas")}
-              className="ml-auto text-primary underline-offset-2 hover:underline"
+              className="ml-auto min-h-9 rounded-lg px-2 font-semibold text-primary transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-100"
             >
-              Ver todas
+              Limpar filtro
             </button>
           </div>
         )}
-        {isLoading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            Nenhuma OS encontrada.
-          </div>
-        ) : (
-          <ul className="divide-y divide-border/50">
-            {filtered.map((o) => {
-              const cancelada = o.status === "cancelada";
-              const Icon = cancelada ? XCircle : CheckCircle2;
-              const st = equipeStyles(o.equipe);
-              const rowCls = cancelada
-                ? "border-l-4 border-destructive/60 hover:bg-accent/60"
-                : "border-l-4 border-emerald-500 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20";
-              return (
-                <li key={o.id}>
-                  <div
-                    className={`flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition ${rowCls}`}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setOpen(o)}
-                      className="flex flex-1 items-start gap-3 text-left"
+
+        <div className="p-3 sm:p-5">
+          {isLoading ? (
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center text-sm text-muted-foreground">
+              <Loader2 className="mb-3 h-7 w-7 animate-spin text-primary" />
+              <span className="font-medium">Carregando histórico de execução…</span>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center">
+              <Search className="mb-3 h-6 w-6 text-muted-foreground/60" />
+              <p className="font-semibold text-foreground">Nenhum chamado encontrado</p>
+              <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
+                Ajuste a busca ou os filtros para visualizar outros registros.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2.5">
+              {filtered.map((os) => {
+                const cancelada = os.status === "cancelada";
+                const StatusIcon = cancelada ? XCircle : CheckCircle2;
+                const teamStyle = equipeStyles(os.equipe);
+                const selected = open?.id === os.id;
+                const completedAt = formatDateTime(os.fim || os.updated_at);
+
+                return (
+                  <li key={os.id}>
+                    <div
+                      className={cn(
+                        "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card/35 p-3 shadow-[0_14px_38px_-34px_rgba(0,0,0,0.8)] transition-[background-color,border-color,box-shadow] duration-200 sm:flex-row sm:items-stretch sm:p-3.5 motion-reduce:transition-none",
+                        cancelada
+                          ? "border-destructive/18 hover:border-destructive/30 hover:bg-destructive/[0.035]"
+                          : "border-emerald-500/15 hover:border-emerald-500/30 hover:bg-emerald-500/[0.035]",
+                        selected && "border-primary/40 bg-primary/[0.045] ring-1 ring-primary/15",
+                      )}
                     >
-                      <Icon
-                        className={`mt-0.5 h-5 w-5 shrink-0 ${
-                          cancelada ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"
-                        }`}
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "absolute inset-y-3 left-0 w-0.5 rounded-r-full",
+                          cancelada ? "bg-destructive/70" : "bg-emerald-500/80",
+                        )}
                       />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`font-mono text-sm font-semibold ${cancelada ? "" : "text-emerald-800 dark:text-emerald-300"}`}
-                          >
-                            OS {o.numero_os}
-                          </span>
-                          {cancelada ? (
-                            <Badge variant="secondary" className="text-[10px]">
-                              cancelada
-                            </Badge>
-                          ) : (
-                            <Badge className="border border-emerald-500/40 bg-emerald-500/20 text-[10px] text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300">
-                              <CheckCircle2 className="mr-1 h-3 w-3" /> Finalizada
-                            </Badge>
+
+                      <button
+                        type="button"
+                        onClick={() => setOpen(os)}
+                        className="flex min-w-0 flex-1 items-start gap-3 rounded-xl p-1.5 text-left outline-none transition-[background-color,box-shadow] duration-200 hover:bg-white/[0.025] focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-100 active:translate-y-0 motion-reduce:transition-none"
+                      >
+                        <span
+                          className={cn(
+                            "mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-xl border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
+                            cancelada
+                              ? "border-destructive/20 bg-destructive/10 text-destructive"
+                              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500",
                           )}
-                          {o.equipe && (
-                            <Badge variant="outline" className={`text-[10px] ${st.badge}`}>
-                              <span
-                                className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${st.dot}`}
-                              />
-                              {o.equipe}
-                            </Badge>
-                          )}
-                          {o.assinatura_url && (
-                            <Badge variant="outline" className="text-[10px]">
-                              <PenLine className="mr-1 h-3 w-3" /> Rubricada
-                            </Badge>
-                          )}
-                          {o.fim && !cancelada && (
-                            <span className="text-xs text-muted-foreground">
-                              concluída em {new Date(o.fim).toLocaleString("pt-BR")}
+                        >
+                          <StatusIcon className="h-5 w-5" />
+                        </span>
+
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-mono text-sm font-black tracking-tight text-foreground">
+                              OS {os.numero_os}
                             </span>
-                          )}
-                        </div>
-                        {o.nome_os ? (
-                          <div className="mt-1 max-h-24 overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-white/5 p-2 text-sm font-medium leading-snug whitespace-pre-wrap break-words sm:max-h-28">
-                            {o.nome_os}
-                          </div>
-                        ) : (
-                          <div className="mt-1 text-sm text-muted-foreground">
-                            Sem descrição da atividade
-                          </div>
-                        )}
-                        <div className="mt-1 break-words text-xs text-muted-foreground/80">
-                          {[o.predio, o.andar, o.local].filter(Boolean).join(" · ") || "—"}
-                        </div>
-                      </div>
-                    </button>
-                    <div className="shrink-0 self-center">
-                      <div className="flex items-center gap-2">
-                        {(o.status === "concluida" && (o.assinatura_url || urls[o.id])) && (
-                           <Badge variant="outline" className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
-                             Evidências OK
-                           </Badge>
-                        )}
-                        <OsPhotosButton osId={o.id} numeroOs={o.numero_os} modulo="corretiva" />
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "rounded-lg text-[9px] font-bold uppercase tracking-wider",
+                                cancelada
+                                  ? "border-destructive/25 bg-destructive/8 text-destructive"
+                                  : "border-emerald-500/25 bg-emerald-500/8 text-emerald-600 dark:text-emerald-300",
+                              )}
+                            >
+                              {cancelada ? "Cancelada" : "Finalizada"}
+                            </Badge>
+                            {os.equipe && (
+                              <Badge variant="outline" className={cn("rounded-lg text-[9px]", teamStyle.badge)}>
+                                <span className={cn("mr-1 h-1.5 w-1.5 rounded-full", teamStyle.dot)} />
+                                {os.equipe}
+                              </Badge>
+                            )}
+                            {os.assinatura_url && (
+                              <Badge variant="outline" className="rounded-lg border-primary/20 bg-primary/5 text-[9px] text-primary">
+                                <PenLine className="mr-1 h-3 w-3" /> Rubricada
+                              </Badge>
+                            )}
+                          </span>
+
+                          <span className="mt-2 block text-sm font-semibold leading-snug text-foreground/90 sm:text-[15px]">
+                            {os.nome_os || "Sem descrição da atividade"}
+                          </span>
+
+                          <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                            <span className="inline-flex min-w-0 items-center gap-1.5">
+                              <MapPin className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">
+                                {[os.predio, os.andar, os.local].filter(Boolean).join(" · ") || "Local não informado"}
+                              </span>
+                            </span>
+                            {completedAt && (
+                              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                {completedAt}
+                              </span>
+                            )}
+                          </span>
+                        </span>
+
+                        <ChevronRight className="mt-3 hidden h-4 w-4 shrink-0 text-muted-foreground/55 transition-colors group-hover:text-primary sm:block" />
+                      </button>
+
+                      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/40 pt-2 sm:w-auto sm:justify-end sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 sm:hidden">
+                          Evidências
+                        </span>
+                        <OsPhotosButton osId={os.id} numeroOs={os.numero_os} modulo="corretiva" />
                       </div>
                     </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </GlassCard>
 
       <OsDetail os={open} onClose={() => setOpen(null)} />
@@ -328,7 +445,8 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     enabled: !!os,
     queryFn: async () => {
       if (!os) return { fotos: [] as Foto[], pecas: [] as Peca[], problemas: [] as Problema[] };
-      const [f, p, pr] = await Promise.all([
+
+      const [photosResult, partsResult, issuesResult] = await Promise.all([
         supabase
           .from("corretiva_fotos")
           .select("id, storage_path, image_url, created_at, legenda")
@@ -345,10 +463,11 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           .eq("os_id", os.id)
           .order("created_at"),
       ]);
+
       return {
-        fotos: (f.data ?? []) as Foto[],
-        pecas: (p.data ?? []) as Peca[],
-        problemas: (pr.data ?? []) as Problema[],
+        fotos: (photosResult.data ?? []) as Foto[],
+        pecas: (partsResult.data ?? []) as Peca[],
+        problemas: (issuesResult.data ?? []) as Problema[],
       };
     },
   });
@@ -362,265 +481,301 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
         setUrls({});
         return;
       }
-      
+
       setLoadingUrls(true);
       const next: Record<string, string> = {};
       const legacy: Foto[] = [];
-      
-      for (const f of data.fotos) {
-        if (f.image_url) {
-          // Garante que o image_url é uma URL válida do ImgBB ou similar
-          next[f.id] = f.image_url;
-        } else if (f.storage_path) {
-          legacy.push(f);
+
+      for (const photo of data.fotos) {
+        if (photo.image_url) {
+          next[photo.id] = photo.image_url;
+        } else if (photo.storage_path) {
+          legacy.push(photo);
         }
       }
 
       if (legacy.length > 0) {
         try {
-          const paths = legacy.map((f) => f.storage_path as string);
-          // Aumentamos o tempo de expiração para 24h (86400s) para evitar expiração rápida
-          const { data: s, error } = await supabase.storage
+          const paths = legacy.map((photo) => photo.storage_path as string);
+          const { data: signedUrls, error } = await supabase.storage
             .from("corretiva-fotos")
             .createSignedUrls(paths, 86400);
-            
+
           if (error) throw error;
-          
-          legacy.forEach((f, i) => {
-            const u = s?.[i]?.signedUrl;
-            if (u) next[f.id] = u;
+
+          legacy.forEach((photo, index) => {
+            const url = signedUrls?.[index]?.signedUrl;
+            if (url) next[photo.id] = url;
           });
-        } catch (err) {
-          console.error("[CorretivaHistorico] Erro ao resolver URLs legadas:", err);
+        } catch (error) {
+          console.error("[CorretivaHistorico] Erro ao resolver URLs legadas:", error);
         }
       }
-      
+
       setUrls(next);
       setLoadingUrls(false);
     })();
   }, [data?.fotos]);
 
-  const downloadPhoto = useCallback(async (f: Foto, idx: number) => {
-    const url = urls[f.id];
-    if (!url) {
-      toast.error("URL da foto não disponível.");
-      return;
-    }
-    
-    // Abrir em nova aba é o método mais confiável para ImgBB/Storage sem problemas de CORS ou bloqueio de download direto no navegador
-    window.open(url, "_blank", "noopener,noreferrer");
-  }, [urls]);
+  const openPhoto = useCallback(
+    (photo: Foto) => {
+      const url = urls[photo.id];
+      if (!url) {
+        toast.error("URL da foto não disponível.");
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
+    },
+    [urls],
+  );
+
+  const statusIsCancelled = os?.status === "cancelada";
+  const completedAt = formatDateTime(os?.fim || os?.updated_at);
+  const metadata = [
+    { label: "Prédio", value: os?.predio || "—", icon: Building2 },
+    { label: "Andar", value: os?.andar || "—", icon: Layers3 },
+    { label: "Local", value: os?.local || "—", icon: MapPin },
+    { label: "Ativo", value: os?.ativo || "—", icon: Cpu },
+    { label: "Equipamento", value: os?.equipamento || "—", icon: Package },
+    { label: "Solicitante", value: os?.solicitante || "—", icon: UserRound },
+  ];
 
   return (
-    <Dialog open={!!os} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto sm:w-full">
-        <DialogHeader>
-          <DialogTitle className="text-base sm:text-lg">OS {os?.numero_os}</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 p-6 rounded-3xl bg-white/[0.03] border border-white/10 text-[13px] shadow-2xl backdrop-blur-md">
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Prédio
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.predio || "—"}</div>
-          </div>
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Andar
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.andar || "—"}</div>
-          </div>
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Local
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.local || "—"}</div>
-          </div>
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Ativo
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.ativo || "—"}</div>
-          </div>
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Equipamento
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight">{os?.equipamento || "—"}</div>
-          </div>
-          <div className="space-y-1.5">
-            <span className="flex items-center gap-2 text-[10px] uppercase text-muted-foreground font-black tracking-widest opacity-60">
-              <span className="w-1.5 h-4 bg-primary/60 rounded-full" /> Solicitante
-            </span>
-            <div className="font-bold text-lg text-white/90 pl-3.5 leading-tight truncate" title={os?.solicitante || ""}>{os?.solicitante || "—"}</div>
-          </div>
-        </div>
-
-        {os?.nome_os && (
-          <div className="max-h-40 overflow-y-auto overscroll-contain rounded-2xl border border-white/10 bg-white/5 p-3 text-sm leading-snug whitespace-pre-wrap break-words">
-            {os.nome_os}
-          </div>
-        )}
-
-        {isLoading || loadingUrls ? (
-          <div className="p-12 text-center text-sm text-muted-foreground flex flex-col items-center justify-center min-h-[200px]">
-            <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-primary" />
-            <p className="animate-pulse">Carregando evidências fotográficas...</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <section>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                <Camera className="h-4 w-4" /> Fotos ({data?.fotos.length ?? 0})
-              </h4>
-              {data?.fotos.length ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                    {data.fotos.map((f, idx) => (
-                      <a
-                        key={f.id}
-                        href={urls[f.id] ?? "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => {
-                          if (!urls[f.id]) {
-                            e.preventDefault();
-                            toast.error("Aguarde o carregamento da imagem...");
-                            return;
-                          }
-                        }}
-                        className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
-                      >
-                        {urls[f.id] ? (
-                          <img
-                            src={urls[f.id]}
-                            className="h-full w-full object-cover"
-                            alt={f.legenda || `Foto ${idx + 1}`}
-                            loading="eager"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                            …
-                          </div>
-                        )}
-                        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
-                          <ExternalLink className="h-3.5 w-3.5 text-white" />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              downloadPhoto(f, idx);
-                            }}
-                            className="pointer-events-auto rounded-full bg-white/20 p-1 text-white backdrop-blur-md transition hover:bg-white/30"
-                            aria-label="Baixar foto"
-                          >
-                            <Download className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                  {data.fotos.some((f) => f.image_url) && (
-                    <ul className="space-y-1.5">
-                      {data.fotos
-                        .filter((f) => f.image_url)
-                        .map((f, i) => (
-                          <li key={`link-${f.id}`}>
-                            <a
-                              href={f.image_url as string}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:bg-white/10 active:scale-[0.98]"
-                            >
-                              <LinkIcon className="h-3.5 w-3.5 text-primary" />
-                              <span className="truncate font-mono text-muted-foreground">
-                                Foto {i + 1} · {f.image_url}
-                              </span>
-                              <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60 transition group-hover:opacity-100" />
-                            </a>
-                          </li>
-                        ))}
-                    </ul>
+    <Dialog open={!!os} onOpenChange={(value) => !value && onClose()}>
+      <DialogContent className="w-[calc(100vw-1rem)] max-w-4xl gap-0 overflow-hidden rounded-[26px] border-border/60 bg-background/95 p-0 shadow-[0_32px_100px_-35px_rgba(0,0,0,0.78)] data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100 sm:w-[calc(100vw-2rem)] sm:rounded-[30px] motion-reduce:animate-none">
+        <div className="max-h-[calc(100dvh-1rem)] overflow-y-auto overscroll-contain sm:max-h-[90vh]">
+          <div className="sticky top-0 z-20 border-b border-border/55 bg-background/95 px-4 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-16">
+            <DialogHeader className="space-y-2 text-left">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className="rounded-lg border border-primary/20 bg-primary/10 font-mono text-[10px] font-bold text-primary hover:bg-primary/10">
+                  OS {os?.numero_os}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "rounded-lg text-[9px] font-bold uppercase tracking-wider",
+                    statusIsCancelled
+                      ? "border-destructive/25 bg-destructive/8 text-destructive"
+                      : "border-emerald-500/25 bg-emerald-500/8 text-emerald-600 dark:text-emerald-300",
                   )}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhuma foto.</p>
-              )}
-            </section>
+                >
+                  {statusIsCancelled ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                  {statusIsCancelled ? "Cancelada" : "Finalizada"}
+                </Badge>
+                {os?.equipe && (
+                  <Badge variant="outline" className={cn("rounded-lg text-[9px]", equipeStyles(os.equipe).badge)}>
+                    {os.equipe}
+                  </Badge>
+                )}
+                {completedAt && (
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
+                    <CalendarClock className="h-3.5 w-3.5" />
+                    {completedAt}
+                  </span>
+                )}
+              </div>
+              <DialogTitle className="pr-3 text-lg font-black leading-snug tracking-tight text-foreground sm:text-2xl">
+                {os?.nome_os || "Detalhes da execução"}
+              </DialogTitle>
+              <DialogDescription className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Registro consolidado do chamado, com localização, evidências, materiais e ocorrências associadas.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-            <section>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                <Package className="h-4 w-4" /> Peças solicitadas ({data?.pecas.length ?? 0})
-              </h4>
-              {data?.pecas.length ? (
-                <ul className="space-y-2">
-                  {data.pecas.map((p) => (
-                    <li key={p.id} className="rounded-md border bg-background/40 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{p.descricao}</span>
-                        {p.modelo && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {p.modelo}
-                          </Badge>
-                        )}
-                        <Badge variant="outline" className="text-[10px]">
-                          Qtd {p.quantidade}
-                        </Badge>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {p.urgencia}
-                        </Badge>
-                      </div>
-                      {p.observacao && (
-                        <p className="mt-1 text-xs text-muted-foreground">{p.observacao}</p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">Sem pedidos.</p>
-              )}
-            </section>
+          <div className="space-y-4 p-4 sm:p-6">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {metadata.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={item.label}
+                    className="min-w-0 rounded-2xl border border-border/55 bg-card/35 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  >
+                    <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                      <Icon className="h-3.5 w-3.5 shrink-0 text-primary/75" />
+                      <span>{item.label}</span>
+                    </div>
+                    <p className="mt-2 truncate text-sm font-bold text-foreground" title={item.value}>
+                      {item.value}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
 
-            {os?.assinatura_url && (
-              <section>
-                <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  <PenLine className="h-4 w-4" /> Rubrica do solicitante
-                </h4>
-                <div className="rounded-2xl border border-white/10 bg-white p-3">
-                  <img loading="lazy" decoding="async" src={os.assinatura_url} alt="Rubrica do solicitante" className="max-h-32" />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {os.assinatura_nome ? `${os.assinatura_nome} · ` : ""}
-                  {os.assinatura_em ? new Date(os.assinatura_em).toLocaleString("pt-BR") : ""}
+            {os?.nome_os && (
+              <div className="rounded-2xl border border-border/55 bg-muted/15 p-4">
+                <p className="mb-2 text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  Descrição da atividade
                 </p>
-              </section>
+                <p className="max-h-44 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/85">
+                  {os.nome_os}
+                </p>
+              </div>
             )}
 
-            <section>
-              <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                <AlertTriangle className="h-4 w-4" /> Problemas ({data?.problemas.length ?? 0})
-              </h4>
-              {data?.problemas.length ? (
-                <ul className="space-y-2">
-                  {data.problemas.map((pr) => (
-                    <li key={pr.id} className="rounded-md border bg-background/40 p-3 text-sm">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="text-[10px]">
-                          {pr.gravidade}
-                        </Badge>
+            {isLoading || loadingUrls ? (
+              <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center">
+                <Loader2 className="mb-3 h-7 w-7 animate-spin text-primary" />
+                <p className="text-sm font-semibold text-foreground">Carregando evidências do chamado</p>
+                <p className="mt-1 text-xs text-muted-foreground">Organizando fotos, materiais e ocorrências…</p>
+              </div>
+            ) : (
+              <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+                <SectionCard title="Evidências fotográficas" icon={<Camera className="h-4 w-4" />} count={data?.fotos.length ?? 0}>
+                  {data?.fotos.length ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {data.fotos.map((photo, index) => {
+                          const photoUrl = urls[photo.id];
+                          return (
+                            <div
+                              key={photo.id}
+                              className="group relative aspect-square overflow-hidden rounded-2xl border border-border/60 bg-muted/20 shadow-[0_12px_30px_-26px_rgba(0,0,0,0.8)]"
+                            >
+                              {photoUrl ? (
+                                <a
+                                  href={photoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+                                  aria-label={`Abrir foto ${index + 1}`}
+                                >
+                                  <img
+                                    src={photoUrl}
+                                    className="h-full w-full object-cover"
+                                    alt={photo.legenda || `Foto ${index + 1}`}
+                                    loading="lazy"
+                                    decoding="async"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/75 via-black/20 to-transparent px-3 pb-2.5 pt-8 text-[10px] font-semibold text-white">
+                                    <span className="truncate">{photo.legenda || `Foto ${index + 1}`}</span>
+                                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                                  </span>
+                                </a>
+                              ) : (
+                                <div className="grid h-full place-items-center text-xs text-muted-foreground">
+                                  Carregando…
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => openPhoto(photo)}
+                                disabled={!photoUrl}
+                                className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-white/15 bg-black/60 text-white opacity-90 shadow-lg transition-[background-color,opacity] hover:bg-black/80 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed disabled:opacity-30 active:scale-100 motion-reduce:transition-none"
+                                aria-label={`Abrir foto ${index + 1} em nova guia`}
+                                title="Abrir imagem"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <p className="mt-1">{pr.descricao}</p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-xs text-muted-foreground">Nenhum problema.</p>
-              )}
-            </section>
+
+                      {data.fotos.some((photo) => photo.image_url) && (
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {data.fotos
+                            .filter((photo) => photo.image_url)
+                            .map((photo, index) => (
+                              <a
+                                key={`link-${photo.id}`}
+                                href={photo.image_url as string}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex min-h-10 items-center gap-2 rounded-xl border border-border/55 bg-background/45 px-3 text-xs font-medium text-muted-foreground transition-[background-color,border-color,color] hover:border-primary/30 hover:bg-primary/5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 active:scale-100 motion-reduce:transition-none"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-primary" />
+                                <span className="truncate">Abrir foto {index + 1}</span>
+                                <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0" />
+                              </a>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-border/55 bg-muted/10 px-4 py-6 text-center text-xs text-muted-foreground">
+                      Nenhuma evidência fotográfica registrada.
+                    </div>
+                  )}
+                </SectionCard>
+
+                <div className="space-y-4">
+                  <SectionCard title="Peças solicitadas" icon={<Package className="h-4 w-4" />} count={data?.pecas.length ?? 0}>
+                    {data?.pecas.length ? (
+                      <ul className="space-y-2">
+                        {data.pecas.map((part) => (
+                          <li key={part.id} className="rounded-xl border border-border/50 bg-background/40 p-3">
+                            <div className="flex flex-wrap items-start gap-1.5">
+                              <span className="min-w-0 flex-1 text-sm font-semibold leading-snug text-foreground">
+                                {part.descricao}
+                              </span>
+                              <Badge variant="outline" className="rounded-md text-[9px]">
+                                Qtd {part.quantidade}
+                              </Badge>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {part.modelo && (
+                                <Badge variant="outline" className="rounded-md text-[9px]">
+                                  {part.modelo}
+                                </Badge>
+                              )}
+                              <Badge variant="secondary" className="rounded-md text-[9px]">
+                                {part.urgencia}
+                              </Badge>
+                            </div>
+                            {part.observacao && (
+                              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{part.observacao}</p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhum pedido de material registrado.</p>
+                    )}
+                  </SectionCard>
+
+                  <SectionCard title="Ocorrências" icon={<AlertTriangle className="h-4 w-4" />} count={data?.problemas.length ?? 0}>
+                    {data?.problemas.length ? (
+                      <ul className="space-y-2">
+                        {data.problemas.map((issue) => (
+                          <li key={issue.id} className="rounded-xl border border-destructive/15 bg-destructive/[0.035] p-3">
+                            <Badge variant="outline" className="rounded-md border-destructive/20 bg-destructive/5 text-[9px] text-destructive">
+                              {issue.gravidade}
+                            </Badge>
+                            <p className="mt-2 text-sm leading-relaxed text-foreground/85">{issue.descricao}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Nenhuma ocorrência registrada.</p>
+                    )}
+                  </SectionCard>
+
+                  {os?.assinatura_url && (
+                    <SectionCard title="Rubrica do solicitante" icon={<PenLine className="h-4 w-4" />}>
+                      <div className="overflow-hidden rounded-xl border border-border/55 bg-white p-3">
+                        <img
+                          loading="lazy"
+                          decoding="async"
+                          src={os.assinatura_url}
+                          alt="Rubrica do solicitante"
+                          className="mx-auto max-h-28 max-w-full object-contain"
+                        />
+                      </div>
+                      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                        {os.assinatura_nome ? `${os.assinatura_nome} · ` : ""}
+                        {os.assinatura_em ? formatDateTime(os.assinatura_em) : ""}
+                      </p>
+                    </SectionCard>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );
