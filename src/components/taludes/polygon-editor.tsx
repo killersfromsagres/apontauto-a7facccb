@@ -836,7 +836,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               <div className="space-y-2">
                 <span className="text-[10px] text-white/70 uppercase">Data do Status</span>
                 <div className="relative">
-                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/70" />
                   <input 
                     type="date" 
                     value={statusDate}
@@ -859,7 +859,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               <div className="space-y-2">
                 <span className="text-[10px] text-white/70 uppercase">Data Prazo (Manual)</span>
                 <div className="relative">
-                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/40" />
+                  <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-white/70" />
                   <input 
                     type="date" 
                     value={prazoDate}
