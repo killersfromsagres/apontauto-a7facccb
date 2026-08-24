@@ -65,14 +65,14 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-2 sm:h-16 border-b border-border/50 bg-background/70 px-3 pt-[env(safe-area-inset-top)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/50 sm:gap-3 sm:px-4">
+    <header className="premium-app-header sticky top-0 z-30 flex h-14 items-center gap-2 border-b px-3 pt-[env(safe-area-inset-top)] pl-[max(env(safe-area-inset-left),0.75rem)] pr-[max(env(safe-area-inset-right),0.75rem)] sm:h-16 sm:gap-3 sm:px-4">
       <SidebarToggle />
       <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
-        <div className="relative shrink-0">
+        <div className="premium-logo-tile relative h-10 w-10 shrink-0 p-1 sm:h-12 sm:w-12">
           <img
             src={logoAsset.url}
             alt="Apont Auto — Sistema Automático de Apontamento"
-            className="relative h-9 w-9 object-contain sm:h-12 sm:w-12"
+            className="relative h-full w-full object-contain"
             loading="eager"
             decoding="async"
             fetchPriority="high"
@@ -81,15 +81,11 @@ export function AppHeader() {
           />
         </div>
         <div className="flex min-w-0 flex-col leading-tight">
-          <h1 className="truncate font-display text-sm font-bold tracking-wide sm:text-base">
-            <span className="text-gradient">{title}</span>
+          <h1 className="truncate font-display text-sm font-semibold tracking-[-0.01em] text-foreground sm:text-base">
+            {title}
           </h1>
-          {isAdmin ? (
-            <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-primary/70 sm:block">
-              &lt;/&gt; Dev <span className="shine-text font-semibold">Gabriel Vitor</span>
-            </p>
-          ) : displayName ? (
-            <p className="hidden truncate font-mono text-[10px] uppercase tracking-[0.2em] text-white sm:block">
+          {displayName ? (
+            <p className="hidden truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground sm:block">
               {displayName}
             </p>
           ) : null}
@@ -97,7 +93,7 @@ export function AppHeader() {
       </div>
       <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
         {email && (
-          <span className="hidden max-w-[200px] truncate rounded-full border border-border/50 bg-muted/40 px-3 py-1 text-xs text-muted-foreground md:inline">
+          <span className="premium-chip hidden max-w-[200px] truncate rounded-full px-3 py-1 text-xs text-muted-foreground md:inline">
             {email}
           </span>
         )}
@@ -108,7 +104,7 @@ export function AppHeader() {
         <ThemeToggle />
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="Sair">
+            <Button className="premium-icon-button" variant="ghost" size="icon" aria-label="Sair">
               <LogOut className="h-5 w-5" />
             </Button>
           </AlertDialogTrigger>

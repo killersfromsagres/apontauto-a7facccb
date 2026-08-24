@@ -6,24 +6,21 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium tracking-[-0.005em] cursor-pointer transition-[transform,box-shadow,background-color,color,border-color,filter] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] hover:scale-[1.02] active:scale-[0.97] motion-reduce:transition-none motion-reduce:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:relative [&_svg]:z-10",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium tracking-[-0.005em] cursor-pointer transition-[transform,box-shadow,background-color,color,border-color,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-px active:translate-y-0 active:scale-[0.985] motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:relative [&_svg]:z-10",
   {
     variants: {
       variant: {
-        default:
-          "bg-[image:var(--gradient-primary)] bg-primary text-primary-foreground shadow-elegant hover:bg-primary/95",
-        premium:
-          "bg-[image:var(--gradient-primary)] text-primary-foreground shadow-lift hover:brightness-110",
+        default: "premium-primary-button text-primary-foreground",
+        premium: "premium-primary-button text-primary-foreground",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         success: "bg-success text-success-foreground shadow-sm hover:bg-success/90",
         warning: "bg-warning text-warning-foreground shadow-sm hover:bg-warning/90",
-        outline:
-          "border border-input bg-background/60 backdrop-blur-sm shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/50",
-        glass: "glass-pill text-foreground hover:text-foreground",
-        soft: "bg-primary/10 text-primary hover:bg-primary/15 border border-primary/15",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        outline: "premium-control-glass text-foreground hover:border-primary/25 hover:bg-accent/70 hover:text-accent-foreground",
+        glass: "premium-control-glass text-foreground hover:bg-accent/65",
+        soft: "border border-primary/15 bg-primary/9 text-primary hover:border-primary/25 hover:bg-primary/13",
+        secondary: "border border-border/50 bg-secondary/85 text-secondary-foreground shadow-sm hover:bg-secondary",
+        ghost: "border border-transparent hover:bg-accent/70 hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline hover:translate-y-0 active:scale-100",
       },
       size: {
         default: "h-11 px-5 py-2",
@@ -58,13 +55,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button";
     if (asChild) {
       return (
-        <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+        <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
           {children}
         </Comp>
       );
     }
     return (
       <Comp
+        data-slot="button"
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}

@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import premiumCss from "../premium-ui.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -114,6 +115,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: premiumCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
@@ -183,7 +185,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
 
-      <body className="min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]">
+      <body className="app-premium-surface min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]">
         {children}
         <Scripts />
       </body>
@@ -215,7 +217,7 @@ function RootComponent() {
         <OfflineBanner />
 
         {/* Outlet principal envolto em suspense para rotas com lazy loading (Item 7.4) */}
-        <div className="flex min-h-dvh flex-col transition-opacity duration-300">
+        <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300">
           <Outlet />
         </div>
 

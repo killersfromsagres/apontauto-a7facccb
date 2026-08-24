@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-
 export function PageShell({
   title,
   description,
@@ -32,21 +31,20 @@ export function PageShell({
   const online = typeof navigator !== "undefined" ? navigator.onLine : true;
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8">
+    <div className="premium-page-shell mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8">
       {!online && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive px-4 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-destructive-foreground animate-in slide-in-from-top duration-300">
           Modo Offline Ativo — Sincronização em pausa
         </div>
       )}
-      {/* Cabeçalho Compacto Mobile */}
-      <div className="relative flex min-w-0 flex-col gap-2 border-b border-border/40 pb-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4 sm:pb-6">
+      <div className="premium-page-heading relative flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-3">
           {(backButton || true) && (
-            <div className="pt-0.5 shrink-0 md:pt-1">
+            <div className="shrink-0 pt-0.5 md:pt-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 sm:h-10 sm:w-10 transition-all"
+                className="premium-icon-button h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground sm:h-10 sm:w-10"
                 onClick={onBack ? handleBack : undefined}
                 asChild={!onBack}
               >
@@ -62,12 +60,12 @@ export function PageShell({
           )}
           <div className="min-w-0 flex-1">
             {eyebrow && (
-              <div className="text-[10px] font-bold uppercase tracking-widest text-primary/80 sm:text-xs mb-1.5 sm:mb-2">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:mb-2 sm:text-xs">
                 {eyebrow}
               </div>
             )}
-            <h2 className="font-sans text-xl font-bold leading-tight tracking-tight sm:text-3xl md:text-4xl">
-              <span className="text-gradient break-words">{title}</span>
+            <h2 className="break-words font-sans text-xl font-semibold leading-tight tracking-[-0.025em] text-foreground sm:text-3xl md:text-4xl">
+              {title}
             </h2>
             {description && (
               <p className="mt-1 line-clamp-2 max-w-2xl text-[12px] leading-snug text-muted-foreground sm:mt-3 sm:line-clamp-none sm:text-base">

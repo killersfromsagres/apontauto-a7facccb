@@ -1,0 +1,181 @@
+/*
+ * Premium UI refinement layer.
+ * Applied after the core design system so the product keeps its existing
+ * tokens and behavior while gaining a calmer Apple-inspired glass finish.
+ */
+
+.app-premium-surface {
+  min-height: 100dvh;
+  background-color: var(--background);
+}
+
+.app-premium-surface::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(58rem 30rem at 8% -8%, color-mix(in oklch, var(--primary) 11%, transparent), transparent 68%),
+    radial-gradient(48rem 28rem at 96% 5%, color-mix(in oklch, var(--primary-glow) 7%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in oklch, var(--background) 98%, white 2%), var(--background));
+}
+
+.dark .app-premium-surface::before {
+  background:
+    radial-gradient(58rem 30rem at 8% -8%, color-mix(in oklch, var(--primary) 12%, transparent), transparent 68%),
+    radial-gradient(48rem 28rem at 96% 5%, color-mix(in oklch, var(--primary-glow) 8%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in oklch, var(--background) 94%, white 2%), var(--background));
+}
+
+.app-premium-root {
+  position: relative;
+  isolation: isolate;
+}
+
+.premium-app-header {
+  border-bottom-color: color-mix(in oklch, var(--border) 72%, transparent) !important;
+  background: color-mix(in oklch, var(--background) 76%, transparent) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(165%);
+  backdrop-filter: blur(28px) saturate(165%);
+  box-shadow: 0 1px 0 color-mix(in oklch, white 5%, transparent), 0 14px 36px -30px rgb(0 0 0 / 0.55);
+}
+
+.premium-logo-tile {
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border-radius: 0.9rem;
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 8px 24px -18px rgb(0 0 0 / 0.65);
+}
+
+.premium-chip {
+  border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  background: color-mix(in oklch, var(--card) 58%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(145%);
+  backdrop-filter: blur(16px) saturate(145%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.premium-app-header [data-slot="button"],
+.premium-icon-button {
+  border: 1px solid transparent;
+}
+
+.premium-app-header [data-slot="button"]:hover,
+.premium-icon-button:hover {
+  border-color: color-mix(in oklch, var(--border) 80%, transparent);
+  background: color-mix(in oklch, var(--card) 72%, transparent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 8px 22px -18px rgb(0 0 0 / 0.65);
+}
+
+.premium-app-sidebar [data-sidebar="sidebar"] {
+  overflow: hidden;
+  border-color: color-mix(in oklch, var(--sidebar-border) 72%, transparent) !important;
+  border-radius: 1.15rem !important;
+  background: color-mix(in oklch, var(--sidebar) 82%, transparent) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(155%);
+  backdrop-filter: blur(30px) saturate(155%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 20px 55px -38px rgb(0 0 0 / 0.75) !important;
+}
+
+.premium-sidebar-header {
+  border-bottom-color: color-mix(in oklch, var(--sidebar-border) 68%, transparent) !important;
+  background: linear-gradient(180deg, color-mix(in oklch, var(--sidebar) 82%, white 2%), transparent);
+}
+
+.premium-nav-item {
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.premium-nav-item:hover {
+  border-color: color-mix(in oklch, var(--sidebar-border) 70%, transparent);
+  background: color-mix(in oklch, var(--sidebar-accent, var(--accent)) 58%, transparent);
+}
+
+.premium-nav-item[data-active="true"] {
+  border-color: color-mix(in oklch, var(--primary) 20%, transparent) !important;
+  background: color-mix(in oklch, var(--primary) 10%, var(--sidebar)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 9px 22px -20px color-mix(in oklch, var(--primary) 55%, transparent);
+}
+
+.premium-page-shell {
+  position: relative;
+}
+
+.premium-page-heading {
+  border: 1px solid color-mix(in oklch, var(--border) 64%, transparent);
+  border-radius: 1.35rem;
+  padding: 1rem;
+  background: color-mix(in oklch, var(--card) 46%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055), 0 20px 44px -38px rgb(0 0 0 / 0.7);
+}
+
+@media (min-width: 640px) {
+  .premium-page-heading {
+    padding: 1.25rem 1.35rem;
+  }
+}
+
+.premium-card {
+  border-color: color-mix(in oklch, var(--border) 68%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 78%, transparent) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  backdrop-filter: blur(22px) saturate(145%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055), 0 18px 46px -38px rgb(0 0 0 / 0.72);
+}
+
+.premium-card:hover {
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.065), 0 22px 54px -40px rgb(0 0 0 / 0.78);
+}
+
+.premium-input {
+  border-color: color-mix(in oklch, var(--input) 80%, transparent) !important;
+  background: color-mix(in oklch, var(--background) 68%, transparent) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  backdrop-filter: blur(16px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 8px 22px -22px rgb(0 0 0 / 0.65);
+}
+
+.premium-input:hover {
+  border-color: color-mix(in oklch, var(--border) 90%, transparent) !important;
+}
+
+.premium-input:focus-visible {
+  border-color: color-mix(in oklch, var(--primary) 62%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 14%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+.premium-control-glass {
+  border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+  background: color-mix(in oklch, var(--card) 64%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+  backdrop-filter: blur(18px) saturate(145%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055), 0 10px 26px -24px rgb(0 0 0 / 0.75);
+}
+
+.premium-primary-button {
+  background: var(--primary);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 12px 28px -22px color-mix(in oklch, var(--primary) 72%, transparent);
+}
+
+.premium-primary-button:hover {
+  background: color-mix(in oklch, var(--primary) 92%, white 8%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 15px 34px -22px color-mix(in oklch, var(--primary) 72%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .premium-card,
+  .premium-nav-item,
+  [data-slot="button"],
+  .premium-input {
+    transition: none !important;
+  }
+}

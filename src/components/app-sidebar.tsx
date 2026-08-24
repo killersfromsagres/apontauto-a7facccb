@@ -33,10 +33,10 @@ export const AppSidebar = memo(function AppSidebar() {
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
   return (
-    <Sidebar collapsible="icon" variant="floating" className="border-sidebar-border/60">
-      <SidebarHeader className="border-b border-sidebar-border/50">
-        <div className="flex items-center gap-2.5 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:gap-0 transition-[padding,gap] duration-200 ease-out">
-          <div className="relative shrink-0 transition-all duration-200 ease-out h-10 w-10 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+    <Sidebar collapsible="icon" variant="floating" className="premium-app-sidebar border-sidebar-border/60">
+      <SidebarHeader className="premium-sidebar-header border-b border-sidebar-border/50">
+        <div className="flex items-center gap-2.5 px-2 py-3 transition-[padding,gap] duration-200 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0">
+          <div className="premium-logo-tile relative h-10 w-10 shrink-0 p-1 transition-all duration-200 ease-out group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
             <img
               src={logoAsset.url}
               alt="Apont Auto — Sistema Automático de Apontamento"
@@ -48,11 +48,11 @@ export const AppSidebar = memo(function AppSidebar() {
               fetchPriority="high"
             />
           </div>
-          <div className="flex flex-col leading-tight overflow-hidden transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            <span className="shine-text font-display text-sm font-bold uppercase tracking-[0.18em] whitespace-nowrap">
+          <div className="flex flex-col overflow-hidden leading-tight transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+            <span className="whitespace-nowrap font-display text-sm font-semibold tracking-[-0.01em] text-foreground">
               Apont Auto
             </span>
-            <span className="shine-text font-mono text-[9px] uppercase tracking-[0.22em] whitespace-nowrap">
+            <span className="mt-0.5 whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
               In Haus Industrial
             </span>
           </div>
@@ -61,7 +61,7 @@ export const AppSidebar = memo(function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
+          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
             Navegação
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -101,7 +101,7 @@ const SimpleItem = memo(function SimpleItem({ item, active }: { item: MenuItem; 
         asChild
         isActive={active}
         tooltip={item.title}
-        className="group/item relative h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5 data-[active=true]:text-foreground data-[active=true]:shadow-inner"
+        className="premium-nav-item group/item relative h-10 rounded-xl transition-[background-color,border-color,box-shadow,color] duration-200 data-[active=true]:text-foreground"
       >
         <Link
           to={item.url}
@@ -110,7 +110,7 @@ const SimpleItem = memo(function SimpleItem({ item, active }: { item: MenuItem; 
           className="flex items-center gap-3"
         >
           {active && (
-            <span className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
+            <span className="absolute left-1 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
           )}
           <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
           <span className="truncate">{item.title}</span>
@@ -148,7 +148,7 @@ const GroupItem = memo(function GroupItem({
           asChild
           isActive={hasActive}
           tooltip={section.title}
-          className="h-10 rounded-lg data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
+          className="premium-nav-item h-10 rounded-xl transition-[background-color,border-color,box-shadow,color] duration-200"
         >
           <Link
             to={first.url}
@@ -171,7 +171,7 @@ const GroupItem = memo(function GroupItem({
           <SidebarMenuButton
             tooltip={section.title}
             isActive={hasActive && !open}
-            className="group/trigger h-10 rounded-lg transition-all data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-primary/5"
+            className="premium-nav-item group/trigger h-10 rounded-xl transition-[background-color,border-color,box-shadow,color] duration-200"
           >
             <section.icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
             <span className="truncate">{section.title}</span>
@@ -190,7 +190,7 @@ const GroupItem = memo(function GroupItem({
                   <SidebarMenuSubButton
                     asChild
                     isActive={active}
-                    className="group/subitem relative h-9 rounded-md transition-all data-[active=true]:bg-primary/15 data-[active=true]:text-foreground"
+                    className="premium-nav-item group/subitem relative h-9 rounded-lg transition-[background-color,border-color,box-shadow,color] duration-200 data-[active=true]:text-foreground"
                   >
                     <Link
                       to={item.url}
