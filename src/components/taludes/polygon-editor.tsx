@@ -54,6 +54,7 @@ interface DateColorSettings {
 const DATE_COLOR_STORAGE_KEY = 'apontauto:taludes:date-colors';
 const DEFAULT_DATE_TEXT_COLOR = '#ffffff';
 const DEFAULT_DATE_BACKGROUND_COLOR = '#ffffff';
+const EXPORT_OPERATIONAL_LEGEND = false;
 
 const hexToRgba = (hex: string, alpha: number) => {
   const normalized = hex.replace('#', '');
@@ -557,7 +558,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   const handleExport = async () => {
     if (!imgRef.current) return;
 
-    const exportToastId = toast.loading("Gerando mapa HD com legenda premium...");
+    const exportToastId = toast.loading("Gerando mapa HD...");
 
     try {
       const exportScale = 1.25;
@@ -736,262 +737,264 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         }
       });
 
-      // 3. Legenda operacional ampliada, com fundo transparente e vidro desfocado.
-      const visibleMarcacoes = localMarcacoes.filter(m => m.visivel);
-      const statusEntries = Object.entries(STATUS_CONFIG);
-      const statusCounts = statusEntries.map(([_, cfg]) => ({
-        ...cfg,
-        count: visibleMarcacoes.filter(m => (m.rotulo || '').includes(cfg.label)).length
-      }));
+      if (EXPORT_OPERATIONAL_LEGEND) {
+        // 3. Legenda operacional ampliada, com fundo transparente e vidro desfocado.
+        const visibleMarcacoes = localMarcacoes.filter(m => m.visivel);
+        const statusEntries = Object.entries(STATUS_CONFIG);
+        const statusCounts = statusEntries.map(([_, cfg]) => ({
+          ...cfg,
+          count: visibleMarcacoes.filter(m => (m.rotulo || '').includes(cfg.label)).length
+        }));
 
-      const legendMargin = Math.max(34, Math.min(64, imageWidth * 0.014));
-      const preferredLegendScale = Math.max(1.5, Math.min(1.85, imageWidth / 2200));
-      const maxLegendScaleByWidth = Math.max(0.8, (imageWidth - legendMargin * 2) / 520);
-      const maxLegendScaleByHeight = Math.max(0.8, (imageHeight - legendMargin * 2) / 352);
-      const legendScale = Math.min(preferredLegendScale, maxLegendScaleByWidth, maxLegendScaleByHeight);
-      const legendWidth = 520 * legendScale;
-      const legendHeight = 352 * legendScale;
-      const legendX = legendMargin;
-      const legendY = Math.max(legendMargin, imageHeight - legendHeight - legendMargin);
-      const panelRadius = 24 * legendScale;
-      const innerX = legendX + 28 * legendScale;
-      const innerWidth = legendWidth - 56 * legendScale;
+        const legendMargin = Math.max(34, Math.min(64, imageWidth * 0.014));
+        const preferredLegendScale = Math.max(1.5, Math.min(1.85, imageWidth / 2200));
+        const maxLegendScaleByWidth = Math.max(0.8, (imageWidth - legendMargin * 2) / 520);
+        const maxLegendScaleByHeight = Math.max(0.8, (imageHeight - legendMargin * 2) / 352);
+        const legendScale = Math.min(preferredLegendScale, maxLegendScaleByWidth, maxLegendScaleByHeight);
+        const legendWidth = 520 * legendScale;
+        const legendHeight = 352 * legendScale;
+        const legendX = legendMargin;
+        const legendY = Math.max(legendMargin, imageHeight - legendHeight - legendMargin);
+        const panelRadius = 24 * legendScale;
+        const innerX = legendX + 28 * legendScale;
+        const innerWidth = legendWidth - 56 * legendScale;
 
-      // Replica o trecho do próprio mapa atrás da legenda em um canvas auxiliar e
-      // reaplica com blur. Assim o efeito de vidro também fica gravado no PNG final.
-      const glassBleed = 34 * legendScale;
-      const sampleX = Math.max(0, legendX - glassBleed);
-      const sampleY = Math.max(0, legendY - glassBleed);
-      const sampleRight = Math.min(imageWidth, legendX + legendWidth + glassBleed);
-      const sampleBottom = Math.min(imageHeight, legendY + legendHeight + glassBleed);
-      const sampleWidth = Math.max(1, sampleRight - sampleX);
-      const sampleHeight = Math.max(1, sampleBottom - sampleY);
-      const glassBackdrop = document.createElement('canvas');
-      glassBackdrop.width = Math.max(1, Math.round(sampleWidth * exportScale));
-      glassBackdrop.height = Math.max(1, Math.round(sampleHeight * exportScale));
-      const glassBackdropCtx = glassBackdrop.getContext('2d');
+        // Replica o trecho do próprio mapa atrás da legenda em um canvas auxiliar e
+        // reaplica com blur. Assim o efeito de vidro também fica gravado no PNG final.
+        const glassBleed = 34 * legendScale;
+        const sampleX = Math.max(0, legendX - glassBleed);
+        const sampleY = Math.max(0, legendY - glassBleed);
+        const sampleRight = Math.min(imageWidth, legendX + legendWidth + glassBleed);
+        const sampleBottom = Math.min(imageHeight, legendY + legendHeight + glassBleed);
+        const sampleWidth = Math.max(1, sampleRight - sampleX);
+        const sampleHeight = Math.max(1, sampleBottom - sampleY);
+        const glassBackdrop = document.createElement('canvas');
+        glassBackdrop.width = Math.max(1, Math.round(sampleWidth * exportScale));
+        glassBackdrop.height = Math.max(1, Math.round(sampleHeight * exportScale));
+        const glassBackdropCtx = glassBackdrop.getContext('2d');
 
-      if (glassBackdropCtx) {
-        glassBackdropCtx.imageSmoothingEnabled = true;
-        glassBackdropCtx.imageSmoothingQuality = 'high';
-        glassBackdropCtx.drawImage(
-          canvas,
-          Math.round(sampleX * exportScale),
-          Math.round(sampleY * exportScale),
-          glassBackdrop.width,
-          glassBackdrop.height,
-          0,
-          0,
-          glassBackdrop.width,
-          glassBackdrop.height
-        );
+        if (glassBackdropCtx) {
+          glassBackdropCtx.imageSmoothingEnabled = true;
+          glassBackdropCtx.imageSmoothingQuality = 'high';
+          glassBackdropCtx.drawImage(
+            canvas,
+            Math.round(sampleX * exportScale),
+            Math.round(sampleY * exportScale),
+            glassBackdrop.width,
+            glassBackdrop.height,
+            0,
+            0,
+            glassBackdrop.width,
+            glassBackdrop.height
+          );
 
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(legendX, legendY, legendWidth, legendHeight, panelRadius);
+          ctx.clip();
+          ctx.filter = `blur(${18 * legendScale}px) saturate(135%)`;
+          ctx.globalAlpha = 0.96;
+          ctx.drawImage(
+            glassBackdrop,
+            0,
+            0,
+            glassBackdrop.width,
+            glassBackdrop.height,
+            sampleX,
+            sampleY,
+            sampleWidth,
+            sampleHeight
+          );
+          ctx.restore();
+        }
+
+        // Camada de vidro neutra: sem o antigo preenchimento escuro/colorido.
         ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(legendX, legendY, legendWidth, legendHeight, panelRadius);
-        ctx.clip();
-        ctx.filter = `blur(${18 * legendScale}px) saturate(135%)`;
-        ctx.globalAlpha = 0.96;
-        ctx.drawImage(
-          glassBackdrop,
-          0,
-          0,
-          glassBackdrop.width,
-          glassBackdrop.height,
-          sampleX,
-          sampleY,
-          sampleWidth,
-          sampleHeight
-        );
-        ctx.restore();
-      }
-
-      // Camada de vidro neutra: sem o antigo preenchimento escuro/colorido.
-      ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.36)';
-      ctx.shadowBlur = 30 * legendScale;
-      ctx.shadowOffsetY = 10 * legendScale;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.075)';
-      ctx.beginPath();
-      ctx.roundRect(legendX, legendY, legendWidth, legendHeight, panelRadius);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
-      ctx.lineWidth = 1.5 * legendScale;
-      ctx.stroke();
-      ctx.restore();
-
-      const accentGradient = ctx.createLinearGradient(legendX, legendY, legendX + legendWidth, legendY);
-      accentGradient.addColorStop(0, 'rgba(255,255,255,0.82)');
-      accentGradient.addColorStop(0.5, 'rgba(186,230,253,0.90)');
-      accentGradient.addColorStop(1, 'rgba(255,255,255,0.58)');
-      ctx.fillStyle = accentGradient;
-      ctx.beginPath();
-      ctx.roundRect(
-        legendX + 18 * legendScale,
-        legendY + 15 * legendScale,
-        legendWidth - 36 * legendScale,
-        4 * legendScale,
-        2 * legendScale
-      );
-      ctx.fill();
-
-      ctx.save();
-      ctx.shadowColor = 'rgba(2, 6, 23, 0.85)';
-      ctx.shadowBlur = 8 * legendScale;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillStyle = '#e0f2fe';
-      ctx.font = `800 ${12 * legendScale}px "Inter", system-ui, sans-serif`;
-      ctx.fillText('APONT AUTO  •  DEMARCAÇÃO DE TALUDES', innerX, legendY + 34 * legendScale);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `900 ${25 * legendScale}px "Inter", system-ui, sans-serif`;
-      ctx.fillText('Legenda operacional', innerX, legendY + 54 * legendScale);
-      ctx.restore();
-
-      const hdBadgeText = 'PNG HD  •  125%';
-      ctx.font = `800 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
-      const hdBadgeWidth = ctx.measureText(hdBadgeText).width + 24 * legendScale;
-      const hdBadgeX = legendX + legendWidth - hdBadgeWidth - 26 * legendScale;
-      const hdBadgeY = legendY + 55 * legendScale;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.10)';
-      ctx.beginPath();
-      ctx.roundRect(hdBadgeX, hdBadgeY, hdBadgeWidth, 25 * legendScale, 12.5 * legendScale);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
-      ctx.lineWidth = 1 * legendScale;
-      ctx.stroke();
-      ctx.fillStyle = '#e0f2fe';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(hdBadgeText, hdBadgeX + hdBadgeWidth / 2, hdBadgeY + 12.5 * legendScale);
-
-      const cardsTop = legendY + 104 * legendScale;
-      const cardGap = 12 * legendScale;
-      const cardWidth = (innerWidth - cardGap) / 2;
-      const cardHeight = 57 * legendScale;
-      const cardRowGap = 10 * legendScale;
-
-      statusCounts.forEach((status, index) => {
-        const column = index % 2;
-        const row = Math.floor(index / 2);
-        const cardX = innerX + column * (cardWidth + cardGap);
-        const cardY = cardsTop + row * (cardHeight + cardRowGap);
-
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.36)';
+        ctx.shadowBlur = 30 * legendScale;
+        ctx.shadowOffsetY = 10 * legendScale;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.075)';
         ctx.beginPath();
-        ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 12 * legendScale);
+        ctx.roundRect(legendX, legendY, legendWidth, legendHeight, panelRadius);
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 1 * legendScale;
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+        ctx.lineWidth = 1.5 * legendScale;
         ctx.stroke();
+        ctx.restore();
 
-        ctx.fillStyle = status.color;
+        const accentGradient = ctx.createLinearGradient(legendX, legendY, legendX + legendWidth, legendY);
+        accentGradient.addColorStop(0, 'rgba(255,255,255,0.82)');
+        accentGradient.addColorStop(0.5, 'rgba(186,230,253,0.90)');
+        accentGradient.addColorStop(1, 'rgba(255,255,255,0.58)');
+        ctx.fillStyle = accentGradient;
         ctx.beginPath();
         ctx.roundRect(
-          cardX + 12 * legendScale,
-          cardY + 12 * legendScale,
-          5 * legendScale,
-          cardHeight - 24 * legendScale,
-          2.5 * legendScale
+          legendX + 18 * legendScale,
+          legendY + 15 * legendScale,
+          legendWidth - 36 * legendScale,
+          4 * legendScale,
+          2 * legendScale
         );
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(cardX + 31 * legendScale, cardY + 20 * legendScale, 5 * legendScale, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.save();
-        ctx.shadowColor = 'rgba(2, 6, 23, 0.75)';
-        ctx.shadowBlur = 5 * legendScale;
+        ctx.shadowColor = 'rgba(2, 6, 23, 0.85)';
+        ctx.shadowBlur = 8 * legendScale;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
+        ctx.fillStyle = '#e0f2fe';
+        ctx.font = `800 ${12 * legendScale}px "Inter", system-ui, sans-serif`;
+        ctx.fillText('APONT AUTO  •  DEMARCAÇÃO DE TALUDES', innerX, legendY + 34 * legendScale);
+
         ctx.fillStyle = '#ffffff';
-        ctx.font = `800 ${14 * legendScale}px "Inter", system-ui, sans-serif`;
-        ctx.fillText(status.label, cardX + 43 * legendScale, cardY + 10 * legendScale);
-
-        ctx.fillStyle = 'rgba(241, 245, 249, 0.88)';
-        ctx.font = `600 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
-        ctx.fillText(
-          `${status.count} ${status.count === 1 ? 'área' : 'áreas'}`,
-          cardX + 43 * legendScale,
-          cardY + 33 * legendScale
-        );
+        ctx.font = `900 ${25 * legendScale}px "Inter", system-ui, sans-serif`;
+        ctx.fillText('Legenda operacional', innerX, legendY + 54 * legendScale);
         ctx.restore();
-      });
 
-      const iconSectionY = cardsTop + cardHeight * 2 + cardRowGap + 20 * legendScale;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
-      ctx.lineWidth = 1 * legendScale;
-      ctx.beginPath();
-      ctx.moveTo(innerX, iconSectionY - 9 * legendScale);
-      ctx.lineTo(innerX + innerWidth, iconSectionY - 9 * legendScale);
-      ctx.stroke();
-
-      const drawTreeLegend = (x: number, y: number) => {
-        ctx.fillStyle = '#34d399';
+        const hdBadgeText = 'PNG HD  •  125%';
+        ctx.font = `800 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
+        const hdBadgeWidth = ctx.measureText(hdBadgeText).width + 24 * legendScale;
+        const hdBadgeX = legendX + legendWidth - hdBadgeWidth - 26 * legendScale;
+        const hdBadgeY = legendY + 55 * legendScale;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.10)';
         ctx.beginPath();
-        ctx.moveTo(x, y - 9 * legendScale);
-        ctx.lineTo(x + 10 * legendScale, y + 7 * legendScale);
-        ctx.lineTo(x + 4 * legendScale, y + 7 * legendScale);
-        ctx.lineTo(x + 8 * legendScale, y + 14 * legendScale);
-        ctx.lineTo(x - 8 * legendScale, y + 14 * legendScale);
-        ctx.lineTo(x - 4 * legendScale, y + 7 * legendScale);
-        ctx.lineTo(x - 10 * legendScale, y + 7 * legendScale);
-        ctx.closePath();
+        ctx.roundRect(hdBadgeX, hdBadgeY, hdBadgeWidth, 25 * legendScale, 12.5 * legendScale);
         ctx.fill();
-      };
-
-      const drawBanLegend = (x: number, y: number) => {
-        ctx.strokeStyle = '#f87171';
-        ctx.lineWidth = 2.5 * legendScale;
-        ctx.beginPath();
-        ctx.arc(x, y + 3 * legendScale, 10 * legendScale, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+        ctx.lineWidth = 1 * legendScale;
         ctx.stroke();
+        ctx.fillStyle = '#e0f2fe';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(hdBadgeText, hdBadgeX + hdBadgeWidth / 2, hdBadgeY + 12.5 * legendScale);
+
+        const cardsTop = legendY + 104 * legendScale;
+        const cardGap = 12 * legendScale;
+        const cardWidth = (innerWidth - cardGap) / 2;
+        const cardHeight = 57 * legendScale;
+        const cardRowGap = 10 * legendScale;
+
+        statusCounts.forEach((status, index) => {
+          const column = index % 2;
+          const row = Math.floor(index / 2);
+          const cardX = innerX + column * (cardWidth + cardGap);
+          const cardY = cardsTop + row * (cardHeight + cardRowGap);
+
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.075)';
+          ctx.beginPath();
+          ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 12 * legendScale);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.lineWidth = 1 * legendScale;
+          ctx.stroke();
+
+          ctx.fillStyle = status.color;
+          ctx.beginPath();
+          ctx.roundRect(
+            cardX + 12 * legendScale,
+            cardY + 12 * legendScale,
+            5 * legendScale,
+            cardHeight - 24 * legendScale,
+            2.5 * legendScale
+          );
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(cardX + 31 * legendScale, cardY + 20 * legendScale, 5 * legendScale, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.save();
+          ctx.shadowColor = 'rgba(2, 6, 23, 0.75)';
+          ctx.shadowBlur = 5 * legendScale;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `800 ${14 * legendScale}px "Inter", system-ui, sans-serif`;
+          ctx.fillText(status.label, cardX + 43 * legendScale, cardY + 10 * legendScale);
+
+          ctx.fillStyle = 'rgba(241, 245, 249, 0.88)';
+          ctx.font = `600 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
+          ctx.fillText(
+            `${status.count} ${status.count === 1 ? 'área' : 'áreas'}`,
+            cardX + 43 * legendScale,
+            cardY + 33 * legendScale
+          );
+          ctx.restore();
+        });
+
+        const iconSectionY = cardsTop + cardHeight * 2 + cardRowGap + 20 * legendScale;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+        ctx.lineWidth = 1 * legendScale;
         ctx.beginPath();
-        ctx.moveTo(x - 7 * legendScale, y - 4 * legendScale);
-        ctx.lineTo(x + 7 * legendScale, y + 10 * legendScale);
+        ctx.moveTo(innerX, iconSectionY - 9 * legendScale);
+        ctx.lineTo(innerX + innerWidth, iconSectionY - 9 * legendScale);
         ctx.stroke();
-      };
 
-      const iconColumnWidth = innerWidth / 2;
-      drawTreeLegend(innerX + 12 * legendScale, iconSectionY + 4 * legendScale);
-      ctx.save();
-      ctx.shadowColor = 'rgba(2, 6, 23, 0.8)';
-      ctx.shadowBlur = 5 * legendScale;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = `700 ${12 * legendScale}px "Inter", system-ui, sans-serif`;
-      ctx.fillText('Reserva Suvinil', innerX + 34 * legendScale, iconSectionY + 7 * legendScale);
+        const drawTreeLegend = (x: number, y: number) => {
+          ctx.fillStyle = '#34d399';
+          ctx.beginPath();
+          ctx.moveTo(x, y - 9 * legendScale);
+          ctx.lineTo(x + 10 * legendScale, y + 7 * legendScale);
+          ctx.lineTo(x + 4 * legendScale, y + 7 * legendScale);
+          ctx.lineTo(x + 8 * legendScale, y + 14 * legendScale);
+          ctx.lineTo(x - 8 * legendScale, y + 14 * legendScale);
+          ctx.lineTo(x - 4 * legendScale, y + 7 * legendScale);
+          ctx.lineTo(x - 10 * legendScale, y + 7 * legendScale);
+          ctx.closePath();
+          ctx.fill();
+        };
 
-      drawBanLegend(innerX + iconColumnWidth + 12 * legendScale, iconSectionY + 4 * legendScale);
-      ctx.fillText('Área interditada', innerX + iconColumnWidth + 34 * legendScale, iconSectionY + 7 * legendScale);
-      ctx.restore();
+        const drawBanLegend = (x: number, y: number) => {
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth = 2.5 * legendScale;
+          ctx.beginPath();
+          ctx.arc(x, y + 3 * legendScale, 10 * legendScale, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x - 7 * legendScale, y - 4 * legendScale);
+          ctx.lineTo(x + 7 * legendScale, y + 10 * legendScale);
+          ctx.stroke();
+        };
 
-      const generatedAt = new Date();
-      const generatedLabel = generatedAt.toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+        const iconColumnWidth = innerWidth / 2;
+        drawTreeLegend(innerX + 12 * legendScale, iconSectionY + 4 * legendScale);
+        ctx.save();
+        ctx.shadowColor = 'rgba(2, 6, 23, 0.8)';
+        ctx.shadowBlur = 5 * legendScale;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = `700 ${12 * legendScale}px "Inter", system-ui, sans-serif`;
+        ctx.fillText('Reserva Suvinil', innerX + 34 * legendScale, iconSectionY + 7 * legendScale);
 
-      const footerY = legendY + legendHeight - 36 * legendScale;
-      ctx.save();
-      ctx.shadowColor = 'rgba(2, 6, 23, 0.8)';
-      ctx.shadowBlur = 4 * legendScale;
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.90)';
-      ctx.font = `600 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`Áreas visíveis: ${visibleMarcacoes.length}`, innerX, footerY);
-      ctx.textAlign = 'right';
-      ctx.fillText(`Emitido em ${generatedLabel}`, legendX + legendWidth - 28 * legendScale, footerY);
-      ctx.restore();
+        drawBanLegend(innerX + iconColumnWidth + 12 * legendScale, iconSectionY + 4 * legendScale);
+        ctx.fillText('Área interditada', innerX + iconColumnWidth + 34 * legendScale, iconSectionY + 7 * legendScale);
+        ctx.restore();
+
+        const generatedAt = new Date();
+        const generatedLabel = generatedAt.toLocaleString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const footerY = legendY + legendHeight - 36 * legendScale;
+        ctx.save();
+        ctx.shadowColor = 'rgba(2, 6, 23, 0.8)';
+        ctx.shadowBlur = 4 * legendScale;
+        ctx.fillStyle = 'rgba(248, 250, 252, 0.90)';
+        ctx.font = `600 ${11 * legendScale}px "Inter", system-ui, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Áreas visíveis: ${visibleMarcacoes.length}`, innerX, footerY);
+        ctx.textAlign = 'right';
+        ctx.fillText(`Emitido em ${generatedLabel}`, legendX + legendWidth - 28 * legendScale, footerY);
+        ctx.restore();
+      }
 
       // 4. Geração por Blob evita uma string base64 muito grande em mapas de alta resolução.
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -1011,7 +1014,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 
-      toast.success("Mapa HD exportado com legenda premium!", { id: exportToastId });
+      toast.success("Mapa HD exportado!", { id: exportToastId });
     } catch (err) {
       console.error("Erro na exportação:", err);
       toast.error("Erro ao exportar mapa", { id: exportToastId });
