@@ -24,7 +24,7 @@ const DASHBOARD_COLUMNS = [
   "inicio",
   "fim",
   "updated_at",
-  "material_status",
+  "pecas_solicitadas",
   "solicitante",
 ].join(", ");
 
@@ -47,7 +47,7 @@ export type CorretivaDashboardRow = {
   inicio: string | null;
   fim: string | null;
   updated_at: string | null;
-  material_status: string | null;
+  pecas_solicitadas: string | null;
   solicitante: string | null;
 };
 
@@ -115,6 +115,19 @@ function normalize(value: unknown) {
     .toLowerCase();
 }
 
+function hasRequestedMaterials(value: string | null) {
+  const normalized = normalize(value);
+  return Boolean(
+    normalized &&
+      normalized !== "[]" &&
+      normalized !== "{}" &&
+      normalized !== "null" &&
+      normalized !== "nenhum" &&
+      normalized !== "nao" &&
+      normalized !== "não",
+  );
+}
+
 function isCorrective(row: CorretivaDashboardRow) {
   const tipo = normalize(row.tipo);
   const importType = normalize(row.tipo_importacao);
@@ -158,7 +171,7 @@ function bucketKey(date: Date, weekly: boolean) {
 
 function statusLabel(status: string | null) {
   const value = normalize(status);
-  if (!value || value === "pendente") return "Pendente";
+  if (!value || value === "pendente" || value === "aberta") return "Aberta";
   if (value.includes("andamento") || value.includes("execucao")) return "Em andamento";
   if (value.includes("aguard")) return "Aguardando";
   if (value.includes("program")) return "Programada";
@@ -252,7 +265,7 @@ export async function fetchCorretivaDashboard(params: {
       supabase
         .from("corretiva_os")
         .select(DASHBOARD_COLUMNS)
-        .or("status.is.null,status.not.in.(concluida,cancelada)")
+        .in("status", ["aberta", "em_andamento"])
         .order("updated_at", { ascending: false })
         .range(from, to) as unknown as PromiseLike<QueryResult>,
     ),
@@ -341,10 +354,11 @@ export async function fetchCorretivaDashboard(params: {
     statuses.set(label, (statuses.get(label) ?? 0) + 1);
   }
 
-  const lastDatabaseUpdate = filteredSource
-    .map((row) => row.updated_at)
-    .filter((value): value is string => Boolean(value))
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
+  const lastDatabaseUpdate =
+    filteredSource
+      .map((row) => row.updated_at)
+      .filter((value): value is string => Boolean(value))
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0] ?? null;
 
   const recent = history
     .slice()
@@ -375,7 +389,7 @@ export async function fetchCorretivaDashboard(params: {
       tempoMedioDias: leadTimes.length
         ? leadTimes.reduce((total, value) => total + value, 0) / leadTimes.length
         : null,
-      materiaisSolicitados: active.filter((row) => row.material_status === "solicitado").length,
+      materiaisSolicitados: active.filter((row) => hasRequestedMaterials(row.pecas_solicitadas)).length,
     },
     trend: buildTrend(created, history, start, days),
     teams: Array.from(teams.values())
