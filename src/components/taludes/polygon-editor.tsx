@@ -851,7 +851,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, rotulo: `${STATUS_CONFIG[statusType].label} - ${newDate}` });
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
                 </div>
               </div>
@@ -874,7 +874,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) onSave({ ...target, prazo_rotulo: newDate });
                     }}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-1.5 pl-8 pr-2 text-[10px] text-white focus:outline-none focus:border-blue-500/50"
                   />
                 </div>
               </div>
