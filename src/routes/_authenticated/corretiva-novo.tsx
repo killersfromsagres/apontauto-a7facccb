@@ -125,9 +125,10 @@ function CorretivaNovoPage() {
   }, [osList, search, equipe, sortOrder]);
 
   const exportExcelByTeam = async () => {
-    if (!filtered.length) return toast.error("Nenhuma OS para exportar.");
+    const pendentes = filtered.filter((o) => o.status !== "concluida");
+    if (!pendentes.length) return toast.error("Nenhuma OS pendente para exportar.");
     try {
-      await generateProgramacaoExcel(filtered, "Programacao_por_Equipe", "corretiva");
+      await generateProgramacaoExcel(pendentes, "Programacao_por_Equipe", "corretiva");
       toast.success("Excel gerado com sucesso!");
     } catch (error) {
       toast.error("Erro ao gerar Excel.");
@@ -135,9 +136,10 @@ function CorretivaNovoPage() {
   };
 
   const exportPDFByTeam = async () => {
-    if (!filtered.length) return toast.error("Nenhuma OS para imprimir.");
+    const pendentes = filtered.filter((o) => o.status !== "concluida");
+    if (!pendentes.length) return toast.error("Nenhuma OS pendente para imprimir.");
     try {
-      await generateProgramacaoPDF(filtered, "Programacao_Equipes");
+      await generateProgramacaoPDF(pendentes, "Programacao_Equipes");
       toast.success("PDF preparado para impressão!");
     } catch (error) {
       toast.error("Erro ao gerar PDF.");
