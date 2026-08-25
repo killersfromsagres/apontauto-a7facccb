@@ -374,7 +374,7 @@ export async function generateProgramacaoExcel(
   styleSummaryRow(ws, totalRow, headers.length, osList.length);
 
   ws.headerFooter.oddFooter =
-    '&L&10Apont Auto · Execução de Campo&C&10Página &P de &N&R&10Programação de Corretivas';
+    `&L&10Apont Auto · Execução de Campo&C&10Página &P de &N&R&10${title}`;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf], {
