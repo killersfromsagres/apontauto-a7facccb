@@ -17,7 +17,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { OfflineBanner } from "@/components/offline-banner";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
-import { syncPending as syncCorretiva } from "@/lib/corretiva/sync";
 
 function NotFoundComponent() {
   return (
@@ -121,17 +120,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
       // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
       { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
-      // Reduz latência da primeira chamada auth/DB
-      {
-        rel: "preconnect",
-        href: "https://uthidybbrziwvktknryr.supabase.co",
-        crossOrigin: "anonymous",
-      },
-      { rel: "dns-prefetch", href: "https://uthidybbrziwvktknryr.supabase.co" },
-      // APIs de clima chamadas direto do cliente em Programação de Taludes.
-      { rel: "preconnect", href: "https://api.open-meteo.com", crossOrigin: "anonymous" },
-      { rel: "dns-prefetch", href: "https://api.open-meteo.com" },
-      { rel: "dns-prefetch", href: "https://archive-api.open-meteo.com" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
 
@@ -202,11 +190,17 @@ function RootComponent() {
       m.installErrorTelemetry(),
     );
 
-    // Sync Corretiva a cada 10s
-    const iv = setInterval(() => {
-      if (navigator.onLine) syncCorretiva().catch(() => {});
-    }, 10000);
-    return () => clearInterval(iv);
+    // Mantém a cadência existente, mas retira o módulo de sincronização do carregamento inicial global.
+    const runCorrectiveSync = () => {
+      if (!navigator.onLine) return;
+
+      void import("@/lib/corretiva/sync")
+        .then(({ syncPending }) => syncPending())
+        .catch(() => {});
+    };
+
+    const iv = window.setInterval(runCorrectiveSync, 10000);
+    return () => window.clearInterval(iv);
   }, []);
 
   return (
