@@ -1,69 +1,123 @@
 import { createServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { classifyTeamByText } from "@/lib/backorder/team-classifier";
+import {
+  canonicalCorrectiveTeam,
+  designateCorrectiveTeam,
+} from "@/lib/corretiva/designation-engine";
+
+type DesignationUpdate = {
+  id: string;
+  equipe: string;
+};
 
 /**
- * Agente inteligente para reclassificar equipes de OS Corretiva.
- * Analisa a descrição de todas as OS pendentes e atualiza a equipe baseada em IA.
+ * Reavalia todas as OS abertas usando o contexto operacional completo disponível.
+ *
+ * O motor cruza descrição, ativo, equipamento, localização e solicitante. Casos
+ * sem sinal técnico ou com empate de baixa confiança são preservados para evitar
+ * realocações arbitrárias; casos com evidência suficiente são atualizados.
  */
-export const reclassifyAllOsWithAi = createServerFn({ method: "POST" })
-  .handler(async () => {
-    // 1. Buscar todas as OS que não estão concluídas
-    const { data: osList, error: fetchError } = await supabase
-      .from("corretiva_os")
-      .select("id, nome_os, equipamento, ativo, equipe, local")
-      .neq("status", "concluida");
+export const designateAllCorrectiveOrders = createServerFn({ method: "POST" }).handler(async () => {
+  const { data: osList, error: fetchError } = await supabase
+    .from("corretiva_os")
+    .select(
+      "id, numero_os, nome_os, equipamento, ativo, equipe, local, predio, andar, solicitante, tipo, status",
+    )
+    .neq("status", "concluida")
+    .neq("tipo_importacao", "backorder_mensal");
 
-    if (fetchError) {
-      console.error("[AiReclassifier] Erro ao buscar OS:", fetchError);
-      throw new Error("Falha ao buscar OS para reclassificação.");
-    }
+  if (fetchError) {
+    console.error("[Designar] Erro ao buscar OS:", fetchError);
+    throw new Error("Falha ao buscar os chamados para designação.");
+  }
 
-    if (!osList || osList.length === 0) {
-      return { success: true, count: 0 };
-    }
-
-    let updatedCount = 0;
-    const updates = [];
-
-    // 2. Classificar cada OS
-    for (const os of osList) {
-      const texto = [os.nome_os, os.equipamento, os.ativo, os.local].filter(Boolean).join(" ");
-      const result = classifyTeamByText(texto);
-      
-      // Só atualizar se a equipe sugerida for diferente da atual
-      // Normalizamos para comparação e tratamos valores nulos
-      const currentEquipe = os.equipe?.trim() || "";
-      const newEquipe = result.equipe;
-
-      if (currentEquipe !== newEquipe) {
-        updates.push({
-          id: os.id,
-          equipe: newEquipe
-        });
-      }
-    }
-
-    // 3. Executar atualizações em lote (ou uma a uma se o lote for complexo)
-    // Supabase JS client handles batching if an array of objects with IDs is provided for upsert, 
-    // but for simple updates we'll loop to ensure RLS and triggers run correctly for each row.
-    for (const update of updates) {
-      const { error: updateError } = await supabase
-        .from("corretiva_os")
-        .update({ equipe: update.equipe })
-        .eq("id", update.id);
-      
-      if (!updateError) {
-        updatedCount++;
-      } else {
-        console.error(`[AiReclassifier] Erro ao atualizar OS ${update.id}:`, updateError);
-      }
-    }
-
-    return { 
-      success: true, 
-      count: updatedCount, 
-      totalProcessed: osList.length 
+  if (!osList?.length) {
+    return {
+      success: true,
+      count: 0,
+      totalProcessed: 0,
+      unchanged: 0,
+      noSignal: 0,
+      reviewNeeded: 0,
+      lowConfidence: 0,
+      failed: 0,
     };
-  });
+  }
+
+  const updates: DesignationUpdate[] = [];
+  let unchanged = 0;
+  let noSignal = 0;
+  let reviewNeeded = 0;
+  let lowConfidence = 0;
+
+  for (const os of osList) {
+    const result = designateCorrectiveTeam({
+      nome_os: os.nome_os,
+      equipamento: os.equipamento,
+      ativo: os.ativo,
+      local: os.local,
+      predio: os.predio,
+      andar: os.andar,
+      solicitante: os.solicitante,
+      equipe: os.equipe,
+    });
+
+    const currentTeam = canonicalCorrectiveTeam(os.equipe);
+
+    if (result.confianca === "baixa") lowConfidence++;
+
+    if (!result.hasSignal) {
+      noSignal++;
+      unchanged++;
+      continue;
+    }
+
+    if (result.ambiguo && result.confianca === "baixa" && currentTeam) {
+      reviewNeeded++;
+      unchanged++;
+      continue;
+    }
+
+    if (currentTeam === result.equipe) {
+      unchanged++;
+      continue;
+    }
+
+    updates.push({ id: os.id, equipe: result.equipe });
+  }
+
+  let updatedCount = 0;
+  let failed = 0;
+
+  for (const update of updates) {
+    const { error: updateError } = await supabase
+      .from("corretiva_os")
+      .update({
+        equipe: update.equipe,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("id", update.id);
+
+    if (updateError) {
+      failed++;
+      console.error(`[Designar] Erro ao atualizar OS ${update.id}:`, updateError);
+      continue;
+    }
+
+    updatedCount++;
+  }
+
+  return {
+    success: failed === 0,
+    count: updatedCount,
+    totalProcessed: osList.length,
+    unchanged,
+    noSignal,
+    reviewNeeded,
+    lowConfidence,
+    failed,
+  };
+});
+
+/** Compatibilidade temporária para qualquer import antigo ainda existente. */
+export const reclassifyAllOsWithAi = designateAllCorrectiveOrders;
