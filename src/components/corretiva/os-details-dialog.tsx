@@ -73,6 +73,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
   const hasMaterialDraft = pecas.trim().length > 0;
+  const isCompleted = ["concluida", "concluido"].includes(String(os.status || "").toLowerCase());
 
   useEffect(() => {
     const handleStatus = () => setOfflineMode(!navigator.onLine);
@@ -551,13 +552,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const setPhoto = isBefore ? setPhotoBefore : setPhotoAfter;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1.5 sm:space-y-2">
         <Label className="block text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {label}
         </Label>
 
         {photo ? (
-          <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border bg-muted sm:aspect-square">
             <img src={photo} alt={label} className="h-full w-full object-cover" />
             <Button
               variant="destructive"
@@ -570,8 +571,8 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             </Button>
           </div>
         ) : (
-          <div className="grid aspect-square grid-rows-2 gap-2">
-            <label className="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-3 text-center transition-colors hover:bg-muted/40">
+          <div className="grid aspect-[4/3] grid-rows-2 gap-1.5 sm:aspect-square sm:gap-2">
+            <label className="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-2 text-center transition-colors hover:bg-muted/40 sm:px-3">
               <input
                 type="file"
                 accept="image/*"
@@ -580,11 +581,11 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 disabled={loading}
                 onChange={(event) => void handleEvidenceSelected(event.target.files?.[0], kind, "camera")}
               />
-              <Camera className="mb-1 h-5 w-5 text-primary" />
+              <Camera className="mb-0.5 h-4 w-4 text-primary sm:mb-1 sm:h-5 sm:w-5" />
               <span className="text-[10px] font-semibold text-foreground">Câmera</span>
             </label>
 
-            <label className="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-3 text-center transition-colors hover:bg-muted/40">
+            <label className="relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-2 text-center transition-colors hover:bg-muted/40 sm:px-3">
               <input
                 type="file"
                 accept="image/*"
@@ -592,7 +593,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 disabled={loading}
                 onChange={(event) => void handleEvidenceSelected(event.target.files?.[0], kind, "galeria")}
               />
-              <LayoutGrid className="mb-1 h-4 w-4 text-muted-foreground" />
+              <LayoutGrid className="mb-0.5 h-4 w-4 text-muted-foreground sm:mb-1" />
               <span className="text-[10px] font-semibold text-foreground">Galeria</span>
             </label>
           </div>
@@ -608,7 +609,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="z-[9999] max-h-[90vh] w-[calc(100%-1.5rem)] max-w-lg gap-0 overflow-hidden rounded-2xl border border-border bg-background p-0 shadow-lg md:w-full"
+        className="z-[9999] max-h-[94dvh] w-[calc(100%-0.75rem)] max-w-lg gap-0 overflow-hidden rounded-xl border border-border bg-background p-0 shadow-lg sm:w-[calc(100%-1.5rem)] sm:rounded-2xl md:w-full"
         onPointerDownOutside={(event) => {
           const target = event.target as HTMLElement;
           if (target.closest("[data-radix-dropdown-menu-content]")) {
@@ -616,41 +617,66 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
           }
         }}
       >
-        <div className="flex max-h-[90vh] flex-col overflow-hidden bg-background">
-          <div className="flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-            <DialogHeader className="space-y-3 text-left">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex max-h-[94dvh] flex-col overflow-hidden bg-background">
+          <div className="flex-1 space-y-3 overflow-y-auto p-3 sm:space-y-5 sm:p-6">
+            <DialogHeader className="space-y-2 text-left sm:space-y-3">
+              <div className="flex items-center justify-between gap-2 pr-7 sm:pr-0">
                 <Badge
                   variant="outline"
-                  className={cn("font-mono text-[10px]", equipeStyles(os.equipe).badge)}
+                  className={cn(
+                    "shrink-0 px-3 py-1.5 font-mono text-sm font-bold tracking-wide sm:text-base",
+                    equipeStyles(os.equipe).badge,
+                  )}
                 >
                   OS {os.numero_os}
                 </Badge>
-                <Badge variant="secondary" className="text-[10px] uppercase tracking-[0.1em]">
-                  {os.status}
+                <Badge
+                  variant="outline"
+                  aria-label={isCompleted ? "Ordem de serviço concluída" : "Ordem de serviço aberta"}
+                  className={cn(
+                    "gap-1.5 whitespace-nowrap px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors",
+                    isCompleted
+                      ? "border-emerald-400/35 bg-emerald-400/10 text-emerald-300 shadow-[0_0_18px_rgba(52,211,153,0.12)]"
+                      : "border-amber-400/35 bg-amber-400/10 text-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.10)]",
+                  )}
+                >
+                  <span className="relative flex h-2 w-2 items-center justify-center" aria-hidden="true">
+                    {!isCompleted && (
+                      <span className="absolute h-2 w-2 animate-ping rounded-full bg-amber-300/45" />
+                    )}
+                    <span
+                      className={cn(
+                        "relative h-1.5 w-1.5 rounded-full",
+                        isCompleted ? "bg-emerald-300" : "bg-amber-300",
+                      )}
+                    />
+                  </span>
+                  {isCompleted ? "Concluída" : "Aberta"}
                 </Badge>
               </div>
-              <DialogTitle className="text-xl font-semibold leading-tight text-foreground">
+              <DialogTitle className="line-clamp-3 text-base font-semibold leading-snug text-foreground sm:text-xl sm:leading-tight">
                 {os.nome_os || "Sem descrição"}
               </DialogTitle>
             </DialogHeader>
 
-            <div className="grid gap-4 rounded-xl border border-border bg-muted/20 p-4 text-sm sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-xl border border-border bg-muted/20 p-3 text-sm sm:gap-4 sm:p-4">
+              <div className="min-w-0 space-y-1">
+                <Label className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[10px]">
                   Localização
                 </Label>
-                <p className="font-medium text-foreground">
-                  {os.predio} - {os.andar}
+                <p className="truncate text-xs font-semibold text-foreground sm:text-sm">
+                  {os.predio || "-"} - {os.andar || "-"}
                 </p>
-                <p className="line-clamp-2 text-xs text-muted-foreground">{os.local}</p>
+                <p className="line-clamp-1 text-[10px] text-muted-foreground sm:line-clamp-2 sm:text-xs">
+                  {os.local || "Local não informado"}
+                </p>
               </div>
 
-              <div className="space-y-1 sm:text-right">
-                <Label className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <div className="space-y-1 text-right">
+                <Label className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[10px]">
                   Equipe
                 </Label>
-                <div className="flex items-center sm:justify-end">
+                <div className="flex items-center justify-end">
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger
                       asChild
@@ -660,11 +686,11 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         variant="outline"
                         size="sm"
                         className={cn(
-                          "h-9 rounded-lg px-3 text-xs font-medium",
+                          "h-8 rounded-lg px-2.5 text-[10px] font-medium sm:h-9 sm:px-3 sm:text-xs",
                           equipeStyles(os.equipe).badge,
                         )}
                       >
-                        <LayoutGrid className="mr-2 h-3.5 w-3.5" />
+                        <LayoutGrid className="mr-1.5 h-3.5 w-3.5 sm:mr-2" />
                         {os.equipe || "Não definida"}
                       </Button>
                     </DropdownMenuTrigger>
@@ -700,24 +726,25 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
-                  Solicitante: {os.solicitante || "-"}
-                </p>
+              </div>
+
+              <div className="col-span-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-border/70 pt-2.5 text-[9px] text-muted-foreground sm:text-[10px]">
+                <span className="min-w-0 truncate">Solicitante: {os.solicitante || "-"}</span>
                 {os.data_criacao && (
-                  <p className="text-[10px] text-muted-foreground">
+                  <span className="shrink-0">
                     Abertura: {new Date(os.data_criacao).toLocaleString("pt-BR", {
                       dateStyle: "short",
                       timeStyle: "short",
                     })}
-                  </p>
+                  </span>
                 )}
               </div>
             </div>
 
-            <section className="space-y-3 border-t border-border pt-5">
+            <section className="space-y-2.5 border-t border-border pt-3 sm:space-y-3 sm:pt-5">
               <div>
-                <Label className="text-sm font-semibold text-foreground">Solicitar peças / materiais</Label>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <Label className="text-xs font-semibold text-foreground sm:text-sm">Solicitar peças / materiais</Label>
+                <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">
                   Descreva o material necessário e, se quiser, anexe fotos do pedido.
                 </p>
               </div>
@@ -727,12 +754,12 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   placeholder="Ex: Lâmpada LED 9W..."
                   value={pecas}
                   onChange={(event) => setPecas(event.target.value)}
-                  className="h-11 bg-background text-sm"
+                  className="h-10 bg-background text-xs sm:h-11 sm:text-sm"
                 />
                 <Button
                   variant={hasMaterialDraft ? "default" : "outline"}
                   size="icon"
-                  className="h-11 w-11 shrink-0"
+                  className="h-10 w-10 shrink-0 sm:h-11 sm:w-11"
                   onClick={async () => {
                     const success = await handleSolicitarPeca();
                     if (success) clearMaterialDraft();
@@ -759,17 +786,17 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 </Button>
               </div>
 
-              <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-3">
+              <div className="space-y-2.5 rounded-xl border border-border bg-muted/20 p-2.5 sm:space-y-3 sm:p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-foreground">Fotos do pedido</p>
-                    <p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">
+                    <p className="text-[11px] font-medium text-foreground sm:text-xs">Fotos do pedido</p>
+                    <p className="mt-0.5 text-[9px] leading-relaxed text-muted-foreground sm:text-[10px]">
                       Até {MAX_MATERIAL_PHOTOS} imagens, com no máximo 10 MB por foto.
                     </p>
                   </div>
                   <label
                     className={cn(
-                      "inline-flex h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-border bg-background px-3 text-[10px] font-medium text-foreground transition-colors hover:bg-muted",
+                      "inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[9px] font-medium text-foreground transition-colors hover:bg-muted sm:h-9 sm:gap-2 sm:px-3 sm:text-[10px]",
                       loading && "pointer-events-none opacity-50",
                     )}
                   >
@@ -784,14 +811,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         event.currentTarget.value = "";
                       }}
                     />
-                    <ImagePlus className="h-4 w-4" />
+                    <ImagePlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Galeria
                   </label>
                 </div>
 
                 {materialPhotos.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                    <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                       {materialPhotos.map((photo, index) => (
                         <div
                           key={photo.id}
@@ -814,14 +841,14 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-[9px] text-muted-foreground sm:text-[10px]">
                       {materialPhotos.length} foto(s) pronta(s) para anexar ao pedido.
                     </p>
                   </>
                 ) : (
-                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-background/60 px-3 py-2.5">
-                    <ImagePlus className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <p className="text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-border bg-background/60 px-2.5 py-2 sm:px-3 sm:py-2.5">
+                    <ImagePlus className="h-3.5 w-3.5 shrink-0 text-muted-foreground sm:h-4 sm:w-4" />
+                    <p className="text-[9px] text-muted-foreground sm:text-[10px]">
                       Nenhuma foto selecionada. O pedido pode ser enviado sem imagens.
                     </p>
                   </div>
@@ -829,10 +856,10 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
             </section>
 
-            <section className="space-y-3 border-t border-border pt-5">
+            <section className="space-y-2.5 border-t border-border pt-3 sm:space-y-3 sm:pt-5">
               <div>
-                <Label className="text-sm font-semibold text-foreground">Observações de campo</Label>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <Label className="text-xs font-semibold text-foreground sm:text-sm">Observações de campo</Label>
+                <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">
                   Registre de forma objetiva o serviço executado no local.
                 </p>
               </div>
@@ -841,12 +868,12 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   placeholder="Relate o que foi feito no local..."
                   value={observacao}
                   onChange={(event) => setObservacao(event.target.value)}
-                  className="min-h-[96px] flex-1 resize-none bg-background text-sm"
+                  className="min-h-[76px] flex-1 resize-none bg-background text-xs sm:min-h-[96px] sm:text-sm"
                 />
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-[96px] w-11 shrink-0"
+                  className="h-[76px] w-10 shrink-0 sm:h-[96px] sm:w-11"
                   onClick={() => void saveObservation()}
                   disabled={loading}
                   aria-label="Salvar observação"
@@ -860,32 +887,32 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </div>
             </section>
 
-            <section className="space-y-4 border-t border-border pt-5">
+            <section className="space-y-3 border-t border-border pt-3 sm:space-y-4 sm:pt-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <Label className="text-sm font-semibold text-foreground">Evidência fotográfica</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <Label className="text-xs font-semibold text-foreground sm:text-sm">Evidência fotográfica</Label>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">
                     Registre o estado antes e depois da execução.
                   </p>
                 </div>
-                <Badge variant="outline" className="gap-1.5 text-[10px] font-medium">
+                <Badge variant="outline" className="gap-1.5 text-[9px] font-medium sm:text-[10px]">
                   <Zap className="h-3 w-3" />
                   {offlineMode ? "Modo offline" : "Sincronização ativa"}
                 </Badge>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {renderEvidence("antes", photoBefore)}
                 {renderEvidence("depois", photoAfter)}
               </div>
             </section>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 border-t border-border bg-background p-4 sm:p-6">
+          <div className="grid grid-cols-2 gap-2 border-t border-border bg-background p-3 sm:gap-3 sm:p-6">
             {canFinishWithoutPhoto && (
               <Button
                 variant="outline"
-                className="col-span-1 h-11 rounded-lg text-xs font-semibold"
+                className="col-span-1 h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs"
                 disabled={loading}
                 onClick={() => handleFinish(false)}
               >
@@ -895,7 +922,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
             <Button
               variant="default"
               className={cn(
-                "h-11 rounded-lg text-xs font-semibold",
+                "h-10 rounded-lg px-2 text-[10px] font-semibold sm:h-11 sm:px-4 sm:text-xs",
                 canFinishWithoutPhoto ? "col-span-1" : "col-span-2",
               )}
               disabled={loading || !canFinishWithPhoto}
