@@ -389,83 +389,131 @@ function CorretivaNovoPage() {
           <div
             className={cn(
               viewMode === "grid"
-                ? "grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 md:gap-4"
-                : "flex flex-col gap-2 md:gap-3",
+                ? "grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4 lg:grid-cols-3 xl:grid-cols-4"
+                : "flex flex-col gap-3",
             )}
           >
             {filtered.map((os) => (
               <GlassCard
                 key={os.id}
-                className={cn(
-                  "p-4 group cursor-pointer hover:bg-white/[0.07] transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15",
-                  viewMode === "list" && "flex items-center gap-4 py-3",
-                )}
+                className="group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
                 onClick={() => setSelectedOs(os)}
               >
-                <div className="flex flex-col flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "font-mono text-xs md:text-sm font-semibold tracking-wide px-2.5 py-1",
-                        equipeStyles(os.equipe).badge,
-                      )}
-                    >
-                      OS {os.numero_os}
-                    </Badge>
-                    <Badge
-                      variant={os.status === "concluida" ? "secondary" : "outline"}
-                      className={cn(
-                        "text-[9px] md:text-[10px] uppercase font-bold gap-1.5 whitespace-nowrap",
-                        os.status === "concluida"
-                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                          : "opacity-70",
-                      )}
-                    >
-                      {os.status === "concluida" && (
-                        <span
-                          className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
-                          aria-hidden="true"
-                        >
-                          <span className="absolute inset-0 rounded-full border border-emerald-300/40 animate-pulse" />
-                          <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
-                        </span>
-                      )}
-                      {os.status === "concluida" ? "Concluída" : (os.equipe || "Sem Equipe")}
-                    </Badge>
+                <div
+                  className={cn(
+                    "flex min-w-0 flex-1 flex-col",
+                    viewMode === "list" &&
+                      "md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)] md:items-stretch",
+                  )}
+                >
+                  <div className="flex min-w-0 flex-col p-4 md:p-5">
+                    <div className="mb-5 flex items-center justify-between gap-2">
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "px-2.5 py-1 font-mono text-xs font-semibold tracking-wide md:text-sm",
+                          equipeStyles(os.equipe).badge,
+                        )}
+                      >
+                        OS {os.numero_os}
+                      </Badge>
+                      <Badge
+                        variant={os.status === "concluida" ? "secondary" : "outline"}
+                        className={cn(
+                          "gap-1.5 whitespace-nowrap text-[9px] font-bold uppercase md:text-[10px]",
+                          os.status === "concluida"
+                            ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                            : "opacity-80",
+                        )}
+                      >
+                        {os.status === "concluida" && (
+                          <span
+                            className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
+                            aria-hidden="true"
+                          >
+                            <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
+                            <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
+                          </span>
+                        )}
+                        {os.status === "concluida" ? "Concluída" : (os.equipe || "Sem Equipe")}
+                      </Badge>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                        Descrição do chamado
+                      </p>
+                      <h3
+                        className={cn(
+                          "text-[15px] font-semibold leading-6 text-white/95 transition-colors group-hover:text-white md:text-base",
+                          viewMode === "list" ? "line-clamp-3" : "line-clamp-4 min-h-[6rem]",
+                        )}
+                      >
+                        {os.nome_os || "Sem descrição informada"}
+                      </h3>
+                    </div>
                   </div>
 
-                  <h3 className="font-bold text-sm md:text-base leading-tight group-hover:text-primary transition-colors mb-3 text-white line-clamp-2">
-                    {os.nome_os || "Sem descrição"}
-                  </h3>
+                  <div
+                    className={cn(
+                      "border-t border-white/[0.06] bg-black/10 p-4 md:p-5",
+                      viewMode === "list" && "md:border-l md:border-t-0",
+                    )}
+                  >
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                      <div className="min-w-0">
+                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                          Prédio
+                        </p>
+                        <p className="break-words text-sm font-semibold leading-5 text-white/90">
+                          {os.predio || "Não informado"}
+                        </p>
+                      </div>
 
-                  <div className="grid gap-1.5 mt-auto">
-                    <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90">
-                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/25" />
-                      <span className="truncate"><span className="opacity-60">Prédio/Andar:</span> {os.predio} - {os.andar}</span>
+                      <div className="min-w-0">
+                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                          Andar
+                        </p>
+                        <p className="break-words text-sm font-semibold leading-5 text-white/90">
+                          {os.andar || "Não informado"}
+                        </p>
+                      </div>
+
+                      <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
+                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                          Ambiente
+                        </p>
+                        <p className="break-words text-sm font-medium leading-5 text-white/85">
+                          {os.local || "Não informado"}
+                        </p>
+                      </div>
+
+                      <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
+                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                          Solicitante
+                        </p>
+                        <p className="break-words text-sm font-medium leading-5 text-white/85">
+                          {os.solicitante || "Não informado"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.025] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90">
-                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/25" />
-                      <span className="truncate"><span className="opacity-60">Ambiente:</span> {os.local}</span>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-lg border border-primary/10 bg-primary/[0.035] px-2 py-1.5 text-[10px] md:text-xs text-muted-foreground/90 italic">
-                      <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-primary/50" />
-                      <span className="truncate text-primary-glow/80"><span className="opacity-60">Solicitante:</span> {os.solicitante || "Não inf."}</span>
-                    </div>
-                    {os.data_criacao && (
-                      <div className="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-2 py-1.5 text-[10px] text-muted-foreground/70">
-                        <div className="w-1.5 h-1.5 shrink-0 rounded-full bg-white/15" />
-                        <span className="truncate"><span className="opacity-60">Abertura:</span> {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+
+                    {(os.data_criacao || os.pecas_solicitadas) && (
+                      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.06] pt-3 text-[10px] text-muted-foreground/65">
+                        {os.data_criacao && (
+                          <span>
+                            Abertura: {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                          </span>
+                        )}
+                        {os.pecas_solicitadas && (
+                          <span className="flex items-center gap-1.5 text-amber-400/80">
+                            <Package className="h-3 w-3" />
+                            Peças solicitadas
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
-
-                  {os.pecas_solicitadas && (
-                    <div className="mt-3 pt-3 border-t border-white/5 flex items-center gap-2 text-[10px] text-amber-400/80">
-                      <Package className="h-3 w-3" />
-                      <span className="truncate">Peças solicitadas</span>
-                    </div>
-                  )}
                 </div>
               </GlassCard>
             ))}
