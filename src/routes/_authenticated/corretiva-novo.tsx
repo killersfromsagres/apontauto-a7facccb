@@ -19,8 +19,8 @@ import {
   ArrowUpDown,
   History,
   Clock,
-  Brain,
-  Sparkles,
+  ListChecks,
+  Loader2,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -41,7 +41,7 @@ import { equipeStyles, matchEquipe, type EquipeFiltro } from "@/lib/corretiva/eq
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
-import { reclassifyAllOsWithAi } from "@/lib/corretiva/ai-reclassifier.functions";
+import { designateAllCorrectiveOrders } from "@/lib/corretiva/ai-reclassifier.functions";
 
 export const Route = createFileRoute("/_authenticated/corretiva-novo")({
   component: CorretivaNovoPage,
@@ -58,7 +58,7 @@ function CorretivaNovoPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedOs, setSelectedOs] = useState<any | null>(null);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
-  const [isReclassifying, setIsReclassifying] = useState(false);
+  const [isDesignating, setIsDesignating] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
@@ -166,25 +166,35 @@ function CorretivaNovoPage() {
     }
   };
 
-  const handleAiReclassify = async () => {
+  const handleDesignate = async () => {
     if (!isAdmin) return;
 
-    setIsReclassifying(true);
-    const id = toast.loading("Agente IA analisando e reclassificando equipes...");
+    setIsDesignating(true);
+    const id = toast.loading("Analisando o contexto dos chamados e designando equipes...");
 
     try {
-      const result = await reclassifyAllOsWithAi();
-      if (result.success) {
-        toast.success(`Sucesso! ${result.count} OS foram reclassificadas inteligentemente.`, { id });
-        await loadData();
+      const result = await designateAllCorrectiveOrders();
+      const reviewMessage =
+        result.reviewNeeded > 0 ? ` ${result.reviewNeeded} caso(s) ambíguo(s) foram preservados.` : "";
+
+      if (result.failed > 0) {
+        toast.warning(
+          `Designação parcial: ${result.count} realocadas, ${result.unchanged} mantidas e ${result.failed} falharam.${reviewMessage}`,
+          { id },
+        );
       } else {
-        toast.error("Ocorreu um problema durante a reclassificação.", { id });
+        toast.success(
+          `Designação concluída: ${result.count} realocadas e ${result.unchanged} mantidas.${reviewMessage}`,
+          { id },
+        );
       }
+
+      await loadData();
     } catch (error: any) {
-      console.error("[CorretivaNovo] Erro na reclassificação IA:", error);
-      toast.error("Falha ao acionar o agente de reclassificação.", { id });
+      console.error("[CorretivaNovo] Erro na designação automática:", error);
+      toast.error("Falha ao analisar e designar os chamados.", { id });
     } finally {
-      setIsReclassifying(false);
+      setIsDesignating(false);
     }
   };
 
@@ -197,18 +207,19 @@ function CorretivaNovoPage() {
           {isAdmin && (
             <>
               <Button
-                variant="glass"
+                variant="outline"
                 size="sm"
-                className="gap-2 border-primary/20 hover:border-primary/50 text-primary-glow"
-                onClick={handleAiReclassify}
-                disabled={isReclassifying}
+                className="gap-2 border-border/70 bg-background/60 text-foreground hover:bg-muted"
+                onClick={handleDesignate}
+                disabled={isDesignating}
+                title="Analisar os chamados abertos e designar automaticamente a equipe responsável"
               >
-                {isReclassifying ? (
-                  <Sparkles className="h-4 w-4 animate-pulse" />
+                {isDesignating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Brain className="h-4 w-4" />
+                  <ListChecks className="h-4 w-4" />
                 )}
-                Agente IA
+                Designar
               </Button>
               <PreventivaImportDialog mode="corretiva" onDone={loadData} />
             </>
