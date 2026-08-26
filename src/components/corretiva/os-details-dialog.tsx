@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -62,14 +62,6 @@ const TEAM_OPTIONS = [
   { name: "Refrigeração", icon: Snowflake, color: "text-cyan-500" },
   { name: "Limpeza", icon: Trash2, color: "text-sky-500" },
 ] as const;
-
-function SilverField({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className="rounded-xl bg-gradient-to-br from-zinc-500/35 via-slate-200/75 to-zinc-600/35 p-px shadow-[0_0_14px_rgba(226,232,240,0.06)]">
-      <div className={cn("rounded-[11px] bg-background", className)}>{children}</div>
-    </div>
-  );
-}
 
 export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDialogProps) {
   const processIA = useServerFn(processarDescricaoPecaIA);
@@ -667,7 +659,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
               </DialogTitle>
             </DialogHeader>
 
-            <SilverField className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 bg-muted/20 p-3 text-sm sm:gap-4 sm:p-4">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-xl border border-border bg-muted/20 p-3 text-sm sm:gap-4 sm:p-4">
               <div className="min-w-0 space-y-1">
                 <Label className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[10px]">
                   Localização
@@ -747,9 +739,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   </span>
                 )}
               </div>
-            </SilverField>
+            </div>
 
-            <SilverField className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
+            <section className="space-y-2.5 border-t border-border pt-3 sm:space-y-3 sm:pt-5">
               <div>
                 <Label className="text-xs font-semibold text-foreground sm:text-sm">Solicitar peças / materiais</Label>
                 <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">
@@ -862,9 +854,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   </div>
                 )}
               </div>
-            </SilverField>
+            </section>
 
-            <SilverField className="space-y-2.5 p-3 sm:space-y-3 sm:p-4">
+            <section className="space-y-2.5 border-t border-border pt-3 sm:space-y-3 sm:pt-5">
               <div>
                 <Label className="text-xs font-semibold text-foreground sm:text-sm">Observações de campo</Label>
                 <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-xs">
@@ -893,9 +885,9 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   )}
                 </Button>
               </div>
-            </SilverField>
+            </section>
 
-            <SilverField className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+            <section className="space-y-3 border-t border-border pt-3 sm:space-y-4 sm:pt-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <Label className="text-xs font-semibold text-foreground sm:text-sm">Evidência fotográfica</Label>
@@ -913,7 +905,7 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                 {renderEvidence("antes", photoBefore)}
                 {renderEvidence("depois", photoAfter)}
               </div>
-            </SilverField>
+            </section>
           </div>
 
           <div className="grid grid-cols-2 gap-2 border-t border-border bg-background p-3 sm:gap-3 sm:p-6">
