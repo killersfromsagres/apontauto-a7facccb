@@ -1,0 +1,12 @@
+-- Importação operacional realizada em 28/08/2026 a partir da planilha
+-- CONTROLE MENSAGERIA(3).xlsx, com reconciliação entre RECEBIMENTO e ENTREGA.
+--
+-- Resultado aplicado no projeto Apont Auto:
+--   65 registros históricos consolidados
+--   56 registros marcados como entregues conforme evidências do arquivo
+--   9 registros aguardando entrega
+--   4 registros antigos sem data de recebimento (mantidos sem inventar data)
+--
+-- Os dados pessoais/operacionais da planilha não são duplicados no código-fonte.
+-- Esta migration é intencionalmente no-op no repositório e existe para alinhar
+-- o versionamento com a carga única já aplicada no banco de produção.
