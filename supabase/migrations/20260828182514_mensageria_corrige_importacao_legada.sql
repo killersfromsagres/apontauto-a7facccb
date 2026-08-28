@@ -1,0 +1,3 @@
+-- Registro histórico: correção da primeira tentativa de importação legada.
+-- A tentativa foi revertida integralmente pela migration 20260828183445.
+-- No-op mantido para alinhar o histórico remoto de migrations.
