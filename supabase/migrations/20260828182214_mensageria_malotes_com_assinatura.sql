@@ -1,0 +1,3 @@
+-- Registro histórico: primeira tentativa de schema da Mensageria.
+-- O conteúdo foi revertido integralmente pela migration 20260828183445.
+-- Mantido como no-op no repositório apenas para alinhar o histórico remoto de migrations.
