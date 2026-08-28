@@ -122,7 +122,6 @@ export const sections: MenuSection[] = [
           "automação",
           "preventiva",
         ],
-
       },
     ],
   },
@@ -315,7 +314,6 @@ export const sections: MenuSection[] = [
       },
     ],
   },
-
   {
     kind: "group",
     key: "rondas-calhas-grp",
@@ -478,6 +476,14 @@ export const sections: MenuSection[] = [
         url: "/lavanderia",
         icon: WashingMachine,
       },
+      {
+        key: "mensageria",
+        title: "Mensageria e Malotes",
+        short: "Malotes",
+        url: "/mensageria",
+        icon: PackageOpen,
+        keywords: ["mensageria", "malote", "correspondência", "portaria", "protocolo", "recebimento", "entrega", "assinatura", "destinatário"],
+      },
     ],
   },
   {
@@ -559,7 +565,6 @@ export const sections: MenuSection[] = [
       },
     ],
   },
-
   {
     kind: "group",
     key: "admin-grp",
@@ -633,7 +638,12 @@ export function menuItemForPath(pathname: string): MenuItem | null {
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
     if (item.url === "/") continue;
-    if (pathname === item.url || pathname === `/_authenticated${item.url}` || pathname === `/_authenticated${item.url}/` || pathname.startsWith(`${item.url}/`)) {
+    if (
+      pathname === item.url ||
+      pathname === `/_authenticated${item.url}` ||
+      pathname === `/_authenticated${item.url}/` ||
+      pathname.startsWith(`${item.url}/`)
+    ) {
       if (!best || item.url.length > best.url.length) best = item;
     }
   }
@@ -652,7 +662,6 @@ export function menuKeysForPath(pathname: string): string[] | null {
 const RESTRICTED_KEYS = [
   "dashboard-chamados",
   "abastecimento",
-
   "avaliacao-chamados",
   "abastecimento-agua",
   "agua-execucao",
@@ -672,6 +681,7 @@ const RESTRICTED_KEYS = [
   "preventiva-automacao",
   "rondas-calhas",
   "rondas-calhas-historico",
+  "mensageria",
 ];
 
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
@@ -688,43 +698,27 @@ const QUICK_KEYS = [
   "preventiva-ac",
   "dashboard-chamados",
   "dashboard-chamados",
-
   "painel-legal",
   "capacidade",
   "confiabilidade",
   "qualidade-dados",
   "materiais-os",
-
 ];
 
-/**
- * Seções de menu já filtradas pelas permissões do usuário.
- * Compartilhado entre a sidebar (desktop), a barra inferior (mobile),
- * a pesquisa global e os atalhos da home.
- */
 /** Módulo sensível (negação por padrão, espelha `can_access_module`). */
 export function isRestrictedModule(key: string): boolean {
   return RESTRICTED_KEYS.includes(key);
 }
 
-/**
- * Regra pura de visibilidade de um item de menu.
- * `allowed = null` significa "sem lista explícita" → nega tudo, exceto admin.
- */
+/** Regra pura de visibilidade de um item de menu. */
 export function canSeeMenuItem(
   item: MenuItem,
   ctx: { isAdmin: boolean; allowed: string[] | null | undefined },
 ): boolean {
   const { isAdmin, allowed } = ctx;
   const key = item.key;
-  // Módulos restritos: negação por padrão (nunca liberados por
-  // `allowed_menus = null` do sistema legado). Espelha a lista de
-  // `can_access_module` no banco.
   if (isAdmin) return true;
-  
-  // Módulos restritos: negação por padrão (nunca liberados por
-  // `allowed_menus = null` do sistema legado). Espelha a lista de
-  // `can_access_module` no banco.
+
   if (isRestrictedModule(key)) {
     return allowed?.includes(key) ?? false;
   }
@@ -734,23 +728,19 @@ export function canSeeMenuItem(
   if (key === "dashboard") return true;
   if (key === "dashboard-chamados") return allowed?.includes("dashboard-chamados") ?? false;
 
-  
-  if (key === "imagens") return false; // isAdmin já retornou true acima
+  if (key === "imagens") return false;
   if (key === "configuracoes") return false;
   if (key === "refrigeracao-gestor") return allowed?.includes("refrigeracao-gestor") ?? false;
   if (key === "corretiva-gestor") return allowed?.includes("corretiva-gestor") ?? false;
   if (key === "assets-catalog") return false;
   if (key.startsWith("assets-")) return false;
 
-  // Adiciona permissão total para o login de climatizacao nos módulos de refrigeração
   if (key.startsWith("refrigeracao")) {
     const isClimatizacao = allowed?.includes("climatizacao");
     if (isClimatizacao) return true;
   }
-  // Negação por padrão: sem lista explícita, nada é liberado (espelha o banco).
   if (!allowed) return false;
 
-  // Oculta Planejamento PCM para o login de manutenção
   const isManutencao = allowed.includes("manutencao");
   if (isManutencao) {
     if (["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key)) {
@@ -775,7 +765,6 @@ export function useVisibleSections() {
       if (s.kind === "item") {
         if (canSee(s.item)) out.push(s);
       } else {
-        // Regra específica para o login de manutenção: oculta o grupo de Planejamento PCM
         const isManutencao = allowed?.includes("manutencao");
         if (isManutencao && s.key === "planejamento-grp") continue;
 
@@ -796,7 +785,6 @@ export function useVisibleSections() {
     [visibleItems],
   );
 
-  /** Até 3 atalhos rápidos (fora o Dashboard) para a barra inferior. */
   const quickItems = useMemo<MenuItem[]>(() => {
     const byKey = new Map(visibleItems.map((i) => [i.key, i]));
     const picked: MenuItem[] = [];
