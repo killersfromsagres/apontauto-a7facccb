@@ -1,0 +1,3 @@
+-- Registro histórico: rollback da primeira tentativa de Mensageria.
+-- O rollback já foi executado no Supabase antes da implementação definitiva.
+-- No-op mantido para alinhar o histórico remoto de migrations.
