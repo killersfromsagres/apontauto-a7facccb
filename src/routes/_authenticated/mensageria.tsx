@@ -1,26 +1,18 @@
-import { useCallback, useEffect, useMemo, useState, type ComponentType, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 import {
-  CalendarCheck2,
-  CalendarPlus2,
   CheckCircle2,
   ChevronRight,
   Clock3,
+  Download,
   FileSignature,
-  Inbox,
   Loader2,
-  MapPin,
-  PackageCheck,
   PackageOpen,
-  Plus,
   Search,
-  Send,
-  UserRound,
-  UsersRound,
 } from "lucide-react";
-import { toast } from "sonner";
 
-import { GlassCard } from "@/components/glass-card";
 import { PageShell } from "@/components/page-shell";
 import { SignaturePad } from "@/components/mensageria/signature-pad";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/mensageria")({
 });
 
 type MaloteStatus = "aguardando_entrega" | "entregue";
-type StatusFilter = "todos" | MaloteStatus;
+type ViewMode = "operacao" | "recebimentos" | "pendentes" | "entregues" | "setores";
 
 type Setor = {
   id: string;
@@ -96,6 +88,19 @@ type DeliveryForm = {
   assinatura_data_url: string | null;
 };
 
+const FALLBACK_SECTORS: Setor[] = [
+  { id: "juridico", nome: "JURIDICO", responsavel: "JURIDICO CORP - BR, JOYCE CRUZ E LUANA BOLZAN", ativo: true },
+  { id: "multas", nome: "MULTAS", responsavel: "EDUARDA LOIOLA ARRUDA", ativo: true },
+  { id: "doacoes", nome: "DOACOES", responsavel: "RH", ativo: true },
+  { id: "logistica", nome: "LOGISTICA", responsavel: "LARISSA TORETA E TIME", ativo: true },
+  { id: "compras", nome: "COMPRAS", responsavel: "RODRIGO COSTA RODRIGUES", ativo: true },
+  { id: "telefonia", nome: "CONTAS TELEFONIA", responsavel: "OSMAN", ativo: true },
+  { id: "financas", nome: "FINANCAS - CREDITOS", responsavel: "ANDERSON CABRAL, EDINALDO SANTANA E RONALDO SOUSA", ativo: true },
+  { id: "serasa", nome: "SERASA E PROTESTO", responsavel: "LOCAL BR", ativo: true },
+  { id: "fretes", nome: "PAGAMENTOS DE FRETES/FEDEX CORREIOS", responsavel: "EDUARDA LOIOLA ARRUDA / FACILITIES", ativo: true },
+  { id: "nao-classificado", nome: "NÃO CLASSIFICADO", responsavel: "A definir", ativo: true },
+];
+
 function toDateTimeLocal(date = new Date()) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -121,11 +126,14 @@ function isToday(value: string | null) {
   if (!value) return false;
   const date = new Date(value);
   const now = new Date();
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+}
+
+function ageInDays(value: string | null) {
+  if (!value) return 0;
+  const received = new Date(value).getTime();
+  if (Number.isNaN(received)) return 0;
+  return Math.max(0, Math.floor((Date.now() - received) / 86_400_000));
 }
 
 function emptyReceiptForm(): ReceiptForm {
@@ -144,6 +152,23 @@ function emptyReceiptForm(): ReceiptForm {
   };
 }
 
+function receiptFormFromMalote(malote: Malote): ReceiptForm {
+  const received = malote.recebido_em ? new Date(malote.recebido_em) : new Date();
+  return {
+    remetente: malote.remetente,
+    destinatario: malote.destinatario,
+    codigo_rastreio: malote.codigo_rastreio ?? "",
+    codigo_interno: malote.codigo_interno ?? "",
+    item_descricao: malote.item_descricao ?? "",
+    local_recebimento: malote.local_recebimento,
+    quantidade: String(malote.quantidade),
+    setor: malote.setor,
+    recebido_em: toDateTimeLocal(received),
+    recebido_por: malote.recebido_por,
+    observacoes: malote.observacoes ?? "",
+  };
+}
+
 function emptyDeliveryForm(malote?: Malote | null): DeliveryForm {
   return {
     entregue_para: malote?.destinatario ?? "",
@@ -155,15 +180,18 @@ function emptyDeliveryForm(malote?: Malote | null): DeliveryForm {
 
 function MensageriaPage() {
   const [malotes, setMalotes] = useState<Malote[]>([]);
-  const [setores, setSetores] = useState<Setor[]>([]);
+  const [setores, setSetores] = useState<Setor[]>(FALLBACK_SECTORS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>("operacao");
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("aguardando_entrega");
   const [sectorFilter, setSectorFilter] = useState("todos");
 
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [editingTarget, setEditingTarget] = useState<Malote | null>(null);
   const [receiptForm, setReceiptForm] = useState<ReceiptForm>(emptyReceiptForm());
+  const [deliveryQueueOpen, setDeliveryQueueOpen] = useState(false);
   const [deliveryTarget, setDeliveryTarget] = useState<Malote | null>(null);
   const [deliveryForm, setDeliveryForm] = useState<DeliveryForm>(emptyDeliveryForm());
   const [detailsTarget, setDetailsTarget] = useState<Malote | null>(null);
@@ -171,6 +199,7 @@ function MensageriaPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [malotesResult, setoresResult] = await Promise.all([
         (supabase as any)
@@ -186,13 +215,18 @@ function MensageriaPage() {
       ]);
 
       if (malotesResult.error) throw malotesResult.error;
-      if (setoresResult.error) throw setoresResult.error;
-
       setMalotes((malotesResult.data ?? []) as Malote[]);
-      setSetores((setoresResult.data ?? []) as Setor[]);
+
+      if (!setoresResult.error && setoresResult.data?.length) {
+        setSetores(setoresResult.data as Setor[]);
+      } else {
+        setSetores(FALLBACK_SECTORS);
+      }
     } catch (error) {
       console.error("Erro ao carregar mensageria:", error);
-      toast.error("Não foi possível carregar os malotes. Verifique sua permissão de Mensageria.");
+      const message = error instanceof Error ? error.message : "Falha ao consultar o módulo de Mensageria.";
+      setLoadError(message);
+      toast.error("Não foi possível carregar a base de Mensageria.");
     } finally {
       setLoading(false);
     }
@@ -202,13 +236,34 @@ function MensageriaPage() {
     void loadData();
   }, [loadData]);
 
-  const filtered = useMemo(() => {
+  const sectorMap = useMemo(() => new Map(setores.map((sector) => [sector.nome, sector])), [setores]);
+  const pending = useMemo(() => malotes.filter((item) => item.status === "aguardando_entrega"), [malotes]);
+  const delivered = useMemo(() => malotes.filter((item) => item.status === "entregue"), [malotes]);
+
+  const stats = useMemo(() => ({
+    recebidosHoje: malotes.filter((item) => isToday(item.recebido_em)).length,
+    pendentes: pending.length,
+    entreguesHoje: delivered.filter((item) => isToday(item.entregue_em)).length,
+    atrasados: pending.filter((item) => ageInDays(item.recebido_em) >= 3).length,
+    assinados: delivered.filter((item) => Boolean(item.assinatura_data_url)).length,
+    setoresPendentes: new Set(pending.map((item) => item.setor)).size,
+  }), [delivered, malotes, pending]);
+
+  const oldestPending = useMemo(() => {
+    return [...pending].sort((a, b) => {
+      const av = a.recebido_em ? new Date(a.recebido_em).getTime() : Number.MAX_SAFE_INTEGER;
+      const bv = b.recebido_em ? new Date(b.recebido_em).getTime() : Number.MAX_SAFE_INTEGER;
+      return av - bv;
+    })[0] ?? null;
+  }, [pending]);
+
+  const visible = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     return malotes.filter((malote) => {
-      if (statusFilter !== "todos" && malote.status !== statusFilter) return false;
       if (sectorFilter !== "todos" && malote.setor !== sectorFilter) return false;
+      if (view === "pendentes" && malote.status !== "aguardando_entrega") return false;
+      if (view === "entregues" && malote.status !== "entregue") return false;
       if (!term) return true;
-
       return [
         malote.remetente,
         malote.destinatario,
@@ -220,88 +275,93 @@ function MensageriaPage() {
         malote.entregue_para,
       ].some((value) => value?.toLocaleLowerCase("pt-BR").includes(term));
     });
-  }, [malotes, search, sectorFilter, statusFilter]);
+  }, [malotes, search, sectorFilter, view]);
 
-  const grouped = useMemo(() => {
+  const groupedPending = useMemo(() => {
     const groups = new Map<string, Malote[]>();
-    for (const malote of filtered) {
+    for (const malote of pending) {
       const current = groups.get(malote.setor) ?? [];
       current.push(malote);
       groups.set(malote.setor, current);
     }
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"));
-  }, [filtered]);
+  }, [pending]);
 
-  const stats = useMemo(
-    () => ({
-      recebidosHoje: malotes.filter((item) => isToday(item.recebido_em)).length,
-      pendentes: malotes.filter((item) => item.status === "aguardando_entrega").length,
-      entreguesHoje: malotes.filter((item) => isToday(item.entregue_em)).length,
-      setores: new Set(
-        malotes
-          .filter((item) => item.status === "aguardando_entrega")
-          .map((item) => item.setor),
-      ).size,
-    }),
-    [malotes],
-  );
+  const openNewReceipt = () => {
+    setEditingTarget(null);
+    setReceiptForm(emptyReceiptForm());
+    setReceiptOpen(true);
+  };
 
-  const handleCreateReceipt = async (event: FormEvent<HTMLFormElement>) => {
+  const openEditReceipt = (malote: Malote) => {
+    if (malote.status === "entregue") {
+      toast.info("Protocolos entregues ficam bloqueados para preservar a rastreabilidade.");
+      return;
+    }
+    setEditingTarget(malote);
+    setReceiptForm(receiptFormFromMalote(malote));
+    setDetailsTarget(null);
+    setReceiptOpen(true);
+  };
+
+  const handleSaveReceipt = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const quantidade = Number.parseInt(receiptForm.quantidade, 10);
+    if (!receiptForm.remetente.trim() || !receiptForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
+    if (!receiptForm.recebido_por.trim()) return void toast.error("Informe quem recebeu o malote na portaria.");
+    if (!receiptForm.recebido_em) return void toast.error("Informe a data e hora do recebimento.");
+    if (!Number.isFinite(quantidade) || quantidade < 1) return void toast.error("Informe uma quantidade válida.");
 
-    if (!receiptForm.remetente.trim() || !receiptForm.destinatario.trim()) {
-      toast.error("Informe remetente e destinatário.");
-      return;
-    }
-    if (!receiptForm.recebido_por.trim()) {
-      toast.error("Informe quem recebeu o malote na portaria.");
-      return;
-    }
-    if (!receiptForm.recebido_em) {
-      toast.error("Informe a data e hora do recebimento.");
-      return;
-    }
-    if (!Number.isFinite(quantidade) || quantidade < 1) {
-      toast.error("Informe uma quantidade válida.");
-      return;
-    }
+    const payload = {
+      remetente: receiptForm.remetente.trim(),
+      destinatario: receiptForm.destinatario.trim(),
+      codigo_rastreio: receiptForm.codigo_rastreio.trim() || null,
+      codigo_interno: receiptForm.codigo_interno.trim() || null,
+      item_descricao: receiptForm.item_descricao.trim() || null,
+      local_recebimento: receiptForm.local_recebimento.trim() || "Portaria",
+      quantidade,
+      setor: receiptForm.setor || "NÃO CLASSIFICADO",
+      recebido_em: toIso(receiptForm.recebido_em),
+      recebido_por: receiptForm.recebido_por.trim(),
+      observacoes: receiptForm.observacoes.trim() || null,
+      legacy_import: false,
+    };
 
     setSaving(true);
     try {
-      const payload = {
-        remetente: receiptForm.remetente.trim(),
-        destinatario: receiptForm.destinatario.trim(),
-        codigo_rastreio: receiptForm.codigo_rastreio.trim() || null,
-        codigo_interno: receiptForm.codigo_interno.trim() || null,
-        item_descricao: receiptForm.item_descricao.trim() || null,
-        local_recebimento: receiptForm.local_recebimento.trim() || "Portaria",
-        quantidade,
-        setor: receiptForm.setor || "NÃO CLASSIFICADO",
-        recebido_em: toIso(receiptForm.recebido_em),
-        recebido_por: receiptForm.recebido_por.trim(),
-        observacoes: receiptForm.observacoes.trim() || null,
-        status: "aguardando_entrega",
-        legacy_import: false,
-      };
-
-      const { error } = await (supabase as any).from("mensageria_malotes").insert(payload);
-      if (error) throw error;
-
-      toast.success("Recebimento registrado. O malote agora aguarda entrega.");
+      if (editingTarget) {
+        const { data, error } = await (supabase as any)
+          .from("mensageria_malotes")
+          .update(payload)
+          .eq("id", editingTarget.id)
+          .eq("status", "aguardando_entrega")
+          .select("id")
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Registro não alterado. Ele pode já ter sido entregue.");
+        toast.success("Protocolo de recebimento atualizado.");
+      } else {
+        const { error } = await (supabase as any)
+          .from("mensageria_malotes")
+          .insert({ ...payload, status: "aguardando_entrega" });
+        if (error) throw error;
+        toast.success("Recebimento registrado e incluído na fila de entrega.");
+      }
       setReceiptOpen(false);
+      setEditingTarget(null);
       setReceiptForm(emptyReceiptForm());
-      setStatusFilter("aguardando_entrega");
+      setView("pendentes");
       await loadData();
     } catch (error) {
-      console.error("Erro ao registrar recebimento:", error);
-      toast.error("Não foi possível registrar o recebimento.");
+      console.error("Erro ao salvar recebimento:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o recebimento.");
     } finally {
       setSaving(false);
     }
   };
 
   const openDelivery = (malote: Malote) => {
+    setDeliveryQueueOpen(false);
     setDeliveryTarget(malote);
     setDeliveryForm(emptyDeliveryForm(malote));
   };
@@ -309,23 +369,13 @@ function MensageriaPage() {
   const handleDelivery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!deliveryTarget) return;
-    if (!deliveryForm.entregue_para.trim()) {
-      toast.error("Informe o nome de quem recebeu a entrega.");
-      return;
-    }
-    if (!deliveryForm.assinatura_data_url) {
-      toast.error("A assinatura digital é obrigatória para concluir a entrega.");
-      return;
-    }
+    if (!deliveryForm.entregue_para.trim()) return void toast.error("Informe o nome de quem recebeu a entrega.");
+    if (!deliveryForm.entregue_em) return void toast.error("Informe a data e hora da entrega.");
+    if (!deliveryForm.assinatura_data_url) return void toast.error("A assinatura digital é obrigatória para concluir a entrega.");
 
     const deliveryIso = toIso(deliveryForm.entregue_em);
-    if (deliveryTarget.recebido_em) {
-      const received = new Date(deliveryTarget.recebido_em).getTime();
-      const delivered = new Date(deliveryIso).getTime();
-      if (delivered < received) {
-        toast.error("A data da entrega não pode ser anterior ao recebimento na portaria.");
-        return;
-      }
+    if (deliveryTarget.recebido_em && new Date(deliveryIso).getTime() < new Date(deliveryTarget.recebido_em).getTime()) {
+      return void toast.error("A data da entrega não pode ser anterior ao recebimento na portaria.");
     }
 
     setSaving(true);
@@ -343,17 +393,17 @@ function MensageriaPage() {
         .eq("status", "aguardando_entrega")
         .select("id")
         .maybeSingle();
-
       if (error) throw error;
-      if (!data) throw new Error("Malote já entregue ou sem permissão para atualização.");
+      if (!data) throw new Error("O malote já foi entregue ou não pôde ser atualizado.");
 
-      toast.success("Entrega concluída com assinatura digital.");
+      toast.success("Entrega concluída com assinatura digital e protocolo atualizado.");
       setDeliveryTarget(null);
       setDeliveryForm(emptyDeliveryForm());
+      setView("entregues");
       await loadData();
     } catch (error) {
       console.error("Erro ao concluir entrega:", error);
-      toast.error("Não foi possível concluir a entrega.");
+      toast.error(error instanceof Error ? error.message : "Não foi possível concluir a entrega.");
     } finally {
       setSaving(false);
     }
@@ -376,8 +426,7 @@ function MensageriaPage() {
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("Registro não atualizado.");
-
-      toast.success("Setor atualizado.");
+      toast.success("Direcionamento do setor atualizado.");
       setDetailsTarget({ ...detailsTarget, setor: detailsSector });
       await loadData();
     } catch (error) {
@@ -388,391 +437,287 @@ function MensageriaPage() {
     }
   };
 
+  const exportWorkbook = () => {
+    if (!malotes.length) return void toast.info("Não há protocolos para exportar.");
+    const workbook = XLSX.utils.book_new();
+    const rows = malotes.map((item) => ({
+      Status: item.status === "entregue" ? "ENTREGUE" : "PENDENTE",
+      Setor: item.setor,
+      "Responsável do setor": sectorMap.get(item.setor)?.responsavel ?? "",
+      Remetente: item.remetente,
+      Destinatário: item.destinatario,
+      "Código de rastreio": item.codigo_rastreio ?? "",
+      "Código Sherwin": item.codigo_interno ?? "",
+      Item: item.item_descricao ?? "",
+      Quantidade: item.quantidade,
+      "Data recebimento": item.recebido_em ? formatDateTime(item.recebido_em, item.legacy_import) : "",
+      Local: item.local_recebimento,
+      "Recebido na portaria por": item.recebido_por,
+      "Data entrega": item.entregue_em ? formatDateTime(item.entregue_em, item.legacy_import) : "",
+      "Entregue para": item.entregue_para ?? "",
+      "Assinatura digital": item.assinatura_data_url ? "SIM" : item.legacy_import ? "NÃO DISPONÍVEL NO LEGADO" : "PENDENTE",
+      "Observações recebimento": item.observacoes ?? "",
+      "Observações entrega": item.entrega_observacoes ?? "",
+    }));
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Controle de Malotes");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(setores.map((item) => ({ Setor: item.nome, Responsável: item.responsavel ?? "" }))),
+      "Setores",
+    );
+    XLSX.writeFile(workbook, `mensageria-sherwin-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Planilha operacional exportada.");
+  };
+
   return (
     <PageShell
       title="Mensageria e Malotes"
-      description="Controle do recebimento na portaria até a entrega final, com assinatura digital e organização por setor."
+      description="Recebimento na portaria, triagem por setor, entrega ao destinatário e comprovação por assinatura digital."
       actions={
-        <Button
-          variant="glass"
-          size="sm"
-          className="gap-2 border-primary/40 bg-primary/20 text-primary-glow"
-          onClick={() => {
-            setReceiptForm(emptyReceiptForm());
-            setReceiptOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4" />
-          Registrar recebimento
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2">
+            <Download className="h-4 w-4" /> Exportar
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!pending.length}>
+            Registrar entrega{pending.length ? ` (${pending.length})` : ""}
+          </Button>
+          <Button type="button" size="sm" onClick={openNewReceipt}>Novo recebimento</Button>
+        </div>
       }
     >
       <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard icon={CalendarPlus2} label="Recebidos hoje" value={stats.recebidosHoje} />
-          <StatCard icon={Clock3} label="Aguardando entrega" value={stats.pendentes} emphasis />
-          <StatCard icon={CalendarCheck2} label="Entregues hoje" value={stats.entreguesHoje} />
-          <StatCard icon={UsersRound} label="Setores com pendências" value={stats.setores} />
-        </div>
+        <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
+          <div className="grid divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+            <Kpi label="Recebidos hoje" value={stats.recebidosHoje} detail="Entradas registradas" />
+            <Kpi label="Aguardando entrega" value={stats.pendentes} detail={`${stats.setoresPendentes} setores envolvidos`} critical={stats.pendentes > 0} />
+            <Kpi label="Entregues hoje" value={stats.entreguesHoje} detail="Protocolos concluídos" />
+            <Kpi label="Há 3+ dias" value={stats.atrasados} detail="Pendências que exigem atenção" critical={stats.atrasados > 0} />
+            <Kpi label="Com assinatura" value={stats.assinados} detail="Comprovações digitais" />
+          </div>
+        </section>
 
-        <GlassCard className="p-4">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por remetente, destinatário, rastreio, código ou recebedor..."
-                className="h-11 border-white/10 bg-white/5 pl-9"
-              />
-            </div>
-            <select
-              value={sectorFilter}
-              onChange={(event) => setSectorFilter(event.target.value)}
-              className="h-11 rounded-xl border border-white/10 bg-background/80 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/40"
-              aria-label="Filtrar por setor"
-            >
-              <option value="todos">Todos os setores</option>
-              {setores.map((setor) => (
-                <option key={setor.id} value={setor.nome}>
-                  {setor.nome}
-                </option>
-              ))}
-            </select>
-          </div>
+        {loadError && (
+          <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+            <p className="font-semibold text-foreground">Base de Mensageria indisponível neste backend</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              O painel está pronto, mas a tabela de Mensageria precisa existir no mesmo Supabase usado pela autenticação. Nenhum outro módulo foi redirecionado para evitar quebrar os logins.
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">Detalhe técnico: {loadError}</p>
+            <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => void loadData()}>Tentar novamente</Button>
+          </section>
+        )}
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <FilterButton
-              active={statusFilter === "aguardando_entrega"}
-              onClick={() => setStatusFilter("aguardando_entrega")}
-            >
-              Pendentes ({stats.pendentes})
-            </FilterButton>
-            <FilterButton active={statusFilter === "entregue"} onClick={() => setStatusFilter("entregue")}>
-              Entregues
-            </FilterButton>
-            <FilterButton active={statusFilter === "todos"} onClick={() => setStatusFilter("todos")}>
-              Todos ({malotes.length})
-            </FilterButton>
+        <section className="rounded-2xl border border-border/70 bg-card/50 p-2 shadow-sm">
+          <div className="flex flex-wrap gap-1">
+            <ViewButton active={view === "operacao"} onClick={() => setView("operacao")}>Operação</ViewButton>
+            <ViewButton active={view === "recebimentos"} onClick={() => setView("recebimentos")}>Recebimentos ({malotes.length})</ViewButton>
+            <ViewButton active={view === "pendentes"} onClick={() => setView("pendentes")}>Pendentes ({pending.length})</ViewButton>
+            <ViewButton active={view === "entregues"} onClick={() => setView("entregues")}>Entregues ({delivered.length})</ViewButton>
+            <ViewButton active={view === "setores"} onClick={() => setView("setores")}>Setores e direcionamentos</ViewButton>
           </div>
-        </GlassCard>
+        </section>
 
-        {loading ? (
-          <div className="flex flex-col items-center justify-center gap-3 py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Carregando protocolos de mensageria...</p>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
-            <Inbox className="mx-auto h-10 w-10 text-muted-foreground" />
-            <p className="mt-4 font-semibold text-foreground">Nenhum malote encontrado</p>
-            <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou registre um novo recebimento.</p>
-          </div>
+        {view === "operacao" ? (
+          <OperationalOverview
+            pending={pending}
+            oldestPending={oldestPending}
+            groupedPending={groupedPending}
+            sectorMap={sectorMap}
+            onDeliver={openDelivery}
+            onDetails={openDetails}
+            onSeePending={() => setView("pendentes")}
+          />
+        ) : view === "setores" ? (
+          <SectorOverview setores={setores} malotes={malotes} />
         ) : (
-          <div className="space-y-5">
-            {grouped.map(([setor, items]) => (
-              <section key={setor} className="space-y-3" aria-label={`Malotes do setor ${setor}`}>
-                <div className="flex items-center justify-between gap-3 px-1">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Setor</p>
-                    <h2 className="mt-0.5 text-sm font-semibold text-foreground">{setor}</h2>
-                  </div>
-                  <Badge variant="outline">{items.length} {items.length === 1 ? "malote" : "malotes"}</Badge>
+          <>
+            <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm">
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Buscar remetente, destinatário, rastreio, código Sherwin ou recebedor"
+                    className="h-11 pl-9"
+                  />
                 </div>
-                <div className="grid gap-3">
-                  {items.map((malote) => (
-                    <MaloteCard
+                <select
+                  value={sectorFilter}
+                  onChange={(event) => setSectorFilter(event.target.value)}
+                  className="h-11 rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+                  aria-label="Filtrar por setor"
+                >
+                  <option value="todos">Todos os setores</option>
+                  {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}</option>)}
+                </select>
+              </div>
+            </section>
+
+            {loading ? (
+              <LoadingState />
+            ) : visible.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
+                <div className="hidden grid-cols-[1.4fr_1.4fr_1fr_1fr_140px] gap-3 border-b border-border/70 bg-muted/30 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid">
+                  <span>Remetente → destinatário</span><span>Setor</span><span>Recebimento</span><span>Referências</span><span className="text-right">Ações</span>
+                </div>
+                <div className="divide-y divide-border/60">
+                  {visible.map((malote) => (
+                    <ProtocolRow
                       key={malote.id}
                       malote={malote}
+                      sector={sectorMap.get(malote.setor)}
                       onDeliver={() => openDelivery(malote)}
                       onDetails={() => openDetails(malote)}
                     />
                   ))}
                 </div>
               </section>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
       <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent className="max-w-3xl border-white/10 bg-background/95 backdrop-blur-xl">
+        <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Registrar recebimento na portaria</DialogTitle>
+            <DialogTitle>{editingTarget ? "Editar protocolo de recebimento" : "Novo recebimento na portaria"}</DialogTitle>
             <DialogDescription>
-              Crie o protocolo de entrada. O malote ficará pendente até a entrega ao destinatário final.
+              Registre a entrada uma única vez. Depois, o mesmo protocolo seguirá para a fila de entrega e assinatura do destinatário final.
             </DialogDescription>
           </DialogHeader>
-
-          <form onSubmit={handleCreateReceipt} className="space-y-5">
+          <form onSubmit={handleSaveReceipt} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Remetente" required>
-                <Input
-                  value={receiptForm.remetente}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, remetente: event.target.value }))}
-                  placeholder="Empresa ou pessoa remetente"
-                />
-              </Field>
-              <Field label="Destinatário" required>
-                <Input
-                  value={receiptForm.destinatario}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, destinatario: event.target.value }))}
-                  placeholder="Pessoa ou área destinatária"
-                />
-              </Field>
-              <Field label="Código de rastreio">
-                <Input
-                  value={receiptForm.codigo_rastreio}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, codigo_rastreio: event.target.value }))}
-                  placeholder="Ex.: OY123456789BR"
-                />
-              </Field>
-              <Field label="Código interno Sherwin">
-                <Input
-                  value={receiptForm.codigo_interno}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, codigo_interno: event.target.value }))}
-                  placeholder="Ex.: SW-28082601"
-                />
-              </Field>
-              <Field label="Item / descrição">
-                <Input
-                  value={receiptForm.item_descricao}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, item_descricao: event.target.value }))}
-                  placeholder="Envelope, caixa, aparelho..."
-                />
-              </Field>
-              <Field label="Quantidade" required>
-                <Input
-                  type="number"
-                  min={1}
-                  max={9999}
-                  value={receiptForm.quantidade}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, quantidade: event.target.value }))}
-                />
-              </Field>
+              <Field label="Remetente" required><Input value={receiptForm.remetente} onChange={(e) => setReceiptForm((p) => ({ ...p, remetente: e.target.value }))} /></Field>
+              <Field label="Destinatário" required><Input value={receiptForm.destinatario} onChange={(e) => setReceiptForm((p) => ({ ...p, destinatario: e.target.value }))} /></Field>
+              <Field label="Código de rastreio"><Input value={receiptForm.codigo_rastreio} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_rastreio: e.target.value }))} placeholder="Ex.: OY123456789BR" /></Field>
+              <Field label="Código interno Sherwin"><Input value={receiptForm.codigo_interno} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_interno: e.target.value }))} placeholder="Ex.: SW-28082601" /></Field>
+              <Field label="Item / descrição"><Input value={receiptForm.item_descricao} onChange={(e) => setReceiptForm((p) => ({ ...p, item_descricao: e.target.value }))} /></Field>
+              <Field label="Quantidade" required><Input type="number" min={1} max={9999} value={receiptForm.quantidade} onChange={(e) => setReceiptForm((p) => ({ ...p, quantidade: e.target.value }))} /></Field>
               <Field label="Setor" required>
-                <select
-                  value={receiptForm.setor}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, setor: event.target.value }))}
-                  className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                >
-                  {setores.map((setor) => (
-                    <option key={setor.id} value={setor.nome}>
-                      {setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}
-                    </option>
-                  ))}
+                <select value={receiptForm.setor} onChange={(e) => setReceiptForm((p) => ({ ...p, setor: e.target.value }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}</option>)}
                 </select>
               </Field>
-              <Field label="Local do recebimento" required>
-                <Input
-                  value={receiptForm.local_recebimento}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, local_recebimento: event.target.value }))}
-                />
-              </Field>
-              <Field label="Data e hora do recebimento" required>
-                <Input
-                  type="datetime-local"
-                  value={receiptForm.recebido_em}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, recebido_em: event.target.value }))}
-                />
-              </Field>
-              <Field label="Recebido na portaria por" required>
-                <Input
-                  value={receiptForm.recebido_por}
-                  onChange={(event) => setReceiptForm((current) => ({ ...current, recebido_por: event.target.value }))}
-                  placeholder="Nome do colaborador"
-                />
-              </Field>
+              <Field label="Local de recebimento" required><Input value={receiptForm.local_recebimento} onChange={(e) => setReceiptForm((p) => ({ ...p, local_recebimento: e.target.value }))} /></Field>
+              <Field label="Data e hora do recebimento" required><Input type="datetime-local" value={receiptForm.recebido_em} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_em: e.target.value }))} /></Field>
+              <Field label="Recebido na portaria por" required><Input value={receiptForm.recebido_por} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_por: e.target.value }))} /></Field>
             </div>
-
-            <Field label="Observações">
-              <textarea
-                value={receiptForm.observacoes}
-                onChange={(event) => setReceiptForm((current) => ({ ...current, observacoes: event.target.value }))}
-                rows={3}
-                className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-                placeholder="Informações adicionais do recebimento..."
-              />
-            </Field>
-
+            <Field label="Observações"><textarea value={receiptForm.observacoes} onChange={(e) => setReceiptForm((p) => ({ ...p, observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setReceiptOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saving} className="gap-2">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <PackageOpen className="h-4 w-4" />}
-                Salvar recebimento
-              </Button>
+              <Button type="submit" disabled={saving}>{saving ? "Salvando..." : editingTarget ? "Salvar alterações" : "Registrar recebimento"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={Boolean(deliveryTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDeliveryTarget(null);
-        }}
-      >
-        <DialogContent className="max-w-2xl border-white/10 bg-background/95 backdrop-blur-xl">
+      <Dialog open={deliveryQueueOpen} onOpenChange={setDeliveryQueueOpen}>
+        <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Confirmar entrega do malote</DialogTitle>
-            <DialogDescription>A entrega só será concluída após a assinatura digital do recebedor.</DialogDescription>
+            <DialogTitle>Fila para entrega</DialogTitle>
+            <DialogDescription>Selecione o malote que será entregue ao destinatário. A conclusão exigirá assinatura digital.</DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            {pending.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Não há malotes pendentes.</p> : pending.map((malote) => (
+              <button key={malote.id} type="button" onClick={() => openDelivery(malote)} className="flex w-full items-center justify-between gap-4 rounded-xl border border-border/70 bg-card/60 p-4 text-left transition-colors hover:bg-muted/40">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-foreground">{malote.destinatario}</p>
+                  <p className="mt-1 truncate text-sm text-muted-foreground">{malote.remetente} · {malote.setor}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Recebido {formatDateTime(malote.recebido_em, malote.legacy_import)} · {ageInDays(malote.recebido_em)} dia(s) em aberto</p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
+      <Dialog open={Boolean(deliveryTarget)} onOpenChange={(open) => { if (!open) setDeliveryTarget(null); }}>
+        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Registrar entrega ao destinatário</DialogTitle>
+            <DialogDescription>Confirme o recebedor, a data e colete a assinatura antes de concluir.</DialogDescription>
+          </DialogHeader>
           {deliveryTarget && (
             <form onSubmit={handleDelivery} className="space-y-5">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline">{deliveryTarget.setor}</Badge>
-                  {deliveryTarget.codigo_interno && <Badge variant="outline">{deliveryTarget.codigo_interno}</Badge>}
-                </div>
-                <p className="mt-3 text-sm text-muted-foreground">Destinatário</p>
-                <p className="font-semibold text-foreground">{deliveryTarget.destinatario}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Recebido em {formatDateTime(deliveryTarget.recebido_em, deliveryTarget.legacy_import)}
-                </p>
+              <div className="rounded-2xl border border-border/70 bg-muted/25 p-4">
+                <div className="flex flex-wrap gap-2"><Badge variant="outline">{deliveryTarget.setor}</Badge>{deliveryTarget.codigo_interno && <Badge variant="outline">{deliveryTarget.codigo_interno}</Badge>}</div>
+                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Destino</p>
+                <p className="mt-1 font-semibold text-foreground">{deliveryTarget.destinatario}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Recebido na portaria em {formatDateTime(deliveryTarget.recebido_em, deliveryTarget.legacy_import)}</p>
               </div>
-
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Entregue para" required>
-                  <Input
-                    value={deliveryForm.entregue_para}
-                    onChange={(event) => setDeliveryForm((current) => ({ ...current, entregue_para: event.target.value }))}
-                  />
-                </Field>
-                <Field label="Data e hora da entrega" required>
-                  <Input
-                    type="datetime-local"
-                    value={deliveryForm.entregue_em}
-                    onChange={(event) => setDeliveryForm((current) => ({ ...current, entregue_em: event.target.value }))}
-                  />
-                </Field>
+                <Field label="Entregue para" required><Input value={deliveryForm.entregue_para} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_para: e.target.value }))} /></Field>
+                <Field label="Data e hora da entrega" required><Input type="datetime-local" value={deliveryForm.entregue_em} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_em: e.target.value }))} /></Field>
               </div>
-
-              <SignaturePad
-                key={deliveryTarget.id}
-                value={deliveryForm.assinatura_data_url}
-                onChange={(value) => setDeliveryForm((current) => ({ ...current, assinatura_data_url: value }))}
-                disabled={saving}
-              />
-
-              <Field label="Observações da entrega">
-                <textarea
-                  value={deliveryForm.entrega_observacoes}
-                  onChange={(event) => setDeliveryForm((current) => ({ ...current, entrega_observacoes: event.target.value }))}
-                  rows={3}
-                  className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/40"
-                  placeholder="Observações opcionais..."
-                />
-              </Field>
-
+              <SignaturePad key={deliveryTarget.id} value={deliveryForm.assinatura_data_url} onChange={(value) => setDeliveryForm((p) => ({ ...p, assinatura_data_url: value }))} disabled={saving} />
+              <Field label="Observações da entrega"><textarea value={deliveryForm.entrega_observacoes} onChange={(e) => setDeliveryForm((p) => ({ ...p, entrega_observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setDeliveryTarget(null)}>Cancelar</Button>
-                <Button type="submit" disabled={saving || !deliveryForm.assinatura_data_url} className="gap-2">
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSignature className="h-4 w-4" />}
-                  Concluir entrega
-                </Button>
+                <Button type="submit" disabled={saving || !deliveryForm.assinatura_data_url}>{saving ? "Concluindo..." : "Concluir e registrar assinatura"}</Button>
               </DialogFooter>
             </form>
           )}
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={Boolean(detailsTarget)}
-        onOpenChange={(open) => {
-          if (!open) setDetailsTarget(null);
-        }}
-      >
-        <DialogContent className="max-w-2xl border-white/10 bg-background/95 backdrop-blur-xl">
-          <DialogHeader>
-            <DialogTitle>Protocolo do malote</DialogTitle>
-            <DialogDescription>Rastreabilidade do recebimento na portaria até a entrega final.</DialogDescription>
-          </DialogHeader>
-
+      <Dialog open={Boolean(detailsTarget)} onOpenChange={(open) => { if (!open) setDetailsTarget(null); }}>
+        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
+          <DialogHeader><DialogTitle>Protocolo do malote</DialogTitle><DialogDescription>Rastreabilidade completa da entrada até a entrega final.</DialogDescription></DialogHeader>
           {detailsTarget && (
             <div className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Info label="Remetente" value={detailsTarget.remetente} />
-                <Info label="Destinatário" value={detailsTarget.destinatario} />
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
+                <div><StatusBadge status={detailsTarget.status} /><p className="mt-2 text-lg font-semibold text-foreground">{detailsTarget.remetente} → {detailsTarget.destinatario}</p></div>
+                {detailsTarget.status === "aguardando_entrega" && <Button type="button" variant="outline" size="sm" onClick={() => openEditReceipt(detailsTarget)}>Editar recebimento</Button>}
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Info label="Código de rastreio" value={detailsTarget.codigo_rastreio || "Não informado"} />
-                <Info label="Código interno" value={detailsTarget.codigo_interno || "Não informado"} />
-                <Info label="Item" value={detailsTarget.item_descricao || "Não informado"} />
-                <Info label="Quantidade" value={String(detailsTarget.quantidade)} />
+                <Info label="Código Sherwin" value={detailsTarget.codigo_interno || "Não informado"} />
+                <Info label="Item / quantidade" value={`${detailsTarget.item_descricao || "Não informado"} · ${detailsTarget.quantidade}`} />
               </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recebimento na portaria</p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Info label="Data" value={formatDateTime(detailsTarget.recebido_em, detailsTarget.legacy_import)} />
-                  <Info label="Local" value={detailsTarget.local_recebimento} />
-                  <Info label="Recebido por" value={detailsTarget.recebido_por} />
-                  <Info label="Observações" value={detailsTarget.observacoes || "Sem observações"} />
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Entrega final</p>
-                {detailsTarget.status === "entregue" ? (
-                  <div className="mt-3 space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <Info
-                        label="Data"
-                        value={detailsTarget.entregue_em ? formatDateTime(detailsTarget.entregue_em, detailsTarget.legacy_import) : "Data não registrada no legado"}
-                      />
-                      <Info label="Recebido por" value={detailsTarget.entregue_para || "Não registrado no legado"} />
-                      <Info label="Observações" value={detailsTarget.entrega_observacoes || "Sem observações"} />
-                    </div>
-                    {detailsTarget.assinatura_data_url ? (
-                      <div>
-                        <p className="mb-2 text-xs text-muted-foreground">Assinatura digital</p>
-                        <div className="rounded-xl bg-white p-3">
-                          <img
-                            src={detailsTarget.assinatura_data_url}
-                            alt={`Assinatura de ${detailsTarget.entregue_para || "recebedor"}`}
-                            className="max-h-40 w-full object-contain"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-200">
-                        Registro importado da planilha antiga: não havia assinatura digital disponível.
-                      </div>
-                    )}
+              <ProtocolSection title="1. Recebimento na portaria">
+                <Info label="Data" value={formatDateTime(detailsTarget.recebido_em, detailsTarget.legacy_import)} />
+                <Info label="Local" value={detailsTarget.local_recebimento} />
+                <Info label="Recebido por" value={detailsTarget.recebido_por || "Não registrado no legado"} />
+                <Info label="Observações" value={detailsTarget.observacoes || "Sem observações"} />
+              </ProtocolSection>
+              <ProtocolSection title="2. Triagem e direcionamento">
+                <div className="sm:col-span-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Setor / responsável</p>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <select value={detailsSector} onChange={(e) => setDetailsSector(e.target.value)} className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm">
+                      {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}</option>)}
+                    </select>
+                    <Button type="button" variant="outline" onClick={updateSector} disabled={saving || detailsSector === detailsTarget.setor}>Atualizar direcionamento</Button>
                   </div>
+                </div>
+              </ProtocolSection>
+              <ProtocolSection title="3. Entrega final">
+                {detailsTarget.status === "entregue" ? (
+                  <>
+                    <Info label="Data" value={formatDateTime(detailsTarget.entregue_em, detailsTarget.legacy_import)} />
+                    <Info label="Entregue para" value={detailsTarget.entregue_para || "Não registrado no legado"} />
+                    <Info label="Observações" value={detailsTarget.entrega_observacoes || "Sem observações"} />
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assinatura de recebimento</p>
+                      {detailsTarget.assinatura_data_url ? (
+                        <div className="mt-2 rounded-xl border border-border bg-white p-3"><img src={detailsTarget.assinatura_data_url} alt={`Assinatura de ${detailsTarget.entregue_para || "recebedor"}`} className="max-h-36 w-full object-contain" /></div>
+                      ) : (
+                        <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-sm text-muted-foreground">Registro legado: a planilha original não possuía assinatura digital.</p>
+                      )}
+                    </div>
+                  </>
                 ) : (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-amber-300">
-                    <Clock3 className="h-4 w-4" />
-                    Aguardando entrega ao destinatário.
+                  <div className="sm:col-span-2 flex items-center justify-between gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                    <div><p className="font-semibold text-foreground">Aguardando entrega</p><p className="mt-1 text-sm text-muted-foreground">O protocolo só será concluído após identificação do recebedor e assinatura.</p></div>
+                    <Button type="button" size="sm" onClick={() => openDelivery(detailsTarget)}>Registrar entrega</Button>
                   </div>
                 )}
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Classificação por setor</p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <select
-                    value={detailsSector}
-                    onChange={(event) => setDetailsSector(event.target.value)}
-                    className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {setores.map((setor) => (
-                      <option key={setor.id} value={setor.nome}>
-                        {setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <Button type="button" variant="outline" onClick={updateSector} disabled={saving || detailsSector === detailsTarget.setor}>
-                    Salvar setor
-                  </Button>
-                </div>
-              </div>
-
-              {detailsTarget.legacy_import && (
-                <p className="text-xs text-muted-foreground">
-                  Importado da planilha histórica ({detailsTarget.legacy_source}, linha {detailsTarget.legacy_source_row ?? "—"}
-                  {detailsTarget.legacy_delivery_row ? `; protocolo de entrega linha ${detailsTarget.legacy_delivery_row}` : ""}). Campos ausentes no arquivo original permaneceram como não registrados.
-                </p>
-              )}
+              </ProtocolSection>
+              {detailsTarget.legacy_import && <p className="text-xs leading-relaxed text-muted-foreground">Importado do histórico ({detailsTarget.legacy_source}, linha {detailsTarget.legacy_source_row ?? "—"}{detailsTarget.legacy_delivery_row ? `; entrega linha ${detailsTarget.legacy_delivery_row}` : ""}). Campos inexistentes no arquivo original permanecem como não registrados.</p>}
             </div>
           )}
         </DialogContent>
@@ -781,139 +726,128 @@ function MensageriaPage() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, emphasis = false }: {
-  icon: ComponentType<{ className?: string }>;
-  label: string;
-  value: number;
-  emphasis?: boolean;
+function OperationalOverview({ pending, oldestPending, groupedPending, sectorMap, onDeliver, onDetails, onSeePending }: {
+  pending: Malote[];
+  oldestPending: Malote | null;
+  groupedPending: [string, Malote[]][];
+  sectorMap: Map<string, Setor>;
+  onDeliver: (malote: Malote) => void;
+  onDetails: (malote: Malote) => void;
+  onSeePending: () => void;
 }) {
   return (
-    <GlassCard className={`p-4 ${emphasis ? "border-amber-400/25 bg-amber-500/[0.04]" : ""}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-          <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">{value}</p>
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.75fr)]">
+      <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
+          <div><h2 className="font-semibold text-foreground">Fila para entrega</h2><p className="mt-1 text-sm text-muted-foreground">Separada por setor, pronta para coleta de assinatura.</p></div>
+          <Button type="button" variant="ghost" size="sm" onClick={onSeePending}>Ver todos</Button>
         </div>
-        <div className={`rounded-xl p-2 ${emphasis ? "bg-amber-500/15 text-amber-300" : "bg-primary/10 text-primary"}`}>
-          <Icon className="h-4 w-4" />
-        </div>
+        {pending.length === 0 ? (
+          <div className="px-5 py-12 text-center"><CheckCircle2 className="mx-auto h-7 w-7 text-emerald-500" /><p className="mt-3 font-medium text-foreground">Fila em dia</p><p className="mt-1 text-sm text-muted-foreground">Nenhum malote aguarda entrega.</p></div>
+        ) : (
+          <div className="divide-y divide-border/60">
+            {pending.slice(0, 8).map((malote) => <ProtocolRow key={malote.id} malote={malote} sector={sectorMap.get(malote.setor)} onDeliver={() => onDeliver(malote)} onDetails={() => onDetails(malote)} compact />)}
+          </div>
+        )}
+      </section>
+
+      <div className="space-y-5">
+        <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Prioridade operacional</p>
+          {oldestPending ? (
+            <>
+              <p className="mt-3 text-lg font-semibold text-foreground">{oldestPending.destinatario}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{oldestPending.remetente}</p>
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Info label="Setor" value={oldestPending.setor} /><Info label="Em aberto" value={`${ageInDays(oldestPending.recebido_em)} dia(s)`} /></div>
+              <Button type="button" className="mt-5 w-full" onClick={() => onDeliver(oldestPending)}>Registrar entrega</Button>
+            </>
+          ) : <p className="mt-3 text-sm text-muted-foreground">Sem pendências.</p>}
+        </section>
+
+        <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pendências por setor</p>
+          <div className="mt-4 space-y-3">
+            {groupedPending.length ? groupedPending.map(([sector, items]) => (
+              <div key={sector} className="flex items-start justify-between gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
+                <div className="min-w-0"><p className="truncate text-sm font-medium text-foreground">{sector}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sectorMap.get(sector)?.responsavel || "Responsável não cadastrado"}</p></div>
+                <Badge variant="outline">{items.length}</Badge>
+              </div>
+            )) : <p className="text-sm text-muted-foreground">Sem pendências.</p>}
+          </div>
+        </section>
       </div>
-    </GlassCard>
+    </div>
   );
 }
 
-function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+function SectorOverview({ setores, malotes }: { setores: Setor[]; malotes: Malote[] }) {
   return (
-    <Button
-      type="button"
-      variant={active ? "secondary" : "ghost"}
-      size="sm"
-      onClick={onClick}
-      className={active ? "bg-white/10" : ""}
-    >
-      {children}
-    </Button>
+    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      {setores.map((setor) => {
+        const all = malotes.filter((item) => item.setor === setor.nome);
+        const pending = all.filter((item) => item.status === "aguardando_entrega");
+        return (
+          <div key={setor.id} className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Setor</p><h3 className="mt-1 font-semibold text-foreground">{setor.nome}</h3></div><Badge variant={pending.length ? "outline" : "secondary"}>{pending.length} pend.</Badge></div>
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Responsável / referência</p>
+            <p className="mt-1 text-sm leading-relaxed text-foreground">{setor.responsavel || "Não cadastrado"}</p>
+            <div className="mt-4 flex gap-4 border-t border-border/60 pt-4 text-sm"><span><strong>{all.length}</strong> protocolos</span><span><strong>{pending.length}</strong> em aberto</span></div>
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
-function MaloteCard({ malote, onDeliver, onDetails }: { malote: Malote; onDeliver: () => void; onDetails: () => void }) {
-  const pending = malote.status === "aguardando_entrega";
-
+function ProtocolRow({ malote, sector, onDeliver, onDetails, compact = false }: { malote: Malote; sector?: Setor; onDeliver: () => void; onDetails: () => void; compact?: boolean }) {
+  const isPending = malote.status === "aguardando_entrega";
   return (
-    <GlassCard className="overflow-hidden border-white/10 p-0 transition-colors hover:bg-white/[0.05]">
-      <div className="p-4 sm:p-5">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
-          <div className="flex min-w-0 flex-1 gap-3">
-            <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${pending ? "bg-amber-500/12 text-amber-300" : "bg-emerald-500/12 text-emerald-300"}`}>
-              {pending ? <PackageOpen className="h-5 w-5" /> : <PackageCheck className="h-5 w-5" />}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={pending ? "border-amber-500/30 text-amber-300" : "border-emerald-500/30 text-emerald-300"}>
-                  {pending ? "Aguardando entrega" : "Entregue"}
-                </Badge>
-                <Badge variant="outline">{malote.setor}</Badge>
-                {malote.legacy_import && <Badge variant="outline" className="text-muted-foreground">Legado</Badge>}
-              </div>
-
-              <div className="mt-3 flex min-w-0 items-center gap-2 text-sm">
-                <span className="truncate font-semibold text-foreground">{malote.remetente}</span>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate font-semibold text-foreground">{malote.destinatario}</span>
-              </div>
-
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CalendarPlus2 className="h-3.5 w-3.5" />
-                  {formatDateTime(malote.recebido_em, malote.legacy_import)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" />
-                  {malote.local_recebimento}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <UserRound className="h-3.5 w-3.5" />
-                  {malote.recebido_por}
-                </span>
-              </div>
-
-              <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-                {malote.codigo_rastreio && <span>Rastreio: {malote.codigo_rastreio}</span>}
-                {malote.codigo_interno && <span>Interno: {malote.codigo_interno}</span>}
-                <span>Qtd.: {malote.quantidade}</span>
-                {malote.item_descricao && <span>{malote.item_descricao}</span>}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 gap-2">
-            <Button type="button" variant="ghost" size="sm" onClick={onDetails}>Ver protocolo</Button>
-            {pending && (
-              <Button type="button" size="sm" className="gap-2" onClick={onDeliver}>
-                <Send className="h-4 w-4" />
-                Registrar entrega
-              </Button>
-            )}
-          </div>
-        </div>
+    <div className={`grid gap-3 px-4 py-4 lg:items-center lg:px-5 ${compact ? "lg:grid-cols-[1.7fr_1fr_150px]" : "lg:grid-cols-[1.4fr_1.4fr_1fr_1fr_140px]"}`}>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2"><StatusBadge status={malote.status} />{malote.legacy_import && <Badge variant="outline" className="text-muted-foreground">Legado</Badge>}</div>
+        <p className="mt-2 truncate text-sm font-semibold text-foreground">{malote.remetente} <span className="text-muted-foreground">→</span> {malote.destinatario}</p>
       </div>
-
-      {!pending && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-white/5 bg-emerald-500/[0.025] px-4 py-2.5 text-xs text-muted-foreground sm:px-5">
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-            {malote.entregue_em ? formatDateTime(malote.entregue_em, malote.legacy_import) : "Entrega registrada no legado"}
-          </span>
-          <span>{malote.entregue_para || "Recebedor não registrado no legado"}</span>
-          {malote.assinatura_data_url && (
-            <span className="flex items-center gap-1.5 text-emerald-300">
-              <FileSignature className="h-3.5 w-3.5" />
-              Assinado digitalmente
-            </span>
-          )}
-        </div>
-      )}
-    </GlassCard>
+      <div className="min-w-0"><p className="text-sm font-medium text-foreground">{malote.setor}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sector?.responsavel || "Responsável não cadastrado"}</p></div>
+      {!compact && <div><p className="text-sm text-foreground">{formatDateTime(malote.recebido_em, malote.legacy_import)}</p><p className="mt-0.5 text-xs text-muted-foreground">{malote.recebido_por || "Recebedor não registrado"}</p></div>}
+      {!compact && <div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{malote.codigo_interno ? `Sherwin: ${malote.codigo_interno}` : "Sem código Sherwin"}</p><p className="mt-1 truncate">{malote.codigo_rastreio ? `Rastreio: ${malote.codigo_rastreio}` : "Sem rastreio"}</p></div>}
+      {compact && <div><p className="text-sm font-medium text-foreground">{ageInDays(malote.recebido_em)} dia(s)</p><p className="text-xs text-muted-foreground">em aberto</p></div>}
+      <div className="flex justify-end gap-2">
+        <Button type="button" variant="ghost" size="sm" onClick={onDetails}>Protocolo</Button>
+        {isPending && <Button type="button" size="sm" onClick={onDeliver}>Entregar</Button>}
+      </div>
+    </div>
   );
+}
+
+function Kpi({ label, value, detail, critical = false }: { label: string; value: number; detail: string; critical?: boolean }) {
+  return <div className="p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold tracking-tight ${critical ? "text-amber-500" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>;
+}
+
+function StatusBadge({ status }: { status: MaloteStatus }) {
+  const pending = status === "aguardando_entrega";
+  return <Badge variant="outline" className={pending ? "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300"}>{pending ? "Aguardando entrega" : "Entregue"}</Badge>;
+}
+
+function ViewButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
+  return <button type="button" onClick={onClick} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}>{children}</button>;
+}
+
+function LoadingState() {
+  return <div className="flex flex-col items-center justify-center gap-3 py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><p className="text-sm text-muted-foreground">Carregando protocolos...</p></div>;
+}
+
+function EmptyState() {
+  return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><PackageOpen className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold text-foreground">Nenhum protocolo encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou registre um novo recebimento.</p></div>;
+}
+
+function ProtocolSection({ title, children }: { title: string; children: ReactNode }) {
+  return <section className="rounded-2xl border border-border/70 bg-muted/15 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div></section>;
 }
 
 function Field({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) {
-  return (
-    <label className="space-y-1.5">
-      <span className="text-xs font-medium text-muted-foreground">
-        {label}{required ? <span className="ml-1 text-primary">*</span> : null}
-      </span>
-      {children}
-    </label>
-  );
+  return <label className="space-y-1.5"><span className="text-xs font-medium text-muted-foreground">{label}{required ? <span className="ml-1 text-destructive">*</span> : null}</span>{children}</label>;
 }
 
 function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className="mt-1 break-words text-sm text-foreground">{value}</p>
-    </div>
-  );
+  return <div><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-1 break-words text-sm text-foreground">{value}</p></div>;
 }
