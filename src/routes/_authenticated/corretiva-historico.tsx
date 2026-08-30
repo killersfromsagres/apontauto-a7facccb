@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarClock,
   Camera,
+  CheckCheck,
   CheckCircle2,
   ChevronRight,
   Cpu,
@@ -53,6 +54,12 @@ import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
 import { isPreventiva } from "@/lib/corretiva/preventiva-import";
 import { cn } from "@/lib/utils";
 import { exportCorretivaHistoricoToExcel } from "@/lib/corretiva/excel-export";
+import {
+  loadVerifiedOsIds,
+  saveVerifiedOsIds,
+  verifiedOsStorageKey,
+  withVerifiedOs,
+} from "@/lib/corretiva/historico-verificacao";
 
 export const Route = createFileRoute("/_authenticated/corretiva-historico")({
   component: HistoricoPage,
@@ -104,6 +111,8 @@ type Problema = {
   created_at: string;
 };
 
+type VerificationFilter = "pending" | "verified" | "all";
+
 const formatDateTime = (value: string | null | undefined) => {
   if (!value) return null;
   const date = new Date(value);
@@ -150,6 +159,10 @@ function HistoricoPage() {
   const [equipe, setEquipe] = useState<EquipeFiltro>("todas");
   const [equipes, setEquipes] = useState<string[]>([]);
   const [aba, setAba] = useState<"corretiva" | "backorder">("corretiva");
+  const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>("pending");
+  const [verificationScope, setVerificationScope] = useState<string | null>(null);
+  const [verifiedOsIds, setVerifiedOsIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -160,10 +173,66 @@ function HistoricoPage() {
       .then(({ data }) => setEquipes((data ?? []).map((row: any) => row.nome as string)));
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    const applyScope = (scope: string) => {
+      if (!active) return;
+      setVerificationScope(scope);
+      setVerifiedOsIds(loadVerifiedOsIds(scope));
+    };
+
+    supabase.auth
+      .getUser()
+      .then(({ data }) => applyScope(data.user?.id ?? "device"))
+      .catch(() => applyScope("device"));
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!verificationScope || typeof window === "undefined") return;
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === verifiedOsStorageKey(verificationScope)) {
+        setVerifiedOsIds(loadVerifiedOsIds(verificationScope));
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [verificationScope]);
+
   const setEquipeAndPersist = (value: EquipeFiltro) => {
     setEquipe(value);
     saveEquipe(value);
   };
+
+  const handleVerification = useCallback(
+    (os: OsRow) => {
+      if (!verificationScope) {
+        toast.error("Aguarde o carregamento do controle de conferência.");
+        return;
+      }
+
+      const verified = !verifiedOsIds.has(os.id);
+      const next = withVerifiedOs(verifiedOsIds, os.id, verified);
+      if (!saveVerifiedOsIds(verificationScope, next)) {
+        toast.error("Não foi possível salvar a conferência neste navegador.");
+        return;
+      }
+
+      setVerifiedOsIds(next);
+      toast.success(
+        verified
+          ? "OS " + os.numero_os + " verificada e removida das próximas exportações."
+          : "OS " + os.numero_os + " voltou para as próximas exportações.",
+      );
+    },
+    [verificationScope, verifiedOsIds],
+  );
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["corretiva-historico"],
@@ -195,17 +264,52 @@ function HistoricoPage() {
     });
   }, [rows, search, equipe, aba]);
 
+  const exportableRows = useMemo(
+    () => filtered.filter((os) => !verifiedOsIds.has(os.id)),
+    [filtered, verifiedOsIds],
+  );
+
+  const displayedRows = useMemo(() => {
+    if (verificationFilter === "all") return filtered;
+    const shouldBeVerified = verificationFilter === "verified";
+    return filtered.filter((os) => verifiedOsIds.has(os.id) === shouldBeVerified);
+  }, [filtered, verificationFilter, verifiedOsIds]);
+
   const metrics = useMemo(() => {
     const concluidas = filtered.filter((os) => os.status === "concluida").length;
     const canceladas = filtered.filter((os) => os.status === "cancelada").length;
     const rubricadas = filtered.filter((os) => Boolean(os.assinatura_url)).length;
-    return { total: filtered.length, concluidas, canceladas, rubricadas };
-  }, [filtered]);
+    const verified = filtered.filter((os) => verifiedOsIds.has(os.id)).length;
+    return {
+      total: filtered.length,
+      exportable: filtered.length - verified,
+      verified,
+      concluidas,
+      canceladas,
+      rubricadas,
+    };
+  }, [filtered, verifiedOsIds]);
+
+  const handleExport = useCallback(async () => {
+    if (exportableRows.length === 0 || isExporting) return;
+
+    setIsExporting(true);
+    try {
+      await exportCorretivaHistoricoToExcel(exportableRows);
+      const noun = exportableRows.length === 1 ? "chamado exportado" : "chamados exportados";
+      toast.success(exportableRows.length + " " + noun + ".");
+    } catch (error) {
+      console.error("[CorretivaHistorico] Falha ao exportar histórico:", error);
+      toast.error("Não foi possível gerar a planilha. Tente novamente.");
+    } finally {
+      setIsExporting(false);
+    }
+  }, [exportableRows, isExporting]);
 
   return (
     <PageShell
       title="Histórico de execução"
-      description="Consulte chamados finalizados e cancelados com evidências, materiais e rastreabilidade da execução."
+      description="Confira os chamados concluídos e mantenha as próximas exportações livres de itens já revisados."
     >
       <GlassCard className="overflow-hidden p-0 active:scale-100">
         <div className="border-b border-border/50 bg-gradient-to-b from-muted/25 to-transparent px-4 py-4 sm:px-5">
@@ -233,24 +337,28 @@ function HistoricoPage() {
                 ))}
               </div>
               <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                Selecione um chamado para abrir a visão completa da execução sem alterar o estado da lista.
+                Marque uma OS como verificada para retirá-la das próximas planilhas. Você pode desfazer a marcação a qualquer momento.
               </p>
             </div>
 
             <Button
               variant="outline"
-              onClick={() => exportCorretivaHistoricoToExcel(filtered)}
-              disabled={filtered.length === 0}
+              onClick={handleExport}
+              disabled={!verificationScope || exportableRows.length === 0 || isExporting}
               className="h-11 gap-2 rounded-xl border-emerald-500/25 bg-emerald-500/10 px-4 text-emerald-700 shadow-none transition-[background-color,border-color,color] hover:border-emerald-500/40 hover:bg-emerald-500/15 dark:text-emerald-300 active:scale-100 motion-reduce:transition-none"
             >
-              <FileSpreadsheet className="h-4 w-4" />
-              Exportar Excel
+              {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
+              {exportableRows.length === 0
+                ? "Nada novo para exportar"
+                : "Exportar Excel (" + exportableRows.length + ")"}
             </Button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
             {[
-              { label: "Exibidos", value: metrics.total, className: "text-foreground" },
+              { label: "No histórico", value: metrics.total, className: "text-foreground" },
+              { label: "A exportar", value: metrics.exportable, className: "text-amber-500" },
+              { label: "Verificados", value: metrics.verified, className: "text-primary" },
               { label: "Finalizados", value: metrics.concluidas, className: "text-emerald-500" },
               { label: "Cancelados", value: metrics.canceladas, className: "text-destructive" },
               { label: "Rubricados", value: metrics.rubricadas, className: "text-primary" },
@@ -268,7 +376,7 @@ function HistoricoPage() {
           </div>
         </div>
 
-        <div className="grid gap-3 border-b border-border/50 bg-background/25 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.35fr)] sm:p-5">
+        <div className="grid gap-3 border-b border-border/50 bg-background/25 p-4 lg:grid-cols-[minmax(0,1fr)_minmax(200px,0.32fr)_minmax(230px,0.36fr)] sm:p-5">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -289,6 +397,19 @@ function HistoricoPage() {
                   {team}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={verificationFilter}
+            onValueChange={(value) => setVerificationFilter(value as VerificationFilter)}
+          >
+            <SelectTrigger className="premium-input h-11 rounded-xl text-sm" aria-label="Filtrar por conferência">
+              <SelectValue placeholder="Pendentes de verificação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pendentes de verificação</SelectItem>
+              <SelectItem value="verified">Já verificados</SelectItem>
+              <SelectItem value="all">Todos os chamados</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -315,18 +436,25 @@ function HistoricoPage() {
               <Loader2 className="mb-3 h-7 w-7 animate-spin text-primary" />
               <span className="font-medium">Carregando histórico de execução…</span>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : displayedRows.length === 0 ? (
             <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center">
               <Search className="mb-3 h-6 w-6 text-muted-foreground/60" />
-              <p className="font-semibold text-foreground">Nenhum chamado encontrado</p>
+              <p className="font-semibold text-foreground">
+                {verificationFilter === "pending" && filtered.length > 0
+                  ? "Todos os chamados foram verificados"
+                  : "Nenhum chamado encontrado"}
+              </p>
               <p className="mt-1 max-w-md text-xs leading-relaxed text-muted-foreground">
-                Ajuste a busca ou os filtros para visualizar outros registros.
+                {verificationFilter === "pending" && filtered.length > 0
+                  ? "Os próximos chamados concluídos aparecerão aqui e entrarão na próxima exportação."
+                  : "Ajuste a busca ou os filtros para visualizar outros registros."}
               </p>
             </div>
           ) : (
             <ul className="space-y-2.5">
-              {filtered.map((os) => {
+              {displayedRows.map((os) => {
                 const cancelada = os.status === "cancelada";
+                const verified = verifiedOsIds.has(os.id);
                 const StatusIcon = cancelada ? XCircle : CheckCircle2;
                 const teamStyle = equipeStyles(os.equipe);
                 const selected = open?.id === os.id;
@@ -340,6 +468,7 @@ function HistoricoPage() {
                         cancelada
                           ? "border-destructive/18 hover:border-destructive/30 hover:bg-destructive/[0.035]"
                           : "border-emerald-500/15 hover:border-emerald-500/30 hover:bg-emerald-500/[0.035]",
+                        verified && "border-primary/25 bg-primary/[0.04] hover:border-primary/35 hover:bg-primary/[0.055]",
                         selected && "border-primary/40 bg-primary/[0.045] ring-1 ring-primary/15",
                       )}
                     >
@@ -347,7 +476,7 @@ function HistoricoPage() {
                         aria-hidden="true"
                         className={cn(
                           "absolute inset-y-3 left-0 w-0.5 rounded-r-full",
-                          cancelada ? "bg-destructive/70" : "bg-emerald-500/80",
+                          verified ? "bg-primary/80" : cancelada ? "bg-destructive/70" : "bg-emerald-500/80",
                         )}
                       />
 
@@ -394,6 +523,14 @@ function HistoricoPage() {
                                 <PenLine className="mr-1 h-3 w-3" /> Rubricada
                               </Badge>
                             )}
+                            {verified && (
+                              <Badge
+                                variant="outline"
+                                className="rounded-lg border-primary/25 bg-primary/10 text-[9px] font-bold uppercase tracking-wider text-primary"
+                              >
+                                <CheckCheck className="mr-1 h-3 w-3" /> Verificado
+                              </Badge>
+                            )}
                           </span>
 
                           <span className="mt-2 block text-sm font-semibold leading-snug text-foreground/90 sm:text-[15px]">
@@ -419,10 +556,27 @@ function HistoricoPage() {
                         <ChevronRight className="mt-3 hidden h-4 w-4 shrink-0 text-muted-foreground/55 transition-colors group-hover:text-primary sm:block" />
                       </button>
 
-                      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border/40 pt-2 sm:w-auto sm:justify-end sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
+                      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/40 pt-2 sm:max-w-56 sm:justify-end sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 sm:hidden">
-                          Evidências
+                          Conferência
                         </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleVerification(os)}
+                          disabled={!verificationScope}
+                          aria-pressed={verified}
+                          className={cn(
+                            "h-9 gap-1.5 rounded-lg px-2.5 text-xs font-semibold shadow-none active:scale-100",
+                            verified
+                              ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/15"
+                              : "border-border/60 bg-background/55 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground",
+                          )}
+                        >
+                          <CheckCheck className="h-3.5 w-3.5" />
+                          {verified ? "Verificado" : "Marcar verificado"}
+                        </Button>
                         <OsPhotosButton osId={os.id} numeroOs={os.numero_os} modulo="corretiva" />
                       </div>
                     </div>
