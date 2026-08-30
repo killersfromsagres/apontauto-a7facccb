@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -27,6 +28,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  describeMensageriaError,
+  type MensageriaErrorInfo,
+} from "@/lib/mensageria/errors";
 
 export const Route = createFileRoute("/_authenticated/mensageria")({
   component: MensageriaPage,
@@ -183,7 +188,7 @@ function MensageriaPage() {
   const [setores, setSetores] = useState<Setor[]>(FALLBACK_SECTORS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<MensageriaErrorInfo | null>(null);
   const [view, setView] = useState<ViewMode>("operacao");
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("todos");
@@ -196,6 +201,15 @@ function MensageriaPage() {
   const [deliveryForm, setDeliveryForm] = useState<DeliveryForm>(emptyDeliveryForm());
   const [detailsTarget, setDetailsTarget] = useState<Malote | null>(null);
   const [detailsSector, setDetailsSector] = useState("");
+
+  const reportActionError = (error: unknown, fallback: string) => {
+    const issue = describeMensageriaError(error);
+    if (["schema", "permission", "session"].includes(issue.kind)) {
+      setLoadError(issue);
+      setMalotes([]);
+    }
+    toast.error(issue.kind === "unknown" ? fallback : issue.message);
+  };
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -215,18 +229,21 @@ function MensageriaPage() {
       ]);
 
       if (malotesResult.error) throw malotesResult.error;
+      if (setoresResult.error) throw setoresResult.error;
       setMalotes((malotesResult.data ?? []) as Malote[]);
 
-      if (!setoresResult.error && setoresResult.data?.length) {
+      if (setoresResult.data?.length) {
         setSetores(setoresResult.data as Setor[]);
       } else {
         setSetores(FALLBACK_SECTORS);
       }
     } catch (error) {
       console.error("Erro ao carregar mensageria:", error);
-      const message = error instanceof Error ? error.message : "Falha ao consultar o módulo de Mensageria.";
-      setLoadError(message);
-      toast.error("Não foi possível carregar a base de Mensageria.");
+      const issue = describeMensageriaError(error);
+      setMalotes([]);
+      setSetores(FALLBACK_SECTORS);
+      setLoadError(issue);
+      toast.error(issue.title, { description: issue.message });
     } finally {
       setLoading(false);
     }
@@ -237,6 +254,7 @@ function MensageriaPage() {
   }, [loadData]);
 
   const sectorMap = useMemo(() => new Map(setores.map((sector) => [sector.nome, sector])), [setores]);
+  const backendReady = !loading && loadError === null;
   const pending = useMemo(() => malotes.filter((item) => item.status === "aguardando_entrega"), [malotes]);
   const delivered = useMemo(() => malotes.filter((item) => item.status === "entregue"), [malotes]);
 
@@ -288,6 +306,7 @@ function MensageriaPage() {
   }, [pending]);
 
   const openNewReceipt = () => {
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para novos registros.");
     setEditingTarget(null);
     setReceiptForm(emptyReceiptForm());
     setReceiptOpen(true);
@@ -306,11 +325,19 @@ function MensageriaPage() {
 
   const handleSaveReceipt = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para salvar o protocolo.");
     const quantidade = Number.parseInt(receiptForm.quantidade, 10);
     if (!receiptForm.remetente.trim() || !receiptForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
     if (!receiptForm.recebido_por.trim()) return void toast.error("Informe quem recebeu o malote na portaria.");
     if (!receiptForm.recebido_em) return void toast.error("Informe a data e hora do recebimento.");
     if (!Number.isFinite(quantidade) || quantidade < 1) return void toast.error("Informe uma quantidade válida.");
+
+    let recebidoEm: string;
+    try {
+      recebidoEm = toIso(receiptForm.recebido_em);
+    } catch {
+      return void toast.error("Informe uma data e hora de recebimento válidas.");
+    }
 
     const payload = {
       remetente: receiptForm.remetente.trim(),
@@ -321,7 +348,7 @@ function MensageriaPage() {
       local_recebimento: receiptForm.local_recebimento.trim() || "Portaria",
       quantidade,
       setor: receiptForm.setor || "NÃO CLASSIFICADO",
-      recebido_em: toIso(receiptForm.recebido_em),
+      recebido_em: recebidoEm,
       recebido_por: receiptForm.recebido_por.trim(),
       observacoes: receiptForm.observacoes.trim() || null,
       legacy_import: false,
@@ -354,13 +381,14 @@ function MensageriaPage() {
       await loadData();
     } catch (error) {
       console.error("Erro ao salvar recebimento:", error);
-      toast.error(error instanceof Error ? error.message : "Não foi possível salvar o recebimento.");
+      reportActionError(error, "Não foi possível salvar o recebimento.");
     } finally {
       setSaving(false);
     }
   };
 
   const openDelivery = (malote: Malote) => {
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar a entrega.");
     setDeliveryQueueOpen(false);
     setDeliveryTarget(malote);
     setDeliveryForm(emptyDeliveryForm(malote));
@@ -369,11 +397,17 @@ function MensageriaPage() {
   const handleDelivery = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!deliveryTarget) return;
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar a entrega.");
     if (!deliveryForm.entregue_para.trim()) return void toast.error("Informe o nome de quem recebeu a entrega.");
     if (!deliveryForm.entregue_em) return void toast.error("Informe a data e hora da entrega.");
     if (!deliveryForm.assinatura_data_url) return void toast.error("A assinatura digital é obrigatória para concluir a entrega.");
 
-    const deliveryIso = toIso(deliveryForm.entregue_em);
+    let deliveryIso: string;
+    try {
+      deliveryIso = toIso(deliveryForm.entregue_em);
+    } catch {
+      return void toast.error("Informe uma data e hora de entrega válidas.");
+    }
     if (deliveryTarget.recebido_em && new Date(deliveryIso).getTime() < new Date(deliveryTarget.recebido_em).getTime()) {
       return void toast.error("A data da entrega não pode ser anterior ao recebimento na portaria.");
     }
@@ -403,7 +437,7 @@ function MensageriaPage() {
       await loadData();
     } catch (error) {
       console.error("Erro ao concluir entrega:", error);
-      toast.error(error instanceof Error ? error.message : "Não foi possível concluir a entrega.");
+      reportActionError(error, "Não foi possível concluir a entrega.");
     } finally {
       setSaving(false);
     }
@@ -416,6 +450,7 @@ function MensageriaPage() {
 
   const updateSector = async () => {
     if (!detailsTarget || !detailsSector || detailsSector === detailsTarget.setor) return;
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para atualizar o setor.");
     setSaving(true);
     try {
       const { data, error } = await (supabase as any)
@@ -431,7 +466,7 @@ function MensageriaPage() {
       await loadData();
     } catch (error) {
       console.error("Erro ao atualizar setor:", error);
-      toast.error("Não foi possível atualizar o setor.");
+      reportActionError(error, "Não foi possível atualizar o setor.");
     } finally {
       setSaving(false);
     }
@@ -475,13 +510,13 @@ function MensageriaPage() {
       description="Recebimento na portaria, triagem por setor, entrega ao destinatário e comprovação por assinatura digital."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2" disabled={!backendReady || !malotes.length} title={!backendReady ? "Aguarde a conexão com a base de Mensageria." : undefined}>
             <Download className="h-4 w-4" /> Exportar
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!pending.length}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!backendReady || !pending.length} title={!backendReady ? "A base de Mensageria precisa estar disponível para registrar entregas." : undefined}>
             Registrar entrega{pending.length ? ` (${pending.length})` : ""}
           </Button>
-          <Button type="button" size="sm" onClick={openNewReceipt}>Novo recebimento</Button>
+          <Button type="button" size="sm" onClick={openNewReceipt} disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para novos registros." : undefined}>Novo recebimento</Button>
         </div>
       }
     >
@@ -497,13 +532,22 @@ function MensageriaPage() {
         </section>
 
         {loadError && (
-          <section className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
-            <p className="font-semibold text-foreground">Base de Mensageria indisponível neste backend</p>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              O painel está pronto, mas a tabela de Mensageria precisa existir no mesmo Supabase usado pela autenticação. Nenhum outro módulo foi redirecionado para evitar quebrar os logins.
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">Detalhe técnico: {loadError}</p>
-            <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => void loadData()}>Tentar novamente</Button>
+          <section role="alert" aria-live="polite" className="overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card/80 to-card shadow-sm">
+            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex min-w-0 gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300">
+                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-semibold text-foreground">{loadError.title}</p>
+                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{loadError.message}</p>
+                  <p className="mt-2 text-xs font-medium text-muted-foreground">Referência técnica: {loadError.reference}</p>
+                </div>
+              </div>
+              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => void loadData()}>
+                Verificar novamente
+              </Button>
+            </div>
           </section>
         )}
 
@@ -608,7 +652,7 @@ function MensageriaPage() {
             <Field label="Observações"><textarea value={receiptForm.observacoes} onChange={(e) => setReceiptForm((p) => ({ ...p, observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setReceiptOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saving}>{saving ? "Salvando..." : editingTarget ? "Salvar alterações" : "Registrar recebimento"}</Button>
+              <Button type="submit" disabled={saving || !backendReady}>{saving ? "Salvando..." : editingTarget ? "Salvar alterações" : "Registrar recebimento"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -657,7 +701,7 @@ function MensageriaPage() {
               <Field label="Observações da entrega"><textarea value={deliveryForm.entrega_observacoes} onChange={(e) => setDeliveryForm((p) => ({ ...p, entrega_observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
               <DialogFooter>
                 <Button type="button" variant="ghost" onClick={() => setDeliveryTarget(null)}>Cancelar</Button>
-                <Button type="submit" disabled={saving || !deliveryForm.assinatura_data_url}>{saving ? "Concluindo..." : "Concluir e registrar assinatura"}</Button>
+                <Button type="submit" disabled={saving || !backendReady || !deliveryForm.assinatura_data_url}>{saving ? "Concluindo..." : "Concluir e registrar assinatura"}</Button>
               </DialogFooter>
             </form>
           )}
@@ -671,7 +715,7 @@ function MensageriaPage() {
             <div className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
                 <div><StatusBadge status={detailsTarget.status} /><p className="mt-2 text-lg font-semibold text-foreground">{detailsTarget.remetente} → {detailsTarget.destinatario}</p></div>
-                {detailsTarget.status === "aguardando_entrega" && <Button type="button" variant="outline" size="sm" onClick={() => openEditReceipt(detailsTarget)}>Editar recebimento</Button>}
+                {detailsTarget.status === "aguardando_entrega" && <Button type="button" variant="outline" size="sm" onClick={() => openEditReceipt(detailsTarget)} disabled={!backendReady}>Editar recebimento</Button>}
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <Info label="Código de rastreio" value={detailsTarget.codigo_rastreio || "Não informado"} />
@@ -691,7 +735,7 @@ function MensageriaPage() {
                     <select value={detailsSector} onChange={(e) => setDetailsSector(e.target.value)} className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm">
                       {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}</option>)}
                     </select>
-                    <Button type="button" variant="outline" onClick={updateSector} disabled={saving || detailsSector === detailsTarget.setor}>Atualizar direcionamento</Button>
+                    <Button type="button" variant="outline" onClick={updateSector} disabled={saving || !backendReady || detailsSector === detailsTarget.setor}>Atualizar direcionamento</Button>
                   </div>
                 </div>
               </ProtocolSection>
@@ -713,7 +757,7 @@ function MensageriaPage() {
                 ) : (
                   <div className="sm:col-span-2 flex items-center justify-between gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
                     <div><p className="font-semibold text-foreground">Aguardando entrega</p><p className="mt-1 text-sm text-muted-foreground">O protocolo só será concluído após identificação do recebedor e assinatura.</p></div>
-                    <Button type="button" size="sm" onClick={() => openDelivery(detailsTarget)}>Registrar entrega</Button>
+                    <Button type="button" size="sm" onClick={() => openDelivery(detailsTarget)} disabled={!backendReady}>Registrar entrega</Button>
                   </div>
                 )}
               </ProtocolSection>
