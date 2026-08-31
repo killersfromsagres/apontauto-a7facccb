@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Download,
+  HardDrive,
   Loader2,
   PackageOpen,
   Search,
@@ -14,8 +15,8 @@ import {
   Upload,
 } from "lucide-react";
 
-import { PageShell } from "@/components/page-shell";
 import { SignaturePad } from "@/components/mensageria/signature-pad";
+import { PageShell } from "@/components/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,11 +28,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import {
-  describeMensageriaError,
-  type MensageriaErrorInfo,
-} from "@/lib/mensageria/errors";
+  importLocalHistory,
+  loadMensageriaSnapshot,
+  saveLocalEnvio,
+  saveLocalMalote,
+} from "@/lib/mensageria/local-database";
+import { mapSpreadsheetHistoryToLocal } from "@/lib/mensageria/local-import";
+import type { Envio, EnvioCategoria, EnvioStatus, Malote, MaloteStatus, MensageriaSnapshot, Setor } from "@/lib/mensageria/models";
+import { MENSAGERIA_SECTORS } from "@/lib/mensageria/seed-data";
 import {
   parseMensageriaSpreadsheet,
   type MensageriaSpreadsheetImport,
@@ -43,42 +48,7 @@ export const Route = createFileRoute("/_authenticated/mensageria")({
   component: MensageriaPage,
 });
 
-type MaloteStatus = "aguardando_entrega" | "entregue";
-type EnvioStatus = "preparando" | "enviado" | "finalizado" | "devolvido";
-type EnvioCategoria = "correios" | "juridico" | "malote_interno" | "outro";
-type ViewMode = "operacao" | "recebimentos" | "pendentes" | "entregues" | "envios" | "setores";
-
-type Setor = {
-  id: string;
-  nome: string;
-  responsavel: string | null;
-  ativo: boolean;
-};
-
-type Malote = {
-  id: string;
-  remetente: string;
-  destinatario: string;
-  codigo_rastreio: string | null;
-  codigo_interno: string | null;
-  item_descricao: string | null;
-  local_recebimento: string;
-  quantidade: number;
-  setor: string;
-  recebido_em: string | null;
-  recebido_por: string;
-  observacoes: string | null;
-  status: MaloteStatus;
-  entregue_em: string | null;
-  entregue_para: string | null;
-  assinatura_data_url: string | null;
-  entrega_observacoes: string | null;
-  legacy_import: boolean;
-  legacy_source: string | null;
-  legacy_source_row: number | null;
-  legacy_delivery_row: number | null;
-  created_at: string;
-};
+type ViewMode = "operacao" | "todos" | "pendentes" | "entregues" | "envios" | "setores";
 
 type ReceiptForm = {
   remetente: string;
@@ -91,36 +61,18 @@ type ReceiptForm = {
   setor: string;
   recebido_em: string;
   recebido_por: string;
+  assinatura_portaria_data_url: string | null;
   observacoes: string;
 };
 
 type DeliveryForm = {
   entregue_para: string;
   entregue_em: string;
+  assinatura_entrega_data_url: string | null;
   entrega_observacoes: string;
-  assinatura_data_url: string | null;
 };
 
-type Envio = {
-  id: string;
-  categoria: EnvioCategoria;
-  remetente: string;
-  destinatario: string;
-  codigo_rastreio: string | null;
-  item_descricao: string | null;
-  nota_fiscal: string | null;
-  enviado_em: string | null;
-  enviado_por: string | null;
-  status: EnvioStatus;
-  finalizado_em: string | null;
-  observacoes: string | null;
-  legacy_import: boolean;
-  legacy_source: string | null;
-  legacy_source_row: number | null;
-  created_at: string;
-};
-
-type EnvioForm = {
+type ShipmentForm = {
   categoria: EnvioCategoria;
   remetente: string;
   destinatario: string;
@@ -132,52 +84,51 @@ type EnvioForm = {
   observacoes: string;
 };
 
-const FALLBACK_SECTORS: Setor[] = [
-  { id: "juridico", nome: "JURIDICO", responsavel: "JURIDICO CORP - BR, JOYCE CRUZ E LUANA BOLZAN", ativo: true },
-  { id: "multas", nome: "MULTAS", responsavel: "EDUARDA LOIOLA ARRUDA", ativo: true },
-  { id: "doacoes", nome: "DOACOES", responsavel: "RH", ativo: true },
-  { id: "logistica", nome: "LOGISTICA", responsavel: "LARISSA TORETA E TIME", ativo: true },
-  { id: "compras", nome: "COMPRAS", responsavel: "RODRIGO COSTA RODRIGUES", ativo: true },
-  { id: "telefonia", nome: "CONTAS TELEFONIA", responsavel: "OSMAN", ativo: true },
-  { id: "financas", nome: "FINANCAS - CREDITOS", responsavel: "ANDERSON CABRAL, EDINALDO SANTANA E RONALDO SOUSA", ativo: true },
-  { id: "serasa", nome: "SERASA E PROTESTO", responsavel: "LOCAL BR", ativo: true },
-  { id: "fretes", nome: "PAGAMENTOS DE FRETES/FEDEX CORREIOS", responsavel: "EDUARDA LOIOLA ARRUDA / FACILITIES", ativo: true },
-  { id: "nao-classificado", nome: "NÃO CLASSIFICADO", responsavel: "A definir", ativo: true },
-];
+type ImportPreview = {
+  fileName: string;
+  parsed: MensageriaSpreadsheetImport;
+  snapshot: MensageriaSnapshot;
+};
 
 function toDateTimeLocal(date = new Date()) {
   const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function toIso(localValue: string) {
-  const parsed = new Date(localValue);
-  if (Number.isNaN(parsed.getTime())) throw new Error("Data e hora inválidas.");
-  return parsed.toISOString();
+function toIso(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) throw new Error("Data inválida.");
+  return date.toISOString();
 }
 
-function formatDateTime(value: string | null, dateOnly = false) {
-  if (!value) return "Não registrado no legado";
+function formatDateTime(value: string | null, legacy = false) {
+  if (!value) return legacy ? "Não registrado na planilha" : "Não informado";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Data inválida";
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
-    ...(dateOnly ? {} : { timeStyle: "short" as const }),
+    ...(legacy ? {} : { timeStyle: "short" as const }),
   }).format(date);
 }
 
 function isToday(value: string | null) {
   if (!value) return false;
   const date = new Date(value);
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+  const today = new Date();
+  return date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate();
 }
 
 function ageInDays(value: string | null) {
   if (!value) return 0;
-  const received = new Date(value).getTime();
-  if (Number.isNaN(received)) return 0;
-  return Math.max(0, Math.floor((Date.now() - received) / 86_400_000));
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? 0 : Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000));
+}
+
+function createId(prefix: string) {
+  const value = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${prefix}-${value}`;
 }
 
 function emptyReceiptForm(): ReceiptForm {
@@ -192,12 +143,12 @@ function emptyReceiptForm(): ReceiptForm {
     setor: "NÃO CLASSIFICADO",
     recebido_em: toDateTimeLocal(),
     recebido_por: "",
+    assinatura_portaria_data_url: null,
     observacoes: "",
   };
 }
 
 function receiptFormFromMalote(malote: Malote): ReceiptForm {
-  const received = malote.recebido_em ? new Date(malote.recebido_em) : new Date();
   return {
     remetente: malote.remetente,
     destinatario: malote.destinatario,
@@ -207,8 +158,9 @@ function receiptFormFromMalote(malote: Malote): ReceiptForm {
     local_recebimento: malote.local_recebimento,
     quantidade: String(malote.quantidade),
     setor: malote.setor,
-    recebido_em: toDateTimeLocal(received),
+    recebido_em: toDateTimeLocal(malote.recebido_em ? new Date(malote.recebido_em) : new Date()),
     recebido_por: malote.recebido_por,
+    assinatura_portaria_data_url: malote.assinatura_portaria_data_url,
     observacoes: malote.observacoes ?? "",
   };
 }
@@ -217,12 +169,12 @@ function emptyDeliveryForm(malote?: Malote | null): DeliveryForm {
   return {
     entregue_para: malote?.destinatario ?? "",
     entregue_em: toDateTimeLocal(),
+    assinatura_entrega_data_url: null,
     entrega_observacoes: "",
-    assinatura_data_url: null,
   };
 }
 
-function emptyEnvioForm(): EnvioForm {
+function emptyShipmentForm(): ShipmentForm {
   return {
     categoria: "malote_interno",
     remetente: "",
@@ -236,92 +188,46 @@ function emptyEnvioForm(): EnvioForm {
   };
 }
 
-function envioCategoryLabel(category: EnvioCategoria) {
-  return ({
-    correios: "Correios",
-    juridico: "Jurídico",
-    malote_interno: "Malote interno",
-    outro: "Outro",
-  })[category];
+function shipmentCategoryLabel(category: EnvioCategoria) {
+  return ({ correios: "Correios", juridico: "Jurídico", malote_interno: "Malote interno", outro: "Outro" })[category];
 }
 
 function MensageriaPage() {
   const [malotes, setMalotes] = useState<Malote[]>([]);
   const [envios, setEnvios] = useState<Envio[]>([]);
-  const [setores, setSetores] = useState<Setor[]>(FALLBACK_SECTORS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<MensageriaErrorInfo | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("operacao");
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("todos");
 
   const [receiptOpen, setReceiptOpen] = useState(false);
-  const [editingTarget, setEditingTarget] = useState<Malote | null>(null);
+  const [receiptTarget, setReceiptTarget] = useState<Malote | null>(null);
   const [receiptForm, setReceiptForm] = useState<ReceiptForm>(emptyReceiptForm());
   const [deliveryQueueOpen, setDeliveryQueueOpen] = useState(false);
   const [deliveryTarget, setDeliveryTarget] = useState<Malote | null>(null);
   const [deliveryForm, setDeliveryForm] = useState<DeliveryForm>(emptyDeliveryForm());
   const [detailsTarget, setDetailsTarget] = useState<Malote | null>(null);
   const [detailsSector, setDetailsSector] = useState("");
-  const [envioOpen, setEnvioOpen] = useState(false);
-  const [envioForm, setEnvioForm] = useState<EnvioForm>(emptyEnvioForm());
+  const [shipmentOpen, setShipmentOpen] = useState(false);
+  const [shipmentForm, setShipmentForm] = useState<ShipmentForm>(emptyShipmentForm());
   const [importOpen, setImportOpen] = useState(false);
-  const [importFileName, setImportFileName] = useState("");
-  const [importPreview, setImportPreview] = useState<MensageriaSpreadsheetImport | null>(null);
   const [importReading, setImportReading] = useState(false);
-
-  const reportActionError = (error: unknown, fallback: string) => {
-    const issue = describeMensageriaError(error);
-    if (["schema", "permission", "session"].includes(issue.kind)) {
-      setLoadError(issue);
-      setMalotes([]);
-      setEnvios([]);
-    }
-    toast.error(issue.kind === "unknown" ? fallback : issue.message);
-  };
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
-    setLoadError(null);
+    setLocalError(null);
     try {
-      const [malotesResult, setoresResult, enviosResult] = await Promise.all([
-        (supabase as any)
-          .from("mensageria_malotes")
-          .select("*")
-          .order("recebido_em", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false }),
-        (supabase as any)
-          .from("mensageria_setores")
-          .select("*")
-          .eq("ativo", true)
-          .order("nome", { ascending: true }),
-        (supabase as any)
-          .from("mensageria_envios")
-          .select("*")
-          .order("enviado_em", { ascending: false, nullsFirst: false })
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (malotesResult.error) throw malotesResult.error;
-      if (setoresResult.error) throw setoresResult.error;
-      if (enviosResult.error) throw enviosResult.error;
-      setMalotes((malotesResult.data ?? []) as Malote[]);
-      setEnvios((enviosResult.data ?? []) as Envio[]);
-
-      if (setoresResult.data?.length) {
-        setSetores(setoresResult.data as Setor[]);
-      } else {
-        setSetores(FALLBACK_SECTORS);
-      }
+      const snapshot = await loadMensageriaSnapshot();
+      setMalotes(snapshot.malotes);
+      setEnvios(snapshot.envios);
     } catch (error) {
-      console.error("Erro ao carregar mensageria:", error);
-      const issue = describeMensageriaError(error);
-      setMalotes([]);
-      setEnvios([]);
-      setSetores(FALLBACK_SECTORS);
-      setLoadError(issue);
-      toast.error(issue.title, { description: issue.message });
+      console.error("Erro no armazenamento local da Mensageria:", error);
+      const message = error instanceof Error ? error.message : "Não foi possível carregar o armazenamento local.";
+      setLocalError(message);
+      toast.error("Falha ao abrir a Mensageria local.", { description: message });
     } finally {
       setLoading(false);
     }
@@ -331,211 +237,59 @@ function MensageriaPage() {
     void loadData();
   }, [loadData]);
 
-  const sectorMap = useMemo(() => new Map(setores.map((sector) => [sector.nome, sector])), [setores]);
-  const backendReady = !loading && loadError === null;
+  const sectors = MENSAGERIA_SECTORS;
+  const sectorMap = useMemo(() => new Map(sectors.map((item) => [item.nome, item])), [sectors]);
   const pending = useMemo(() => malotes.filter((item) => item.status === "aguardando_entrega"), [malotes]);
   const delivered = useMemo(() => malotes.filter((item) => item.status === "entregue"), [malotes]);
   const activeShipments = useMemo(() => envios.filter((item) => item.status === "preparando" || item.status === "enviado"), [envios]);
 
   const stats = useMemo(() => ({
-    recebidosHoje: malotes.filter((item) => isToday(item.recebido_em)).length,
-    pendentes: pending.length,
-    entreguesHoje: delivered.filter((item) => isToday(item.entregue_em)).length,
-    atrasados: pending.filter((item) => ageInDays(item.recebido_em) >= 3).length,
-    assinados: delivered.filter((item) => Boolean(item.assinatura_data_url)).length,
-    setoresPendentes: new Set(pending.map((item) => item.setor)).size,
-    enviosAtivos: activeShipments.length,
+    receivedToday: malotes.filter((item) => isToday(item.recebido_em)).length,
+    pending: pending.length,
+    deliveredToday: delivered.filter((item) => isToday(item.entregue_em)).length,
+    overdue: pending.filter((item) => ageInDays(item.recebido_em) >= 3).length,
+    signed: delivered.filter((item) => Boolean(item.assinatura_entrega_data_url)).length,
+    sectorsPending: new Set(pending.map((item) => item.setor)).size,
+    shipments: activeShipments.length,
   }), [activeShipments, delivered, malotes, pending]);
 
-  const oldestPending = useMemo(() => {
-    return [...pending].sort((a, b) => {
-      const av = a.recebido_em ? new Date(a.recebido_em).getTime() : Number.MAX_SAFE_INTEGER;
-      const bv = b.recebido_em ? new Date(b.recebido_em).getTime() : Number.MAX_SAFE_INTEGER;
-      return av - bv;
-    })[0] ?? null;
-  }, [pending]);
-
-  const visible = useMemo(() => {
+  const visibleMalotes = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
-    return malotes.filter((malote) => {
-      if (sectorFilter !== "todos" && malote.setor !== sectorFilter) return false;
-      if (view === "pendentes" && malote.status !== "aguardando_entrega") return false;
-      if (view === "entregues" && malote.status !== "entregue") return false;
+    return malotes.filter((item) => {
+      if (sectorFilter !== "todos" && item.setor !== sectorFilter) return false;
+      if (view === "pendentes" && item.status !== "aguardando_entrega") return false;
+      if (view === "entregues" && item.status !== "entregue") return false;
       if (!term) return true;
-      return [
-        malote.remetente,
-        malote.destinatario,
-        malote.codigo_rastreio,
-        malote.codigo_interno,
-        malote.item_descricao,
-        malote.setor,
-        malote.recebido_por,
-        malote.entregue_para,
-      ].some((value) => value?.toLocaleLowerCase("pt-BR").includes(term));
+      return [item.remetente, item.destinatario, item.codigo_rastreio, item.codigo_interno, item.item_descricao, item.setor, item.recebido_por, item.entregue_para]
+        .some((value) => value?.toLocaleLowerCase("pt-BR").includes(term));
     });
   }, [malotes, search, sectorFilter, view]);
 
-  const visibleEnvios = useMemo(() => {
+  const visibleShipments = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("pt-BR");
     if (!term) return envios;
-    return envios.filter((envio) => [
-      envio.remetente,
-      envio.destinatario,
-      envio.codigo_rastreio,
-      envio.item_descricao,
-      envio.nota_fiscal,
-      envio.enviado_por,
-      envio.status,
-      envioCategoryLabel(envio.categoria),
-    ].some((value) => value?.toLocaleLowerCase("pt-BR").includes(term)));
+    return envios.filter((item) => [item.remetente, item.destinatario, item.codigo_rastreio, item.item_descricao, item.nota_fiscal, item.enviado_por, item.status]
+      .some((value) => value?.toLocaleLowerCase("pt-BR").includes(term)));
   }, [envios, search]);
 
   const groupedPending = useMemo(() => {
     const groups = new Map<string, Malote[]>();
-    for (const malote of pending) {
-      const current = groups.get(malote.setor) ?? [];
-      current.push(malote);
-      groups.set(malote.setor, current);
-    }
-    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, "pt-BR"));
+    pending.forEach((item) => groups.set(item.setor, [...(groups.get(item.setor) ?? []), item]));
+    return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right, "pt-BR"));
   }, [pending]);
 
-  const openNewReceipt = () => {
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para novos registros.");
-    setEditingTarget(null);
-    setReceiptForm(emptyReceiptForm());
-    setReceiptOpen(true);
-  };
-
-  const openEditReceipt = (malote: Malote) => {
-    if (malote.status === "entregue") {
-      toast.info("Protocolos entregues ficam bloqueados para preservar a rastreabilidade.");
-      return;
-    }
-    setEditingTarget(malote);
-    setReceiptForm(receiptFormFromMalote(malote));
-    setDetailsTarget(null);
-    setReceiptOpen(true);
-  };
-
-  const handleSaveReceipt = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para salvar o protocolo.");
-    const quantidade = Number.parseInt(receiptForm.quantidade, 10);
-    if (!receiptForm.remetente.trim() || !receiptForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
-    if (!receiptForm.recebido_por.trim()) return void toast.error("Informe quem recebeu o malote na portaria.");
-    if (!receiptForm.recebido_em) return void toast.error("Informe a data e hora do recebimento.");
-    if (!Number.isFinite(quantidade) || quantidade < 1) return void toast.error("Informe uma quantidade válida.");
-
-    let recebidoEm: string;
-    try {
-      recebidoEm = toIso(receiptForm.recebido_em);
-    } catch {
-      return void toast.error("Informe uma data e hora de recebimento válidas.");
-    }
-
-    const payload = {
-      remetente: receiptForm.remetente.trim(),
-      destinatario: receiptForm.destinatario.trim(),
-      codigo_rastreio: receiptForm.codigo_rastreio.trim() || null,
-      codigo_interno: receiptForm.codigo_interno.trim() || null,
-      item_descricao: receiptForm.item_descricao.trim() || null,
-      local_recebimento: receiptForm.local_recebimento.trim() || "Portaria",
-      quantidade,
-      setor: receiptForm.setor || "NÃO CLASSIFICADO",
-      recebido_em: recebidoEm,
-      recebido_por: receiptForm.recebido_por.trim(),
-      observacoes: receiptForm.observacoes.trim() || null,
-      legacy_import: false,
-    };
-
-    setSaving(true);
-    try {
-      if (editingTarget) {
-        const { data, error } = await (supabase as any)
-          .from("mensageria_malotes")
-          .update(payload)
-          .eq("id", editingTarget.id)
-          .eq("status", "aguardando_entrega")
-          .select("id")
-          .maybeSingle();
-        if (error) throw error;
-        if (!data) throw new Error("Registro não alterado. Ele pode já ter sido entregue.");
-        toast.success("Protocolo de recebimento atualizado.");
-      } else {
-        const { error } = await (supabase as any)
-          .from("mensageria_malotes")
-          .insert({ ...payload, status: "aguardando_entrega" });
-        if (error) throw error;
-        toast.success("Recebimento registrado e incluído na fila de entrega.");
-      }
-      setReceiptOpen(false);
-      setEditingTarget(null);
-      setReceiptForm(emptyReceiptForm());
-      setView("pendentes");
-      await loadData();
-    } catch (error) {
-      console.error("Erro ao salvar recebimento:", error);
-      reportActionError(error, "Não foi possível salvar o recebimento.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const openDelivery = (malote: Malote) => {
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar a entrega.");
     setDeliveryQueueOpen(false);
+    setDetailsTarget(null);
     setDeliveryTarget(malote);
     setDeliveryForm(emptyDeliveryForm(malote));
   };
 
-  const handleDelivery = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!deliveryTarget) return;
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar a entrega.");
-    if (!deliveryForm.entregue_para.trim()) return void toast.error("Informe o nome de quem recebeu a entrega.");
-    if (!deliveryForm.entregue_em) return void toast.error("Informe a data e hora da entrega.");
-    if (!deliveryForm.assinatura_data_url) return void toast.error("A assinatura digital é obrigatória para concluir a entrega.");
-
-    let deliveryIso: string;
-    try {
-      deliveryIso = toIso(deliveryForm.entregue_em);
-    } catch {
-      return void toast.error("Informe uma data e hora de entrega válidas.");
-    }
-    if (deliveryTarget.recebido_em && new Date(deliveryIso).getTime() < new Date(deliveryTarget.recebido_em).getTime()) {
-      return void toast.error("A data da entrega não pode ser anterior ao recebimento na portaria.");
-    }
-
-    setSaving(true);
-    try {
-      const { data, error } = await (supabase as any)
-        .from("mensageria_malotes")
-        .update({
-          status: "entregue",
-          entregue_em: deliveryIso,
-          entregue_para: deliveryForm.entregue_para.trim(),
-          assinatura_data_url: deliveryForm.assinatura_data_url,
-          entrega_observacoes: deliveryForm.entrega_observacoes.trim() || null,
-        })
-        .eq("id", deliveryTarget.id)
-        .eq("status", "aguardando_entrega")
-        .select("id")
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("O malote já foi entregue ou não pôde ser atualizado.");
-
-      toast.success("Entrega concluída com assinatura digital e protocolo atualizado.");
-      setDeliveryTarget(null);
-      setDeliveryForm(emptyDeliveryForm());
-      setView("entregues");
-      await loadData();
-    } catch (error) {
-      console.error("Erro ao concluir entrega:", error);
-      reportActionError(error, "Não foi possível concluir a entrega.");
-    } finally {
-      setSaving(false);
-    }
+  const openEditReceipt = (malote: Malote) => {
+    setDetailsTarget(null);
+    setReceiptTarget(malote);
+    setReceiptForm(receiptFormFromMalote(malote));
+    setReceiptOpen(true);
   };
 
   const openDetails = (malote: Malote) => {
@@ -543,740 +297,376 @@ function MensageriaPage() {
     setDetailsSector(malote.setor);
   };
 
+  const handleReceipt = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const quantity = Number.parseInt(receiptForm.quantidade, 10);
+    if (!receiptForm.remetente.trim() || !receiptForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
+    if (!receiptForm.recebido_por.trim()) return void toast.error("Informe quem recebeu o malote na portaria.");
+    if (!receiptForm.assinatura_portaria_data_url) return void toast.error("Colete a assinatura de recebimento na portaria.");
+    if (!Number.isFinite(quantity) || quantity < 1) return void toast.error("Informe uma quantidade válida.");
+    let receivedAt: string;
+    try { receivedAt = toIso(receiptForm.recebido_em); } catch { return void toast.error("Informe uma data de recebimento válida."); }
+
+    const now = new Date().toISOString();
+    const malote: Malote = {
+      ...(receiptTarget ?? {
+        id: createId("malote"),
+        status: "aguardando_entrega" as const,
+        entregue_em: null,
+        entregue_para: null,
+        assinatura_entrega_data_url: null,
+        entrega_observacoes: null,
+        legacy_import: false,
+        source_key: null,
+        legacy_source: null,
+        legacy_source_row: null,
+        created_at: now,
+      }),
+      remetente: receiptForm.remetente.trim(),
+      destinatario: receiptForm.destinatario.trim(),
+      codigo_rastreio: receiptForm.codigo_rastreio.trim() || null,
+      codigo_interno: receiptForm.codigo_interno.trim() || null,
+      item_descricao: receiptForm.item_descricao.trim() || null,
+      local_recebimento: receiptForm.local_recebimento.trim() || "Portaria",
+      quantidade: quantity,
+      setor: receiptForm.setor,
+      recebido_em: receivedAt,
+      recebido_por: receiptForm.recebido_por.trim(),
+      assinatura_portaria_data_url: receiptForm.assinatura_portaria_data_url,
+      observacoes: receiptForm.observacoes.trim() || null,
+      updated_at: now,
+    };
+    setSaving(true);
+    try {
+      await saveLocalMalote(malote);
+      await loadData();
+      setReceiptOpen(false);
+      setReceiptTarget(null);
+      setReceiptForm(emptyReceiptForm());
+      setView("pendentes");
+      toast.success(receiptTarget ? "Protocolo de entrada atualizado." : "Recebimento registrado com assinatura da portaria.");
+    } catch (error) {
+      console.error("Erro ao salvar recebimento local:", error);
+      toast.error("Não foi possível salvar o recebimento neste dispositivo.");
+    } finally { setSaving(false); }
+  };
+
+  const handleDelivery = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!deliveryTarget) return;
+    if (!deliveryForm.entregue_para.trim()) return void toast.error("Informe quem recebeu o malote.");
+    if (!deliveryForm.assinatura_entrega_data_url) return void toast.error("A assinatura digital do destinatário é obrigatória.");
+    let deliveredAt: string;
+    try { deliveredAt = toIso(deliveryForm.entregue_em); } catch { return void toast.error("Informe uma data de entrega válida."); }
+    if (deliveryTarget.recebido_em && new Date(deliveredAt).getTime() < new Date(deliveryTarget.recebido_em).getTime()) {
+      return void toast.error("A entrega não pode ocorrer antes do recebimento na portaria.");
+    }
+    setSaving(true);
+    try {
+      await saveLocalMalote({
+        ...deliveryTarget,
+        status: "entregue",
+        entregue_em: deliveredAt,
+        entregue_para: deliveryForm.entregue_para.trim(),
+        assinatura_entrega_data_url: deliveryForm.assinatura_entrega_data_url,
+        entrega_observacoes: deliveryForm.entrega_observacoes.trim() || null,
+        updated_at: new Date().toISOString(),
+      });
+      await loadData();
+      setDeliveryTarget(null);
+      setDeliveryForm(emptyDeliveryForm());
+      setView("entregues");
+      toast.success("Entrega concluída com assinatura digital.");
+    } catch (error) {
+      console.error("Erro ao salvar entrega local:", error);
+      toast.error("Não foi possível salvar a entrega neste dispositivo.");
+    } finally { setSaving(false); }
+  };
+
   const updateSector = async () => {
     if (!detailsTarget || !detailsSector || detailsSector === detailsTarget.setor) return;
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para atualizar o setor.");
     setSaving(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from("mensageria_malotes")
-        .update({ setor: detailsSector })
-        .eq("id", detailsTarget.id)
-        .select("id")
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("Registro não atualizado.");
-      toast.success("Direcionamento do setor atualizado.");
-      setDetailsTarget({ ...detailsTarget, setor: detailsSector });
+      const updated = { ...detailsTarget, setor: detailsSector, updated_at: new Date().toISOString() };
+      await saveLocalMalote(updated);
       await loadData();
+      setDetailsTarget(updated);
+      toast.success("Direcionamento atualizado.");
     } catch (error) {
-      console.error("Erro ao atualizar setor:", error);
-      reportActionError(error, "Não foi possível atualizar o setor.");
-    } finally {
-      setSaving(false);
-    }
+      console.error("Erro ao atualizar setor local:", error);
+      toast.error("Não foi possível atualizar o direcionamento.");
+    } finally { setSaving(false); }
   };
 
-  const handleSaveEnvio = async (event: FormEvent<HTMLFormElement>) => {
+  const handleShipment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar o envio.");
-    if (!envioForm.remetente.trim() || !envioForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
-    if (!envioForm.enviado_em) return void toast.error("Informe a data e hora do envio.");
-    if (!envioForm.enviado_por.trim()) return void toast.error("Informe quem realizou o envio.");
-
-    let enviadoEm: string;
-    try {
-      enviadoEm = toIso(envioForm.enviado_em);
-    } catch {
-      return void toast.error("Informe uma data e hora de envio válidas.");
-    }
-
+    if (!shipmentForm.remetente.trim() || !shipmentForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
+    if (!shipmentForm.enviado_por.trim()) return void toast.error("Informe quem realizou o envio.");
+    let shippedAt: string;
+    try { shippedAt = toIso(shipmentForm.enviado_em); } catch { return void toast.error("Informe uma data de envio válida."); }
+    const now = new Date().toISOString();
+    const envio: Envio = {
+      id: createId("envio"),
+      categoria: shipmentForm.categoria,
+      remetente: shipmentForm.remetente.trim(),
+      destinatario: shipmentForm.destinatario.trim(),
+      codigo_rastreio: shipmentForm.codigo_rastreio.trim() || null,
+      item_descricao: shipmentForm.item_descricao.trim() || null,
+      nota_fiscal: shipmentForm.nota_fiscal.trim() || null,
+      enviado_em: shippedAt,
+      enviado_por: shipmentForm.enviado_por.trim(),
+      status: "enviado",
+      finalizado_em: null,
+      observacoes: shipmentForm.observacoes.trim() || null,
+      legacy_import: false,
+      source_key: null,
+      legacy_source: null,
+      legacy_source_row: null,
+      created_at: now,
+      updated_at: now,
+    };
     setSaving(true);
     try {
-      const { error } = await (supabase as any).from("mensageria_envios").insert({
-        categoria: envioForm.categoria,
-        remetente: envioForm.remetente.trim(),
-        destinatario: envioForm.destinatario.trim(),
-        codigo_rastreio: envioForm.codigo_rastreio.trim() || null,
-        item_descricao: envioForm.item_descricao.trim() || null,
-        nota_fiscal: envioForm.nota_fiscal.trim() || null,
-        enviado_em: enviadoEm,
-        enviado_por: envioForm.enviado_por.trim(),
-        status: "enviado",
-        observacoes: envioForm.observacoes.trim() || null,
-        legacy_import: false,
-      });
-      if (error) throw error;
-      toast.success("Envio registrado e incluído no acompanhamento.");
-      setEnvioOpen(false);
-      setEnvioForm(emptyEnvioForm());
+      await saveLocalEnvio(envio);
+      await loadData();
+      setShipmentOpen(false);
+      setShipmentForm(emptyShipmentForm());
       setView("envios");
-      await loadData();
+      toast.success("Envio registrado no acompanhamento local.");
     } catch (error) {
-      console.error("Erro ao registrar envio:", error);
-      reportActionError(error, "Não foi possível registrar o envio.");
-    } finally {
-      setSaving(false);
-    }
+      console.error("Erro ao salvar envio local:", error);
+      toast.error("Não foi possível salvar o envio neste dispositivo.");
+    } finally { setSaving(false); }
   };
 
-  const finalizeEnvio = async (envio: Envio) => {
-    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para finalizar o envio.");
+  const finalizeShipment = async (envio: Envio) => {
     setSaving(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from("mensageria_envios")
-        .update({ status: "finalizado", finalizado_em: new Date().toISOString() })
-        .eq("id", envio.id)
-        .in("status", ["preparando", "enviado"])
-        .select("id")
-        .maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("O envio já foi finalizado ou não pôde ser atualizado.");
-      toast.success("Envio finalizado com data de conclusão registrada.");
+      const now = new Date().toISOString();
+      await saveLocalEnvio({ ...envio, status: "finalizado", finalizado_em: now, updated_at: now });
       await loadData();
+      toast.success("Envio finalizado.");
     } catch (error) {
-      console.error("Erro ao finalizar envio:", error);
-      reportActionError(error, "Não foi possível finalizar o envio.");
-    } finally {
-      setSaving(false);
-    }
+      console.error("Erro ao finalizar envio local:", error);
+      toast.error("Não foi possível finalizar o envio.");
+    } finally { setSaving(false); }
   };
 
-  const handleSpreadsheetFile = async (event: ChangeEvent<HTMLInputElement>) => {
+  const readSpreadsheet = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setImportReading(true);
     setImportPreview(null);
-    setImportFileName(file.name);
     try {
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
       const sheets = Object.fromEntries(workbook.SheetNames.map((name) => [
         name.trim().toLocaleUpperCase("pt-BR"),
-        XLSX.utils.sheet_to_json<SpreadsheetCell[]>(workbook.Sheets[name], {
-          header: 1,
-          raw: true,
-          defval: null,
-        }) as SpreadsheetRows,
+        XLSX.utils.sheet_to_json<SpreadsheetCell[]>(workbook.Sheets[name], { header: 1, raw: true, defval: null }) as SpreadsheetRows,
       ]));
-      if (!sheets.ENTREGA) throw new Error("A aba ENTREGA não foi encontrada na planilha.");
-      const preview = parseMensageriaSpreadsheet(sheets);
-      if (!preview.malotes.length) throw new Error("A aba ENTREGA não contém registros para importar.");
-      setImportPreview(preview);
+      if (!sheets.ENTREGA) throw new Error("A aba ENTREGA não foi encontrada.");
+      const parsed = parseMensageriaSpreadsheet(sheets);
+      if (!parsed.malotes.length) throw new Error("Nenhum protocolo foi encontrado na aba ENTREGA.");
+      setImportPreview({ fileName: file.name, parsed, snapshot: mapSpreadsheetHistoryToLocal(parsed) });
     } catch (error) {
-      console.error("Erro ao ler planilha de Mensageria:", error);
-      toast.error(error instanceof Error ? error.message : "Não foi possível ler a planilha selecionada.");
+      console.error("Erro ao ler planilha:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível ler a planilha.");
     } finally {
       setImportReading(false);
       event.target.value = "";
     }
   };
 
-  const confirmSpreadsheetImport = async () => {
-    if (!importPreview || !backendReady) return;
+  const confirmImport = async () => {
+    if (!importPreview) return;
     setSaving(true);
     try {
-      const operations = [];
-      if (importPreview.malotes.length) {
-        operations.push((supabase as any)
-          .from("mensageria_malotes")
-          .upsert(importPreview.malotes, { onConflict: "legacy_source,legacy_source_row", ignoreDuplicates: true }));
-      }
-      if (importPreview.envios.length) {
-        operations.push((supabase as any)
-          .from("mensageria_envios")
-          .upsert(importPreview.envios, { onConflict: "legacy_source,legacy_source_row", ignoreDuplicates: true }));
-      }
-      const results = await Promise.all(operations);
-      const failure = results.find((result) => result.error)?.error;
-      if (failure) throw failure;
-      toast.success("Histórico importado sem duplicações.", {
-        description: `${importPreview.malotes.length} recebimentos/entregas e ${importPreview.envios.length} envios processados.`,
-      });
+      const result = await importLocalHistory(importPreview.snapshot.malotes, importPreview.snapshot.envios);
+      await loadData();
       setImportOpen(false);
       setImportPreview(null);
-      setImportFileName("");
-      await loadData();
+      toast.success("Planilha processada sem duplicações.", { description: `${result.malotes} malote(s) e ${result.envios} envio(s) novos adicionados.` });
     } catch (error) {
-      console.error("Erro ao importar histórico de Mensageria:", error);
-      reportActionError(error, "Não foi possível importar o histórico.");
-    } finally {
-      setSaving(false);
-    }
+      console.error("Erro ao importar planilha local:", error);
+      toast.error("Não foi possível importar a planilha neste dispositivo.");
+    } finally { setSaving(false); }
   };
 
   const exportWorkbook = () => {
-    if (!malotes.length && !envios.length) return void toast.info("Não há protocolos para exportar.");
     const workbook = XLSX.utils.book_new();
-    const rows = malotes.map((item) => ({
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(malotes.map((item) => ({
       Status: item.status === "entregue" ? "ENTREGUE" : "PENDENTE",
       Setor: item.setor,
       "Responsável do setor": sectorMap.get(item.setor)?.responsavel ?? "",
       Remetente: item.remetente,
       Destinatário: item.destinatario,
       "Código de rastreio": item.codigo_rastreio ?? "",
-      "Código Sherwin": item.codigo_interno ?? "",
+      "Código interno": item.codigo_interno ?? "",
       Item: item.item_descricao ?? "",
       Quantidade: item.quantidade,
-      "Data recebimento": item.recebido_em ? formatDateTime(item.recebido_em, item.legacy_import) : "",
+      "Data recebimento": formatDateTime(item.recebido_em, item.legacy_import),
       Local: item.local_recebimento,
-      "Recebido na portaria por": item.recebido_por,
-      "Data entrega": item.entregue_em ? formatDateTime(item.entregue_em, item.legacy_import) : "",
+      "Recebido por": item.recebido_por,
+      "Assinatura portaria": item.assinatura_portaria_data_url ? "SIM" : "NÃO DISPONÍVEL",
+      "Data entrega": formatDateTime(item.entregue_em, item.legacy_import),
       "Entregue para": item.entregue_para ?? "",
-      "Assinatura digital": item.assinatura_data_url ? "SIM" : item.legacy_import ? "NÃO DISPONÍVEL NO LEGADO" : "PENDENTE",
+      "Assinatura destinatário": item.assinatura_entrega_data_url ? "SIM" : "NÃO DISPONÍVEL",
       "Observações recebimento": item.observacoes ?? "",
       "Observações entrega": item.entrega_observacoes ?? "",
-    }));
-    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Controle de Malotes");
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(envios.map((item) => ({
-        Status: item.status.toLocaleUpperCase("pt-BR"),
-        Categoria: envioCategoryLabel(item.categoria),
-        Remetente: item.remetente,
-        Destinatário: item.destinatario,
-        "Código de rastreio": item.codigo_rastreio ?? "",
-        Item: item.item_descricao ?? "",
-        "Nota fiscal": item.nota_fiscal ?? "",
-        "Data envio": item.enviado_em ? formatDateTime(item.enviado_em, item.legacy_import) : "",
-        "Enviado por": item.enviado_por ?? "",
-        "Data conclusão": item.finalizado_em ? formatDateTime(item.finalizado_em, item.legacy_import) : "",
-        Observações: item.observacoes ?? "",
-      }))),
-      "Envios",
-    );
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.json_to_sheet(setores.map((item) => ({ Setor: item.nome, Responsável: item.responsavel ?? "" }))),
-      "Setores",
-    );
-    XLSX.writeFile(workbook, `mensageria-malotes-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast.success("Planilha operacional exportada.");
+    }))), "Malotes");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(envios.map((item) => ({
+      Status: item.status.toLocaleUpperCase("pt-BR"), Categoria: shipmentCategoryLabel(item.categoria), Remetente: item.remetente,
+      Destinatário: item.destinatario, "Código de rastreio": item.codigo_rastreio ?? "", Item: item.item_descricao ?? "",
+      "Nota fiscal": item.nota_fiscal ?? "", "Data envio": formatDateTime(item.enviado_em, item.legacy_import),
+      "Enviado por": item.enviado_por ?? "", "Data conclusão": formatDateTime(item.finalizado_em, item.legacy_import), Observações: item.observacoes ?? "",
+    }))), "Envios");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(sectors.map((item) => ({ Setor: item.nome, Responsável: item.responsavel }))), "Setores");
+    XLSX.writeFile(workbook, `mensageria-backup-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success("Backup Excel exportado.");
   };
 
   return (
     <PageShell
       title="Mensageria e Malotes"
-      description="Recebimento na portaria, triagem por setor, entrega ao destinatário e comprovação por assinatura digital."
-      actions={
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2" disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para importar." : undefined}>
-            <Upload className="h-4 w-4" /> Importar histórico
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2" disabled={!backendReady || (!malotes.length && !envios.length)} title={!backendReady ? "Aguarde a conexão com a base de Mensageria." : undefined}>
-            <Download className="h-4 w-4" /> Exportar
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => { setEnvioForm(emptyEnvioForm()); setEnvioOpen(true); }} className="gap-2" disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para novos envios." : undefined}>
-            <Send className="h-4 w-4" /> Novo envio
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!backendReady || !pending.length} title={!backendReady ? "A base de Mensageria precisa estar disponível para registrar entregas." : undefined}>
-            Registrar entrega{pending.length ? ` (${pending.length})` : ""}
-          </Button>
-          <Button type="button" size="sm" onClick={openNewReceipt} disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para novos registros." : undefined}>Novo recebimento</Button>
-        </div>
-      }
+      description="Protocolo único da entrada na portaria até a entrega ao destinatário, com duas assinaturas e controle por setor."
+      actions={<div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4" /> Importar Excel</Button>
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={exportWorkbook} disabled={!malotes.length && !envios.length}><Download className="h-4 w-4" /> Exportar backup</Button>
+        <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => { setShipmentForm(emptyShipmentForm()); setShipmentOpen(true); }}><Send className="h-4 w-4" /> Novo envio</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!pending.length}>Registrar entrega{pending.length ? ` (${pending.length})` : ""}</Button>
+        <Button type="button" size="sm" onClick={() => { setReceiptTarget(null); setReceiptForm(emptyReceiptForm()); setReceiptOpen(true); }}>Novo recebimento</Button>
+      </div>}
     >
       <div className="space-y-5">
-        <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
-          <div className="grid divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-6">
-            <Kpi label="Recebidos hoje" value={stats.recebidosHoje} detail="Entradas registradas" />
-            <Kpi label="Aguardando entrega" value={stats.pendentes} detail={`${stats.setoresPendentes} setores envolvidos`} critical={stats.pendentes > 0} />
-            <Kpi label="Entregues hoje" value={stats.entreguesHoje} detail="Protocolos concluídos" />
-            <Kpi label="Há 3+ dias" value={stats.atrasados} detail="Pendências que exigem atenção" critical={stats.atrasados > 0} />
-            <Kpi label="Com assinatura" value={stats.assinados} detail="Comprovações digitais" />
-            <Kpi label="Envios ativos" value={stats.enviosAtivos} detail="Em acompanhamento" critical={stats.enviosAtivos > 0} />
-          </div>
+        <section className="flex flex-col gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500"><HardDrive className="h-5 w-5" /></span><div><p className="font-semibold text-foreground">Armazenamento local ativo</p><p className="mt-1 text-sm text-muted-foreground">Os dados e assinaturas ficam neste navegador. Exporte o backup para guardar ou mover o histórico para outro dispositivo.</p></div></div>
+          <Badge variant="outline" className="w-fit border-emerald-500/30 text-emerald-600 dark:text-emerald-300">Sem dependência do Supabase</Badge>
         </section>
 
-        {loadError && (
-          <section role="alert" aria-live="polite" className="overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-card/80 to-card shadow-sm">
-            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex min-w-0 gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-300">
-                  <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-semibold text-foreground">{loadError.title}</p>
-                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{loadError.message}</p>
-                  <p className="mt-2 text-xs font-medium text-muted-foreground">Referência técnica: {loadError.reference}</p>
-                </div>
-              </div>
-              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => void loadData()}>
-                Verificar novamente
-              </Button>
-            </div>
-          </section>
-        )}
-
-        <section className="rounded-2xl border border-border/70 bg-card/50 p-2 shadow-sm">
-          <div className="flex flex-wrap gap-1">
-            <ViewButton active={view === "operacao"} onClick={() => setView("operacao")}>Operação</ViewButton>
-            <ViewButton active={view === "recebimentos"} onClick={() => setView("recebimentos")}>Recebimentos ({malotes.length})</ViewButton>
-            <ViewButton active={view === "pendentes"} onClick={() => setView("pendentes")}>Pendentes ({pending.length})</ViewButton>
-            <ViewButton active={view === "entregues"} onClick={() => setView("entregues")}>Entregues ({delivered.length})</ViewButton>
-            <ViewButton active={view === "envios"} onClick={() => setView("envios")}>Envios ({envios.length})</ViewButton>
-            <ViewButton active={view === "setores"} onClick={() => setView("setores")}>Setores e direcionamentos</ViewButton>
-          </div>
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
+          <Kpi label="Recebidos hoje" value={stats.receivedToday} detail="Entradas registradas" />
+          <Kpi label="Aguardando entrega" value={stats.pending} detail={`${stats.sectorsPending} setores envolvidos`} critical={stats.pending > 0} />
+          <Kpi label="Entregues hoje" value={stats.deliveredToday} detail="Protocolos concluídos" />
+          <Kpi label="Há 3+ dias" value={stats.overdue} detail="Pendências prioritárias" critical={stats.overdue > 0} />
+          <Kpi label="Assinaturas finais" value={stats.signed} detail="Comprovações digitais" />
+          <Kpi label="Envios ativos" value={stats.shipments} detail="Em acompanhamento" />
         </section>
+
+        {localError && <section role="alert" className="flex flex-col gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" /><div><p className="font-semibold text-foreground">Armazenamento local indisponível</p><p className="mt-1 text-sm text-muted-foreground">{localError}</p></div></div><Button type="button" variant="outline" size="sm" onClick={() => void loadData()}>Tentar novamente</Button></section>}
+
+        <section className="rounded-2xl border border-border/70 bg-card/50 p-2 shadow-sm"><div className="flex flex-wrap gap-1">
+          <ViewButton active={view === "operacao"} onClick={() => setView("operacao")}>Operação</ViewButton>
+          <ViewButton active={view === "todos"} onClick={() => setView("todos")}>Todos ({malotes.length})</ViewButton>
+          <ViewButton active={view === "pendentes"} onClick={() => setView("pendentes")}>Pendentes ({pending.length})</ViewButton>
+          <ViewButton active={view === "entregues"} onClick={() => setView("entregues")}>Entregues ({delivered.length})</ViewButton>
+          <ViewButton active={view === "envios"} onClick={() => setView("envios")}>Envios ({envios.length})</ViewButton>
+          <ViewButton active={view === "setores"} onClick={() => setView("setores")}>Setores</ViewButton>
+        </div></section>
 
         {view === "operacao" ? (
-          <OperationalOverview
-            pending={pending}
-            oldestPending={oldestPending}
-            groupedPending={groupedPending}
-            sectorMap={sectorMap}
-            onDeliver={openDelivery}
-            onDetails={openDetails}
-            onSeePending={() => setView("pendentes")}
-          />
+          <OperationalOverview pending={pending} grouped={groupedPending} sectorMap={sectorMap} onDeliver={openDelivery} onDetails={openDetails} onSeeAll={() => setView("pendentes")} />
         ) : view === "setores" ? (
-          <SectorOverview setores={setores} malotes={malotes} />
+          <SectorGrid sectors={sectors} malotes={malotes} />
         ) : view === "envios" ? (
-          <>
-            <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Buscar remetente, destinatário, rastreio, nota fiscal ou status"
-                  className="h-11 pl-9"
-                />
-              </div>
-            </section>
-            {loading ? <LoadingState /> : <ShipmentOverview envios={visibleEnvios} saving={saving} onFinalize={finalizeEnvio} />}
-          </>
+          <><SearchBox value={search} onChange={setSearch} placeholder="Buscar remetente, destinatário, rastreio, NF ou status" />{loading ? <LoadingState /> : <ShipmentList envios={visibleShipments} saving={saving} onFinalize={finalizeShipment} />}</>
         ) : (
-          <>
-            <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm">
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={search}
-                    onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Buscar remetente, destinatário, rastreio, código Sherwin ou recebedor"
-                    className="h-11 pl-9"
-                  />
-                </div>
-                <select
-                  value={sectorFilter}
-                  onChange={(event) => setSectorFilter(event.target.value)}
-                  className="h-11 rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-                  aria-label="Filtrar por setor"
-                >
-                  <option value="todos">Todos os setores</option>
-                  {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}</option>)}
-                </select>
-              </div>
-            </section>
-
-            {loading ? (
-              <LoadingState />
-            ) : visible.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
-                <div className="hidden grid-cols-[1.4fr_1.4fr_1fr_1fr_140px] gap-3 border-b border-border/70 bg-muted/30 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid">
-                  <span>Remetente → destinatário</span><span>Setor</span><span>Recebimento</span><span>Referências</span><span className="text-right">Ações</span>
-                </div>
-                <div className="divide-y divide-border/60">
-                  {visible.map((malote) => (
-                    <ProtocolRow
-                      key={malote.id}
-                      malote={malote}
-                      sector={sectorMap.get(malote.setor)}
-                      onDeliver={() => openDelivery(malote)}
-                      onDetails={() => openDetails(malote)}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
-          </>
+          <><SearchBox value={search} onChange={setSearch} placeholder="Buscar remetente, destinatário, rastreio, código interno ou recebedor" sectors={sectors} sectorFilter={sectorFilter} onSectorChange={setSectorFilter} />{loading ? <LoadingState /> : <ProtocolList malotes={visibleMalotes} sectorMap={sectorMap} onDeliver={openDelivery} onDetails={openDetails} />}</>
         )}
       </div>
 
-      <Dialog open={receiptOpen} onOpenChange={setReceiptOpen}>
-        <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingTarget ? "Editar protocolo de recebimento" : "Novo recebimento na portaria"}</DialogTitle>
-            <DialogDescription>
-              Registre a entrada uma única vez. Depois, o mesmo protocolo seguirá para a fila de entrega e assinatura do destinatário final.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSaveReceipt} className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Remetente" required><Input value={receiptForm.remetente} onChange={(e) => setReceiptForm((p) => ({ ...p, remetente: e.target.value }))} /></Field>
-              <Field label="Destinatário" required><Input value={receiptForm.destinatario} onChange={(e) => setReceiptForm((p) => ({ ...p, destinatario: e.target.value }))} /></Field>
-              <Field label="Código de rastreio"><Input value={receiptForm.codigo_rastreio} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_rastreio: e.target.value }))} placeholder="Ex.: OY123456789BR" /></Field>
-              <Field label="Código interno Sherwin"><Input value={receiptForm.codigo_interno} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_interno: e.target.value }))} placeholder="Ex.: SW-28082601" /></Field>
-              <Field label="Item / descrição"><Input value={receiptForm.item_descricao} onChange={(e) => setReceiptForm((p) => ({ ...p, item_descricao: e.target.value }))} /></Field>
-              <Field label="Quantidade" required><Input type="number" min={1} max={9999} value={receiptForm.quantidade} onChange={(e) => setReceiptForm((p) => ({ ...p, quantidade: e.target.value }))} /></Field>
-              <Field label="Setor" required>
-                <select value={receiptForm.setor} onChange={(e) => setReceiptForm((p) => ({ ...p, setor: e.target.value }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}</option>)}
-                </select>
-              </Field>
-              <Field label="Local de recebimento" required><Input value={receiptForm.local_recebimento} onChange={(e) => setReceiptForm((p) => ({ ...p, local_recebimento: e.target.value }))} /></Field>
-              <Field label="Data e hora do recebimento" required><Input type="datetime-local" value={receiptForm.recebido_em} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_em: e.target.value }))} /></Field>
-              <Field label="Recebido na portaria por" required><Input value={receiptForm.recebido_por} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_por: e.target.value }))} /></Field>
-            </div>
-            <Field label="Observações"><textarea value={receiptForm.observacoes} onChange={(e) => setReceiptForm((p) => ({ ...p, observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setReceiptOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saving || !backendReady}>{saving ? "Salvando..." : editingTarget ? "Salvar alterações" : "Registrar recebimento"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <Dialog open={receiptOpen} onOpenChange={(open) => { setReceiptOpen(open); if (!open) setReceiptTarget(null); }}><DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto"><DialogHeader><DialogTitle>{receiptTarget ? "Editar protocolo de entrada" : "Novo recebimento na portaria"}</DialogTitle><DialogDescription>{receiptTarget ? "Atualize os dados registrados e preserve a rastreabilidade do protocolo." : "Crie o protocolo inicial, identifique o setor e colete a primeira assinatura."}</DialogDescription></DialogHeader><form onSubmit={handleReceipt} className="space-y-5">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Remetente" required><Input value={receiptForm.remetente} onChange={(e) => setReceiptForm((p) => ({ ...p, remetente: e.target.value }))} /></Field>
+          <Field label="Destinatário final" required><Input value={receiptForm.destinatario} onChange={(e) => setReceiptForm((p) => ({ ...p, destinatario: e.target.value }))} /></Field>
+          <Field label="Código de rastreio"><Input value={receiptForm.codigo_rastreio} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_rastreio: e.target.value }))} /></Field>
+          <Field label="Código interno"><Input value={receiptForm.codigo_interno} onChange={(e) => setReceiptForm((p) => ({ ...p, codigo_interno: e.target.value }))} /></Field>
+          <Field label="Item / descrição"><Input value={receiptForm.item_descricao} onChange={(e) => setReceiptForm((p) => ({ ...p, item_descricao: e.target.value }))} /></Field>
+          <Field label="Quantidade" required><Input type="number" min={1} max={9999} value={receiptForm.quantidade} onChange={(e) => setReceiptForm((p) => ({ ...p, quantidade: e.target.value }))} /></Field>
+          <Field label="Setor" required><SectorSelect value={receiptForm.setor} onChange={(value) => setReceiptForm((p) => ({ ...p, setor: value }))} sectors={sectors} /></Field>
+          <Field label="Local de recebimento" required><Input value={receiptForm.local_recebimento} onChange={(e) => setReceiptForm((p) => ({ ...p, local_recebimento: e.target.value }))} /></Field>
+          <Field label="Data e hora do recebimento" required><Input type="datetime-local" value={receiptForm.recebido_em} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_em: e.target.value }))} /></Field>
+          <Field label="Recebido na portaria por" required><Input value={receiptForm.recebido_por} onChange={(e) => setReceiptForm((p) => ({ ...p, recebido_por: e.target.value }))} /></Field>
+        </div>
+        <SignaturePad value={receiptForm.assinatura_portaria_data_url} onChange={(value) => setReceiptForm((p) => ({ ...p, assinatura_portaria_data_url: value }))} disabled={saving} />
+        <Field label="Observações do recebimento"><textarea rows={3} value={receiptForm.observacoes} onChange={(e) => setReceiptForm((p) => ({ ...p, observacoes: e.target.value }))} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
+        <DialogFooter><Button type="button" variant="ghost" onClick={() => setReceiptOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving || !receiptForm.assinatura_portaria_data_url}>{saving ? "Salvando..." : receiptTarget ? "Salvar alterações" : "Registrar recebimento"}</Button></DialogFooter>
+      </form></DialogContent></Dialog>
 
-      <Dialog open={envioOpen} onOpenChange={setEnvioOpen}>
-        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Novo envio</DialogTitle>
-            <DialogDescription>Registre a saída para acompanhar o objeto até a conclusão, com rastreio e responsável.</DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSaveEnvio} className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Categoria" required>
-                <select value={envioForm.categoria} onChange={(event) => setEnvioForm((current) => ({ ...current, categoria: event.target.value as EnvioCategoria }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  <option value="malote_interno">Malote interno</option>
-                  <option value="correios">Correios</option>
-                  <option value="juridico">Jurídico</option>
-                  <option value="outro">Outro</option>
-                </select>
-              </Field>
-              <Field label="Código de rastreio"><Input value={envioForm.codigo_rastreio} onChange={(event) => setEnvioForm((current) => ({ ...current, codigo_rastreio: event.target.value }))} placeholder="Ex.: OY123456789BR" /></Field>
-              <Field label="Remetente" required><Input value={envioForm.remetente} onChange={(event) => setEnvioForm((current) => ({ ...current, remetente: event.target.value }))} /></Field>
-              <Field label="Destinatário" required><Input value={envioForm.destinatario} onChange={(event) => setEnvioForm((current) => ({ ...current, destinatario: event.target.value }))} /></Field>
-              <Field label="Item / descrição"><Input value={envioForm.item_descricao} onChange={(event) => setEnvioForm((current) => ({ ...current, item_descricao: event.target.value }))} /></Field>
-              <Field label="Nota fiscal"><Input value={envioForm.nota_fiscal} onChange={(event) => setEnvioForm((current) => ({ ...current, nota_fiscal: event.target.value }))} /></Field>
-              <Field label="Data e hora do envio" required><Input type="datetime-local" value={envioForm.enviado_em} onChange={(event) => setEnvioForm((current) => ({ ...current, enviado_em: event.target.value }))} /></Field>
-              <Field label="Enviado por" required><Input value={envioForm.enviado_por} onChange={(event) => setEnvioForm((current) => ({ ...current, enviado_por: event.target.value }))} /></Field>
-            </div>
-            <Field label="Observações"><textarea value={envioForm.observacoes} onChange={(event) => setEnvioForm((current) => ({ ...current, observacoes: event.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setEnvioOpen(false)}>Cancelar</Button>
-              <Button type="submit" disabled={saving || !backendReady}>{saving ? "Salvando..." : "Registrar envio"}</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <Dialog open={Boolean(deliveryTarget)} onOpenChange={(open) => { if (!open) setDeliveryTarget(null); }}><DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto"><DialogHeader><DialogTitle>{deliveryTarget?.status === "entregue" ? "Regularizar comprovante de entrega" : "Entrega ao destinatário"}</DialogTitle><DialogDescription>Informe a data real, confirme o recebedor e colete a assinatura digital final.</DialogDescription></DialogHeader>{deliveryTarget && <form onSubmit={handleDelivery} className="space-y-5">
+        <div className="rounded-2xl border border-border/70 bg-muted/20 p-4"><div className="flex flex-wrap gap-2"><Badge variant="outline">{deliveryTarget.setor}</Badge>{deliveryTarget.codigo_interno && <Badge variant="outline">{deliveryTarget.codigo_interno}</Badge>}</div><p className="mt-3 font-semibold text-foreground">{deliveryTarget.remetente} → {deliveryTarget.destinatario}</p><p className="mt-1 text-sm text-muted-foreground">Recebido em {formatDateTime(deliveryTarget.recebido_em, deliveryTarget.legacy_import)}</p></div>
+        <div className="grid gap-4 sm:grid-cols-2"><Field label="Entregue para" required><Input value={deliveryForm.entregue_para} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_para: e.target.value }))} /></Field><Field label="Data e hora da entrega" required><Input type="datetime-local" value={deliveryForm.entregue_em} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_em: e.target.value }))} /></Field></div>
+        <SignaturePad key={deliveryTarget.id} value={deliveryForm.assinatura_entrega_data_url} onChange={(value) => setDeliveryForm((p) => ({ ...p, assinatura_entrega_data_url: value }))} disabled={saving} />
+        <Field label="Observações da entrega"><textarea rows={3} value={deliveryForm.entrega_observacoes} onChange={(e) => setDeliveryForm((p) => ({ ...p, entrega_observacoes: e.target.value }))} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
+        <DialogFooter><Button type="button" variant="ghost" onClick={() => setDeliveryTarget(null)}>Cancelar</Button><Button type="submit" disabled={saving || !deliveryForm.assinatura_entrega_data_url}>{saving ? "Concluindo..." : "Concluir entrega"}</Button></DialogFooter>
+      </form>}</DialogContent></Dialog>
 
-      <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) { setImportPreview(null); setImportFileName(""); } }}>
-        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Importar histórico de Mensageria</DialogTitle>
-            <DialogDescription>Use a planilha de controle existente. A aba ENTREGA prevalece como histórico consolidado e a mesma linha nunca é duplicada.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/15 px-5 py-8 text-center transition-colors hover:bg-muted/30 focus-within:ring-2 focus-within:ring-ring">
-              {importReading ? <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /> : <Upload className="h-7 w-7 text-muted-foreground" />}
-              <span className="mt-3 text-sm font-semibold text-foreground">{importReading ? "Analisando planilha..." : "Selecionar arquivo Excel"}</span>
-              <span className="mt-1 text-xs text-muted-foreground">Formatos .xlsx e .xls · nenhum registro é salvo antes da confirmação</span>
-              <input type="file" accept=".xlsx,.xls" onChange={handleSpreadsheetFile} disabled={importReading || saving || !backendReady} className="sr-only" />
-            </label>
+      <Dialog open={deliveryQueueOpen} onOpenChange={setDeliveryQueueOpen}><DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto"><DialogHeader><DialogTitle>Fila para entrega</DialogTitle><DialogDescription>Escolha o protocolo que será concluído com a assinatura do destinatário.</DialogDescription></DialogHeader><div className="space-y-2">{pending.length ? pending.map((item) => <button key={item.id} type="button" onClick={() => openDelivery(item)} className="flex w-full items-center justify-between gap-4 rounded-xl border border-border/70 p-4 text-left transition-colors hover:bg-muted/40"><div className="min-w-0"><p className="truncate font-semibold text-foreground">{item.destinatario}</p><p className="mt-1 truncate text-sm text-muted-foreground">{item.remetente} · {item.setor}</p><p className="mt-1 text-xs text-muted-foreground">{ageInDays(item.recebido_em)} dia(s) em aberto</p></div><ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" /></button>) : <p className="py-8 text-center text-sm text-muted-foreground">Nenhum malote aguarda entrega.</p>}</div></DialogContent></Dialog>
 
-            {importPreview && (
-              <div aria-live="polite" className="space-y-4">
-                <section className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Prévia validada</p>
-                  <p className="mt-2 font-semibold text-foreground">{importFileName}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    <Info label="Recebimentos/entregas" value={String(importPreview.malotes.length)} />
-                    <Info label="Envios" value={String(importPreview.envios.length)} />
-                    <Info label="Alertas de qualidade" value={String(importPreview.warnings.length)} />
-                  </div>
-                </section>
-                {importPreview.warnings.length > 0 && (
-                  <section className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
-                    <p className="text-sm font-semibold text-foreground">Campos mantidos como não informados</p>
-                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                      {importPreview.warnings.slice(0, 8).map((warning, index) => <li key={`${warning.sheet}-${warning.row}-${index}`}>• {warning.sheet}, linha {warning.row}: {warning.message}</li>)}
-                    </ul>
-                    {importPreview.warnings.length > 8 && <p className="mt-3 text-xs font-medium text-muted-foreground">Mais {importPreview.warnings.length - 8} alerta(s) serão preservados sem preenchimento artificial.</p>}
-                  </section>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => setImportOpen(false)}>Cancelar</Button>
-            <Button type="button" onClick={confirmSpreadsheetImport} disabled={!importPreview || saving || importReading || !backendReady}>{saving ? "Importando..." : "Confirmar importação"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Dialog open={Boolean(detailsTarget)} onOpenChange={(open) => { if (!open) setDetailsTarget(null); }}><DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto"><DialogHeader><DialogTitle>Protocolo completo</DialogTitle><DialogDescription>Rastreabilidade da entrada na portaria até o destinatário final.</DialogDescription></DialogHeader>{detailsTarget && <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/20 p-4"><div><MaloteStatusBadge status={detailsTarget.status} /><p className="mt-2 text-lg font-semibold text-foreground">{detailsTarget.remetente} → {detailsTarget.destinatario}</p></div><div className="flex flex-wrap gap-2">{detailsTarget.status === "aguardando_entrega" && <Button type="button" variant="outline" size="sm" onClick={() => openEditReceipt(detailsTarget)}>Editar entrada</Button>}{(detailsTarget.status === "aguardando_entrega" || !detailsTarget.assinatura_entrega_data_url) && <Button type="button" size="sm" onClick={() => openDelivery(detailsTarget)}>{detailsTarget.status === "entregue" ? "Adicionar assinatura" : "Registrar entrega"}</Button>}</div></div>
+        <div className="grid gap-4 sm:grid-cols-3"><Info label="Rastreio" value={detailsTarget.codigo_rastreio || "Não informado"} /><Info label="Código interno" value={detailsTarget.codigo_interno || "Não informado"} /><Info label="Item / quantidade" value={`${detailsTarget.item_descricao || "Não informado"} · ${detailsTarget.quantidade}`} /></div>
+        <ProtocolSection title="1. Recebimento na portaria"><Info label="Data" value={formatDateTime(detailsTarget.recebido_em, detailsTarget.legacy_import)} /><Info label="Local" value={detailsTarget.local_recebimento} /><Info label="Recebido por" value={detailsTarget.recebido_por} /><SignaturePreview label="Assinatura da portaria" value={detailsTarget.assinatura_portaria_data_url} legacy={detailsTarget.legacy_import} /></ProtocolSection>
+        <ProtocolSection title="2. Setor e direcionamento"><div className="sm:col-span-2"><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Setor / responsável</p><div className="mt-2 flex flex-col gap-2 sm:flex-row"><SectorSelect value={detailsSector} onChange={setDetailsSector} sectors={sectors} /><Button type="button" variant="outline" onClick={updateSector} disabled={saving || detailsSector === detailsTarget.setor}>Atualizar</Button></div></div></ProtocolSection>
+        <ProtocolSection title="3. Entrega final">{detailsTarget.status === "entregue" ? <><Info label="Data" value={formatDateTime(detailsTarget.entregue_em, detailsTarget.legacy_import)} /><Info label="Entregue para" value={detailsTarget.entregue_para || "Não registrado na planilha"} /><Info label="Observações" value={detailsTarget.entrega_observacoes || "Sem observações"} /><SignaturePreview label="Assinatura do destinatário" value={detailsTarget.assinatura_entrega_data_url} legacy={detailsTarget.legacy_import} /></> : <div className="sm:col-span-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4"><p className="font-semibold text-foreground">Aguardando entrega</p><p className="mt-1 text-sm text-muted-foreground">A conclusão exigirá identificação e assinatura do destinatário.</p></div>}</ProtocolSection>
+        {detailsTarget.legacy_import && <p className="text-xs text-muted-foreground">Registro importado de {detailsTarget.legacy_source}, linha {detailsTarget.legacy_source_row}. A planilha original não continha imagens de assinatura nem data separada de entrega.</p>}
+      </div>}</DialogContent></Dialog>
 
-      <Dialog open={deliveryQueueOpen} onOpenChange={setDeliveryQueueOpen}>
-        <DialogContent className="max-h-[88vh] max-w-3xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Fila para entrega</DialogTitle>
-            <DialogDescription>Selecione o malote que será entregue ao destinatário. A conclusão exigirá assinatura digital.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            {pending.length === 0 ? <p className="py-8 text-center text-sm text-muted-foreground">Não há malotes pendentes.</p> : pending.map((malote) => (
-              <button key={malote.id} type="button" onClick={() => openDelivery(malote)} className="flex w-full items-center justify-between gap-4 rounded-xl border border-border/70 bg-card/60 p-4 text-left transition-colors hover:bg-muted/40">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground">{malote.destinatario}</p>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">{malote.remetente} · {malote.setor}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Recebido {formatDateTime(malote.recebido_em, malote.legacy_import)} · {ageInDays(malote.recebido_em)} dia(s) em aberto</p>
-                </div>
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </button>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Dialog open={shipmentOpen} onOpenChange={setShipmentOpen}><DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto"><DialogHeader><DialogTitle>Novo envio</DialogTitle><DialogDescription>Registre Correios, Jurídico ou malote interno para acompanhar até a conclusão.</DialogDescription></DialogHeader><form onSubmit={handleShipment} className="space-y-5"><div className="grid gap-4 md:grid-cols-2">
+        <Field label="Categoria" required><select value={shipmentForm.categoria} onChange={(e) => setShipmentForm((p) => ({ ...p, categoria: e.target.value as EnvioCategoria }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option value="malote_interno">Malote interno</option><option value="correios">Correios</option><option value="juridico">Jurídico</option><option value="outro">Outro</option></select></Field>
+        <Field label="Código de rastreio"><Input value={shipmentForm.codigo_rastreio} onChange={(e) => setShipmentForm((p) => ({ ...p, codigo_rastreio: e.target.value }))} /></Field>
+        <Field label="Remetente" required><Input value={shipmentForm.remetente} onChange={(e) => setShipmentForm((p) => ({ ...p, remetente: e.target.value }))} /></Field>
+        <Field label="Destinatário" required><Input value={shipmentForm.destinatario} onChange={(e) => setShipmentForm((p) => ({ ...p, destinatario: e.target.value }))} /></Field>
+        <Field label="Item"><Input value={shipmentForm.item_descricao} onChange={(e) => setShipmentForm((p) => ({ ...p, item_descricao: e.target.value }))} /></Field>
+        <Field label="Nota fiscal"><Input value={shipmentForm.nota_fiscal} onChange={(e) => setShipmentForm((p) => ({ ...p, nota_fiscal: e.target.value }))} /></Field>
+        <Field label="Data e hora do envio" required><Input type="datetime-local" value={shipmentForm.enviado_em} onChange={(e) => setShipmentForm((p) => ({ ...p, enviado_em: e.target.value }))} /></Field>
+        <Field label="Enviado por" required><Input value={shipmentForm.enviado_por} onChange={(e) => setShipmentForm((p) => ({ ...p, enviado_por: e.target.value }))} /></Field>
+      </div><Field label="Observações"><textarea rows={3} value={shipmentForm.observacoes} onChange={(e) => setShipmentForm((p) => ({ ...p, observacoes: e.target.value }))} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field><DialogFooter><Button type="button" variant="ghost" onClick={() => setShipmentOpen(false)}>Cancelar</Button><Button type="submit" disabled={saving}>{saving ? "Salvando..." : "Registrar envio"}</Button></DialogFooter></form></DialogContent></Dialog>
 
-      <Dialog open={Boolean(deliveryTarget)} onOpenChange={(open) => { if (!open) setDeliveryTarget(null); }}>
-        <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Registrar entrega ao destinatário</DialogTitle>
-            <DialogDescription>Confirme o recebedor, a data e colete a assinatura antes de concluir.</DialogDescription>
-          </DialogHeader>
-          {deliveryTarget && (
-            <form onSubmit={handleDelivery} className="space-y-5">
-              <div className="rounded-2xl border border-border/70 bg-muted/25 p-4">
-                <div className="flex flex-wrap gap-2"><Badge variant="outline">{deliveryTarget.setor}</Badge>{deliveryTarget.codigo_interno && <Badge variant="outline">{deliveryTarget.codigo_interno}</Badge>}</div>
-                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Destino</p>
-                <p className="mt-1 font-semibold text-foreground">{deliveryTarget.destinatario}</p>
-                <p className="mt-1 text-sm text-muted-foreground">Recebido na portaria em {formatDateTime(deliveryTarget.recebido_em, deliveryTarget.legacy_import)}</p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Entregue para" required><Input value={deliveryForm.entregue_para} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_para: e.target.value }))} /></Field>
-                <Field label="Data e hora da entrega" required><Input type="datetime-local" value={deliveryForm.entregue_em} onChange={(e) => setDeliveryForm((p) => ({ ...p, entregue_em: e.target.value }))} /></Field>
-              </div>
-              <SignaturePad key={deliveryTarget.id} value={deliveryForm.assinatura_data_url} onChange={(value) => setDeliveryForm((p) => ({ ...p, assinatura_data_url: value }))} disabled={saving} />
-              <Field label="Observações da entrega"><textarea value={deliveryForm.entrega_observacoes} onChange={(e) => setDeliveryForm((p) => ({ ...p, entrega_observacoes: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
-              <DialogFooter>
-                <Button type="button" variant="ghost" onClick={() => setDeliveryTarget(null)}>Cancelar</Button>
-                <Button type="submit" disabled={saving || !backendReady || !deliveryForm.assinatura_data_url}>{saving ? "Concluindo..." : "Concluir e registrar assinatura"}</Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={Boolean(detailsTarget)} onOpenChange={(open) => { if (!open) setDetailsTarget(null); }}>
-        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
-          <DialogHeader><DialogTitle>Protocolo do malote</DialogTitle><DialogDescription>Rastreabilidade completa da entrada até a entrega final.</DialogDescription></DialogHeader>
-          {detailsTarget && (
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-muted/20 p-4">
-                <div><StatusBadge status={detailsTarget.status} /><p className="mt-2 text-lg font-semibold text-foreground">{detailsTarget.remetente} → {detailsTarget.destinatario}</p></div>
-                {detailsTarget.status === "aguardando_entrega" && <Button type="button" variant="outline" size="sm" onClick={() => openEditReceipt(detailsTarget)} disabled={!backendReady}>Editar recebimento</Button>}
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Info label="Código de rastreio" value={detailsTarget.codigo_rastreio || "Não informado"} />
-                <Info label="Código Sherwin" value={detailsTarget.codigo_interno || "Não informado"} />
-                <Info label="Item / quantidade" value={`${detailsTarget.item_descricao || "Não informado"} · ${detailsTarget.quantidade}`} />
-              </div>
-              <ProtocolSection title="1. Recebimento na portaria">
-                <Info label="Data" value={formatDateTime(detailsTarget.recebido_em, detailsTarget.legacy_import)} />
-                <Info label="Local" value={detailsTarget.local_recebimento} />
-                <Info label="Recebido por" value={detailsTarget.recebido_por || "Não registrado no legado"} />
-                <Info label="Observações" value={detailsTarget.observacoes || "Sem observações"} />
-              </ProtocolSection>
-              <ProtocolSection title="2. Triagem e direcionamento">
-                <div className="sm:col-span-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Setor / responsável</p>
-                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                    <select value={detailsSector} onChange={(e) => setDetailsSector(e.target.value)} className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm">
-                      {setores.map((setor) => <option key={setor.id} value={setor.nome}>{setor.nome}{setor.responsavel ? ` — ${setor.responsavel}` : ""}</option>)}
-                    </select>
-                    <Button type="button" variant="outline" onClick={updateSector} disabled={saving || !backendReady || detailsSector === detailsTarget.setor}>Atualizar direcionamento</Button>
-                  </div>
-                </div>
-              </ProtocolSection>
-              <ProtocolSection title="3. Entrega final">
-                {detailsTarget.status === "entregue" ? (
-                  <>
-                    <Info label="Data" value={formatDateTime(detailsTarget.entregue_em, detailsTarget.legacy_import)} />
-                    <Info label="Entregue para" value={detailsTarget.entregue_para || "Não registrado no legado"} />
-                    <Info label="Observações" value={detailsTarget.entrega_observacoes || "Sem observações"} />
-                    <div className="sm:col-span-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Assinatura de recebimento</p>
-                      {detailsTarget.assinatura_data_url ? (
-                        <div className="mt-2 rounded-xl border border-border bg-white p-3"><img src={detailsTarget.assinatura_data_url} alt={`Assinatura de ${detailsTarget.entregue_para || "recebedor"}`} className="max-h-36 w-full object-contain" /></div>
-                      ) : (
-                        <p className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-sm text-muted-foreground">Registro legado: a planilha original não possuía assinatura digital.</p>
-                      )}
-                    </div>
-                  </>
-                ) : (
-                  <div className="sm:col-span-2 flex items-center justify-between gap-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-                    <div><p className="font-semibold text-foreground">Aguardando entrega</p><p className="mt-1 text-sm text-muted-foreground">O protocolo só será concluído após identificação do recebedor e assinatura.</p></div>
-                    <Button type="button" size="sm" onClick={() => openDelivery(detailsTarget)} disabled={!backendReady}>Registrar entrega</Button>
-                  </div>
-                )}
-              </ProtocolSection>
-              {detailsTarget.legacy_import && <p className="text-xs leading-relaxed text-muted-foreground">Importado do histórico ({detailsTarget.legacy_source}, linha {detailsTarget.legacy_source_row ?? "—"}{detailsTarget.legacy_delivery_row ? `; entrega linha ${detailsTarget.legacy_delivery_row}` : ""}). Campos inexistentes no arquivo original permanecem como não registrados.</p>}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) setImportPreview(null); }}><DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto"><DialogHeader><DialogTitle>Importar planilha</DialogTitle><DialogDescription>A aba ENTREGA é usada como histórico consolidado. As linhas já existentes não serão duplicadas.</DialogDescription></DialogHeader><div className="space-y-4"><label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-border bg-muted/15 px-5 py-8 text-center hover:bg-muted/30"><span className="flex h-11 w-11 items-center justify-center rounded-xl bg-muted">{importReading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Upload className="h-6 w-6" />}</span><span className="mt-3 text-sm font-semibold text-foreground">{importReading ? "Analisando..." : "Selecionar arquivo Excel"}</span><span className="mt-1 text-xs text-muted-foreground">.xlsx ou .xls · processado somente neste navegador</span><input type="file" accept=".xlsx,.xls" onChange={readSpreadsheet} disabled={importReading || saving} className="sr-only" /></label>{importPreview && <><section className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"><p className="font-semibold text-foreground">{importPreview.fileName}</p><div className="mt-4 grid grid-cols-3 gap-3"><Info label="Malotes" value={String(importPreview.snapshot.malotes.length)} /><Info label="Envios" value={String(importPreview.snapshot.envios.length)} /><Info label="Alertas" value={String(importPreview.parsed.warnings.length)} /></div></section>{importPreview.parsed.warnings.length > 0 && <section className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"><p className="text-sm font-semibold text-foreground">Dados ausentes preservados</p><ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">{importPreview.parsed.warnings.slice(0, 8).map((warning, index) => <li key={`${warning.sheet}-${warning.row}-${index}`}>• {warning.sheet}, linha {warning.row}: {warning.message}</li>)}</ul>{importPreview.parsed.warnings.length > 8 && <p className="mt-2 text-xs text-muted-foreground">Mais {importPreview.parsed.warnings.length - 8} alerta(s).</p>}</section>}</>}</div><DialogFooter><Button type="button" variant="ghost" onClick={() => setImportOpen(false)}>Cancelar</Button><Button type="button" onClick={confirmImport} disabled={!importPreview || saving || importReading}>{saving ? "Importando..." : "Confirmar importação"}</Button></DialogFooter></DialogContent></Dialog>
     </PageShell>
   );
 }
 
-function OperationalOverview({ pending, oldestPending, groupedPending, sectorMap, onDeliver, onDetails, onSeePending }: {
-  pending: Malote[];
-  oldestPending: Malote | null;
-  groupedPending: [string, Malote[]][];
-  sectorMap: Map<string, Setor>;
-  onDeliver: (malote: Malote) => void;
-  onDetails: (malote: Malote) => void;
-  onSeePending: () => void;
-}) {
-  return (
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.75fr)]">
-      <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4">
-          <div><h2 className="font-semibold text-foreground">Fila para entrega</h2><p className="mt-1 text-sm text-muted-foreground">Separada por setor, pronta para coleta de assinatura.</p></div>
-          <Button type="button" variant="ghost" size="sm" onClick={onSeePending}>Ver todos</Button>
-        </div>
-        {pending.length === 0 ? (
-          <div className="px-5 py-12 text-center"><CheckCircle2 className="mx-auto h-7 w-7 text-emerald-500" /><p className="mt-3 font-medium text-foreground">Fila em dia</p><p className="mt-1 text-sm text-muted-foreground">Nenhum malote aguarda entrega.</p></div>
-        ) : (
-          <div className="divide-y divide-border/60">
-            {pending.slice(0, 8).map((malote) => <ProtocolRow key={malote.id} malote={malote} sector={sectorMap.get(malote.setor)} onDeliver={() => onDeliver(malote)} onDetails={() => onDetails(malote)} compact />)}
-          </div>
-        )}
-      </section>
-
-      <div className="space-y-5">
-        <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Prioridade operacional</p>
-          {oldestPending ? (
-            <>
-              <p className="mt-3 text-lg font-semibold text-foreground">{oldestPending.destinatario}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{oldestPending.remetente}</p>
-              <div className="mt-4 grid grid-cols-2 gap-3 text-sm"><Info label="Setor" value={oldestPending.setor} /><Info label="Em aberto" value={`${ageInDays(oldestPending.recebido_em)} dia(s)`} /></div>
-              <Button type="button" className="mt-5 w-full" onClick={() => onDeliver(oldestPending)}>Registrar entrega</Button>
-            </>
-          ) : <p className="mt-3 text-sm text-muted-foreground">Sem pendências.</p>}
-        </section>
-
-        <section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pendências por setor</p>
-          <div className="mt-4 space-y-3">
-            {groupedPending.length ? groupedPending.map(([sector, items]) => (
-              <div key={sector} className="flex items-start justify-between gap-3 border-b border-border/50 pb-3 last:border-0 last:pb-0">
-                <div className="min-w-0"><p className="truncate text-sm font-medium text-foreground">{sector}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sectorMap.get(sector)?.responsavel || "Responsável não cadastrado"}</p></div>
-                <Badge variant="outline">{items.length}</Badge>
-              </div>
-            )) : <p className="text-sm text-muted-foreground">Sem pendências.</p>}
-          </div>
-        </section>
-      </div>
-    </div>
-  );
+function OperationalOverview({ pending, grouped, sectorMap, onDeliver, onDetails, onSeeAll }: { pending: Malote[]; grouped: [string, Malote[]][]; sectorMap: Map<string, Setor>; onDeliver: (item: Malote) => void; onDetails: (item: Malote) => void; onSeeAll: () => void }) {
+  const oldest = [...pending].sort((a, b) => (a.recebido_em ?? "9999").localeCompare(b.recebido_em ?? "9999"))[0] ?? null;
+  return <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,.75fr)]"><section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm"><div className="flex items-center justify-between gap-3 border-b border-border/70 px-5 py-4"><div><h2 className="font-semibold text-foreground">Fila para entrega</h2><p className="mt-1 text-sm text-muted-foreground">Protocolos aguardando assinatura do destinatário.</p></div><Button type="button" variant="ghost" size="sm" onClick={onSeeAll}>Ver todos</Button></div>{pending.length ? <div className="divide-y divide-border/60">{pending.slice(0, 8).map((item) => <ProtocolRow key={item.id} item={item} sector={sectorMap.get(item.setor)} compact onDeliver={() => onDeliver(item)} onDetails={() => onDetails(item)} />)}</div> : <div className="px-5 py-12 text-center"><CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" /><p className="mt-3 font-semibold text-foreground">Fila em dia</p><p className="mt-1 text-sm text-muted-foreground">Nenhum malote aguarda entrega.</p></div>}</section><div className="space-y-5"><section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Prioridade operacional</p>{oldest ? <><p className="mt-3 text-lg font-semibold text-foreground">{oldest.destinatario}</p><p className="mt-1 text-sm text-muted-foreground">{oldest.remetente}</p><div className="mt-4 grid grid-cols-2 gap-3"><Info label="Setor" value={oldest.setor} /><Info label="Em aberto" value={`${ageInDays(oldest.recebido_em)} dia(s)`} /></div><Button type="button" className="mt-5 w-full" onClick={() => onDeliver(oldest)}>Registrar entrega</Button></> : <p className="mt-3 text-sm text-muted-foreground">Sem pendências.</p>}</section><section className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Pendências por setor</p><div className="mt-4 space-y-3">{grouped.length ? grouped.map(([sector, items]) => <div key={sector} className="flex items-start justify-between gap-3 border-b border-border/50 pb-3 last:border-0"><div className="min-w-0"><p className="truncate text-sm font-medium text-foreground">{sector}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sectorMap.get(sector)?.responsavel || "Responsável a definir"}</p></div><Badge variant="outline">{items.length}</Badge></div>) : <p className="text-sm text-muted-foreground">Sem pendências.</p>}</div></section></div></div>;
 }
 
-function SectorOverview({ setores, malotes }: { setores: Setor[]; malotes: Malote[] }) {
-  return (
-    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {setores.map((setor) => {
-        const all = malotes.filter((item) => item.setor === setor.nome);
-        const pending = all.filter((item) => item.status === "aguardando_entrega");
-        return (
-          <div key={setor.id} className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Setor</p><h3 className="mt-1 font-semibold text-foreground">{setor.nome}</h3></div><Badge variant={pending.length ? "outline" : "secondary"}>{pending.length} pend.</Badge></div>
-            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Responsável / referência</p>
-            <p className="mt-1 text-sm leading-relaxed text-foreground">{setor.responsavel || "Não cadastrado"}</p>
-            <div className="mt-4 flex gap-4 border-t border-border/60 pt-4 text-sm"><span><strong>{all.length}</strong> protocolos</span><span><strong>{pending.length}</strong> em aberto</span></div>
-          </div>
-        );
-      })}
-    </section>
-  );
+function SearchBox({ value, onChange, placeholder, sectors, sectorFilter, onSectorChange }: { value: string; onChange: (value: string) => void; placeholder: string; sectors?: Setor[]; sectorFilter?: string; onSectorChange?: (value: string) => void }) {
+  return <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm"><div className={sectors ? "grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px]" : ""}><div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-11 pl-9" /></div>{sectors && <select value={sectorFilter} onChange={(e) => onSectorChange?.(e.target.value)} className="h-11 rounded-xl border border-input bg-background px-3 text-sm"><option value="todos">Todos os setores</option>{sectors.map((sector) => <option key={sector.id} value={sector.nome}>{sector.nome}</option>)}</select>}</div></section>;
 }
 
-function ShipmentOverview({ envios, saving, onFinalize }: { envios: Envio[]; saving: boolean; onFinalize: (envio: Envio) => void }) {
-  if (!envios.length) {
-    return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><Send className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold text-foreground">Nenhum envio encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste a busca, importe o histórico ou registre um novo envio.</p></div>;
-  }
-  return (
-    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
-      <div className="hidden grid-cols-[1.2fr_1.5fr_1fr_1fr_140px] gap-3 border-b border-border/70 bg-muted/30 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid">
-        <span>Status / categoria</span><span>Remetente → destinatário</span><span>Envio</span><span>Referências</span><span className="text-right">Ações</span>
-      </div>
-      <div className="divide-y divide-border/60">
-        {envios.map((envio) => {
-          const canFinalize = envio.status === "preparando" || envio.status === "enviado";
-          return (
-            <div key={envio.id} className="grid gap-3 px-4 py-4 lg:grid-cols-[1.2fr_1.5fr_1fr_1fr_140px] lg:items-center lg:px-5">
-              <div className="flex flex-wrap items-center gap-2"><EnvioStatusBadge status={envio.status} /><Badge variant="outline">{envioCategoryLabel(envio.categoria)}</Badge>{envio.legacy_import && <Badge variant="outline" className="text-muted-foreground">Legado</Badge>}</div>
-              <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{envio.remetente} <span className="text-muted-foreground">→</span> {envio.destinatario}</p><p className="mt-1 truncate text-xs text-muted-foreground">{envio.item_descricao || "Item não informado"}</p></div>
-              <div><p className="text-sm text-foreground">{formatDateTime(envio.enviado_em, envio.legacy_import)}</p><p className="mt-0.5 text-xs text-muted-foreground">{envio.enviado_por || "Responsável não registrado"}</p></div>
-              <div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{envio.codigo_rastreio ? `Rastreio: ${envio.codigo_rastreio}` : "Sem rastreio"}</p><p className="mt-1 truncate">{envio.nota_fiscal ? `NF: ${envio.nota_fiscal}` : envio.finalizado_em ? `Concluído: ${formatDateTime(envio.finalizado_em)}` : "Sem nota fiscal"}</p></div>
-              <div className="flex justify-end">
-                {canFinalize ? <Button type="button" size="sm" onClick={() => onFinalize(envio)} disabled={saving}>Finalizar</Button> : <span className="text-xs font-medium text-muted-foreground">Sem ação pendente</span>}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
+function ProtocolList({ malotes, sectorMap, onDeliver, onDetails }: { malotes: Malote[]; sectorMap: Map<string, Setor>; onDeliver: (item: Malote) => void; onDetails: (item: Malote) => void }) {
+  if (!malotes.length) return <EmptyState icon={<PackageOpen className="h-8 w-8" />} title="Nenhum protocolo encontrado" description="Ajuste os filtros ou registre um novo recebimento." />;
+  return <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm"><div className="hidden grid-cols-[1.4fr_1.3fr_1fr_1fr_140px] gap-3 border-b border-border/70 bg-muted/30 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid"><span>Remetente → destinatário</span><span>Setor</span><span>Recebimento</span><span>Referências</span><span className="text-right">Ações</span></div><div className="divide-y divide-border/60">{malotes.map((item) => <ProtocolRow key={item.id} item={item} sector={sectorMap.get(item.setor)} onDeliver={() => onDeliver(item)} onDetails={() => onDetails(item)} />)}</div></section>;
 }
 
-function ProtocolRow({ malote, sector, onDeliver, onDetails, compact = false }: { malote: Malote; sector?: Setor; onDeliver: () => void; onDetails: () => void; compact?: boolean }) {
-  const isPending = malote.status === "aguardando_entrega";
-  return (
-    <div className={`grid gap-3 px-4 py-4 lg:items-center lg:px-5 ${compact ? "lg:grid-cols-[1.7fr_1fr_150px]" : "lg:grid-cols-[1.4fr_1.4fr_1fr_1fr_140px]"}`}>
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2"><StatusBadge status={malote.status} />{malote.legacy_import && <Badge variant="outline" className="text-muted-foreground">Legado</Badge>}</div>
-        <p className="mt-2 truncate text-sm font-semibold text-foreground">{malote.remetente} <span className="text-muted-foreground">→</span> {malote.destinatario}</p>
-      </div>
-      <div className="min-w-0"><p className="text-sm font-medium text-foreground">{malote.setor}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sector?.responsavel || "Responsável não cadastrado"}</p></div>
-      {!compact && <div><p className="text-sm text-foreground">{formatDateTime(malote.recebido_em, malote.legacy_import)}</p><p className="mt-0.5 text-xs text-muted-foreground">{malote.recebido_por || "Recebedor não registrado"}</p></div>}
-      {!compact && <div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{malote.codigo_interno ? `Sherwin: ${malote.codigo_interno}` : "Sem código Sherwin"}</p><p className="mt-1 truncate">{malote.codigo_rastreio ? `Rastreio: ${malote.codigo_rastreio}` : "Sem rastreio"}</p></div>}
-      {compact && <div><p className="text-sm font-medium text-foreground">{ageInDays(malote.recebido_em)} dia(s)</p><p className="text-xs text-muted-foreground">em aberto</p></div>}
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" size="sm" onClick={onDetails}>Protocolo</Button>
-        {isPending && <Button type="button" size="sm" onClick={onDeliver}>Entregar</Button>}
-      </div>
-    </div>
-  );
+function ProtocolRow({ item, sector, onDeliver, onDetails, compact = false }: { item: Malote; sector?: Setor; onDeliver: () => void; onDetails: () => void; compact?: boolean }) {
+  return <div className={`grid gap-3 px-4 py-4 lg:items-center lg:px-5 ${compact ? "lg:grid-cols-[1.6fr_1fr_130px]" : "lg:grid-cols-[1.4fr_1.3fr_1fr_1fr_140px]"}`}><div className="min-w-0"><div className="flex flex-wrap gap-2"><MaloteStatusBadge status={item.status} />{item.legacy_import && <Badge variant="outline" className="text-muted-foreground">Planilha</Badge>}</div><p className="mt-2 truncate text-sm font-semibold text-foreground">{item.remetente} <span className="text-muted-foreground">→</span> {item.destinatario}</p></div><div className="min-w-0"><p className="truncate text-sm font-medium text-foreground">{item.setor}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{sector?.responsavel || "Responsável a definir"}</p></div>{compact ? <div><p className="text-sm font-medium text-foreground">{ageInDays(item.recebido_em)} dia(s)</p><p className="text-xs text-muted-foreground">em aberto</p></div> : <><div><p className="text-sm text-foreground">{formatDateTime(item.recebido_em, item.legacy_import)}</p><p className="mt-0.5 truncate text-xs text-muted-foreground">{item.recebido_por}</p></div><div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{item.codigo_interno ? `Interno: ${item.codigo_interno}` : "Sem código interno"}</p><p className="mt-1 truncate">{item.codigo_rastreio ? `Rastreio: ${item.codigo_rastreio}` : "Sem rastreio"}</p></div></>}<div className="flex justify-end gap-2"><Button type="button" variant="ghost" size="sm" onClick={onDetails}>Protocolo</Button>{item.status === "aguardando_entrega" && <Button type="button" size="sm" onClick={onDeliver}>Entregar</Button>}</div></div>;
 }
 
-function Kpi({ label, value, detail, critical = false }: { label: string; value: number; detail: string; critical?: boolean }) {
-  return <div className="p-4"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold tracking-tight ${critical ? "text-amber-500" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>;
+function ShipmentList({ envios, saving, onFinalize }: { envios: Envio[]; saving: boolean; onFinalize: (item: Envio) => void }) {
+  if (!envios.length) return <EmptyState icon={<Send className="h-8 w-8" />} title="Nenhum envio encontrado" description="Registre um envio ou importe a planilha." />;
+  return <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm"><div className="divide-y divide-border/60">{envios.map((item) => <div key={item.id} className="grid gap-3 px-4 py-4 lg:grid-cols-[1.2fr_1.5fr_1fr_1fr_130px] lg:items-center lg:px-5"><div className="flex flex-wrap gap-2"><ShipmentStatusBadge status={item.status} /><Badge variant="outline">{shipmentCategoryLabel(item.categoria)}</Badge>{item.legacy_import && <Badge variant="outline">Planilha</Badge>}</div><div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{item.remetente} → {item.destinatario}</p><p className="mt-1 truncate text-xs text-muted-foreground">{item.item_descricao || "Item não informado"}</p></div><div><p className="text-sm text-foreground">{formatDateTime(item.enviado_em, item.legacy_import)}</p><p className="text-xs text-muted-foreground">{item.enviado_por || "Responsável não registrado"}</p></div><div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{item.codigo_rastreio ? `Rastreio: ${item.codigo_rastreio}` : "Sem rastreio"}</p><p className="mt-1 truncate">{item.nota_fiscal ? `NF: ${item.nota_fiscal}` : "Sem nota fiscal"}</p></div><div className="flex justify-end">{item.status === "enviado" || item.status === "preparando" ? <Button type="button" size="sm" disabled={saving} onClick={() => onFinalize(item)}>Finalizar</Button> : <span className="text-xs text-muted-foreground">Concluído</span>}</div></div>)}</div></section>;
 }
 
-function StatusBadge({ status }: { status: MaloteStatus }) {
-  const pending = status === "aguardando_entrega";
-  return <Badge variant="outline" className={pending ? "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300"}>{pending ? "Aguardando entrega" : "Entregue"}</Badge>;
+function SectorGrid({ sectors, malotes }: { sectors: Setor[]; malotes: Malote[] }) {
+  return <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{sectors.map((sector) => { const all = malotes.filter((item) => item.setor === sector.nome); const pending = all.filter((item) => item.status === "aguardando_entrega"); return <article key={sector.id} className="rounded-2xl border border-border/70 bg-card/60 p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">Setor</p><h3 className="mt-1 font-semibold text-foreground">{sector.nome}</h3></div><Badge variant="outline">{pending.length} pend.</Badge></div><p className="mt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Responsável</p><p className="mt-1 text-sm text-foreground">{sector.responsavel}</p><div className="mt-4 flex gap-5 border-t border-border/60 pt-4 text-sm"><span><strong>{all.length}</strong> protocolos</span><span><strong>{pending.length}</strong> em aberto</span></div></article>; })}</section>;
 }
 
-function EnvioStatusBadge({ status }: { status: EnvioStatus }) {
-  const styles: Record<EnvioStatus, string> = {
-    preparando: "border-slate-500/30 bg-slate-500/5 text-slate-600 dark:text-slate-300",
-    enviado: "border-sky-500/30 bg-sky-500/5 text-sky-600 dark:text-sky-300",
-    finalizado: "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300",
-    devolvido: "border-rose-500/30 bg-rose-500/5 text-rose-600 dark:text-rose-300",
-  };
-  const labels: Record<EnvioStatus, string> = {
-    preparando: "Preparando",
-    enviado: "Enviado",
-    finalizado: "Finalizado",
-    devolvido: "Devolvido",
-  };
-  return <Badge variant="outline" className={styles[status]}>{labels[status]}</Badge>;
+function SignaturePreview({ label, value, legacy }: { label: string; value: string | null; legacy: boolean }) {
+  return <div className="sm:col-span-2"><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>{value ? <div className="mt-2 rounded-xl border border-border bg-white p-3"><img src={value} alt={label} className="max-h-32 w-full object-contain" /></div> : <p className="mt-2 rounded-xl border border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">{legacy ? "A planilha original não possuía imagem de assinatura." : "Assinatura ainda não registrada."}</p>}</div>;
 }
 
-function ViewButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" onClick={onClick} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}>{children}</button>;
+function SectorSelect({ value, onChange, sectors }: { value: string; onChange: (value: string) => void; sectors: Setor[] }) {
+  return <select value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">{sectors.map((sector) => <option key={sector.id} value={sector.nome}>{sector.nome} — {sector.responsavel}</option>)}</select>;
 }
 
-function LoadingState() {
-  return <div className="flex flex-col items-center justify-center gap-3 py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><p className="text-sm text-muted-foreground">Carregando protocolos...</p></div>;
-}
-
-function EmptyState() {
-  return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><PackageOpen className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold text-foreground">Nenhum protocolo encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou registre um novo recebimento.</p></div>;
-}
-
-function ProtocolSection({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-2xl border border-border/70 bg-muted/15 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div></section>;
-}
-
-function Field({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) {
-  return <label className="space-y-1.5"><span className="text-xs font-medium text-muted-foreground">{label}{required ? <span className="ml-1 text-destructive">*</span> : null}</span>{children}</label>;
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-1 break-words text-sm text-foreground">{value}</p></div>;
-}
+function MaloteStatusBadge({ status }: { status: MaloteStatus }) { const pending = status === "aguardando_entrega"; return <Badge variant="outline" className={pending ? "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300"}>{pending ? "Aguardando entrega" : "Entregue"}</Badge>; }
+function ShipmentStatusBadge({ status }: { status: EnvioStatus }) { const labels: Record<EnvioStatus, string> = { preparando: "Preparando", enviado: "Enviado", finalizado: "Finalizado", devolvido: "Devolvido" }; const style = status === "finalizado" ? "border-emerald-500/30 text-emerald-600" : status === "devolvido" ? "border-rose-500/30 text-rose-600" : "border-sky-500/30 text-sky-600"; return <Badge variant="outline" className={style}>{labels[status]}</Badge>; }
+function Kpi({ label, value, detail, critical = false }: { label: string; value: number; detail: string; critical?: boolean }) { return <article className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold ${critical ? "text-amber-500" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></article>; }
+function ViewButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) { return <button type="button" onClick={onClick} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}>{children}</button>; }
+function LoadingState() { return <div className="flex flex-col items-center gap-3 py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><p className="text-sm text-muted-foreground">Carregando protocolos locais...</p></div>; }
+function EmptyState({ icon, title, description }: { icon: ReactNode; title: string; description: string }) { return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><span className="mx-auto flex w-fit text-muted-foreground">{icon}</span><p className="mt-3 font-semibold text-foreground">{title}</p><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>; }
+function ProtocolSection({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border/70 bg-muted/15 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div></section>; }
+function Field({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) { return <label className="space-y-1.5"><span className="text-xs font-medium text-muted-foreground">{label}{required && <span className="ml-1 text-destructive">*</span>}</span>{children}</label>; }
+function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-1 break-words text-sm text-foreground">{value}</p></div>; }

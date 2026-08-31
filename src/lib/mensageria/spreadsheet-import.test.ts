@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseMensageriaSpreadsheet, type SpreadsheetRows } from "./spreadsheet-import";
+import { mapSpreadsheetHistoryToLocal } from "./local-import";
 
 describe("parseMensageriaSpreadsheet", () => {
   it("usa ENTREGA como histórico consolidado e enriquece por rastreio", () => {
@@ -23,7 +24,7 @@ describe("parseMensageriaSpreadsheet", () => {
     expect(result.malotes[0]).toMatchObject({
       destinatario: "Pessoa correta",
       codigo_rastreio: "AB123BR",
-      codigo_interno: "SW01",
+      codigo_interno: "SW-01",
       item_descricao: "3 CAIXAS",
       quantidade: 3,
       status: "entregue",
@@ -64,5 +65,27 @@ describe("parseMensageriaSpreadsheet", () => {
     expect(result.envios[0]).toMatchObject({ categoria: "correios", status: "finalizado", enviado_em: null, finalizado_em: null });
     expect(result.envios[1]).toMatchObject({ categoria: "juridico", status: "enviado", enviado_em: null, observacoes: "Valor original da data: POR ANA" });
     expect(result.warnings).toHaveLength(4);
+  });
+
+  it("mapeia o histórico para chaves locais idempotentes", () => {
+    const parsed = parseMensageriaSpreadsheet({
+      RECEBIMENTO: [],
+      ENTREGA: [
+        ["REMETENTE", "DESTINATARIO", "COD RASTREIO", "COD SHERWIN", "DATA RECEBIMENTO", "STATUS", "OBSERVACAO"],
+        ["Origem", "Destino", "AB123BR", "SW-01", 46202, "PENDENTE", null],
+      ],
+      CORREIOS: [],
+      JURIDICOS: [],
+    });
+
+    const local = mapSpreadsheetHistoryToLocal(parsed, "2026-08-31T12:00:00.000Z");
+
+    expect(local.malotes[0]).toMatchObject({
+      id: "planilha-entrega-2",
+      source_key: "CONTROLE MENSAGERIA/ENTREGA:2",
+      assinatura_portaria_data_url: null,
+      assinatura_entrega_data_url: null,
+      legacy_import: true,
+    });
   });
 });

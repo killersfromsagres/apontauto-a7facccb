@@ -72,6 +72,11 @@ function normalizeCode(value: SpreadsheetCell): string | null {
   return text && !EMPTY_VALUES.has(text) ? text : null;
 }
 
+function preserveCode(value: SpreadsheetCell): string | null {
+  const text = cleanText(value)?.toLocaleUpperCase("pt-BR") ?? null;
+  return text && !EMPTY_VALUES.has(text) ? text : null;
+}
+
 function sheetRows(rows: SpreadsheetRows | undefined): RowRecord[] {
   if (!rows?.length) return [];
   const headers = rows[0].map(normalizeHeader);
@@ -185,9 +190,13 @@ export function parseMensageriaSpreadsheet(sheets: Record<string, SpreadsheetRow
     const receipt = tracking ? receiptsByTracking.get(tracking) : undefined;
     const receivedAt = excelDateToIso(row["DATA RECEBIMENTO"] ?? receipt?.["DATA RECEBIMENTO"]);
     if (!receivedAt) warnings.push({ sheet: "ENTREGA", row: row.__row, message: "Data de recebimento ausente ou inválida; mantida como não informada." });
-    const internalCode = normalizeCode(row["COD SHERWIN"]);
+    const internalCode = preserveCode(row["COD SHERWIN"]);
     if (!internalCode) warnings.push({ sheet: "ENTREGA", row: row.__row, message: "Código interno Sherwin ausente." });
-    const item = cleanText(receipt?.ITEM);
+    const rawDate = row["DATA RECEBIMENTO"];
+    const misplacedItem = typeof rawDate === "string" && /(CAIX|CX\b|ENVELOPE|PACOTE|DOCUMENTO)/i.test(rawDate)
+      ? cleanText(rawDate)
+      : null;
+    const item = cleanText(receipt?.ITEM) ?? misplacedItem;
     const status = statusFromLegacy(row.STATUS);
     return {
       remetente: requiredText(row.REMETENTE, "Remetente não registrado no legado"),
