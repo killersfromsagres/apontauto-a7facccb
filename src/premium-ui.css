@@ -171,11 +171,129 @@
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 15px 34px -22px color-mix(in oklch, var(--primary) 72%, transparent);
 }
 
+/* Mensageria e Malotes: navegação compacta e áreas de conteúdo com scroll/touch. */
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) {
+  padding: 0.375rem;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--border) 88%, transparent) transparent;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div > button {
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  scroll-snap-align: start;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div::-webkit-scrollbar {
+  height: 0.4rem;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--border) 88%, transparent);
+}
+
+/* Operação: limita a altura do painel ativo para a página não crescer indefinidamente. */
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div {
+  max-height: min(64dvh, 44rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--border) 88%, transparent) transparent;
+  padding-right: 0.25rem;
+}
+
+/* Todos, Pendentes, Entregues e Envios: mantém busca livre e rolagem dentro da lista. */
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
+  max-height: min(62dvh, 42rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--border) 88%, transparent) transparent;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div::-webkit-scrollbar,
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y)::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div::-webkit-scrollbar-track,
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y)::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div::-webkit-scrollbar-thumb,
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y)::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--border) 88%, transparent);
+}
+
+/* Cabeçalho da listagem permanece legível durante a rolagem no desktop. */
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) > div:first-child:not(.divide-y) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in oklch, var(--card) 92%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+@media (min-width: 640px) {
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) {
+    padding: 0.5rem;
+  }
+
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div > button {
+    min-height: 2.5rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .premium-card,
   .premium-nav-item,
   [data-slot="button"],
   .premium-input {
     transition: none !important;
+  }
+
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div,
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div,
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
+    scroll-behavior: auto;
   }
 }
