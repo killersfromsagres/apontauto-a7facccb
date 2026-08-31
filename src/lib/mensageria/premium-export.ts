@@ -199,7 +199,6 @@ function createSummarySheet(workbook: ExcelJS.Workbook, malotes: Malote[], envio
     ["Setores", MENSAGERIA_SECTORS.length, "Setores cadastrados e responsáveis"],
   ];
 
-  sheet.getRange("A10:H13");
   summaryRows.forEach((row, index) => {
     const excelRow = sheet.getRow(10 + index);
     excelRow.values = [row[0], row[1], row[2]];
