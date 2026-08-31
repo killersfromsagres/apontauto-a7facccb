@@ -195,9 +195,9 @@ export async function draftGet(osId: string): Promise<OsDraft | undefined> {
 
 /**
  * Persiste o rascunho local e, quando uma peça já possui descrição,
- * transforma o item em uma operação de outbox imediatamente.
- * Isso desacopla a solicitação de peças da finalização da OS.
- * O ID estável da peça é reutilizado como ID da outbox para evitar duplicações.
+ * transforma peça, evidências e estado de material em operações de outbox.
+ * Assim a solicitação e as fotos ficam disponíveis sem exigir a finalização da OS.
+ * IDs estáveis mantêm o autosave idempotente entre múltiplas gravações do rascunho.
  */
 export async function draftPut(draft: OsDraft): Promise<void> {
   await tx("drafts", "readwrite", (t) => req(t.objectStore("drafts").put(draft)));
@@ -222,6 +222,25 @@ export async function draftPut(draft: OsDraft): Promise<void> {
   }
 
   if (pecas.length > 0) {
+    const fotos = Array.isArray(draft.fotos) ? draft.fotos : [];
+
+    for (const foto of fotos) {
+      await outboxAdd({
+        id: `foto:${draft.osId}:${foto.id}`,
+        kind: "foto",
+        osId: draft.osId,
+        numeroOs: "",
+        payload: {
+          blobKey: foto.blobKey,
+          clientUuid: foto.id,
+          legenda: "Evidência vinculada à solicitação de material",
+          __fromDraft: true,
+        },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+    }
+
     await outboxAdd({
       id: `material-status:${draft.osId}`,
       kind: "material_status",
