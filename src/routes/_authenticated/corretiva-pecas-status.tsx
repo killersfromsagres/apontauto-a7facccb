@@ -24,6 +24,7 @@ import { useIsAdmin } from "@/hooks/use-is-admin";
 import { cn } from "@/lib/utils";
 import { useServerFn } from "@tanstack/react-start";
 import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
+import { exportComprasPremiumExcel } from "@/lib/materiais/compras-premium-excel";
 
 export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
   component: CentralMateriaisUnificadaPage,
@@ -99,42 +100,14 @@ function CentralMateriaisUnificadaPage() {
   }, [pecas, search, fOrigem, osById]);
 
   const exportExcel = async () => {
-    const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Solicitações de Materiais');
-    
-    worksheet.columns = [
-      { header: 'Data', key: 'data', width: 18 },
-      { header: 'Origem', key: 'origem', width: 15 },
-      { header: 'OS', key: 'os', width: 12 },
-      { header: 'Descrição Peça', key: 'peca', width: 40 },
-      { header: 'Qtd', key: 'qtd', width: 8 },
-      { header: 'Equipe', key: 'equipe', width: 20 },
-      { header: 'Localização', key: 'local', width: 30 },
-      { header: 'Solicitante', key: 'solicitante', width: 20 },
-    ];
-
-    filtered.forEach(p => {
-      const os = osById.get(p.os_id);
-      worksheet.addRow({
-        data: new Date(p.created_at).toLocaleString('pt-BR'),
-        origem: p.origem === 'refrigeracao' ? 'Refrigeração' : 'Corretiva',
-        os: os?.numero_os || '—',
-        peca: p.descricao,
-        qtd: p.quantidade || 1,
-        equipe: os?.equipe || '—',
-        local: `${os?.predio || ''} ${os?.andar || ''} ${os?.local || ''}`.trim(),
-        solicitante: os?.solicitante || '—',
-      });
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Central_Materiais_Unificada_${new Date().toISOString().split('T')[0]}.xlsx`;
-    a.click();
+    const toastId = toast.loading("Preparando planilha premium de compras...");
+    try {
+      await exportComprasPremiumExcel(filtered, osById);
+      toast.success("Planilha premium de compras exportada!", { id: toastId });
+    } catch (error) {
+      console.error("Erro ao exportar compras:", error);
+      toast.error("Não foi possível gerar a planilha de compras.", { id: toastId });
+    }
   };
 
   return (
