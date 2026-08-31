@@ -9,6 +9,7 @@ import {
   BrainCircuit,
   Loader2,
   PencilLine,
+  Info,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -30,6 +31,7 @@ import {
   type EditableMaterialRequest,
 } from "@/components/materiais/material-request-edit-dialog";
 import { MaterialRequestPhotoGallery } from "@/components/materiais/material-request-photo-gallery";
+import { MaterialRequestDetailsDialog } from "@/components/materiais/material-request-details-dialog";
 
 export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
   component: CentralMateriaisUnificadaPage,
@@ -49,6 +51,7 @@ function CentralMateriaisUnificadaPage() {
   const [search, setSearch] = useState("");
   const [fOrigem, setFOrigem] = useState<"todas" | "refrigeracao" | "corretiva">("todas");
   const [editingRequest, setEditingRequest] = useState<EditableMaterialRequest | null>(null);
+  const [detailRequest, setDetailRequest] = useState<any | null>(null);
 
   const processIA = useServerFn(processarDescricaoPecaIA);
 
@@ -131,6 +134,12 @@ function CentralMateriaisUnificadaPage() {
   };
 
   const editingOs = editingRequest ? osById.get(editingRequest.os_id) : null;
+  const detailOs = detailRequest ? osById.get(detailRequest.os_id) : null;
+  const detailOrigin: "refrigeracao" | "corretiva" =
+    detailRequest?.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+  const detailPhotos = detailRequest
+    ? photosByOs.get(materialPhotoKey(detailOrigin, detailRequest.os_id)) || []
+    : [];
 
   return (
     <PageShell
@@ -283,7 +292,8 @@ function CentralMateriaisUnificadaPage() {
           <div className="space-y-3">
             {filtered.map((p) => {
               const os = osById.get(p.os_id);
-              const origem = p.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+              const origem: "refrigeracao" | "corretiva" =
+                p.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
               const photos = photosByOs.get(materialPhotoKey(origem, p.os_id)) || [];
 
               return (
@@ -338,15 +348,15 @@ function CentralMateriaisUnificadaPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch md:shrink-0">
+                    <div className="flex flex-col gap-2 md:w-[250px] md:shrink-0">
                       <div className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-3">
                         <div className="border-r border-white/10 px-4 text-center">
                           <p className="text-[10px] font-bold uppercase text-muted-foreground">Qtd</p>
                           <p className="text-2xl font-black text-white">{p.quantidade || 1}</p>
                         </div>
-                        <div className="min-w-28 text-right">
+                        <div className="min-w-0 flex-1 text-right">
                           <p className="text-[10px] font-bold uppercase text-muted-foreground">Equipe</p>
-                          <p className="whitespace-nowrap font-bold text-white">{os?.equipe || "—"}</p>
+                          <p className="truncate font-bold text-white">{os?.equipe || "—"}</p>
                           <Badge
                             variant="outline"
                             className="mt-1 border-emerald-500/20 bg-emerald-500/10 text-[9px] text-emerald-400"
@@ -356,15 +366,26 @@ function CentralMateriaisUnificadaPage() {
                         </div>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingRequest(p as EditableMaterialRequest)}
-                        className="h-auto min-h-12 gap-2 border-emerald-500/20 bg-emerald-500/10 px-4 text-emerald-200 shadow-sm transition-all hover:border-emerald-400/40 hover:bg-emerald-500/20 hover:text-white sm:min-h-full"
-                        title="Editar descrição e quantidade desta solicitação"
-                      >
-                        <PencilLine className="h-4 w-4" />
-                        Editar solicitação
-                      </Button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => setDetailRequest(p)}
+                          className="gap-2 border-sky-500/20 bg-sky-500/10 px-3 text-sky-200 shadow-sm transition-all hover:border-sky-400/40 hover:bg-sky-500/20 hover:text-white"
+                          title="Visualizar todas as informações desta corretiva"
+                        >
+                          <Info className="h-4 w-4" />
+                          Ver detalhes
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setEditingRequest(p as EditableMaterialRequest)}
+                          className="gap-2 border-emerald-500/20 bg-emerald-500/10 px-3 text-emerald-200 shadow-sm transition-all hover:border-emerald-400/40 hover:bg-emerald-500/20 hover:text-white"
+                          title="Editar descrição e quantidade desta solicitação"
+                        >
+                          <PencilLine className="h-4 w-4" />
+                          Editar
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </GlassCard>
@@ -373,6 +394,21 @@ function CentralMateriaisUnificadaPage() {
           </div>
         )}
       </div>
+
+      <MaterialRequestDetailsDialog
+        request={detailRequest}
+        os={detailOs}
+        photos={detailPhotos}
+        open={Boolean(detailRequest)}
+        onOpenChange={(open) => {
+          if (!open) setDetailRequest(null);
+        }}
+        onEdit={() => {
+          if (!detailRequest) return;
+          setEditingRequest(detailRequest as EditableMaterialRequest);
+          setDetailRequest(null);
+        }}
+      />
 
       <MaterialRequestEditDialog
         request={editingRequest}
