@@ -43,7 +43,11 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
 
   return (
     <>
-      <div className="mt-4 rounded-2xl border border-sky-500/10 bg-sky-500/[0.04] p-3">
+      <div
+        className="mt-4 rounded-2xl border border-sky-500/10 bg-sky-500/[0.04] p-3"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="rounded-lg border border-sky-400/15 bg-sky-500/10 p-1.5 text-sky-300">
@@ -65,7 +69,10 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
               key={photo.id}
               type="button"
               variant="ghost"
-              onClick={() => setSelectedId(photo.id)}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedId(photo.id);
+              }}
               className="group/photo relative h-24 w-28 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20 p-0 hover:border-sky-400/40"
               title={`Abrir foto ${index + 1}`}
             >
@@ -73,6 +80,7 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
                 src={photo.image_url}
                 alt={photo.legenda || `Foto ${index + 1} da OS ${osNumber || ""}`}
                 loading="lazy"
+                referrerPolicy="no-referrer"
                 onError={() => markFailed(photo.id)}
                 className="h-full w-full object-cover transition duration-300 group-hover/photo:scale-105"
               />
@@ -88,7 +96,10 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
       </div>
 
       <Dialog open={Boolean(selectedPhoto)} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <DialogContent className="max-w-5xl overflow-hidden border-white/10 bg-[#070b10]/98 p-0 shadow-2xl backdrop-blur-2xl">
+        <DialogContent
+          className="max-w-5xl overflow-hidden border-white/10 bg-[#070b10]/98 p-0 shadow-2xl backdrop-blur-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
           <DialogHeader className="border-b border-white/10 px-5 py-4 text-left">
             <div className="flex items-center gap-2">
               <ImageIcon className="h-4 w-4 text-sky-300" />
@@ -105,6 +116,7 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
                 <img
                   src={selectedPhoto.image_url}
                   alt={selectedPhoto.legenda || materialDescription || "Evidência do material"}
+                  referrerPolicy="no-referrer"
                   onError={() => markFailed(selectedPhoto.id)}
                   className="max-h-[72vh] max-w-full object-contain"
                 />
