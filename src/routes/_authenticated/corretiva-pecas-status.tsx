@@ -21,9 +21,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 import { exportComprasPremiumExcel } from "@/lib/materiais/compras-premium-excel";
 import {
+  loadMaterialRequestPhotos,
+  materialPhotoKey,
+  type MaterialPhotosByOs,
+} from "@/lib/materiais/material-request-photos";
+import {
   MaterialRequestEditDialog,
   type EditableMaterialRequest,
 } from "@/components/materiais/material-request-edit-dialog";
+import { MaterialRequestPhotoGallery } from "@/components/materiais/material-request-photo-gallery";
 
 export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
   component: CentralMateriaisUnificadaPage,
@@ -38,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
 function CentralMateriaisUnificadaPage() {
   const [pecas, setPecas] = useState<any[]>([]);
   const [osById, setOsById] = useState<Map<string, any>>(new Map());
+  const [photosByOs, setPhotosByOs] = useState<MaterialPhotosByOs>(new Map());
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [fOrigem, setFOrigem] = useState<"todas" | "refrigeracao" | "corretiva">("todas");
@@ -61,18 +68,20 @@ function CentralMateriaisUnificadaPage() {
 
       setPecas(all);
 
-      const rIds = Array.from(new Set(rData.map((p) => p.os_id)));
-      const cIds = Array.from(new Set(cData.map((p) => p.os_id)));
+      const rIds = Array.from(new Set(rData.map((p) => p.os_id).filter(Boolean))) as string[];
+      const cIds = Array.from(new Set(cData.map((p) => p.os_id).filter(Boolean))) as string[];
 
-      const [rOs, cOs] = await Promise.all([
+      const [rOs, cOs, photoMap] = await Promise.all([
         rIds.length ? supabase.from("refrigeracao_os").select("*").in("id", rIds) : { data: [] },
         cIds.length ? supabase.from("corretiva_os").select("*").in("id", cIds) : { data: [] },
+        loadMaterialRequestPhotos(rIds, cIds),
       ]);
 
       const map = new Map();
       (rOs.data || []).forEach((o) => map.set(o.id, { ...o, origem: "refrigeracao" }));
       (cOs.data || []).forEach((o) => map.set(o.id, { ...o, origem: "corretiva" }));
       setOsById(map);
+      setPhotosByOs(photoMap);
     } catch (err: any) {
       toast.error("Erro ao carregar materiais: " + err.message);
     } finally {
@@ -274,12 +283,15 @@ function CentralMateriaisUnificadaPage() {
           <div className="space-y-3">
             {filtered.map((p) => {
               const os = osById.get(p.os_id);
+              const origem = p.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+              const photos = photosByOs.get(materialPhotoKey(origem, p.os_id)) || [];
+
               return (
                 <GlassCard
                   key={`${p.origem}-${p.id}`}
                   className="group p-4 transition-all hover:border-emerald-500/15 hover:bg-white/5"
                 >
-                  <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                  <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
                     <div className="min-w-0 flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Badge
@@ -296,6 +308,11 @@ function CentralMateriaisUnificadaPage() {
                         <Badge variant="secondary" className="font-mono text-[10px]">
                           OS {os?.numero_os || "—"}
                         </Badge>
+                        {photos.length > 0 && (
+                          <Badge variant="outline" className="border-sky-500/20 bg-sky-500/10 text-[10px] text-sky-300">
+                            {photos.length} {photos.length === 1 ? "foto anexada" : "fotos anexadas"}
+                          </Badge>
+                        )}
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(p.created_at).toLocaleString("pt-BR")}
                         </span>
@@ -303,7 +320,7 @@ function CentralMateriaisUnificadaPage() {
 
                       <div className="flex items-start gap-3">
                         <Package className="mt-0.5 h-5 w-5 shrink-0 text-primary/70" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="break-words text-lg font-bold leading-tight">{p.descricao}</p>
                           <p className="mt-1 text-sm text-muted-foreground">
                             {os?.predio} · {os?.andar} · {os?.local}
@@ -311,11 +328,17 @@ function CentralMateriaisUnificadaPage() {
                           <p className="mt-0.5 text-[11px] font-medium italic text-primary/60">
                             Solicitante: {os?.solicitante || "Não informado"}
                           </p>
+
+                          <MaterialRequestPhotoGallery
+                            photos={photos}
+                            osNumber={os?.numero_os}
+                            materialDescription={p.descricao}
+                          />
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch md:shrink-0">
                       <div className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-3">
                         <div className="border-r border-white/10 px-4 text-center">
                           <p className="text-[10px] font-bold uppercase text-muted-foreground">Qtd</p>
