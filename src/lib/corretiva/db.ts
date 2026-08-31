@@ -1,10 +1,18 @@
 // Minimal IndexedDB wrapper para o módulo Corretiva.
-// Sem dependências externas: 3 object stores (os_cache, outbox, blobs).
+// Sem dependências externas: stores de OS, outbox, blobs e rascunhos.
 
 const DB_NAME = "corretiva-offline";
 const DB_VERSION = 3;
 
-export type OutboxKind = "foto" | "peca" | "material" | "problema" | "patrimonio" | "status" | "assinatura";
+export type OutboxKind =
+  | "foto"
+  | "peca"
+  | "material"
+  | "material_status"
+  | "problema"
+  | "patrimonio"
+  | "status"
+  | "assinatura";
 
 export type OutboxItem = {
   id: string;
@@ -185,8 +193,45 @@ export async function draftGet(osId: string): Promise<OsDraft | undefined> {
   return tx("drafts", "readonly", (t) => req<OsDraft>(t.objectStore("drafts").get(osId) as any));
 }
 
+/**
+ * Persiste o rascunho local e, quando uma peça já possui descrição,
+ * transforma o item em uma operação de outbox imediatamente.
+ * Isso desacopla a solicitação de peças da finalização da OS.
+ * O ID estável da peça é reutilizado como ID da outbox para evitar duplicações.
+ */
 export async function draftPut(draft: OsDraft): Promise<void> {
   await tx("drafts", "readwrite", (t) => req(t.objectStore("drafts").put(draft)));
+
+  const pecas = Array.isArray(draft.pecas)
+    ? draft.pecas.filter((p) => String(p?.descricao ?? "").trim().length > 0)
+    : [];
+
+  for (const peca of pecas) {
+    await outboxAdd({
+      id: `peca:${draft.osId}:${peca.id}`,
+      kind: "peca",
+      osId: draft.osId,
+      numeroOs: "",
+      payload: {
+        ...peca,
+        __fromDraft: true,
+      },
+      createdAt: Date.now(),
+      attempts: 0,
+    });
+  }
+
+  if (pecas.length > 0) {
+    await outboxAdd({
+      id: `material-status:${draft.osId}`,
+      kind: "material_status",
+      osId: draft.osId,
+      numeroOs: "",
+      payload: { status: "solicitado" },
+      createdAt: Date.now(),
+      attempts: 0,
+    });
+  }
 }
 
 export async function draftDelete(osId: string): Promise<void> {
