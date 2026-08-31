@@ -3,6 +3,7 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { ASSIGNABLE_MENU_KEYS, type MenuKey } from "@/lib/permission-catalog";
+export { MENU_KEYS, type MenuKey } from "@/lib/permission-catalog";
 
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
