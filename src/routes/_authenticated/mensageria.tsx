@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
@@ -6,12 +6,12 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   Download,
-  FileSignature,
   Loader2,
   PackageOpen,
   Search,
+  Send,
+  Upload,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -32,13 +32,21 @@ import {
   describeMensageriaError,
   type MensageriaErrorInfo,
 } from "@/lib/mensageria/errors";
+import {
+  parseMensageriaSpreadsheet,
+  type MensageriaSpreadsheetImport,
+  type SpreadsheetCell,
+  type SpreadsheetRows,
+} from "@/lib/mensageria/spreadsheet-import";
 
 export const Route = createFileRoute("/_authenticated/mensageria")({
   component: MensageriaPage,
 });
 
 type MaloteStatus = "aguardando_entrega" | "entregue";
-type ViewMode = "operacao" | "recebimentos" | "pendentes" | "entregues" | "setores";
+type EnvioStatus = "preparando" | "enviado" | "finalizado" | "devolvido";
+type EnvioCategoria = "correios" | "juridico" | "malote_interno" | "outro";
+type ViewMode = "operacao" | "recebimentos" | "pendentes" | "entregues" | "envios" | "setores";
 
 type Setor = {
   id: string;
@@ -91,6 +99,37 @@ type DeliveryForm = {
   entregue_em: string;
   entrega_observacoes: string;
   assinatura_data_url: string | null;
+};
+
+type Envio = {
+  id: string;
+  categoria: EnvioCategoria;
+  remetente: string;
+  destinatario: string;
+  codigo_rastreio: string | null;
+  item_descricao: string | null;
+  nota_fiscal: string | null;
+  enviado_em: string | null;
+  enviado_por: string | null;
+  status: EnvioStatus;
+  finalizado_em: string | null;
+  observacoes: string | null;
+  legacy_import: boolean;
+  legacy_source: string | null;
+  legacy_source_row: number | null;
+  created_at: string;
+};
+
+type EnvioForm = {
+  categoria: EnvioCategoria;
+  remetente: string;
+  destinatario: string;
+  codigo_rastreio: string;
+  item_descricao: string;
+  nota_fiscal: string;
+  enviado_em: string;
+  enviado_por: string;
+  observacoes: string;
 };
 
 const FALLBACK_SECTORS: Setor[] = [
@@ -183,8 +222,32 @@ function emptyDeliveryForm(malote?: Malote | null): DeliveryForm {
   };
 }
 
+function emptyEnvioForm(): EnvioForm {
+  return {
+    categoria: "malote_interno",
+    remetente: "",
+    destinatario: "",
+    codigo_rastreio: "",
+    item_descricao: "",
+    nota_fiscal: "",
+    enviado_em: toDateTimeLocal(),
+    enviado_por: "",
+    observacoes: "",
+  };
+}
+
+function envioCategoryLabel(category: EnvioCategoria) {
+  return ({
+    correios: "Correios",
+    juridico: "Jurídico",
+    malote_interno: "Malote interno",
+    outro: "Outro",
+  })[category];
+}
+
 function MensageriaPage() {
   const [malotes, setMalotes] = useState<Malote[]>([]);
+  const [envios, setEnvios] = useState<Envio[]>([]);
   const [setores, setSetores] = useState<Setor[]>(FALLBACK_SECTORS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -201,12 +264,19 @@ function MensageriaPage() {
   const [deliveryForm, setDeliveryForm] = useState<DeliveryForm>(emptyDeliveryForm());
   const [detailsTarget, setDetailsTarget] = useState<Malote | null>(null);
   const [detailsSector, setDetailsSector] = useState("");
+  const [envioOpen, setEnvioOpen] = useState(false);
+  const [envioForm, setEnvioForm] = useState<EnvioForm>(emptyEnvioForm());
+  const [importOpen, setImportOpen] = useState(false);
+  const [importFileName, setImportFileName] = useState("");
+  const [importPreview, setImportPreview] = useState<MensageriaSpreadsheetImport | null>(null);
+  const [importReading, setImportReading] = useState(false);
 
   const reportActionError = (error: unknown, fallback: string) => {
     const issue = describeMensageriaError(error);
     if (["schema", "permission", "session"].includes(issue.kind)) {
       setLoadError(issue);
       setMalotes([]);
+      setEnvios([]);
     }
     toast.error(issue.kind === "unknown" ? fallback : issue.message);
   };
@@ -215,7 +285,7 @@ function MensageriaPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [malotesResult, setoresResult] = await Promise.all([
+      const [malotesResult, setoresResult, enviosResult] = await Promise.all([
         (supabase as any)
           .from("mensageria_malotes")
           .select("*")
@@ -226,11 +296,18 @@ function MensageriaPage() {
           .select("*")
           .eq("ativo", true)
           .order("nome", { ascending: true }),
+        (supabase as any)
+          .from("mensageria_envios")
+          .select("*")
+          .order("enviado_em", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false }),
       ]);
 
       if (malotesResult.error) throw malotesResult.error;
       if (setoresResult.error) throw setoresResult.error;
+      if (enviosResult.error) throw enviosResult.error;
       setMalotes((malotesResult.data ?? []) as Malote[]);
+      setEnvios((enviosResult.data ?? []) as Envio[]);
 
       if (setoresResult.data?.length) {
         setSetores(setoresResult.data as Setor[]);
@@ -241,6 +318,7 @@ function MensageriaPage() {
       console.error("Erro ao carregar mensageria:", error);
       const issue = describeMensageriaError(error);
       setMalotes([]);
+      setEnvios([]);
       setSetores(FALLBACK_SECTORS);
       setLoadError(issue);
       toast.error(issue.title, { description: issue.message });
@@ -257,6 +335,7 @@ function MensageriaPage() {
   const backendReady = !loading && loadError === null;
   const pending = useMemo(() => malotes.filter((item) => item.status === "aguardando_entrega"), [malotes]);
   const delivered = useMemo(() => malotes.filter((item) => item.status === "entregue"), [malotes]);
+  const activeShipments = useMemo(() => envios.filter((item) => item.status === "preparando" || item.status === "enviado"), [envios]);
 
   const stats = useMemo(() => ({
     recebidosHoje: malotes.filter((item) => isToday(item.recebido_em)).length,
@@ -265,7 +344,8 @@ function MensageriaPage() {
     atrasados: pending.filter((item) => ageInDays(item.recebido_em) >= 3).length,
     assinados: delivered.filter((item) => Boolean(item.assinatura_data_url)).length,
     setoresPendentes: new Set(pending.map((item) => item.setor)).size,
-  }), [delivered, malotes, pending]);
+    enviosAtivos: activeShipments.length,
+  }), [activeShipments, delivered, malotes, pending]);
 
   const oldestPending = useMemo(() => {
     return [...pending].sort((a, b) => {
@@ -294,6 +374,21 @@ function MensageriaPage() {
       ].some((value) => value?.toLocaleLowerCase("pt-BR").includes(term));
     });
   }, [malotes, search, sectorFilter, view]);
+
+  const visibleEnvios = useMemo(() => {
+    const term = search.trim().toLocaleLowerCase("pt-BR");
+    if (!term) return envios;
+    return envios.filter((envio) => [
+      envio.remetente,
+      envio.destinatario,
+      envio.codigo_rastreio,
+      envio.item_descricao,
+      envio.nota_fiscal,
+      envio.enviado_por,
+      envio.status,
+      envioCategoryLabel(envio.categoria),
+    ].some((value) => value?.toLocaleLowerCase("pt-BR").includes(term)));
+  }, [envios, search]);
 
   const groupedPending = useMemo(() => {
     const groups = new Map<string, Malote[]>();
@@ -472,8 +567,136 @@ function MensageriaPage() {
     }
   };
 
+  const handleSaveEnvio = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para registrar o envio.");
+    if (!envioForm.remetente.trim() || !envioForm.destinatario.trim()) return void toast.error("Informe remetente e destinatário.");
+    if (!envioForm.enviado_em) return void toast.error("Informe a data e hora do envio.");
+    if (!envioForm.enviado_por.trim()) return void toast.error("Informe quem realizou o envio.");
+
+    let enviadoEm: string;
+    try {
+      enviadoEm = toIso(envioForm.enviado_em);
+    } catch {
+      return void toast.error("Informe uma data e hora de envio válidas.");
+    }
+
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from("mensageria_envios").insert({
+        categoria: envioForm.categoria,
+        remetente: envioForm.remetente.trim(),
+        destinatario: envioForm.destinatario.trim(),
+        codigo_rastreio: envioForm.codigo_rastreio.trim() || null,
+        item_descricao: envioForm.item_descricao.trim() || null,
+        nota_fiscal: envioForm.nota_fiscal.trim() || null,
+        enviado_em: enviadoEm,
+        enviado_por: envioForm.enviado_por.trim(),
+        status: "enviado",
+        observacoes: envioForm.observacoes.trim() || null,
+        legacy_import: false,
+      });
+      if (error) throw error;
+      toast.success("Envio registrado e incluído no acompanhamento.");
+      setEnvioOpen(false);
+      setEnvioForm(emptyEnvioForm());
+      setView("envios");
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao registrar envio:", error);
+      reportActionError(error, "Não foi possível registrar o envio.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const finalizeEnvio = async (envio: Envio) => {
+    if (!backendReady) return void toast.error("A base de Mensageria precisa estar disponível para finalizar o envio.");
+    setSaving(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("mensageria_envios")
+        .update({ status: "finalizado", finalizado_em: new Date().toISOString() })
+        .eq("id", envio.id)
+        .in("status", ["preparando", "enviado"])
+        .select("id")
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("O envio já foi finalizado ou não pôde ser atualizado.");
+      toast.success("Envio finalizado com data de conclusão registrada.");
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao finalizar envio:", error);
+      reportActionError(error, "Não foi possível finalizar o envio.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSpreadsheetFile = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImportReading(true);
+    setImportPreview(null);
+    setImportFileName(file.name);
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+      const sheets = Object.fromEntries(workbook.SheetNames.map((name) => [
+        name.trim().toLocaleUpperCase("pt-BR"),
+        XLSX.utils.sheet_to_json<SpreadsheetCell[]>(workbook.Sheets[name], {
+          header: 1,
+          raw: true,
+          defval: null,
+        }) as SpreadsheetRows,
+      ]));
+      if (!sheets.ENTREGA) throw new Error("A aba ENTREGA não foi encontrada na planilha.");
+      const preview = parseMensageriaSpreadsheet(sheets);
+      if (!preview.malotes.length) throw new Error("A aba ENTREGA não contém registros para importar.");
+      setImportPreview(preview);
+    } catch (error) {
+      console.error("Erro ao ler planilha de Mensageria:", error);
+      toast.error(error instanceof Error ? error.message : "Não foi possível ler a planilha selecionada.");
+    } finally {
+      setImportReading(false);
+      event.target.value = "";
+    }
+  };
+
+  const confirmSpreadsheetImport = async () => {
+    if (!importPreview || !backendReady) return;
+    setSaving(true);
+    try {
+      const operations = [];
+      if (importPreview.malotes.length) {
+        operations.push((supabase as any)
+          .from("mensageria_malotes")
+          .upsert(importPreview.malotes, { onConflict: "legacy_source,legacy_source_row", ignoreDuplicates: true }));
+      }
+      if (importPreview.envios.length) {
+        operations.push((supabase as any)
+          .from("mensageria_envios")
+          .upsert(importPreview.envios, { onConflict: "legacy_source,legacy_source_row", ignoreDuplicates: true }));
+      }
+      const results = await Promise.all(operations);
+      const failure = results.find((result) => result.error)?.error;
+      if (failure) throw failure;
+      toast.success("Histórico importado sem duplicações.", {
+        description: `${importPreview.malotes.length} recebimentos/entregas e ${importPreview.envios.length} envios processados.`,
+      });
+      setImportOpen(false);
+      setImportPreview(null);
+      setImportFileName("");
+      await loadData();
+    } catch (error) {
+      console.error("Erro ao importar histórico de Mensageria:", error);
+      reportActionError(error, "Não foi possível importar o histórico.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const exportWorkbook = () => {
-    if (!malotes.length) return void toast.info("Não há protocolos para exportar.");
+    if (!malotes.length && !envios.length) return void toast.info("Não há protocolos para exportar.");
     const workbook = XLSX.utils.book_new();
     const rows = malotes.map((item) => ({
       Status: item.status === "entregue" ? "ENTREGUE" : "PENDENTE",
@@ -497,10 +720,27 @@ function MensageriaPage() {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), "Controle de Malotes");
     XLSX.utils.book_append_sheet(
       workbook,
+      XLSX.utils.json_to_sheet(envios.map((item) => ({
+        Status: item.status.toLocaleUpperCase("pt-BR"),
+        Categoria: envioCategoryLabel(item.categoria),
+        Remetente: item.remetente,
+        Destinatário: item.destinatario,
+        "Código de rastreio": item.codigo_rastreio ?? "",
+        Item: item.item_descricao ?? "",
+        "Nota fiscal": item.nota_fiscal ?? "",
+        "Data envio": item.enviado_em ? formatDateTime(item.enviado_em, item.legacy_import) : "",
+        "Enviado por": item.enviado_por ?? "",
+        "Data conclusão": item.finalizado_em ? formatDateTime(item.finalizado_em, item.legacy_import) : "",
+        Observações: item.observacoes ?? "",
+      }))),
+      "Envios",
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
       XLSX.utils.json_to_sheet(setores.map((item) => ({ Setor: item.nome, Responsável: item.responsavel ?? "" }))),
       "Setores",
     );
-    XLSX.writeFile(workbook, `mensageria-sherwin-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(workbook, `mensageria-malotes-${new Date().toISOString().slice(0, 10)}.xlsx`);
     toast.success("Planilha operacional exportada.");
   };
 
@@ -510,8 +750,14 @@ function MensageriaPage() {
       description="Recebimento na portaria, triagem por setor, entrega ao destinatário e comprovação por assinatura digital."
       actions={
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2" disabled={!backendReady || !malotes.length} title={!backendReady ? "Aguarde a conexão com a base de Mensageria." : undefined}>
+          <Button type="button" variant="outline" size="sm" onClick={() => setImportOpen(true)} className="gap-2" disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para importar." : undefined}>
+            <Upload className="h-4 w-4" /> Importar histórico
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={exportWorkbook} className="gap-2" disabled={!backendReady || (!malotes.length && !envios.length)} title={!backendReady ? "Aguarde a conexão com a base de Mensageria." : undefined}>
             <Download className="h-4 w-4" /> Exportar
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={() => { setEnvioForm(emptyEnvioForm()); setEnvioOpen(true); }} className="gap-2" disabled={!backendReady} title={!backendReady ? "A base de Mensageria precisa estar disponível para novos envios." : undefined}>
+            <Send className="h-4 w-4" /> Novo envio
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setDeliveryQueueOpen(true)} disabled={!backendReady || !pending.length} title={!backendReady ? "A base de Mensageria precisa estar disponível para registrar entregas." : undefined}>
             Registrar entrega{pending.length ? ` (${pending.length})` : ""}
@@ -522,12 +768,13 @@ function MensageriaPage() {
     >
       <div className="space-y-5">
         <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
-          <div className="grid divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+          <div className="grid divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-6">
             <Kpi label="Recebidos hoje" value={stats.recebidosHoje} detail="Entradas registradas" />
             <Kpi label="Aguardando entrega" value={stats.pendentes} detail={`${stats.setoresPendentes} setores envolvidos`} critical={stats.pendentes > 0} />
             <Kpi label="Entregues hoje" value={stats.entreguesHoje} detail="Protocolos concluídos" />
             <Kpi label="Há 3+ dias" value={stats.atrasados} detail="Pendências que exigem atenção" critical={stats.atrasados > 0} />
             <Kpi label="Com assinatura" value={stats.assinados} detail="Comprovações digitais" />
+            <Kpi label="Envios ativos" value={stats.enviosAtivos} detail="Em acompanhamento" critical={stats.enviosAtivos > 0} />
           </div>
         </section>
 
@@ -557,6 +804,7 @@ function MensageriaPage() {
             <ViewButton active={view === "recebimentos"} onClick={() => setView("recebimentos")}>Recebimentos ({malotes.length})</ViewButton>
             <ViewButton active={view === "pendentes"} onClick={() => setView("pendentes")}>Pendentes ({pending.length})</ViewButton>
             <ViewButton active={view === "entregues"} onClick={() => setView("entregues")}>Entregues ({delivered.length})</ViewButton>
+            <ViewButton active={view === "envios"} onClick={() => setView("envios")}>Envios ({envios.length})</ViewButton>
             <ViewButton active={view === "setores"} onClick={() => setView("setores")}>Setores e direcionamentos</ViewButton>
           </div>
         </section>
@@ -573,6 +821,21 @@ function MensageriaPage() {
           />
         ) : view === "setores" ? (
           <SectorOverview setores={setores} malotes={malotes} />
+        ) : view === "envios" ? (
+          <>
+            <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Buscar remetente, destinatário, rastreio, nota fiscal ou status"
+                  className="h-11 pl-9"
+                />
+              </div>
+            </section>
+            {loading ? <LoadingState /> : <ShipmentOverview envios={visibleEnvios} saving={saving} onFinalize={finalizeEnvio} />}
+          </>
         ) : (
           <>
             <section className="rounded-2xl border border-border/70 bg-card/50 p-4 shadow-sm">
@@ -655,6 +918,83 @@ function MensageriaPage() {
               <Button type="submit" disabled={saving || !backendReady}>{saving ? "Salvando..." : editingTarget ? "Salvar alterações" : "Registrar recebimento"}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={envioOpen} onOpenChange={setEnvioOpen}>
+        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Novo envio</DialogTitle>
+            <DialogDescription>Registre a saída para acompanhar o objeto até a conclusão, com rastreio e responsável.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSaveEnvio} className="space-y-5">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Categoria" required>
+                <select value={envioForm.categoria} onChange={(event) => setEnvioForm((current) => ({ ...current, categoria: event.target.value as EnvioCategoria }))} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                  <option value="malote_interno">Malote interno</option>
+                  <option value="correios">Correios</option>
+                  <option value="juridico">Jurídico</option>
+                  <option value="outro">Outro</option>
+                </select>
+              </Field>
+              <Field label="Código de rastreio"><Input value={envioForm.codigo_rastreio} onChange={(event) => setEnvioForm((current) => ({ ...current, codigo_rastreio: event.target.value }))} placeholder="Ex.: OY123456789BR" /></Field>
+              <Field label="Remetente" required><Input value={envioForm.remetente} onChange={(event) => setEnvioForm((current) => ({ ...current, remetente: event.target.value }))} /></Field>
+              <Field label="Destinatário" required><Input value={envioForm.destinatario} onChange={(event) => setEnvioForm((current) => ({ ...current, destinatario: event.target.value }))} /></Field>
+              <Field label="Item / descrição"><Input value={envioForm.item_descricao} onChange={(event) => setEnvioForm((current) => ({ ...current, item_descricao: event.target.value }))} /></Field>
+              <Field label="Nota fiscal"><Input value={envioForm.nota_fiscal} onChange={(event) => setEnvioForm((current) => ({ ...current, nota_fiscal: event.target.value }))} /></Field>
+              <Field label="Data e hora do envio" required><Input type="datetime-local" value={envioForm.enviado_em} onChange={(event) => setEnvioForm((current) => ({ ...current, enviado_em: event.target.value }))} /></Field>
+              <Field label="Enviado por" required><Input value={envioForm.enviado_por} onChange={(event) => setEnvioForm((current) => ({ ...current, enviado_por: event.target.value }))} /></Field>
+            </div>
+            <Field label="Observações"><textarea value={envioForm.observacoes} onChange={(event) => setEnvioForm((current) => ({ ...current, observacoes: event.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /></Field>
+            <DialogFooter>
+              <Button type="button" variant="ghost" onClick={() => setEnvioOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={saving || !backendReady}>{saving ? "Salvando..." : "Registrar envio"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) { setImportPreview(null); setImportFileName(""); } }}>
+        <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Importar histórico de Mensageria</DialogTitle>
+            <DialogDescription>Use a planilha de controle existente. A aba ENTREGA prevalece como histórico consolidado e a mesma linha nunca é duplicada.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <label className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-muted/15 px-5 py-8 text-center transition-colors hover:bg-muted/30 focus-within:ring-2 focus-within:ring-ring">
+              {importReading ? <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /> : <Upload className="h-7 w-7 text-muted-foreground" />}
+              <span className="mt-3 text-sm font-semibold text-foreground">{importReading ? "Analisando planilha..." : "Selecionar arquivo Excel"}</span>
+              <span className="mt-1 text-xs text-muted-foreground">Formatos .xlsx e .xls · nenhum registro é salvo antes da confirmação</span>
+              <input type="file" accept=".xlsx,.xls" onChange={handleSpreadsheetFile} disabled={importReading || saving || !backendReady} className="sr-only" />
+            </label>
+
+            {importPreview && (
+              <div aria-live="polite" className="space-y-4">
+                <section className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Prévia validada</p>
+                  <p className="mt-2 font-semibold text-foreground">{importFileName}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    <Info label="Recebimentos/entregas" value={String(importPreview.malotes.length)} />
+                    <Info label="Envios" value={String(importPreview.envios.length)} />
+                    <Info label="Alertas de qualidade" value={String(importPreview.warnings.length)} />
+                  </div>
+                </section>
+                {importPreview.warnings.length > 0 && (
+                  <section className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4">
+                    <p className="text-sm font-semibold text-foreground">Campos mantidos como não informados</p>
+                    <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                      {importPreview.warnings.slice(0, 8).map((warning, index) => <li key={`${warning.sheet}-${warning.row}-${index}`}>• {warning.sheet}, linha {warning.row}: {warning.message}</li>)}
+                    </ul>
+                    {importPreview.warnings.length > 8 && <p className="mt-3 text-xs font-medium text-muted-foreground">Mais {importPreview.warnings.length - 8} alerta(s) serão preservados sem preenchimento artificial.</p>}
+                  </section>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setImportOpen(false)}>Cancelar</Button>
+            <Button type="button" onClick={confirmSpreadsheetImport} disabled={!importPreview || saving || importReading || !backendReady}>{saving ? "Importando..." : "Confirmar importação"}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -843,6 +1183,35 @@ function SectorOverview({ setores, malotes }: { setores: Setor[]; malotes: Malot
   );
 }
 
+function ShipmentOverview({ envios, saving, onFinalize }: { envios: Envio[]; saving: boolean; onFinalize: (envio: Envio) => void }) {
+  if (!envios.length) {
+    return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><Send className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-semibold text-foreground">Nenhum envio encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste a busca, importe o histórico ou registre um novo envio.</p></div>;
+  }
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/60 shadow-sm">
+      <div className="hidden grid-cols-[1.2fr_1.5fr_1fr_1fr_140px] gap-3 border-b border-border/70 bg-muted/30 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground lg:grid">
+        <span>Status / categoria</span><span>Remetente → destinatário</span><span>Envio</span><span>Referências</span><span className="text-right">Ações</span>
+      </div>
+      <div className="divide-y divide-border/60">
+        {envios.map((envio) => {
+          const canFinalize = envio.status === "preparando" || envio.status === "enviado";
+          return (
+            <div key={envio.id} className="grid gap-3 px-4 py-4 lg:grid-cols-[1.2fr_1.5fr_1fr_1fr_140px] lg:items-center lg:px-5">
+              <div className="flex flex-wrap items-center gap-2"><EnvioStatusBadge status={envio.status} /><Badge variant="outline">{envioCategoryLabel(envio.categoria)}</Badge>{envio.legacy_import && <Badge variant="outline" className="text-muted-foreground">Legado</Badge>}</div>
+              <div className="min-w-0"><p className="truncate text-sm font-semibold text-foreground">{envio.remetente} <span className="text-muted-foreground">→</span> {envio.destinatario}</p><p className="mt-1 truncate text-xs text-muted-foreground">{envio.item_descricao || "Item não informado"}</p></div>
+              <div><p className="text-sm text-foreground">{formatDateTime(envio.enviado_em, envio.legacy_import)}</p><p className="mt-0.5 text-xs text-muted-foreground">{envio.enviado_por || "Responsável não registrado"}</p></div>
+              <div className="min-w-0 text-xs text-muted-foreground"><p className="truncate">{envio.codigo_rastreio ? `Rastreio: ${envio.codigo_rastreio}` : "Sem rastreio"}</p><p className="mt-1 truncate">{envio.nota_fiscal ? `NF: ${envio.nota_fiscal}` : envio.finalizado_em ? `Concluído: ${formatDateTime(envio.finalizado_em)}` : "Sem nota fiscal"}</p></div>
+              <div className="flex justify-end">
+                {canFinalize ? <Button type="button" size="sm" onClick={() => onFinalize(envio)} disabled={saving}>Finalizar</Button> : <span className="text-xs font-medium text-muted-foreground">Sem ação pendente</span>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function ProtocolRow({ malote, sector, onDeliver, onDetails, compact = false }: { malote: Malote; sector?: Setor; onDeliver: () => void; onDetails: () => void; compact?: boolean }) {
   const isPending = malote.status === "aguardando_entrega";
   return (
@@ -870,6 +1239,22 @@ function Kpi({ label, value, detail, critical = false }: { label: string; value:
 function StatusBadge({ status }: { status: MaloteStatus }) {
   const pending = status === "aguardando_entrega";
   return <Badge variant="outline" className={pending ? "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-300" : "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300"}>{pending ? "Aguardando entrega" : "Entregue"}</Badge>;
+}
+
+function EnvioStatusBadge({ status }: { status: EnvioStatus }) {
+  const styles: Record<EnvioStatus, string> = {
+    preparando: "border-slate-500/30 bg-slate-500/5 text-slate-600 dark:text-slate-300",
+    enviado: "border-sky-500/30 bg-sky-500/5 text-sky-600 dark:text-sky-300",
+    finalizado: "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-300",
+    devolvido: "border-rose-500/30 bg-rose-500/5 text-rose-600 dark:text-rose-300",
+  };
+  const labels: Record<EnvioStatus, string> = {
+    preparando: "Preparando",
+    enviado: "Enviado",
+    finalizado: "Finalizado",
+    devolvido: "Devolvido",
+  };
+  return <Badge variant="outline" className={styles[status]}>{labels[status]}</Badge>;
 }
 
 function ViewButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
