@@ -109,8 +109,7 @@ export async function syncPending() {
 
           // A mesma peça pode aparecer primeiro no autosave do rascunho e depois
           // novamente durante a finalização. O client_uuid mantém a operação idempotente.
-          const { data: existing, error: existingError } = await supabase
-            .from("corretiva_pecas")
+          const { data: existing, error: existingError } = await (supabase.from("corretiva_pecas") as any)
             .select("id")
             .eq("client_uuid", clientUuid)
             .maybeSingle();
