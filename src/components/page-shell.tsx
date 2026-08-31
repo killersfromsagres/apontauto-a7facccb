@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
+const MENSAGERIA_TITLE = "Mensageria e Malotes";
+
 export function PageShell({
   title,
   description,
@@ -26,6 +28,21 @@ export function PageShell({
       e.preventDefault();
       onBack();
     }
+  };
+
+  const handleActionsClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (title !== MENSAGERIA_TITLE) return;
+
+    const target = event.target as HTMLElement;
+    const button = target.closest("button");
+    if (!button?.textContent?.includes("Exportar backup")) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    void import("@/lib/mensageria/premium-export")
+      .then(({ exportMensageriaPremiumBackup }) => exportMensageriaPremiumBackup())
+      .catch((error) => console.error("Falha ao carregar exportador premium da Mensageria:", error));
   };
 
   const online = typeof navigator !== "undefined" ? navigator.onLine : true;
@@ -78,11 +95,77 @@ export function PageShell({
           </div>
         </div>
         {actions && (
-          <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap [&>*]:flex-1 sm:[&>*]:flex-none">
+          <div
+            onClickCapture={handleActionsClickCapture}
+            className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap [&>*]:flex-1 sm:[&>*]:flex-none"
+          >
             {actions}
           </div>
         )}
       </div>
+
+      {title === MENSAGERIA_TITLE && (
+        <style>{`
+          [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button:first-child {
+            min-width: 6.75rem;
+            border: 1px solid color-mix(in oklch, var(--primary) 38%, var(--border));
+            background: color-mix(in oklch, var(--primary) 10%, var(--card));
+            color: color-mix(in oklch, var(--primary) 88%, white 12%);
+            font-weight: 700;
+            box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 8px 20px -16px color-mix(in oklch, var(--primary) 65%, transparent);
+          }
+
+          [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button:first-child:hover {
+            border-color: color-mix(in oklch, var(--primary) 62%, var(--border));
+            background: color-mix(in oklch, var(--primary) 18%, var(--card));
+            color: var(--foreground);
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12), 0 12px 26px -18px color-mix(in oklch, var(--primary) 72%, transparent);
+          }
+
+          [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button:nth-child(2) {
+            min-width: 6.5rem;
+            border: 1px solid color-mix(in oklch, #10b981 72%, var(--border));
+            background: linear-gradient(135deg, color-mix(in oklch, #10b981 92%, white 8%), color-mix(in oklch, #059669 94%, black 6%));
+            color: white;
+            font-weight: 800;
+            box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 10px 24px -16px rgb(16 185 129 / 0.78);
+          }
+
+          [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button:nth-child(2):hover {
+            filter: saturate(1.12) brightness(1.04);
+            transform: translateY(-1px);
+            box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.3), 0 14px 30px -16px rgb(16 185 129 / 0.92);
+          }
+
+          [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 24%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.14);
+          }
+
+          [data-page-title="Mensageria e Malotes"] .premium-page-heading button:nth-of-type(2) {
+            border-color: color-mix(in oklch, var(--primary) 34%, var(--border));
+          }
+
+          @media (max-width: 639px) {
+            [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child {
+              justify-content: stretch;
+            }
+
+            [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button {
+              flex: 1 1 0;
+              min-height: 2.5rem;
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button {
+              transform: none !important;
+            }
+          }
+        `}</style>
+      )}
+
       <div className="min-w-0 pb-16 md:pb-0">{children}</div>
     </div>
   );
