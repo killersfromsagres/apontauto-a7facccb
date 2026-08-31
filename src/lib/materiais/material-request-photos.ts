@@ -12,6 +12,12 @@ export type MaterialEvidencePhoto = {
 export type MaterialPhotosByOs = Map<string, MaterialEvidencePhoto[]>;
 
 const CHUNK_SIZE = 100;
+const SIGNED_URL_TTL_SECONDS = 24 * 60 * 60;
+
+const PHOTO_STORAGE_BUCKET = {
+  refrigeracao: "refrigeracao-fotos",
+  corretiva: "corretiva-fotos",
+} as const;
 
 export function materialPhotoKey(origem: "refrigeracao" | "corretiva", osId: string | null | undefined) {
   return `${origem}:${String(osId || "")}`;
@@ -27,14 +33,27 @@ function chunks<T>(values: T[], size = CHUNK_SIZE) {
   return result;
 }
 
-function resolvePhotoUrl(row: any) {
+async function resolvePhotoUrl(row: any, origem: "refrigeracao" | "corretiva") {
   const imageUrl = String(row?.image_url || "").trim();
   if (imageUrl) return imageUrl;
 
   const storagePath = String(row?.storage_path || "").trim();
+  if (!storagePath) return "";
   if (/^https?:\/\//i.test(storagePath)) return storagePath;
 
-  return "";
+  const { data, error } = await supabase.storage
+    .from(PHOTO_STORAGE_BUCKET[origem])
+    .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
+
+  if (error) {
+    console.warn(
+      `[CentralMateriais] Não foi possível assinar a foto ${String(row?.id || "")} de ${origem}:`,
+      error,
+    );
+    return "";
+  }
+
+  return data?.signedUrl || "";
 }
 
 async function fetchOriginPhotos(
@@ -56,8 +75,11 @@ async function fetchOriginPhotos(
       continue;
     }
 
-    for (const row of data || []) {
-      const url = resolvePhotoUrl(row);
+    const resolved = await Promise.all(
+      (data || []).map(async (row) => ({ row, url: await resolvePhotoUrl(row, origem) })),
+    );
+
+    for (const { row, url } of resolved) {
       if (!url || !row.os_id) continue;
       photos.push({
         id: String(row.id),
