@@ -1,34 +1,83 @@
 // Auto-injected by the Supabase integration when this file does not exist.
-//
-// Pathless layout route that gates every child under `src/routes/_authenticated/`
-// behind a signed-in Supabase user. The subtree is client-rendered (`ssr: false`)
-// because Supabase stores the session in `localStorage`, which the server cannot
-// read. Trying to gate this subtree server-side produces redirect loops or
-// false sign-out flashes on hard refresh.
-//
-// Public pages and `/auth` continue to SSR normally — they do not import this
-// layout and are not affected.
-//
-// Data fetching inside this subtree should call `createServerFn`s protected by
-// `requireSupabaseAuth`. The browser attaches the bearer token automatically
-// via `attachSupabaseAuth`, which is registered as `functionMiddleware` in
-// `src/start.ts` (auto-wired by the integration).
-//
-// Edit freely. This file is only re-injected when deleted entirely.
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
-import { supabase } from '@/integrations/supabase/client'
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useRouterState,
+} from "@tanstack/react-router";
+import { Loader2, LockKeyhole } from "lucide-react";
 
-// Lovable's Supabase auth scaffolds use `/auth`; change this if the app uses another sign-in route.
-const SIGN_IN_ROUTE = '/auth'
+import { Button } from "@/components/ui/button";
+import { useMyAccess } from "@/hooks/use-my-access";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  allMenuItems,
+  itemKeys,
+  menuItemForPath,
+  menuKeysForPath,
+} from "@/lib/nav-config";
 
-export const Route = createFileRoute('/_authenticated')({
+const SIGN_IN_ROUTE = "/auth";
+
+export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser()
+    const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      throw redirect({ to: SIGN_IN_ROUTE })
+      throw redirect({ to: SIGN_IN_ROUTE });
     }
-    return { user: data.user }
+    return { user: data.user };
   },
-  component: () => <Outlet />,
-})
+  component: AuthenticatedLayout,
+});
+
+function AuthenticatedLayout() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { access, loading } = useMyAccess();
+  const knownSection = menuItemForPath(pathname);
+  const pathKeys = menuKeysForPath(pathname) ?? [];
+  const canView =
+    access.isAdmin ||
+    !knownSection ||
+    pathKeys.some((key) => access.allowed?.includes(key));
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[55vh] items-center justify-center gap-2 px-4 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Verificando permissões…
+      </div>
+    );
+  }
+
+  if (!canView) {
+    const firstAllowed = allMenuItems.find(
+      (item) =>
+        item.url !== "#" &&
+        item.key !== "usuarios" &&
+        itemKeys(item).some((key) => access.allowed?.includes(key)),
+    );
+
+    return (
+      <div className="flex min-h-[55vh] items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card/60 p-6 text-center backdrop-blur-xl">
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-500">
+            <LockKeyhole className="h-5 w-5" />
+          </div>
+          <h1 className="text-lg font-semibold tracking-tight">Seção não liberada</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            Este login não possui permissão de visualização para esta seção. Um administrador
+            pode ajustar o acesso no Controle de Usuários.
+          </p>
+          {firstAllowed && (
+            <Button asChild className="mt-5">
+              <a href={firstAllowed.url}>Abrir primeira seção permitida</a>
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return <Outlet />;
+}

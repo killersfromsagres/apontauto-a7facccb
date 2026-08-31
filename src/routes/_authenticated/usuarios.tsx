@@ -14,6 +14,8 @@ import {
   Save,
   Search,
   Activity,
+  Layers3,
+  CheckCircle2,
 } from "lucide-react";
 
 
@@ -41,14 +43,17 @@ import {
   setUserBanned,
   setUserRole,
   setUserAllowedMenus,
-  MENU_KEYS,
   provisionEncarregadosUser,
   provisionChamadosClientLogin,
 
-  type MenuKey,
 } from "@/lib/users.functions";
 
 import { useIsAdmin } from "@/hooks/use-is-admin";
+import {
+  ASSIGNABLE_MENU_KEYS,
+  PERMISSION_GROUPS,
+  type MenuKey,
+} from "@/lib/permission-catalog";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -56,59 +61,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
 
 type Role = "admin" | "user";
 
-const MENU_LABELS: Record<MenuKey, string> = {
-  dashboard: "Menu Inicial (BI)",
-  "dashboard-chamados": "Menu Inicial (Monitoramento Cliente)",
-  "programacao-gps": "Programação GPS",
 
-  "backlog-inteligente": "Backlog Inteligente",
-  capacidade: "Capacidade das Equipes",
-  apontamentos: "Apontamentos de OS",
-  refrigeracao: "Refrigeração — Campo",
-  "refrigeracao-pecas-status": "Refrigeração — Status de Peças",
-  "refrigeracao-historico": "Refrigeração — Histórico",
-  programacao: "Programação Semanal (Legado)",
-  "programacao-preventivas": "Programação Semanal",
-  corretiva: "Programação — Campo (Legado)",
-  "corretiva-novo": "Execução de Campo (IA)",
-  "corretiva-pecas-status": "Corretiva — Status de Peças",
-  "corretiva-historico": "Corretiva — Histórico",
-  "avaliacao-chamados": "Avaliação de Chamados",
-  "corretiva-finalizar-sem-foto": "Admin: Finalizar OS sem Foto (Botão)",
-  "corretiva-concluir-sem-foto-especial": "Encarregados: Finalizar OS sem Foto",
-  "imagens-migrar": "Migrar Imagens (Storage -> ImgBB)",
-  "assets-fill": "Localização de Ativos",
-  "assets-catalog": "Base de Ativos",
-  "assets-unmatched": "Ativos não encontrados",
-  "assets-history": "Histórico Ativos",
-  confiabilidade: "Confiabilidade / Causa Raiz",
-  abastecimento: "Frota e Abastecimento",
-  "agua-execucao": "Entrega de Água",
-  "solicitacao-materiais": "Solicitação de Materiais",
-  "controle-materiais": "Controle de Materiais",
-  lavanderia: "Controle de Lavanderia",
-  "seguranca-trabalho": "Segurança do Trabalho",
-  "painel-legal": "Painel de Itens Legais",
-  auditoria: "Trilha de Auditoria",
-  observabilidade: "Painel Técnico",
-  copiloto: "Copiloto Admin (IA)",
-  "agente-ia": "Agente de Documentos (IA)",
-  "bi-studio": "BI Studio",
-  notificacoes: "Central de Notificações",
-  "notificacoes-admin": "Administração de Avisos",
-  "qualidade-dados": "Qualidade de Dados",
-  imagens: "Imagens e Armazenamento",
-  usuarios: "Gerenciamento de Usuários",
-  organograma: "Organograma Demarchi",
-  configuracoes: "Configurações",
-  backorder: "Backorders (Histórico)",
-  "backorder-mensal": "Backorder Mensal",
-  taludes: "Demarcação de Taludes",
-  "reclassificar-equipe": "Encarregados: Reclassificar Equipe Manualmente",
-  "preventiva-automacao": "Automação de Preventivas",
-  "rondas-calhas": "Rondas de Calhas",
-  "rondas-calhas-historico": "Histórico de Rondas",
-};
 
 function UsuariosPage() {
   const { isAdmin, loading: checking } = useIsAdmin();
@@ -443,7 +396,6 @@ function UsersListCard() {
 }
 
 function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) {
-  const qc = useQueryClient();
   const del = useServerFn(deleteAppUser);
   const setBanned = useServerFn(setUserBanned);
   const setRole = useServerFn(setUserRole);
@@ -451,12 +403,21 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [localAllowed, setLocalAllowed] = useState<string[] | null>(user.allowedMenus);
+  const [localAllowed, setLocalAllowed] = useState<string[]>(user.allowedMenus ?? []);
   const isAdminUser = user.role === "admin";
-  const allAllowed = localAllowed === null;
+  const baselineAllowed = (user.allowedMenus ?? []).filter((key) =>
+    (ASSIGNABLE_MENU_KEYS as readonly string[]).includes(key),
+  );
+  const selectedCount = localAllowed.filter((key) =>
+    (ASSIGNABLE_MENU_KEYS as readonly string[]).includes(key),
+  ).length;
+  const hasEveryPermission = selectedCount === ASSIGNABLE_MENU_KEYS.length;
+  const permissionsChanged =
+    [...new Set(localAllowed)].sort().join("|") !==
+    [...new Set(baselineAllowed)].sort().join("|");
 
   useEffect(() => {
-    setLocalAllowed(user.allowedMenus);
+    setLocalAllowed(user.allowedMenus ?? []);
   }, [user.allowedMenus]);
 
   const banMut = useMutation({
@@ -497,9 +458,16 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
   });
 
   const toggleMenu = (key: MenuKey, on: boolean) => {
-    const current = localAllowed ?? [...MENU_KEYS];
-    const next = on ? Array.from(new Set([...current, key])) : current.filter((k) => k !== key);
-    setLocalAllowed(next);
+    setLocalAllowed((current) =>
+      on ? Array.from(new Set([...current, key])) : current.filter((item) => item !== key),
+    );
+  };
+
+  const toggleGroup = (keys: readonly MenuKey[], on: boolean) => {
+    setLocalAllowed((current) => {
+      if (!on) return current.filter((item) => !keys.includes(item as MenuKey));
+      return Array.from(new Set([...current, ...keys]));
+    });
   };
 
   return (
@@ -570,64 +538,143 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
       </div>
 
       {expanded && (
-        <div className="mt-4 space-y-3 rounded-lg border border-border/50 bg-background/40 p-3">
-          {isAdminUser && (
-            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-              Administradores sempre mantêm acesso total, incluindo o menu Usuários.
+        <div className="mt-4 space-y-4 rounded-xl border border-border/60 bg-background/50 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 border-b border-border/50 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <Layers3 className="h-4 w-4 text-primary" />
+                Seções visíveis para este login
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Marque somente os módulos que devem aparecer e poder ser abertos por
+                <strong> {user.login}</strong>.
+              </p>
             </div>
-          )}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Itens de menu permitidos
-            </div>
-            <label className="flex items-center gap-2 text-xs">
-              <Checkbox
-                checked={allAllowed}
-                disabled={isAdminUser}
-                onCheckedChange={(v) => {
-                  setLocalAllowed(v ? null : [...MENU_KEYS]);
-                  if (v) menusMut.mutate();
-                }}
-              />
-              Acesso total (todos os itens)
-            </label>
+            <Badge variant={hasEveryPermission ? "default" : "secondary"} className="w-fit">
+              {isAdminUser
+                ? "Acesso administrativo total"
+                : `${selectedCount} de ${ASSIGNABLE_MENU_KEYS.length} liberadas`}
+            </Badge>
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-            {MENU_KEYS.map((key) => {
-              const checked = allAllowed || (localAllowed ?? []).includes(key);
-              return (
-                <label
-                  key={key}
-                  className={`flex items-center gap-2 rounded-md border px-2.5 py-2 text-sm transition cursor-pointer hover:bg-muted/30 ${
-                    checked ? "border-primary/60 bg-primary/5" : "border-border bg-transparent"
-                  } ${allAllowed ? "opacity-70" : ""}`}
+
+          {isAdminUser ? (
+            <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+              Administradores sempre mantêm acesso total. Para personalizar seções, altere o
+              perfil desta conta para Usuário.
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setLocalAllowed([...ASSIGNABLE_MENU_KEYS])}
+                  disabled={hasEveryPermission}
                 >
-                  <Checkbox
-                    checked={checked}
-                    disabled={allAllowed || isAdminUser}
-                    onCheckedChange={async (v) => {
-                      toggleMenu(key, Boolean(v));
-                      // Salvamento automático para melhor UX conforme solicitado
-                      if (!allAllowed && !isAdminUser) {
-                        const next = Boolean(v) 
-                          ? Array.from(new Set([...(localAllowed ?? []), key])) 
-                          : (localAllowed ?? []).filter((k) => k !== key);
-                        await setMenus({ data: { userId: user.id, allowed: next } });
-                        qc.invalidateQueries({ queryKey: ["app-users"] });
-                      }
-                      // Adiciona animação de fechar se desejar, mas aqui apenas processamos
-                    }}
-                  />
-                  <span className="truncate">{MENU_LABELS[key]}</span>
-                </label>
-              );
-            })}
-          </div>
-          <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
+                  <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+                  Selecionar todas
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setLocalAllowed([])}
+                  disabled={selectedCount === 0}
+                >
+                  Limpar seleção
+                </Button>
+              </div>
+
+              <div className="max-h-[520px] space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                {PERMISSION_GROUPS.map((group) => {
+                  const assignableKeys = group.modules
+                    .filter((module) => !("requiresAdmin" in module && module.requiresAdmin))
+                    .map((module) => module.key);
+                  const selectedInGroup = assignableKeys.filter((key) =>
+                    localAllowed.includes(key),
+                  ).length;
+                  const groupAll =
+                    assignableKeys.length > 0 && selectedInGroup === assignableKeys.length;
+                  const groupSome = selectedInGroup > 0 && !groupAll;
+
+                  return (
+                    <section
+                      key={group.key}
+                      className="overflow-hidden rounded-xl border border-border/60 bg-card/35"
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-border/40 bg-muted/20 px-3 py-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold">{group.label}</div>
+                          <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                            {group.description}
+                          </p>
+                        </div>
+                        {assignableKeys.length > 0 && (
+                          <Checkbox
+                            aria-label={`Selecionar toda a seção ${group.label}`}
+                            checked={groupAll ? true : groupSome ? "indeterminate" : false}
+                            onCheckedChange={(value) =>
+                              toggleGroup(assignableKeys, Boolean(value))
+                            }
+                          />
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-2">
+                        {group.modules.map((module) => {
+                          const adminOnly =
+                            "requiresAdmin" in module && Boolean(module.requiresAdmin);
+                          const checked = !adminOnly && localAllowed.includes(module.key);
+
+                          return (
+                            <label
+                              key={module.key}
+                              className={`flex min-h-11 items-start gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                                checked
+                                  ? "border-primary/50 bg-primary/10"
+                                  : "border-border/60 bg-background/35"
+                              } ${
+                                adminOnly
+                                  ? "cursor-not-allowed opacity-55"
+                                  : "cursor-pointer hover:border-primary/35 hover:bg-muted/30"
+                              }`}
+                            >
+                              <Checkbox
+                                className="mt-0.5"
+                                checked={checked}
+                                disabled={adminOnly}
+                                onCheckedChange={(value) =>
+                                  toggleMenu(module.key, Boolean(value))
+                                }
+                              />
+                              <span className="min-w-0">
+                                <span className="block leading-snug">{module.label}</span>
+                                {adminOnly && (
+                                  <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                                    Somente administrador
+                                  </span>
+                                )}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          <div className="flex flex-col-reverse gap-2 border-t border-border/50 pt-3 sm:flex-row sm:justify-end">
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => setExpanded(false)}
+              onClick={() => {
+                setLocalAllowed(user.allowedMenus ?? []);
+                setExpanded(false);
+              }}
             >
               Cancelar
             </Button>
@@ -637,14 +684,14 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
                 await menusMut.mutateAsync();
                 setExpanded(false);
               }}
-              disabled={menusMut.isPending || isAdminUser}
+              disabled={menusMut.isPending || isAdminUser || !permissionsChanged}
             >
               {menusMut.isPending ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : (
                 <Save className="mr-1 h-3.5 w-3.5" />
               )}
-              Salvar e Fechar
+              Salvar permissões
             </Button>
           </div>
         </div>

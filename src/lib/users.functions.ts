@@ -2,6 +2,7 @@ import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { ASSIGNABLE_MENU_KEYS, type MenuKey } from "@/lib/permission-catalog";
 
 type Role = "admin" | "user";
 type CreateUserInput = { login: string; password: string; fullName?: string; role: Role };
@@ -182,60 +183,6 @@ export const addOrganizationalMember = createServerFn({ method: "POST" })
     return inserted;
   });
 
-export const MENU_KEYS = [
-  "dashboard",
-  "dashboard-chamados",
-  "avaliacao-chamados",
-  "programacao-gps",
-  "backlog-inteligente",
-  "capacidade",
-  "apontamentos",
-  "refrigeracao",
-  "refrigeracao-pecas-status",
-  "refrigeracao-historico",
-  "programacao",
-  "programacao-preventivas",
-  "corretiva",
-  "corretiva-novo",
-  "corretiva-pecas-status",
-  "corretiva-historico",
-  "corretiva-finalizar-sem-foto",
-  "corretiva-concluir-sem-foto-especial",
-  "assets-fill",
-  "assets-catalog",
-  "assets-unmatched",
-  "assets-history",
-  "confiabilidade",
-  "abastecimento",
-  "agua-execucao",
-  "solicitacao-materiais",
-  "controle-materiais",
-  "lavanderia",
-  "seguranca-trabalho",
-  "painel-legal",
-  "auditoria",
-  "observabilidade",
-  "copiloto",
-  "agente-ia",
-  "bi-studio",
-  "notificacoes",
-  "notificacoes-admin",
-  "qualidade-dados",
-  "imagens",
-  "usuarios",
-  "organograma",
-  "configuracoes",
-  "backorder",
-  "backorder-mensal",
-  "taludes",
-  "imagens-migrar",
-  "reclassificar-equipe",
-  "preventiva-automacao",
-  "rondas-calhas",
-  "rondas-calhas-historico",
-] as const;
-
-export type MenuKey = (typeof MENU_KEYS)[number];
 
 export function loginToEmail(login: string) {
   const l = login.trim().toLowerCase();
@@ -492,19 +439,19 @@ export const setUserRole = createServerFn({ method: "POST" })
   });
 
 /**
- * Define quais itens de menu o usuário pode acessar.
- * `allowed = null` significa acesso total.
+ * Define quais seções o usuário comum pode visualizar. O acesso total é
+ * representado pela lista completa de módulos atribuíveis, nunca por null.
  */
 export const setUserAllowedMenus = createServerFn({ method: "POST" })
   .middleware([requireUsersAuth])
   .validator((input: unknown) => {
     const { userId } = requireUserId(input);
     const raw = (input as any)?.allowed;
-    let allowed: string[] | null = null;
+    let allowed: MenuKey[] = [];
     if (Array.isArray(raw)) {
       allowed = raw
         .filter((k): k is string => typeof k === "string")
-        .filter((k) => (MENU_KEYS as readonly string[]).includes(k));
+        .filter((k): k is MenuKey => (ASSIGNABLE_MENU_KEYS as readonly string[]).includes(k));
     }
     return { userId, allowed };
   })
@@ -533,7 +480,7 @@ export const setUserAllowedMenus = createServerFn({ method: "POST" })
 async function syncModuleAccess(
   supabaseAdmin: any,
   userId: string,
-  allowed: string[] | null,
+  allowed: readonly string[],
   grantedBy: string,
 ) {
   const keys = Array.isArray(allowed) ? Array.from(new Set(allowed)) : [];
@@ -542,7 +489,7 @@ async function syncModuleAccess(
   const rows = keys.map((module_key) => ({
     user_id: userId,
     module_key,
-    actions: ["all"],
+    actions: ["read"],
     granted_by: grantedBy,
   }));
   const { error } = await supabaseAdmin.from("user_module_access").insert(rows);

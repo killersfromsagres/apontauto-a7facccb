@@ -631,29 +631,33 @@ export const allMenuItems: MenuItem[] = sections.flatMap((s) =>
 export const itemKeys = (item: MenuItem) => [item.key, ...(item.aliases ?? [])];
 
 /** Encontra o item de menu que corresponde a um pathname (prefixo mais longo). */
-export function menuItemForPath(pathname: string): MenuItem | null {
-  if (pathname === "/" || pathname === "" || pathname === "/_authenticated/") {
-    return allMenuItems.find((i) => i.url === "/" || i.key === "dashboard") ?? null;
+function itemMatchesPath(item: MenuItem, pathname: string) {
+  if (item.url === "/") {
+    return pathname === "/" || pathname === "" || pathname === "/_authenticated/";
   }
+  return (
+    pathname === item.url ||
+    pathname === `/_authenticated${item.url}` ||
+    pathname === `/_authenticated${item.url}/` ||
+    pathname.startsWith(`${item.url}/`)
+  );
+}
+
+export function menuItemForPath(pathname: string): MenuItem | null {
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
-    if (item.url === "/") continue;
-    if (
-      pathname === item.url ||
-      pathname === `/_authenticated${item.url}` ||
-      pathname === `/_authenticated${item.url}/` ||
-      pathname.startsWith(`${item.url}/`)
-    ) {
-      if (!best || item.url.length > best.url.length) best = item;
-    }
+    if (!itemMatchesPath(item, pathname)) continue;
+    if (!best || item.url.length > best.url.length) best = item;
   }
   return best;
 }
 
-/** Chaves aceitas para liberar um pathname (`null` = rota sem restrição). */
+/** Todas as chaves que podem liberar o pathname, incluindo menus com URL compartilhada. */
 export function menuKeysForPath(pathname: string): string[] | null {
-  const item = menuItemForPath(pathname);
-  if (item) return itemKeys(item);
+  const matching = allMenuItems.filter((item) => itemMatchesPath(item, pathname));
+  if (matching.length > 0) {
+    return Array.from(new Set(matching.flatMap(itemKeys)));
+  }
   const seg = pathname.split("/").filter(Boolean)[0];
   return seg ? [seg] : null;
 }
@@ -716,39 +720,17 @@ export function canSeeMenuItem(
   ctx: { isAdmin: boolean; allowed: string[] | null | undefined },
 ): boolean {
   const { isAdmin, allowed } = ctx;
-  const key = item.key;
   if (isAdmin) return true;
 
-  if (isRestrictedModule(key)) {
-    return allowed?.includes(key) ?? false;
-  }
-  if (key === "pesquisa") return true;
-  if (key === "favoritos") return true;
-  if (key === "notificacoes") return true;
-  if (key === "dashboard") return true;
-  if (key === "dashboard-chamados") return allowed?.includes("dashboard-chamados") ?? false;
+  // Atalhos locais não abrem módulos e permanecem disponíveis para todos.
+  if (item.key === "pesquisa" || item.key === "favoritos") return true;
 
-  if (key === "imagens") return false;
-  if (key === "configuracoes") return false;
-  if (key === "refrigeracao-gestor") return allowed?.includes("refrigeracao-gestor") ?? false;
-  if (key === "corretiva-gestor") return allowed?.includes("corretiva-gestor") ?? false;
-  if (key === "assets-catalog") return false;
-  if (key.startsWith("assets-")) return false;
+  // O gerenciamento de contas exige papel administrativo no backend.
+  if (item.key === "usuarios") return false;
 
-  if (key.startsWith("refrigeracao")) {
-    const isClimatizacao = allowed?.includes("climatizacao");
-    if (isClimatizacao) return true;
-  }
+  // Para usuários comuns, toda seção real é explícita e falha fechada.
   if (!allowed) return false;
-
-  const isManutencao = allowed.includes("manutencao");
-  if (isManutencao) {
-    if (["programacao-gps", "backlog-inteligente", "capacidade", "apontamentos"].includes(key)) {
-      return false;
-    }
-  }
-
-  return itemKeys(item).some((k) => allowed.includes(k));
+  return itemKeys(item).some((key) => allowed.includes(key));
 }
 
 export function useVisibleSections() {

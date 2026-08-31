@@ -75,15 +75,15 @@ export function useMyAccess() {
       }
     },
 
-    // Cache curto de 60s: evita refetch a cada navegação/foco (principal
-    // gargalo de "piscada" ao trocar de rota), mas mantém latência baixa
-    // quando o admin altera permissões (usuário sente em <1 min ou pode
-    // clicar em "Recarregar permissões").
-    staleTime: 5 * 60_000,
+    // A sessão reutiliza a resposta entre navegações, mas revisa permissões
+    // ao voltar para a aba e, no máximo, a cada minuto. Assim uma alteração
+    // feita pelo administrador alcança logins que já estavam conectados.
+    staleTime: 30_000,
     gcTime: 15 * 60_000,
+    refetchInterval: 60_000,
     refetchOnMount: false,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 
   useEffect(() => {
