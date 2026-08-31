@@ -1,55 +1,53 @@
+import ExcelJS from "exceljs";
 import type { OsCacheRow } from "./db";
 
-const argb = (hex: string) => "FF" + hex.replace("#", "").toUpperCase();
+const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
 const C = {
-  ink: argb("#0F172A"),
-  brand: argb("#08111F"),
-  brandSoft: argb("#14263A"),
-  brandMuted: argb("#1E3852"),
-  accent: argb("#1D6FD6"),
-  accentStrong: argb("#0E4F9F"),
-  accentSoft: argb("#EAF3FF"),
-  teal: argb("#0F766E"),
-  tealSoft: argb("#E8F7F4"),
-  gold: argb("#D6A84B"),
+  navy950: argb("#06111F"),
+  navy900: argb("#0B1F33"),
+  navy800: argb("#12314C"),
+  blue700: argb("#1D4ED8"),
+  blue600: argb("#2563EB"),
+  blue50: argb("#EFF6FF"),
+  cyan600: argb("#0891B2"),
+  cyan50: argb("#ECFEFF"),
+  emerald700: argb("#047857"),
+  emerald600: argb("#059669"),
+  emerald50: argb("#ECFDF5"),
+  amber700: argb("#B45309"),
+  amber500: argb("#F59E0B"),
+  amber50: argb("#FFFBEB"),
+  rose700: argb("#BE123C"),
+  rose600: argb("#E11D48"),
+  rose50: argb("#FFF1F2"),
+  violet700: argb("#6D28D9"),
+  violet50: argb("#F5F3FF"),
   white: argb("#FFFFFF"),
-  slate800: argb("#1E293B"),
+  slate900: argb("#0F172A"),
   slate700: argb("#334155"),
   slate500: argb("#64748B"),
   slate300: argb("#CBD5E1"),
   slate200: argb("#E2E8F0"),
   slate100: argb("#F1F5F9"),
   slate50: argb("#F8FAFC"),
-  warnBg: argb("#FFF7E6"),
-  warnFg: argb("#9A6700"),
-  okBg: argb("#ECFDF3"),
-  okFg: argb("#067647"),
-  infoBg: argb("#EFF8FF"),
-  infoFg: argb("#175CD3"),
-  dangerBg: argb("#FEF3F2"),
-  dangerFg: argb("#B42318"),
 };
 
 const FONT = "Aptos";
-const FONT_SEMIBOLD = "Aptos Display";
-
-const thinBorder = {
-  style: "thin",
-  color: { argb: C.slate200 },
-} as const;
+const FONT_DISPLAY = "Aptos Display";
+const thinBorder = { style: "thin", color: { argb: C.slate200 } } as const;
 
 const TEAM_PALETTE = [
-  { bg: "#FFF4D8", fg: "#8B5A00", accent: "#F59E0B" },
-  { bg: "#E8F7FF", fg: "#075985", accent: "#0EA5E9" },
-  { bg: "#F1ECFF", fg: "#5B21B6", accent: "#8B5CF6" },
-  { bg: "#ECFDF3", fg: "#067647", accent: "#10B981" },
+  { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
+  { bg: "#EAF7FF", fg: "#075985", accent: "#0EA5E9" },
+  { bg: "#F3EEFF", fg: "#5B21B6", accent: "#8B5CF6" },
+  { bg: "#ECFDF3", fg: "#047857", accent: "#10B981" },
   { bg: "#FFF0F6", fg: "#9D174D", accent: "#EC4899" },
   { bg: "#ECFEFF", fg: "#0E7490", accent: "#06B6D4" },
   { bg: "#F2F4F7", fg: "#344054", accent: "#667085" },
 ] as const;
 
-function normalize(value: string | null | undefined): string {
+function normalize(value: string | null | undefined) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -57,16 +55,13 @@ function normalize(value: string | null | undefined): string {
     .toUpperCase();
 }
 
-function hashText(value: string): number {
+function hashText(value: string) {
   let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
+  for (let index = 0; index < value.length; index += 1) hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   return hash;
 }
 
 function teamStyle(team: string | null | undefined) {
-  const normalized = normalize(team);
   const explicit: Record<string, number> = {
     ELETRICA: 0,
     HIDRAULICA: 1,
@@ -76,453 +71,461 @@ function teamStyle(team: string | null | undefined) {
     REFRIGERACAO: 5,
     CHAVEIRO: 6,
   };
-  const index = explicit[normalized] ?? hashText(normalized || "OUTROS") % TEAM_PALETTE.length;
-  return TEAM_PALETTE[index];
+  const value = normalize(team) || "OUTROS";
+  return TEAM_PALETTE[explicit[value] ?? hashText(value) % TEAM_PALETTE.length];
 }
 
-function statusLabel(status: string | null | undefined): string {
-  const normalized = normalize(status || "aberto");
-  if (["CONCLUIDO", "CONCLUIDA", "FINALIZADO", "FINALIZADA", "FECHADO", "FECHADA"].includes(normalized)) {
-    return "Concluído";
-  }
-  if (["EM ANDAMENTO", "EM EXECUCAO", "EXECUCAO", "ANDAMENTO"].includes(normalized)) {
-    return "Em andamento";
-  }
-  if (["AGUARDANDO MATERIAL", "MATERIAL", "AGUARDANDO PECA", "AGUARDANDO PECAS"].includes(normalized)) {
-    return "Aguardando material";
-  }
-  if (["CANCELADO", "CANCELADA"].includes(normalized)) return "Cancelado";
+function statusLabel(status: string | null | undefined) {
+  const value = normalize(status || "aberto");
+  if (["CONCLUIDO", "CONCLUIDA", "FINALIZADO", "FINALIZADA", "FECHADO", "FECHADA"].includes(value)) return "Concluído";
+  if (["EM ANDAMENTO", "EM EXECUCAO", "EXECUCAO", "ANDAMENTO"].includes(value)) return "Em andamento";
+  if (["AGUARDANDO MATERIAL", "MATERIAL", "AGUARDANDO PECA", "AGUARDANDO PECAS"].includes(value)) return "Aguardando material";
+  if (["CANCELADO", "CANCELADA"].includes(value)) return "Cancelado";
   return status ? String(status) : "Aberto";
 }
 
-function ageInDays(iso: string | null | undefined): number {
+function ageInDays(iso: string | null | undefined) {
   if (!iso) return 0;
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return 0;
-  return Math.max(0, Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24)));
+  const timestamp = new Date(iso).getTime();
+  return Number.isNaN(timestamp) ? 0 : Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000));
 }
 
-function titleBlock(ws: any, title: string, subtitle: string, cols: number) {
-  ws.mergeCells(1, 1, 1, cols);
-  const titleCell = ws.getCell(1, 1);
+function materialRequested(item: OsCacheRow) {
+  return normalize(item.material_status) === "SOLICITADO";
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR");
+}
+
+function safeSheetName(value: string, used: Set<string>) {
+  const base = value.replace(/[\\/*?:\[\]]/g, " ").replace(/\s+/g, " ").trim().slice(0, 31) || "Equipe";
+  let candidate = base;
+  let suffix = 2;
+  while (used.has(candidate)) {
+    const ending = ` ${suffix++}`;
+    candidate = `${base.slice(0, Math.max(1, 31 - ending.length))}${ending}`;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+function setWorkbookMetadata(workbook: ExcelJS.Workbook, title: string, generatedAt: Date) {
+  workbook.creator = "Apont Auto";
+  workbook.lastModifiedBy = "Apont Auto";
+  workbook.company = "Apont Auto";
+  workbook.title = title;
+  workbook.subject = "Programação de execução de campo";
+  workbook.description = "Relatório executivo premium de programação de ordens de serviço.";
+  workbook.created = generatedAt;
+  workbook.modified = generatedAt;
+  workbook.calcProperties.fullCalcOnLoad = true;
+}
+
+function styleTitle(sheet: ExcelJS.Worksheet, title: string, subtitle: string, lastColumn: string) {
+  sheet.mergeCells(`A1:${lastColumn}1`);
+  sheet.mergeCells(`A2:${lastColumn}2`);
+
+  const titleCell = sheet.getCell("A1");
   titleCell.value = title;
-  titleCell.font = {
-    name: FONT_SEMIBOLD,
-    size: 22,
-    bold: true,
-    color: { argb: C.white },
-  };
+  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy950 } };
+  titleCell.font = { name: FONT_DISPLAY, size: 22, bold: true, color: { argb: C.white } };
   titleCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
-  titleCell.border = { bottom: { style: "medium", color: { argb: C.gold } } };
-  ws.getRow(1).height = 42;
+  titleCell.border = { bottom: { style: "medium", color: { argb: C.amber500 } } };
 
-  ws.mergeCells(2, 1, 2, cols);
-  const subtitleCell = ws.getCell(2, 1);
+  const subtitleCell = sheet.getCell("A2");
   subtitleCell.value = subtitle;
-  subtitleCell.font = {
-    name: FONT,
-    size: 10,
-    bold: true,
-    color: { argb: argb("#D7E5F3") },
-  };
+  subtitleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  subtitleCell.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.slate300 } };
   subtitleCell.alignment = { vertical: "middle", horizontal: "left", indent: 2 };
-  subtitleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandSoft } };
-  ws.getRow(2).height = 24;
+
+  sheet.getRow(1).height = 44;
+  sheet.getRow(2).height = 24;
+  sheet.getRow(3).height = 8;
 }
 
-function sectionBand(ws: any, rowIdx: number) {
-  ws.mergeCells(rowIdx, 1, rowIdx, 7);
-  const identity = ws.getCell(rowIdx, 1);
-  identity.value = "IDENTIFICAÇÃO DO CHAMADO";
-  identity.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandMuted } };
-  identity.font = { name: FONT, size: 9, bold: true, color: { argb: C.white } };
-  identity.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-
-  ws.mergeCells(rowIdx, 8, rowIdx, 11);
-  const execution = ws.getCell(rowIdx, 8);
-  execution.value = "EXECUÇÃO DE CAMPO & STATUS";
-  execution.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.teal } };
-  execution.font = { name: FONT, size: 9, bold: true, color: { argb: C.white } };
-  execution.alignment = { vertical: "middle", horizontal: "center" };
-
-  ws.getRow(rowIdx).height = 21;
-}
-
-function headerRow(ws: any, rowIdx: number, headers: string[]) {
-  const row = ws.getRow(rowIdx);
-
-  headers.forEach((header, index) => {
-    const cell = row.getCell(index + 1);
-    cell.value = header;
-    cell.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: index >= 7 ? C.teal : C.brandSoft },
-    };
-    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-    cell.border = {
-      top: thinBorder,
-      bottom: { style: "medium", color: { argb: index >= 7 ? C.teal : C.gold } },
-      left: {
-        style: index === 7 ? "medium" : "thin",
-        color: { argb: index === 7 ? C.teal : C.slate300 },
-      },
-      right: thinBorder,
-    };
-  });
-
-  row.height = 34;
-  ws.views = [
-    {
-      state: "frozen",
-      xSplit: 2,
-      ySplit: rowIdx,
-      activeCell: `C${rowIdx + 1}`,
-      showGridLines: false,
-    },
-  ];
-}
-
-function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
-  for (let r = firstRow; r <= lastRow; r += 1) {
-    const row = ws.getRow(r);
-    row.height = 36;
-
-    for (let c = 1; c <= cols; c += 1) {
-      const cell = row.getCell(c);
-      cell.font = { name: FONT, size: 10, color: { argb: C.ink } };
-      cell.alignment = {
-        vertical: "middle",
-        wrapText: true,
-        horizontal: "left",
-        indent: c === 1 ? 0 : 1,
-      };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: (r - firstRow) % 2 === 0 ? C.white : C.slate50 },
-      };
-      cell.border = {
-        bottom: thinBorder,
-        left: {
-          style: c === 8 ? "medium" : "thin",
-          color: { argb: c === 8 ? C.teal : C.slate200 },
-        },
-        right: thinBorder,
-      };
-    }
-
-    row.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
-    row.getCell(1).font = { name: FONT, size: 9, bold: true, color: { argb: C.slate500 } };
-
-    row.getCell(2).alignment = { vertical: "middle", horizontal: "center" };
-    row.getCell(2).font = { name: FONT, size: 10.5, bold: true, color: { argb: C.infoFg } };
-    row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.infoBg } };
-
-    row.getCell(8).alignment = { vertical: "middle", horizontal: "center" };
-    row.getCell(9).alignment = { vertical: "middle", horizontal: "center" };
-    row.getCell(10).alignment = { vertical: "middle", horizontal: "center" };
-    row.getCell(11).alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  }
-}
-
-function styleTeamCell(row: any, team: string | null | undefined) {
-  const style = teamStyle(team);
-  const cell = row.getCell(3);
-  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(style.bg) } };
-  cell.font = { name: FONT, size: 10, bold: true, color: { argb: argb(style.fg) } };
-  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  cell.border = {
-    ...cell.border,
-    left: { style: "medium", color: { argb: argb(style.accent) } },
-  };
-}
-
-function highlightOperationalStatus(
-  row: any,
-  slaText: string,
-  materialSolicitado: boolean,
-  status: string,
-) {
-  const slaCell = row.getCell(9);
-  if (slaText === "No prazo") {
-    slaCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.okFg } };
-    slaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.okBg } };
-  } else {
-    slaCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.dangerFg } };
-    slaCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.dangerBg } };
-  }
-
-  const materialCell = row.getCell(10);
-  if (materialSolicitado) {
-    materialCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.warnFg } };
-    materialCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.warnBg } };
-  } else {
-    materialCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.slate500 } };
-    materialCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate100 } };
-  }
-
-  const normalizedStatus = normalize(status);
-  const statusCell = row.getCell(11);
-
-  if (["CONCLUIDO", "CONCLUIDA", "FINALIZADO", "FINALIZADA", "FECHADO", "FECHADA"].includes(normalizedStatus)) {
-    statusCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.okFg } };
-    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.okBg } };
-  } else if (["EM ANDAMENTO", "EM EXECUCAO", "EXECUCAO", "ANDAMENTO"].includes(normalizedStatus)) {
-    statusCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.infoFg } };
-    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.infoBg } };
-  } else if (["CANCELADO", "CANCELADA"].includes(normalizedStatus)) {
-    statusCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.dangerFg } };
-    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.dangerBg } };
-  } else {
-    statusCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.slate700 } };
-    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate100 } };
-  }
-}
-
-function styleSummaryRow(
-  ws: any,
-  rowIdx: number,
-  cols: number,
-  stats: { total: number; teams: number; slaRisk: number; materials: number },
-) {
-  ws.mergeCells(rowIdx, 1, rowIdx, 4);
-  const labelCell = ws.getCell(rowIdx, 1);
-  labelCell.value = "RESUMO DA PROGRAMAÇÃO";
-  labelCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
-  labelCell.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
-  labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandSoft } };
-
-  ws.mergeCells(rowIdx, 5, rowIdx, cols);
-  const totalCell = ws.getCell(rowIdx, 5);
-  totalCell.value =
-    `Total: ${stats.total} OS  •  ${stats.teams} equipes  •  ` +
-    `${stats.slaRisk} SLA crítico  •  ${stats.materials} com material solicitado`;
-  totalCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
-  totalCell.alignment = { vertical: "middle", horizontal: "left", indent: 1, wrapText: true };
-  totalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.accentStrong } };
-
-  for (let c = 1; c <= cols; c += 1) {
-    ws.getCell(rowIdx, c).border = {
-      top: { style: "medium", color: { argb: C.gold } },
-      bottom: thinBorder,
-    };
-  }
-
-  ws.getRow(rowIdx).height = 32;
-}
-
-function styleKpiCard(
-  ws: any,
+function styleKpi(
+  sheet: ExcelJS.Worksheet,
   labelRange: string,
   valueRange: string,
   label: string,
   value: string | number,
-  tone: "blue" | "teal" | "gold" | "red",
+  tone: "blue" | "cyan" | "amber" | "rose" | "emerald",
 ) {
   const tones = {
-    blue: { label: C.accentStrong, valueBg: C.infoBg, valueFg: C.infoFg },
-    teal: { label: C.teal, valueBg: C.tealSoft, valueFg: C.teal },
-    gold: { label: C.gold, valueBg: C.warnBg, valueFg: C.warnFg },
-    red: { label: C.dangerFg, valueBg: C.dangerBg, valueFg: C.dangerFg },
+    blue: { strong: C.blue700, soft: C.blue50 },
+    cyan: { strong: C.cyan600, soft: C.cyan50 },
+    amber: { strong: C.amber700, soft: C.amber50 },
+    rose: { strong: C.rose700, soft: C.rose50 },
+    emerald: { strong: C.emerald700, soft: C.emerald50 },
   };
   const style = tones[tone];
-
-  ws.mergeCells(labelRange);
-  ws.mergeCells(valueRange);
-  const labelCell = ws.getCell(labelRange.split(":")[0]);
-  const valueCell = ws.getCell(valueRange.split(":")[0]);
+  sheet.mergeCells(labelRange);
+  sheet.mergeCells(valueRange);
+  const labelCell = sheet.getCell(labelRange.split(":")[0]);
+  const valueCell = sheet.getCell(valueRange.split(":")[0]);
 
   labelCell.value = label;
-  labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: style.label } };
+  labelCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: style.strong } };
   labelCell.font = { name: FONT, size: 8.5, bold: true, color: { argb: C.white } };
   labelCell.alignment = { vertical: "middle", horizontal: "center" };
 
   valueCell.value = value;
-  valueCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: style.valueBg } };
-  valueCell.font = { name: FONT_SEMIBOLD, size: 15, bold: true, color: { argb: style.valueFg } };
+  valueCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: style.soft } };
+  valueCell.font = { name: FONT_DISPLAY, size: 16, bold: true, color: { argb: style.strong } };
   valueCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  valueCell.border = {
-    bottom: { style: "thin", color: { argb: C.slate300 } },
-    left: { style: "thin", color: { argb: C.slate300 } },
-    right: { style: "thin", color: { argb: C.slate300 } },
-  };
+  valueCell.border = { bottom: thinBorder, left: thinBorder, right: thinBorder };
 }
 
-function createExecutiveSummary(
-  wb: any,
-  osList: OsCacheRow[],
-  title: string,
-  equipeFiltro: string,
-  generatedAt: Date,
-) {
-  const summary = wb.addWorksheet("Resumo Executivo", {
-    properties: { tabColor: { argb: C.gold } },
-    views: [{ state: "normal", showGridLines: false }],
-  });
-  summary.columns = Array.from({ length: 12 }, () => ({ width: 12 }));
+function applyTeamCell(cell: ExcelJS.Cell, team: string | null | undefined) {
+  const palette = teamStyle(team);
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
+  cell.font = { name: FONT, size: 9.5, bold: true, color: { argb: argb(palette.fg) } };
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  cell.border = { ...cell.border, left: { style: "medium", color: { argb: argb(palette.accent) } } };
+}
 
-  const teamCounts = new Map<string, number>();
-  const statusCounts = new Map<string, number>();
-  let materialCount = 0;
-  let slaRisk = 0;
-  let inProgress = 0;
+function applySlaCell(cell: ExcelJS.Cell, days: number) {
+  if (days >= 30) {
+    cell.value = `${days} dias`;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.rose50 } };
+    cell.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.rose700 } };
+  } else if (days >= 15) {
+    cell.value = `${days} dias`;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.amber50 } };
+    cell.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.amber700 } };
+  } else {
+    cell.value = "No prazo";
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.emerald50 } };
+    cell.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.emerald700 } };
+  }
+  cell.alignment = { vertical: "middle", horizontal: "center" };
+}
 
-  osList.forEach((item) => {
-    const team = item.equipe || "Sem equipe";
-    const currentStatus = statusLabel(item.status);
-    teamCounts.set(team, (teamCounts.get(team) || 0) + 1);
-    statusCounts.set(currentStatus, (statusCounts.get(currentStatus) || 0) + 1);
-    if (item.material_status === "solicitado") materialCount += 1;
-    if (ageInDays(item.data_criacao) >= 30) slaRisk += 1;
-    if (normalize(currentStatus) === "EM ANDAMENTO") inProgress += 1;
-  });
+function applyMaterialCell(cell: ExcelJS.Cell, requested: boolean) {
+  cell.value = requested ? "SOLICITADO" : "N/A";
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: requested ? C.amber50 : C.slate100 } };
+  cell.font = { name: FONT, size: 9, bold: true, color: { argb: requested ? C.amber700 : C.slate500 } };
+  cell.alignment = { vertical: "middle", horizontal: "center" };
+}
 
-  const teams = [...teamCounts.entries()].sort((a, b) => b[1] - a[1]);
-  const statuses = [...statusCounts.entries()].sort((a, b) => b[1] - a[1]);
+function applyStatusCell(cell: ExcelJS.Cell, status: string) {
+  const normalized = normalize(status);
+  let strong = C.slate700;
+  let soft = C.slate100;
+  if (normalized === "CONCLUIDO") [strong, soft] = [C.emerald700, C.emerald50];
+  else if (normalized === "EM ANDAMENTO") [strong, soft] = [C.blue700, C.blue50];
+  else if (normalized === "AGUARDANDO MATERIAL") [strong, soft] = [C.amber700, C.amber50];
+  else if (normalized === "CANCELADO") [strong, soft] = [C.rose700, C.rose50];
+  cell.value = status;
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: soft } };
+  cell.font = { name: FONT, size: 9, bold: true, color: { argb: strong } };
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+}
 
-  summary.mergeCells("A1:L1");
-  const titleCell = summary.getCell("A1");
-  titleCell.value = "RESUMO EXECUTIVO · EXECUÇÃO DE CAMPO";
-  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brand } };
-  titleCell.font = { name: FONT_SEMIBOLD, size: 20, bold: true, color: { argb: C.white } };
-  titleCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-  titleCell.border = { bottom: { style: "medium", color: { argb: C.gold } } };
-  summary.getRow(1).height = 40;
-
-  summary.mergeCells("A2:L2");
-  const meta = summary.getCell("A2");
-  meta.value = `${title}  •  Equipe: ${equipeFiltro}  •  Gerado em ${generatedAt.toLocaleString("pt-BR")}`;
-  meta.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandSoft } };
-  meta.font = { name: FONT, size: 9.5, bold: true, color: { argb: argb("#D7E5F3") } };
-  meta.alignment = { vertical: "middle", horizontal: "left", indent: 2 };
-  summary.getRow(2).height = 23;
-
-  styleKpiCard(summary, "A4:C4", "A5:C6", "TOTAL DE OS", osList.length, "blue");
-  styleKpiCard(summary, "D4:F4", "D5:F6", "EQUIPES ATIVAS", teams.length, "teal");
-  styleKpiCard(summary, "G4:I4", "G5:I6", "EM ANDAMENTO", inProgress, "gold");
-  styleKpiCard(summary, "J4:L4", "J5:L6", "SLA CRÍTICO ≥ 30 DIAS", slaRisk, "red");
-  summary.getRow(4).height = 21;
-  summary.getRow(5).height = 20;
-  summary.getRow(6).height = 20;
-
-  summary.mergeCells("A8:F8");
-  const teamsTitle = summary.getCell("A8");
-  teamsTitle.value = "DISTRIBUIÇÃO POR EQUIPE";
-  teamsTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandSoft } };
-  teamsTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
-  teamsTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-
-  summary.mergeCells("H8:L8");
-  const statusTitle = summary.getCell("H8");
-  statusTitle.value = "STATUS OPERACIONAL";
-  statusTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.teal } };
-  statusTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
-  statusTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-
-  summary.mergeCells("A9:D9");
-  summary.mergeCells("E9:F9");
-  summary.getCell("A9").value = "Equipe";
-  summary.getCell("E9").value = "OS / Participação";
-  [summary.getCell("A9"), summary.getCell("E9")].forEach((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
-    cell.font = { name: FONT, size: 8.5, bold: true, color: { argb: C.white } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-  });
-
-  summary.mergeCells("H9:J9");
-  summary.mergeCells("K9:L9");
-  summary.getCell("H9").value = "Status";
-  summary.getCell("K9").value = "Quantidade";
-  [summary.getCell("H9"), summary.getCell("K9")].forEach((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
-    cell.font = { name: FONT, size: 8.5, bold: true, color: { argb: C.white } };
-    cell.alignment = { vertical: "middle", horizontal: "center" };
-  });
-
-  let teamRow = 10;
-  teams.forEach(([team, count]) => {
-    const palette = teamStyle(team);
-    const share = osList.length ? (count / osList.length) * 100 : 0;
-    summary.mergeCells(teamRow, 1, teamRow, 4);
-    summary.mergeCells(teamRow, 5, teamRow, 6);
-
-    const teamCell = summary.getCell(teamRow, 1);
-    teamCell.value = team;
-    teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
-    teamCell.font = { name: FONT, size: 9, bold: true, color: { argb: argb(palette.fg) } };
-    teamCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-    teamCell.border = { left: { style: "medium", color: { argb: argb(palette.accent) } }, bottom: thinBorder };
-
-    const shareCell = summary.getCell(teamRow, 5);
-    shareCell.value = `${count}  •  ${share.toFixed(1).replace(".", ",")}%`;
-    shareCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
-    shareCell.font = { name: FONT, size: 9, bold: true, color: { argb: C.slate700 } };
-    shareCell.alignment = { vertical: "middle", horizontal: "center" };
-    shareCell.border = { bottom: thinBorder, right: thinBorder };
-    summary.getRow(teamRow).height = 25;
-    teamRow += 1;
-  });
-
-  let statusRow = 10;
-  statuses.forEach(([status, count]) => {
-    summary.mergeCells(statusRow, 8, statusRow, 10);
-    summary.mergeCells(statusRow, 11, statusRow, 12);
-    const statusCell = summary.getCell(statusRow, 8);
-    const countCell = summary.getCell(statusRow, 11);
-
-    statusCell.value = status;
-    statusCell.font = { name: FONT, size: 9, bold: true, color: { argb: C.slate700 } };
-    statusCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
-    statusCell.border = { bottom: thinBorder, left: thinBorder };
-
-    countCell.value = count;
-    countCell.font = { name: FONT_SEMIBOLD, size: 10, bold: true, color: { argb: C.teal } };
-    countCell.alignment = { vertical: "middle", horizontal: "center" };
-    countCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.tealSoft } };
-    countCell.border = { bottom: thinBorder, right: thinBorder };
-    summary.getRow(statusRow).height = 25;
-    statusRow += 1;
-  });
-
-  const detailRow = Math.max(teamRow, statusRow) + 2;
-  summary.mergeCells(detailRow, 1, detailRow, 12);
-  const alertsTitle = summary.getCell(detailRow, 1);
-  alertsTitle.value = "INDICADORES DE ATENÇÃO";
-  alertsTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.brandSoft } };
-  alertsTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
-  alertsTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-
-  summary.mergeCells(detailRow + 1, 1, detailRow + 2, 6);
-  const materialCard = summary.getCell(detailRow + 1, 1);
-  materialCard.value = `${materialCount} chamado(s) com material solicitado`;
-  materialCard.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.warnBg } };
-  materialCard.font = { name: FONT_SEMIBOLD, size: 11, bold: true, color: { argb: C.warnFg } };
-  materialCard.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  materialCard.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
-
-  summary.mergeCells(detailRow + 1, 7, detailRow + 2, 12);
-  const slaCard = summary.getCell(detailRow + 1, 7);
-  slaCard.value = `${slaRisk} chamado(s) com 30 dias ou mais de abertura`;
-  slaCard.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.dangerBg } };
-  slaCard.font = { name: FONT_SEMIBOLD, size: 11, bold: true, color: { argb: C.dangerFg } };
-  slaCard.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  slaCard.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
-
-  summary.pageSetup = {
+function configurePrint(sheet: ExcelJS.Worksheet, printArea: string, repeatRows?: string) {
+  sheet.pageSetup = {
     orientation: "landscape",
     fitToPage: true,
     fitToWidth: 1,
-    fitToHeight: 1,
+    fitToHeight: 0,
     paperSize: 9,
     horizontalCentered: true,
-    margins: { left: 0.35, right: 0.35, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
-    printArea: `A1:L${detailRow + 2}`,
+    margins: { left: 0.25, right: 0.25, top: 0.45, bottom: 0.5, header: 0.2, footer: 0.2 },
+    printArea,
   };
-  summary.headerFooter.oddFooter = "&L&9Apont Auto · Execução de Campo&C&9Resumo Executivo&R&9Página &P de &N";
+  if (repeatRows) sheet.pageSetup.printTitlesRow = repeatRows;
+  sheet.headerFooter.oddFooter = "&L&9Apont Auto · Programação de Corretivas&C&9Página &P de &N&R&9Relatório operacional";
+}
+
+function buildOperationsSheet(
+  workbook: ExcelJS.Workbook,
+  name: string,
+  items: OsCacheRow[],
+  title: string,
+  scope: string,
+  generatedAt: Date,
+  tabColor: string,
+) {
+  const sheet = workbook.addWorksheet(name, { properties: { tabColor: { argb: tabColor }, defaultRowHeight: 18 } });
+  const headers = ["ID", "OS", "Equipe", "Solicitante", "Prédio / Andar", "Local", "Descrição do Serviço", "Abertura", "SLA", "Material", "Status Atual"];
+  const widths = [7, 15, 20, 27, 22, 25, 52, 15, 15, 17, 19];
+  widths.forEach((width, index) => { sheet.getColumn(index + 1).width = width; });
+
+  const teamCount = new Set(items.map((item) => item.equipe || "Sem equipe")).size;
+  const slaRisk = items.filter((item) => ageInDays(item.data_criacao) >= 30).length;
+  const materials = items.filter(materialRequested).length;
+
+  styleTitle(sheet, title.toUpperCase(), `${scope}  •  ${items.length} OS  •  ${teamCount} equipe(s)  •  Gerado em ${generatedAt.toLocaleString("pt-BR")}`, "K");
+  styleKpi(sheet, "A4:B4", "A5:B5", "TOTAL DE OS", items.length, "blue");
+  styleKpi(sheet, "C4:E4", "C5:E5", "EQUIPES", teamCount, "cyan");
+  styleKpi(sheet, "F4:H4", "F5:H5", "SLA CRÍTICO ≥ 30 DIAS", slaRisk, "rose");
+  styleKpi(sheet, "I4:K4", "I5:K5", "MATERIAL SOLICITADO", materials, "amber");
+  sheet.getRow(4).height = 20;
+  sheet.getRow(5).height = 27;
+  sheet.getRow(6).height = 8;
+
+  sheet.mergeCells("A7:G7");
+  sheet.mergeCells("H7:K7");
+  const identity = sheet.getCell("A7");
+  identity.value = "IDENTIFICAÇÃO DO CHAMADO";
+  identity.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy800 } };
+  identity.font = { name: FONT, size: 9, bold: true, color: { argb: C.white } };
+  identity.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  const execution = sheet.getCell("H7");
+  execution.value = "EXECUÇÃO DE CAMPO & PRIORIDADE";
+  execution.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan600 } };
+  execution.font = { name: FONT, size: 9, bold: true, color: { argb: C.white } };
+  execution.alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(7).height = 21;
+
+  const headerRowNumber = 8;
+  const headerRow = sheet.getRow(headerRowNumber);
+  headers.forEach((header, index) => {
+    const cell = headerRow.getCell(index + 1);
+    cell.value = header;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index >= 7 ? C.cyan600 : C.navy900 } };
+    cell.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.border = { top: thinBorder, bottom: { style: "medium", color: { argb: index >= 7 ? C.cyan600 : C.amber500 } }, left: thinBorder, right: thinBorder };
+  });
+  headerRow.height = 34;
+
+  items.forEach((item, index) => {
+    const row = sheet.getRow(headerRowNumber + 1 + index);
+    const days = ageInDays(item.data_criacao);
+    const status = statusLabel(item.status);
+    row.values = [
+      index + 1,
+      item.numero_os || "—",
+      item.equipe || "—",
+      item.solicitante || "—",
+      `${item.predio || "—"} / ${item.andar || "—"}`,
+      item.local || "—",
+      item.nome_os || "—",
+      formatDate(item.data_criacao),
+      "",
+      "",
+      "",
+    ];
+    row.height = 38;
+    for (let column = 1; column <= headers.length; column += 1) {
+      const cell = row.getCell(column);
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 } };
+      cell.font = { name: FONT, size: 9.5, color: { argb: C.slate900 } };
+      cell.alignment = { vertical: "middle", horizontal: column === 1 || column === 2 || column >= 8 ? "center" : "left", wrapText: true, indent: column >= 3 && column <= 7 ? 1 : 0 };
+      cell.border = { bottom: thinBorder, left: { style: column === 8 ? "medium" : "thin", color: { argb: column === 8 ? C.cyan600 : C.slate200 } }, right: thinBorder };
+    }
+    row.getCell(1).font = { name: FONT, size: 8.5, bold: true, color: { argb: C.slate500 } };
+    row.getCell(2).font = { name: FONT_DISPLAY, size: 10.5, bold: true, color: { argb: C.blue700 } };
+    row.getCell(2).fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.blue50 } };
+    applyTeamCell(row.getCell(3), item.equipe);
+    applySlaCell(row.getCell(9), days);
+    applyMaterialCell(row.getCell(10), materialRequested(item));
+    applyStatusCell(row.getCell(11), status);
+  });
+
+  const lastDataRow = headerRowNumber + items.length;
+  sheet.autoFilter = { from: { row: headerRowNumber, column: 1 }, to: { row: Math.max(headerRowNumber, lastDataRow), column: headers.length } };
+  sheet.views = [{ state: "frozen", xSplit: 2, ySplit: headerRowNumber, activeCell: `C${headerRowNumber + 1}`, showGridLines: false }];
+
+  const summaryRowNumber = Math.max(headerRowNumber, lastDataRow) + 2;
+  sheet.mergeCells(summaryRowNumber, 1, summaryRowNumber, 4);
+  sheet.mergeCells(summaryRowNumber, 5, summaryRowNumber, 11);
+  const summaryLabel = sheet.getCell(summaryRowNumber, 1);
+  summaryLabel.value = "RESUMO DA PROGRAMAÇÃO";
+  summaryLabel.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  summaryLabel.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+  summaryLabel.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
+  const summaryValue = sheet.getCell(summaryRowNumber, 5);
+  summaryValue.value = `Total: ${items.length} OS  •  ${teamCount} equipes  •  ${slaRisk} SLA crítico  •  ${materials} com material solicitado`;
+  summaryValue.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.blue700 } };
+  summaryValue.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+  summaryValue.alignment = { vertical: "middle", horizontal: "left", indent: 1, wrapText: true };
+  sheet.getRow(summaryRowNumber).height = 30;
+
+  configurePrint(sheet, `A1:K${summaryRowNumber}`, `1:${headerRowNumber}`);
+  return sheet;
+}
+
+function buildExecutiveSheet(workbook: ExcelJS.Workbook, items: OsCacheRow[], title: string, scope: string, generatedAt: Date) {
+  const sheet = workbook.addWorksheet("Visão Executiva", { properties: { tabColor: { argb: C.amber500 } } });
+  for (let index = 1; index <= 12; index += 1) sheet.getColumn(index).width = 12;
+  sheet.views = [{ state: "normal", showGridLines: false }];
+
+  const teamCounts = new Map<string, number>();
+  const statusCounts = new Map<string, number>();
+  items.forEach((item) => {
+    const team = item.equipe || "Sem equipe";
+    const status = statusLabel(item.status);
+    teamCounts.set(team, (teamCounts.get(team) || 0) + 1);
+    statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
+  });
+  const teams = [...teamCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const statuses = [...statusCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const critical = items.filter((item) => ageInDays(item.data_criacao) >= 30).length;
+  const materials = items.filter(materialRequested).length;
+  const inProgress = items.filter((item) => statusLabel(item.status) === "Em andamento").length;
+
+  styleTitle(sheet, "PROGRAMAÇÃO DE CORRETIVAS · VISÃO EXECUTIVA", `${title}  •  ${scope}  •  Gerado em ${generatedAt.toLocaleString("pt-BR")}`, "L");
+  styleKpi(sheet, "A4:C4", "A5:C6", "TOTAL DE OS", items.length, "blue");
+  styleKpi(sheet, "D4:F4", "D5:F6", "EQUIPES ATIVAS", teams.length, "cyan");
+  styleKpi(sheet, "G4:I4", "G5:I6", "EM ANDAMENTO", inProgress, "amber");
+  styleKpi(sheet, "J4:L4", "J5:L6", "SLA CRÍTICO ≥ 30 DIAS", critical, "rose");
+
+  sheet.mergeCells("A8:F8");
+  sheet.mergeCells("H8:L8");
+  const teamTitle = sheet.getCell("A8");
+  teamTitle.value = "DISTRIBUIÇÃO POR EQUIPE";
+  teamTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  teamTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+  teamTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  const statusTitle = sheet.getCell("H8");
+  statusTitle.value = "STATUS OPERACIONAL";
+  statusTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan600 } };
+  statusTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+  statusTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+
+  let teamRow = 9;
+  teams.forEach(([team, count]) => {
+    const palette = teamStyle(team);
+    sheet.mergeCells(teamRow, 1, teamRow, 4);
+    sheet.mergeCells(teamRow, 5, teamRow, 6);
+    const nameCell = sheet.getCell(teamRow, 1);
+    nameCell.value = team;
+    nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
+    nameCell.font = { name: FONT, size: 9, bold: true, color: { argb: argb(palette.fg) } };
+    nameCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    nameCell.border = { left: { style: "medium", color: { argb: argb(palette.accent) } }, bottom: thinBorder };
+    const valueCell = sheet.getCell(teamRow, 5);
+    valueCell.value = `${count} OS · ${items.length ? ((count / items.length) * 100).toFixed(1).replace(".", ",") : "0,0"}%`;
+    valueCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
+    valueCell.font = { name: FONT, size: 9, bold: true, color: { argb: C.slate700 } };
+    valueCell.alignment = { vertical: "middle", horizontal: "center" };
+    valueCell.border = { bottom: thinBorder, right: thinBorder };
+    sheet.getRow(teamRow).height = 24;
+    teamRow += 1;
+  });
+
+  let statusRow = 9;
+  statuses.forEach(([status, count]) => {
+    sheet.mergeCells(statusRow, 8, statusRow, 10);
+    sheet.mergeCells(statusRow, 11, statusRow, 12);
+    const statusCell = sheet.getCell(statusRow, 8);
+    const countCell = sheet.getCell(statusRow, 11);
+    statusCell.value = status;
+    statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
+    statusCell.font = { name: FONT, size: 9, bold: true, color: { argb: C.slate700 } };
+    statusCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    statusCell.border = { left: thinBorder, bottom: thinBorder };
+    countCell.value = count;
+    countCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan50 } };
+    countCell.font = { name: FONT_DISPLAY, size: 10, bold: true, color: { argb: C.cyan600 } };
+    countCell.alignment = { vertical: "middle", horizontal: "center" };
+    countCell.border = { right: thinBorder, bottom: thinBorder };
+    sheet.getRow(statusRow).height = 24;
+    statusRow += 1;
+  });
+
+  const priorityStart = Math.max(teamRow, statusRow) + 2;
+  sheet.mergeCells(priorityStart, 1, priorityStart, 12);
+  const priorityTitle = sheet.getCell(priorityStart, 1);
+  priorityTitle.value = "PRIORIDADES · CHAMADOS MAIS ANTIGOS";
+  priorityTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  priorityTitle.font = { name: FONT, size: 9.5, bold: true, color: { argb: C.white } };
+  priorityTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+
+  const priorityHeader = priorityStart + 1;
+  const priorityHeaders = ["OS", "Equipe", "Local", "Dias", "Status", "Material"];
+  const ranges = [[1, 2], [3, 4], [5, 7], [8, 8], [9, 10], [11, 12]];
+  priorityHeaders.forEach((label, index) => {
+    const [start, end] = ranges[index];
+    if (start !== end) sheet.mergeCells(priorityHeader, start, priorityHeader, end);
+    const cell = sheet.getCell(priorityHeader, start);
+    cell.value = label;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate700 } };
+    cell.font = { name: FONT, size: 8.5, bold: true, color: { argb: C.white } };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+  });
+
+  const priorities = [...items].sort((a, b) => ageInDays(b.data_criacao) - ageInDays(a.data_criacao)).slice(0, 10);
+  priorities.forEach((item, index) => {
+    const rowNumber = priorityHeader + 1 + index;
+    const values = [item.numero_os || "—", item.equipe || "—", item.local || "—", ageInDays(item.data_criacao), statusLabel(item.status), materialRequested(item) ? "Solicitado" : "N/A"];
+    ranges.forEach(([start, end], valueIndex) => {
+      if (start !== end) sheet.mergeCells(rowNumber, start, rowNumber, end);
+      const cell = sheet.getCell(rowNumber, start);
+      cell.value = values[valueIndex];
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 } };
+      cell.font = { name: FONT, size: 9, color: { argb: C.slate900 }, bold: start === 1 || start === 8 };
+      cell.alignment = { vertical: "middle", horizontal: start === 5 ? "left" : "center", wrapText: true, indent: start === 5 ? 1 : 0 };
+      cell.border = { bottom: thinBorder, left: thinBorder, right: thinBorder };
+    });
+    applyTeamCell(sheet.getCell(rowNumber, 3), item.equipe);
+    applySlaCell(sheet.getCell(rowNumber, 8), ageInDays(item.data_criacao));
+    applyStatusCell(sheet.getCell(rowNumber, 9), statusLabel(item.status));
+    applyMaterialCell(sheet.getCell(rowNumber, 11), materialRequested(item));
+    sheet.getRow(rowNumber).height = 28;
+  });
+
+  const attentionRow = priorityHeader + priorities.length + 2;
+  sheet.mergeCells(attentionRow, 1, attentionRow, 6);
+  sheet.mergeCells(attentionRow, 7, attentionRow, 12);
+  const materialCard = sheet.getCell(attentionRow, 1);
+  materialCard.value = `${materials} chamado(s) com material solicitado`;
+  materialCard.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.amber50 } };
+  materialCard.font = { name: FONT_DISPLAY, size: 10.5, bold: true, color: { argb: C.amber700 } };
+  materialCard.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  materialCard.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+  const slaCard = sheet.getCell(attentionRow, 7);
+  slaCard.value = `${critical} chamado(s) com 30 dias ou mais de abertura`;
+  slaCard.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.rose50 } };
+  slaCard.font = { name: FONT_DISPLAY, size: 10.5, bold: true, color: { argb: C.rose700 } };
+  slaCard.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  slaCard.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+  sheet.getRow(attentionRow).height = 34;
+
+  const legendRow = attentionRow + 2;
+  sheet.mergeCells(legendRow, 1, legendRow, 12);
+  const legend = sheet.getCell(legendRow, 1);
+  legend.value = "LEGENDA SLA  ·  Verde: até 14 dias  ·  Âmbar: 15–29 dias  ·  Vermelho: 30 dias ou mais";
+  legend.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate100 } };
+  legend.font = { name: FONT, size: 8.5, bold: true, color: { argb: C.slate500 } };
+  legend.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  legend.border = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+
+  configurePrint(sheet, `A1:L${legendRow}`);
+  return sheet;
+}
+
+export function buildProgramacaoWorkbook(
+  osList: OsCacheRow[],
+  equipeFiltro: string,
+  aba: "corretiva" | "preventiva",
+  generatedAt = new Date(),
+) {
+  const workbook = new ExcelJS.Workbook();
+  const title = aba === "preventiva" ? "Programação de Backorder" : "Programação de Corretivas";
+  const scope = `Equipe: ${equipeFiltro}`;
+  setWorkbookMetadata(workbook, title, generatedAt);
+
+  buildExecutiveSheet(workbook, osList, title, scope, generatedAt);
+  buildOperationsSheet(workbook, "Programação Geral", osList, title, scope, generatedAt, C.blue600);
+
+  const usedNames = new Set(["Visão Executiva", "Programação Geral"]);
+  const teams = [...new Set(osList.map((item) => item.equipe || "Sem equipe"))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  teams.forEach((team) => {
+    const teamItems = osList.filter((item) => (item.equipe || "Sem equipe") === team);
+    const sheetName = safeSheetName(`Equipe · ${team}`, usedNames);
+    const palette = teamStyle(team);
+    buildOperationsSheet(workbook, sheetName, teamItems, `${title} · ${team}`, `Equipe: ${team}`, generatedAt, argb(palette.accent));
+  });
+
+  workbook.worksheets[0].state = "visible";
+  return workbook;
 }
 
 export async function generateProgramacaoExcel(
@@ -530,159 +533,10 @@ export async function generateProgramacaoExcel(
   equipeFiltro: string,
   aba: "corretiva" | "preventiva",
 ) {
-  const { default: ExcelJS } = await import("exceljs");
-  const wb = new ExcelJS.Workbook();
   const generatedAt = new Date();
-
-  wb.creator = "Apont Auto · Programação";
-  wb.company = "Apont Auto";
-  wb.subject = "Programação de execução de campo";
-  wb.created = generatedAt;
-  wb.modified = generatedAt;
-
-  const title = aba === "preventiva" ? "Programação de Backorder" : "Programação de Corretivas";
-  const teamCount = new Set(osList.map((item) => item.equipe || "Sem equipe")).size;
-  const slaRisk = osList.filter((item) => ageInDays(item.data_criacao) >= 30).length;
-  const materialCount = osList.filter((item) => item.material_status === "solicitado").length;
-
-  const ws = wb.addWorksheet("Programação", {
-    properties: {
-      defaultRowHeight: 18,
-      tabColor: { argb: C.accent },
-    },
-    pageSetup: {
-      orientation: "landscape",
-      fitToPage: true,
-      fitToWidth: 1,
-      fitToHeight: 0,
-      horizontalCentered: true,
-      margins: {
-        left: 0.25,
-        right: 0.25,
-        top: 0.55,
-        bottom: 0.55,
-        header: 0.2,
-        footer: 0.2,
-      },
-    },
-  });
-
-  const headers = [
-    "ID",
-    "OS",
-    "Equipe",
-    "Solicitante",
-    "Prédio / Andar",
-    "Local",
-    "Descrição do Serviço",
-    "Abertura",
-    "SLA (Atraso)",
-    "Material",
-    "Status Atual",
-  ];
-
-  ws.columns = [
-    { width: 7 },
-    { width: 14 },
-    { width: 20 },
-    { width: 27 },
-    { width: 23 },
-    { width: 25 },
-    { width: 54 },
-    { width: 15 },
-    { width: 16 },
-    { width: 17 },
-    { width: 18 },
-  ];
-
-  titleBlock(
-    ws,
-    title.toUpperCase(),
-    `Equipe: ${equipeFiltro.toUpperCase()}  •  ${osList.length} OS  •  ${teamCount} equipe(s)  •  ` +
-      `Gerado em ${generatedAt.toLocaleString("pt-BR")}`,
-    headers.length,
-  );
-
-  sectionBand(ws, 3);
-  const headerIdx = 4;
-  headerRow(ws, headerIdx, headers);
-
-  const operationalRows: Array<{
-    row: any;
-    slaText: string;
-    materialSolicitado: boolean;
-    status: string;
-    equipe: string | null;
-  }> = [];
-
-  osList.forEach((o, idx) => {
-    const rowIdx = headerIdx + 1 + idx;
-    const row = ws.getRow(rowIdx);
-
-    const dataAbertura = o.data_criacao
-      ? new Date(o.data_criacao).toLocaleDateString("pt-BR")
-      : "—";
-
-    const daysOpen = ageInDays(o.data_criacao);
-    const slaText = daysOpen >= 30 ? `${daysOpen} dias` : "No prazo";
-    const materialSolicitado = o.material_status === "solicitado";
-    const status = statusLabel(o.status);
-
-    row.values = [
-      idx + 1,
-      o.numero_os,
-      o.equipe || "—",
-      o.solicitante || "—",
-      `${o.predio || "—"} / ${o.andar || "—"}`,
-      o.local || "—",
-      o.nome_os || "—",
-      dataAbertura,
-      slaText,
-      materialSolicitado ? "Solicitado" : "N/A",
-      status,
-    ];
-
-    operationalRows.push({ row, slaText, materialSolicitado, status, equipe: o.equipe });
-  });
-
-  const lastRow = headerIdx + osList.length;
-  if (osList.length > 0) {
-    styleBody(ws, headerIdx + 1, lastRow, headers.length);
-    operationalRows.forEach(({ row, slaText, materialSolicitado, status, equipe }) => {
-      styleTeamCell(row, equipe);
-      highlightOperationalStatus(row, slaText, materialSolicitado, status);
-    });
-  }
-
-  ws.autoFilter = {
-    from: { row: headerIdx, column: 1 },
-    to: { row: Math.max(headerIdx, lastRow), column: headers.length },
-  };
-  ws.pageSetup.printTitlesRow = `1:${headerIdx}`;
-
-  const totalRow = Math.max(headerIdx, lastRow) + 2;
-  styleSummaryRow(ws, totalRow, headers.length, {
-    total: osList.length,
-    teams: teamCount,
-    slaRisk,
-    materials: materialCount,
-  });
-  ws.pageSetup.printArea = `A1:K${totalRow}`;
-
-  ws.headerFooter.oddFooter =
-    `&L&9Apont Auto · Execução de Campo&C&9Página &P de &N&R&9${title}`;
-
-  createExecutiveSummary(wb, osList, title, equipeFiltro, generatedAt);
-
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `programacao_${aba}_${equipeFiltro.toLowerCase().replace(/\s+/g, "_")}_${generatedAt.toISOString().split("T")[0]}.xlsx`;
-  link.click();
-  URL.revokeObjectURL(url);
+  const workbook = buildProgramacaoWorkbook(osList, equipeFiltro, aba, generatedAt);
+  const buffer = await workbook.xlsx.writeBuffer();
+  const { saveAs } = await import("file-saver");
+  const fileName = `programacao_${aba}_${equipeFiltro.toLowerCase().replace(/\s+/g, "_")}_${generatedAt.toISOString().slice(0, 10)}.xlsx`;
+  saveAs(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), fileName);
 }
