@@ -17,8 +17,8 @@ function asPositiveQuantity(value: unknown) {
 
 /**
  * Sincroniza o outbox da execução de campo.
- * Peças usam um client_uuid estável para que salvar o rascunho e depois
- * finalizar a OS não gere o mesmo item duas vezes.
+ * Peças e fotos usam identificadores estáveis para que autosave e finalização
+ * possam reenviar a mesma operação sem duplicar registros no servidor.
  */
 export async function syncPending() {
   if (isSyncing || !navigator.onLine) return { sent: 0, failed: 0 };
@@ -34,9 +34,33 @@ export async function syncPending() {
     for (const item of items) {
       try {
         if (item.kind === "foto") {
-          const { blobKey, legenda } = item.payload;
-          const blob = await blobGet(blobKey);
+          const payload = item.payload ?? {};
+          const blobKey = String(payload.blobKey || "");
+          const legenda = payload.legenda ? String(payload.legenda) : null;
+          const clientUuid = String(payload.clientUuid || item.id).replace(/^foto:[^:]+:/, "");
 
+          // O mesmo arquivo pode ser colocado no outbox pelo autosave da solicitação
+          // e novamente na finalização. client_uuid impede upload/insert duplicado.
+          const { data: existingPhoto, error: existingPhotoError } = await (supabase.from("corretiva_fotos") as any)
+            .select("id")
+            .eq("client_uuid", clientUuid)
+            .maybeSingle();
+          if (existingPhotoError) throw existingPhotoError;
+
+          if (existingPhoto) {
+            if (blobKey) await blobDelete(blobKey).catch(() => {});
+            await outboxRemove(item.id);
+            sent++;
+            continue;
+          }
+
+          if (!blobKey) {
+            await outboxRemove(item.id);
+            sent++;
+            continue;
+          }
+
+          const blob = await blobGet(blobKey);
           if (!blob) {
             await outboxRemove(item.id);
             sent++;
@@ -56,7 +80,8 @@ export async function syncPending() {
           const { error: dbErr } = await supabase.from("corretiva_fotos").insert({
             os_id: item.osId,
             image_url: url,
-            legenda: legenda ?? null,
+            legenda,
+            client_uuid: clientUuid,
             enviado_por: userId,
           } as any);
 
