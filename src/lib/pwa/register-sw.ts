@@ -7,6 +7,10 @@
  * `?sw=off` funciona como chave de emergência para desinstalar o SW.
  */
 const PREVIEW_HOST_SUFFIXES = ["lovableproject.com", "lovableproject-dev.com", "beta.lovable.dev"];
+const SW_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
+
+let controllerReloadStarted = false;
+let updateTimer: number | null = null;
 
 function isBlockedContext(): boolean {
   if (typeof window === "undefined") return true;
@@ -26,9 +30,39 @@ async function unregisterAppServiceWorkers() {
   const registrations = await navigator.serviceWorker.getRegistrations();
   await Promise.allSettled(
     registrations
-      .filter((r) => (r.active?.scriptURL ?? r.installing?.scriptURL ?? "").includes("/sw.js"))
-      .map((r) => r.unregister()),
+      .filter((registration) =>
+        (registration.active?.scriptURL ?? registration.installing?.scriptURL ?? "").includes("/sw.js"),
+      )
+      .map((registration) => registration.unregister()),
   );
+}
+
+function installControllerReloadGuard() {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (controllerReloadStarted) return;
+    controllerReloadStarted = true;
+    window.location.reload();
+  });
+}
+
+function installUpdateChecks(registration: ServiceWorkerRegistration) {
+  const requestUpdate = () => {
+    if (!navigator.onLine) return;
+    void registration.update().catch(() => {
+      /* atualização do SW é best-effort e não pode interromper o app */
+    });
+  };
+
+  requestUpdate();
+
+  if (updateTimer === null) {
+    updateTimer = window.setInterval(requestUpdate, SW_UPDATE_INTERVAL_MS);
+  }
+
+  window.addEventListener("online", requestUpdate);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") requestUpdate();
+  });
 }
 
 export function registerServiceWorker() {
@@ -39,9 +73,17 @@ export function registerServiceWorker() {
     return;
   }
 
+  installControllerReloadGuard();
+
   window.addEventListener("load", () => {
-    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-      /* offline é um extra: falha no registro não pode quebrar o app */
-    });
+    void navigator.serviceWorker
+      .register("/sw.js", {
+        scope: "/",
+        updateViaCache: "none",
+      })
+      .then((registration) => installUpdateChecks(registration))
+      .catch(() => {
+        /* offline é um extra: falha no registro não pode quebrar o app */
+      });
   });
 }
