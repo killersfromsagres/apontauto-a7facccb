@@ -197,7 +197,6 @@ export async function exportControleMateriais(params: {
   wb.company = "Apont Auto";
   wb.subject = "Central operacional de materiais";
 
-  const geradoEm = new Date().toLocaleString("pt-BR");
   const pecas = params.itens.filter((item) => item.tipo === "peca");
   const defeitos = params.itens.filter((item) => item.tipo === "problema");
   const fieldRequests = params.itens.filter((item) => item.fonte === "execucao_campo");
@@ -215,7 +214,7 @@ export async function exportControleMateriais(params: {
   titleBlock(
     resumo,
     "Central de Materiais · Painel Executivo",
-    "Visão consolidada de peças, defeitos, compras, Execução de Campo e Facilities",
+    "Visão consolidada de Corretiva + Refrigeração, compras, Execução de Campo e Facilities",
     8,
   );
 
@@ -241,8 +240,10 @@ export async function exportControleMateriais(params: {
     kpiCard(resumo, row, start, start + 1, String(label), value as string | number, index === 4 ? C.rose : C.blue);
   });
 
+  // Os blocos abaixo ocupam faixas de linhas independentes. Não reutilize a mesma
+  // linha em sectionTitle: ExcelJS rejeita uma nova mesclagem sobre células já mescladas.
   const statusStart = 15;
-  sectionTitle(resumo, statusStart, "Distribuição por situação de compra", 4);
+  sectionTitle(resumo, statusStart, "Distribuição por situação de compra", 8);
   const statusHeaders = ["Situação", "Qtd.", "% da fila", "Leitura"];
   headerRow(resumo, statusStart + 1, statusHeaders);
   STATUS_COMPRA_ORDER.forEach((status, index) => {
@@ -256,8 +257,7 @@ export async function exportControleMateriais(params: {
     resumo.getCell(row, 3).alignment = { horizontal: "center", vertical: "middle" };
   });
 
-  sectionTitle(resumo, statusStart, "", 4);
-  const originStart = statusStart;
+  const originStart = statusStart + 2 + STATUS_COMPRA_ORDER.length + 2;
   sectionTitle(resumo, originStart, "Origem dos registros", 8);
   headerRow(resumo, originStart + 1, ["Origem", "Qtd.", "Participação", "Fonte"]);
   const origins = [
@@ -268,12 +268,12 @@ export async function exportControleMateriais(params: {
   origins.forEach(([label, count], index) => {
     const row = originStart + 2 + index;
     const n = Number(count);
-    resumo.getRow(row).values = [label, n, params.itens.length ? `${Math.round((n / params.itens.length) * 100)}%` : "0%", label === "Execução de Campo" ? "Solicitação independente da conclusão da OS" : "Apontamento técnico"];
+    resumo.getRow(row).values = [label, n, params.itens.length ? `${Math.round((n / params.itens.length) * 100)}%` : "0%", label === "Execução de Campo" ? "Corretiva + Refrigeração · independente da conclusão da OS" : "Apontamento técnico"];
     styleBody(resumo, row, row, 4);
     badge(resumo.getCell(row, 1), label === "Corretiva" ? "info" : label === "Refrigeração" ? "violet" : "neutral");
   });
 
-  const alertRow = 25;
+  const alertRow = originStart + 6;
   resumo.mergeCells(alertRow, 1, alertRow, 8);
   const alert = resumo.getCell(alertRow, 1);
   alert.value = missingCc > 0
