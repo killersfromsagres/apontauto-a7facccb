@@ -134,20 +134,52 @@ function compareNatural(a: unknown, b: unknown): number {
   });
 }
 
-function floorSortKey(value: unknown): [number, number, string] {
-  const normalized = naturalText(value)
+/**
+ * Normaliza textos de localização sem depender da grafia usada na planilha.
+ * Ex.: "1º Sub-Solo", "1º Sub Solo" e "1º Subsolo" passam a ser reconhecidos
+ * como o mesmo tipo de andar para fins de ordenação.
+ */
+function canonicalLocationText(value: unknown): string {
+  return naturalText(value)
     .toUpperCase()
     .replace(/[º°ª]/g, "")
     .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
+}
+
+function buildingSortKey(value: unknown): [number, number, string] {
+  const normalized = canonicalLocationText(value).replace(
+    /^(?:PREDIO|BLOCO|EDIFICIO)\s+/,
+    "",
+  );
+  // Prédios sem identificação nunca devem aparecer antes dos prédios válidos.
+  if (!normalized) return [2, 0, ""];
+  // Identificações iniciadas por letra (A, B, C...) têm precedência sobre
+  // códigos puramente numéricos/outros, preservando comparação natural.
+  return [/^[A-Z]/.test(normalized) ? 0 : 1, 0, normalized];
+}
+
+function compareBuildings(a: unknown, b: unknown): number {
+  const left = buildingSortKey(a);
+  const right = buildingSortKey(b);
+  return (
+    left[0] - right[0] ||
+    left[1] - right[1] ||
+    compareNatural(left[2], right[2])
+  );
+}
+
+function floorSortKey(value: unknown): [number, number, string] {
+  const normalized = canonicalLocationText(value);
   if (!normalized) return [9, 0, ""];
 
   const basement =
-    normalized.match(/(?:^| )(\d+) SUBSOLO(?: |$)/) ??
-    normalized.match(/(?:^| )SUBSOLO (\d+)(?: |$)/) ??
+    normalized.match(/(?:^| )(\d+) SUB ?SOLO(?: |$)/) ??
+    normalized.match(/(?:^| )SUB ?SOLO (\d+)(?: |$)/) ??
     normalized.match(/^S(?:S)? ?(\d+)$/);
   if (basement) return [0, Number(basement[1]), normalized];
-  if (/^(?:SUBSOLO|SS|S)$/.test(normalized)) return [0, 1, normalized];
+  if (/^(?:SUB ?SOLO|SS|S)$/.test(normalized)) return [0, 1, normalized];
   if (/\bTERREO\b/.test(normalized)) return [1, 0, normalized];
   if (/\bMEZANINO\b/.test(normalized)) return [2, 0, normalized];
 
@@ -171,7 +203,7 @@ function compareFloors(a: unknown, b: unknown): number {
 
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
-    const buildingOrder = compareNatural(a.predio, b.predio);
+    const buildingOrder = compareBuildings(a.predio, b.predio);
     if (buildingOrder !== 0) return buildingOrder;
     const floorOrder = compareFloors(a.andar, b.andar);
     if (floorOrder !== 0) return floorOrder;
