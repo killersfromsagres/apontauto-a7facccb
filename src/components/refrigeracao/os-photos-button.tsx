@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 import { toast } from "sonner";
 
 type FotoRow = {
@@ -36,14 +37,11 @@ async function fetchFotos(osId: string, modulo: FotosModulo): Promise<FotoRow[]>
   return (data ?? []) as FotoRow[];
 }
 
-async function resolveStorageUrl(path: string, modulo: FotosModulo): Promise<string | null> {
-  const { data } = await supabase.storage.from(BUCKET[modulo]).createSignedUrl(path, 86400);
-  return data?.signedUrl ?? null;
-}
-
 /**
- * Botão compacto que abre um diálogo com as fotos hospedadas da OS
- * (links ImgBB + fallback para Storage). Use em listas de OS.
+ * Botão compacto que abre um diálogo com as fotos hospedadas da OS.
+ * Storage é resolvido por storage_path com signed URL renovada; ImgBB continua
+ * sendo usado diretamente. Signed URLs antigas gravadas no banco são reparadas
+ * automaticamente pelo resolvePhotoUrl.
  */
 export function OsPhotosButton({
   osId,
@@ -68,20 +66,15 @@ export function OsPhotosButton({
     queryKey: ["fotos-os-btn", modulo, osId],
     enabled: open,
     staleTime: 15_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const rows = await fetchFotos(osId, modulo);
-      // Resolve URLs (ImgBB direto ou signed URL do Storage)
-      const withUrl = await Promise.all(
-        rows.map(async (r) => {
-          if (r.image_url) return { ...r, url: r.image_url };
-          if (r.storage_path) {
-            const u = await resolveStorageUrl(r.storage_path, modulo);
-            return { ...r, url: u };
-          }
-          return { ...r, url: null };
-        }),
+      return Promise.all(
+        rows.map(async (row) => ({
+          ...row,
+          url: await resolvePhotoUrl(row, BUCKET[modulo]),
+        })),
       );
-      return withUrl;
     },
   });
 
@@ -90,14 +83,16 @@ export function OsPhotosButton({
   const copy = async (u: string) => {
     try {
       await navigator.clipboard.writeText(u);
-      toast.success("Link copiado");
+      toast.success("Link atualizado copiado");
     } catch {
       toast.error("Não foi possível copiar");
     }
   };
 
   const openAll = () => {
-    links.forEach((u, i) => setTimeout(() => window.open(u, "_blank", "noopener"), i * 120));
+    links.forEach((u, i) =>
+      setTimeout(() => window.open(u, "_blank", "noopener,noreferrer"), i * 120),
+    );
   };
 
   return (
@@ -167,6 +162,15 @@ export function OsPhotosButton({
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                       Abrir todas ({links.length})
                     </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-full"
+                      onClick={() => refetch()}
+                    >
+                      Atualizar links
+                    </Button>
                   </div>
                 )}
 
@@ -179,7 +183,7 @@ export function OsPhotosButton({
                       <a
                         href={f.url ?? "#"}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="relative block aspect-square overflow-hidden bg-black/20"
                         onClick={(e) => {
                           if (!f.url) e.preventDefault();
@@ -194,8 +198,8 @@ export function OsPhotosButton({
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                            sem link
+                          <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+                            Foto indisponível
                           </div>
                         )}
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/70 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
@@ -203,6 +207,11 @@ export function OsPhotosButton({
                           <ExternalLink className="h-3.5 w-3.5 text-white" />
                         </div>
                       </a>
+                      {f.legenda && (
+                        <div className="border-t border-white/5 px-2 py-1.5 text-[10px] text-muted-foreground">
+                          {f.legenda}
+                        </div>
+                      )}
                       {f.url && (
                         <div className="flex items-center gap-1 border-t border-white/5 p-1.5">
                           <Button
@@ -216,7 +225,9 @@ export function OsPhotosButton({
                           </Button>
                           <button
                             type="button"
-                            onClick={() => window.open(f.url!, "_blank", "noopener,noreferrer")}
+                            onClick={() =>
+                              window.open(f.url!, "_blank", "noopener,noreferrer")
+                            }
                             className="inline-flex h-7 items-center rounded-full bg-primary/90 px-2 text-[11px] font-medium text-primary-foreground shadow-sm transition-transform active:scale-95"
                           >
                             <Download className="mr-1 h-3 w-3" /> Abrir/Baixar
