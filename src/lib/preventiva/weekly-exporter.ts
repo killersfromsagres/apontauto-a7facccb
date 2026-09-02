@@ -120,20 +120,67 @@ function taskValues(os: TriagedOS, ativoIndex: Map<string, AtivoIndexEntry>) {
   };
 }
 
+function naturalText(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+}
+
+function compareNatural(a: unknown, b: unknown): number {
+  return naturalText(a).localeCompare(naturalText(b), "pt-BR", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function floorSortKey(value: unknown): [number, number, string] {
+  const normalized = naturalText(value)
+    .toUpperCase()
+    .replace(/[º°ª]/g, "")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .trim();
+  if (!normalized) return [9, 0, ""];
+
+  const basement =
+    normalized.match(/(?:^| )(\d+) SUBSOLO(?: |$)/) ??
+    normalized.match(/(?:^| )SUBSOLO (\d+)(?: |$)/) ??
+    normalized.match(/^S(?:S)? ?(\d+)$/);
+  if (basement) return [0, Number(basement[1]), normalized];
+  if (/^(?:SUBSOLO|SS|S)$/.test(normalized)) return [0, 1, normalized];
+  if (/\bTERREO\b/.test(normalized)) return [1, 0, normalized];
+  if (/\bMEZANINO\b/.test(normalized)) return [2, 0, normalized];
+
+  const floor =
+    normalized.match(/(?:^| )(\d+) (?:ANDAR|PAVIMENTO|PAV|PISO)(?: |$)/) ??
+    normalized.match(/^(\d+)$/);
+  if (floor) return [3, Number(floor[1]), normalized];
+  if (/\bCOBERTURA\b/.test(normalized)) return [7, 0, normalized];
+  return [8, 0, normalized];
+}
+
+function compareFloors(a: unknown, b: unknown): number {
+  const left = floorSortKey(a);
+  const right = floorSortKey(b);
+  return (
+    left[0] - right[0] ||
+    left[1] - right[1] ||
+    compareNatural(left[2], right[2])
+  );
+}
+
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
+    const buildingOrder = compareNatural(a.predio, b.predio);
+    if (buildingOrder !== 0) return buildingOrder;
+    const floorOrder = compareFloors(a.andar, b.andar);
+    if (floorOrder !== 0) return floorOrder;
     const correctiveOrder = Number(isCorrective(b)) - Number(isCorrective(a));
     if (correctiveOrder !== 0) return correctiveOrder;
     const teamOrder =
       EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
     if (teamOrder !== 0) return teamOrder;
-    return (
-      String(a.predio).localeCompare(String(b.predio), "pt-BR") ||
-      String(a.andar).localeCompare(String(b.andar), "pt-BR", {
-        numeric: true,
-      }) ||
-      a.terminoSLATs - b.terminoSLATs
-    );
+    return a.terminoSLATs - b.terminoSLATs || compareNatural(a.local, b.local);
   });
 }
 
@@ -184,6 +231,7 @@ function styleProgramSheet(
   );
   let rowIndex = 2;
   let firstHeaderRow = 0;
+  let printedDays = 0;
 
   for (let dayIndex = 0; dayIndex < 5; dayIndex += 1) {
     const dayLoads = activeTeams
@@ -199,6 +247,8 @@ function styleProgramSheet(
     );
     const correctiveCount = items.filter(isCorrective).length;
 
+    if (printedDays > 0) ws.getRow(rowIndex - 1).addPageBreak();
+    printedDays += 1;
     ws.mergeCells(rowIndex, 1, rowIndex, 10);
     const dayCell = ws.getCell(rowIndex, 1);
     dayCell.value = `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`;
@@ -641,7 +691,110 @@ function excelColor(value: unknown, fallback: string): string {
   return argb.length >= 6 ? `#${argb.slice(-6)}` : fallback;
 }
 
-/** Abre uma única janela e imprime a programação completa da semana. */
+function renderPrintRow(
+  row: import("exceljs").Row,
+  className: string,
+  mergedBand = false,
+): string {
+  const cells: string[] = [];
+  for (let column = 1; column <= 10; column += 1) {
+    const cell = row.getCell(column);
+    if (mergedBand && column > 1) continue;
+    const fill =
+      cell.fill && "fgColor" in cell.fill ? cell.fill.fgColor : undefined;
+    const background = excelColor(fill, "#FFFFFF");
+    const color = excelColor(cell.font?.color, "#162231");
+    const align =
+      cell.alignment?.horizontal ??
+      (column === 2 || column >= 8 ? "left" : "center");
+    const value =
+      typeof cell.value === "object" && cell.value && "text" in cell.value
+        ? cell.value.text
+        : cell.text;
+    cells.push(
+      `<td${mergedBand && column === 1 ? " colspan='10'" : ""} style="background-color:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`,
+    );
+  }
+  return `<tr class="${className}">${cells.join("")}</tr>`;
+}
+
+/** Gera a impressão semanal com um bloco/página independente para cada dia. */
+export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
+  const { default: ExcelJS } = await import("exceljs");
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await blob.arrayBuffer());
+  const sections: string[] = [];
+
+  workbook.worksheets
+    .filter((worksheet) => worksheet.name !== "RESUMO")
+    .forEach((worksheet) => {
+      const titleRow = worksheet.getRow(1);
+      let dayBand: import("exceljs").Row | undefined;
+      let columnHeader: import("exceljs").Row | undefined;
+      let dataRows: import("exceljs").Row[] = [];
+
+      const flushDay = () => {
+        if (!dayBand || !columnHeader) return;
+        sections.push(`<section class="day-sheet"><table>
+          <thead>${renderPrintRow(titleRow, "title-row", true)}${renderPrintRow(dayBand, "day-band", true)}${renderPrintRow(columnHeader, "column-header")}</thead>
+          <tbody>${dataRows
+            .map((row) =>
+              renderPrintRow(
+                row,
+                "data-row",
+                row.getCell(1).text === "Nenhuma OS programada para este dia.",
+              ),
+            )
+            .join("")}</tbody>
+        </table></section>`);
+      };
+
+      worksheet.eachRow({ includeEmpty: false }, (row) => {
+        if (row.number === 1) return;
+        const firstCellText = row.getCell(1).text;
+        const isDayBand = DAY_NAMES.some((name) =>
+          firstCellText.startsWith(name),
+        );
+        if (isDayBand) {
+          flushDay();
+          dayBand = row;
+          columnHeader = undefined;
+          dataRows = [];
+          return;
+        }
+        if (!dayBand) return;
+        if (!columnHeader) columnHeader = row;
+        else dataRows.push(row);
+      });
+      flushDay();
+    });
+
+  return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
+    @page { size: A4 landscape; margin: 7mm; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { margin: 0; background: #FFFFFF; font-family: Aptos, Arial, sans-serif; color: #162231; }
+    .day-sheet { break-after: page; page-break-after: always; }
+    .day-sheet:last-child { break-after: auto; page-break-after: auto; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    thead { display: table-header-group; }
+    tbody { display: table-row-group; }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    td { border: 1px solid #DDE5EC; padding: 4.5px; font-size: 7.3pt; line-height: 1.14; overflow-wrap: anywhere; }
+    .title-row td { height: 32px; font-size: 14pt; }
+    .day-band td { height: 25px; font-size: 8.5pt; }
+    .column-header td { height: 27px; font-size: 7.2pt; }
+    .data-row td { height: 58px; }
+    td:nth-child(1){width:6%} td:nth-child(2){width:18%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
+    td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:11%}
+    td:nth-child(9){width:11%} td:nth-child(10){width:15%}
+    @media print {
+      html, body, .day-sheet, table, thead, tbody, tr, td { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+      .day-sheet + .day-sheet { break-before: page; page-break-before: always; }
+    }
+  </style></head><body>${sections.join("")}</body></html>`;
+}
+
+/** Abre uma única janela e imprime todos os dias da semana de uma só vez. */
 export async function printWeeklyProgramacao(blob: Blob): Promise<void> {
   const printWindow = window.open("", "_blank");
   if (!printWindow)
@@ -651,74 +804,13 @@ export async function printWeeklyProgramacao(blob: Blob): Promise<void> {
     "<p style='font-family:Arial;padding:24px'>Preparando impressão...</p>",
   );
   try {
-    const { default: ExcelJS } = await import("exceljs");
-    const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(await blob.arrayBuffer());
-    const sections: string[] = [];
-    workbook.worksheets
-      .filter((worksheet) => worksheet.name !== "RESUMO")
-      .forEach((worksheet) => {
-        const rows: string[] = [];
-        let daySection = 0;
-        worksheet.eachRow({ includeEmpty: false }, (row) => {
-          const cells: string[] = [];
-          const firstCellText = row.getCell(1).text;
-          const isDayBand = DAY_NAMES.some((name) =>
-            firstCellText.startsWith(name),
-          );
-          if (isDayBand) daySection += 1;
-          const isMergedBand =
-            row.number === 1 ||
-            isDayBand ||
-            firstCellText === "Nenhuma OS programada para este dia.";
-          for (let column = 1; column <= 10; column += 1) {
-            const cell = row.getCell(column);
-            if (isMergedBand && column > 1) continue;
-            const fill =
-              cell.fill && "fgColor" in cell.fill
-                ? cell.fill.fgColor
-                : undefined;
-            const background = excelColor(fill, "#FFFFFF");
-            const color = excelColor(cell.font?.color, "#162231");
-            const align =
-              cell.alignment?.horizontal ??
-              (column === 2 || column >= 8 ? "left" : "center");
-            const value =
-              typeof cell.value === "object" &&
-              cell.value &&
-              "text" in cell.value
-                ? cell.value.text
-                : cell.text;
-            cells.push(
-              `<td${isMergedBand && column === 1 ? " colspan='10'" : ""} style="background:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`,
-            );
-          }
-          rows.push(
-            `<tr class="${isDayBand && daySection > 1 ? "day-start" : ""}">${cells.join("")}</tr>`,
-          );
-        });
-        sections.push(
-          `<section><table><tbody>${rows.join("")}</tbody></table></section>`,
-        );
-      });
+    const html = await buildWeeklyPrintHtml(blob);
     printWindow.document.open();
-    printWindow.document
-      .write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
-      @page { size: A4 landscape; margin: 7mm; } * { box-sizing: border-box; }
-      body { margin: 0; font-family: Aptos, Arial, sans-serif; color: #162231; }
-      section { break-after: auto; page-break-after: auto; }
-      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-      td { border: 1px solid #DDE5EC; padding: 5px; font-size: 7.5pt; line-height: 1.15; overflow-wrap: anywhere; }
-      tr:first-child td { height: 32px; font-size: 14pt; } tr:nth-child(2) td { height: 26px; }
-      tr:nth-child(n+3) td { min-height: 68px; }
-      tr.day-start { break-before: page; page-break-before: always; }
-      td:nth-child(1){width:6%} td:nth-child(2){width:18%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
-      td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:11%}
-      td:nth-child(9){width:11%} td:nth-child(10){width:15%}
-    </style></head><body>${sections.join("")}</body></html>`);
+    printWindow.document.write(html);
     printWindow.document.close();
+    await printWindow.document.fonts?.ready;
     printWindow.focus();
-    window.setTimeout(() => printWindow.print(), 350);
+    printWindow.setTimeout(() => printWindow.print(), 250);
   } catch (error) {
     printWindow.close();
     throw error;
