@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { OsCacheRow } from "./db";
-import { buildProgramacaoWorkbook } from "./programacao-excel";
+import {
+  buildProgramacaoWorkbook,
+  OPERATIONS_FONT,
+  OPERATIONS_FONT_SIZE,
+  OPERATIONS_ROW_HEIGHT,
+} from "./programacao-excel";
 
 function os(overrides: Partial<OsCacheRow> = {}) {
   return {
@@ -24,7 +29,13 @@ describe("buildProgramacaoWorkbook", () => {
     const workbook = buildProgramacaoWorkbook(
       [
         os(),
-        os({ id: "os-test-2", numero_os: "223634", equipe: "Civil", material_status: null, status: "em andamento" }),
+        os({
+          id: "os-test-2",
+          numero_os: "223634",
+          equipe: "Civil",
+          material_status: null,
+          status: "em andamento",
+        }),
       ],
       "Todas",
       "corretiva",
@@ -40,6 +51,25 @@ describe("buildProgramacaoWorkbook", () => {
 
     const buffer = await workbook.xlsx.writeBuffer();
     expect(buffer.byteLength).toBeGreaterThan(5_000);
+  });
+
+  it("aplica Aptos ExtraBold 16 e altura de 170 px nas linhas operacionais", () => {
+    const workbook = buildProgramacaoWorkbook([os()], "Todas", "corretiva");
+    const sheet = workbook.getWorksheet("Programação Geral")!;
+    const header = sheet.getRow(7);
+    const data = sheet.getRow(8);
+
+    expect(header.getCell(1).font.name).toBe(OPERATIONS_FONT);
+    expect(header.getCell(1).font.size).toBe(OPERATIONS_FONT_SIZE);
+    expect(header.getCell(1).font.bold).toBe(true);
+
+    expect(data.height).toBe(OPERATIONS_ROW_HEIGHT);
+    for (let column = 1; column <= 11; column += 1) {
+      const font = data.getCell(column).font;
+      expect(font.name).toBe(OPERATIONS_FONT);
+      expect(font.size).toBe(OPERATIONS_FONT_SIZE);
+      expect(font.bold).toBe(true);
+    }
   });
 
   it("mantém o relatório válido com uma única equipe", async () => {
