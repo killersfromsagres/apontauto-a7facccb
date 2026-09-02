@@ -1,8 +1,12 @@
-// Classificação automática de equipe para OS de Corretiva.
-// Usa o motor determinístico do módulo Backorder (mesmas regras já validadas)
-// e casa o resultado com os nomes de equipe cadastrados em `corretiva_equipes`.
+// Classificação automática de equipe para OS do módulo Corretiva.
+// Centraliza a decisão no motor contextual de Corretivas para evitar divergência
+// entre importação, sugestões automáticas e o botão Designar.
 
-import { classifyTeamByText, type Equipe } from "@/lib/backorder/team-classifier";
+import {
+  designateCorrectiveTeam,
+  type CorrectiveDesignationInput,
+} from "@/lib/corretiva/designation-engine";
+import type { Equipe } from "@/lib/backorder/team-classifier";
 
 export type { Equipe };
 
@@ -33,25 +37,25 @@ export type ClassificacaoOs = {
 };
 
 /**
- * Classifica uma OS pelo texto (nome da OS + equipamento + ativo).
- * `equipesCadastradas` permite devolver o nome exato usado no sistema.
+ * Classifica uma OS usando o contexto técnico disponível.
+ * O tipo aceita campos adicionais sem quebrar os chamadores antigos.
  */
 export function classificarEquipeOs(
-  texto: { nome_os?: string | null; equipamento?: string | null; ativo?: string | null },
+  texto: CorrectiveDesignationInput,
   equipesCadastradas: string[] = [],
 ): ClassificacaoOs {
-  const base = [texto.nome_os, texto.equipamento, texto.ativo].filter(Boolean).join(" ");
-  const r = classifyTeamByText(base);
-
-  const alvos = CANON[r.equipe] ?? [];
+  const result = designateCorrectiveTeam(texto);
+  const alvos = CANON[result.equipe] ?? [];
   const match =
-    equipesCadastradas.find((nome) => alvos.some((a) => norm(nome).includes(a))) ?? null;
+    equipesCadastradas.find((nome) =>
+      alvos.some((alias) => norm(nome).includes(alias)),
+    ) ?? null;
 
   return {
-    equipe: r.equipe,
+    equipe: result.equipe,
     equipeCadastrada: match,
-    confianca: r.confianca,
-    ambiguo: r.ambiguo,
+    confianca: result.confianca,
+    ambiguo: result.ambiguo,
   };
 }
 
@@ -59,5 +63,7 @@ export function classificarEquipeOs(
 export function equipeReconhecida(valor: string | null | undefined): boolean {
   const n = norm(valor);
   if (!n) return false;
-  return Object.values(CANON).some((alvos) => alvos.some((a) => n.includes(a)));
+  return Object.values(CANON).some((alvos) =>
+    alvos.some((alias) => n.includes(alias)),
+  );
 }
