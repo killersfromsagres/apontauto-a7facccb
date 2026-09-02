@@ -48,9 +48,9 @@ const FIELD_WEIGHTS: Record<WeightedField, number> = {
 const CONTEXT_RULES: ContextRule[] = [
   {
     equipe: "Refrigeração",
-    score: 20,
+    score: 22,
     pattern:
-      /\b(ar condicionado|split|fancoil|fan coil|cassete|cassette|condensadora|evaporadora|compressor|chiller|vrf|vrv|hvac|climatizacao|refrigeracao|camara fria|freezer|geladeira)\b/,
+      /\b(ar condicionado|split|fancoil|fan coil|fan coil|cassete|cassette|condensadora|evaporadora|compressor|chiller|vrf|vrv|hvac|climatizacao|refrigeracao|camara fria|freezer|geladeira|serpentina)\b/,
     evidence: "equipamento ou serviço de climatização/refrigeração",
   },
   {
@@ -62,21 +62,21 @@ const CONTEXT_RULES: ContextRule[] = [
   },
   {
     equipe: "Elétrica",
-    score: 18,
+    score: 22,
     pattern:
-      /\b(lampada|luminaria|refletor|tomada|interruptor|disjuntor|quadro eletrico|painel eletrico|curto circuito|sem energia|falta de energia|fiacao|cabeamento eletrico|ponto eletrico|aterramento|reator|sensor de presenca|nobreak|no break)\b/,
+      /\b(lampada|luminaria|refletor|tomada|interruptor|disjuntor|quadro eletrico|painel eletrico|curto circuito|sem energia|falta de energia|fiacao|cabeamento eletrico|ponto eletrico|aterramento|reator|sensor de presenca|nobreak|no break|qgbt|qdl|qdc|ccm|contator|fusivel|transformador|eletroduto|inversor de frequencia|tensao|voltagem)\b/,
     evidence: "instalação, alimentação ou equipamento elétrico",
   },
   {
     equipe: "Chaveiro",
-    score: 18,
+    score: 20,
     pattern:
       /\b(fechadura|miolo|cadeado|chaveiro|copia de chave|chave quebrada|destrancar|porta travada|porta trancada|trinco|lingueta|macaneta|cilindro|mola de porta)\b/,
     evidence: "fechamento, chave ou ferragem de acesso",
   },
   {
     equipe: "Pintura",
-    score: 18,
+    score: 20,
     pattern:
       /\b(pintura|pintar|repintura|repintar|tinta|verniz|retoque|demarcacao de piso|sinalizacao de piso|faixa amarela|pintura de piso|pintura de parede)\b/,
     evidence: "pintura, acabamento ou demarcação",
@@ -90,10 +90,55 @@ const CONTEXT_RULES: ContextRule[] = [
   },
   {
     equipe: "Civil",
-    score: 16,
+    score: 18,
     pattern:
       /\b(alvenaria|parede|forro|teto|drywall|gesso|reboco|trinca|rachadura|piso|azulejo|revestimento|calcada|telhado|telha|infiltracao|concreto|argamassa|guarda corpo|corrimao|esquadria|batente|vidro|marcenaria|mobiliario|armario|mesa|cadeira)\b/,
     evidence: "estrutura, acabamento predial ou mobiliário",
+  },
+];
+
+const STRONG_DOMAIN_RULES: ContextRule[] = [
+  {
+    equipe: "Elétrica",
+    score: 55,
+    pattern:
+      /\b(qgbt|qdl|qdc|ccm|quadro (?:geral |de )?(?:baixa tensao|distribuicao|energia|eletrico)|painel eletrico|disjuntor|contator|rele termico|rele de protecao|fusivel|transformador|barramento|tomada|interruptor|luminaria|lampada|refletor|curto circuito|cabo eletrico|fiacao eletrica|eletroduto|aterramento|inversor de frequencia|nobreak|no break|sem energia|falta de energia)\b/,
+    evidence: "evidência elétrica específica",
+  },
+  {
+    equipe: "Refrigeração",
+    score: 60,
+    pattern:
+      /\b(ar condicionado|split|fancoil|fan coil|cassete|cassette|condensadora|evaporadora|chiller|vrf|vrv|hvac|compressor frigorifico|gas refrigerante|serpentina|camara fria|freezer|geladeira)\b/,
+    evidence: "equipamento HVAC/refrigeração identificado",
+  },
+  {
+    equipe: "Hidráulica",
+    score: 55,
+    pattern:
+      /\b(torneira|sifao|ralo|esgoto|vaso sanitario|mictorio|descarga|registro de agua|tubulacao de agua|encanamento|caixa d agua|bomba d agua|boca de lobo|caixa pluvial|rede pluvial|efluente)\b/,
+    evidence: "componente hidráulico/sanitário específico",
+  },
+  {
+    equipe: "Chaveiro",
+    score: 60,
+    pattern:
+      /\b(fechadura|miolo de fechadura|cadeado|copia de chave|chave quebrada|destrancar|porta travada|porta trancada|trinco|lingueta|macaneta|cilindro de fechadura)\b/,
+    evidence: "componente de chave/fechadura identificado",
+  },
+  {
+    equipe: "Pintura",
+    score: 55,
+    pattern:
+      /\b(repintura|repintar|pintura|pintar|tinta|verniz|retoque de pintura|demarcacao de piso|faixa amarela|pintura de piso|pintura de parede)\b/,
+    evidence: "serviço de pintura identificado",
+  },
+  {
+    equipe: "Civil",
+    score: 50,
+    pattern:
+      /\b(alvenaria|drywall|gesso|reboco|trinca|rachadura|azulejo|revestimento|calcada|telhado|telha|concreto|argamassa|guarda corpo|corrimao|esquadria|marcenaria)\b/,
+    evidence: "serviço civil/predial específico",
   },
 ];
 
@@ -101,8 +146,10 @@ const HYDRAULIC_CLEANING =
   /\blimpeza (?:de |da |das |do |dos )?(calha|ralo|canaleta|boca de lobo|caixa pluvial|rede pluvial)\b/;
 const HVAC_CLEANING =
   /\b(limpeza|higienizacao) (?:de |da |do )?(ar condicionado|split|fancoil|fan coil|evaporadora|condensadora)\b/;
-const ELECTRIC_SHOWER = /\bchuveiro (eletrico|queimado|nao aquece|sem aquecer|resistencia)\b/;
-const HYDRAULIC_SHOWER = /\bchuveiro (vazando|pingando|registro|canopla|manopla)\b/;
+const ELECTRIC_SHOWER =
+  /\bchuveiro (eletrico|queimado|nao aquece|sem aquecer|resistencia)\b/;
+const HYDRAULIC_SHOWER =
+  /\bchuveiro (vazando|pingando|registro|canopla|manopla)\b/;
 
 const normalize = (value: unknown) =>
   String(value ?? "")
@@ -116,13 +163,19 @@ const normalize = (value: unknown) =>
 const makeScores = (): Record<Equipe, number> =>
   Object.fromEntries(EQUIPES.map((team) => [team, 0])) as Record<Equipe, number>;
 
-export function canonicalCorrectiveTeam(value: string | null | undefined): Equipe | null {
+export function canonicalCorrectiveTeam(
+  value: string | null | undefined,
+): Equipe | null {
   const text = normalize(value);
   if (!text) return null;
   if (text.includes("chave") || text.includes("serralh")) return "Chaveiro";
   if (text.includes("hidraul") || text.includes("encanad")) return "Hidráulica";
   if (text.includes("eletric")) return "Elétrica";
-  if (text.includes("refrig") || text.includes("climat") || text.includes("ar condicionado")) {
+  if (
+    text.includes("refrig") ||
+    text.includes("climat") ||
+    text.includes("ar condicionado")
+  ) {
     return "Refrigeração";
   }
   if (text.includes("pint")) return "Pintura";
@@ -134,7 +187,11 @@ export function canonicalCorrectiveTeam(value: string | null | undefined): Equip
   ) {
     return "Limpeza";
   }
-  if (text.includes("civil") || text.includes("alvenaria") || text.includes("predial")) {
+  if (
+    text.includes("civil") ||
+    text.includes("alvenaria") ||
+    text.includes("predial")
+  ) {
     return "Civil";
   }
   return null;
@@ -172,42 +229,64 @@ function applyContextRules(
   for (const rule of CONTEXT_RULES) {
     if (!rule.pattern.test(fullText)) continue;
     scores[rule.equipe] += rule.score;
-    if (evidence.length < 6) evidence.push(rule.evidence);
+    if (evidence.length < 8) evidence.push(rule.evidence);
+  }
+
+  for (const rule of STRONG_DOMAIN_RULES) {
+    if (!rule.pattern.test(fullText)) continue;
+    scores[rule.equipe] += rule.score;
+    evidence.unshift(rule.evidence);
   }
 
   if (HYDRAULIC_CLEANING.test(fullText)) {
-    scores.Hidráulica += 30;
-    scores.Limpeza = Math.max(0, scores.Limpeza - 12);
-    scores.Civil = Math.max(0, scores.Civil - 8);
+    scores.Hidráulica += 45;
+    scores.Limpeza = Math.max(0, scores.Limpeza - 20);
+    scores.Civil = Math.max(0, scores.Civil - 12);
     evidence.unshift("limpeza de elemento hidráulico/pluvial");
   }
 
   if (HVAC_CLEANING.test(fullText)) {
-    scores.Refrigeração += 30;
-    scores.Limpeza = Math.max(0, scores.Limpeza - 12);
+    scores.Refrigeração += 45;
+    scores.Limpeza = Math.max(0, scores.Limpeza - 20);
+    scores.Hidráulica = Math.max(0, scores.Hidráulica - 8);
     evidence.unshift("higienização de equipamento de climatização");
   }
 
   if (ELECTRIC_SHOWER.test(fullText)) {
-    scores.Elétrica += 30;
-    scores.Hidráulica = Math.max(0, scores.Hidráulica - 10);
+    scores.Elétrica += 45;
+    scores.Hidráulica = Math.max(0, scores.Hidráulica - 12);
     evidence.unshift("chuveiro com falha elétrica");
   }
 
   if (HYDRAULIC_SHOWER.test(fullText)) {
-    scores.Hidráulica += 30;
-    scores.Elétrica = Math.max(0, scores.Elétrica - 10);
+    scores.Hidráulica += 45;
+    scores.Elétrica = Math.max(0, scores.Elétrica - 12);
     evidence.unshift("chuveiro com falha hidráulica");
+  }
+
+  // Um vazamento genérico não deve transformar um equipamento HVAC em Hidráulica.
+  if (STRONG_DOMAIN_RULES[1].pattern.test(fullText)) {
+    scores.Hidráulica = Math.min(scores.Hidráulica, scores.Refrigeração * 0.45);
+  }
+
+  // Termos genéricos como "quadro", "porta", "fixar" ou "piso" não podem
+  // superar uma evidência elétrica explícita.
+  if (STRONG_DOMAIN_RULES[0].pattern.test(fullText)) {
+    scores.Civil = Math.min(scores.Civil, scores.Elétrica * 0.5);
+    scores.Chaveiro = Math.min(scores.Chaveiro, scores.Elétrica * 0.5);
+  }
+
+  if (STRONG_DOMAIN_RULES[3].pattern.test(fullText)) {
+    scores.Civil = Math.min(scores.Civil, scores.Chaveiro * 0.45);
   }
 }
 
 /**
  * Motor contextual de designação para Corretivas.
  *
- * Em vez de classificar apenas uma frase, combina todos os campos operacionais
- * disponíveis e dá mais peso à descrição e ao equipamento. A equipe atual é
- * usada somente como desempate conservador quando a evidência é praticamente
- * equivalente, evitando realocações instáveis.
+ * Analisa descrição, equipamento, ativo, local, prédio, andar e solicitante.
+ * Evidências técnicas específicas recebem precedência sobre palavras genéricas
+ * e sobre uma equipe previamente preenchida incorretamente.
  */
 export function designateCorrectiveTeam(
   input: CorrectiveDesignationInput,
@@ -258,12 +337,14 @@ export function designateCorrectiveTeam(
   let selectedTeam = topTeam;
   let preservedCurrent = false;
 
+  // Só preserva a equipe atual em empate técnico real. Uma leitura forte da OS
+  // pode corrigir inclusive uma equipe reconhecida que veio errada da origem.
   if (
     currentTeam &&
     currentTeam !== topTeam &&
     scores[currentTeam] > 0 &&
-    scores[currentTeam] >= topScore * 0.9 &&
-    gapRatio < 0.12
+    scores[currentTeam] >= topScore * 0.94 &&
+    gapRatio < 0.08
   ) {
     selectedTeam = currentTeam;
     preservedCurrent = true;
@@ -271,11 +352,11 @@ export function designateCorrectiveTeam(
   }
 
   const selectedScore = scores[selectedTeam];
-  const ambiguo = !preservedCurrent && secondScore > 0 && gapRatio < 0.18;
+  const ambiguo = !preservedCurrent && secondScore > 0 && gapRatio < 0.16;
   const confianca: TeamClassificationResult["confianca"] =
-    selectedScore >= 24 && !ambiguo
+    selectedScore >= 28 && !ambiguo
       ? "alta"
-      : selectedScore >= 9 && gapRatio >= 0.12
+      : selectedScore >= 10 && gapRatio >= 0.1
         ? "media"
         : "baixa";
 
@@ -286,6 +367,6 @@ export function designateCorrectiveTeam(
     hasSignal: true,
     preservedCurrent,
     scores,
-    evidence: evidence.slice(0, 6),
+    evidence: [...new Set(evidence)].slice(0, 8),
   };
 }
