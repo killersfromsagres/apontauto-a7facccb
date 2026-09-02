@@ -71,7 +71,8 @@ function pick(row: Record<string, unknown>, ...keys: string[]): string {
   for (const k of Object.keys(row)) map.set(norm(k), row[k]);
   for (const k of keys) {
     const v = map.get(norm(k));
-    if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
+    if (v !== undefined && v !== null && String(v).trim() !== "")
+      return String(v).trim();
   }
   return "";
 }
@@ -80,12 +81,40 @@ function detectCategoria(raw: string): Categoria {
   const n = norm(raw);
   if (!n) return "OUTROS";
   if (n.includes("ABASTEC")) return "ABASTECIMENTO";
-  if (n.includes("CLIMAT") || n.includes("REFRIG") || n.includes("AR CONDIC") || n.includes("AC ") || n.includes("FANCOIL") || n.includes("SPLIT") || n.includes("CHILLER"))
+  if (
+    n.includes("CLIMAT") ||
+    n.includes("REFRIG") ||
+    n.includes("AR CONDIC") ||
+    n.includes("AC ") ||
+    n.includes("FANCOIL") ||
+    n.includes("SPLIT") ||
+    n.includes("CHILLER")
+  )
     return "CLIMATIZAÇÃO E REFRIGERAÇÃO";
-  if (n.includes("ELETR") || n.includes("SUBEST") || n.includes("GERADOR") || n.includes("PAINEL") || n.includes("ILUMINACAO") || n.includes("LUMINARIA")) return "ELÉTRICA";
-  if (n.includes("JARDIN") || n.includes("PAISAG")) return "JARDINAGEM E PAISAGISMO";
+  if (
+    n.includes("ELETR") ||
+    n.includes("SUBEST") ||
+    n.includes("GERADOR") ||
+    n.includes("PAINEL") ||
+    n.includes("ILUMINACAO") ||
+    n.includes("LUMINARIA")
+  )
+    return "ELÉTRICA";
+  if (n.includes("JARDIN") || n.includes("PAISAG"))
+    return "JARDINAGEM E PAISAGISMO";
   if (n.includes("LIMPEZ")) return "LIMPEZA";
-  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("PINTURA") || n.includes("ALVENARIA") || n.includes("TELHADO") || n.includes("PORTA") || n.includes("FECHADURA") || n.includes("PISO") || n.includes("PAREDE")) return "CIVIL";
+  if (
+    n.includes("CIVIL") ||
+    n.includes("CHAVE") ||
+    n.includes("PINTURA") ||
+    n.includes("ALVENARIA") ||
+    n.includes("TELHADO") ||
+    n.includes("PORTA") ||
+    n.includes("FECHADURA") ||
+    n.includes("PISO") ||
+    n.includes("PAREDE")
+  )
+    return "CIVIL";
   if (n.includes("HIDR")) return "CIVIL"; // Mapeia Hidráulica para Civil para que o triage faça a separação específica para a equipe de HIDRÁULICA
   if (n.includes("OUTRO") || n.includes("DIVERSOS")) return "OUTROS";
   return "OUTROS";
@@ -94,11 +123,14 @@ function detectCategoria(raw: string): Categoria {
 function guessCategoriaFromFilename(name: string): Categoria | null {
   const n = norm(name);
   if (n.includes("ABASTEC")) return "ABASTECIMENTO";
-  if (n.includes("CLIMAT") || n.includes("REFRIG")) return "CLIMATIZAÇÃO E REFRIGERAÇÃO";
+  if (n.includes("CLIMAT") || n.includes("REFRIG"))
+    return "CLIMATIZAÇÃO E REFRIGERAÇÃO";
   if (n.includes("ELETR")) return "ELÉTRICA";
-  if (n.includes("JARDIN") || n.includes("PAISAG")) return "JARDINAGEM E PAISAGISMO";
+  if (n.includes("JARDIN") || n.includes("PAISAG"))
+    return "JARDINAGEM E PAISAGISMO";
   if (n.includes("LIMPEZ")) return "LIMPEZA";
-  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR")) return "CIVIL";
+  if (n.includes("CIVIL") || n.includes("CHAVE") || n.includes("HIDR"))
+    return "CIVIL";
   return null;
 }
 
@@ -108,7 +140,14 @@ function parseDate(v: string): { iso: string; ts: number } {
   if (!Number.isNaN(asNum) && asNum > 20000 && asNum < 80000) {
     const utcMs = Math.round((asNum - 25569) * 86400 * 1000);
     const u = new Date(utcMs);
-    const d = new Date(u.getUTCFullYear(), u.getUTCMonth(), u.getUTCDate(), 12, 0, 0);
+    const d = new Date(
+      u.getUTCFullYear(),
+      u.getUTCMonth(),
+      u.getUTCDate(),
+      12,
+      0,
+      0,
+    );
     return { iso: d.toISOString(), ts: d.getTime() };
   }
   const br = v.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})/);
@@ -119,7 +158,8 @@ function parseDate(v: string): { iso: string; ts: number } {
     return { iso: date.toISOString(), ts: date.getTime() };
   }
   const iso = new Date(v);
-  if (!Number.isNaN(iso.getTime())) return { iso: iso.toISOString(), ts: iso.getTime() };
+  if (!Number.isNaN(iso.getTime()))
+    return { iso: iso.toISOString(), ts: iso.getTime() };
   return { iso: v, ts: Number.MAX_SAFE_INTEGER };
 }
 
@@ -141,15 +181,31 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
 
     // Aba PREVENTIVAS ou primeira aba
     const mainSheetName =
-      wb.SheetNames.find((n) => norm(n).includes("PREVENTIV")) ?? wb.SheetNames[0];
+      wb.SheetNames.find((n) => norm(n).includes("PREVENTIV")) ??
+      wb.SheetNames[0];
     const mainSheet = wb.Sheets[mainSheetName];
-    const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(mainSheet, { defval: "" });
+    const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(mainSheet, {
+      defval: "",
+    });
 
     const fileRows: RawRow[] = [];
     const catCount = new Map<Categoria, number>();
 
     for (const r of raw) {
-      const os = pick(r, "OS", "ORDEM DE SERVIÇO", "ORDEM DE SERVICO", "ID OS", "NÚMERO OS", "NUMERO OS", "OS #", "WO");
+      // Mantém compatibilidade com a planilha mensal usada em campo, na qual
+      // o equipamento de Refrigeração fica fisicamente na coluna G.
+      const columnG = Object.values(r)[6];
+      const os = pick(
+        r,
+        "OS",
+        "ORDEM DE SERVIÇO",
+        "ORDEM DE SERVICO",
+        "ID OS",
+        "NÚMERO OS",
+        "NUMERO OS",
+        "OS #",
+        "WO",
+      );
       if (!os) {
         discartadasVazias++;
         continue;
@@ -158,10 +214,16 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
       // Se não houver SITE ou não contiver DEMARCHI, aceitamos mesmo assim se o resto parecer válido
       // pois o filtro rígido pode estar descartando OSs legítimas.
       const isDemarchi = !site || norm(site).includes("DEMARCHI");
-      
+
       const categoriaRaw = pick(r, "CATEGORIA", "CATEGORY", "TIPO DE SERVIÇO");
       const categoria = detectCategoria(categoriaRaw || file.name);
-      const terminoSLARaw = pick(r, "TERMINO SLA", "TÉRMINO SLA", "TERMINO_SLA", "DATA LIMITE");
+      const terminoSLARaw = pick(
+        r,
+        "TERMINO SLA",
+        "TÉRMINO SLA",
+        "TERMINO_SLA",
+        "DATA LIMITE",
+      );
       const tSLA = parseDate(terminoSLARaw);
       const row: RawRow = {
         arquivo: file.name,
@@ -169,7 +231,13 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
         chamado: pick(r, "CHAMADO PRISMA", "CHAMADO"),
         tipo: pick(r, "TIPO"),
         nomeOS: pick(r, "NOME OS", "NOME_OS"),
-        descricao: pick(r, "DESCRIÇÃO OS", "DESCRICAO OS", "DESCRIÇÃO", "DESCRICAO"),
+        descricao: pick(
+          r,
+          "DESCRIÇÃO OS",
+          "DESCRICAO OS",
+          "DESCRIÇÃO",
+          "DESCRICAO",
+        ),
         categoria,
         criticidade: pick(r, "CRITICIDADE"),
         unidadeNegocio: pick(r, "UNIDADE DE NEGOCIO", "UNIDADE DE NEGÓCIO"),
@@ -177,14 +245,25 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
         solicitante: pick(r, "SOLICITANTE"),
         inicioSLA: pick(r, "INICIO SLA", "INÍCIO SLA"),
         dataLimite: pick(r, "DATA LIMITE"),
-        dataPrevistaMaxima: pick(r, "DATA PREVISTA MAXIMA", "DATA PREVISTA MÁXIMA"),
+        dataPrevistaMaxima: pick(
+          r,
+          "DATA PREVISTA MAXIMA",
+          "DATA PREVISTA MÁXIMA",
+        ),
         status: pick(r, "STATUS"),
         dataStatus: pick(r, "DATA STATUS"),
         site: site || "DEMARCHI",
         predio: pick(r, "PRÉDIO", "PREDIO"),
         andar: pick(r, "ANDAR"),
         local: pick(r, "LOCAL"),
-        equipamento: pick(r, "EQUIPAMENTO"),
+        equipamento:
+          pick(
+            r,
+            "EQUIPAMENTO",
+            "EQUIP",
+            "DESCRIÇÃO DO EQUIPAMENTO",
+            "DESCRICAO DO EQUIPAMENTO",
+          ) || String(columnG ?? "").trim(),
         terminoSLA: tSLA.iso,
         terminoSLATs: tSLA.ts,
         dataConclusao: pick(r, "DATA CONCLUSÃO", "DATA CONCLUSAO"),
@@ -248,7 +327,14 @@ export async function readPreventivaFiles(files: File[]): Promise<ReadResult> {
   };
   for (const r of rows) porCategoria[r.categoria]++;
 
-  return { rows, discartadasSite, discartadasVazias, alerts, ativoIndex, porCategoria };
+  return {
+    rows,
+    discartadasSite,
+    discartadasVazias,
+    alerts,
+    ativoIndex,
+    porCategoria,
+  };
 }
 
 export function lookupAtivo(

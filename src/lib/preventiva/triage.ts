@@ -24,14 +24,14 @@ export const EQUIPES_ORDEM: Equipe[] = [
 ];
 
 export const EQUIPE_COLOR: Record<Equipe, string> = {
-  CHAVEIRO: "#4F4FD9",
-  CIVIL: "#00863D",
-  "CLIMATIZAÇÃO E REFRIGERAÇÃO 1": "#1688CE",
-  "CLIMATIZAÇÃO E REFRIGERAÇÃO 2": "#007D02",
-  "CLIMATIZAÇÃO E REFRIGERAÇÃO 3": "#A85D5F",
-  ELÉTRICA: "#3EA9AB",
-  HIDRÁULICA: "#DB8E03",
-  CORRETIVA: "#FF0000",
+  CHAVEIRO: "#5B5CE2",
+  CIVIL: "#0B8F55",
+  "CLIMATIZAÇÃO E REFRIGERAÇÃO 1": "#1597D5",
+  "CLIMATIZAÇÃO E REFRIGERAÇÃO 2": "#168B75",
+  "CLIMATIZAÇÃO E REFRIGERAÇÃO 3": "#B65C72",
+  ELÉTRICA: "#35B8C4",
+  HIDRÁULICA: "#E29A16",
+  CORRETIVA: "#E11D48",
 };
 
 const HIDRAULICA_KEYWORDS = [
@@ -55,7 +55,14 @@ const HIDRAULICA_KEYWORDS = [
   "bocas de lobo",
 ];
 
-export const REFRIG_1 = ["A160", "A170", "ADC", "AMBULATÓRIO", "AMBULATORIO", "B203"];
+export const REFRIG_1 = [
+  "A160",
+  "A170",
+  "ADC",
+  "AMBULATÓRIO",
+  "AMBULATORIO",
+  "B203",
+];
 export const REFRIG_2 = [
   "A220",
   "B115",
@@ -108,7 +115,8 @@ function isHidraulica(row: RawRow): boolean {
 
 function refrigTeamForPredio(predio: string): Equipe {
   const p = norm(predio);
-  const match = (arr: string[]) => arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
+  const match = (arr: string[]) =>
+    arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
   if (match(REFRIG_1)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 1";
   if (match(REFRIG_2)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 2";
   if (match(REFRIG_3)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 3";
@@ -135,7 +143,7 @@ export function triage(rows: RawRow[]): TriagedOS[] {
 
   for (const r of sorted) {
     const cat = r.categoria;
-    
+
     if (cat === "CLIMATIZAÇÃO E REFRIGERAÇÃO") {
       out.push({ ...r, equipe: refrigTeamForPredio(r.predio) });
     } else if (cat === "ELÉTRICA") {
@@ -151,7 +159,11 @@ export function triage(rows: RawRow[]): TriagedOS[] {
     } else {
       // Tenta classificar pelo nome da OS se for OUTROS ou categorias genéricas
       const bag = norm(`${r.nomeOS} ${r.descricao} ${r.arquivo}`);
-      if (bag.includes("CLIMAT") || bag.includes("REFRIG") || bag.includes("AR CONDIC")) {
+      if (
+        bag.includes("CLIMAT") ||
+        bag.includes("REFRIG") ||
+        bag.includes("AR CONDIC")
+      ) {
         out.push({ ...r, equipe: refrigTeamForPredio(r.predio) });
       } else if (bag.includes("ELETR")) {
         out.push({ ...r, equipe: "ELÉTRICA" });
@@ -167,11 +179,15 @@ export function triage(rows: RawRow[]): TriagedOS[] {
   civilPool.forEach((r) => {
     // Balanceamento entre Civil e Chaveiro baseado em palavras-chave
     const bag = norm(`${r.nomeOS} ${r.descricao}`);
-    
+
     // Verificação extra de segurança para garantir que nada de hidráulica escape para chaveiro/civil
     if (isHidraulica(r) || bag.includes("HIDR")) {
       out.push({ ...r, equipe: "HIDRÁULICA" });
-    } else if (bag.includes("CHAVE") || bag.includes("PORTA") || bag.includes("FECHADURA")) {
+    } else if (
+      bag.includes("CHAVE") ||
+      bag.includes("PORTA") ||
+      bag.includes("FECHADURA")
+    ) {
       out.push({ ...r, equipe: "CHAVEIRO" });
     } else {
       out.push({ ...r, equipe: "CIVIL" });
@@ -182,7 +198,7 @@ export function triage(rows: RawRow[]): TriagedOS[] {
   return out.sort((a, b) => {
     if (a.equipe !== b.equipe)
       return EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
-    
+
     return (
       a.predio.localeCompare(b.predio) ||
       a.andar.localeCompare(b.andar) ||
@@ -196,7 +212,11 @@ export function triage(rows: RawRow[]): TriagedOS[] {
  * ser incluídas no arquivo daquela seleção.
  */
 export function equipesRelacionadas(selecionada: Equipe): Equipe[] {
-  if (selecionada === "CIVIL" || selecionada === "CHAVEIRO" || selecionada === "HIDRÁULICA") {
+  if (
+    selecionada === "CIVIL" ||
+    selecionada === "CHAVEIRO" ||
+    selecionada === "HIDRÁULICA"
+  ) {
     return ["CIVIL", "CHAVEIRO", "HIDRÁULICA"];
   }
   return [selecionada];

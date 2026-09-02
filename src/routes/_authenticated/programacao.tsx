@@ -1,49 +1,36 @@
-import { useConfirm } from "@/components/ui/use-confirm";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   AlertTriangle,
   CalendarIcon,
   Download,
   FileSpreadsheet,
   History,
+  Loader2,
+  Printer,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
-import { useIsAdmin } from "@/hooks/use-is-admin";
-
-import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
-import {
-  triage,
-  EQUIPE_COLOR,
-  REFRIG_1,
-  REFRIG_2,
-  REFRIG_3,
-  type Equipe,
-  type TriagedOS,
-} from "@/lib/preventiva/triage";
-import {
-  distributeAcrossMonth,
-  weeksToCoverAll,
-  MINUTOS_UTEIS_DIA,
-  type WeekBucket,
-} from "@/lib/preventiva/capacity";
-import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
-import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { downloadBlob } from "@/lib/download";
+import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
+import { weeksBetween, type WeekBucket } from "@/lib/preventiva/capacity";
+import { getLatestCorretivas } from "@/lib/preventiva/corretivas.functions";
 import {
   clearHistorico,
   deleteHistorico,
@@ -51,6 +38,29 @@ import {
   saveHistorico,
   type HistoricoItem,
 } from "@/lib/preventiva/history";
+import {
+  formatMinutes,
+  mapCorrectives,
+  MINUTOS_PADRAO_POR_EQUIPE,
+  scheduleTeamMonth,
+  type CorrectiveSourceRow,
+  type DailyTeamLoad,
+  type TeamMonthlySchedule,
+} from "@/lib/preventiva/monthly-scheduler";
+import { readPreventivaFiles, type FileAlert } from "@/lib/preventiva/reader";
+import {
+  EQUIPE_COLOR,
+  REFRIG_1,
+  REFRIG_2,
+  REFRIG_3,
+  triage,
+  type Equipe,
+  type TriagedOS,
+} from "@/lib/preventiva/triage";
+import {
+  generateWeeklyProgramacao,
+  printWeeklyProgramacao,
+} from "@/lib/preventiva/weekly-exporter";
 
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
@@ -63,38 +73,34 @@ interface SlotDef {
   label: string;
   hint: string;
   color: string;
-  equipes: Equipe[]; // equipes que serão geradas por esse slot
-  minutosPorOS: number; // duração estimada por OS
+  equipes: Equipe[];
 }
 
 const SLOTS: SlotDef[] = [
   {
     id: "CCH",
     label: "CIVIL / CHAVEIRO / HIDRÁULICA",
-    hint: "Base 01:00/OS · +00:30 por incremento (alerta).",
+    hint: "Padrões independentes: Chaveiro e Civil 00:30; Hidráulica 01:00.",
     color: EQUIPE_COLOR.CIVIL,
     equipes: ["CHAVEIRO", "CIVIL", "HIDRÁULICA"],
-    minutosPorOS: 60,
   },
   {
     id: "REFRIG",
     label: "CLIMATIZAÇÃO E REFRIGERAÇÃO",
-    hint: "60 min/OS · até 8/dia · separa Equipe 1/2/3 por prédio.",
+    hint: "Equipes 1, 2 e 3 separadas por prédio; padrão 01:00.",
     color: EQUIPE_COLOR["CLIMATIZAÇÃO E REFRIGERAÇÃO 1"],
     equipes: [
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 1",
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 2",
       "CLIMATIZAÇÃO E REFRIGERAÇÃO 3",
     ],
-    minutosPorOS: 60,
   },
   {
     id: "ELETRICA",
     label: "ELÉTRICA",
-    hint: "30 min/OS · até 16/dia (8h por técnico).",
+    hint: "Padrão 00:30 por OS; meta diária de 09:00.",
     color: EQUIPE_COLOR.ELÉTRICA,
     equipes: ["ELÉTRICA"],
-    minutosPorOS: 30,
   },
 ];
 
@@ -106,556 +112,558 @@ interface GeneratedFile {
   slot: SlotId;
   slotLabel: string;
   totalOS: number;
-  solicitante?: string;
+  preventiveCount: number;
+  correctiveCount: number;
+  remainingMinutes: number;
+  periodStart: string;
+  periodEnd: string;
 }
 
-
-const TITULO_PADRAO = "SHERWIN WILLIAMS / DEMARCHI";
-
-const norm = (v: unknown) =>
-  String(v ?? "")
+const TITULO_PADRAO = "GRUPO GPS • SHERWIN WILLIAMS / DEMARCHI";
+const norm = (value: unknown) =>
+  String(value ?? "")
     .trim()
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-function predioMatches(predio: string, arr: string[]): boolean {
-  const p = norm(predio);
-  return arr.some((x) => norm(x) === p || p.startsWith(norm(x)));
+function predioMatches(predio: string, buildings: string[]): boolean {
+  const normalized = norm(predio);
+  return buildings.some(
+    (building) =>
+      normalized === norm(building) || normalized.startsWith(norm(building)),
+  );
 }
 
-function filterForSlot(all: TriagedOS[], slot: SlotId): TriagedOS[] {
-  switch (slot) {
-    case "CCH":
-      return all.filter(
-        (o) => o.equipe === "CIVIL" || o.equipe === "CHAVEIRO" || o.equipe === "HIDRÁULICA",
-      );
-    case "REFRIG": {
-      const climat = all.filter((o) => o.equipe.startsWith("CLIMAT"));
-      const out: TriagedOS[] = [];
-      for (const o of climat) {
-        if (predioMatches(o.predio, REFRIG_1)) {
-          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 1" as Equipe });
-        } else if (predioMatches(o.predio, REFRIG_2)) {
-          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 2" as Equipe });
-        } else if (predioMatches(o.predio, REFRIG_3)) {
-          out.push({ ...o, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 3" as Equipe });
-        }
-      }
-      return out;
-    }
-    case "ELETRICA":
-      return all.filter((o) => o.equipe === "ELÉTRICA");
+function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
+  if (slot === "CCH") {
+    return items.filter((item) =>
+      ["CIVIL", "CHAVEIRO", "HIDRÁULICA"].includes(item.equipe),
+    );
   }
+  if (slot === "ELETRICA")
+    return items.filter((item) => item.equipe === "ELÉTRICA");
+  return items
+    .filter((item) => item.equipe.startsWith("CLIMAT"))
+    .map((item) => {
+      if (predioMatches(item.predio, REFRIG_2))
+        return { ...item, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 2" as Equipe };
+      if (predioMatches(item.predio, REFRIG_3))
+        return { ...item, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 3" as Equipe };
+      if (predioMatches(item.predio, REFRIG_1))
+        return { ...item, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 1" as Equipe };
+      return { ...item, equipe: "CLIMATIZAÇÃO E REFRIGERAÇÃO 1" as Equipe };
+    });
 }
+
+const isoLocal = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
 function ProgramacaoPage() {
-  const { isAdmin } = useIsAdmin();
-  const { confirmar, dialogo } = useConfirm();
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
     REFRIG: null,
     ELETRICA: null,
   });
-  const [osInputFile, setOsInputFile] = useState<File | null>(null);
+  const [tempoPorEquipe, setTempoPorEquipe] = useState<Record<Equipe, 30 | 60>>(
+    { ...MINUTOS_PADRAO_POR_EQUIPE },
+  );
   const [processing, setProcessing] = useState(false);
   const [generated, setGenerated] = useState<GeneratedFile[]>([]);
   const [alerts, setAlerts] = useState<FileAlert[]>([]);
-  const [overflowMsgs, setOverflowMsgs] = useState<string[]>([]);
-  const [tempoPorOS, setTempoPorOS] = useState<Record<SlotId, 30 | 60>>({
-    CCH: 60,
-    REFRIG: 60,
-    ELETRICA: 30,
-  });
+  const [statusMessages, setStatusMessages] = useState<string[]>([]);
   const [historico, setHistorico] = useState<HistoricoItem[]>([]);
   const [startDate, setStartDate] = useState<Date>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
   const reloadHistorico = useCallback(async () => {
     try {
       setHistorico(await listHistorico());
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     }
   }, []);
 
-  useEffect(() => {
-    void reloadHistorico();
-  }, [reloadHistorico]);
+  useEffect(() => void reloadHistorico(), [reloadHistorico]);
 
-  const setTempo = useCallback((slot: SlotId, minutos: 30 | 60) => {
-    setTempoPorOS((prev) => {
-      if (prev[slot] === minutos) return prev;
-      return { ...prev, [slot]: minutos };
+  const hasAnyFile = useMemo(
+    () => Object.values(slotFiles).some(Boolean),
+    [slotFiles],
+  );
+  const historyGroups = useMemo(() => {
+    const groups = new Map<string, HistoricoItem[]>();
+    historico.forEach((item) => {
+      const key = item.periodStart
+        ? `${item.periodStart}|${item.periodEnd ?? ""}`
+        : `semana-${item.week}`;
+      groups.set(key, [...(groups.get(key) ?? []), item]);
     });
-  }, []);
+    return [...groups.entries()];
+  }, [historico]);
 
   const setSlot = useCallback((slot: SlotId, file: File | null) => {
     if (file && !file.name.toLowerCase().endsWith(".xlsx")) {
       toast.error("Envie um arquivo .xlsx");
       return;
     }
-    setSlotFiles((prev) => ({ ...prev, [slot]: file }));
+    setSlotFiles((current) => ({ ...current, [slot]: file }));
   }, []);
 
-  const hasAnyFile = useMemo(() => Object.values(slotFiles).some(Boolean), [slotFiles]);
+  const setTeamMinutes = useCallback((equipe: Equipe, minutes: 30 | 60) => {
+    setTempoPorEquipe((current) => ({ ...current, [equipe]: minutes }));
+  }, []);
+
+  const handlePrint = useCallback(async (blob: Blob) => {
+    try {
+      await printWeeklyProgramacao(blob);
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Falha ao preparar a impressão",
+      );
+    }
+  }, []);
 
   const generate = async () => {
-    if (!hasAnyFile) return toast.error("Anexe pelo menos um arquivo");
+    if (!hasAnyFile) {
+      toast.error("Anexe pelo menos uma planilha mensal de OS.");
+      return;
+    }
     setProcessing(true);
     setAlerts([]);
-    setOverflowMsgs([]);
+    setStatusMessages([]);
+
     try {
-      const out: GeneratedFile[] = [];
+      const monthEnd = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth() + 1,
+        0,
+      );
+      const weeks = weeksBetween(startDate, monthEnd);
+      const correctiveRows =
+        (await getLatestCorretivas()) as unknown as CorrectiveSourceRow[];
+      const correctiveMap = mapCorrectives(correctiveRows, startDate);
+      const output: GeneratedFile[] = [];
       const allAlerts: FileAlert[] = [];
-      const overflowList: string[] = [];
-      const now = startDate;
+      const messages: string[] = [
+        `Corretivas abertas: ${correctiveMap.items.length}; críticas: ${correctiveMap.critical}; backorders: ${correctiveMap.backorders}.`,
+      ];
+      if (correctiveMap.unassigned.length > 0) {
+        messages.push(
+          `${correctiveMap.unassigned.length} corretiva(s) sem equipe identificável não foram distribuídas.`,
+        );
+      }
 
       for (const slot of SLOTS) {
         const file = slotFiles[slot.id];
         if (!file) continue;
-
         const read = await readPreventivaFiles([file]);
         allAlerts.push(...read.alerts);
-        const triaged = triage(read.rows);
-        const filtered = filterForSlot(triaged, slot.id);
-
-        if (filtered.length === 0) {
-          toast.warning(`${slot.label}: nenhuma OS reconhecida no arquivo.`);
-          continue;
+        const preventiveItems = filterForSlot(triage(read.rows), slot.id);
+        if (preventiveItems.length === 0) {
+          messages.push(
+            `${slot.label}: nenhuma preventiva reconhecida; as semanas mostram corretivas e saldos pendentes.`,
+          );
         }
 
-        const minEffective = tempoPorOS[slot.id] ?? slot.minutosPorOS;
-        // Capacidade diária deste slot (1 técnico por equipe).
-        const capPerDay = Math.max(1, Math.floor(MINUTOS_UTEIS_DIA / minEffective));
-        // Precisamos cobrir a MAIOR fila de equipe (dias úteis suficientes
-        // para não sobrar OS).
-        const maiorFila = slot.equipes.reduce((max, eq) => {
-          const n = filtered.filter((o) => o.equipe === eq).length;
-          return n > max ? n : max;
-        }, 0);
-        const diasNecessarios = Math.ceil(maiorFila / capPerDay);
-        const { weeks: semanas, until } = weeksToCoverAll(now, diasNecessarios);
+        const schedules = new Map<Equipe, TeamMonthlySchedule>();
+        for (const equipe of slot.equipes) {
+          const schedule = scheduleTeamMonth({
+            equipe,
+            preventivas: preventiveItems.filter(
+              (item) => item.equipe === equipe,
+            ),
+            corretivas: correctiveMap.items.filter(
+              (item) => item.equipe === equipe,
+            ),
+            weeks,
+            from: startDate,
+            until: monthEnd,
+            minutosPorOS: tempoPorEquipe[equipe],
+          });
+          schedules.set(equipe, schedule);
 
-        // Distribui cada equipe do slot balanceando por dias úteis (até `until`),
-        // com sequenciamento por prédio → andar (minimiza deslocamento).
-        const porEquipeBuckets = new Map<Equipe, ReturnType<typeof distributeAcrossMonth>>();
-        for (const eq of slot.equipes) {
-          const osEq = filtered.filter((o) => o.equipe === eq);
-          if (osEq.length > 0) {
-            porEquipeBuckets.set(
-              eq,
-              distributeAcrossMonth(osEq, semanas, {
-                from: now,
-                until,
-                minutosPorOS: minEffective,
-              }),
+          const allLoads = schedule.loadsByWeek.flat();
+          const remaining = allLoads.reduce(
+            (total, load) => total + load.remainingMinutes,
+            0,
+          );
+          const deficitDays = allLoads.filter(
+            (load) => load.correctiveDeficit > 0,
+          ).length;
+          messages.push(
+            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) + ${schedule.scheduledCorretivas} corretiva(s); ` +
+              `saldo mensal a apontar ${formatMinutes(remaining)}${deficitDays ? `; ${deficitDays} dia(s) sem duas corretivas disponíveis` : ""}.`,
+          );
+          if (
+            schedule.overflowPreventivas.length ||
+            schedule.overflowCorretivas.length
+          ) {
+            messages.push(
+              `${equipe}: excedente de ${schedule.overflowPreventivas.length} preventiva(s) e ${schedule.overflowCorretivas.length} corretiva(s) após preencher 09:00 em todos os dias úteis.`,
             );
           }
         }
 
-        let overflowTotal = 0;
-        let overflowPerDay = 0;
-        let overflowCap = 0;
-        let overflowDias = 0;
-        let overflowTotalOS = 0;
-        for (let i = 0; i < semanas.length; i++) {
-          const week = semanas[i];
+        for (let weekIndex = 0; weekIndex < weeks.length; weekIndex += 1) {
+          const week = weeks[weekIndex];
           const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
-          let totalSemana = 0;
-          for (const eq of slot.equipes) {
-            const sliced = porEquipeBuckets.get(eq);
-            if (!sliced) continue;
-            const b = sliced.buckets[i];
-            if (b && b.os.length > 0) {
-              bucketsPorEquipe.set(eq, b);
-              totalSemana += b.os.length;
-            }
+          const cargasPorEquipe = new Map<Equipe, DailyTeamLoad[]>();
+          for (const equipe of slot.equipes) {
+            const schedule = schedules.get(equipe);
+            if (!schedule) continue;
+            bucketsPorEquipe.set(equipe, schedule.buckets[weekIndex]);
+            cargasPorEquipe.set(equipe, schedule.loadsByWeek[weekIndex]);
           }
-          if (totalSemana === 0) continue;
+
+          const totalOS = [...bucketsPorEquipe.values()].reduce(
+            (total, bucket) => total + bucket.os.length,
+            0,
+          );
+          const preventiveCount = [...bucketsPorEquipe.values()].reduce(
+            (total, bucket) =>
+              total +
+              bucket.os.filter((item) => norm(item.tipo) !== "CORRETIVA")
+                .length,
+            0,
+          );
+          const correctiveCount = totalOS - preventiveCount;
+          const remainingMinutes = [...cargasPorEquipe.values()]
+            .flat()
+            .reduce((total, load) => total + load.remainingMinutes, 0);
           const blob = await generateWeeklyProgramacao({
             titulo: TITULO_PADRAO,
             week,
             bucketsPorEquipe,
+            cargasPorEquipe,
+            minutosPorEquipe: tempoPorEquipe,
             ativoIndex: read.ativoIndex,
           });
-          const slug = slot.label.replace(/[^A-Z0-9]+/gi, "_");
+          const periodStart = isoLocal(week.monday);
+          const periodEnd = isoLocal(week.friday);
+          const monthSlug = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`;
+          const slotSlug = slot.id === "REFRIG" ? "REFRIGERACAO" : slot.id;
+          const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
           const item: GeneratedFile = {
-            id: `${slot.id}-${week.isoWeek}-${Date.now()}-${i}`,
-            filename: `PROGRAMACAO_SEM${week.isoWeek}_${slug}.xlsx`,
+            id,
+            filename: `PROGRAMACAO_${monthSlug}_SEM${week.isoWeek}_${slotSlug}.xlsx`,
             blob,
             week: week.isoWeek,
             slot: slot.id,
             slotLabel: slot.label,
-            totalOS: totalSemana,
-            solicitante: "", // Solicitante info preserved if available
+            totalOS,
+            preventiveCount,
+            correctiveCount,
+            remainingMinutes,
+            periodStart,
+            periodEnd,
           };
-
-          out.push(item);
-          try {
-            await saveHistorico({
-              id: item.id,
-              filename: item.filename,
-              week: item.week,
-              slot: item.slot,
-              slotLabel: item.slotLabel,
-              totalOS: item.totalOS,
-              titulo: TITULO_PADRAO,
-              createdAt: Date.now(),
-              blob,
-            });
-          } catch (err) {
-            console.error("Falha ao salvar histórico", err);
-          }
-        }
-        for (const eq of slot.equipes) {
-          const d = porEquipeBuckets.get(eq);
-          if (!d) continue;
-          overflowTotal += d.overflow.length;
-          overflowPerDay = Math.max(overflowPerDay, d.perDay);
-          overflowCap = Math.max(overflowCap, d.capPerDay);
-          overflowDias = d.businessDaysCount;
-          overflowTotalOS += d.buckets.reduce((s, b) => s + b.os.length, 0) + d.overflow.length;
-        }
-        const fmtDate = (d: Date) => d.toLocaleDateString("pt-BR");
-        if (overflowTotal > 0) {
-          overflowList.push(
-            `${slot.label}: ${overflowTotal} OS ainda não alocadas — capacidade máxima ${overflowCap}/dia. Reveja o tempo/OS.`,
-          );
-        } else if (overflowPerDay > 0) {
-          overflowList.push(
-            `${slot.label}: ${overflowTotalOS} OS distribuídas em ${overflowDias} dias úteis (${overflowPerDay}/dia), de ${fmtDate(now)} até ${fmtDate(until)}. Sequenciadas por prédio → andar.`,
-          );
+          output.push(item);
+          await saveHistorico({
+            id,
+            filename: item.filename,
+            week: item.week,
+            slot: item.slot,
+            slotLabel: item.slotLabel,
+            totalOS,
+            titulo: TITULO_PADRAO,
+            createdAt: Date.now(),
+            blob,
+            periodStart,
+            periodEnd,
+            preventiveCount,
+            correctiveCount,
+            remainingMinutes,
+          });
         }
       }
 
       setAlerts(allAlerts);
-      setOverflowMsgs(overflowList);
-      setGenerated((prev) => [...out, ...prev]);
-
-      if (out.length > 0) void reloadHistorico();
-      if (out.length === 0) toast.warning("Nenhum arquivo semanal foi gerado.");
-      else toast.success(`${out.length} arquivo(s) semanal(is) gerado(s)`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao processar os arquivos");
+      setStatusMessages(messages);
+      setGenerated((current) => [...output, ...current]);
+      await reloadHistorico();
+      toast.success(
+        `${output.length} planilha(s) semanal(is) gerada(s) para o mês.`,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        "Não foi possível gerar a programação. Verifique a planilha e o acesso às corretivas.",
+      );
     } finally {
       setProcessing(false);
     }
   };
 
-  const downloadTemplate = async (titulo: string) => {
+  const downloadTemplate = async () => {
     try {
-      const blob = await generateBlankTemplate(titulo);
-      const slug = titulo.replace(/[^A-Z0-9]+/gi, "_");
-      downloadBlob(blob, `TEMPLATE_${slug}.xlsx`);
-    } catch (e) {
-      console.error(e);
-      toast.error("Falha ao gerar template");
+      downloadBlob(
+        await generateBlankTemplate("GRUPO GPS"),
+        "TEMPLATE_GRUPO_GPS.xlsx",
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Falha ao gerar o modelo.");
     }
   };
 
   return (
     <PageShell
       title="Programação"
-      description="Gestão de programações semanais e manutenção preventiva."
+      description="Programação mensal em semanas, com meta diária de 09:00 e corretivas abertas integradas automaticamente."
       actions={
-        <div className="flex flex-wrap items-center gap-3">
-          {isAdmin && (
-            <div className="flex items-center gap-2 bg-primary/5 p-1.5 rounded-2xl border border-primary/20 backdrop-blur-md shadow-elegant animate-card-rise">
-              <PreventivaImportDialog mode="corretiva" onDone={() => {}} />
-              <div className="w-px h-6 bg-primary/20 mx-1" />
-              <PreventivaImportDialog mode="backorder" onDone={() => {}} />
-            </div>
-          )}
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="glass" 
-              onClick={() => downloadTemplate("GRUPO GPS")} 
-              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> 
-              <span className="hidden sm:inline font-semibold">Template GPS</span>
-              <span className="sm:hidden text-xs">GPS</span>
-            </Button>
-            <Button 
-              variant="glass" 
-              onClick={() => downloadTemplate(TITULO_PADRAO)} 
-              className="h-9 px-4 hover:bg-emerald-500/10 hover:text-emerald-500 border-emerald-500/20 transition-all duration-300 shadow-elegant"
-            >
-              <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
-              <span className="hidden sm:inline font-semibold">Template Sherwin</span>
-              <span className="sm:hidden text-xs">Sherwin</span>
-            </Button>
-          </div>
-        </div>
+        <Button
+          variant="glass"
+          onClick={downloadTemplate}
+          className="h-9 border-emerald-500/20 hover:bg-emerald-500/10"
+        >
+          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> Baixar
+          modelo da programação
+        </Button>
       }
     >
-      {dialogo}
       <div className="space-y-6">
-        {/* Campo 1 — 5 slots de upload */}
         <GlassCard>
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                1 · Anexar planilhas por equipe
-              </h3>
-              <span className="text-[11px] text-muted-foreground">
-                A Categoria é lida linha a linha — o nome do arquivo é ignorado.
-              </span>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                  1 · Planilhas mensais por equipe
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  As corretivas vêm de Corretiva › Novo › Programação de
+                  Corretivas; não é necessário importá-las.
+                </p>
+              </div>
+              <Badge variant="outline">2 corretivas/dia • 09:00/equipe</Badge>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 lg:grid-cols-3">
               {SLOTS.map((slot) => (
                 <SlotUpload
                   key={slot.id}
                   slot={slot}
                   file={slotFiles[slot.id]}
-                  onChange={(f) => setSlot(slot.id, f)}
-                  minutos={tempoPorOS[slot.id]}
-                  onMinutosChange={(m) => setTempo(slot.id, m)}
+                  onChange={(file) => setSlot(slot.id, file)}
+                  minutes={tempoPorEquipe}
+                  onMinutesChange={setTeamMinutes}
                 />
               ))}
             </div>
-
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="flex flex-col gap-1.5">
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Data de início da programação
+                  Início da programação no mês
                 </label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal sm:w-[260px]",
-                        !startDate && "text-muted-foreground",
+                        "w-full justify-start text-left font-normal sm:w-[290px]",
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate
-                        ? format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                        : "Selecione a data"}
+                      {format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", {
+                        locale: ptBR,
+                      })}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={startDate}
-                      onSelect={(d) => d && setStartDate(d)}
+                      onSelect={(date: Date | undefined) =>
+                        date && setStartDate(date)
+                      }
                       locale={ptBR}
-                      weekStartsOn={1}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
                 </Popover>
-                <p className="text-[11px] text-muted-foreground">
-                  A distribuição começa nesta data e se estende automaticamente até acomodar todas
-                  as OS.
-                </p>
               </div>
-
               <Button
                 onClick={generate}
-                disabled={processing || !hasAnyFile}
-                className="w-full sm:w-auto"
-                size="lg"
+                disabled={!hasAnyFile || processing}
+                className="min-w-[220px]"
               >
-                {processing ? "Processando…" : "Gerar Programação"}
+                {processing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                )}
+                {processing ? "Montando o mês..." : "Gerar todas as semanas"}
               </Button>
             </div>
-
-            {alerts.length > 0 && (
-              <div className="space-y-2">
-                {alerts.map((a) => (
-                  <div
-                    key={a.arquivo}
-                    className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-xs"
-                  >
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <div>
-                      <strong>{a.arquivo}</strong> foi enviado como <em>{a.esperado}</em> mas contém{" "}
-                      {Math.round(a.percentual * 100)}% de <em>{a.real}</em>. Os dados foram
-                      reclassificados automaticamente.
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {overflowMsgs.length > 0 && (
-              <div className="space-y-2">
-                {overflowMsgs.map((m, i) => (
-                  <div
-                    key={i}
-                    className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-xs"
-                  >
-                    {m}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         </GlassCard>
 
-        {/* Campo 2 — Downloads */}
-        <GlassCard>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                2 · Arquivos gerados
+        {(alerts.length > 0 || statusMessages.length > 0) && (
+          <GlassCard>
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">
+                Relatório de capacidade e triagem
               </h3>
-              {generated.length > 0 && (
-                <button
-                  onClick={() => setGenerated([])}
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
+              {alerts.map((alert) => (
+                <p
+                  key={`${alert.arquivo}-${alert.real}`}
+                  className="flex gap-2 text-xs text-amber-600 dark:text-amber-400"
                 >
-                  Limpar
-                </button>
-              )}
+                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{" "}
+                  {alert.arquivo}: conteúdo identificado como {alert.real}.
+                </p>
+              ))}
+              {statusMessages.map((message, index) => (
+                <p key={index} className="text-xs text-muted-foreground">
+                  {message}
+                </p>
+              ))}
             </div>
+          </GlassCard>
+        )}
 
-            {generated.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 py-12 text-center text-muted-foreground">
-                <FileSpreadsheet className="h-6 w-6" />
-                <p className="text-xs">Nenhum arquivo gerado ainda.</p>
-              </div>
-            ) : (
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {generated.map((f) => (
-                  <li
-                    key={f.id}
-                    className="flex items-center justify-between rounded-lg border border-border/50 bg-background/40 p-3"
+        {generated.length > 0 && (
+          <GlassCard>
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Planilhas prontas para baixar e imprimir
+              </h3>
+              <div className="grid gap-2 md:grid-cols-2">
+                {generated.map((file) => (
+                  <div
+                    key={file.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        Semana {f.week} · {f.slotLabel}
+                    <div className="min-w-0">
+                      <p
+                        className="truncate text-xs font-semibold"
+                        title={file.filename}
+                      >
+                        {file.filename}
                       </p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {f.totalOS} OS · {f.filename}
+                      <p className="text-[10px] text-muted-foreground">
+                        {file.preventiveCount} preventivas •{" "}
+                        {file.correctiveCount} corretivas • falta{" "}
+                        {formatMinutes(file.remainingMinutes)}
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => downloadBlob(f.blob, f.filename)}
-                    >
-                      <Download className="mr-1.5 h-3.5 w-3.5" /> Baixar
-                    </Button>
-                  </li>
+                    <div className="flex shrink-0 gap-1">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => downloadBlob(file.blob, file.filename)}
+                      >
+                        <Download className="mr-1 h-3.5 w-3.5" /> Baixar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => void handlePrint(file.blob)}
+                      >
+                        <Printer className="mr-1 h-3.5 w-3.5" /> Imprimir
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </ul>
-            )}
-          </div>
-        </GlassCard>
+              </div>
+            </div>
+          </GlassCard>
+        )}
 
-        {/* Campo 3 — Histórico persistente */}
         <GlassCard>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between gap-2">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  3 · Histórico de programações
-                </h3>
-                {historico.length > 0 && (
-                  <Badge variant="secondary" className="text-[10px]">
-                    {historico.length}
-                  </Badge>
-                )}
+                <History className="h-4 w-4" />
+                <h3 className="text-sm font-semibold">Histórico semanal</h3>
               </div>
               {historico.length > 0 && (
-                <button
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={async () => {
-                    const ok = await confirmar({
-                      titulo: "Limpar histórico",
-                      descricao: "Apagar todo o histórico local?",
-                      confirmar: "Apagar",
-                      destrutivo: true,
-                    });
-                    if (!ok) return;
+                    if (
+                      !window.confirm(
+                        "Limpar todo o histórico de programações?",
+                      )
+                    )
+                      return;
                     await clearHistorico();
                     await reloadHistorico();
-                    toast.success("Histórico limpo");
                   }}
-                  className="text-[11px] text-muted-foreground hover:text-destructive"
                 >
-                  Limpar histórico
-                </button>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
+                </Button>
               )}
             </div>
-
-            {historico.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/50 py-12 text-center text-muted-foreground">
-                <History className="h-6 w-6" />
-                <p className="text-xs">
-                  Programações geradas aparecerão aqui e ficam salvas no navegador.
-                </p>
-              </div>
+            {historyGroups.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma programação gerada neste navegador.
+              </p>
             ) : (
-              <div className="space-y-4">
-                {Object.entries(
-                  historico.reduce<Record<string, HistoricoItem[]>>((acc, it) => {
-                    const key = `Semana ${it.week}`;
-                    (acc[key] ||= []).push(it);
-                    return acc;
-                  }, {}),
-                ).map(([label, items]) => (
-                  <div key={label} className="space-y-2">
-                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-                      <span className="font-semibold">{label}</span>
-                      <span className="h-px flex-1 bg-border/50" />
-                      <span>
-                        {items.length} arquivo{items.length === 1 ? "" : "s"}
-                      </span>
-                    </div>
-                    <ul className="grid gap-2 sm:grid-cols-2">
-                      {items.map((f) => (
-                        <li
-                          key={f.id}
-                          className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/40 p-3"
+              <div className="space-y-2">
+                {historyGroups.map(([group, items]) => (
+                  <details
+                    key={group}
+                    className="rounded-xl border border-border/60 bg-background/30"
+                    open={historyGroups.length <= 2}
+                  >
+                    <summary className="cursor-pointer px-3 py-2 text-xs font-semibold">
+                      Semana {items[0].week} •{" "}
+                      {items[0].periodStart ?? "arquivo anterior"} a{" "}
+                      {items[0].periodEnd ?? "—"} • {items.length} arquivo(s)
+                    </summary>
+                    <div className="grid gap-2 border-t border-border/50 p-2 lg:grid-cols-2">
+                      {items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between gap-2 rounded-lg bg-background/50 p-2"
                         >
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">{f.slotLabel}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {f.totalOS} OS ·{" "}
-                              {new Date(f.createdAt).toLocaleString("pt-BR", {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
+                          <div className="min-w-0">
+                            <p className="truncate text-[11px] font-medium">
+                              {item.slotLabel}
                             </p>
-                            <p className="truncate text-[10px] text-muted-foreground/70">
-                              {f.filename}
+                            <p className="text-[10px] text-muted-foreground">
+                              {item.preventiveCount ?? item.totalOS} prev. •{" "}
+                              {item.correctiveCount ?? 0} corr. • falta{" "}
+                              {formatMinutes(item.remainingMinutes ?? 0)}
                             </p>
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex shrink-0 gap-1">
                             <Button
                               size="sm"
                               variant="secondary"
-                              className="bg-primary/20 text-primary-glow border-primary/30 hover:bg-primary/30 font-bold"
-                              onClick={() => downloadBlob(f.blob, f.filename)}
+                              onClick={() =>
+                                downloadBlob(item.blob, item.filename)
+                              }
+                              aria-label="Baixar"
                             >
-                              <Download className="mr-1.5 h-3.5 w-3.5" /> Baixar
+                              <Download className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => void handlePrint(item.blob)}
+                              aria-label="Imprimir"
+                            >
+                              <Printer className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={async () => {
-                                await deleteHistorico(f.id);
+                                await deleteHistorico(item.id);
                                 await reloadHistorico();
                               }}
-                              aria-label="Excluir do histórico"
+                              aria-label="Excluir"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
-                        </li>
+                        </div>
                       ))}
-                    </ul>
-                  </div>
+                    </div>
+                  </details>
                 ))}
               </div>
             )}
@@ -670,76 +678,69 @@ interface SlotUploadProps {
   slot: SlotDef;
   file: File | null;
   onChange: (file: File | null) => void;
-  minutos: 30 | 60;
-  onMinutosChange: (minutos: 30 | 60) => void;
+  minutes: Record<Equipe, 30 | 60>;
+  onMinutesChange: (equipe: Equipe, minutes: 30 | 60) => void;
 }
 
-function SlotUpload({ slot, file, onChange, minutos, onMinutosChange }: SlotUploadProps) {
+function SlotUpload({
+  slot,
+  file,
+  onChange,
+  minutes,
+  onMinutesChange,
+}: SlotUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const fmt = (m: number) => (m === 60 ? "01:00" : "00:30");
-
   return (
     <div
-      className="relative flex flex-col gap-2 overflow-hidden rounded-xl border border-border/60 bg-background/40 p-3"
-      style={{ boxShadow: `inset 4px 0 0 0 ${slot.color}` }}
+      className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
+      style={{ boxShadow: `inset 4px 0 0 ${slot.color}` }}
     >
-      <div className="flex items-center gap-2">
-        <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: slot.color }} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold">{slot.label}</p>
-          <p className="truncate text-[10px] text-muted-foreground">{slot.hint}</p>
-        </div>
+      <div>
+        <p className="text-xs font-semibold">{slot.label}</p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">{slot.hint}</p>
       </div>
-
-      <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/50 px-2 py-1.5 text-[11px]">
-        <div className="flex flex-col leading-tight">
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Tempo/OS
-          </span>
-          <span className="font-mono">{fmt(minutos)}</span>
-        </div>
-        <div className="inline-flex overflow-hidden rounded-md border border-border/60">
-          <button
-            type="button"
-            onClick={() => onMinutosChange(30)}
-            className={`px-2 py-1 text-[11px] font-mono transition-colors ${
-              minutos === 30
-                ? "bg-primary text-primary-foreground"
-                : "bg-background/60 text-muted-foreground hover:bg-accent/40"
-            }`}
-            aria-pressed={minutos === 30}
+      <div className="space-y-1.5">
+        {slot.equipes.map((equipe) => (
+          <div
+            key={equipe}
+            className="flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-background/50 px-2 py-1.5"
           >
-            00:30
-          </button>
-          <button
-            type="button"
-            onClick={() => onMinutosChange(60)}
-            className={`border-l border-border/60 px-2 py-1 text-[11px] font-mono transition-colors ${
-              minutos === 60
-                ? "bg-primary text-primary-foreground"
-                : "bg-background/60 text-muted-foreground hover:bg-accent/40"
-            }`}
-            aria-pressed={minutos === 60}
-          >
-            01:00
-          </button>
-        </div>
+            <span
+              className="min-w-0 truncate text-[10px] font-semibold"
+              style={{ color: EQUIPE_COLOR[equipe] }}
+            >
+              {equipe}
+            </span>
+            <div className="inline-flex shrink-0 overflow-hidden rounded-md border border-border/60">
+              {([30, 60] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onMinutesChange(equipe, value)}
+                  className={cn(
+                    "px-2 py-1 font-mono text-[10px]",
+                    value === 60 && "border-l border-border/60",
+                    minutes[equipe] === value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent/40",
+                  )}
+                  aria-pressed={minutes[equipe] === value}
+                >
+                  {value === 30 ? "00:30" : "01:00"}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
-      {minutos !== slot.minutosPorOS && (
-        <div className="flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="h-3 w-3" />
-          Tempo/OS ajustado (padrão {fmt(slot.minutosPorOS)}).
-        </div>
-      )}
-
       {file ? (
-        <div className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/60 px-2 py-1.5 text-[11px]">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/60 px-2 py-2 text-[11px]">
           <span className="truncate" title={file.name}>
             {file.name}
           </span>
           <button
+            type="button"
             onClick={() => onChange(null)}
-            className="opacity-60 hover:opacity-100"
             aria-label="Remover arquivo"
           >
             <X className="h-3.5 w-3.5" />
@@ -749,25 +750,23 @@ function SlotUpload({ slot, file, onChange, minutos, onMinutosChange }: SlotUplo
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            const f = e.dataTransfer.files?.[0];
-            if (f) onChange(f);
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            const dropped = event.dataTransfer.files?.[0];
+            if (dropped) onChange(dropped);
           }}
-          className="flex items-center justify-center gap-2 rounded-md border border-dashed border-border/60 px-3 py-2 text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:bg-accent/30"
+          className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2 text-[11px] text-muted-foreground hover:border-primary/50 hover:bg-accent/30"
         >
-          <Upload className="h-3.5 w-3.5" />
-          Anexar .xlsx
+          <Upload className="h-3.5 w-3.5" /> Anexar OS do mês (.xlsx)
         </button>
       )}
-
       <input
         ref={inputRef}
         type="file"
         accept=".xlsx"
         className="hidden"
-        onChange={(e) => onChange(e.target.files?.[0] ?? null)}
+        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
       />
     </div>
   );

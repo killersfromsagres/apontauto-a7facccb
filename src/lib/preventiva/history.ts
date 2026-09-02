@@ -15,6 +15,11 @@ export interface HistoricoItem {
   titulo: string;
   createdAt: number; // epoch ms
   blob: Blob;
+  periodStart?: string;
+  periodEnd?: string;
+  preventiveCount?: number;
+  correctiveCount?: number;
+  remainingMinutes?: number;
 }
 
 function openDB(): Promise<IDBDatabase> {
