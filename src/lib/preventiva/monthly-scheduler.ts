@@ -243,86 +243,85 @@ export function sortCorrectiveRows(
   });
 }
 
-function sortBySlaThenLocation(items: TriagedOS[]): TriagedOS[] {
+function naturalText(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim();
+}
+
+function compareNatural(a: unknown, b: unknown): number {
+  return naturalText(a).localeCompare(naturalText(b), "pt-BR", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function canonicalLocationText(value: unknown): string {
+  return naturalText(value)
+    .toUpperCase()
+    .replace(/[º°ª]/g, "")
+    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildingSortKey(value: unknown): [number, string] {
+  const normalized = canonicalLocationText(value).replace(
+    /^(?:PREDIO|BLOCO|EDIFICIO)\s+/,
+    "",
+  );
+  if (!normalized) return [2, ""];
+  return [/^[A-Z]/.test(normalized) ? 0 : 1, normalized];
+}
+
+function compareBuildings(a: unknown, b: unknown): number {
+  const left = buildingSortKey(a);
+  const right = buildingSortKey(b);
+  return left[0] - right[0] || compareNatural(left[1], right[1]);
+}
+
+function floorSortKey(value: unknown): [number, number, string] {
+  const normalized = canonicalLocationText(value);
+  if (!normalized) return [9, 0, ""];
+  const basement =
+    normalized.match(/(?:^| )(\d+) SUB ?SOLO(?: |$)/) ??
+    normalized.match(/(?:^| )SUB ?SOLO (\d+)(?: |$)/) ??
+    normalized.match(/^S(?:S)? ?(\d+)$/);
+  if (basement) return [0, Number(basement[1]), normalized];
+  if (/^(?:SUB ?SOLO|SS|S)$/.test(normalized)) return [0, 1, normalized];
+  if (/\bTERREO\b/.test(normalized)) return [1, 0, normalized];
+  if (/\bMEZANINO\b/.test(normalized)) return [2, 0, normalized];
+  const floor =
+    normalized.match(/(?:^| )(\d+) (?:ANDAR|PAVIMENTO|PAV|PISO)(?: |$)/) ??
+    normalized.match(/^(\d+)$/);
+  if (floor) return [3, Number(floor[1]), normalized];
+  if (/\bCOBERTURA\b/.test(normalized)) return [7, 0, normalized];
+  return [8, 0, normalized];
+}
+
+function compareFloors(a: unknown, b: unknown): number {
+  const left = floorSortKey(a);
+  const right = floorSortKey(b);
+  return (
+    left[0] - right[0] ||
+    left[1] - right[1] ||
+    compareNatural(left[2], right[2])
+  );
+}
+
+function sortByLocation(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
-    if (a.terminoSLATs !== b.terminoSLATs)
-      return a.terminoSLATs - b.terminoSLATs;
+    const buildingOrder = compareBuildings(a.predio, b.predio);
+    if (buildingOrder !== 0) return buildingOrder;
+    const floorOrder = compareFloors(a.andar, b.andar);
+    if (floorOrder !== 0) return floorOrder;
     return (
-      String(a.predio).localeCompare(String(b.predio), "pt-BR") ||
-      String(a.andar).localeCompare(String(b.andar), "pt-BR", {
-        numeric: true,
-      }) ||
-      String(a.local).localeCompare(String(b.local), "pt-BR") ||
-      String(a.os).localeCompare(String(b.os), "pt-BR", { numeric: true })
+      compareNatural(a.local, b.local) ||
+      compareNatural(a.os, b.os) ||
+      compareNatural(a.nomeOS, b.nomeOS)
     );
   });
-}
-
-function sortCorrectiveItems(items: TriagedOS[]): TriagedOS[] {
-  return [...items].sort((a, b) => {
-    const backorderA = Boolean(a.raw?.programacaoBackorder);
-    const backorderB = Boolean(b.raw?.programacaoBackorder);
-    if (backorderA !== backorderB) return backorderA ? -1 : 1;
-    const severityA = Number(a.raw?.programacaoGravidade ?? 2);
-    const severityB = Number(b.raw?.programacaoGravidade ?? 2);
-    if (backorderA && severityA !== severityB) return severityA - severityB;
-    if (a.terminoSLATs !== b.terminoSLATs)
-      return a.terminoSLATs - b.terminoSLATs;
-    return severityA - severityB;
-  });
-}
-
-function requiredByDeadline(
-  remainingItems: TriagedOS[],
-  businessDays: Date[],
-  dayPosition: number,
-): number {
-  if (remainingItems.length === 0) return 0;
-  const remainingDays = businessDays.slice(dayPosition);
-  const deadlines = [
-    ...new Set(
-      remainingItems
-        .map((item) => item.terminoSLATs)
-        .filter(
-          (timestamp) =>
-            Number.isFinite(timestamp) && timestamp < Number.MAX_SAFE_INTEGER,
-        ),
-    ),
-  ].sort((a, b) => a - b);
-
-  let requiredToday = 0;
-  for (const deadline of deadlines) {
-    const dueCount = remainingItems.filter(
-      (item) => item.terminoSLATs <= deadline,
-    ).length;
-    const dueDate = new Date(deadline);
-    const deadlineEnd = new Date(
-      dueDate.getFullYear(),
-      dueDate.getMonth(),
-      dueDate.getDate(),
-      23,
-      59,
-      59,
-      999,
-    ).getTime();
-    const availableDays = remainingDays.filter((date) => {
-      const endOfDay = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        23,
-        59,
-        59,
-        999,
-      );
-      return endOfDay.getTime() <= deadlineEnd;
-    }).length;
-    requiredToday = Math.max(
-      requiredToday,
-      availableDays > 0 ? Math.ceil(dueCount / availableDays) : dueCount,
-    );
-  }
-  return requiredToday;
 }
 
 export function mapCorrectives(
@@ -444,8 +443,12 @@ export function scheduleTeamMonth(options: {
     porDia: [[], [], [], [], []],
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
-  const preventivas = sortBySlaThenLocation(options.preventivas);
-  const corretivas = sortCorrectiveItems(options.corretivas);
+
+  // A programação operacional é geográfica: prédio -> andar -> espaço -> OS.
+  // Término SLA fica apenas como referência para apontamento e não interfere
+  // na escolha de qual OS entra primeiro em um dia/semana.
+  const preventivas = sortByLocation(options.preventivas);
+  const corretivas = sortByLocation(options.corretivas);
   const businessDays = businessDaysUntil(options.from, options.until);
 
   let preventivaIndex = 0;
@@ -464,11 +467,6 @@ export function scheduleTeamMonth(options: {
     const desiredCorrectivas = Math.max(
       minCorrectives,
       Math.ceil(Math.max(0, remainingCorretivas) / remainingDays),
-      requiredByDeadline(
-        corretivas.slice(corretivaIndex),
-        businessDays,
-        dayPosition,
-      ),
     );
     const correctiveCount = Math.min(
       capSlots,
@@ -476,13 +474,8 @@ export function scheduleTeamMonth(options: {
       desiredCorrectivas,
     );
     const availableForPreventivas = capSlots - correctiveCount;
-    const desiredPreventivas = Math.max(
-      Math.ceil(Math.max(0, remainingPreventivas) / remainingDays),
-      requiredByDeadline(
-        preventivas.slice(preventivaIndex),
-        businessDays,
-        dayPosition,
-      ),
+    const desiredPreventivas = Math.ceil(
+      Math.max(0, remainingPreventivas) / remainingDays,
     );
     const preventiveCount = Math.min(
       availableForPreventivas,
