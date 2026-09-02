@@ -34,6 +34,7 @@ import {
   type EquipeFiltro,
 } from "@/lib/refrigeracao/equipe";
 import { OsPhotosButton } from "@/components/refrigeracao/os-photos-button";
+import { resolvePhotoUrl } from "@/lib/photo-url";
 
 export const Route = createFileRoute("/_authenticated/refrigeracao-historico")({
   component: HistoricoPage,
@@ -305,23 +306,32 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
 
   const [urls, setUrls] = useState<Record<string, string>>({});
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
-      if (!data?.fotos?.length) return;
-      const next: Record<string, string> = {};
-      // Fotos novas usam ImgBB (image_url); antigas continuam no Storage.
-      const legacy: Foto[] = [];
-      for (const f of data.fotos) {
-        if (f.image_url) next[f.id] = f.image_url;
-        else if (f.storage_path) legacy.push(f);
+      if (!data?.fotos?.length) {
+        setUrls({});
+        return;
       }
-      for (const f of legacy) {
-        const { data: s } = await supabase.storage
-          .from("refrigeracao-fotos")
-          .createSignedUrl(f.storage_path as string, 3600);
-        if (s?.signedUrl) next[f.id] = s.signedUrl;
+
+      const resolved = await Promise.all(
+        data.fotos.map(async (foto) => [
+          foto.id,
+          await resolvePhotoUrl(foto, "refrigeracao-fotos"),
+        ] as const),
+      );
+
+      if (cancelled) return;
+      const next: Record<string, string> = {};
+      for (const [id, url] of resolved) {
+        if (url) next[id] = url;
       }
       setUrls(next);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [data]);
 
   const downloadPhoto = async (f: Foto, idx: number) => {
@@ -329,6 +339,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
     if (!url) return;
     try {
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -336,7 +347,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
       a.click();
       URL.revokeObjectURL(a.href);
     } catch {
-      window.open(url, "_blank", "noopener");
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -400,7 +411,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                 </h4>
                 {(() => {
                   const links = (data?.fotos ?? [])
-                    .map((f) => f.image_url || urls[f.id])
+                    .map((f) => urls[f.id])
                     .filter((u): u is string => !!u);
                   if (!links.length) return null;
                   return (
@@ -411,7 +422,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                       className="h-8 rounded-full"
                       onClick={() => {
                         links.forEach((u, i) => {
-                          setTimeout(() => window.open(u, "_blank", "noopener"), i * 120);
+                          setTimeout(() => window.open(u, "_blank", "noopener,noreferrer"), i * 120);
                         });
                       }}
                     >
@@ -430,7 +441,7 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                         key={f.id}
                         href={urls[f.id] ?? "#"}
                         target="_blank"
-                        rel="noreferrer"
+                        rel="noopener noreferrer"
                         className="group relative block aspect-square overflow-hidden rounded-2xl border border-white/10 bg-black/5 shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95 dark:bg-white/5"
                         onClick={(e) => {
                           if (!urls[f.id]) e.preventDefault();
@@ -440,12 +451,13 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                           <img
                             src={urls[f.id]}
                             className="h-full w-full object-cover"
-                            alt=""
+                            alt={`Foto ${idx + 1} da OS ${os?.numero_os ?? ""}`}
                             loading="lazy"
+                            referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                            …
+                          <div className="flex h-full items-center justify-center px-2 text-center text-xs text-muted-foreground">
+                            Foto indisponível
                           </div>
                         )}
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-gradient-to-t from-black/70 to-transparent p-1.5 opacity-0 transition-opacity group-hover:opacity-100">
@@ -465,21 +477,21 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
                       </a>
                     ))}
                   </div>
-                  {data.fotos.some((f) => f.image_url) && (
+                  {data.fotos.some((f) => !!urls[f.id]) && (
                     <ul className="space-y-1.5">
                       {data.fotos
-                        .filter((f) => f.image_url)
+                        .filter((f) => !!urls[f.id])
                         .map((f, i) => (
                           <li key={`link-${f.id}`}>
                             <a
-                              href={f.image_url as string}
+                              href={urls[f.id]}
                               target="_blank"
-                              rel="noreferrer"
+                              rel="noopener noreferrer"
                               className="group flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs backdrop-blur-xl transition-all duration-200 hover:border-primary/40 hover:bg-white/10 active:scale-[0.98]"
                             >
                               <LinkIcon className="h-3.5 w-3.5 text-primary" />
                               <span className="truncate font-mono text-muted-foreground">
-                                Foto {i + 1} · {f.image_url}
+                                Foto {i + 1} · link atualizado
                               </span>
                               <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60 transition group-hover:opacity-100" />
                             </a>
