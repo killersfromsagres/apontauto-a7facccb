@@ -166,10 +166,11 @@ describe("generateWeeklyProgramacao", () => {
       located("A160-2", "A160", "2º Andar"),
       located("A160-T", "A160", "Térreo"),
       located("A160-1", "A160", "1º Andar"),
-      located("A160-S2", "A160", "2º Subsolo"),
-      located("A160-S1", "A160", "1º Subsolo"),
+      located("A160-S2", "A160", "2º Sub Solo"),
+      located("A160-S1", "A160", "1º Sub-Solo"),
       located("D55-X", "D55", ""),
       located("C70-T", "C70", "TÉRREO"),
+      located("SEM-PREDIO", "", "Térreo"),
     ];
     const tuesday = located("TER-1", "A160", "1º Andar");
     const load = (date: Date, dayIndex: number): DailyTeamLoad => ({
@@ -205,19 +206,20 @@ describe("generateWeeklyProgramacao", () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await blob.arrayBuffer());
     const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
-    const order = Array.from({ length: 8 }, (_, index) => ({
+    const order = Array.from({ length: 9 }, (_, index) => ({
       predio: program.getCell(4 + index, 3).text,
       andar: program.getCell(4 + index, 4).text,
     }));
     expect(order).toEqual([
-      { predio: "A160", andar: "1º Subsolo" },
-      { predio: "A160", andar: "2º Subsolo" },
+      { predio: "A160", andar: "1º Sub-Solo" },
+      { predio: "A160", andar: "2º Sub Solo" },
       { predio: "A160", andar: "Térreo" },
       { predio: "A160", andar: "1º Andar" },
       { predio: "A160", andar: "2º Andar" },
       { predio: "A220", andar: "2º Andar" },
       { predio: "C70", andar: "TÉRREO" },
       { predio: "D55", andar: "" },
+      { predio: "", andar: "Térreo" },
     ]);
   });
 });
