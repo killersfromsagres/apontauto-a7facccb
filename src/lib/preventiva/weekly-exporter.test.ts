@@ -48,7 +48,7 @@ function os(
 }
 
 describe("generateWeeklyProgramacao", () => {
-  it("mantém o modelo A:J e preenche J somente para Refrigeração", async () => {
+  it("mantém o modelo A:J, cria referência compacta de SLA e preenche J somente para Refrigeração", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
     const civil = os("CIV-1", "CIVIL", "NÃO DEVE SAIR", "Corretiva");
@@ -109,7 +109,7 @@ describe("generateWeeklyProgramacao", () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(xlsxBuffer);
     const program = workbook.worksheets[0];
-    expect(workbook.worksheets).toHaveLength(2);
+    expect(workbook.worksheets).toHaveLength(3);
     expect(program.name).toBe("PROGRAMAÇÃO");
     expect(program.actualColumnCount).toBe(10);
     expect(program.getColumn(2).width).toBeCloseTo(56.7109375);
@@ -127,6 +127,12 @@ describe("generateWeeklyProgramacao", () => {
     expect(program.getCell("A6").text).toContain("TERÇA-FEIRA");
     expect(workbook.getWorksheet("RESUMO")?.getCell("G5").value).toBe("08:30");
 
+    const slaSheet = workbook.getWorksheet("SLA APONTAMENTO")!;
+    expect(slaSheet.getCell("A4").value).toBe("OS");
+    expect(slaSheet.getCell("B4").value).toBe("Término SLA");
+    expect(slaSheet.getCell("C4").value).toBe("Equipe");
+    expect(slaSheet.getCell("B5").value).toBe("18/09/2026");
+
     const zip = await JSZip.loadAsync(xlsxBuffer);
     const programXml = await zip
       .file("xl/worksheets/sheet1.xml")!
@@ -139,6 +145,7 @@ describe("generateWeeklyProgramacao", () => {
     )!;
     expect(printSections).toHaveLength(3);
     expect(html.match(/PROGRAMAÇÃO SEMANAL/g)).toHaveLength(3);
+    expect(html).not.toContain("APONTAMENTO ANTECIPADO");
     expect(printSections[0]).toContain("EQUIPE CIVIL");
     expect(printSections[1]).toContain("EQUIPE CIVIL");
     expect(printSections[0]).not.toContain("CLIMATIZAÇÃO E REFRIGERAÇÃO 1");
@@ -221,5 +228,68 @@ describe("generateWeeklyProgramacao", () => {
       { predio: "D55", andar: "" },
       { predio: "", andar: "Térreo" },
     ]);
+  });
+
+  it("não usa SLA para ordenar a programação, mas usa SLA na aba de apontamento", async () => {
+    const monday = new Date(2026, 8, 14);
+    const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
+    const early = {
+      ...os("OS-200", "CIVIL", ""),
+      predio: "A160",
+      andar: "1º Andar",
+      local: "Sala Z",
+      terminoSLA: "2026-09-15",
+      terminoSLATs: new Date(2026, 8, 15).getTime(),
+    };
+    const later = {
+      ...os("OS-100", "CIVIL", ""),
+      predio: "A160",
+      andar: "1º Andar",
+      local: "Sala A",
+      terminoSLA: "2026-09-30",
+      terminoSLATs: new Date(2026, 8, 30).getTime(),
+    };
+    const load: DailyTeamLoad = {
+      date: monday,
+      dateKey: "2026-09-14",
+      dayIndex: 0,
+      preventiveCount: 2,
+      correctiveCount: 0,
+      scheduledMinutes: 60,
+      remainingMinutes: 480,
+      targetMinutes: 540,
+      correctiveDeficit: 2,
+    };
+    const blob = await generateWeeklyProgramacao({
+      titulo: "GRUPO GPS",
+      week,
+      bucketsPorEquipe: new Map([
+        [
+          "CIVIL",
+          {
+            week,
+            os: [early, later],
+            porDia: [[early, later], [], [], [], []],
+          },
+        ],
+      ]),
+      cargasPorEquipe: new Map([["CIVIL", [load]]]),
+      minutosPorEquipe: { CIVIL: 30 },
+      ativoIndex: new Map(),
+    });
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await blob.arrayBuffer());
+    const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
+    expect(program.getCell("E4").text).toBe("Sala A");
+    expect(program.getCell("A4").text).toBe("OS-100");
+    expect(program.getCell("E5").text).toBe("Sala Z");
+    expect(program.getCell("A5").text).toBe("OS-200");
+
+    const slaSheet = workbook.getWorksheet("SLA APONTAMENTO")!;
+    expect(slaSheet.getCell("A5").text).toBe("OS-200");
+    expect(slaSheet.getCell("B5").text).toBe("15/09/2026");
+    expect(slaSheet.getCell("C5").text).toBe("CIVIL");
+    expect(slaSheet.getCell("A6").text).toBe("OS-100");
+    expect(slaSheet.getCell("B6").text).toBe("30/09/2026");
   });
 });
