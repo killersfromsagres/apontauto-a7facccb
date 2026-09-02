@@ -99,7 +99,10 @@ async function sendOne(item: OutboxItem): Promise<void> {
     if (!blobKey) throw new Error("Foto sem blob");
     const blob = await blobGet(blobKey);
     if (!blob) throw new Error("Blob local ausente");
-    // Hospeda no ImgBB; se falhar, cai para o Storage (nunca perde a foto).
+
+    // ImgBB gera URL pública permanente. Quando houver fallback para Storage,
+    // persistimos apenas o storage_path como referência durável; a signed URL
+    // é regenerada no momento da visualização e nunca fica envelhecendo no banco.
     const uploaded = await uploadPhotoWithFallback(
       blob,
       `os-${item.numeroOs}-${item.id}.jpg`,
@@ -108,7 +111,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
     );
     const { error } = await supabase.from("refrigeracao_fotos").insert({
       os_id: item.osId,
-      image_url: uploaded.url || null,
+      image_url: uploaded.storagePath ? null : uploaded.url || null,
       storage_path: uploaded.storagePath,
       legenda: item.payload.legenda ?? null,
       client_uuid: item.id,
@@ -119,14 +122,14 @@ async function sendOne(item: OutboxItem): Promise<void> {
     return;
   }
   if (item.kind === "material") {
-    const { 
-      descricao, 
-      equipe, 
-      solicitante, 
-      predio, 
-      local, 
+    const {
+      descricao,
+      equipe,
+      solicitante,
+      predio,
+      local,
       numeroOs,
-      observacao 
+      observacao,
     } = item.payload;
 
     const { data: solData, error } = await supabase
@@ -146,7 +149,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
       .single();
 
     if (error) throw error;
-    
+
     const solId = (solData as any)?.id;
     if (solId) {
       await supabase.from("material_solicitacao_itens").insert({
@@ -154,7 +157,7 @@ async function sendOne(item: OutboxItem): Promise<void> {
         descricao: descricao,
         quantidade: item.payload.quantidade || 1,
         unidade: "UN",
-        justificativa: `Referente à OS ${numeroOs}`
+        justificativa: `Referente à OS ${numeroOs}`,
       } as any);
     }
     return;
