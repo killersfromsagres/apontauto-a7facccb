@@ -134,8 +134,20 @@ describe("generateWeeklyProgramacao", () => {
     expect(programXml).toContain('<rowBreaks count="1" manualBreakCount="1">');
 
     const html = await buildWeeklyPrintHtml(blob);
-    expect(html.match(/class="day-sheet"/g)).toHaveLength(2);
-    expect(html.match(/PROGRAMAÇÃO SEMANAL/g)).toHaveLength(2);
+    const printSections = html.match(
+      /<section class="day-sheet[\s\S]*?<\/section>/g,
+    )!;
+    expect(printSections).toHaveLength(3);
+    expect(html.match(/PROGRAMAÇÃO SEMANAL/g)).toHaveLength(3);
+    expect(printSections[0]).toContain("EQUIPE CIVIL");
+    expect(printSections[1]).toContain("EQUIPE CIVIL");
+    expect(printSections[0]).not.toContain("CLIMATIZAÇÃO E REFRIGERAÇÃO 1");
+    expect(printSections[1]).not.toContain("CLIMATIZAÇÃO E REFRIGERAÇÃO 1");
+    expect(printSections[2]).toContain("EQUIPE CLIMATIZAÇÃO E REFRIGERAÇÃO 1");
+    expect(printSections[2]).not.toContain(">CIVIL<");
+    expect(html.indexOf('data-team="CIVIL"')).toBeLessThan(
+      html.indexOf('data-team="CLIMATIZAÇÃO E REFRIGERAÇÃO 1"'),
+    );
     expect(html).toContain("print-color-adjust: exact !important");
     expect(html).toContain("page-break-after: always");
     expect(html).toContain("background-color:#0B1F33");

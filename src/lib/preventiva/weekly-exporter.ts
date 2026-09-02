@@ -695,6 +695,7 @@ function renderPrintRow(
   row: import("exceljs").Row,
   className: string,
   mergedBand = false,
+  firstCellOverride?: string,
 ): string {
   const cells: string[] = [];
   for (let column = 1; column <= 10; column += 1) {
@@ -708,9 +709,11 @@ function renderPrintRow(
       cell.alignment?.horizontal ??
       (column === 2 || column >= 8 ? "left" : "center");
     const value =
-      typeof cell.value === "object" && cell.value && "text" in cell.value
-        ? cell.value.text
-        : cell.text;
+      column === 1 && firstCellOverride !== undefined
+        ? firstCellOverride
+        : typeof cell.value === "object" && cell.value && "text" in cell.value
+          ? cell.value.text
+          : cell.text;
     cells.push(
       `<td${mergedBand && column === 1 ? " colspan='10'" : ""} style="background-color:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`,
     );
@@ -718,7 +721,7 @@ function renderPrintRow(
   return `<tr class="${className}">${cells.join("")}</tr>`;
 }
 
-/** Gera a impressão semanal com um bloco/página independente para cada dia. */
+/** Gera a impressão semanal agrupada por equipe e, dentro dela, por dia. */
 export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
   const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
@@ -729,24 +732,18 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
     .filter((worksheet) => worksheet.name !== "RESUMO")
     .forEach((worksheet) => {
       const titleRow = worksheet.getRow(1);
+      const days: Array<{
+        band: import("exceljs").Row;
+        header: import("exceljs").Row;
+        rows: import("exceljs").Row[];
+      }> = [];
       let dayBand: import("exceljs").Row | undefined;
       let columnHeader: import("exceljs").Row | undefined;
       let dataRows: import("exceljs").Row[] = [];
 
       const flushDay = () => {
         if (!dayBand || !columnHeader) return;
-        sections.push(`<section class="day-sheet"><table>
-          <thead>${renderPrintRow(titleRow, "title-row", true)}${renderPrintRow(dayBand, "day-band", true)}${renderPrintRow(columnHeader, "column-header")}</thead>
-          <tbody>${dataRows
-            .map((row) =>
-              renderPrintRow(
-                row,
-                "data-row",
-                row.getCell(1).text === "Nenhuma OS programada para este dia.",
-              ),
-            )
-            .join("")}</tbody>
-        </table></section>`);
+        days.push({ band: dayBand, header: columnHeader, rows: dataRows });
       };
 
       worksheet.eachRow({ includeEmpty: false }, (row) => {
@@ -767,6 +764,43 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
         else dataRows.push(row);
       });
       flushDay();
+
+      const discoveredTeams = new Set(
+        days.flatMap((day) =>
+          day.rows.map((row) => row.getCell(8).text.trim()).filter(Boolean),
+        ),
+      );
+      const teams = [
+        ...EQUIPES_ORDEM.filter((team) => discoveredTeams.has(team)),
+        ...[...discoveredTeams]
+          .filter((team) => !EQUIPES_ORDEM.includes(team as Equipe))
+          .sort(compareNatural),
+      ];
+
+      teams.forEach((team) => {
+        let teamPage = 0;
+        days.forEach((day) => {
+          const teamRows = day.rows.filter(
+            (row) => row.getCell(8).text.trim() === team,
+          );
+          if (teamRows.length === 0) return;
+          const correctiveCount = teamRows.filter(
+            (row) =>
+              naturalText(row.getCell(6).text).toUpperCase() === "CORRETIVA",
+          ).length;
+          const dayParts = day.band.getCell(1).text.split(" • ");
+          const dayLabel = dayParts.slice(0, 2).join(" • ");
+          const titleLabel = `${titleRow.getCell(1).text} • EQUIPE ${team}`;
+          const bandLabel = `${dayLabel} • ${teamRows.length} OS (${correctiveCount} CORRETIVAS) • ${team}`;
+          sections.push(`<section class="day-sheet team-sheet${teamPage === 0 ? " team-start" : ""}" data-team="${escapeHtml(team)}"><table>
+            <thead>${renderPrintRow(titleRow, "title-row", true, titleLabel)}${renderPrintRow(day.band, "day-band", true, bandLabel)}${renderPrintRow(day.header, "column-header")}</thead>
+            <tbody>${teamRows
+              .map((row) => renderPrintRow(row, "data-row"))
+              .join("")}</tbody>
+          </table></section>`);
+          teamPage += 1;
+        });
+      });
     });
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
@@ -794,7 +828,7 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
   </style></head><body>${sections.join("")}</body></html>`;
 }
 
-/** Abre uma única janela e imprime todos os dias da semana de uma só vez. */
+/** Imprime a semana em um clique, com todas as páginas de cada equipe juntas. */
 export async function printWeeklyProgramacao(blob: Blob): Promise<void> {
   const printWindow = window.open("", "_blank");
   if (!printWindow)
