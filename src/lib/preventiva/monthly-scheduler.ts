@@ -1,5 +1,5 @@
 import { businessDaysUntil, isoDate } from "./business-days";
-import { sortByLocation, type WeekBucket, type WeekInfo } from "./capacity";
+import type { WeekBucket, WeekInfo } from "./capacity";
 import {
   REFRIG_1,
   REFRIG_2,
@@ -153,6 +153,15 @@ export function resolveCorrectiveTeam(row: CorrectiveSourceRow): Equipe | null {
 
 function validDate(value: string | null | undefined): Date | null {
   if (!value) return null;
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (dateOnly) {
+    return new Date(
+      Number(dateOnly[1]),
+      Number(dateOnly[2]) - 1,
+      Number(dateOnly[3]),
+      12,
+    );
+  }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
@@ -204,17 +213,27 @@ export function sortCorrectiveRows(
   referenceDate: Date,
 ): CorrectiveSourceRow[] {
   return [...rows].sort((a, b) => {
-    const severity = problemSeverity(a) - problemSeverity(b);
-    if (severity !== 0) return severity;
-
     const backorder =
       Number(!isCorrectiveBackorder(a, referenceDate)) -
       Number(!isCorrectiveBackorder(b, referenceDate));
     if (backorder !== 0) return backorder;
 
+    const bothBackorder =
+      isCorrectiveBackorder(a, referenceDate) &&
+      isCorrectiveBackorder(b, referenceDate);
+    if (bothBackorder) {
+      const severity = problemSeverity(a) - problemSeverity(b);
+      if (severity !== 0) return severity;
+    }
+
     const dueA = dueDate(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     const dueB = dueDate(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     if (dueA !== dueB) return dueA - dueB;
+
+    if (!bothBackorder) {
+      const severity = problemSeverity(a) - problemSeverity(b);
+      if (severity !== 0) return severity;
+    }
 
     const createdA =
       validDate(a.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
@@ -222,6 +241,88 @@ export function sortCorrectiveRows(
       validDate(b.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     return createdA - createdB;
   });
+}
+
+function sortBySlaThenLocation(items: TriagedOS[]): TriagedOS[] {
+  return [...items].sort((a, b) => {
+    if (a.terminoSLATs !== b.terminoSLATs)
+      return a.terminoSLATs - b.terminoSLATs;
+    return (
+      String(a.predio).localeCompare(String(b.predio), "pt-BR") ||
+      String(a.andar).localeCompare(String(b.andar), "pt-BR", {
+        numeric: true,
+      }) ||
+      String(a.local).localeCompare(String(b.local), "pt-BR") ||
+      String(a.os).localeCompare(String(b.os), "pt-BR", { numeric: true })
+    );
+  });
+}
+
+function sortCorrectiveItems(items: TriagedOS[]): TriagedOS[] {
+  return [...items].sort((a, b) => {
+    const backorderA = Boolean(a.raw?.programacaoBackorder);
+    const backorderB = Boolean(b.raw?.programacaoBackorder);
+    if (backorderA !== backorderB) return backorderA ? -1 : 1;
+    const severityA = Number(a.raw?.programacaoGravidade ?? 2);
+    const severityB = Number(b.raw?.programacaoGravidade ?? 2);
+    if (backorderA && severityA !== severityB) return severityA - severityB;
+    if (a.terminoSLATs !== b.terminoSLATs)
+      return a.terminoSLATs - b.terminoSLATs;
+    return severityA - severityB;
+  });
+}
+
+function requiredByDeadline(
+  remainingItems: TriagedOS[],
+  businessDays: Date[],
+  dayPosition: number,
+): number {
+  if (remainingItems.length === 0) return 0;
+  const remainingDays = businessDays.slice(dayPosition);
+  const deadlines = [
+    ...new Set(
+      remainingItems
+        .map((item) => item.terminoSLATs)
+        .filter(
+          (timestamp) =>
+            Number.isFinite(timestamp) && timestamp < Number.MAX_SAFE_INTEGER,
+        ),
+    ),
+  ].sort((a, b) => a - b);
+
+  let requiredToday = 0;
+  for (const deadline of deadlines) {
+    const dueCount = remainingItems.filter(
+      (item) => item.terminoSLATs <= deadline,
+    ).length;
+    const dueDate = new Date(deadline);
+    const deadlineEnd = new Date(
+      dueDate.getFullYear(),
+      dueDate.getMonth(),
+      dueDate.getDate(),
+      23,
+      59,
+      59,
+      999,
+    ).getTime();
+    const availableDays = remainingDays.filter((date) => {
+      const endOfDay = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        23,
+        59,
+        59,
+        999,
+      );
+      return endOfDay.getTime() <= deadlineEnd;
+    }).length;
+    requiredToday = Math.max(
+      requiredToday,
+      availableDays > 0 ? Math.ceil(dueCount / availableDays) : dueCount,
+    );
+  }
+  return requiredToday;
 }
 
 export function mapCorrectives(
@@ -343,8 +444,8 @@ export function scheduleTeamMonth(options: {
     porDia: [[], [], [], [], []],
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
-  const preventivas = sortByLocation(options.preventivas);
-  const corretivas = [...options.corretivas];
+  const preventivas = sortBySlaThenLocation(options.preventivas);
+  const corretivas = sortCorrectiveItems(options.corretivas);
   const businessDays = businessDaysUntil(options.from, options.until);
 
   let preventivaIndex = 0;
@@ -363,6 +464,11 @@ export function scheduleTeamMonth(options: {
     const desiredCorrectivas = Math.max(
       minCorrectives,
       Math.ceil(Math.max(0, remainingCorretivas) / remainingDays),
+      requiredByDeadline(
+        corretivas.slice(corretivaIndex),
+        businessDays,
+        dayPosition,
+      ),
     );
     const correctiveCount = Math.min(
       capSlots,
@@ -370,8 +476,13 @@ export function scheduleTeamMonth(options: {
       desiredCorrectivas,
     );
     const availableForPreventivas = capSlots - correctiveCount;
-    const desiredPreventivas = Math.ceil(
-      Math.max(0, remainingPreventivas) / remainingDays,
+    const desiredPreventivas = Math.max(
+      Math.ceil(Math.max(0, remainingPreventivas) / remainingDays),
+      requiredByDeadline(
+        preventivas.slice(preventivaIndex),
+        businessDays,
+        dayPosition,
+      ),
     );
     const preventiveCount = Math.min(
       availableForPreventivas,
