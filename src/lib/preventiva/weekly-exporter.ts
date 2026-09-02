@@ -207,12 +207,14 @@ function sortDayItems(items: TriagedOS[]): TriagedOS[] {
     if (buildingOrder !== 0) return buildingOrder;
     const floorOrder = compareFloors(a.andar, b.andar);
     if (floorOrder !== 0) return floorOrder;
-    const correctiveOrder = Number(isCorrective(b)) - Number(isCorrective(a));
-    if (correctiveOrder !== 0) return correctiveOrder;
+    const localOrder = compareNatural(a.local, b.local);
+    if (localOrder !== 0) return localOrder;
+    const osOrder = compareNatural(a.os, b.os);
+    if (osOrder !== 0) return osOrder;
     const teamOrder =
       EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
     if (teamOrder !== 0) return teamOrder;
-    return a.terminoSLATs - b.terminoSLATs || compareNatural(a.local, b.local);
+    return Number(isCorrective(b)) - Number(isCorrective(a));
   });
 }
 
@@ -675,6 +677,175 @@ function addSummarySheet(
   };
 }
 
+/**
+ * Aba compacta para apontamento antecipado. O SLA é usado somente aqui como
+ * referência de consulta e não participa da ordem da programação principal.
+ */
+function addSlaReferenceSheet(
+  workbook: import("exceljs").Workbook,
+  input: WeeklyExportInput,
+  activeTeams: Equipe[],
+) {
+  const sheet = workbook.addWorksheet("SLA APONTAMENTO", {
+    views: [{ state: "frozen", ySplit: 4, showGridLines: false }],
+  });
+  sheet.columns = [{ width: 20 }, { width: 20 }, { width: 38 }];
+  sheet.mergeCells("A1:C1");
+  const title = sheet.getCell("A1");
+  title.value = "APONTAMENTO ANTECIPADO · REFERÊNCIA DE SLA";
+  title.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: PALETTE.navy },
+  };
+  title.font = {
+    name: APTOS_EXTRABOLD,
+    bold: true,
+    size: 15,
+    color: { argb: PALETTE.white },
+  };
+  title.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  sheet.getRow(1).height = 32;
+
+  sheet.mergeCells("A2:C2");
+  const note = sheet.getCell("A2");
+  note.value =
+    "Consulta rápida de OS, Término SLA e Equipe. Esta lista não altera a ordem alfabética da Programação.";
+  note.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: PALETTE.warningBg },
+  };
+  note.font = {
+    name: APTOS_SEMIBOLD,
+    bold: true,
+    size: 9,
+    color: { argb: PALETTE.warningText },
+  };
+  note.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
+  sheet.getRow(2).height = 28;
+
+  const headers = ["OS", "Término SLA", "Equipe"];
+  const header = sheet.getRow(4);
+  headers.forEach((label, index) => {
+    const cell = header.getCell(index + 1);
+    cell.value = label;
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: PALETTE.teal },
+    };
+    cell.font = {
+      name: APTOS_EXTRABOLD,
+      bold: true,
+      size: 9,
+      color: { argb: PALETTE.white },
+    };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = {
+      top: { style: "thin", color: { argb: PALETTE.borderStrong } },
+      bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
+      left: { style: "thin", color: { argb: PALETTE.borderStrong } },
+      right: { style: "thin", color: { argb: PALETTE.borderStrong } },
+    };
+  });
+  header.height = 25;
+
+  const unique = new Map<string, TriagedOS>();
+  activeTeams.forEach((equipe) => {
+    (input.bucketsPorEquipe.get(equipe)?.os ?? []).forEach((item) => {
+      const key = `${item.equipe}|${item.os}`;
+      if (!unique.has(key)) unique.set(key, item);
+    });
+  });
+
+  const items = [...unique.values()]
+    .filter((item) => Boolean(item.os) && Boolean(item.terminoSLA))
+    .sort((a, b) => {
+      const slaA = Number.isFinite(a.terminoSLATs)
+        ? a.terminoSLATs
+        : Number.MAX_SAFE_INTEGER;
+      const slaB = Number.isFinite(b.terminoSLATs)
+        ? b.terminoSLATs
+        : Number.MAX_SAFE_INTEGER;
+      return (
+        slaA - slaB ||
+        compareNatural(a.equipe, b.equipe) ||
+        compareNatural(a.os, b.os)
+      );
+    });
+
+  if (items.length === 0) {
+    sheet.mergeCells("A5:C5");
+    const empty = sheet.getCell("A5");
+    empty.value = "Nenhuma OS da semana possui Término SLA informado.";
+    empty.alignment = { vertical: "middle", horizontal: "center" };
+    empty.font = { name: APTOS_SEMIBOLD, size: 9, color: { argb: PALETTE.text } };
+    sheet.getRow(5).height = 24;
+  } else {
+    items.forEach((item, index) => {
+      const row = sheet.getRow(index + 5);
+      const teamHex = EQUIPE_COLOR[item.equipe];
+      const values = [item.os, formatSLA(item.terminoSLA), item.equipe];
+      values.forEach((value, columnIndex) => {
+        const cell = row.getCell(columnIndex + 1);
+        cell.value = value;
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: {
+            argb:
+              columnIndex === 2
+                ? mixWithWhite(teamHex)
+                : index % 2
+                  ? PALETTE.stripe
+                  : PALETTE.white,
+          },
+        };
+        cell.font = {
+          name: APTOS_SEMIBOLD,
+          bold: columnIndex !== 1,
+          size: 9,
+          color: {
+            argb: columnIndex === 2 ? argbFromHex(teamHex) : PALETTE.text,
+          },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: columnIndex === 2 ? "left" : "center",
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: PALETTE.border } },
+          bottom: { style: "thin", color: { argb: PALETTE.border } },
+          left: { style: "thin", color: { argb: PALETTE.border } },
+          right: { style: "thin", color: { argb: PALETTE.border } },
+        };
+      });
+      row.height = 23;
+    });
+  }
+
+  sheet.autoFilter = `A4:C${Math.max(5, items.length + 4)}`;
+  sheet.pageSetup = {
+    orientation: "portrait",
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9,
+    margins: {
+      left: 0.3,
+      right: 0.3,
+      top: 0.4,
+      bottom: 0.4,
+      header: 0.2,
+      footer: 0.2,
+    },
+    printTitlesRow: "1:4",
+    printArea: `A1:C${Math.max(5, items.length + 4)}`,
+  };
+}
+
 export async function generateWeeklyProgramacao(
   input: WeeklyExportInput,
 ): Promise<Blob> {
@@ -701,6 +872,7 @@ export async function generateWeeklyProgramacao(
     input,
   );
   addSummarySheet(workbook, input, totalOS, activeTeams);
+  addSlaReferenceSheet(workbook, input, activeTeams);
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -761,7 +933,7 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
   const sections: string[] = [];
 
   workbook.worksheets
-    .filter((worksheet) => worksheet.name !== "RESUMO")
+    .filter((worksheet) => worksheet.name === "PROGRAMAÇÃO")
     .forEach((worksheet) => {
       const titleRow = worksheet.getRow(1);
       const days: Array<{
