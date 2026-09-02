@@ -14,6 +14,7 @@ const state = {
   items: [] as Item[],
   inserts: [] as { table: string; row: any }[],
   insertError: null as any,
+  uploadResult: { url: "https://img/x.jpg", storagePath: null as string | null },
 };
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -30,7 +31,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 vi.mock("@/lib/photo-upload", () => ({
-  uploadPhotoWithFallback: async () => ({ url: "https://img/x.jpg", storagePath: null }),
+  uploadPhotoWithFallback: async () => state.uploadResult,
 }));
 
 vi.mock("../db", () => ({
@@ -63,6 +64,7 @@ beforeEach(() => {
   state.items = [];
   state.inserts = [];
   state.insertError = null;
+  state.uploadResult = { url: "https://img/x.jpg", storagePath: null };
 });
 
 describe("sincronização da fila offline (refrigeração)", () => {
@@ -118,7 +120,7 @@ describe("sincronização da fila offline (refrigeração)", () => {
     expect(state.inserts).toHaveLength(1);
   });
 
-  it("envia foto hospedada e registra a URL", async () => {
+  it("envia foto do ImgBB e registra a URL pública", async () => {
     state.items = [
       item({ id: "foto-1", kind: "foto", payload: { blobKey: "k1", legenda: "Antes" } }),
     ];
@@ -128,5 +130,22 @@ describe("sincronização da fila offline (refrigeração)", () => {
     expect(r.sent).toBe(1);
     expect(state.inserts[0].table).toBe("refrigeracao_fotos");
     expect(state.inserts[0].row.image_url).toBe("https://img/x.jpg");
+    expect(state.inserts[0].row.storage_path).toBeNull();
+  });
+
+  it("no fallback do Storage grava apenas o caminho permanente, sem signed URL", async () => {
+    state.uploadResult = {
+      url: "https://example.supabase.co/storage/v1/object/sign/refrigeracao-fotos/u1/foto.jpg?token=antigo",
+      storagePath: "u1/foto.jpg",
+    };
+    state.items = [
+      item({ id: "foto-storage", kind: "foto", payload: { blobKey: "k2", legenda: "Depois" } }),
+    ];
+
+    const r = await syncPending();
+
+    expect(r.sent).toBe(1);
+    expect(state.inserts[0].row.image_url).toBeNull();
+    expect(state.inserts[0].row.storage_path).toBe("u1/foto.jpg");
   });
 });
