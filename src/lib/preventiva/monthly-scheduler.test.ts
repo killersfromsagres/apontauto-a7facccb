@@ -127,34 +127,38 @@ describe("scheduleTeamMonth", () => {
     expect(result.loadsByWeek[0][0].remainingMinutes).toBe(510);
   });
 
-  it("coloca na primeira semana todas as OS com Término SLA naquela semana", () => {
+  it("ignora Término SLA na distribuição e prioriza a sequência de prédios", () => {
     const equipe: Equipe = "ELÉTRICA";
-    const twoWeeks = weeksBetween(monday, new Date(2026, 8, 25));
-    const dueFirstWeek = Array.from({ length: 20 }, (_, index) =>
-      os(`SLA-${index}`, equipe, "Corretiva", "2026-09-18"),
-    );
-    const dueSecondWeek = Array.from({ length: 10 }, (_, index) =>
-      os(`FUT-${index}`, equipe, "Corretiva", "2026-09-25"),
-    );
+    const predioBComSlaMaisCedo = {
+      ...os("B-URGENTE", equipe, "Preventiva", "2026-09-14"),
+      predio: "B200",
+      andar: "Térreo",
+    };
+    const predioAComSlaMaisTarde = {
+      ...os("A-DEPOIS", equipe, "Preventiva", "2026-09-30"),
+      predio: "A100",
+      andar: "Térreo",
+    };
     const result = scheduleTeamMonth({
       equipe,
-      preventivas: [],
-      corretivas: [...dueSecondWeek, ...dueFirstWeek],
-      weeks: twoWeeks,
+      preventivas: [predioBComSlaMaisCedo, predioAComSlaMaisTarde],
+      corretivas: [],
+      weeks,
       from: monday,
-      until: new Date(2026, 8, 25),
-      minutosPorOS: 30,
+      until: friday,
+      minutosPorOS: 60,
     });
-    const firstWeekIds = new Set(result.buckets[0].os.map((item) => item.os));
-    expect(dueFirstWeek.every((item) => firstWeekIds.has(item.os))).toBe(true);
-    expect(
-      result.buckets[1].os.some((item) => item.os.startsWith("SLA-")),
-    ).toBe(false);
+    expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual([
+      "A-DEPOIS",
+    ]);
+    expect(result.buckets[0].porDia[1].map((item) => item.os)).toEqual([
+      "B-URGENTE",
+    ]);
   });
 });
 
 describe("prioridade das corretivas", () => {
-  it("coloca backorder primeiro, preservando criticidade e Término SLA", () => {
+  it("mantém classificação de backorder para diagnóstico, sem usar isso na ordem da programação", () => {
     const reference = new Date(2026, 8, 14);
     const rows: CorrectiveSourceRow[] = [
       {
