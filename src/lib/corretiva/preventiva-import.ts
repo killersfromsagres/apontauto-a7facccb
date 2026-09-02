@@ -1,16 +1,27 @@
-// Importação de OS de PREVENTIVA no módulo Corretiva (aba Preventivas).
-// Reaproveita o leitor de planilha da corretiva e restringe a separação
-// automática às 4 equipes de preventiva: Chaveiro, Civil, Hidráulica e Elétrica.
+// Importação de OS de PREVENTIVA/CORRETIVA no módulo Corretiva.
+// A leitura de Corretivas usa o motor contextual completo para validar a equipe,
+// inclusive quando a planilha de origem já traz uma equipe preenchida.
 
-import { readCorretivaOsFile, type CorretivaOsImport } from "@/lib/corretiva/reader";
-import { classificarEquipeOs, equipeReconhecida } from "@/lib/corretiva/auto-equipe";
-import { classifyTeamByText } from "@/lib/backorder/team-classifier";
+import {
+  readCorretivaOsFile,
+  type CorretivaOsImport,
+} from "@/lib/corretiva/reader";
+import {
+  classificarEquipeOs,
+  equipeReconhecida,
+} from "@/lib/corretiva/auto-equipe";
+import { analyzeCorrectiveOrder } from "@/lib/corretiva/designation-agent";
 import { supabase } from "@/integrations/supabase/client";
 
 export const TIPO_PREVENTIVA = "Preventiva";
 export const TIPO_BACKORDER = "Backorder";
 
-export const EQUIPES_PREVENTIVA = ["Chaveiro", "Civil", "Hidráulica", "Elétrica"] as const;
+export const EQUIPES_PREVENTIVA = [
+  "Chaveiro",
+  "Civil",
+  "Hidráulica",
+  "Elétrica",
+] as const;
 export type EquipePreventiva = (typeof EQUIPES_PREVENTIVA)[number];
 
 const norm = (s: unknown) =>
@@ -21,18 +32,21 @@ const norm = (s: unknown) =>
     .trim();
 
 /** Casa um texto livre de equipe com uma das 4 equipes de preventiva. */
-export function equipePreventivaFromText(valor: string | null | undefined): EquipePreventiva | null {
+export function equipePreventivaFromText(
+  valor: string | null | undefined,
+): EquipePreventiva | null {
   const n = norm(valor);
   if (!n) return null;
   if (n.includes("chave") || n.includes("serralh")) return "Chaveiro";
   if (n.includes("hidraul") || n.includes("encanad")) return "Hidráulica";
   if (n.includes("eletr")) return "Elétrica";
-  if (n.includes("civil") || n.includes("alvenaria") || n.includes("predial")) return "Civil";
+  if (n.includes("civil") || n.includes("alvenaria") || n.includes("predial"))
+    return "Civil";
   return null;
 }
 
 /**
- * Separação automática:
+ * Separação automática de Preventivas:
  * 1. usa a coluna Equipe quando reconhecível;
  * 2. senão, classifica pelo texto da OS;
  * 3. equipes fora das 4 (Pintura → Civil, Refrigeração → Elétrica) são redirecionadas.
@@ -55,7 +69,10 @@ export function classificarPreventiva(row: CorretivaOsImport): EquipePreventiva 
   }
 }
 
-export type PreventivaRow = CorretivaOsImport & { tipo: string; equipe: EquipePreventiva };
+export type PreventivaRow = CorretivaOsImport & {
+  tipo: string;
+  equipe: EquipePreventiva;
+};
 
 export async function lerPreventivaFile(file: File): Promise<PreventivaRow[]> {
   const rows = await readCorretivaOsFile(file);
@@ -67,80 +84,103 @@ export async function lerPreventivaFile(file: File): Promise<PreventivaRow[]> {
 }
 
 export const TIPO_CORRETIVA = "Corretiva";
-
 export type CorretivaRow = CorretivaOsImport & { tipo: string; equipe: string };
 
 /**
+ * Resolve a equipe de uma Corretiva importada usando TODOS os campos disponíveis.
+ *
+ * Uma equipe reconhecida na planilha é preservada somente quando a leitura técnica
+ * não traz evidência suficiente para contradizê-la. Evidência alta, ou média sem
+ * ambiguidade, corrige automaticamente uma equipe de origem incorreta.
+ */
+export function resolveImportedCorrectiveTeam(row: CorretivaOsImport): string {
+  const sourceTeam = row.equipe?.trim() || "";
+  const sourceRecognized = equipeReconhecida(sourceTeam);
+  const analysis = analyzeCorrectiveOrder({
+    nome_os: row.nome_os,
+    equipamento: row.equipamento,
+    ativo: row.ativo,
+    local: row.local,
+    predio: row.predio,
+    andar: row.andar,
+    solicitante: row.solicitante,
+    equipe: sourceTeam || null,
+  });
+
+  const decisive =
+    analysis.hasSignal &&
+    (analysis.confianca === "alta" ||
+      (analysis.confianca === "media" && !analysis.ambiguo));
+
+  if (decisive) return analysis.equipe;
+  if (sourceRecognized) return sourceTeam;
+  if (analysis.hasSignal) return analysis.equipe;
+
+  // Compatibilidade com registros antigos sem qualquer informação técnica.
+  // O motor marca esse cenário como baixa confiança/sem sinal para revisão.
+  return analysis.equipe;
+}
+
+/**
  * Importação de OS de CORRETIVA: mantém todas as equipes possíveis
- * (inclusive Pintura e Refrigeração), usando a equipe da planilha quando
- * informada e a classificação automática por texto como fallback.
+ * (Pintura, Refrigeração, Limpeza etc.) e valida semanticamente a equipe
+ * contra descrição, equipamento, ativo e localização antes de persistir.
  */
 export async function lerCorretivaFile(file: File): Promise<CorretivaRow[]> {
   const rows = await readCorretivaOsFile(file);
-  
-  // 1. Verificar se a aba Backorder está vazia no banco
+
   let backorderCount = 0;
   try {
     const { count, error } = await supabase
       .from("corretiva_os")
-      .select("*", { count: 'exact', head: true })
+      .select("*", { count: "exact", head: true })
       .eq("tipo", "Backorder");
     if (!error) backorderCount = count ?? 0;
-  } catch (e) {
-    console.warn("[Import] Erro ao contar backorders, assumindo 0", e);
+  } catch (error) {
+    console.warn("[Import] Erro ao contar backorders, assumindo 0", error);
   }
 
-  // 2. Se vazio, marcar todas as novas importações como Backorder automaticamente
   const autoBackorder = backorderCount === 0;
-  
-  // 3. Log para auditoria
-  console.log(`[Import] Linhas lidas: ${rows.length}, Total Backorder Atual: ${backorderCount}, AutoBackorder: ${autoBackorder}`);
+  console.log(
+    `[Import] Linhas lidas: ${rows.length}, Total Backorder Atual: ${backorderCount}, AutoBackorder: ${autoBackorder}`,
+  );
 
-  return rows.map((r) => {
-    // A equipe vinda da planilha tem precedência se for reconhecida
-    let equipeFinal: string = (r.equipe && r.equipe.trim()) || "";
-    
-    // Se não tiver equipe ou não for reconhecida, usamos a IA de classificação por texto
-    if (!equipeFinal || !equipeReconhecida(equipeFinal)) {
-      // Combina descrição, equipamento e ativo para uma leitura mais precisa da IA
-      const textForClassification = [r.nome_os, r.equipamento, r.ativo].filter(Boolean).join(" ");
-      equipeFinal = classifyTeamByText(textForClassification).equipe;
-    }
-    
-    // Regra: se autoBackorder, o tipo vira "Backorder"
+  return rows.map((row) => {
+    const equipeFinal = resolveImportedCorrectiveTeam(row);
+
     let tipoFinal = TIPO_CORRETIVA;
     if (autoBackorder) {
       tipoFinal = "Backorder";
-    } else if (r.tipo) {
-      // Tentar reconhecer "Backorder" ou "Corretiva" se vindo na planilha
-      const t = r.tipo.toLowerCase();
-      if (t.includes("back") || t.includes("atras")) tipoFinal = "Backorder";
+    } else if (row.tipo) {
+      const type = row.tipo.toLowerCase();
+      if (type.includes("back") || type.includes("atras")) tipoFinal = "Backorder";
     }
 
-    // Identificação de atrasos (aprox 35 dias)
-    // Se a data de criação for mais antiga que 30-35 dias, sugere Backorder
-    if (tipoFinal === TIPO_CORRETIVA && r.data_criacao) {
-      const criacao = new Date(r.data_criacao);
-      const diffDays = (new Date().getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24);
-      // Ajustado para 35 dias conforme solicitado para identificação de atrasos
+    if (tipoFinal === TIPO_CORRETIVA && row.data_criacao) {
+      const criacao = new Date(row.data_criacao);
+      const diffDays =
+        (new Date().getTime() - criacao.getTime()) / (1000 * 60 * 60 * 24);
       if (diffDays >= 35) tipoFinal = "Backorder";
     }
 
     return {
-      ...r,
+      ...row,
       tipo: tipoFinal,
       equipe: equipeFinal,
     } as CorretivaRow;
   });
 }
 
-
-export function contarPorEquipe(rows: PreventivaRow[]): Record<EquipePreventiva, number> {
-  const out = { Chaveiro: 0, Civil: 0, Hidráulica: 0, Elétrica: 0 } as Record<
-    EquipePreventiva,
-    number
-  >;
-  for (const r of rows) out[r.equipe]++;
+export function contarPorEquipe(
+  rows: PreventivaRow[],
+): Record<EquipePreventiva, number> {
+  const out = {
+    Chaveiro: 0,
+    Civil: 0,
+    Hidráulica: 0,
+    Elétrica: 0,
+  } as Record<EquipePreventiva, number>;
+  for (const row of rows) out[row.equipe]++;
   return out;
 }
 
