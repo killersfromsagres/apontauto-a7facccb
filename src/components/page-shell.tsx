@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
 const MENSAGERIA_TITLE = "Mensageria e Malotes";
+const LEGAL_PANEL_TITLE = "Painel de Itens Legais";
 
 export function PageShell({
   title,
@@ -46,11 +47,14 @@ export function PageShell({
   };
 
   const online = typeof navigator !== "undefined" ? navigator.onLine : true;
+  const isLegalPanel = title === LEGAL_PANEL_TITLE;
 
   return (
     <div
       data-page-title={title}
-      className="premium-page-shell mx-auto w-full min-w-0 max-w-7xl animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8"
+      className={`premium-page-shell mx-auto w-full min-w-0 animate-fade-in space-y-4 p-3 sm:space-y-7 sm:p-4 md:p-8 ${
+        isLegalPanel ? "max-w-[1680px]" : "max-w-7xl"
+      }`}
     >
       {!online && (
         <div className="fixed top-0 left-0 right-0 z-[100] bg-destructive px-4 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-destructive-foreground animate-in slide-in-from-top duration-300">
@@ -161,6 +165,103 @@ export function PageShell({
           @media (prefers-reduced-motion: reduce) {
             [data-page-title="Mensageria e Malotes"] section:has(> div:first-child + div.divide-y) > div.divide-y > div > div:last-child > button {
               transform: none !important;
+            }
+          }
+        `}</style>
+      )}
+
+      {isLegalPanel && (
+        <style>{`
+          [data-page-title="Painel de Itens Legais"] {
+            padding-inline: clamp(0.75rem, 1.75vw, 2rem);
+          }
+
+          [data-page-title="Painel de Itens Legais"] > .premium-page-heading,
+          [data-page-title="Painel de Itens Legais"] > div:last-child {
+            width: 100%;
+            max-width: 1600px;
+            margin-inline: auto;
+          }
+
+          [data-page-title="Painel de Itens Legais"] div:has(> table) {
+            scrollbar-width: thin;
+            scrollbar-color: color-mix(in oklch, var(--primary) 45%, var(--border)) transparent;
+            scrollbar-gutter: stable;
+            border-radius: 1rem;
+          }
+
+          [data-page-title="Painel de Itens Legais"] div:has(> table)::-webkit-scrollbar {
+            height: 8px;
+          }
+
+          [data-page-title="Painel de Itens Legais"] div:has(> table)::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: color-mix(in oklch, var(--primary) 42%, var(--border));
+          }
+
+          [data-page-title="Painel de Itens Legais"] table {
+            min-width: 1160px !important;
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th,
+          [data-page-title="Painel de Itens Legais"] table td {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th:first-child,
+          [data-page-title="Painel de Itens Legais"] table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+            min-width: 18rem;
+            max-width: 22rem;
+            background: color-mix(in oklch, var(--card) 96%, transparent);
+            box-shadow: 10px 0 24px -22px rgb(0 0 0 / 0.72);
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th:last-child,
+          [data-page-title="Painel de Itens Legais"] table td:last-child {
+            position: sticky;
+            right: 0;
+            z-index: 12;
+            min-width: 10.5rem;
+            background: color-mix(in oklch, var(--card) 96%, transparent);
+            box-shadow: -10px 0 24px -22px rgb(0 0 0 / 0.72);
+          }
+
+          [data-page-title="Painel de Itens Legais"] table thead th:first-child,
+          [data-page-title="Painel de Itens Legais"] table thead th:last-child {
+            z-index: 24;
+            background: color-mix(in oklch, var(--card) 99%, transparent);
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th:nth-child(2),
+          [data-page-title="Painel de Itens Legais"] table td:nth-child(2) {
+            min-width: 8rem;
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th:nth-child(3),
+          [data-page-title="Painel de Itens Legais"] table td:nth-child(3) {
+            min-width: 6.5rem;
+          }
+
+          [data-page-title="Painel de Itens Legais"] table th:nth-child(n+8):nth-child(-n+19),
+          [data-page-title="Painel de Itens Legais"] table td:nth-child(n+8):nth-child(-n+19) {
+            min-width: 2.25rem;
+            width: 2.25rem;
+            padding-inline: 0.2rem !important;
+          }
+
+          @media (min-width: 1440px) {
+            [data-page-title="Painel de Itens Legais"] table {
+              min-width: 1240px !important;
+            }
+          }
+
+          @media (max-width: 1023px) {
+            [data-page-title="Painel de Itens Legais"] {
+              padding-inline: 0.75rem;
             }
           }
         `}</style>
