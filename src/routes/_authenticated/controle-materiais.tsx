@@ -19,7 +19,8 @@ import {
   History,
   FilterX,
   RadioTower,
-  X,
+  CheckSquare2,
+  SlidersHorizontal,
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
@@ -64,6 +65,7 @@ import {
   type StatusCompra,
 } from "@/lib/controle/data";
 import { exportControleMateriais } from "@/lib/controle/export";
+import { exportControleMateriaisPdf } from "@/lib/controle/pdf";
 
 export const Route = createFileRoute("/_authenticated/controle-materiais")({
   component: ControlePage,
@@ -73,12 +75,12 @@ export const Route = createFileRoute("/_authenticated/controle-materiais")({
       {
         name: "description",
         content:
-          "Central operacional de materiais solicitados em Corretiva e Refrigeração, com acompanhamento de compra, centro de custo e histórico de Facilities.",
+          "Central operacional unificada de materiais solicitados em Corretiva e Refrigeração, com acompanhamento de compra, centro de custo, evidências e Facilities.",
       },
       { property: "og:title", content: "Central de Materiais" },
       {
         property: "og:description",
-        content: "Fila operacional, compras, centros de custo e comprovação de solicitações à Facilities.",
+        content: "Fila operacional unificada de Corretiva e Refrigeração, compras, centros de custo e Facilities.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -109,6 +111,18 @@ const origemBadge: Record<string, string> = {
   corretiva: "border-orange-400/35 bg-orange-400/10 text-orange-700 dark:text-orange-300",
 };
 
+function PdfIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path d="M6.5 2.75h7.1l3.9 3.9v14.6H6.5z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M13.5 2.9v4h3.8" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M8 16.8h8M8 13.7h8M8 10.6h4.7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <rect x="7" y="15" width="10" height="4" rx="1" fill="currentColor" opacity=".16" />
+      <text x="12" y="18.05" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="currentColor">PDF</text>
+    </svg>
+  );
+}
+
 function fmt(iso: string | null | undefined) {
   if (!iso) return "—";
   const date = new Date(iso);
@@ -137,18 +151,16 @@ function Kpi({
   tone: string;
 }) {
   return (
-    <GlassCard className="group relative overflow-hidden border-white/10 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/20">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-60" />
+    <GlassCard className="group relative overflow-hidden border-white/10 p-3.5 transition-colors hover:border-white/20 sm:p-4">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent opacity-60" />
       <div className="flex min-w-0 items-start gap-3">
-        <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ring-1 ring-inset ring-white/10 ${tone}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset ring-white/10 ${tone}`}>
+          <Icon className="h-4.5 w-4.5" />
         </div>
         <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-            {label}
-          </div>
-          <div className="mt-0.5 font-display text-2xl font-bold leading-none sm:text-3xl">{value}</div>
-          <div className="mt-1.5 text-[11px] leading-snug text-muted-foreground">{hint}</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground">{label}</div>
+          <div className="mt-0.5 font-display text-2xl font-bold leading-none">{value}</div>
+          <div className="mt-1.5 line-clamp-1 text-[10px] leading-snug text-muted-foreground">{hint}</div>
         </div>
       </div>
     </GlassCard>
@@ -161,7 +173,8 @@ function ControlePage() {
   const [envios, setEnvios] = useState<EnvioFacilities[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
 
@@ -217,11 +230,13 @@ function ControlePage() {
     };
 
     const channel = supabase
-      .channel("central-materiais-live-v2")
+      .channel("central-materiais-live-v3")
       .on("postgres_changes", { event: "*", schema: "public", table: "corretiva_pecas" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "corretiva_problemas" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "corretiva_fotos" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "refrigeracao_pecas" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "refrigeracao_problemas" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "refrigeracao_fotos" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "material_solicitacoes" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "material_solicitacao_itens" }, scheduleRefresh)
       .on("postgres_changes", { event: "*", schema: "public", table: "controle_materiais_meta" }, scheduleRefresh)
@@ -288,6 +303,8 @@ function ControlePage() {
     () => filtered.filter((item) => selected.has(item.key)),
     [filtered, selected],
   );
+  const exportItems = selectedItems.length > 0 ? selectedItems : filtered;
+  const allFilteredSelected = filtered.length > 0 && filtered.every((item) => selected.has(item.key));
 
   const hasFilters =
     Boolean(busca) ||
@@ -316,71 +333,97 @@ function ControlePage() {
   };
 
   const toggleAll = () => {
-    const allSelected = filtered.length > 0 && filtered.every((item) => selected.has(item.key));
     setSelected((previous) => {
       const next = new Set(previous);
-      filtered.forEach((item) => (allSelected ? next.delete(item.key) : next.add(item.key)));
+      filtered.forEach((item) => (allFilteredSelected ? next.delete(item.key) : next.add(item.key)));
       return next;
     });
   };
 
-  const doExport = async () => {
-    if (!filtered.length) {
+  const doExportExcel = async () => {
+    if (!exportItems.length) {
       toast.error("Não há registros nos filtros atuais para exportar.");
       return;
     }
 
-    setExporting(true);
+    setExportingExcel(true);
     try {
-      const blob = await exportControleMateriais({ itens: filtered, centros, envios });
+      const blob = await exportControleMateriais({ itens: exportItems, centros, envios });
       const stamp = new Date().toISOString().slice(0, 10);
       downloadBlob(blob, `central-materiais-${stamp}.xlsx`);
-      toast.success("Planilha premium da Central de Materiais gerada com sucesso.");
+      toast.success(`Planilha gerada com ${exportItems.length} registro(s).`);
     } catch (error: any) {
       toast.error(error?.message ?? "Falha ao gerar a planilha.");
     } finally {
-      setExporting(false);
+      setExportingExcel(false);
+    }
+  };
+
+  const doExportPdf = async () => {
+    if (!exportItems.length) {
+      toast.error("Não há registros nos filtros atuais para gerar o PDF.");
+      return;
+    }
+
+    setExportingPdf(true);
+    try {
+      const blob = await exportControleMateriaisPdf(exportItems);
+      const stamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(blob, `central-materiais-${stamp}.pdf`);
+      toast.success(`PDF com detalhes e evidências gerado para ${exportItems.length} registro(s).`);
+    } catch (error: any) {
+      console.error("[CentralMateriaisPDF]", error);
+      toast.error(error?.message ?? "Falha ao gerar o PDF.");
+    } finally {
+      setExportingPdf(false);
     }
   };
 
   return (
     <PageShell
-      eyebrow="Suprimentos · Central operacional"
+      eyebrow="Suprimentos · Central operacional unificada"
       title="Central de Materiais"
-      description="Materiais solicitados na Execução de Campo entram automaticamente nesta fila, sem depender da conclusão do chamado. Acompanhe centro de custo, compra e envio à Facilities em um único fluxo."
+      description="Corretiva + Refrigeração em uma única fila. Acompanhe pedidos, evidências, centro de custo, compra e envio à Facilities sem depender da conclusão da OS."
       actions={
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => void load(true)} disabled={refreshing || loading}>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <Button variant="outline" className="h-10" onClick={() => void load(true)} disabled={refreshing || loading}>
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
-          <Button onClick={() => void doExport()} disabled={exporting || loading || filtered.length === 0}>
-            {exporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-            )}
-            Exportar planilha
+          <Button
+            className="h-10 border border-emerald-500/70 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 hover:text-white"
+            onClick={() => void doExportExcel()}
+            disabled={exportingExcel || loading || exportItems.length === 0}
+          >
+            {exportingExcel ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4 text-white" />}
+            Excel{exportItems.length ? ` (${exportItems.length})` : ""}
+          </Button>
+          <Button
+            className="h-10 border border-red-500/70 bg-red-600 text-white shadow-sm hover:bg-red-700 hover:text-white"
+            onClick={() => void doExportPdf()}
+            disabled={exportingPdf || loading || exportItems.length === 0}
+          >
+            {exportingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PdfIcon className="mr-2 h-4 w-4 text-white" />}
+            PDF{exportItems.length ? ` (${exportItems.length})` : ""}
           </Button>
         </div>
       }
     >
       <GlassCard className="relative overflow-hidden border-primary/15 p-4 sm:p-5">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-primary/8 blur-3xl" />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
               <RadioTower className="h-5 w-5" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-base font-semibold sm:text-lg">Sincronização operacional ativa</h2>
-                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">
-                  Tempo real
-                </Badge>
+                <h2 className="font-display text-base font-semibold sm:text-lg">Fila única de materiais</h2>
+                <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300">Tempo real</Badge>
+                <Badge variant="outline" className="border-sky-500/25 bg-sky-500/8 text-sky-700 dark:text-sky-300">Refrigeração + Corretiva</Badge>
               </div>
               <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-                Solicitações feitas em Corretiva → Novo → Execução de Campo são conciliadas com os apontamentos técnicos e aparecem aqui assim que persistidas no Supabase.
+                Solicitações da Execução de Campo e apontamentos técnicos das duas operações são conciliados automaticamente nesta Central, evitando duplicidades.
               </p>
               <div className="mt-2 text-xs text-muted-foreground" aria-live="polite">
                 {lastSync ? `Última sincronização: ${lastSync.toLocaleTimeString("pt-BR")}` : "Aguardando primeira sincronização…"}
@@ -389,51 +432,46 @@ function ControlePage() {
             </div>
           </div>
 
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-background/35 p-3 backdrop-blur-xl">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-background/35 p-3 backdrop-blur-xl">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-muted-foreground">Materiais recebidos</span>
               <span className="font-semibold">{kpis.completion}%</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted/70">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-primary via-sky-500 to-emerald-500 transition-[width] duration-500"
-                style={{ width: `${kpis.completion}%` }}
-              />
+              <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${kpis.completion}%` }} />
             </div>
             <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
-              <span>{kpis.inPurchase} em fluxo de compra</span>
+              <span>{kpis.inPurchase} em compra</span>
               <span>{kpis.received} recebidos</span>
             </div>
           </div>
         </div>
       </GlassCard>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Kpi icon={ClipboardList} label="Fila total" value={kpis.total} hint="Todos os registros ativos" tone="bg-primary/12 text-primary" />
-        <Kpi icon={Package} label="Execução de Campo" value={kpis.fieldRequests} hint="Pedidos originados em Corretiva" tone="bg-orange-500/12 text-orange-500" />
+      <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-5">
+        <Kpi icon={ClipboardList} label="Fila total" value={kpis.total} hint="Corretiva + Refrigeração" tone="bg-primary/12 text-primary" />
+        <Kpi icon={Package} label="Execução de Campo" value={kpis.fieldRequests} hint="Pedidos das duas operações" tone="bg-orange-500/12 text-orange-500" />
         <Kpi icon={Wallet} label="Sem centro de custo" value={kpis.withoutCc} hint="Precisam de classificação" tone="bg-rose-500/12 text-rose-500" />
-        <Kpi icon={Send} label="Facilities" value={kpis.requested} hint="Pedidos já encaminhados" tone="bg-sky-500/12 text-sky-500" />
+        <Kpi icon={Send} label="Facilities" value={kpis.requested} hint="Pedidos encaminhados" tone="bg-sky-500/12 text-sky-500" />
         <Kpi icon={CalendarClock} label="A solicitar" value={kpis.pending} hint="Ainda não enviados" tone="bg-amber-500/12 text-amber-500" />
       </div>
 
       <Tabs defaultValue="pedidos" className="mt-5">
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-2xl border border-white/10 bg-muted/35 p-1 sm:w-auto">
-          <TabsTrigger value="pedidos" className="rounded-xl px-4 py-2">Pedidos <span className="ml-2 text-xs opacity-60">{items.length}</span></TabsTrigger>
-          <TabsTrigger value="centros" className="rounded-xl px-4 py-2">Centros de custo <span className="ml-2 text-xs opacity-60">{centros.length}</span></TabsTrigger>
-          <TabsTrigger value="envios" className="rounded-xl px-4 py-2">Envios à Facilities <span className="ml-2 text-xs opacity-60">{envios.length}</span></TabsTrigger>
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-xl border border-white/10 bg-muted/35 p-1 sm:w-auto">
+          <TabsTrigger value="pedidos" className="rounded-lg px-4 py-2">Pedidos <span className="ml-2 text-xs opacity-60">{items.length}</span></TabsTrigger>
+          <TabsTrigger value="centros" className="rounded-lg px-4 py-2">Centros de custo <span className="ml-2 text-xs opacity-60">{centros.length}</span></TabsTrigger>
+          <TabsTrigger value="envios" className="rounded-lg px-4 py-2">Envios à Facilities <span className="ml-2 text-xs opacity-60">{envios.length}</span></TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pedidos" className="mt-4 space-y-4">
+        <TabsContent value="pedidos" className="mt-4 space-y-3">
           <GlassCard className="border-white/10 p-3 sm:p-4">
+            <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros e seleção
+            </div>
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-6">
               <div className="relative sm:col-span-2 xl:col-span-2">
                 <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={busca}
-                  onChange={(event) => setBusca(event.target.value)}
-                  placeholder="Buscar material, OS, solicitação, local, equipe…"
-                  className="h-10 pl-9"
-                />
+                <Input value={busca} onChange={(event) => setBusca(event.target.value)} placeholder="Buscar material, OS, local, equipe…" className="h-10 pl-9" />
               </div>
               <Select value={fOrigem} onValueChange={setFOrigem}>
                 <SelectTrigger className="h-10"><SelectValue placeholder="Origem" /></SelectTrigger>
@@ -463,30 +501,30 @@ function ControlePage() {
                 <SelectTrigger className="h-10"><SelectValue placeholder="Situação" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todas as situações</SelectItem>
-                  {STATUS_COMPRA_ORDER.map((status) => (
-                    <SelectItem key={status} value={status}>{STATUS_COMPRA_LABEL[status]}</SelectItem>
-                  ))}
+                  {STATUS_COMPRA_ORDER.map((status) => <SelectItem key={status} value={status}>{STATUS_COMPRA_LABEL[status]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-white/5 pt-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <div className="mt-3 flex flex-wrap items-center gap-2.5 border-t border-white/5 pt-3">
+              <label className="flex min-h-9 cursor-pointer items-center gap-2 text-xs text-muted-foreground sm:text-sm">
                 <Checkbox checked={somenteSemCC} onCheckedChange={(value) => setSomenteSemCC(Boolean(value))} />
                 Somente sem centro de custo
               </label>
-              <span className="text-xs text-muted-foreground">{filtered.length} de {items.length} registros</span>
+              <Badge variant="outline" className="font-normal">{filtered.length} de {items.length} registros</Badge>
+              {selectedItems.length > 0 && <Badge className="bg-primary/15 text-primary hover:bg-primary/15">{selectedItems.length} selecionados</Badge>}
               {hasFilters && (
-                <Button size="sm" variant="ghost" onClick={resetFilters} className="h-8 gap-1.5">
+                <Button size="sm" variant="ghost" onClick={resetFilters} className="h-9 gap-1.5">
                   <FilterX className="h-3.5 w-3.5" /> Limpar filtros
                 </Button>
               )}
               <div className="ml-auto flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={toggleAll} disabled={!filtered.length}>
-                  {filtered.length > 0 && filtered.every((item) => selected.has(item.key)) ? "Limpar seleção" : "Selecionar visíveis"}
+                <Button size="sm" variant="outline" className="h-9" onClick={toggleAll} disabled={!filtered.length}>
+                  <CheckSquare2 className="mr-1.5 h-4 w-4" />
+                  {allFilteredSelected ? "Limpar seleção" : `Selecionar todos (${filtered.length})`}
                 </Button>
-                <Button size="sm" onClick={() => setEnvioOpen(true)} disabled={!selectedItems.length}>
-                  <Send className="mr-2 h-4 w-4" /> Registrar envio ({selectedItems.length})
+                <Button size="sm" className="h-9" onClick={() => setEnvioOpen(true)} disabled={!selectedItems.length}>
+                  <Send className="mr-1.5 h-4 w-4" /> Registrar envio ({selectedItems.length})
                 </Button>
               </div>
             </div>
@@ -494,112 +532,84 @@ function ControlePage() {
 
           {loadError ? (
             <GlassCard className="border-rose-500/20 p-8 text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-rose-500/10 text-rose-500">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
+              <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-rose-500/10 text-rose-500"><AlertTriangle className="h-5 w-5" /></div>
               <h3 className="mt-3 font-semibold">Não foi possível atualizar a Central</h3>
               <p className="mx-auto mt-1 max-w-xl text-sm text-muted-foreground">{loadError}</p>
-              <Button variant="outline" className="mt-4" onClick={() => void load()}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente
-              </Button>
+              <Button variant="outline" className="mt-4" onClick={() => void load()}><RefreshCw className="mr-2 h-4 w-4" /> Tentar novamente</Button>
             </GlassCard>
           ) : loading ? (
-            <div className="grid gap-3" aria-label="Carregando pedidos">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <GlassCard key={index} className="animate-pulse p-4">
-                  <div className="h-4 w-1/3 rounded bg-muted" />
-                  <div className="mt-3 h-3 w-4/5 rounded bg-muted/70" />
-                  <div className="mt-2 h-3 w-2/3 rounded bg-muted/50" />
-                </GlassCard>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
-            <GlassCard className="grid min-h-[32vh] place-items-center p-8 text-center">
-              <div>
-                <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-muted/60 text-muted-foreground">
-                  <Package className="h-5 w-5" />
+            <GlassCard className="overflow-hidden p-0" aria-label="Carregando pedidos">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="border-b border-white/5 p-3 last:border-0">
+                  <div className="h-4 w-1/3 animate-pulse rounded bg-muted" />
+                  <div className="mt-2 h-3 w-3/4 animate-pulse rounded bg-muted/60" />
                 </div>
+              ))}
+            </GlassCard>
+          ) : filtered.length === 0 ? (
+            <GlassCard className="grid min-h-[28vh] place-items-center p-8 text-center">
+              <div>
+                <div className="mx-auto grid h-12 w-12 place-items-center rounded-xl bg-muted/60 text-muted-foreground"><Package className="h-5 w-5" /></div>
                 <h3 className="mt-3 font-semibold">Nenhum material encontrado</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {hasFilters ? "Ajuste ou limpe os filtros para ampliar a busca." : "Novas solicitações aparecerão aqui automaticamente."}
-                </p>
+                <p className="mt-1 text-sm text-muted-foreground">{hasFilters ? "Ajuste ou limpe os filtros para ampliar a busca." : "Novas solicitações aparecerão aqui automaticamente."}</p>
                 {hasFilters && <Button variant="outline" className="mt-4" onClick={resetFilters}>Limpar filtros</Button>}
               </div>
             </GlassCard>
           ) : (
-            <div className="grid gap-3">
-              {filtered.map((item) => {
-                const status = item.meta?.status_compra ?? "aguardando";
-                const withoutCc = !item.meta?.centro_custo;
-                return (
-                  <GlassCard
-                    key={item.key}
-                    className={`border-l-4 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 sm:p-4 ${statusAccent[status]} ${selected.has(item.key) ? "ring-1 ring-primary/50" : ""}`}
-                  >
-                    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-                      <Checkbox
-                        className="mt-1"
-                        checked={selected.has(item.key)}
-                        onCheckedChange={() => toggle(item.key)}
-                        aria-label={`Selecionar ${item.descricao}`}
-                      />
-
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge variant="outline" className={origemBadge[item.origem]}>
-                            {item.origem === "refrigeracao" ? "Refrigeração" : "Corretiva"}
-                          </Badge>
-                          <Badge variant="outline" className={item.fonte === "execucao_campo" ? "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300" : ""}>
-                            {item.fonte === "execucao_campo" ? "Execução de Campo" : "Apontamento técnico"}
-                          </Badge>
-                          <Badge variant="outline">{item.tipo === "peca" ? "Material" : "Defeito"}</Badge>
-                          <Badge variant="outline" className="font-mono">OS {item.numeroOs}</Badge>
-                          <Badge variant="outline" className={statusBadge[status]}>{STATUS_COMPRA_LABEL[status]}</Badge>
-                          {withoutCc && (
-                            <Badge variant="outline" className="border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-300">
-                              Sem centro de custo
-                            </Badge>
-                          )}
+            <GlassCard className="overflow-hidden border-white/10 p-0">
+              <div className="sticky top-0 z-10 flex min-h-11 items-center justify-between gap-3 border-b border-white/10 bg-background/95 px-3 py-2 backdrop-blur-xl">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold">Fila de pedidos</p>
+                  <p className="truncate text-[10px] text-muted-foreground">Scroll próprio · toque habilitado no mobile · {filtered.length} registro(s)</p>
+                </div>
+                <span className="shrink-0 text-[10px] text-muted-foreground">{selectedItems.length ? `${selectedItems.length} selecionados` : "Nenhuma seleção"}</span>
+              </div>
+              <div className="max-h-[60dvh] overflow-y-auto overscroll-contain scroll-smooth touch-pan-y [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch] sm:max-h-[64dvh]">
+                {filtered.map((item) => {
+                  const status = item.meta?.status_compra ?? "aguardando";
+                  const withoutCc = !item.meta?.centro_custo;
+                  return (
+                    <div
+                      key={item.key}
+                      className={`border-b border-l-4 border-b-white/5 px-2.5 py-2.5 transition-colors last:border-b-0 sm:px-3 ${statusAccent[status]} ${selected.has(item.key) ? "bg-primary/[0.065]" : "hover:bg-muted/25"}`}
+                    >
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5 sm:gap-3">
+                        <div className="flex h-10 w-8 items-center justify-center">
+                          <Checkbox checked={selected.has(item.key)} onCheckedChange={() => toggle(item.key)} aria-label={`Selecionar ${item.descricao}`} />
                         </div>
 
-                        <div className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-                          <div className="min-w-0">
-                            <p className="break-words text-sm font-semibold leading-relaxed sm:text-[15px]">
-                              {item.descricao}
-                              {item.quantidade ? <span className="ml-2 text-muted-foreground">× {item.quantidade}</span> : null}
-                            </p>
-                            {item.descricaoOs && <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{item.descricaoOs}</p>}
+                        <div className="min-w-0 py-0.5">
+                          <div className="flex flex-wrap items-center gap-1">
+                            <Badge variant="outline" className={`h-5 px-1.5 text-[9px] ${origemBadge[item.origem]}`}>{item.origem === "refrigeracao" ? "Refrigeração" : "Corretiva"}</Badge>
+                            <Badge variant="outline" className="h-5 px-1.5 font-mono text-[9px]">OS {item.numeroOs}</Badge>
+                            <Badge variant="outline" className={`h-5 px-1.5 text-[9px] ${statusBadge[status]}`}>{STATUS_COMPRA_LABEL[status]}</Badge>
+                            {item.fonte === "execucao_campo" && <Badge variant="outline" className="hidden h-5 border-violet-500/25 bg-violet-500/8 px-1.5 text-[9px] text-violet-600 sm:inline-flex dark:text-violet-300">Campo</Badge>}
+                            {withoutCc && <span className="text-[9px] font-medium text-rose-500">CC pendente</span>}
+                          </div>
+
+                          <div className="mt-1 flex min-w-0 items-baseline gap-1.5">
+                            <p className="line-clamp-1 min-w-0 text-[13px] font-semibold leading-snug sm:text-sm">{item.descricao}</p>
+                            {item.quantidade ? <span className="shrink-0 text-[10px] font-semibold text-muted-foreground">× {item.quantidade}</span> : null}
+                          </div>
+                          {item.descricaoOs && <p className="mt-0.5 line-clamp-1 text-[10px] text-muted-foreground sm:text-[11px]">{item.descricaoOs}</p>}
+
+                          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground sm:text-[10px]">
+                            <span className="max-w-full truncate">{[item.predio, item.andar, item.local].filter(Boolean).join(" · ") || "Local não informado"}</span>
+                            <span className="max-w-full truncate">{item.equipe || "Equipe não informada"}</span>
+                            <span className="max-w-full truncate">{item.meta?.centro_custo ? `CC ${item.meta.centro_custo}` : "Sem centro de custo"}{item.meta?.numero_requisicao ? ` · Req. ${item.meta.numero_requisicao}` : ""}</span>
+                            <span className="hidden sm:inline">{fmt(item.criadoEm)}</span>
                           </div>
                         </div>
 
-                        <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
-                          <div className="rounded-xl border border-white/5 bg-muted/25 px-3 py-2">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-60">Local</span>
-                            <span className="mt-0.5 block text-foreground/80">{[item.predio, item.andar, item.local].filter(Boolean).join(" · ") || "Não informado"}</span>
-                          </div>
-                          <div className="rounded-xl border border-white/5 bg-muted/25 px-3 py-2">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-60">Responsável</span>
-                            <span className="mt-0.5 block text-foreground/80">{item.equipe || "Equipe não informada"}{item.solicitante ? ` · ${item.solicitante}` : ""}</span>
-                          </div>
-                          <div className="rounded-xl border border-white/5 bg-muted/25 px-3 py-2">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-60">Entrada na fila</span>
-                            <span className="mt-0.5 block text-foreground/80">{fmt(item.criadoEm)}{item.solicitacaoNumero ? ` · ${item.solicitacaoNumero}` : ""}</span>
-                          </div>
-                          <div className="rounded-xl border border-white/5 bg-muted/25 px-3 py-2">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-60">Compra</span>
-                            <span className="mt-0.5 block text-foreground/80">{item.meta?.centro_custo ? `CC ${item.meta.centro_custo}` : "Centro de custo pendente"}{item.meta?.numero_requisicao ? ` · Req. ${item.meta.numero_requisicao}` : ""}</span>
-                          </div>
-                        </div>
+                        <Button size="sm" variant="outline" onClick={() => setEditing(item)} className="h-10 min-w-10 px-2.5 text-[10px] sm:px-3 sm:text-xs">
+                          Gerenciar
+                        </Button>
                       </div>
-
-                      <Button size="sm" variant="outline" onClick={() => setEditing(item)} className="col-start-2 justify-self-start lg:col-start-3 lg:row-start-1 lg:justify-self-end">
-                        Gerenciar
-                      </Button>
                     </div>
-                  </GlassCard>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </GlassCard>
           )}
         </TabsContent>
 
@@ -609,27 +619,21 @@ function ControlePage() {
 
         <TabsContent value="envios" className="mt-4 space-y-3">
           {envios.length === 0 ? (
-            <GlassCard className="grid min-h-[30vh] place-items-center p-8 text-center text-sm text-muted-foreground">
-              Nenhum envio à Facilities registrado até o momento.
-            </GlassCard>
+            <GlassCard className="grid min-h-[30vh] place-items-center p-8 text-center text-sm text-muted-foreground">Nenhum envio à Facilities registrado até o momento.</GlassCard>
           ) : (
             envios.map((envio) => (
               <GlassCard key={envio.id} className="border-l-4 border-l-emerald-400 p-4">
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-                        <History className="mr-1 h-3 w-3" /> {fmt(envio.enviado_em)}
-                      </Badge>
+                      <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"><History className="mr-1 h-3 w-3" /> {fmt(envio.enviado_em)}</Badge>
                       {envio.centro_custo && <Badge variant="outline">CC {envio.centro_custo}</Badge>}
                       {envio.canal && <Badge variant="outline">{envio.canal}</Badge>}
                     </div>
                     {envio.destinatario && <p className="mt-2 text-sm font-semibold">Destinatário: {envio.destinatario}</p>}
                     {envio.observacao && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{envio.observacao}</p>}
-                    <div className="mt-3 max-h-36 overflow-y-auto rounded-2xl border border-white/5 bg-muted/30 p-3 text-xs">
-                      {(envio.itens ?? []).map((item, index) => (
-                        <div key={`${envio.id}-${index}`} className="border-b border-white/5 py-1.5 last:border-0">OS {item.numeroOs} — {item.descricao}</div>
-                      ))}
+                    <div className="mt-3 max-h-36 overflow-y-auto rounded-xl border border-white/5 bg-muted/30 p-3 text-xs touch-pan-y [-webkit-overflow-scrolling:touch]">
+                      {(envio.itens ?? []).map((item, index) => <div key={`${envio.id}-${index}`} className="border-b border-white/5 py-1.5 last:border-0">OS {item.numeroOs} — {item.descricao}</div>)}
                     </div>
                   </div>
                   <Badge variant="outline" className="h-fit">{envio.total_itens} itens</Badge>
@@ -729,9 +733,7 @@ function ItemDialog({
             {item && <Badge variant="outline" className="font-mono">OS {item.numeroOs}</Badge>}
           </div>
           <DialogTitle className="break-words text-xl">{item?.descricao}</DialogTitle>
-          <DialogDescription>
-            Controle de compra, centro de custo e comprovação do encaminhamento à Facilities.
-          </DialogDescription>
+          <DialogDescription>Controle de compra, centro de custo e comprovação do encaminhamento à Facilities.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4">
@@ -750,59 +752,29 @@ function ItemDialog({
               <div className="grid gap-1.5">
                 <Label>Centro de custo</Label>
                 <Input value={cc} onChange={(event) => setCc(event.target.value)} list="centros-custo-list" placeholder="Ex.: 4102-MANUT" />
-                <datalist id="centros-custo-list">
-                  {centros.map((centro) => <option key={centro.id} value={centro.codigo}>{centro.descricao ?? ""}</option>)}
-                </datalist>
+                <datalist id="centros-custo-list">{centros.map((centro) => <option key={centro.id} value={centro.codigo}>{centro.descricao ?? ""}</option>)}</datalist>
               </div>
               <div className="grid gap-1.5">
                 <Label>Situação da compra</Label>
                 <Select value={status} onValueChange={(value) => setStatus(value as StatusCompra)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {STATUS_COMPRA_ORDER.map((option) => <SelectItem key={option} value={option}>{STATUS_COMPRA_LABEL[option]}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{STATUS_COMPRA_ORDER.map((option) => <SelectItem key={option} value={option}>{STATUS_COMPRA_LABEL[option]}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="grid gap-1.5">
-                <Label>Nº da requisição</Label>
-                <Input value={req} onChange={(event) => setReq(event.target.value)} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Fornecedor</Label>
-                <Input value={fornecedor} onChange={(event) => setFornecedor(event.target.value)} />
-              </div>
-              <div className="grid gap-1.5 sm:col-span-2">
-                <Label>Valor estimado (R$)</Label>
-                <Input value={valor} onChange={(event) => setValor(event.target.value)} inputMode="decimal" placeholder="0,00" />
-              </div>
+              <div className="grid gap-1.5"><Label>Nº da requisição</Label><Input value={req} onChange={(event) => setReq(event.target.value)} /></div>
+              <div className="grid gap-1.5"><Label>Fornecedor</Label><Input value={fornecedor} onChange={(event) => setFornecedor(event.target.value)} /></div>
+              <div className="grid gap-1.5 sm:col-span-2"><Label>Valor estimado (R$)</Label><Input value={valor} onChange={(event) => setValor(event.target.value)} inputMode="decimal" placeholder="0,00" /></div>
             </div>
           </div>
 
           <div className="grid gap-3 rounded-2xl border border-white/8 p-4">
             <div className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">Facilities e rastreabilidade</div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="grid gap-1.5">
-                <Label>Data/hora da solicitação</Label>
-                <Input type="datetime-local" value={data} onChange={(event) => setData(event.target.value)} />
-              </div>
-              <div className="grid gap-1.5">
-                <Label>Solicitado por</Label>
-                <Input value={solicitadoPor} onChange={(event) => setSolicitadoPor(event.target.value)} />
-              </div>
+              <div className="grid gap-1.5"><Label>Data/hora da solicitação</Label><Input type="datetime-local" value={data} onChange={(event) => setData(event.target.value)} /></div>
+              <div className="grid gap-1.5"><Label>Solicitado por</Label><Input value={solicitadoPor} onChange={(event) => setSolicitadoPor(event.target.value)} /></div>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Observação</Label>
-              <Textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} />
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setData(toLocalInput());
-                if (status === "aguardando") setStatus("solicitado");
-              }}
-              className="justify-self-start"
-            >
+            <div className="grid gap-1.5"><Label>Observação</Label><Textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} /></div>
+            <Button variant="outline" size="sm" onClick={() => { setData(toLocalInput()); if (status === "aguardando") setStatus("solicitado"); }} className="justify-self-start">
               <CalendarClock className="mr-2 h-4 w-4" /> Marcar envio agora
             </Button>
           </div>
@@ -811,8 +783,7 @@ function ItemDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button onClick={() => void save()} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-            Salvar alterações
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />} Salvar alterações
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -841,9 +812,7 @@ function EnvioDialog({
   const [observacao, setObservacao] = useState("");
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (open) setQuando(toLocalInput());
-  }, [open]);
+  useEffect(() => { if (open) setQuando(toLocalInput()); }, [open]);
 
   const submit = async () => {
     if (!itens.length) return;
@@ -886,50 +855,32 @@ function EnvioDialog({
 
         {missingCc > 0 && (
           <div className="flex gap-2 rounded-2xl border border-amber-500/20 bg-amber-500/8 p-3 text-sm text-amber-700 dark:text-amber-300">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{missingCc} item(ns) ainda não possuem centro de custo. Você pode aplicar um centro de custo comum neste envio.</span>
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><span>{missingCc} item(ns) ainda não possuem centro de custo. Você pode aplicar um centro de custo comum neste envio.</span>
           </div>
         )}
 
         <div className="grid gap-3">
-          <div className="grid gap-1.5">
-            <Label>Data e hora do envio</Label>
-            <Input type="datetime-local" value={quando} onChange={(event) => setQuando(event.target.value)} />
-          </div>
+          <div className="grid gap-1.5"><Label>Data e hora do envio</Label><Input type="datetime-local" value={quando} onChange={(event) => setQuando(event.target.value)} /></div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label>Centro de custo comum</Label>
               <Input value={cc} onChange={(event) => setCc(event.target.value)} list="centros-custo-list-envio" />
-              <datalist id="centros-custo-list-envio">
-                {centros.map((centro) => <option key={centro.id} value={centro.codigo}>{centro.descricao ?? ""}</option>)}
-              </datalist>
+              <datalist id="centros-custo-list-envio">{centros.map((centro) => <option key={centro.id} value={centro.codigo}>{centro.descricao ?? ""}</option>)}</datalist>
             </div>
             <div className="grid gap-1.5">
               <Label>Canal</Label>
               <Select value={canal} onValueChange={setCanal}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="E-mail">E-mail</SelectItem>
-                  <SelectItem value="Sistema">Sistema</SelectItem>
-                  <SelectItem value="WhatsApp">WhatsApp</SelectItem>
-                  <SelectItem value="Presencial">Presencial</SelectItem>
+                  <SelectItem value="E-mail">E-mail</SelectItem><SelectItem value="Sistema">Sistema</SelectItem><SelectItem value="WhatsApp">WhatsApp</SelectItem><SelectItem value="Presencial">Presencial</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid gap-1.5">
-              <Label>Destinatário</Label>
-              <Input value={destinatario} onChange={(event) => setDestinatario(event.target.value)} placeholder="Facilities" />
-            </div>
-            <div className="grid gap-1.5">
-              <Label>Solicitado por</Label>
-              <Input value={solicitante} onChange={(event) => setSolicitante(event.target.value)} />
-            </div>
+            <div className="grid gap-1.5"><Label>Destinatário</Label><Input value={destinatario} onChange={(event) => setDestinatario(event.target.value)} placeholder="Facilities" /></div>
+            <div className="grid gap-1.5"><Label>Solicitado por</Label><Input value={solicitante} onChange={(event) => setSolicitante(event.target.value)} /></div>
           </div>
-          <div className="grid gap-1.5">
-            <Label>Observação / protocolo</Label>
-            <Textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} />
-          </div>
-          <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/5 bg-muted/30 p-3 text-xs">
+          <div className="grid gap-1.5"><Label>Observação / protocolo</Label><Textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} rows={3} /></div>
+          <div className="max-h-44 overflow-y-auto rounded-2xl border border-white/5 bg-muted/30 p-3 text-xs touch-pan-y [-webkit-overflow-scrolling:touch]">
             {itens.map((item) => <div key={item.key} className="border-b border-white/5 py-1.5 last:border-0">OS {item.numeroOs} — {item.descricao}</div>)}
           </div>
         </div>
@@ -937,8 +888,7 @@ function EnvioDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
           <Button onClick={() => void submit()} disabled={saving || !itens.length}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-            Registrar envio
+            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />} Registrar envio
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -966,11 +916,7 @@ function CentrosCustoPanel({
 
     setSaving(true);
     try {
-      await saveCentroCusto({
-        codigo: codigo.trim(),
-        descricao: descricao.trim() || null,
-        responsavel: responsavel.trim() || null,
-      } as any);
+      await saveCentroCusto({ codigo: codigo.trim(), descricao: descricao.trim() || null, responsavel: responsavel.trim() || null } as any);
       setCodigo("");
       setDescricao("");
       setResponsavel("");
@@ -988,19 +934,13 @@ function CentrosCustoPanel({
       <GlassCard className="border-primary/10 p-4">
         <div className="mb-3 flex items-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary"><Building2 className="h-4 w-4" /></div>
-          <div>
-            <div className="text-sm font-semibold">Cadastrar centro de custo</div>
-            <div className="text-xs text-muted-foreground">Mantenha a referência de compras organizada e reutilizável.</div>
-          </div>
+          <div><div className="text-sm font-semibold">Cadastrar centro de custo</div><div className="text-xs text-muted-foreground">Mantenha a referência de compras organizada e reutilizável.</div></div>
         </div>
         <div className="grid gap-2 sm:grid-cols-4">
           <Input value={codigo} onChange={(event) => setCodigo(event.target.value)} placeholder="Código" />
           <Input value={descricao} onChange={(event) => setDescricao(event.target.value)} placeholder="Descrição / área" />
           <Input value={responsavel} onChange={(event) => setResponsavel(event.target.value)} placeholder="Responsável" />
-          <Button onClick={() => void add()} disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-            Adicionar
-          </Button>
+          <Button onClick={() => void add()} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />} Adicionar</Button>
         </div>
       </GlassCard>
 
@@ -1009,30 +949,18 @@ function CentrosCustoPanel({
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {centros.map((centro) => (
-            <GlassCard key={centro.id} className="p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20">
+            <GlassCard key={centro.id} className="p-4 transition-colors hover:border-white/20">
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                 <div className="min-w-0">
                   <div className="truncate font-mono text-sm font-bold text-primary">{centro.codigo}</div>
                   <div className="mt-1 truncate text-sm">{centro.descricao ?? "Sem descrição"}</div>
                   <div className="mt-1 truncate text-xs text-muted-foreground">{centro.responsavel ? `Responsável: ${centro.responsavel}` : "Responsável não informado"}</div>
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Excluir centro de custo ${centro.codigo}`}
-                  onClick={async () => {
-                    if (!window.confirm(`Excluir o centro de custo ${centro.codigo}?`)) return;
-                    try {
-                      await deleteCentroCusto(centro.id);
-                      toast.success("Centro de custo removido.");
-                      await onChanged();
-                    } catch (error: any) {
-                      toast.error(error?.message ?? "Falha ao remover o centro de custo.");
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4 text-rose-500" />
-                </Button>
+                <Button size="icon" variant="ghost" aria-label={`Excluir centro de custo ${centro.codigo}`} onClick={async () => {
+                  if (!window.confirm(`Excluir o centro de custo ${centro.codigo}?`)) return;
+                  try { await deleteCentroCusto(centro.id); toast.success("Centro de custo removido."); await onChanged(); }
+                  catch (error: any) { toast.error(error?.message ?? "Falha ao remover o centro de custo."); }
+                }}><Trash2 className="h-4 w-4 text-rose-500" /></Button>
               </div>
             </GlassCard>
           ))}
