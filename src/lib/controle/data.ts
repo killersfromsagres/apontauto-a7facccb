@@ -157,11 +157,55 @@ function requestSignature(numeroOs: string, descricao: string, quantidade: numbe
   return `${normalize(numeroOs)}|${normalize(descricao).replace(/\s+/g, " ")}|${Number(quantidade || 1)}`;
 }
 
+function originSignature(origem: Origem, numeroOs: string, descricao: string, quantidade: number | null) {
+  return `${origem}|${requestSignature(numeroOs, descricao, quantidade)}`;
+}
+
 function isFieldRequest(row: MaterialSolicitacaoRow) {
   const text = `${row.observacao ?? ""} ${(row.material_solicitacao_itens ?? [])
     .map((item) => item.justificativa ?? "")
     .join(" ")}`;
   return /Solicitado via OS|Requisitado via Execução de Campo|Referente à OS/i.test(text);
+}
+
+function looksLikeRefrigeracao(row: MaterialSolicitacaoRow) {
+  const text = normalize(
+    [
+      row.setor,
+      row.observacao,
+      ...(row.material_solicitacao_itens ?? []).flatMap((item) => [item.descricao, item.justificativa]),
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+
+  return /REFRIG|HVAC|AR CONDICIONADO|AR-CONDICIONADO|FANCOIL|FAN COIL|CHILLER|SPLIT|EVAPORADORA|CONDENSADORA|VRF|VRV/.test(
+    text,
+  );
+}
+
+export function resolveMaterialRequestOrigin(params: {
+  request: MaterialSolicitacaoRow;
+  requestOsNumber: string;
+  refrigeracaoOs: Map<string, OsRow>;
+  corretivaOs: Map<string, OsRow>;
+}): { origem: Origem; os: OsRow | undefined } {
+  const normalizedOs = normalize(params.requestOsNumber);
+  const refrigeracao = params.refrigeracaoOs.get(normalizedOs);
+  const corretiva = params.corretivaOs.get(normalizedOs);
+
+  if (refrigeracao && !corretiva) return { origem: "refrigeracao", os: refrigeracao };
+  if (corretiva && !refrigeracao) return { origem: "corretiva", os: corretiva };
+
+  if (refrigeracao && corretiva) {
+    return looksLikeRefrigeracao(params.request)
+      ? { origem: "refrigeracao", os: refrigeracao }
+      : { origem: "corretiva", os: corretiva };
+  }
+
+  return looksLikeRefrigeracao(params.request)
+    ? { origem: "refrigeracao", os: undefined }
+    : { origem: "corretiva", os: undefined };
 }
 
 function assertQuery(result: { error: { message?: string } | null }, label: string) {
@@ -182,7 +226,7 @@ export function itemKey(origem: Origem, tipo: TipoItem, itemId: string) {
  * A segunda camada garante que um material apareça na Central assim que for
  * solicitado, inclusive em sincronizações offline, sem aguardar a conclusão da OS.
  * Quando os dois registros representam o mesmo pedido, eles são conciliados para
- * evitar duplicidade visual.
+ * evitar duplicidade visual em Corretiva e Refrigeração.
  */
 export async function fetchControleItems(): Promise<ControleItem[]> {
   const [rPecas, rProblemas, cPecas, cProblemas, rOs, cOs, metas, fieldRequests] =
@@ -234,6 +278,7 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
 
   const rMap = osMap(rOs.data as OsRow[] | null);
   const cMap = osMap(cOs.data as OsRow[] | null);
+  const rNumberMap = osNumberMap(rOs.data as OsRow[] | null);
   const cNumberMap = osNumberMap(cOs.data as OsRow[] | null);
   const metaMap = new Map<string, ControleMeta>();
 
@@ -242,7 +287,7 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
   }
 
   const out: ControleItem[] = [];
-  const correctiveIndexesBySignature = new Map<string, number[]>();
+  const indexesByOriginSignature = new Map<string, number[]>();
 
   const pushPeca = (row: any, origem: Origem) => {
     const os = (origem === "refrigeracao" ? rMap : cMap).get(row.os_id);
@@ -273,12 +318,10 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
     };
 
     const index = out.push(item) - 1;
-    if (origem === "corretiva") {
-      const signature = requestSignature(item.numeroOs, item.descricao, item.quantidade);
-      const indexes = correctiveIndexesBySignature.get(signature) ?? [];
-      indexes.push(index);
-      correctiveIndexesBySignature.set(signature, indexes);
-    }
+    const signature = originSignature(origem, item.numeroOs, item.descricao, item.quantidade);
+    const indexes = indexesByOriginSignature.get(signature) ?? [];
+    indexes.push(index);
+    indexesByOriginSignature.set(signature, indexes);
   };
 
   const pushProblema = (row: any, origem: Origem) => {
@@ -324,12 +367,19 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
     );
     if (!requestOsNumber) continue;
 
-    const os = cNumberMap.get(normalize(requestOsNumber));
+    const resolved = resolveMaterialRequestOrigin({
+      request,
+      requestOsNumber,
+      refrigeracaoOs: rNumberMap,
+      corretivaOs: cNumberMap,
+    });
+    const origem = resolved.origem;
+    const os = resolved.os;
 
     for (const requestItem of request.material_solicitacao_itens ?? []) {
       const quantity = Number(requestItem.quantidade ?? 1) || 1;
-      const signature = requestSignature(requestOsNumber, requestItem.descricao, quantity);
-      const matchingIndexes = correctiveIndexesBySignature.get(signature);
+      const signature = originSignature(origem, requestOsNumber, requestItem.descricao, quantity);
+      const matchingIndexes = indexesByOriginSignature.get(signature);
       const existingIndex = matchingIndexes?.shift();
 
       if (existingIndex !== undefined) {
@@ -342,10 +392,10 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
         continue;
       }
 
-      const key = itemKey("corretiva", "peca", requestItem.id);
+      const key = itemKey(origem, "peca", requestItem.id);
       out.push({
         key,
-        origem: "corretiva",
+        origem,
         tipo: "peca",
         fonte: "execucao_campo",
         itemId: requestItem.id,
