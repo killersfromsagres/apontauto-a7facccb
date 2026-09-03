@@ -404,14 +404,14 @@ function HistoricoPage() {
                 ))}
               </div>
               <p className="max-w-2xl text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                Marque uma OS como verificada para retirá-la das próximas planilhas. Você pode desfazer a marcação a qualquer momento.
+                Chamados verificados ficam guardados no histórico de verificados (salvo no servidor, visível em qualquer navegador ou usuário) e são excluídos das próximas exportações. Você pode desfazer a verificação a qualquer momento.
               </p>
             </div>
 
             <Button
               variant="outline"
               onClick={handleExport}
-              disabled={!verificationScope || exportableRows.length === 0 || isExporting}
+              disabled={userId === undefined || isLoadingVerificacoes || exportableRows.length === 0 || isExporting}
               className="h-11 gap-2 rounded-xl border-emerald-500/25 bg-emerald-500/10 px-4 text-emerald-700 shadow-none transition-[background-color,border-color,color] hover:border-emerald-500/40 hover:bg-emerald-500/15 dark:text-emerald-300 active:scale-100 motion-reduce:transition-none"
             >
               {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
@@ -475,7 +475,7 @@ function HistoricoPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pending">Pendentes de verificação</SelectItem>
-              <SelectItem value="verified">Já verificados</SelectItem>
+              <SelectItem value="verified">Histórico de verificados</SelectItem>
               <SelectItem value="all">Todos os chamados</SelectItem>
             </SelectContent>
           </Select>
@@ -521,7 +521,11 @@ function HistoricoPage() {
             <ul className="space-y-2.5">
               {displayedRows.map((os) => {
                 const cancelada = os.status === "cancelada";
-                const verified = verifiedOsIds.has(os.id);
+                const registro = verificacoes.get(os.id) ?? null;
+                const verified = Boolean(registro);
+                const verifiedAt = registro ? formatDateTime(registro.verificadoEm) : null;
+                const verifiedBy = registro ? verificacaoAutorLabel(registro) : null;
+                const saving = pendingOsId === os.id;
                 const StatusIcon = cancelada ? XCircle : CheckCircle2;
                 const teamStyle = equipeStyles(os.equipe);
                 const selected = open?.id === os.id;
@@ -596,6 +600,7 @@ function HistoricoPage() {
                                 className="rounded-lg border-primary/25 bg-primary/10 text-[9px] font-bold uppercase tracking-wider text-primary"
                               >
                                 <CheckCheck className="mr-1 h-3 w-3" /> Verificado
+                                {verifiedAt ? " · " + verifiedAt : ""}
                               </Badge>
                             )}
                           </span>
@@ -632,7 +637,7 @@ function HistoricoPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleVerification(os)}
-                          disabled={!verificationScope}
+                          disabled={userId === undefined || saving}
                           aria-pressed={verified}
                           className={cn(
                             "h-9 gap-1.5 rounded-lg px-2.5 text-xs font-semibold shadow-none active:scale-100",
@@ -641,8 +646,12 @@ function HistoricoPage() {
                               : "border-border/60 bg-background/55 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground",
                           )}
                         >
-                          <CheckCheck className="h-3.5 w-3.5" />
-                          {verified ? "Verificado" : "Marcar verificado"}
+                          {saving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CheckCheck className="h-3.5 w-3.5" />
+                          )}
+                          {verified ? "Desfazer verificação" : "Marcar verificado"}
                         </Button>
                         <OsPhotosButton osId={os.id} numeroOs={os.numero_os} modulo="corretiva" />
                       </div>
