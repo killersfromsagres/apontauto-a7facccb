@@ -55,10 +55,13 @@ import { isPreventiva } from "@/lib/corretiva/preventiva-import";
 import { cn } from "@/lib/utils";
 import { exportCorretivaHistoricoToExcel } from "@/lib/corretiva/excel-export";
 import {
-  loadVerifiedOsIds,
-  saveVerifiedOsIds,
-  verifiedOsStorageKey,
-  withVerifiedOs,
+  desmarcarVerificada,
+  fetchVerificacoes,
+  marcarVerificada,
+  migrarVerificacoesLegadas,
+  verificacaoAutorLabel,
+  withVerificacao,
+  type VerificacaoMap,
 } from "@/lib/corretiva/historico-verificacao";
 
 export const Route = createFileRoute("/_authenticated/corretiva-historico")({
