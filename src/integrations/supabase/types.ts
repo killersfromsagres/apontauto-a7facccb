@@ -2799,6 +2799,47 @@ export type Database = {
           },
         ]
       }
+      corretiva_historico_verificacoes: {
+        Row: {
+          created_at: string
+          id: string
+          numero_os: string
+          origem: string
+          os_id: string
+          updated_at: string
+          verificado_em: string
+          verificado_por: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          numero_os: string
+          origem?: string
+          os_id: string
+          updated_at?: string
+          verificado_em?: string
+          verificado_por?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          numero_os?: string
+          origem?: string
+          os_id?: string
+          updated_at?: string
+          verificado_em?: string
+          verificado_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "corretiva_historico_verificacoes_verificado_por_fkey"
+            columns: ["verificado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       corretiva_os: {
         Row: {
           andar: string | null
