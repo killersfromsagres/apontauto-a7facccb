@@ -1,0 +1,199 @@
+/*
+ * ApontAuto — Global Scrollbar System
+ *
+ * Camada autoritativa carregada depois de styles.css e premium-ui.css.
+ * Mantém um único visual para menu, páginas, listas, tabelas, modais,
+ * popovers e qualquer container nativo com overflow.
+ *
+ * Importante (Chrome/Edge no Windows): quando scrollbar-width/color recebem
+ * valores diferentes de auto, Chromium pode priorizar o scrollbar nativo e
+ * ignorar partes de ::-webkit-scrollbar. Por isso o padrão CSS Scrollbars é
+ * usado apenas onde ::-webkit-scrollbar não existe; Chromium usa a camada
+ * WebKit abaixo, sem trilho claro nem botões/setas nativos.
+ */
+
+:root {
+  --app-scrollbar-size: 8px;
+  --app-scrollbar-size-compact: 7px;
+  --app-scrollbar-thumb: color-mix(in oklch, var(--foreground) 14%, transparent);
+  --app-scrollbar-thumb-hover: color-mix(in oklch, var(--foreground) 25%, transparent);
+  --app-scrollbar-thumb-active: color-mix(in oklch, var(--primary) 38%, transparent);
+  --app-scrollbar-track: transparent;
+}
+
+.dark {
+  --app-scrollbar-thumb: color-mix(in oklch, var(--foreground) 13%, transparent);
+  --app-scrollbar-thumb-hover: color-mix(in oklch, var(--foreground) 24%, transparent);
+  --app-scrollbar-thumb-active: color-mix(in oklch, var(--primary) 34%, transparent);
+}
+
+/* Firefox e engines sem pseudo-elementos WebKit. */
+@supports not selector(::-webkit-scrollbar) {
+  html,
+  body,
+  body * {
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--app-scrollbar-thumb) transparent !important;
+  }
+
+  .scrollbar-hide,
+  [data-scrollbar="hidden"],
+  [role="tablist"] {
+    scrollbar-width: none !important;
+  }
+}
+
+/* Chrome, Edge, Safari e demais engines WebKit/Blink. */
+@supports selector(::-webkit-scrollbar) {
+  /*
+   * Neutraliza scrollbar-width/color antigos. Com auto, Chromium permite que
+   * os pseudo-elementos abaixo controlem integralmente o desenho da barra.
+   */
+  html:root,
+  html body,
+  html body * {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+
+  html:root::-webkit-scrollbar,
+  html body::-webkit-scrollbar,
+  html body *::-webkit-scrollbar {
+    width: var(--app-scrollbar-size) !important;
+    height: var(--app-scrollbar-size) !important;
+    background: transparent !important;
+  }
+
+  html:root::-webkit-scrollbar-track,
+  html body::-webkit-scrollbar-track,
+  html body *::-webkit-scrollbar-track,
+  html:root::-webkit-scrollbar-track-piece,
+  html body::-webkit-scrollbar-track-piece,
+  html body *::-webkit-scrollbar-track-piece {
+    background: var(--app-scrollbar-track) !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    box-shadow: none !important;
+  }
+
+  html:root::-webkit-scrollbar-thumb,
+  html body::-webkit-scrollbar-thumb,
+  html body *::-webkit-scrollbar-thumb {
+    min-height: 40px;
+    min-width: 40px;
+    border: 2px solid transparent !important;
+    border-radius: 999px !important;
+    background: var(--app-scrollbar-thumb) !important;
+    background-clip: padding-box !important;
+    box-shadow: none !important;
+  }
+
+  html:root::-webkit-scrollbar-thumb:hover,
+  html body::-webkit-scrollbar-thumb:hover,
+  html body *::-webkit-scrollbar-thumb:hover {
+    background: var(--app-scrollbar-thumb-hover) !important;
+    background-clip: padding-box !important;
+  }
+
+  html:root::-webkit-scrollbar-thumb:active,
+  html body::-webkit-scrollbar-thumb:active,
+  html body *::-webkit-scrollbar-thumb:active {
+    background: var(--app-scrollbar-thumb-active) !important;
+    background-clip: padding-box !important;
+  }
+
+  /* Remove explicitamente as setas/botões do scrollbar nativo do Windows. */
+  html:root::-webkit-scrollbar-button,
+  html body::-webkit-scrollbar-button,
+  html body *::-webkit-scrollbar-button,
+  html:root::-webkit-scrollbar-button:single-button,
+  html body::-webkit-scrollbar-button:single-button,
+  html body *::-webkit-scrollbar-button:single-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+  }
+
+  html:root::-webkit-scrollbar-corner,
+  html body::-webkit-scrollbar-corner,
+  html body *::-webkit-scrollbar-corner {
+    background: transparent !important;
+  }
+
+  /* Menu lateral: mesma linguagem, apenas um pouco mais compacto. */
+  .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar,
+  .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar {
+    width: var(--app-scrollbar-size-compact) !important;
+    height: var(--app-scrollbar-size-compact) !important;
+  }
+
+  /*
+   * Áreas que deliberadamente escondem o indicador (tabs/carrosséis) mantêm
+   * o comportamento sem perder scroll por roda, trackpad ou touch.
+   */
+  .scrollbar-hide::-webkit-scrollbar,
+  [data-scrollbar="hidden"]::-webkit-scrollbar,
+  [role="tablist"]::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
+
+/*
+ * Neutraliza skins legadas por módulo (Backorder vermelho, Lavanderia verde,
+ * scroll-fluid e Mensageria). As regras de overflow/máscara/touch continuam;
+ * apenas a aparência da barra passa a ser global.
+ */
+.scroll-fluid,
+.priority-scroll,
+.lavanderia-scroll,
+.lavanderia-scroll-scope,
+.lavanderia-scroll-scope [class*="overflow-auto"],
+.lavanderia-scroll-scope [class*="overflow-y-auto"],
+.lavanderia-scroll-scope [class*="overflow-x-auto"],
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div,
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div,
+[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
+  scrollbar-color: var(--app-scrollbar-thumb) transparent !important;
+}
+
+/* O indicador auxiliar de prioridade deixa de parecer uma segunda scrollbar. */
+.priority-scroll-progress {
+  width: 2px !important;
+  background: color-mix(in oklch, var(--foreground) 5%, transparent) !important;
+}
+
+.priority-scroll-progress > span {
+  background: color-mix(in oklch, var(--primary) 34%, transparent) !important;
+  box-shadow: none !important;
+}
+
+/* Touch: indicador ainda menor; a área rolável permanece integral. */
+@media (pointer: coarse) {
+  :root {
+    --app-scrollbar-size: 6px;
+    --app-scrollbar-size-compact: 5px;
+  }
+
+  @supports selector(::-webkit-scrollbar) {
+    html:root::-webkit-scrollbar-thumb,
+    html body::-webkit-scrollbar-thumb,
+    html body *::-webkit-scrollbar-thumb {
+      border-width: 1.5px !important;
+    }
+  }
+}
+
+/* Forced colors preserva acessibilidade do sistema operacional. */
+@media (forced-colors: active) {
+  :root {
+    --app-scrollbar-thumb: ButtonText;
+    --app-scrollbar-thumb-hover: Highlight;
+    --app-scrollbar-thumb-active: Highlight;
+  }
+}
