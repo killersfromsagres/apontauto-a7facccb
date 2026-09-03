@@ -163,9 +163,10 @@ function HistoricoPage() {
   const [equipes, setEquipes] = useState<string[]>([]);
   const [aba, setAba] = useState<"corretiva" | "backorder">("corretiva");
   const [verificationFilter, setVerificationFilter] = useState<VerificationFilter>("pending");
-  const [verificationScope, setVerificationScope] = useState<string | null>(null);
-  const [verifiedOsIds, setVerifiedOsIds] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | null | undefined>(undefined);
+  const [pendingOsId, setPendingOsId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setEquipe(loadEquipe());
@@ -178,35 +179,90 @@ function HistoricoPage() {
 
   useEffect(() => {
     let active = true;
-
-    const applyScope = (scope: string) => {
-      if (!active) return;
-      setVerificationScope(scope);
-      setVerifiedOsIds(loadVerifiedOsIds(scope));
-    };
-
     supabase.auth
       .getUser()
-      .then(({ data }) => applyScope(data.user?.id ?? "device"))
-      .catch(() => applyScope("device"));
-
+      .then(({ data }) => {
+        if (active) setUserId(data.user?.id ?? null);
+      })
+      .catch(() => {
+        if (active) setUserId(null);
+      });
     return () => {
       active = false;
     };
   }, []);
 
-  useEffect(() => {
-    if (!verificationScope || typeof window === "undefined") return;
+  const {
+    data: rows = [],
+    isLoading,
+  } = useQuery({
+    queryKey: ["corretiva-historico"],
+    queryFn: async () => {
+      // Paginação explícita: o limite fixo anterior escondia OS antigas.
+      const pageSize = 1000;
+      const all: OsRow[] = [];
 
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key === verifiedOsStorageKey(verificationScope)) {
-        setVerifiedOsIds(loadVerifiedOsIds(verificationScope));
+      for (let page = 0; ; page += 1) {
+        const from = page * pageSize;
+        const { data, error } = await supabase
+          .from("corretiva_os")
+          .select(
+            "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante",
+          )
+          .in("status", ["concluida", "cancelada"])
+          .order("updated_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+
+        const batch = (data ?? []) as OsRow[];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
       }
-    };
 
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [verificationScope]);
+      return all;
+    },
+  });
+
+  const {
+    data: verificacoes = new Map() as VerificacaoMap,
+    isLoading: isLoadingVerificacoes,
+    isError: verificacoesFailed,
+  } = useQuery({
+    queryKey: ["corretiva-historico-verificacoes"],
+    queryFn: fetchVerificacoes,
+  });
+
+  const numeroPorOsId = useMemo(
+    () => new Map(rows.map((os) => [os.id, os.numero_os] as const)),
+    [rows],
+  );
+
+  // Migração única do resíduo em localStorage para o banco.
+  useEffect(() => {
+    if (!userId || isLoadingVerificacoes || verificacoesFailed) return;
+    if (rows.length === 0) return;
+
+    let active = true;
+    migrarVerificacoesLegadas(userId, verificacoes, numeroPorOsId, userId)
+      .then((migrados) => {
+        if (!active || migrados === 0) return;
+        toast.success(
+          migrados +
+            (migrados === 1
+              ? " conferência local foi migrada para o histórico."
+              : " conferências locais foram migradas para o histórico."),
+        );
+        queryClient.invalidateQueries({ queryKey: ["corretiva-historico-verificacoes"] });
+      })
+      .catch((error) => {
+        console.error("[CorretivaHistorico] Falha ao migrar conferências locais:", error);
+      });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isLoadingVerificacoes, verificacoesFailed, rows.length]);
 
   const setEquipeAndPersist = (value: EquipeFiltro) => {
     setEquipe(value);
@@ -214,44 +270,45 @@ function HistoricoPage() {
   };
 
   const handleVerification = useCallback(
-    (os: OsRow) => {
-      if (!verificationScope) {
+    async (os: OsRow) => {
+      if (userId === undefined) {
         toast.error("Aguarde o carregamento do controle de conferência.");
         return;
       }
+      if (pendingOsId) return;
 
-      const verified = !verifiedOsIds.has(os.id);
-      const next = withVerifiedOs(verifiedOsIds, os.id, verified);
-      if (!saveVerifiedOsIds(verificationScope, next)) {
-        toast.error("Não foi possível salvar a conferência neste navegador.");
-        return;
+      const jaVerificada = verificacoes.has(os.id);
+      setPendingOsId(os.id);
+
+      try {
+        if (jaVerificada) {
+          await desmarcarVerificada(os.id);
+          queryClient.setQueryData<VerificacaoMap>(
+            ["corretiva-historico-verificacoes"],
+            (current) => withVerificacao(current ?? new Map(), os.id, null),
+          );
+          toast.success("OS " + os.numero_os + " voltou para as próximas exportações.");
+        } else {
+          const registro = await marcarVerificada(os.id, os.numero_os, userId);
+          queryClient.setQueryData<VerificacaoMap>(
+            ["corretiva-historico-verificacoes"],
+            (current) => withVerificacao(current ?? new Map(), os.id, registro),
+          );
+          toast.success(
+            "OS " + os.numero_os + " verificada e guardada no histórico de verificados.",
+          );
+        }
+      } catch (error) {
+        console.error("[CorretivaHistorico] Falha ao salvar conferência:", error);
+        toast.error(
+          "Não foi possível salvar a conferência no servidor. A marcação não foi aplicada.",
+        );
+      } finally {
+        setPendingOsId(null);
       }
-
-      setVerifiedOsIds(next);
-      toast.success(
-        verified
-          ? "OS " + os.numero_os + " verificada e removida das próximas exportações."
-          : "OS " + os.numero_os + " voltou para as próximas exportações.",
-      );
     },
-    [verificationScope, verifiedOsIds],
+    [userId, verificacoes, pendingOsId, queryClient],
   );
-
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["corretiva-historico"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("corretiva_os")
-        .select(
-          "id, numero_os, nome_os, predio, andar, local, ativo, equipamento, equipe, patrimonio, assinatura_url, assinatura_nome, assinatura_em, status, tipo, fim, updated_at, solicitante",
-        )
-        .in("status", ["concluida", "cancelada"])
-        .order("updated_at", { ascending: false })
-        .limit(500);
-      if (error) throw error;
-      return (data ?? []) as OsRow[];
-    },
-  });
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -268,21 +325,21 @@ function HistoricoPage() {
   }, [rows, search, equipe, aba]);
 
   const exportableRows = useMemo(
-    () => filtered.filter((os) => !verifiedOsIds.has(os.id)),
-    [filtered, verifiedOsIds],
+    () => filtered.filter((os) => !verificacoes.has(os.id)),
+    [filtered, verificacoes],
   );
 
   const displayedRows = useMemo(() => {
     if (verificationFilter === "all") return filtered;
     const shouldBeVerified = verificationFilter === "verified";
-    return filtered.filter((os) => verifiedOsIds.has(os.id) === shouldBeVerified);
-  }, [filtered, verificationFilter, verifiedOsIds]);
+    return filtered.filter((os) => verificacoes.has(os.id) === shouldBeVerified);
+  }, [filtered, verificationFilter, verificacoes]);
 
   const metrics = useMemo(() => {
     const concluidas = filtered.filter((os) => os.status === "concluida").length;
     const canceladas = filtered.filter((os) => os.status === "cancelada").length;
     const rubricadas = filtered.filter((os) => Boolean(os.assinatura_url)).length;
-    const verified = filtered.filter((os) => verifiedOsIds.has(os.id)).length;
+    const verified = filtered.filter((os) => verificacoes.has(os.id)).length;
     return {
       total: filtered.length,
       exportable: filtered.length - verified,
@@ -291,10 +348,16 @@ function HistoricoPage() {
       canceladas,
       rubricadas,
     };
-  }, [filtered, verifiedOsIds]);
+  }, [filtered, verificacoes]);
 
   const handleExport = useCallback(async () => {
     if (exportableRows.length === 0 || isExporting) return;
+    if (verificacoesFailed) {
+      toast.error(
+        "O histórico de verificados não pôde ser carregado. Recarregue antes de exportar para não repetir chamados já conferidos.",
+      );
+      return;
+    }
 
     setIsExporting(true);
     try {
@@ -307,7 +370,8 @@ function HistoricoPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [exportableRows, isExporting]);
+  }, [exportableRows, isExporting, verificacoesFailed]);
+
 
   return (
     <PageShell
