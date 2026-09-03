@@ -284,7 +284,7 @@ export async function exportControleMateriais(params: {
   alert.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
   resumo.getRow(alertRow).height = 26;
   resumo.views = [{ state: "frozen", ySplit: 4 }];
-  resumo.printArea = `A1:H${alertRow}`;
+  resumo.pageSetup.printArea = `A1:H${alertRow}`;
 
   // ---------------------------- PEÇAS ----------------------------
   const pecaHeaders = [
@@ -319,7 +319,7 @@ export async function exportControleMateriais(params: {
     wsPecas.getCell(row, 10).alignment = { horizontal: "center", vertical: "middle" };
     wsPecas.getCell(row, 17).numFmt = 'R$ #,##0.00;[Red]-R$ #,##0.00;"—"';
   });
-  wsPecas.printArea = `A1:U${Math.max(4 + pecas.length, 5)}`;
+  wsPecas.pageSetup.printArea = `A1:U${Math.max(4 + pecas.length, 5)}`;
 
   // ---------------------------- DEFEITOS ----------------------------
   const defHeaders = ["Origem", "OS", "Descrição da atividade", "Prédio", "Andar", "Local", "Equipe", "Defeito apontado", "Gravidade", "Status gestor", "Situação", "Centro de custo", "Data Facilities", "Observação", "Apontado em"];
@@ -342,7 +342,7 @@ export async function exportControleMateriais(params: {
     badge(wsDef.getCell(row, 11), statusKind(item.meta?.status_compra ?? "aguardando"));
     if (!item.meta?.centro_custo) badge(wsDef.getCell(row, 12), "danger");
   });
-  wsDef.printArea = `A1:O${Math.max(4 + defeitos.length, 5)}`;
+  wsDef.pageSetup.printArea = `A1:O${Math.max(4 + defeitos.length, 5)}`;
 
   // ---------------------------- CENTRO DE CUSTO ----------------------------
   const ccHeaders = ["Centro de custo", "Descrição / Área", "Responsável", "OS vinculada", "Material / Defeito", "Origem", "Valor estimado", "Observação"];
@@ -375,7 +375,7 @@ export async function exportControleMateriais(params: {
   styleBody(wsCC, refStart + 2, refStart + 1 + params.centros.length, 4);
   wsCC.views = [{ state: "frozen", ySplit: 4 }];
   wsCC.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: ccHeaders.length } };
-  wsCC.printArea = `A1:H${Math.max(refStart + 1 + params.centros.length, 5)}`;
+  wsCC.pageSetup.printArea = `A1:H${Math.max(refStart + 1 + params.centros.length, 5)}`;
 
   // ---------------------------- ENVIOS ----------------------------
   const envHeaders = ["Data/hora do envio", "Centro de custo", "Destinatário", "Canal", "Itens enviados", "Observação", "Detalhamento"];
@@ -394,7 +394,7 @@ export async function exportControleMateriais(params: {
   for (let index = 0; index < params.envios.length; index++) {
     badge(wsEnv.getCell(5 + index, 5), "ok");
   }
-  wsEnv.printArea = `A1:G${Math.max(4 + params.envios.length, 5)}`;
+  wsEnv.pageSetup.printArea = `A1:G${Math.max(4 + params.envios.length, 5)}`;
 
   const buffer = await wb.xlsx.writeBuffer();
   return new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });

@@ -133,8 +133,8 @@ function CentralMateriaisUnificadaPage() {
     setEditingRequest(updated);
   };
 
-  const editingOs = editingRequest ? osById.get(editingRequest.os_id) : null;
-  const detailOs = detailRequest ? osById.get(detailRequest.os_id) : null;
+  const editingOs = editingRequest ? osById.get(editingRequest.os_id ?? "") : null;
+  const detailOs = detailRequest ? osById.get(detailRequest.os_id ?? "") : null;
   const detailOrigin: "refrigeracao" | "corretiva" =
     detailRequest?.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
   const detailPhotos = detailRequest
