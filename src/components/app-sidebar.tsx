@@ -23,6 +23,108 @@ const logoAsset = { url: "/apontauto-logo.png" };
 
 import { useVisibleSections, type MenuItem, type MenuSection } from "@/lib/nav-config";
 
+const PREMIUM_SCROLLBAR_CSS = `
+  html,
+  body,
+  body * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 16%, transparent) transparent !important;
+  }
+
+  .scrollbar-hide,
+  [role="tablist"] {
+    scrollbar-width: none !important;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  body *::-webkit-scrollbar {
+    width: 7px !important;
+    height: 7px !important;
+    background: transparent !important;
+  }
+
+  html::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track,
+  body *::-webkit-scrollbar-track {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb,
+  body *::-webkit-scrollbar-thumb {
+    min-height: 36px;
+    border: 2px solid transparent !important;
+    border-radius: 999px !important;
+    background: color-mix(in oklch, var(--foreground) 17%, transparent) !important;
+    background-clip: padding-box !important;
+    box-shadow: none !important;
+  }
+
+  html::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover,
+  body *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--foreground) 30%, transparent) !important;
+    background-clip: padding-box !important;
+  }
+
+  html::-webkit-scrollbar-thumb:active,
+  body::-webkit-scrollbar-thumb:active,
+  body *::-webkit-scrollbar-thumb:active {
+    background: color-mix(in oklch, var(--primary) 42%, transparent) !important;
+    background-clip: padding-box !important;
+  }
+
+  html::-webkit-scrollbar-button,
+  body::-webkit-scrollbar-button,
+  body *::-webkit-scrollbar-button {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+  }
+
+  html::-webkit-scrollbar-corner,
+  body::-webkit-scrollbar-corner,
+  body *::-webkit-scrollbar-corner {
+    background: transparent !important;
+  }
+
+  .premium-app-sidebar [data-sidebar="content"],
+  .premium-app-sidebar [data-sidebar="content"] * {
+    scrollbar-color: color-mix(in oklch, var(--sidebar-foreground) 13%, transparent) transparent !important;
+  }
+
+  .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar,
+  .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar {
+    width: 6px !important;
+  }
+
+  .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar-thumb,
+  .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--sidebar-foreground) 14%, transparent) !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar-thumb:hover,
+  .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--sidebar-foreground) 28%, transparent) !important;
+    background-clip: padding-box !important;
+  }
+
+  @media (pointer: coarse) {
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    body *::-webkit-scrollbar {
+      width: 5px !important;
+      height: 5px !important;
+    }
+  }
+`;
+
 export const AppSidebar = memo(function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { state } = useSidebar();
@@ -33,60 +135,63 @@ export const AppSidebar = memo(function AppSidebar() {
     url === "/" ? currentPath === "/" : currentPath.startsWith(url);
 
   return (
-    <Sidebar collapsible="icon" variant="floating" className="premium-app-sidebar border-sidebar-border/60">
-      <SidebarHeader className="premium-sidebar-header border-b border-sidebar-border/50">
-        <div className="flex items-center gap-2.5 px-2 py-3 transition-[padding,gap] duration-200 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0">
-          <div className="premium-logo-tile relative h-10 w-10 shrink-0 p-1 transition-all duration-200 ease-out group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
-            <img
-              src={logoAsset.url}
-              alt="Apont Auto — Sistema Automático de Apontamento"
-              className="relative h-full w-full object-contain"
-              width={40}
-              height={40}
-              decoding="async"
-              loading="eager"
-              fetchPriority="high"
-            />
+    <>
+      <style>{PREMIUM_SCROLLBAR_CSS}</style>
+      <Sidebar collapsible="icon" variant="floating" className="premium-app-sidebar border-sidebar-border/60">
+        <SidebarHeader className="premium-sidebar-header border-b border-sidebar-border/50">
+          <div className="flex items-center gap-2.5 px-2 py-3 transition-[padding,gap] duration-200 ease-out group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0">
+            <div className="premium-logo-tile relative h-10 w-10 shrink-0 p-1 transition-all duration-200 ease-out group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8">
+              <img
+                src={logoAsset.url}
+                alt="Apont Auto — Sistema Automático de Apontamento"
+                className="relative h-full w-full object-contain"
+                width={40}
+                height={40}
+                decoding="async"
+                loading="eager"
+                fetchPriority="high"
+              />
+            </div>
+            <div className="flex flex-col overflow-hidden leading-tight transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
+              <span className="whitespace-nowrap font-display text-sm font-semibold tracking-[-0.01em] text-foreground">
+                Apont Auto
+              </span>
+              <span className="mt-0.5 whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                In Haus Industrial
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col overflow-hidden leading-tight transition-all duration-200 ease-out group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0">
-            <span className="whitespace-nowrap font-display text-sm font-semibold tracking-[-0.01em] text-foreground">
-              Apont Auto
-            </span>
-            <span className="mt-0.5 whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-              In Haus Industrial
-            </span>
-          </div>
-        </div>
-      </SidebarHeader>
+        </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
-            Navegação
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleSections.map((section) =>
-                section.kind === "item" ? (
-                  <SimpleItem
-                    key={section.item.url}
-                    item={section.item}
-                    active={isItemActive(section.item.url)}
-                  />
-                ) : (
-                  <GroupItem
-                    key={section.key}
-                    section={section}
-                    collapsed={collapsed}
-                    isItemActive={isItemActive}
-                  />
-                ),
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+              Navegação
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleSections.map((section) =>
+                  section.kind === "item" ? (
+                    <SimpleItem
+                      key={section.item.url}
+                      item={section.item}
+                      active={isItemActive(section.item.url)}
+                    />
+                  ) : (
+                    <GroupItem
+                      key={section.key}
+                      section={section}
+                      collapsed={collapsed}
+                      isItemActive={isItemActive}
+                    />
+                  ),
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+    </>
   );
 });
 
