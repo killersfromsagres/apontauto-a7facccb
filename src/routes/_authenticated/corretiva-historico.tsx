@@ -605,6 +605,11 @@ function HistoricoPage() {
                             )}
                           </span>
 
+                          {verifiedBy && (
+                            <span className="mt-1 block text-[10px] font-medium text-muted-foreground/80">
+                              {verifiedBy}
+                            </span>
+                          )}
                           <span className="mt-2 block text-sm font-semibold leading-snug text-foreground/90 sm:text-[15px]">
                             {os.nome_os || "Sem descrição da atividade"}
                           </span>
