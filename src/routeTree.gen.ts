@@ -44,6 +44,7 @@ import { Route as AuthenticatedOrganogramaRouteImport } from './routes/_authenti
 import { Route as AuthenticatedObservabilidadeRouteImport } from './routes/_authenticated/observabilidade'
 import { Route as AuthenticatedNotificacoesAdminRouteImport } from './routes/_authenticated/notificacoes-admin'
 import { Route as AuthenticatedNotificacoesRouteImport } from './routes/_authenticated/notificacoes'
+import { Route as AuthenticatedMensageriaRouteImport } from './routes/_authenticated/mensageria'
 import { Route as AuthenticatedMateriaisOsRouteImport } from './routes/_authenticated/materiais-os'
 import { Route as AuthenticatedLavanderiaRouteImport } from './routes/_authenticated/lavanderia'
 import { Route as AuthenticatedImagensRouteImport } from './routes/_authenticated/imagens'
@@ -292,6 +293,11 @@ const AuthenticatedNotificacoesRoute =
     path: '/notificacoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMensageriaRoute = AuthenticatedMensageriaRouteImport.update({
+  id: '/mensageria',
+  path: '/mensageria',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedMateriaisOsRoute =
   AuthenticatedMateriaisOsRouteImport.update({
     id: '/materiais-os',
@@ -628,6 +634,7 @@ export interface FileRoutesByFullPath {
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
+  '/mensageria': typeof AuthenticatedMensageriaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/observabilidade': typeof AuthenticatedObservabilidadeRoute
@@ -717,6 +724,7 @@ export interface FileRoutesByTo {
   '/imagens': typeof AuthenticatedImagensRoute
   '/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/materiais-os': typeof AuthenticatedMateriaisOsRoute
+  '/mensageria': typeof AuthenticatedMensageriaRoute
   '/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/observabilidade': typeof AuthenticatedObservabilidadeRoute
@@ -807,6 +815,7 @@ export interface FileRoutesById {
   '/_authenticated/imagens': typeof AuthenticatedImagensRoute
   '/_authenticated/lavanderia': typeof AuthenticatedLavanderiaRoute
   '/_authenticated/materiais-os': typeof AuthenticatedMateriaisOsRoute
+  '/_authenticated/mensageria': typeof AuthenticatedMensageriaRoute
   '/_authenticated/notificacoes': typeof AuthenticatedNotificacoesRoute
   '/_authenticated/notificacoes-admin': typeof AuthenticatedNotificacoesAdminRoute
   '/_authenticated/observabilidade': typeof AuthenticatedObservabilidadeRoute
@@ -898,6 +907,7 @@ export interface FileRouteTypes {
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
+    | '/mensageria'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/observabilidade'
@@ -987,6 +997,7 @@ export interface FileRouteTypes {
     | '/imagens'
     | '/lavanderia'
     | '/materiais-os'
+    | '/mensageria'
     | '/notificacoes'
     | '/notificacoes-admin'
     | '/observabilidade'
@@ -1076,6 +1087,7 @@ export interface FileRouteTypes {
     | '/_authenticated/imagens'
     | '/_authenticated/lavanderia'
     | '/_authenticated/materiais-os'
+    | '/_authenticated/mensageria'
     | '/_authenticated/notificacoes'
     | '/_authenticated/notificacoes-admin'
     | '/_authenticated/observabilidade'
@@ -1406,6 +1418,13 @@ declare module '@tanstack/react-router' {
       path: '/notificacoes'
       fullPath: '/notificacoes'
       preLoaderRoute: typeof AuthenticatedNotificacoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/mensageria': {
+      id: '/_authenticated/mensageria'
+      path: '/mensageria'
+      fullPath: '/mensageria'
+      preLoaderRoute: typeof AuthenticatedMensageriaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/materiais-os': {
@@ -1884,6 +1903,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedImagensRoute: typeof AuthenticatedImagensRoute
   AuthenticatedLavanderiaRoute: typeof AuthenticatedLavanderiaRoute
   AuthenticatedMateriaisOsRoute: typeof AuthenticatedMateriaisOsRoute
+  AuthenticatedMensageriaRoute: typeof AuthenticatedMensageriaRoute
   AuthenticatedNotificacoesRoute: typeof AuthenticatedNotificacoesRoute
   AuthenticatedNotificacoesAdminRoute: typeof AuthenticatedNotificacoesAdminRoute
   AuthenticatedObservabilidadeRoute: typeof AuthenticatedObservabilidadeRoute
@@ -1939,6 +1959,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedImagensRoute: AuthenticatedImagensRoute,
   AuthenticatedLavanderiaRoute: AuthenticatedLavanderiaRoute,
   AuthenticatedMateriaisOsRoute: AuthenticatedMateriaisOsRoute,
+  AuthenticatedMensageriaRoute: AuthenticatedMensageriaRoute,
   AuthenticatedNotificacoesRoute: AuthenticatedNotificacoesRoute,
   AuthenticatedNotificacoesAdminRoute: AuthenticatedNotificacoesAdminRoute,
   AuthenticatedObservabilidadeRoute: AuthenticatedObservabilidadeRoute,

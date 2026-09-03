@@ -133,8 +133,8 @@ function styleDataRows(sheet: ExcelJS.Worksheet, startRow: number, endRow: numbe
 
 function styleStatusCell(cell: ExcelJS.Cell, status: string) {
   const normalized = status.toLocaleUpperCase("pt-BR");
-  let fill = COLORS.skySoft;
-  let font = COLORS.sky;
+  let fill: string = COLORS.skySoft;
+  let font: string = COLORS.sky;
 
   if (normalized.includes("ENTREGUE") || normalized.includes("FINALIZADO")) {
     fill = COLORS.emeraldSoft;
