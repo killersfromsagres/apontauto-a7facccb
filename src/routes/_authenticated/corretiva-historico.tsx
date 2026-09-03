@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Building2,
@@ -285,14 +285,14 @@ function HistoricoPage() {
           await desmarcarVerificada(os.id);
           queryClient.setQueryData<VerificacaoMap>(
             ["corretiva-historico-verificacoes"],
-            (current) => withVerificacao(current ?? new Map(), os.id, null),
+            (current: VerificacaoMap | undefined) => withVerificacao(current ?? new Map(), os.id, null),
           );
           toast.success("OS " + os.numero_os + " voltou para as próximas exportações.");
         } else {
           const registro = await marcarVerificada(os.id, os.numero_os, userId);
           queryClient.setQueryData<VerificacaoMap>(
             ["corretiva-historico-verificacoes"],
-            (current) => withVerificacao(current ?? new Map(), os.id, registro),
+            (current: VerificacaoMap | undefined) => withVerificacao(current ?? new Map(), os.id, registro),
           );
           toast.success(
             "OS " + os.numero_os + " verificada e guardada no histórico de verificados.",
