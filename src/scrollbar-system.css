@@ -5,11 +5,9 @@
  * Mantém um único visual para menu, páginas, listas, tabelas, modais,
  * popovers e qualquer container nativo com overflow.
  *
- * Importante (Chrome/Edge no Windows): quando scrollbar-width/color recebem
- * valores diferentes de auto, Chromium pode priorizar o scrollbar nativo e
- * ignorar partes de ::-webkit-scrollbar. Por isso o padrão CSS Scrollbars é
- * usado apenas onde ::-webkit-scrollbar não existe; Chromium usa a camada
- * WebKit abaixo, sem trilho claro nem botões/setas nativos.
+ * Chrome/Edge no Windows: scrollbar-width/color com valor não-auto pode
+ * priorizar o scrollbar nativo e ignorar ::-webkit-scrollbar. Por isso o
+ * padrão CSS Scrollbars fica reservado a engines sem pseudo-elementos WebKit.
  */
 
 :root {
@@ -41,6 +39,20 @@
   [role="tablist"] {
     scrollbar-width: none !important;
   }
+
+  /* Neutraliza as antigas cores por módulo também no Firefox. */
+  .scroll-fluid,
+  .priority-scroll,
+  .lavanderia-scroll,
+  .lavanderia-scroll-scope,
+  .lavanderia-scroll-scope [class*="overflow-auto"],
+  .lavanderia-scroll-scope [class*="overflow-y-auto"],
+  .lavanderia-scroll-scope [class*="overflow-x-auto"],
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div,
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div,
+  [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
+    scrollbar-color: var(--app-scrollbar-thumb) transparent !important;
+  }
 }
 
 /* Chrome, Edge, Safari e demais engines WebKit/Blink. */
@@ -52,6 +64,27 @@
   html:root,
   html body,
   html body * {
+    scrollbar-width: auto !important;
+    scrollbar-color: auto !important;
+  }
+
+  /*
+   * Sobrescritas com maior especificidade para skins legadas e para o antigo
+   * CSS injetado pelo AppSidebar. Sem isso uma classe poderia reativar a barra
+   * nativa do Windows mesmo com a camada global carregada por último.
+   */
+  html body .premium-app-sidebar [data-sidebar="content"],
+  html body .premium-app-sidebar [data-sidebar="content"] *,
+  html body .scroll-fluid,
+  html body .priority-scroll,
+  html body .lavanderia-scroll,
+  html body .lavanderia-scroll-scope,
+  html body .lavanderia-scroll-scope [class*="overflow-auto"],
+  html body .lavanderia-scroll-scope [class*="overflow-y-auto"],
+  html body .lavanderia-scroll-scope [class*="overflow-x-auto"],
+  html body [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div,
+  html body [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div,
+  html body [data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
     scrollbar-width: auto !important;
     scrollbar-color: auto !important;
   }
@@ -125,8 +158,8 @@
   }
 
   /* Menu lateral: mesma linguagem, apenas um pouco mais compacto. */
-  .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar,
-  .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar {
+  html body .premium-app-sidebar [data-sidebar="content"]::-webkit-scrollbar,
+  html body .premium-app-sidebar [data-sidebar="content"] *::-webkit-scrollbar {
     width: var(--app-scrollbar-size-compact) !important;
     height: var(--app-scrollbar-size-compact) !important;
   }
@@ -135,31 +168,19 @@
    * Áreas que deliberadamente escondem o indicador (tabs/carrosséis) mantêm
    * o comportamento sem perder scroll por roda, trackpad ou touch.
    */
-  .scrollbar-hide::-webkit-scrollbar,
-  [data-scrollbar="hidden"]::-webkit-scrollbar,
-  [role="tablist"]::-webkit-scrollbar {
+  html body .scrollbar-hide,
+  html body [data-scrollbar="hidden"],
+  html body [role="tablist"] {
+    scrollbar-width: none !important;
+  }
+
+  html body .scrollbar-hide::-webkit-scrollbar,
+  html body [data-scrollbar="hidden"]::-webkit-scrollbar,
+  html body [role="tablist"]::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
     height: 0 !important;
   }
-}
-
-/*
- * Neutraliza skins legadas por módulo (Backorder vermelho, Lavanderia verde,
- * scroll-fluid e Mensageria). As regras de overflow/máscara/touch continuam;
- * apenas a aparência da barra passa a ser global.
- */
-.scroll-fluid,
-.priority-scroll,
-.lavanderia-scroll,
-.lavanderia-scroll-scope,
-.lavanderia-scroll-scope [class*="overflow-auto"],
-.lavanderia-scroll-scope [class*="overflow-y-auto"],
-.lavanderia-scroll-scope [class*="overflow-x-auto"],
-[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) > div,
-[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) + div,
-[data-page-title="Mensageria e Malotes"] section:has(> div > button:nth-child(6)) ~ section:has(> div.divide-y) {
-  scrollbar-color: var(--app-scrollbar-thumb) transparent !important;
 }
 
 /* O indicador auxiliar de prioridade deixa de parecer uma segunda scrollbar. */
