@@ -81,6 +81,18 @@ describe("agente de designação de corretivas", () => {
     expect(result.equipe).toBe("Civil");
   });
 
+  it("trata organização de fios como Elétrica mesmo quando o texto cita primeiro piso", () => {
+    const result = analyzeCorrectiveOrder({
+      nome_os: "Organização dos fios do primeiro piso",
+      local: "Administração",
+      equipe: "Civil",
+    });
+
+    expect(result.equipe).toBe("Elétrica");
+    expect(result.confianca).toBe("alta");
+    expect(result.ambiguo).toBe(false);
+  });
+
   it("monta um plano de realocação para os exemplos operacionais", () => {
     const plan = planCorrectiveDesignations([
       {
@@ -110,10 +122,10 @@ describe("agente de designação de corretivas", () => {
     ]);
 
     expect(plan.updates).toEqual([
-      { id: "223560", numero_os: "223560", equipe: "Elétrica" },
-      { id: "223567", numero_os: "223567", equipe: "Chaveiro" },
-      { id: "eletrica-1", numero_os: "eletrica-1", equipe: "Elétrica" },
-      { id: "hidraulica-1", numero_os: "hidraulica-1", equipe: "Hidráulica" },
+      { id: "223560", numero_os: "223560", equipe: "Elétrica", source: "technical" },
+      { id: "223567", numero_os: "223567", equipe: "Chaveiro", source: "technical" },
+      { id: "eletrica-1", numero_os: "eletrica-1", equipe: "Elétrica", source: "technical" },
+      { id: "hidraulica-1", numero_os: "hidraulica-1", equipe: "Hidráulica", source: "technical" },
     ]);
     expect(plan.unchanged).toBe(0);
     expect(plan.reviewNeeded).toBe(0);
