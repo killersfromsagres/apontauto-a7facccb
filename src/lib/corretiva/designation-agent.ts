@@ -6,6 +6,7 @@ import {
   type CorrectiveDesignationResult,
 } from "@/lib/corretiva/designation-engine";
 import { analyzeCorrectiveTechnicalDomain } from "@/lib/corretiva/technical-domain-agent";
+import { classifyAmbiguousCorrectiveOrdersWithAi } from "@/lib/corretiva/designation-ai.functions";
 import type { Equipe } from "@/lib/backorder/team-classifier";
 
 export type CorrectiveDesignationRow = CorrectiveDesignationInput & {
@@ -19,6 +20,7 @@ type DesignationUpdate = {
   id: string;
   numero_os?: string | null;
   equipe: Equipe;
+  source?: "technical" | "ai";
 };
 
 export type CorrectiveDesignationPlan = {
@@ -38,6 +40,9 @@ export type DesignationRunResult = {
   reviewNeeded: number;
   lowConfidence: number;
   failed: number;
+  aiReviewed: number;
+  aiReassigned: number;
+  aiAvailable: boolean;
 };
 
 const normalize = (value: unknown) =>
@@ -186,6 +191,7 @@ export function planCorrectiveDesignations(
       id: os.id,
       numero_os: os.numero_os,
       equipe: result.equipe,
+      source: "technical",
     });
   }
 
@@ -198,12 +204,57 @@ export function planCorrectiveDesignations(
   };
 }
 
+function needsAiReview(result: CorrectiveDesignationResult) {
+  return !result.hasSignal || result.ambiguo || result.confianca === "baixa";
+}
+
+async function getAiDecisions(candidates: CorrectiveDesignationRow[]) {
+  const decisions = new Map<
+    string,
+    { equipe: Equipe | null; confianca: "alta" | "media" | "baixa"; motivo: string }
+  >();
+  let available = false;
+
+  for (let start = 0; start < candidates.length; start += 40) {
+    const batch = candidates.slice(start, start + 40);
+    const response = await classifyAmbiguousCorrectiveOrdersWithAi({
+      data: {
+        rows: batch.map((row) => ({
+          id: row.id,
+          numero_os: row.numero_os,
+          nome_os: row.nome_os,
+          equipamento: row.equipamento,
+          ativo: row.ativo,
+          local: row.local,
+          predio: row.predio,
+          andar: row.andar,
+          solicitante: row.solicitante,
+          equipe: row.equipe,
+        })),
+      },
+    });
+
+    available ||= response.available;
+    for (const decision of response.decisions) {
+      decisions.set(decision.id, {
+        equipe: decision.equipe,
+        confianca: decision.confianca,
+        motivo: decision.motivo,
+      });
+    }
+  }
+
+  return { available, decisions };
+}
+
 /**
  * Executa a designação usando a sessão autenticada do navegador.
  *
- * Esta rotina é client-side para preservar a sessão Supabase/RLS do usuário.
- * Processa todos os chamados não concluídos, exceto o backorder mensal, e só
- * grava quando a equipe calculada realmente difere da equipe atual.
+ * Arquitetura híbrida:
+ * - casos técnicos claros são decididos localmente, de forma determinística;
+ * - casos ambíguos/baixa confiança recebem uma segunda leitura por IA;
+ * - a IA nunca grava no banco: a persistência continua no cliente autenticado,
+ *   respeitando RLS e mantendo a equipe atual quando a IA também tiver dúvida.
  */
 export async function designateAllCorrectiveOrders(): Promise<DesignationRunResult> {
   const {
@@ -239,14 +290,83 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
       reviewNeeded: 0,
       lowConfidence: 0,
       failed: 0,
+      aiReviewed: 0,
+      aiReassigned: 0,
+      aiAvailable: false,
     };
   }
 
-  const plan = planCorrectiveDesignations(osList as CorrectiveDesignationRow[]);
+  const rows = osList as CorrectiveDesignationRow[];
+  const results = new Map<string, CorrectiveDesignationResult>();
+  const updates = new Map<string, DesignationUpdate>();
+  const aiCandidates: CorrectiveDesignationRow[] = [];
+  let noSignal = 0;
+  let lowConfidence = 0;
+
+  for (const os of rows) {
+    const result = analyzeCorrectiveOrder(os);
+    results.set(os.id, result);
+
+    if (!result.hasSignal) noSignal++;
+    if (result.confianca === "baixa") lowConfidence++;
+
+    if (needsAiReview(result)) {
+      aiCandidates.push(os);
+      continue;
+    }
+
+    const currentTeam = canonicalCorrectiveTeam(os.equipe);
+    if (currentTeam !== result.equipe) {
+      updates.set(os.id, {
+        id: os.id,
+        numero_os: os.numero_os,
+        equipe: result.equipe,
+        source: "technical",
+      });
+    }
+  }
+
+  let aiAvailable = false;
+  let aiReassigned = 0;
+  let reviewNeeded = 0;
+
+  if (aiCandidates.length > 0) {
+    try {
+      const ai = await getAiDecisions(aiCandidates);
+      aiAvailable = ai.available;
+
+      for (const os of aiCandidates) {
+        const decision = ai.decisions.get(os.id);
+        const currentTeam = canonicalCorrectiveTeam(os.equipe);
+
+        if (
+          decision?.equipe &&
+          decision.confianca !== "baixa"
+        ) {
+          if (currentTeam !== decision.equipe) {
+            updates.set(os.id, {
+              id: os.id,
+              numero_os: os.numero_os,
+              equipe: decision.equipe,
+              source: "ai",
+            });
+            aiReassigned++;
+          }
+          continue;
+        }
+
+        reviewNeeded++;
+      }
+    } catch (error) {
+      console.warn("[Designar] IA indisponível; preservando casos ambíguos:", error);
+      reviewNeeded = aiCandidates.length;
+    }
+  }
+
   let updatedCount = 0;
   let failed = 0;
 
-  for (const update of plan.updates) {
+  for (const update of updates.values()) {
     const { data: persistedRow, error: updateError } = await supabase
       .from("corretiva_os")
       .update({
@@ -272,12 +392,15 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
   return {
     success: failed === 0,
     count: updatedCount,
-    totalProcessed: osList.length,
-    unchanged: plan.unchanged,
-    noSignal: plan.noSignal,
-    reviewNeeded: plan.reviewNeeded,
-    lowConfidence: plan.lowConfidence,
+    totalProcessed: rows.length,
+    unchanged: rows.length - updates.size,
+    noSignal,
+    reviewNeeded,
+    lowConfidence,
     failed,
+    aiReviewed: aiCandidates.length,
+    aiReassigned,
+    aiAvailable,
   };
 }
 
