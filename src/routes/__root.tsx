@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -17,6 +18,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { OfflineBanner } from "@/components/offline-banner";
+import { AuthLocationMapPortal } from "@/components/auth-location-map";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
 
 function NotFoundComponent() {
@@ -185,6 +187,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
     registerServiceWorker();
@@ -211,6 +214,7 @@ function RootComponent() {
         {/* Camada de Performance e Mobile: Lazy-load do LoadingScreen */}
         <LoadingScreen />
         <OfflineBanner />
+        {pathname === "/auth" && <AuthLocationMapPortal />}
 
         {/* Outlet principal envolto em suspense para rotas com lazy loading (Item 7.4) */}
         <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300">
