@@ -63,6 +63,8 @@ const SHOWER_ELECTRICAL_CONTEXT =
 const KEY_COPY_REQUEST =
   /\b(copia|copiar|duplicar|duplicacao|confeccao|confeccionar|fazer)(?:\s+[a-z0-9]+){0,6}\s+chaves?\b/;
 const LOCK_HARDWARE = /\b(miolos?|fechaduras?|cilindros?|cadeados?|trincos?|linguetas?)\b/;
+const ELECTRICAL_WIRING_REQUEST =
+  /\b(organizar|organizacao|arrumar|adequar|adequacao|instalar|instalacao|trocar|substituir|reparar|reparo)(?:\s+[a-z0-9]+){0,7}\s+(fios?|cabos?|fiacao|cabeamento)\b|\b(fios?|cabos?|fiacao|cabeamento)(?:\s+[a-z0-9]+){0,7}\s+(energia|eletric[oa]s?|tomadas?|computadores?|impressoras?)\b/;
 
 function correctiveContext(input: CorrectiveDesignationInput) {
   return normalize(
@@ -107,7 +109,7 @@ function withDecisiveEvidence(
  *  1. lê descrição, equipamento e ativo com prioridade;
  *  2. usa local/prédio/andar apenas como contexto;
  *  3. detecta o domínio técnico (Elétrica, Hidráulica, Refrigeração etc.);
- *  4. aplica intenções especiais (chuveiro, cópia de chaves);
+ *  4. aplica intenções especiais (chuveiro, cópia de chaves, fiação/cabos);
  *  5. só preserva a equipe antiga quando não existe evidência decisiva.
  *
  * Isso impede Civil de absorver iluminação, tomadas, mictórios, privadas,
@@ -141,6 +143,14 @@ export function analyzeCorrectiveOrder(
       base,
       "Chaveiro",
       "agente: cópia de chave ou componente de fechadura",
+    );
+  }
+
+  if (ELECTRICAL_WIRING_REQUEST.test(context)) {
+    return withDecisiveEvidence(
+      base,
+      "Elétrica",
+      "agente: organização/adequação de fios ou cabeamento",
     );
   }
 
@@ -297,7 +307,6 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
   }
 
   const rows = osList as CorrectiveDesignationRow[];
-  const results = new Map<string, CorrectiveDesignationResult>();
   const updates = new Map<string, DesignationUpdate>();
   const aiCandidates: CorrectiveDesignationRow[] = [];
   let noSignal = 0;
@@ -305,7 +314,6 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
 
   for (const os of rows) {
     const result = analyzeCorrectiveOrder(os);
-    results.set(os.id, result);
 
     if (!result.hasSignal) noSignal++;
     if (result.confianca === "baixa") lowConfidence++;
@@ -339,10 +347,7 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
         const decision = ai.decisions.get(os.id);
         const currentTeam = canonicalCorrectiveTeam(os.equipe);
 
-        if (
-          decision?.equipe &&
-          decision.confianca !== "baixa"
-        ) {
+        if (decision?.equipe && decision.confianca !== "baixa") {
           if (currentTeam !== decision.equipe) {
             updates.set(os.id, {
               id: os.id,
