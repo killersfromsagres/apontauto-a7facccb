@@ -55,10 +55,19 @@ const CLEANING_OBJECT =
   /\b(limpeza geral|higienizacao geral|lavagem|varricao|desinfeccao|sujeira|residuos?|coleta de residuos|conservacao)\b/;
 
 const OBSTRUCTION =
-  /\b(desentupimento|desentupir|desentupir|entupimentos?|entupid[oa]s?|hidrojateamento|hidrojato|obstrucao|obstruid[oa]s?)\b/;
+  /\b(desentupimento|desentupir|entupimentos?|entupid[oa]s?|hidrojateamento|hidrojato|obstrucao|obstruid[oa]s?)\b/;
 const WATER_FAILURE = /\b(vazamentos?|vazando|pingando|gotejando|sem agua|falta de agua)\b/;
 const ELECTRICAL_FAILURE =
   /\b(queimad[oa]s?|piscando|nao acende|nao acendem|sem luz|sem energia|falta de energia|curto|desarmando)\b/;
+
+/*
+ * Fio/cabo isolado é um termo genérico demais para ser decisivo. Já pedidos de
+ * organizar/adequar/fixar fiação ou cabeamento são serviço elétrico. Esta regra
+ * evita o falso positivo "organização dos fios do primeiro piso" -> Civil por
+ * causa da palavra "piso" usada apenas como localização.
+ */
+const ELECTRICAL_WIRING_REQUEST =
+  /\b(organizacao|organizar|adequacao|adequar|arrumacao|arrumar|fixacao|fixar|canalizar|passagem)(?:\s+[a-z0-9]+){0,6}\s+(fios?|cabos?|fiacao|cabeamento)\b|\b(fios?|cabos?|fiacao|cabeamento)(?:\s+[a-z0-9]+){0,5}\s+(tomadas?|energia|eletric[oa]s?|impressoras?|computadores?)\b/;
 
 const SHOWER_HYDRAULIC =
   /\bchuveiros?\b(?:\s+[a-z0-9]+){0,5}\s+(vazando|pingando|vazamento|registro|canopla|manopla)\b|\b(vazamento|vazando|pingando|registro|canopla|manopla)(?:\s+[a-z0-9]+){0,5}\s+chuveiros?\b/;
@@ -151,6 +160,13 @@ export function analyzeCorrectiveTechnicalDomain(
   const hasHvac = HVAC_OBJECT.test(primaryText);
   const hasElectrical = ELECTRICAL_OBJECT.test(primaryText);
   const hasHydraulic = HYDRAULIC_OBJECT.test(primaryText);
+  const hasWiringRequest = ELECTRICAL_WIRING_REQUEST.test(primaryText);
+
+  if (hasWiringRequest) {
+    scores.Elétrica += 150;
+    scores.Civil = Math.min(scores.Civil, 22);
+    evidence.unshift("agente técnico: organização/adequação de fios ou cabeamento");
+  }
 
   if (SHOWER_HYDRAULIC.test(primaryText)) {
     scores.Hidráulica += 150;
@@ -174,7 +190,7 @@ export function analyzeCorrectiveTechnicalDomain(
     evidence.unshift("agente técnico: vazamento/falha de água identificado");
   }
 
-  if (ELECTRICAL_FAILURE.test(primaryText) && hasElectrical) {
+  if (ELECTRICAL_FAILURE.test(primaryText) && (hasElectrical || hasWiringRequest)) {
     scores.Elétrica += 60;
     evidence.unshift("agente técnico: falha elétrica explícita identificada");
   }
@@ -189,7 +205,7 @@ export function analyzeCorrectiveTechnicalDomain(
   // Regra operacional solicitada: Civil não absorve corretivas técnicas de
   // elétrica/hidráulica. Quando o componente técnico está claro, Civil e
   // Limpeza ficam apenas como evidência residual.
-  if (hasElectrical && !hasHydraulic && !hasHvac) {
+  if ((hasElectrical || hasWiringRequest) && !hasHydraulic && !hasHvac) {
     scores.Civil = Math.min(scores.Civil, scores.Elétrica * 0.18);
     scores.Limpeza = Math.min(scores.Limpeza, scores.Elétrica * 0.18);
   }
