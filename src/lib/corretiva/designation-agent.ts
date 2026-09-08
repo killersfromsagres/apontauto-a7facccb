@@ -5,6 +5,7 @@ import {
   type CorrectiveDesignationInput,
   type CorrectiveDesignationResult,
 } from "@/lib/corretiva/designation-engine";
+import { analyzeCorrectiveTechnicalDomain } from "@/lib/corretiva/technical-domain-agent";
 import type { Equipe } from "@/lib/backorder/team-classifier";
 
 export type CorrectiveDesignationRow = CorrectiveDesignationInput & {
@@ -88,25 +89,31 @@ function withDecisiveEvidence(
     preservedCurrent: false,
     scores: {
       ...base.scores,
-      [equipe]: Math.max(base.scores[equipe], 50),
+      [equipe]: Math.max(base.scores[equipe], 100),
     },
-    evidence: [evidence, ...base.evidence.filter((item) => item !== evidence)].slice(0, 6),
+    evidence: [evidence, ...base.evidence.filter((item) => item !== evidence)].slice(0, 10),
   };
 }
 
 /**
  * Agente dedicado à leitura semântica dos chamados de Corretiva.
  *
- * Ele reaproveita o motor contextual existente e aplica intenções operacionais
- * decisivas que não dependem de frases exatas. Isso cobre, por exemplo,
- * quantidades entre a ação e o objeto ("troca 2 chuveiro" / "cópia de 23 chaves")
- * sem transformar termos genéricos de local em sinal técnico.
+ * Pipeline:
+ *  1. lê descrição, equipamento e ativo com prioridade;
+ *  2. usa local/prédio/andar apenas como contexto;
+ *  3. detecta o domínio técnico (Elétrica, Hidráulica, Refrigeração etc.);
+ *  4. aplica intenções especiais (chuveiro, cópia de chaves);
+ *  5. só preserva a equipe antiga quando não existe evidência decisiva.
+ *
+ * Isso impede Civil de absorver iluminação, tomadas, mictórios, privadas,
+ * desentupimentos, descargas e demais corretivas técnicas claramente definidas.
  */
 export function analyzeCorrectiveOrder(
   input: CorrectiveDesignationInput,
 ): CorrectiveDesignationResult {
   const base = designateCorrectiveTeam(input);
   const context = correctiveContext(input);
+  const technical = analyzeCorrectiveTechnicalDomain(input);
 
   if (SHOWER_HYDRAULIC_CONTEXT.test(context)) {
     return withDecisiveEvidence(
@@ -129,6 +136,14 @@ export function analyzeCorrectiveOrder(
       base,
       "Chaveiro",
       "agente: cópia de chave ou componente de fechadura",
+    );
+  }
+
+  if (technical.decisive && technical.equipe) {
+    return withDecisiveEvidence(
+      base,
+      technical.equipe,
+      technical.evidence[0] ?? `agente técnico: domínio ${technical.equipe} identificado`,
     );
   }
 
@@ -186,9 +201,9 @@ export function planCorrectiveDesignations(
 /**
  * Executa a designação usando a sessão autenticada do navegador.
  *
- * Esta rotina é deliberadamente client-side: o cliente Supabase do projeto
- * persiste a sessão no browser, enquanto uma server function sem propagação do
- * token perde o contexto de RLS e pode receber uma lista vazia sem erro.
+ * Esta rotina é client-side para preservar a sessão Supabase/RLS do usuário.
+ * Processa todos os chamados não concluídos, exceto o backorder mensal, e só
+ * grava quando a equipe calculada realmente difere da equipe atual.
  */
 export async function designateAllCorrectiveOrders(): Promise<DesignationRunResult> {
   const {
@@ -206,8 +221,6 @@ export async function designateAllCorrectiveOrders(): Promise<DesignationRunResu
     .select(
       "id, numero_os, nome_os, equipamento, ativo, equipe, local, predio, andar, solicitante, tipo, status",
     )
-    // .neq() ignora valores NULL no Postgres. As condições abaixo incluem
-    // chamados legados/recém-importados que ainda não têm status/origem preenchidos.
     .or("status.is.null,status.neq.concluida")
     .or("tipo_importacao.is.null,tipo_importacao.neq.backorder_mensal");
 
