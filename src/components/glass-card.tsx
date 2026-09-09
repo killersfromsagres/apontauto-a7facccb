@@ -31,17 +31,16 @@ function GlassCardImpl({
       className={cn(
         variant === "block" ? "glass-block" : "glass-surface",
         "animate-card-rise relative overflow-hidden rounded-2xl p-5 sm:p-7",
-        "transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
+        "transition-[border-color,box-shadow,background-color,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
         "hover:border-primary/20 hover:shadow-lift",
-        "active:duration-150 active:scale-[0.99]",
         "card-sheen", // Adiciona o brilho especular ao passar o mouse
         onClick && "cursor-pointer",
         className,
       )}
     >
       {/* Overlay de gradiente interno sutil para profundidade */}
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-white/5 to-transparent opacity-50" />
-      
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50" />
+
       <div className="relative z-10">{children}</div>
     </div>
   );
