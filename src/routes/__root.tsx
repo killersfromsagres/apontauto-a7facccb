@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
+import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -118,6 +119,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: premiumCss },
+      { rel: "stylesheet", href: pcmAssetsPremiumCss },
       { rel: "stylesheet", href: scrollbarCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
