@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
 import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
+import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -96,15 +97,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      { property: "og:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
+      {
+        property: "og:title",
+        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
+      },
       {
         property: "og:description",
         content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
-      { name: "twitter:description", content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem." },
+      {
+        name: "twitter:title",
+        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
+      },
+      {
+        name: "twitter:description",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
+      },
       {
         property: "og:image",
         content:
@@ -121,6 +131,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: premiumCss },
       { rel: "stylesheet", href: pcmAssetsPremiumCss },
       { rel: "stylesheet", href: scrollbarCss },
+      // Carregado por último para impedir qualquer microinteração de pressão/afundamento.
+      { rel: "stylesheet", href: interactionMotionResetCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
