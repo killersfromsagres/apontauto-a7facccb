@@ -705,16 +705,16 @@ function InteractionGuard() {
       }
 
       [data-page-title="Central de Notificações"] [data-slot="button"]:hover,
-      [data-page-title="Central de Notificações"] [data-slot="button"]:active,
+      [data-page-title="Central de Notificações"] [data-slot="button"]:active {
+        transform: none !important;
+        translate: 0 0 !important;
+        scale: 1 !important;
+      }
+
       [data-page-title="Central de Notificações"] .glass-block:active,
       [data-page-title="Central de Notificações"] .glass-surface:active {
         transform: none !important;
-      }
-
-      [data-page-title="Central de Notificações"] button:active,
-      [data-page-title="Central de Notificações"] input:active,
-      [data-page-title="Central de Notificações"] select:active {
-        transform: none !important;
+        scale: 1 !important;
       }
 
       @media (prefers-reduced-motion: reduce) {
