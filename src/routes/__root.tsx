@@ -15,6 +15,7 @@ import premiumCss from "../premium-ui.css?url";
 import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
+import institutionalPagesCss from "../institutional-pages.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -133,6 +134,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: scrollbarCss },
       // Carregado por último para impedir qualquer microinteração de pressão/afundamento.
       { rel: "stylesheet", href: interactionMotionResetCss },
+      // Tipografia exclusiva das páginas institucionais; não depende do plugin prose.
+      { rel: "stylesheet", href: institutionalPagesCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
