@@ -8,7 +8,7 @@ export const Route = createFileRoute("/privacidade")({
       {
         name: "description",
         content:
-          "Entenda como o Apont Auto trata dados de acesso, registros operacionais, arquivos e informações necessárias ao funcionamento da plataforma.",
+          "Entenda como o Apont Auto trata dados de acesso, registros operacionais, anexos e informações necessárias ao funcionamento da plataforma.",
       },
       { property: "og:title", content: "Política de Privacidade — Apont Auto" },
       {
@@ -24,122 +24,184 @@ export const Route = createFileRoute("/privacidade")({
 
 function PrivacidadePage() {
   return (
-    <LegalLayout title="Política de Privacidade" updatedAt="09/09/2026">
+    <LegalLayout
+      title="Política de Privacidade"
+      description="Esta política apresenta, de forma objetiva, como dados pessoais e informações operacionais podem ser tratados durante o uso do Apont Auto."
+      updatedAt="09/09/2026"
+    >
       <p className="text-base sm:text-[17px]">
-        Esta Política de Privacidade explica, de forma objetiva, como o <strong>Apont Auto</strong>{" "}
-        trata dados pessoais e informações operacionais necessárias para autenticação, controle de
-        acesso, execução das funcionalidades da plataforma, segurança e rastreabilidade.
+        O <strong>Apont Auto</strong> é uma plataforma de uso corporativo e restrito. O tratamento de
+        informações ocorre para viabilizar autenticação, controle de acesso, operação dos módulos,
+        segurança, suporte, rastreabilidade e geração de registros necessários às atividades
+        realizadas na plataforma.
       </p>
       <p>
-        O tratamento deve observar a <strong>Lei Geral de Proteção de Dados Pessoais — LGPD (Lei nº
-        13.709/2018)</strong> e demais normas aplicáveis ao contexto da organização que utiliza o
-        sistema.
+        Quando houver tratamento de dados pessoais, devem ser observadas as disposições da{" "}
+        <strong>Lei Geral de Proteção de Dados Pessoais — LGPD (Lei nº 13.709/2018)</strong>, além de
+        políticas internas e demais normas aplicáveis à organização que utiliza o sistema.
       </p>
 
-      <h2>1. Quais informações podem ser tratadas</h2>
-      <p>De acordo com o módulo utilizado e com as permissões do usuário, a plataforma pode tratar:</p>
+      <div className="not-prose my-10 grid gap-6 border-y border-white/[0.08] py-8 sm:grid-cols-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+            Finalidade
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            Operação, segurança, histórico, suporte e gestão das informações registradas.
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+            Acesso
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            Restrito a usuários autenticados e conforme as permissões atribuídas.
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+            Princípio
+          </p>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            Utilizar somente as informações necessárias para a finalidade operacional correspondente.
+          </p>
+        </div>
+      </div>
+
+      <h2>1. Informações que podem ser tratadas</h2>
+      <p>
+        A natureza dos dados depende dos módulos liberados ao usuário e das atividades executadas. A
+        plataforma pode tratar, entre outras, as seguintes categorias:
+      </p>
       <ul>
         <li>
-          <strong>Dados de identificação e acesso:</strong> nome, usuário, e-mail, identificadores de
-          conta, perfil e permissões.
+          <strong>Identificação e acesso:</strong> nome, usuário, e-mail, identificadores de conta,
+          perfil, função e permissões.
         </li>
         <li>
-          <strong>Dados operacionais:</strong> ordens de serviço, apontamentos, programações,
-          históricos, materiais, ativos, registros de frota, abastecimentos, itens legais,
-          agendamentos e demais informações inseridas durante a operação.
+          <strong>Registros de manutenção e serviços:</strong> ordens de serviço, apontamentos,
+          programações, corretivas, preventivas, backorders, rondas e históricos de execução.
         </li>
         <li>
-          <strong>Arquivos e evidências:</strong> documentos, imagens, anexos ou registros enviados
-          para comprovação, acompanhamento ou histórico, quando o recurso estiver disponível.
+          <strong>Ativos e localização:</strong> cadastros, identificação de equipamentos,
+          localização, informações de confiabilidade e registros de processamento.
         </li>
         <li>
-          <strong>Dados técnicos e de segurança:</strong> informações de sessão, registros de acesso,
-          eventos de autenticação e dados necessários para diagnóstico, prevenção de abuso e
-          auditoria do sistema.
+          <strong>Materiais e logística:</strong> solicitações, peças, materiais, malotes, registros de
+          recebimento, entrega e outras informações ligadas aos serviços de apoio.
+        </li>
+        <li>
+          <strong>Conformidade e segurança:</strong> itens legais, vencimentos, agendamentos,
+          responsáveis, auditorias e registros relacionados às rotinas de segurança e conformidade.
+        </li>
+        <li>
+          <strong>Frota e abastecimento:</strong> veículos, hodômetro, combustível, litros, valores,
+          datas, horários, comprovantes e demais informações associadas ao registro do abastecimento.
+        </li>
+        <li>
+          <strong>Anexos e evidências:</strong> imagens, documentos, comprovantes e arquivos enviados
+          pelo usuário quando o módulo correspondente oferecer esse recurso.
+        </li>
+        <li>
+          <strong>Dados técnicos:</strong> informações de sessão, eventos de autenticação, logs e dados
+          necessários para segurança, diagnóstico e suporte técnico.
         </li>
       </ul>
 
-      <h2>2. Para que os dados são utilizados</h2>
+      <h2>2. Finalidades do tratamento</h2>
       <p>As informações podem ser utilizadas para:</p>
       <ul>
-        <li>Autenticar usuários e aplicar permissões de acesso.</li>
-        <li>Executar rotinas de planejamento, manutenção, campo e acompanhamento de OS.</li>
-        <li>Organizar materiais, ativos, frota, abastecimentos e obrigações legais.</li>
-        <li>Gerar históricos, indicadores, relatórios, exportações e registros de acompanhamento.</li>
-        <li>Enviar ou apresentar notificações e avisos operacionais dentro dos recursos disponíveis.</li>
-        <li>Investigar falhas, preservar segurança e manter rastreabilidade das ações relevantes.</li>
-        <li>Cumprir obrigações legais, regulatórias ou determinações de autoridade competente.</li>
+        <li>Autenticar usuários e aplicar regras de acesso.</li>
+        <li>Permitir a execução das funcionalidades disponíveis em cada módulo.</li>
+        <li>Organizar históricos, pendências, evidências e registros operacionais.</li>
+        <li>Gerar relatórios, exportações, indicadores e informações de acompanhamento.</li>
+        <li>Apresentar notificações e avisos relacionados ao uso da plataforma.</li>
+        <li>Investigar erros, prevenir acessos indevidos e manter rastreabilidade quando necessário.</li>
+        <li>Atender obrigações legais, regulatórias, contratuais ou determinações de autoridade competente.</li>
       </ul>
 
-      <h2>3. Acesso às informações</h2>
+      <h2>3. Controle de acesso</h2>
       <p>
-        O Apont Auto é um ambiente de uso restrito. O acesso aos módulos e dados depende de
-        autenticação e das permissões atribuídas ao usuário. As informações devem ser acessadas
-        somente por pessoas autorizadas e para finalidades compatíveis com suas atividades.
+        O acesso ao ambiente interno depende de autenticação. A visualização dos módulos pode variar
+        conforme o perfil e as permissões atribuídas a cada usuário. Credenciais são pessoais e não
+        devem ser compartilhadas. O usuário deve acessar somente informações compatíveis com suas
+        atribuições e autorizações.
       </p>
 
-      <h2>4. Infraestrutura e prestadores de serviço</h2>
+      <h2>4. Arquivos, fotos e comprovantes</h2>
       <p>
-        Para disponibilizar autenticação, banco de dados, armazenamento, hospedagem e demais
-        recursos técnicos, o Apont Auto pode utilizar provedores de infraestrutura e serviços de
-        tecnologia. Esses fornecedores podem tratar dados na medida necessária para prestar os
-        serviços contratados, observando suas respectivas obrigações de segurança e privacidade.
-      </p>
-      <p>
-        A plataforma utiliza infraestrutura Supabase em partes do sistema, inclusive para recursos
-        de autenticação e persistência de dados, conforme a arquitetura vigente de cada módulo.
+        Alguns módulos podem permitir o envio de imagens, documentos ou comprovantes. Esses arquivos
+        devem conter apenas informações necessárias à atividade correspondente. O usuário não deve
+        inserir dados pessoais, sigilosos ou sensíveis que sejam desnecessários para a finalidade do
+        registro.
       </p>
 
-      <h2>5. Compartilhamento</h2>
+      <h2>5. Infraestrutura e fornecedores técnicos</h2>
       <p>
-        O Apont Auto não comercializa dados pessoais para fins publicitários. Informações podem ser
-        disponibilizadas a usuários autorizados da organização, a prestadores técnicos necessários
-        ao funcionamento da plataforma ou quando houver obrigação legal, regulatória ou ordem de
-        autoridade competente.
+        O funcionamento da plataforma pode depender de serviços de autenticação, banco de dados,
+        armazenamento, hospedagem e outros recursos de infraestrutura. Fornecedores técnicos podem
+        processar informações na medida necessária para prestar esses serviços e conforme suas
+        próprias obrigações de segurança e privacidade.
+      </p>
+      <p>
+        Partes do Apont Auto utilizam infraestrutura Supabase para recursos como autenticação,
+        persistência e armazenamento, de acordo com a arquitetura vigente de cada módulo.
       </p>
 
-      <h2>6. Segurança</h2>
+      <h2>6. Compartilhamento e acesso por terceiros</h2>
       <p>
-        São adotados controles compatíveis com a operação do sistema, incluindo autenticação,
-        restrição por permissões, comunicação segura e mecanismos de proteção disponíveis na
-        infraestrutura utilizada. Nenhum sistema conectado à internet é totalmente imune a riscos,
-        por isso credenciais devem permanecer pessoais e não devem ser compartilhadas.
+        O Apont Auto não tem como finalidade comercializar dados pessoais para publicidade. As
+        informações podem ser acessadas por usuários autorizados da organização, por fornecedores
+        técnicos necessários ao funcionamento da plataforma ou quando houver obrigação legal,
+        regulatória ou ordem de autoridade competente.
       </p>
 
-      <h2>7. Cookies e armazenamento local</h2>
+      <h2>7. Segurança</h2>
       <p>
-        Recursos essenciais do navegador podem ser utilizados para autenticação, manutenção de
-        sessão, preferências e funcionamento da interface. Esses mecanismos devem ser empregados
-        para finalidades funcionais e de segurança da plataforma.
+        A plataforma utiliza mecanismos compatíveis com sua arquitetura para reduzir riscos de acesso
+        indevido e preservar a integridade das informações. Isso pode incluir autenticação, controle
+        de permissões, comunicação segura, registros de eventos e recursos de proteção fornecidos pela
+        infraestrutura utilizada.
+      </p>
+      <p>
+        Nenhum ambiente conectado à internet é totalmente imune a incidentes. Por isso, senhas,
+        sessões, códigos de acesso, chaves e outros dados de autenticação devem ser mantidos em sigilo.
       </p>
 
-      <h2>8. Retenção e exclusão</h2>
+      <h2>8. Navegador, sessão e armazenamento local</h2>
       <p>
-        Os dados podem ser mantidos pelo período necessário à finalidade operacional, à preservação
-        de históricos, à auditoria e ao cumprimento de obrigações legais ou contratuais. Solicitações
-        de exclusão serão analisadas considerando a natureza do dado, as responsabilidades da
-        organização e eventuais deveres de retenção.
+        O navegador pode armazenar informações essenciais para manter a sessão, recordar preferências
+        e viabilizar o funcionamento da interface. Esses mecanismos devem ser utilizados somente para
+        finalidades funcionais, de segurança ou de experiência do usuário relacionadas ao sistema.
       </p>
 
-      <h2>9. Direitos do titular</h2>
+      <h2>9. Retenção</h2>
       <p>
-        Quando aplicável, o titular pode solicitar confirmação de tratamento, acesso, correção,
-        informações sobre compartilhamento, anonimização, bloqueio, eliminação ou outros direitos
-        previstos na LGPD. A viabilidade de cada solicitação depende da base legal e das obrigações
-        aplicáveis ao tratamento.
+        Informações podem ser mantidas pelo período necessário às finalidades operacionais, à
+        rastreabilidade, ao histórico das atividades e ao cumprimento de obrigações aplicáveis. O
+        prazo pode variar conforme a natureza do registro e as necessidades da organização.
       </p>
 
-      <h2>10. Atualizações desta política</h2>
+      <h2>10. Solicitações do titular</h2>
       <p>
-        Esta política pode ser revisada para acompanhar mudanças no sistema, na infraestrutura ou na
-        legislação. A versão vigente e sua data de atualização serão mantidas nesta página.
+        Quando aplicável, titulares podem solicitar confirmação de tratamento, acesso, correção,
+        informações sobre compartilhamento e outros direitos previstos na LGPD. Cada solicitação será
+        analisada conforme a natureza do dado, a base legal do tratamento e eventuais obrigações de
+        preservação do registro.
       </p>
 
-      <h2>11. Contato</h2>
+      <h2>11. Atualizações</h2>
       <p>
-        Para dúvidas ou solicitações relacionadas à privacidade, utilize a{" "}
-        <a href="/contato">página de contato</a>, o e-mail <strong>gabrielvlp33@gmail.com</strong> ou
-        o WhatsApp <strong>(11) 96323-9378</strong>.
+        Esta política pode ser revisada para acompanhar mudanças nos módulos, na infraestrutura, nos
+        processos internos ou na legislação. A data da versão vigente será mantida no início desta
+        página.
+      </p>
+
+      <h2>12. Contato</h2>
+      <p>
+        Para dúvidas, correções ou solicitações relacionadas à privacidade, utilize a{" "}
+        <a href="/contato">página de contato</a>. Os canais oficiais estão concentrados nessa página
+        para evitar divulgação desnecessária de informações pessoais em diferentes áreas do site.
       </p>
     </LegalLayout>
   );
