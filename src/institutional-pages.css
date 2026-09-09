@@ -1,0 +1,171 @@
+.institutional-copy {
+  color: rgb(203 213 225);
+  font-size: 1rem;
+  line-height: 1.85;
+  letter-spacing: -0.005em;
+}
+
+.institutional-copy > p {
+  max-width: 76ch;
+  margin: 0;
+  color: rgb(203 213 225);
+  font-size: 1rem;
+  line-height: 1.9;
+}
+
+.institutional-copy > p + p {
+  margin-top: 1.35rem;
+}
+
+.institutional-copy > h2 {
+  max-width: 76ch;
+  margin: 4.75rem 0 0;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgb(248 250 252);
+  font-family: var(--font-display, inherit);
+  font-size: clamp(1.4rem, 2vw, 1.65rem);
+  font-weight: 650;
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.institutional-copy > h2 + p {
+  margin-top: 1.2rem;
+}
+
+.institutional-copy > h2 + ul,
+.institutional-copy > h2 + ol {
+  margin-top: 1.4rem;
+}
+
+.institutional-copy > h3 {
+  max-width: 76ch;
+  margin: 2.75rem 0 0;
+  color: rgb(241 245 249);
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.45;
+  letter-spacing: -0.012em;
+}
+
+.institutional-copy > h3 + p {
+  margin-top: 0.9rem;
+}
+
+.institutional-copy > ul,
+.institutional-copy > ol {
+  max-width: 76ch;
+  margin: 1.45rem 0 0;
+  padding-left: 1.45rem;
+  color: rgb(203 213 225);
+}
+
+.institutional-copy > ul {
+  list-style: disc;
+}
+
+.institutional-copy > ol {
+  list-style: decimal;
+}
+
+.institutional-copy > ul > li,
+.institutional-copy > ol > li {
+  margin: 0;
+  padding-left: 0.35rem;
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+.institutional-copy > ul > li + li,
+.institutional-copy > ol > li + li {
+  margin-top: 0.7rem;
+}
+
+.institutional-copy > ul > li::marker,
+.institutional-copy > ol > li::marker {
+  color: rgb(100 116 139);
+}
+
+.institutional-copy strong {
+  color: rgb(241 245 249);
+  font-weight: 650;
+}
+
+.institutional-copy a {
+  color: rgb(226 232 240);
+  font-weight: 560;
+  text-decoration-line: underline;
+  text-decoration-color: rgba(226, 232, 240, 0.24);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: color 160ms ease, text-decoration-color 160ms ease;
+}
+
+.institutional-copy a:hover {
+  color: rgb(255 255 255);
+  text-decoration-color: rgba(255, 255, 255, 0.68);
+}
+
+.institutional-copy > hr {
+  max-width: 76ch;
+  margin: 3.5rem 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.institutional-copy > section,
+.institutional-copy > .not-prose {
+  max-width: 100%;
+}
+
+.institutional-copy > section + h2,
+.institutional-copy > .not-prose + h2,
+.institutional-copy > div + h2 {
+  margin-top: 4.75rem;
+}
+
+@media (max-width: 640px) {
+  .institutional-copy {
+    font-size: 0.96rem;
+    line-height: 1.8;
+  }
+
+  .institutional-copy > p {
+    font-size: 0.96rem;
+    line-height: 1.82;
+  }
+
+  .institutional-copy > p + p {
+    margin-top: 1.15rem;
+  }
+
+  .institutional-copy > h2 {
+    margin-top: 3.75rem;
+    padding-top: 1.65rem;
+    font-size: 1.3rem;
+    line-height: 1.32;
+  }
+
+  .institutional-copy > h2 + p {
+    margin-top: 1rem;
+  }
+
+  .institutional-copy > ul,
+  .institutional-copy > ol {
+    margin-top: 1.2rem;
+    padding-left: 1.25rem;
+  }
+
+  .institutional-copy > ul > li,
+  .institutional-copy > ol > li {
+    font-size: 0.95rem;
+    line-height: 1.72;
+  }
+
+  .institutional-copy > ul > li + li,
+  .institutional-copy > ol > li + li {
+    margin-top: 0.6rem;
+  }
+}
