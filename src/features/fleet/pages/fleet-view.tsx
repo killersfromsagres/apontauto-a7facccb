@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ClipboardCheck, Fuel, History, Truck } from "lucide-react";
 
+import "@/fleet-premium.css";
 import { PageShell } from "@/components/page-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FleetChecklist } from "@/features/fleet/pages/fleet-checklist";
