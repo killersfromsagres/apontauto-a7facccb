@@ -1,14 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-  BarChart3,
-  BellRing,
-  Boxes,
-  ClipboardList,
-  Fuel,
-  ShieldCheck,
-  Wrench,
-} from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { LegalLayout } from "@/components/legal-layout";
+import { WhatsAppMark } from "@/components/whatsapp-mark";
+
+const whatsappUrl =
+  "https://wa.me/5511963239378?text=Ol%C3%A1%2C%20gostaria%20de%20falar%20sobre%20o%20Apont%20Auto.";
 
 export const Route = createFileRoute("/sobre")({
   head: () => ({
@@ -17,13 +13,13 @@ export const Route = createFileRoute("/sobre")({
       {
         name: "description",
         content:
-          "Conheça o Apont Auto, plataforma corporativa para planejamento, execução e controle operacional de manutenção.",
+          "Conheça o Apont Auto, plataforma corporativa para planejamento, execução, ativos, manutenção, conformidade, frota, materiais e serviços operacionais.",
       },
       { property: "og:title", content: "Sobre — Apont Auto" },
       {
         property: "og:description",
         content:
-          "Gestão de manutenção, ordens de serviço, materiais, conformidade, frota e indicadores em uma única plataforma.",
+          "Uma plataforma corporativa para centralizar manutenção, ativos, serviços, conformidade e informações operacionais.",
       },
       { property: "og:url", content: "https://apontauto.online/sobre" },
     ],
@@ -32,109 +28,149 @@ export const Route = createFileRoute("/sobre")({
   component: SobrePage,
 });
 
-const capabilities = [
+const areas = [
   {
-    icon: ClipboardList,
-    title: "Planejamento PCM",
+    number: "01",
+    title: "Planejamento e Controle de Manutenção",
     description:
-      "Programação de atividades, acompanhamento de backlog, capacidade das equipes e apontamentos de ordens de serviço.",
+      "Programação de atividades, backlog, capacidade das equipes, distribuição de trabalho, apontamentos e acompanhamento de ordens de serviço.",
   },
   {
-    icon: Wrench,
-    title: "Execução e manutenção",
+    number: "02",
+    title: "Execução de campo e históricos",
     description:
-      "Apoio às rotinas preventivas e corretivas, execução de campo, históricos e acompanhamento operacional.",
+      "Registro das atividades executadas, acompanhamento de corretivas e preventivas, histórico operacional, reincidências e informações necessárias para continuidade do serviço.",
   },
   {
-    icon: Boxes,
-    title: "Materiais e evidências",
+    number: "03",
+    title: "Ativos e confiabilidade",
     description:
-      "Centralização de solicitações de materiais, registros relacionados às atividades e informações necessárias para rastreabilidade.",
+      "Base de ativos, preenchimento e padronização de localização, tratamento de pendências, histórico de processamentos e recursos de confiabilidade e causa raiz.",
   },
   {
-    icon: ShieldCheck,
-    title: "Conformidade legal",
+    number: "04",
+    title: "Materiais, serviços e logística interna",
     description:
-      "Painel de itens legais, vencimentos, agendamentos, responsáveis e acompanhamento das obrigações recorrentes.",
+      "Solicitação e controle de materiais, centralização de peças, lavanderia, mensageria, malotes e registros relacionados ao suporte das atividades operacionais.",
   },
   {
-    icon: Fuel,
+    number: "05",
+    title: "Segurança e conformidade",
+    description:
+      "Painel de itens legais, vencimentos, agendamentos, segurança do trabalho, trilha de auditoria e recursos de acompanhamento para obrigações recorrentes.",
+  },
+  {
+    number: "06",
     title: "Frota e abastecimento",
     description:
-      "Recursos de apoio ao controle operacional de frota, abastecimentos e registros associados à utilização dos veículos.",
+      "Controle de veículos, abastecimentos, comprovantes, hodômetro, consumo, registros de utilização e relatórios para acompanhamento da operação da frota.",
   },
   {
-    icon: BarChart3,
-    title: "Indicadores e relatórios",
+    number: "07",
+    title: "Rondas, inspeções e serviços de apoio",
     description:
-      "Consolidação de informações operacionais, painéis, históricos e exportações para acompanhamento gerencial.",
+      "Rondas de calhas, históricos de inspeção, entrega de água, taludes, refrigeração e outras rotinas operacionais centralizadas conforme a necessidade da organização.",
   },
   {
-    icon: BellRing,
-    title: "Comunicação operacional",
+    number: "08",
+    title: "Comunicação, indicadores e administração",
     description:
-      "Notificações, avisos e recursos de acompanhamento para manter equipes e responsáveis informados sobre eventos relevantes.",
+      "Central de notificações, avisos administrativos, qualidade de dados, relatórios, indicadores, painéis gerenciais e controles de usuários e permissões.",
   },
 ];
 
 function SobrePage() {
   return (
-    <LegalLayout title="Sobre o Apont Auto">
+    <LegalLayout
+      title="Sobre o Apont Auto"
+      description="Uma plataforma corporativa desenvolvida para organizar informações operacionais, reduzir controles paralelos e dar mais rastreabilidade ao trabalho de manutenção e serviços."
+    >
       <p className="text-base sm:text-[17px]">
-        O <strong>Apont Auto</strong> é uma plataforma corporativa criada para organizar o fluxo de
-        manutenção e operação — do planejamento à execução em campo, passando por materiais,
-        conformidade, frota, históricos e indicadores de gestão.
+        O <strong>Apont Auto</strong> reúne em um único ambiente processos que normalmente ficam
+        distribuídos entre planilhas, mensagens, arquivos e controles independentes. A plataforma foi
+        estruturada para apoiar o trabalho de planejadores, técnicos, encarregados, gestores e demais
+        usuários autorizados, mantendo cada informação vinculada ao contexto operacional em que foi
+        registrada.
       </p>
       <p>
-        A proposta é concentrar informações que normalmente ficam dispersas em planilhas, mensagens
-        e controles paralelos, oferecendo uma visão única e rastreável para planejadores, técnicos,
-        encarregados e gestores autorizados.
+        O foco do sistema é oferecer uma base de trabalho clara para planejamento, execução,
+        acompanhamento e tomada de decisão. Os módulos podem ser disponibilizados conforme a função
+        de cada usuário e a necessidade da organização, evitando exposição desnecessária de áreas ou
+        informações que não façam parte de sua rotina.
       </p>
 
-      <div className="not-prose my-9 grid gap-3 sm:grid-cols-2">
-        {capabilities.map(({ icon: Icon, title, description }, index) => (
+      <h2>O que a plataforma reúne</h2>
+      <div className="not-prose mt-7 border-y border-white/[0.08]">
+        {areas.map((area) => (
           <div
-            key={title}
-            className={`rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5 ${
-              index === capabilities.length - 1 ? "sm:col-span-2" : ""
-            }`}
+            key={area.number}
+            className="grid gap-4 border-b border-white/[0.07] py-7 last:border-b-0 sm:grid-cols-[54px_220px_1fr] sm:gap-7"
           >
-            <div className="grid h-10 w-10 place-items-center rounded-xl border border-blue-400/15 bg-blue-400/[0.06] text-blue-300">
-              <Icon className="h-5 w-5" aria-hidden />
-            </div>
-            <h2 className="mt-4 text-sm font-semibold text-white">{title}</h2>
-            <p className="mt-2 text-xs leading-5 text-slate-400">{description}</p>
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-700">{area.number}</p>
+            <h3 className="font-display text-[15px] font-semibold leading-6 text-slate-100">
+              {area.title}
+            </h3>
+            <p className="max-w-2xl text-sm leading-7 text-slate-400">{area.description}</p>
           </div>
         ))}
       </div>
 
-      <h2>Uma plataforma orientada à operação</h2>
+      <h2>Informação organizada para a rotina real</h2>
       <p>
-        O sistema foi estruturado para apoiar diferentes etapas do trabalho diário, incluindo
-        programação, execução, acompanhamento de ordens de serviço, gestão de pendências, controle
-        de materiais, registros de ativos, rotinas legais e consolidação de informações para tomada
-        de decisão.
+        O Apont Auto busca manter os registros próximos da execução real do trabalho. Isso significa
+        associar informações como OS, local, ativo, responsável, materiais, datas, evidências,
+        abastecimentos, inspeções e históricos ao processo correspondente, facilitando consultas e
+        reduzindo a dependência de controles externos.
       </p>
 
-      <h2>Acesso e governança</h2>
+      <h2>Permissões e responsabilidade</h2>
       <p>
-        O acesso ao ambiente interno é realizado por autenticação e permissões. Cada usuário deve
-        visualizar e utilizar somente os módulos liberados para sua função, preservando a
-        organização das informações e a responsabilidade sobre os registros realizados.
+        O ambiente interno utiliza autenticação e controle de acesso por módulos. Usuários devem
+        acessar somente as áreas liberadas para sua função e são responsáveis pela qualidade das
+        informações inseridas dentro de suas atribuições. Recursos administrativos permanecem
+        restritos aos perfis autorizados.
       </p>
 
-      <h2>Evolução contínua</h2>
+      <h2>Relatórios e rastreabilidade</h2>
       <p>
-        O Apont Auto é atualizado de forma contínua conforme as necessidades operacionais da
-        organização. Novos módulos, automações, relatórios e melhorias de experiência podem ser
-        incorporados mantendo o foco em produtividade, rastreabilidade e clareza das informações.
+        Diversos módulos oferecem históricos, filtros, indicadores e exportações para apoiar o
+        acompanhamento gerencial. A finalidade é permitir que informações operacionais sejam
+        consultadas e apresentadas com mais consistência, sem perder o vínculo com o registro de
+        origem.
       </p>
 
-      <h2>Responsável</h2>
+      <h2>Evolução da plataforma</h2>
       <p>
-        Desenvolvido e mantido por <strong>Gabriel Vitor</strong>. Para suporte, sugestões ou
-        solicitações relacionadas ao sistema, utilize a <a href="/contato">página de contato</a>.
+        O sistema é atualizado conforme novas necessidades de operação são identificadas. Fluxos,
+        relatórios, controles e integrações podem evoluir, sempre procurando preservar segurança,
+        compatibilidade dos dados e simplicidade de uso.
       </p>
+
+      <section className="not-prose mt-14 border-t border-white/[0.08] pt-9">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+              Responsável pelo sistema
+            </p>
+            <p className="mt-3 text-sm leading-7 text-slate-400">
+              Desenvolvido e mantido por <strong className="font-semibold text-slate-200">Gabriel Vitor</strong>.
+              Para suporte, sugestões ou informações sobre a plataforma, utilize o canal direto.
+            </p>
+          </div>
+
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Falar sobre o Apont Auto pelo WhatsApp"
+            className="inline-flex min-h-12 shrink-0 items-center justify-center gap-3 rounded-xl bg-[#25D366] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#20C45A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#080B10]"
+          >
+            <WhatsAppMark className="h-5 w-5 text-white" />
+            Falar no WhatsApp
+            <ArrowUpRight className="h-4 w-4 text-white/80" aria-hidden />
+          </a>
+        </div>
+      </section>
     </LegalLayout>
   );
 }
