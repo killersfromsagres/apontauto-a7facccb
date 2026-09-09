@@ -1,0 +1,406 @@
+/* -------------------------------------------------------------------------- */
+/* Frota e Abastecimento · linguagem visual corporativa premium               */
+/* -------------------------------------------------------------------------- */
+
+[data-page-title="Frota e Abastecimento"] {
+  --fleet-accent: #2dd4bf;
+  --fleet-accent-soft: rgb(45 212 191 / 0.09);
+  --fleet-border: rgb(148 163 184 / 0.16);
+  --fleet-border-strong: rgb(148 163 184 / 0.25);
+  --fleet-panel: rgb(15 23 42 / 0.68);
+  --fleet-panel-strong: rgb(15 23 42 / 0.9);
+  --fleet-muted: #94a3b8;
+}
+
+[data-page-title="Frota e Abastecimento"] > .premium-page-heading {
+  border: 1px solid var(--fleet-border) !important;
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, rgb(15 23 42 / 0.72), rgb(9 15 27 / 0.7)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 18px 48px -42px rgb(0 0 0 / 0.86) !important;
+}
+
+[data-page-title="Frota e Abastecimento"] > .premium-page-heading::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 1.25rem 0 0 1.25rem;
+  background: var(--fleet-accent);
+  opacity: 0.72;
+}
+
+[data-page-title="Frota e Abastecimento"] .premium-page-heading h2 {
+  letter-spacing: -0.04em;
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tablist"] {
+  gap: 0.3rem !important;
+  padding: 0.3rem !important;
+  border: 1px solid var(--fleet-border) !important;
+  border-radius: 0.95rem !important;
+  background: rgb(8 15 27 / 0.72) !important;
+  backdrop-filter: blur(18px) saturate(120%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tab"] {
+  min-height: 2.55rem;
+  border: 1px solid transparent !important;
+  border-radius: 0.7rem !important;
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em;
+  box-shadow: none !important;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease !important;
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tab"] svg {
+  stroke-width: 1.65;
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tab"]:hover {
+  border-color: var(--fleet-border) !important;
+  background: rgb(30 41 59 / 0.42) !important;
+  color: #e2e8f0 !important;
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tab"][data-state="active"] {
+  border-color: rgb(45 212 191 / 0.2) !important;
+  background: rgb(45 212 191 / 0.075) !important;
+  color: #f8fafc !important;
+  box-shadow: inset 0 0 0 1px rgb(45 212 191 / 0.04) !important;
+}
+
+[data-page-title="Frota e Abastecimento"] [role="tab"][data-state="active"] svg {
+  color: var(--fleet-accent);
+  transform: none !important;
+}
+
+/* Painel de abastecimentos. */
+.fleet-fuelings {
+  position: relative;
+}
+
+.fleet-fuelings-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid var(--fleet-border, rgb(148 163 184 / 0.16));
+  border-radius: 1rem;
+  background: rgb(10 17 30 / 0.72);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035);
+}
+
+.fleet-filter-control {
+  min-width: min(100%, 18rem);
+}
+
+.fleet-filter-control select,
+.fleet-fueling-dialog select {
+  width: 100%;
+  min-height: 2.65rem;
+  border: 1px solid rgb(148 163 184 / 0.18);
+  border-radius: 0.72rem;
+  background: rgb(10 17 30 / 0.84);
+  padding: 0 0.8rem;
+  color: #e2e8f0;
+  font-size: 0.875rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.fleet-filter-control select:focus,
+.fleet-fueling-dialog select:focus {
+  border-color: rgb(45 212 191 / 0.48);
+  box-shadow: 0 0 0 3px rgb(45 212 191 / 0.075);
+}
+
+.fleet-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fleet-action-secondary,
+.fleet-action-primary {
+  min-height: 2.65rem !important;
+  border-radius: 0.72rem !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.012em;
+  box-shadow: none !important;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease !important;
+}
+
+.fleet-action-secondary {
+  border: 1px solid rgb(148 163 184 / 0.2) !important;
+  background: rgb(15 23 42 / 0.56) !important;
+  color: #cbd5e1 !important;
+}
+
+.fleet-action-secondary:hover {
+  border-color: rgb(148 163 184 / 0.34) !important;
+  background: rgb(30 41 59 / 0.56) !important;
+  color: #f8fafc !important;
+}
+
+.fleet-action-primary {
+  border: 1px solid rgb(45 212 191 / 0.35) !important;
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.fleet-action-primary:hover {
+  background: #f8fafc !important;
+  transform: translateY(-1px);
+}
+
+.fleet-action-primary svg,
+.fleet-action-secondary svg {
+  stroke-width: 1.75;
+}
+
+.fleet-fueling-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.fleet-fueling-kpi {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgb(148 163 184 / 0.15) !important;
+  border-radius: 0.95rem !important;
+  background: linear-gradient(180deg, rgb(15 23 42 / 0.68), rgb(10 17 30 / 0.64)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035), 0 16px 38px -36px rgb(0 0 0 / 0.88) !important;
+}
+
+.fleet-fueling-kpi::after {
+  content: "";
+  position: absolute;
+  left: 0.9rem;
+  bottom: 0;
+  width: 2.4rem;
+  height: 2px;
+  border-radius: 99px 99px 0 0;
+  background: var(--fleet-accent, #2dd4bf);
+  opacity: 0.5;
+}
+
+.fleet-fueling-kpi-label {
+  color: #7f8da3 !important;
+  letter-spacing: 0.09em !important;
+}
+
+.fleet-fueling-kpi-value {
+  color: #f1f5f9;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.035em;
+}
+
+.fleet-fueling-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.fleet-fueling-row {
+  border: 1px solid rgb(148 163 184 / 0.14) !important;
+  border-radius: 0.95rem !important;
+  background: rgb(10 17 30 / 0.62) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 14px 36px -36px rgb(0 0 0 / 0.9) !important;
+  transition: border-color 150ms ease, background-color 150ms ease !important;
+}
+
+.fleet-fueling-row:hover {
+  border-color: rgb(148 163 184 / 0.24) !important;
+  background: rgb(15 23 42 / 0.72) !important;
+}
+
+.fleet-fueling-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  min-height: 1.75rem;
+  border: 1px solid rgb(148 163 184 / 0.14);
+  border-radius: 0.55rem;
+  background: rgb(15 23 42 / 0.45);
+  padding: 0.2rem 0.48rem;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.fleet-fueling-meta-chip svg {
+  width: 0.82rem;
+  height: 0.82rem;
+  stroke-width: 1.7;
+}
+
+.fleet-receipt-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.9rem !important;
+  border: 1px solid rgb(45 212 191 / 0.2) !important;
+  border-radius: 0.58rem !important;
+  background: rgb(45 212 191 / 0.055) !important;
+  padding: 0 0.58rem !important;
+  color: #99f6e4 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.fleet-receipt-link:hover {
+  border-color: rgb(45 212 191 / 0.38) !important;
+  background: rgb(45 212 191 / 0.1) !important;
+}
+
+.fleet-delete-action {
+  border: 1px solid transparent !important;
+  border-radius: 0.65rem !important;
+  box-shadow: none !important;
+}
+
+/* Dialog é portalizado fora do PageShell; classe própria evita vazamento global. */
+.fleet-fueling-dialog {
+  border: 1px solid rgb(148 163 184 / 0.18) !important;
+  border-radius: 1.1rem !important;
+  background: #0b1220 !important;
+  box-shadow: 0 30px 90px -38px rgb(0 0 0 / 0.92) !important;
+}
+
+.fleet-fueling-dialog [data-slot="dialog-title"] {
+  color: #f8fafc;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.fleet-fueling-dialog label {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.fleet-fueling-dialog input,
+.fleet-fueling-dialog textarea {
+  border-color: rgb(148 163 184 / 0.18) !important;
+  border-radius: 0.72rem !important;
+  background: rgb(8 15 27 / 0.88) !important;
+  color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025) !important;
+}
+
+.fleet-fueling-dialog input:focus-visible,
+.fleet-fueling-dialog textarea:focus-visible {
+  border-color: rgb(45 212 191 / 0.48) !important;
+  box-shadow: 0 0 0 3px rgb(45 212 191 / 0.075) !important;
+}
+
+.fleet-fueling-dialog input::placeholder,
+.fleet-fueling-dialog textarea::placeholder {
+  color: #56657a;
+}
+
+.fleet-receipt-upload {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 4rem;
+  border: 1px solid rgb(148 163 184 / 0.16);
+  border-radius: 0.8rem;
+  background: rgb(8 15 27 / 0.56);
+  padding: 0.65rem;
+}
+
+.fleet-receipt-upload-icon {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgb(148 163 184 / 0.16);
+  border-radius: 0.65rem;
+  background: rgb(15 23 42 / 0.72);
+  color: #cbd5e1;
+}
+
+.fleet-receipt-upload-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  stroke-width: 1.65;
+}
+
+.fleet-receipt-upload-button {
+  min-height: 2.25rem !important;
+  border: 1px solid rgb(148 163 184 / 0.2) !important;
+  border-radius: 0.62rem !important;
+  background: rgb(15 23 42 / 0.5) !important;
+  color: #cbd5e1 !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+
+.fleet-receipt-upload-button:hover {
+  border-color: rgb(45 212 191 / 0.28) !important;
+  background: rgb(45 212 191 / 0.06) !important;
+  color: #f8fafc !important;
+}
+
+.fleet-dialog-save {
+  min-height: 2.75rem !important;
+  border: 1px solid rgb(45 212 191 / 0.32) !important;
+  border-radius: 0.72rem !important;
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+}
+
+.fleet-dialog-save:hover {
+  background: #f8fafc !important;
+}
+
+@media (min-width: 900px) {
+  .fleet-fueling-kpis {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 639px) {
+  .fleet-fuelings-toolbar {
+    align-items: stretch;
+  }
+
+  .fleet-filter-control,
+  .fleet-toolbar-actions,
+  .fleet-toolbar-actions > * {
+    width: 100%;
+  }
+
+  .fleet-toolbar-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .fleet-fueling-row {
+    padding: 0.9rem !important;
+  }
+
+  .fleet-receipt-upload {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-page-title="Frota e Abastecimento"] *,
+  .fleet-fueling-dialog * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
