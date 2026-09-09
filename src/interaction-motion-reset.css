@@ -1,0 +1,100 @@
+/*
+ * Global interaction motion policy.
+ *
+ * Controls may communicate hover/press state through color, border, shadow
+ * and opacity, but must never move, shrink or "sink" under the pointer.
+ * This stylesheet is loaded last so it also neutralizes legacy utilities and
+ * page-specific Tailwind classes without changing their business behavior.
+ */
+
+/* Tailwind 4 uses the individual translate/scale properties for utilities such
+ * as hover:-translate-y-px and active:scale-[...]. Neutralize those properties
+ * on the interactive element while preserving any structural `transform`
+ * already used to position specialized controls.
+ */
+:where(
+  button,
+  [data-slot="button"],
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  [role="checkbox"],
+  [role="radio"],
+  [role="switch"],
+  input,
+  select,
+  textarea,
+  summary
+):is(:hover, :active) {
+  translate: 0 0 !important;
+  scale: 1 !important;
+}
+
+/* Shared Button never depends on transform for layout. Remove both legacy
+ * transform-based motion and Tailwind individual transforms at the source.
+ */
+[data-slot="button"]:is(:hover, :active) {
+  transform: none !important;
+  translate: 0 0 !important;
+  scale: 1 !important;
+}
+
+/* Legacy opt-in interaction utilities found during the audit. They may still
+ * be referenced by older modules, so neutralize their positional motion here
+ * instead of requiring every feature page to carry a local workaround.
+ */
+:where(
+  .tap-press,
+  .photo-tile,
+  .btn-primary,
+  .btn-secondary,
+  .btn-marcante,
+  .card-interactive,
+  .hover-scale,
+  .hover-raise,
+  .imenu__item,
+  .auth-btn,
+  .glass-pill,
+  .priority-card
+):is(:hover, :active) {
+  transform: none !important;
+  translate: 0 0 !important;
+  scale: 1 !important;
+}
+
+/* GlassCard used to make the entire panel shrink while a descendant input,
+ * select or button was pressed. This is a final compatibility guard for any
+ * older bundle/class combination while the component itself is also fixed.
+ */
+:where(.glass-block, .glass-surface):active {
+  transform: none !important;
+  translate: 0 0 !important;
+  scale: 1 !important;
+}
+
+/* Native form controls receive only non-positional visual feedback. */
+:where(input, select, textarea):active {
+  translate: 0 0 !important;
+  scale: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+    button,
+    [data-slot="button"],
+    [role="button"],
+    [role="tab"],
+    [role="menuitem"],
+    [role="option"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    input,
+    select,
+    textarea,
+    summary
+  ) {
+    transition-property: color, background-color, border-color, box-shadow, opacity, filter !important;
+  }
+}
