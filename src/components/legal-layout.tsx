@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import "@/institutional-pages.css";
 
 const logo = { url: "/apontauto-logo.png" };
 
@@ -52,10 +53,7 @@ export function LegalLayout({
             </div>
           </Link>
 
-          <nav
-            className="hidden items-center gap-1 lg:flex"
-            aria-label="Navegação institucional"
-          >
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegação institucional">
             {institutionalLinks.map((item) => (
               <Link
                 key={item.to}
@@ -79,31 +77,29 @@ export function LegalLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-7 sm:py-18 lg:px-10 lg:py-20">
+      <main className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-7 sm:py-20 lg:px-10 lg:py-24">
         <div className="mx-auto max-w-4xl">
-          <header className="max-w-3xl pb-10 sm:pb-12">
-            <p className="mb-5 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-600">
+          <header className="max-w-3xl pb-12 sm:pb-16">
+            <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-600">
               Apont Auto / Institucional
             </p>
-            <h1 className="font-display text-3xl font-semibold leading-[1.15] tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.9rem]">
+            <h1 className="font-display text-3xl font-semibold leading-[1.18] tracking-[-0.035em] text-white sm:text-4xl lg:text-[2.9rem] lg:leading-[1.14]">
               {title}
             </h1>
             {description && (
-              <p className="mt-5 max-w-2xl text-[15px] leading-7 text-slate-400 sm:text-base sm:leading-8">
+              <p className="mt-6 max-w-2xl text-[15px] leading-8 text-slate-400 sm:text-base sm:leading-8">
                 {description}
               </p>
             )}
             {updatedAt && (
-              <p className="mt-5 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-600">
+              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-600">
                 Atualizado em {updatedAt}
               </p>
             )}
           </header>
 
-          <article className="border-t border-white/[0.08] pt-10 sm:pt-12">
-            <div className="prose prose-invert max-w-none text-[15px] leading-8 text-slate-300 prose-headings:font-display prose-headings:tracking-[-0.02em] prose-headings:text-white prose-h2:mb-4 prose-h2:mt-14 prose-h2:text-xl prose-h2:font-semibold prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-base prose-h3:font-semibold prose-p:my-5 prose-p:max-w-3xl prose-p:leading-8 prose-p:text-slate-300 prose-strong:font-semibold prose-strong:text-slate-100 prose-a:font-medium prose-a:text-slate-100 prose-a:underline prose-a:decoration-white/20 prose-a:underline-offset-4 hover:prose-a:decoration-white/60 prose-ul:my-6 prose-ul:max-w-3xl prose-ul:space-y-2.5 prose-ul:pl-5 prose-li:pl-1 prose-li:leading-7 prose-li:text-slate-300 prose-li:marker:text-slate-600 prose-hr:my-12 prose-hr:border-white/[0.08]">
-              {children}
-            </div>
+          <article className="border-t border-white/[0.08] pt-12 sm:pt-14">
+            <div className="institutional-copy">{children}</div>
           </article>
         </div>
       </main>
