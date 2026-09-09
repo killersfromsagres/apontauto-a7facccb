@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import "@/institutional-pages.css";
 
 const logo = { url: "/apontauto-logo.png" };
 
