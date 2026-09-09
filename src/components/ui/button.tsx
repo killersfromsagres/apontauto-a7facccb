@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium tracking-[-0.005em] cursor-pointer transition-[transform,box-shadow,background-color,color,border-color,filter] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-px active:translate-y-0 active:scale-[0.985] motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:relative [&_svg]:z-10",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium tracking-[-0.005em] cursor-pointer transition-[box-shadow,background-color,color,border-color,filter,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:relative [&_svg]:z-10",
   {
     variants: {
       variant: {
@@ -20,7 +20,7 @@ const buttonVariants = cva(
         soft: "border border-primary/15 bg-primary/9 text-primary hover:border-primary/25 hover:bg-primary/13",
         secondary: "border border-border/50 bg-secondary/85 text-secondary-foreground shadow-sm hover:bg-secondary",
         ghost: "border border-transparent hover:bg-accent/70 hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline hover:translate-y-0 active:scale-100",
+        link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
         default: "h-11 px-5 py-2",
@@ -55,7 +55,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button";
     if (asChild) {
       return (
-        <Comp data-slot="button" className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+        <Comp
+          data-slot="button"
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
           {children}
         </Comp>
       );
