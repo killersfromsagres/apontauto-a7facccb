@@ -82,9 +82,17 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     import("jspdf-autotable"),
   ]);
 
-  // Folha única: o tamanho físico cresce conforme o volume para preservar leitura.
-  const format = items.length <= 45 ? "a3" : items.length <= 95 ? "a2" : "a1";
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format });
+  const total = items.length;
+  const baseFormat = total <= 45 ? "a3" : total <= 95 ? "a2" : "a1";
+  const extendedHeight = 245 + total * 9.5;
+  const useExtendedSheet = total > 150;
+  const extendedWidth = Math.max(2384, extendedHeight * 1.4142);
+  const pdfFormat: string | [number, number] = useExtendedSheet
+    ? [extendedWidth, extendedHeight]
+    : baseFormat;
+  const formatLabel = useExtendedSheet ? "A1 ESTENDIDO" : baseFormat.toUpperCase();
+
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: pdfFormat });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = Math.max(28, pageW * 0.025);
@@ -132,7 +140,6 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   });
 
   const statuses = items.map((item) => statusOf(item));
-  const total = items.length;
   const emDia = statuses.filter((status) => status === "em_dia" || status === "concluido").length;
   const proximos = statuses.filter((status) => status === "proximo").length;
   const vencidos = statuses.filter((status) => status === "vencido").length;
@@ -146,7 +153,6 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     .filter((item) => item.agendamento)
     .sort((a, b) => String(a.agendamento).localeCompare(String(b.agendamento)))[0];
 
-  // Fundo branco com detalhe superior editorial.
   doc.setFillColor(...palette.white);
   doc.rect(0, 0, pageW, pageH, "F");
   doc.setFillColor(...palette.ink);
@@ -158,7 +164,6 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   doc.setFillColor(...palette.cyan);
   doc.rect(0, 80, pageW * 0.2, 2, "F");
 
-  // Marca gráfica simples e vetorial.
   const logoX = marginX;
   const logoY = 23;
   doc.setFillColor(...palette.blue);
@@ -170,12 +175,12 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   doc.line(logoX + 10, logoY + 15, logoX + 18, logoY + 15);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(format === "a1" ? 24 : format === "a2" ? 21 : 18);
+  doc.setFontSize(baseFormat === "a1" ? 24 : baseFormat === "a2" ? 21 : 18);
   doc.setTextColor(...palette.white);
   doc.text("PAINEL DE ITENS LEGAIS", logoX + 40, 37);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(format === "a1" ? 10.5 : 8.5);
+  doc.setFontSize(baseFormat === "a1" ? 10.5 : 8.5);
   doc.setTextColor(191, 205, 224);
   doc.text(
     "Relatório consolidado de obrigações, responsáveis, vencimentos e agendamentos",
@@ -184,22 +189,21 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   );
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(format === "a1" ? 13 : 10.5);
+  doc.setFontSize(baseFormat === "a1" ? 13 : 10.5);
   doc.setTextColor(...palette.white);
   const brand = "APONT AUTO";
   doc.text(brand, pageW - marginX - doc.getTextWidth(brand), 31);
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(format === "a1" ? 9 : 7.5);
+  doc.setFontSize(baseFormat === "a1" ? 9 : 7.5);
   doc.setTextColor(148, 163, 184);
   const issue = `Ano-base ${year} · Emitido em ${generatedLabel}`;
   doc.text(issue, pageW - marginX - doc.getTextWidth(issue), 49);
-  const sheetLabel = `Folha única · Formato ${String(format).toUpperCase()}`;
+  const sheetLabel = `Folha única · Formato ${formatLabel}`;
   doc.text(sheetLabel, pageW - marginX - doc.getTextWidth(sheetLabel), 63);
 
-  // Linha executiva: compacta, sem cartões altos.
   const bandY = 96;
-  const bandH = format === "a1" ? 62 : format === "a2" ? 56 : 52;
+  const bandH = baseFormat === "a1" ? 62 : baseFormat === "a2" ? 56 : 52;
   doc.setFillColor(...palette.surface);
   doc.setDrawColor(...palette.line);
   doc.setLineWidth(0.6);
@@ -207,11 +211,27 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
 
   const metrics = [
     { label: "ITENS", value: String(total), accent: palette.blue },
-    { label: "REGULARIDADE", value: `${regularidade}%`, accent: [16, 185, 129] as [number, number, number] },
-    { label: "VENCIDOS", value: String(vencidos), accent: [239, 68, 68] as [number, number, number] },
-    { label: "PRÓXIMOS", value: String(proximos), accent: [245, 158, 11] as [number, number, number] },
+    {
+      label: "REGULARIDADE",
+      value: `${regularidade}%`,
+      accent: [16, 185, 129] as [number, number, number],
+    },
+    {
+      label: "VENCIDOS",
+      value: String(vencidos),
+      accent: [239, 68, 68] as [number, number, number],
+    },
+    {
+      label: "PRÓXIMOS",
+      value: String(proximos),
+      accent: [245, 158, 11] as [number, number, number],
+    },
     { label: "AGENDADOS", value: String(agendados), accent: palette.cyan },
-    { label: "EXECUÇÕES NO ANO", value: String(execucoesAno), accent: [99, 102, 241] as [number, number, number] },
+    {
+      label: "EXECUÇÕES NO ANO",
+      value: String(execucoesAno),
+      accent: [99, 102, 241] as [number, number, number],
+    },
   ];
   const metricW = contentW / metrics.length;
 
@@ -224,18 +244,17 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     doc.setFillColor(...metric.accent);
     doc.roundedRect(x + 13, bandY + 13, 4, bandH - 26, 2, 2, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(format === "a1" ? 18 : 14.5);
+    doc.setFontSize(baseFormat === "a1" ? 18 : 14.5);
     doc.setTextColor(...palette.ink);
     doc.text(metric.value, x + 26, bandY + 26);
-    doc.setFontSize(format === "a1" ? 7.5 : 6.4);
+    doc.setFontSize(baseFormat === "a1" ? 7.5 : 6.4);
     doc.setTextColor(...palette.muted);
     doc.text(metric.label, x + 26, bandY + 41);
   });
 
-  // Linha contextual com informação útil, sem criar nova seção/página.
   const infoY = bandY + bandH + 13;
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(format === "a1" ? 9.5 : 7.5);
+  doc.setFontSize(baseFormat === "a1" ? 9.5 : 7.5);
   doc.setTextColor(...palette.navy);
   doc.text("VISÃO CONSOLIDADA", marginX, infoY);
 
@@ -253,14 +272,19 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   const contextX = marginX + doc.getTextWidth("VISÃO CONSOLIDADA") + 16;
   doc.text(doc.splitTextToSize(context, pageW - marginX - contextX), contextX, infoY);
 
-  const tableStartY = infoY + (format === "a1" ? 20 : 16);
+  const tableStartY = infoY + (baseFormat === "a1" ? 20 : 16);
   const footerY = pageH - 25;
   const availableTableH = footerY - tableStartY - 10;
-  const headerH = format === "a1" ? 31 : format === "a2" ? 27 : 25;
+  const headerH = baseFormat === "a1" ? 31 : baseFormat === "a2" ? 27 : 25;
   const targetRowH = total > 0 ? (availableTableH - headerH) / total : 18;
-  const rowFont = clamp(targetRowH * 0.43, format === "a1" ? 5.4 : 4.8, format === "a1" ? 8.6 : 7.2);
-  const rowPadding = clamp((targetRowH - rowFont * 1.18) / 2, 0.55, 3.1);
-  const headerFont = clamp(rowFont + 0.8, 5.5, format === "a1" ? 9.2 : 8);
+  const rowFont = clamp(
+    targetRowH * 0.4,
+    useExtendedSheet ? 5.1 : baseFormat === "a1" ? 5.4 : 4.8,
+    baseFormat === "a1" ? 8.6 : 7.2,
+  );
+  const rowPadding = clamp((targetRowH - rowFont * 1.15) / 2, 0.45, 3.1);
+  const headerFont = clamp(rowFont + 0.8, 5.5, baseFormat === "a1" ? 9.2 : 8);
+  const allowWrappedDetails = total <= 25;
 
   const weights = [2.65, 2.15, 1.45, 1.2, 1.55, 1.05, 1.05, 1.05, 1.15, 0.8, 1.15, 2.35];
   const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
@@ -312,8 +336,8 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       lineWidth: 0.4,
       textColor: palette.text,
       valign: "middle",
-      overflow: "ellipsize",
-      minCellHeight: Math.max(7, targetRowH),
+      overflow: allowWrappedDetails ? "linebreak" : "ellipsize",
+      minCellHeight: Math.max(6.5, targetRowH * 0.96),
     },
     headStyles: {
       fillColor: palette.navy2,
@@ -386,12 +410,11 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     },
   });
 
-  // Rodapé editorial da única folha.
   doc.setDrawColor(...palette.line);
   doc.setLineWidth(0.5);
   doc.line(marginX, footerY - 10, pageW - marginX, footerY - 10);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(format === "a1" ? 8.5 : 6.8);
+  doc.setFontSize(baseFormat === "a1" ? 8.5 : 6.8);
   doc.setTextColor(...palette.muted);
   doc.text(
     "Apont Auto · Painel de Itens Legais · Todos os itens desta exportação consolidados em uma única folha",
@@ -402,12 +425,6 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...palette.navy);
   doc.text(pageLabel, pageW - marginX - doc.getTextWidth(pageLabel), footerY);
-
-  // Segurança adicional: se o autotable ultrapassar uma folha por uma quantidade extrema
-  // de registros, mantém apenas a primeira folha em vez de gerar um PDF fragmentado.
-  while (doc.getNumberOfPages() > 1) {
-    doc.deletePage(doc.getNumberOfPages());
-  }
 
   doc.save(`painel-itens-legais-${year}.pdf`);
 }
