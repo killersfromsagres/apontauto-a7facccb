@@ -21,6 +21,7 @@ import {
   Clock,
   ListChecks,
   Loader2,
+  RotateCcw,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -47,6 +48,11 @@ export const Route = createFileRoute("/_authenticated/corretiva-novo")({
   component: CorretivaNovoPage,
 });
 
+function isCompletedStatus(status: unknown) {
+  const normalized = String(status ?? "").trim().toLowerCase();
+  return normalized === "concluida" || normalized === "concluido";
+}
+
 function CorretivaNovoPage() {
   const { isAdmin } = useIsAdmin();
   const { access } = useMyAccess();
@@ -59,6 +65,7 @@ function CorretivaNovoPage() {
   const [selectedOs, setSelectedOs] = useState<any | null>(null);
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [isDesignating, setIsDesignating] = useState(false);
+  const [reopeningId, setReopeningId] = useState<string | null>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -144,8 +151,75 @@ function CorretivaNovoPage() {
     setSelectedOs(filtered[nextIndex]);
   };
 
+  const handleReopen = async (os: any) => {
+    if (reopeningId || !isCompletedStatus(os.status)) return;
+
+    const confirmed = window.confirm(
+      `Reabrir a OS ${os.numero_os}? Ela voltará para o status Aberta e será incluída novamente na programação, impressão e planilha.`,
+    );
+    if (!confirmed) return;
+
+    const online = navigator.onLine;
+    const nextStatus = "aberta";
+    setReopeningId(String(os.id));
+
+    try {
+      if (online) {
+        const { error } = await supabase
+          .from("corretiva_os")
+          .update({
+            status: nextStatus,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", os.id);
+
+        if (error) throw error;
+      } else {
+        const { outboxAdd } = await import("@/lib/corretiva/db");
+        await outboxAdd({
+          id: crypto.randomUUID(),
+          kind: "status",
+          osId: os.id,
+          numeroOs: os.numero_os,
+          payload: { status: nextStatus },
+          createdAt: Date.now(),
+          attempts: 0,
+        });
+      }
+
+      try {
+        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
+        const cached = await getCachedOsList();
+        const updated = cached.map((item) =>
+          item.id === os.id ? { ...item, status: nextStatus } : item,
+        );
+        await cacheOsList(updated);
+      } catch (cacheError) {
+        console.warn("[CorretivaReopen] Não foi possível atualizar o cache local:", cacheError);
+      }
+
+      setOsList((current) =>
+        current.map((item) => (item.id === os.id ? { ...item, status: nextStatus } : item)),
+      );
+      setSelectedOs((current: any) =>
+        current?.id === os.id ? { ...current, status: nextStatus } : current,
+      );
+
+      toast.success(
+        online
+          ? "Chamado reaberto. Ele voltou para a programação e será incluído nas próximas impressões e planilhas."
+          : "Modo offline: chamado reaberto e aguardando sincronização. Ele já voltou para a programação local.",
+      );
+    } catch (error: any) {
+      console.error("[CorretivaReopen] Erro ao reabrir OS:", error);
+      toast.error(error?.message || "Não foi possível reabrir o chamado.");
+    } finally {
+      setReopeningId(null);
+    }
+  };
+
   const exportExcelByTeam = async () => {
-    const pendentes = filtered.filter((o) => o.status !== "concluida");
+    const pendentes = filtered.filter((o) => !isCompletedStatus(o.status));
     if (!pendentes.length) return toast.error("Nenhuma OS pendente para exportar.");
     try {
       await generateProgramacaoExcel(pendentes, "Programacao_por_Equipe", "corretiva");
@@ -156,7 +230,7 @@ function CorretivaNovoPage() {
   };
 
   const exportPDFByTeam = async () => {
-    const pendentes = filtered.filter((o) => o.status !== "concluida");
+    const pendentes = filtered.filter((o) => !isCompletedStatus(o.status));
     if (!pendentes.length) return toast.error("Nenhuma OS pendente para imprimir.");
     try {
       await generateProgramacaoPDF(pendentes, "Programacao_Equipes");
@@ -393,130 +467,159 @@ function CorretivaNovoPage() {
                 : "flex flex-col gap-3",
             )}
           >
-            {filtered.map((os) => (
-              <GlassCard
-                key={os.id}
-                className="group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
-                onClick={() => setSelectedOs(os)}
-              >
-                <div
-                  className={cn(
-                    "flex min-w-0 flex-1 flex-col",
-                    viewMode === "list" &&
-                      "md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)] md:items-stretch",
-                  )}
+            {filtered.map((os) => {
+              const completed = isCompletedStatus(os.status);
+              const isReopening = reopeningId === String(os.id);
+
+              return (
+                <GlassCard
+                  key={os.id}
+                  className="group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
+                  onClick={() => setSelectedOs(os)}
                 >
-                  <div className="flex min-w-0 flex-col p-4 md:p-5">
-                    <div className="mb-5 flex items-center justify-between gap-2">
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "px-2.5 py-1 font-mono text-xs font-semibold tracking-wide md:text-sm",
-                          equipeStyles(os.equipe).badge,
-                        )}
-                      >
-                        OS {os.numero_os}
-                      </Badge>
-                      <Badge
-                        variant={os.status === "concluida" ? "secondary" : "outline"}
-                        className={cn(
-                          "gap-1.5 whitespace-nowrap text-[9px] font-bold uppercase md:text-[10px]",
-                          os.status === "concluida"
-                            ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
-                            : "opacity-80",
-                        )}
-                      >
-                        {os.status === "concluida" && (
-                          <span
-                            className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
-                            aria-hidden="true"
-                          >
-                            <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
-                            <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
-                          </span>
-                        )}
-                        {os.status === "concluida" ? "Concluída" : (os.equipe || "Sem Equipe")}
-                      </Badge>
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
-                        Descrição do chamado
-                      </p>
-                      <h3
-                        className={cn(
-                          "text-[15px] font-semibold leading-6 text-white/95 transition-colors group-hover:text-white md:text-base",
-                          viewMode === "list" ? "line-clamp-3" : "line-clamp-4 min-h-[6rem]",
-                        )}
-                      >
-                        {os.nome_os || "Sem descrição informada"}
-                      </h3>
-                    </div>
-                  </div>
-
                   <div
                     className={cn(
-                      "border-t border-white/[0.06] bg-black/10 p-4 md:p-5",
-                      viewMode === "list" && "md:border-l md:border-t-0",
+                      "flex min-w-0 flex-1 flex-col",
+                      viewMode === "list" &&
+                        "md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)] md:items-stretch",
                     )}
                   >
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-4">
-                      <div className="min-w-0">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
-                          Prédio
-                        </p>
-                        <p className="break-words text-sm font-semibold leading-5 text-white/90">
-                          {os.predio || "Não informado"}
-                        </p>
+                    <div className="flex min-w-0 flex-col p-4 md:p-5">
+                      <div className="mb-5 flex items-center justify-between gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "px-2.5 py-1 font-mono text-xs font-semibold tracking-wide md:text-sm",
+                            equipeStyles(os.equipe).badge,
+                          )}
+                        >
+                          OS {os.numero_os}
+                        </Badge>
+                        <Badge
+                          variant={completed ? "secondary" : "outline"}
+                          className={cn(
+                            "gap-1.5 whitespace-nowrap text-[9px] font-bold uppercase md:text-[10px]",
+                            completed
+                              ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                              : "opacity-80",
+                          )}
+                        >
+                          {completed && (
+                            <span
+                              className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
+                              aria-hidden="true"
+                            >
+                              <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
+                              <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
+                            </span>
+                          )}
+                          {completed ? "Concluída" : (os.equipe || "Sem Equipe")}
+                        </Badge>
                       </div>
 
                       <div className="min-w-0">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
-                          Andar
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                          Descrição do chamado
                         </p>
-                        <p className="break-words text-sm font-semibold leading-5 text-white/90">
-                          {os.andar || "Não informado"}
-                        </p>
-                      </div>
-
-                      <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
-                          Ambiente
-                        </p>
-                        <p className="break-words text-sm font-medium leading-5 text-white/85">
-                          {os.local || "Não informado"}
-                        </p>
-                      </div>
-
-                      <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
-                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
-                          Solicitante
-                        </p>
-                        <p className="break-words text-sm font-medium leading-5 text-white/85">
-                          {os.solicitante || "Não informado"}
-                        </p>
+                        <h3
+                          className={cn(
+                            "text-[15px] font-semibold leading-6 text-white/95 transition-colors group-hover:text-white md:text-base",
+                            viewMode === "list" ? "line-clamp-3" : "line-clamp-4 min-h-[6rem]",
+                          )}
+                        >
+                          {os.nome_os || "Sem descrição informada"}
+                        </h3>
                       </div>
                     </div>
 
-                    {(os.data_criacao || os.pecas_solicitadas) && (
-                      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.06] pt-3 text-[10px] text-muted-foreground/65">
-                        {os.data_criacao && (
-                          <span>
-                            Abertura: {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
-                          </span>
-                        )}
-                        {os.pecas_solicitadas && (
-                          <span className="flex items-center gap-1.5 text-amber-400/80">
-                            <Package className="h-3 w-3" />
-                            Peças solicitadas
-                          </span>
-                        )}
+                    <div
+                      className={cn(
+                        "border-t border-white/[0.06] bg-black/10 p-4 md:p-5",
+                        viewMode === "list" && "md:border-l md:border-t-0",
+                      )}
+                    >
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-4">
+                        <div className="min-w-0">
+                          <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                            Prédio
+                          </p>
+                          <p className="break-words text-sm font-semibold leading-5 text-white/90">
+                            {os.predio || "Não informado"}
+                          </p>
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                            Andar
+                          </p>
+                          <p className="break-words text-sm font-semibold leading-5 text-white/90">
+                            {os.andar || "Não informado"}
+                          </p>
+                        </div>
+
+                        <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
+                          <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                            Ambiente
+                          </p>
+                          <p className="break-words text-sm font-medium leading-5 text-white/85">
+                            {os.local || "Não informado"}
+                          </p>
+                        </div>
+
+                        <div className="col-span-2 min-w-0 border-t border-white/[0.05] pt-3">
+                          <p className="mb-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/55">
+                            Solicitante
+                          </p>
+                          <p className="break-words text-sm font-medium leading-5 text-white/85">
+                            {os.solicitante || "Não informado"}
+                          </p>
+                        </div>
                       </div>
-                    )}
+
+                      {(os.data_criacao || os.pecas_solicitadas) && (
+                        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.06] pt-3 text-[10px] text-muted-foreground/65">
+                          {os.data_criacao && (
+                            <span>
+                              Abertura: {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                            </span>
+                          )}
+                          {os.pecas_solicitadas && (
+                            <span className="flex items-center gap-1.5 text-amber-400/80">
+                              <Package className="h-3 w-3" />
+                              Peças solicitadas
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {completed && (
+                        <div className="mt-4 border-t border-white/[0.06] pt-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2 border-amber-400/25 bg-amber-400/[0.05] text-amber-200 hover:border-amber-300/40 hover:bg-amber-400/10 hover:text-amber-100"
+                            disabled={isReopening}
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void handleReopen(os);
+                            }}
+                            title="Voltar este chamado para o status Aberta"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {isReopening ? "Reabrindo..." : "Reabrir chamado"}
+                          </Button>
+                          <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground/65">
+                            Volta para Aberta e reaparece na impressão e na planilha.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </GlassCard>
-            ))}
+                </GlassCard>
+              );
+            })}
           </div>
         )}
       </div>
