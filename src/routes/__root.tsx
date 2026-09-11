@@ -15,6 +15,7 @@ import premiumCss from "../premium-ui.css?url";
 import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
 import pcmAssetsCompactFixCss from "../pcm-assets-compact-fix.css?url";
 import pcmAssetsGlassCss from "../pcm-assets-glass.css?url";
+import pcmAssetsGlassPolishCss from "../pcm-assets-glass-polish.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
@@ -142,6 +143,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: pcmAssetsCompactFixCss },
       // Tema visual exclusivo do fluxo PCM; carregado após a correção de layout para não reintroduzir overflow.
       { rel: "stylesheet", href: pcmAssetsGlassCss },
+      // Ajustes finais do trilho de progresso e interação.
+      { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
