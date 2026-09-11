@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
 import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
+import pcmAssetsCompactFixCss from "../pcm-assets-compact-fix.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
@@ -136,6 +137,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: interactionMotionResetCss },
       // Tipografia exclusiva das páginas institucionais; não depende do plugin prose.
       { rel: "stylesheet", href: institutionalPagesCss },
+      // Correção final e escopada do fluxo PCM para manter upload, stepper e catálogo compactos.
+      { rel: "stylesheet", href: pcmAssetsCompactFixCss },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
