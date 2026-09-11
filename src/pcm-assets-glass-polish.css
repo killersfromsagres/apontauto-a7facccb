@@ -322,6 +322,37 @@
   translate: none !important;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Hard stop for any legacy rotating effect inside the processing panel.       */
+/* This selector does not depend on :has() or the Loader2 class name.           */
+/* -------------------------------------------------------------------------- */
+
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center > svg,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center .animate-spin,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [class*="animate-spin"] {
+  display: none !important;
+  animation: none !important;
+  animation-name: none !important;
+  transform: none !important;
+  rotate: none !important;
+}
+
+/* No child of the processing panel may run a looping rotation/orbit. */
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg::before,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg::after {
+  animation: none !important;
+  rotate: none !important;
+}
+
+/* Keep only the natural progress transition. No shimmer/orbit loop. */
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div::before,
+[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div::after {
+  animation: none !important;
+  animation-name: none !important;
+}
+
 @media (max-width: 639px) {
   [data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) {
     grid-template-columns: 1fr !important;
