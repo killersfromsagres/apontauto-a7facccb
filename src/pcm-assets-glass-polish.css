@@ -1,166 +1,259 @@
-/* Final rendering polish for PCM · Preencher Planilha.
- * This layer is intentionally loaded last for this workflow.
+/*
+ * PCM · Inteligência de Ativos · Preencher Planilha
+ * Final visual polish loaded after the compact + glass layers.
+ * Keep this file intentionally small: one authoritative progress treatment,
+ * refined selection controls and no press/sink interaction.
  */
 
+@keyframes pcm-progress-sheen {
+  0% {
+    transform: translateX(-145%) skewX(-18deg);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.72;
+  }
+  62% {
+    opacity: 0.48;
+  }
+  100% {
+    transform: translateX(360%) skewX(-18deg);
+    opacity: 0;
+  }
+}
+
 /* -------------------------------------------------------------------------- */
-/* Processing: no spinner, no rotating ornament, only a precise progress rail  */
+/* Processing panel                                                            */
 /* -------------------------------------------------------------------------- */
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  align-items: end !important;
-  gap: 0.9rem 1rem !important;
-  padding: 1.05rem 1.1rem !important;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.72rem 0.9rem !important;
+  width: 100% !important;
+  padding: 1rem 1.05rem !important;
+  overflow: hidden !important;
   text-align: left !important;
-  border: 1px solid rgb(132 177 218 / 0.17) !important;
+  border: 1px solid rgb(129 174 215 / 0.16) !important;
   border-radius: 1rem !important;
   background:
-    linear-gradient(145deg, rgb(255 255 255 / 0.026), transparent 38%),
-    rgb(10 19 31 / 0.74) !important;
+    radial-gradient(circle at 92% -20%, rgb(104 168 255 / 0.08), transparent 32%),
+    linear-gradient(145deg, rgb(255 255 255 / 0.026), transparent 40%),
+    rgb(9 18 30 / 0.78) !important;
   box-shadow:
-    0 24px 58px -44px rgb(0 0 0 / 0.94),
+    0 24px 58px -44px rgb(0 0 0 / 0.95),
     inset 0 1px 0 rgb(255 255 255 / 0.04) !important;
   -webkit-backdrop-filter: blur(20px) saturate(125%);
   backdrop-filter: blur(20px) saturate(125%);
 }
 
-/* Remove the original rotating Loader2 completely. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > svg,
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) .animate-spin {
+/* Remove every legacy spinner/rotating element from this processing state. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > svg,
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  .lucide-loader-circle,
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  .animate-spin,
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  [class*="animate-spin"] {
   display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
   animation: none !important;
   transform: none !important;
+  rotate: none !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle)::before {
-  content: "PROCESSANDO PLANILHA";
-  grid-column: 1 / -1;
-  display: inline-flex;
-  align-items: center;
-  width: max-content;
-  max-width: 100%;
-  min-height: 1.55rem;
-  padding: 0.28rem 0.52rem 0.27rem 1.18rem;
-  border: 1px solid rgb(98 220 224 / 0.16);
-  border-radius: 999px;
-  background: rgb(98 220 224 / 0.035);
-  color: #86dce0;
-  font-size: 0.57rem;
-  font-weight: 750;
-  line-height: 1;
-  letter-spacing: 0.105em;
-  position: relative;
+/* Static technical activity icon. No pulse and no rotation. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])::before {
+  content: "" !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: block !important;
+  width: 2.35rem !important;
+  height: 2.35rem !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 1px solid rgb(98 220 224 / 0.19) !important;
+  border-radius: 0.72rem !important;
+  background-color: rgb(10 24 36 / 0.82) !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237fdde1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 1.16rem 1.16rem !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055) !important;
+  animation: none !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle)::after {
-  content: "";
-  position: absolute;
-  top: 1.46rem;
-  left: 1.62rem;
-  width: 0.34rem;
-  height: 0.34rem;
-  border-radius: 999px;
-  background: #62dce0;
-  box-shadow: 0 0 0 3px rgb(98 220 224 / 0.075);
-  pointer-events: none;
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])::after {
+  content: none !important;
+  display: none !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > div {
-  grid-column: 1 / -1 !important;
-  min-width: 0;
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > div:not(.pointer-events-none) {
+  grid-column: 2 / 4 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > div > p:first-child {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > div:not(.pointer-events-none)
+  > p:first-child {
   margin: 0 !important;
   color: #eef7ff !important;
-  font-size: clamp(1rem, 1.7vw, 1.18rem) !important;
-  font-weight: 680 !important;
+  font-size: clamp(0.98rem, 1.6vw, 1.12rem) !important;
+  font-weight: 690 !important;
   line-height: 1.18 !important;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.025em !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > div > p:last-child {
-  margin-top: 0.34rem !important;
-  color: #8298ad !important;
-  font-size: 0.75rem !important;
-  line-height: 1.45 !important;
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > div:not(.pointer-events-none)
+  > p:last-child {
+  margin-top: 0.24rem !important;
+  color: #8198ad !important;
+  font-size: 0.72rem !important;
+  line-height: 1.42 !important;
   overflow-wrap: anywhere;
 }
 
-/* Glass progress rail. The Radix indicator is a translated full-width layer,
-   so the track deliberately clips it. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] {
-  grid-column: 1 !important;
-  position: relative;
+/* -------------------------------------------------------------------------- */
+/* Corrected premium progress rail                                             */
+/* Radix keeps a 100%-wide indicator and translates it by the real percentage. */
+/* -------------------------------------------------------------------------- */
+
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"] {
+  grid-column: 1 / 3 !important;
+  grid-row: 2 !important;
+  position: relative !important;
   isolation: isolate;
-  width: 100%;
-  height: 0.82rem !important;
+  width: 100% !important;
+  height: 0.88rem !important;
+  margin: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgb(131 177 218 / 0.16) !important;
+  border: 1px solid rgb(126 171 211 / 0.17) !important;
   border-radius: 999px !important;
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent),
-    rgb(4 10 17 / 0.78) !important;
+    linear-gradient(180deg, rgb(255 255 255 / 0.026), transparent 58%),
+    rgb(3 9 16 / 0.82) !important;
   box-shadow:
-    inset 0 2px 6px rgb(0 0 0 / 0.36),
-    inset 0 1px 0 rgb(255 255 255 / 0.018) !important;
+    inset 0 2px 7px rgb(0 0 0 / 0.42),
+    inset 0 1px 0 rgb(255 255 255 / 0.018),
+    0 1px 0 rgb(255 255 255 / 0.012) !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"]::before {
-  content: "";
+/* Quiet glass highlight over the rail. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"]::before {
+  content: "" !important;
   position: absolute;
-  z-index: 2;
-  inset: 0;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.028), transparent 55%);
+  z-index: 3;
+  inset: 0 !important;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 52%) !important;
   pointer-events: none;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"]::after {
-  content: attr(aria-valuenow) "%";
-  position: absolute;
-  z-index: 4;
-  top: 50%;
-  right: 0.5rem;
-  min-width: 2.1rem;
-  transform: translateY(-50%);
-  color: rgb(238 248 255 / 0.94);
-  font-family: "JetBrains Mono", ui-monospace, monospace;
-  font-size: 0.56rem;
-  font-weight: 700;
-  line-height: 1;
-  text-align: right;
-  text-shadow: 0 1px 5px rgb(0 0 0 / 0.72);
+/* Percentage remains readable regardless of how full the rail is. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"]::after {
+  content: attr(aria-valuenow) "%" !important;
+  position: absolute !important;
+  z-index: 5 !important;
+  top: 50% !important;
+  right: 0.48rem !important;
+  min-width: 2.2rem !important;
+  transform: translateY(-50%) !important;
+  color: rgb(239 249 255 / 0.95) !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 0.56rem !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  text-align: right !important;
+  text-shadow: 0 1px 5px rgb(0 0 0 / 0.78) !important;
   pointer-events: none;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] > div {
-  position: relative;
-  z-index: 1;
-  overflow: visible !important;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #5c9df5 0%, #61c9dd 54%, #4fd0b4 100%) !important;
-  box-shadow: 0 0 12px rgb(88 176 227 / 0.18) !important;
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+/* Real progress fill. Only the transform supplied by Radix changes. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"]
+  > div {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  border-radius: inherit !important;
+  background: linear-gradient(90deg, #5797ef 0%, #5fc8dc 54%, #48cdae 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.20),
+    0 0 14px rgb(84 175 221 / 0.18) !important;
+  will-change: transform;
+  transition: transform 380ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
-/* Static leading highlight at the actual progress edge — no looping animation. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] > div::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 0.55rem;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.28));
+/* Professional linear sheen: the only looping loading animation. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"]
+  > div::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: 2 !important;
+  top: -20% !important;
+  bottom: -20% !important;
+  left: -35% !important;
+  width: 32% !important;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.34), transparent) !important;
+  animation: pcm-progress-sheen 1.75s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+  pointer-events: none !important;
+}
+
+/* Crisp leading edge without a second animation. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > [role="progressbar"]
+  > div::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 0.12rem !important;
+  background: rgb(232 251 255 / 0.70) !important;
+  box-shadow: 0 0 8px rgb(98 220 224 / 0.42) !important;
   animation: none !important;
+  pointer-events: none !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > button {
-  grid-column: 2 !important;
-  min-width: 6.8rem !important;
-  min-height: 2.35rem !important;
-  padding: 0.52rem 0.75rem !important;
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > button {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+  min-width: 6.6rem !important;
+  min-height: 2.32rem !important;
+  margin: 0 !important;
+  padding: 0.5rem 0.72rem !important;
   border: 1px solid rgb(151 180 205 / 0.13) !important;
   border-radius: 0.68rem !important;
   background: rgb(8 16 27 / 0.56) !important;
@@ -168,23 +261,26 @@
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025) !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > button:hover {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+  > button:hover {
   border-color: rgb(240 124 136 / 0.24) !important;
   background: rgb(240 124 136 / 0.045) !important;
   color: #eab0b6 !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* File selection buttons: quieter, sharper, better aligned                    */
+/* File selection buttons                                                      */
 /* -------------------------------------------------------------------------- */
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"] {
-  position: relative;
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"] {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.52rem !important;
-  min-height: 2.48rem !important;
+  gap: 0.5rem !important;
+  min-height: 2.46rem !important;
   height: auto !important;
   padding: 0.56rem 0.9rem !important;
   border-radius: 0.7rem !important;
@@ -192,11 +288,11 @@
   font-weight: 650 !important;
   line-height: 1.15 !important;
   letter-spacing: -0.01em;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035) !important;
 }
 
-/* Main file chooser: glass surface with a restrained blue accent. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"]:first-of-type {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]:first-of-type {
   border: 1px solid rgb(104 168 255 / 0.34) !important;
   background:
     linear-gradient(180deg, rgb(104 168 255 / 0.11), rgb(104 168 255 / 0.035)),
@@ -207,7 +303,9 @@
     0 14px 26px -24px rgb(104 168 255 / 0.54) !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"]:first-of-type:hover {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]:first-of-type:hover {
   border-color: rgb(123 186 255 / 0.48) !important;
   background:
     linear-gradient(180deg, rgb(104 168 255 / 0.15), rgb(104 168 255 / 0.05)),
@@ -215,21 +313,27 @@
   color: white !important;
 }
 
-/* Model download stays secondary instead of competing with selection. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"]:nth-of-type(2) {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]:nth-of-type(2) {
   border: 1px solid rgb(150 181 208 / 0.12) !important;
   background: rgb(8 16 27 / 0.48) !important;
   color: #96aabc !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025) !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"]:nth-of-type(2):hover {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]:nth-of-type(2):hover {
   border-color: rgb(98 220 224 / 0.23) !important;
   background: rgb(98 220 224 / 0.035) !important;
   color: #c9edef !important;
 }
 
-/* Icons act as small technical glyphs rather than large decorative badges. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"] > svg {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]
+  > svg {
   width: 0.98rem !important;
   height: 0.98rem !important;
   margin: 0 !important;
@@ -237,18 +341,24 @@
   stroke-width: 1.75 !important;
 }
 
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"]:nth-of-type(2) > svg {
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]:nth-of-type(2)
+  > svg {
   color: #72d7d5 !important;
 }
 
-/* Busy state on file selection should not introduce another spinner. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"] .animate-spin {
+/* Do not replace a file-selection busy state with another spinner. */
+[data-page-title="Preencher Planilha"]
+  div.rounded-3xl:has(input[type="file"])
+  [data-slot="button"]
+  .animate-spin {
   display: none !important;
   animation: none !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Select / mapping controls: cleaner selection affordance                     */
+/* Select / mapping controls                                                   */
 /* -------------------------------------------------------------------------- */
 
 [data-page-title="Preencher Planilha"] [data-slot="select-trigger"] {
@@ -271,7 +381,9 @@
 [data-page-title="Preencher Planilha"] [data-slot="select-trigger"]:focus-visible,
 [data-page-title="Preencher Planilha"] [data-slot="select-trigger"][data-state="open"] {
   border-color: rgb(98 220 224 / 0.34) !important;
-  box-shadow: 0 0 0 3px rgb(98 220 224 / 0.075), inset 0 1px 0 rgb(255 255 255 / 0.03) !important;
+  box-shadow:
+    0 0 0 3px rgb(98 220 224 / 0.075),
+    inset 0 1px 0 rgb(255 255 255 / 0.03) !important;
 }
 
 [data-page-title="Preencher Planilha"] [data-slot="select-trigger"] > svg {
@@ -281,7 +393,7 @@
   opacity: 0.9;
 }
 
-/* Preview selection chips become a compact segmented-control language. */
+/* Compact preview selection chips. */
 [data-page-title="Preencher Planilha"] button.rounded-full {
   min-height: 2rem !important;
   padding: 0.42rem 0.62rem !important;
@@ -306,14 +418,15 @@
     linear-gradient(180deg, rgb(104 168 255 / 0.13), rgb(104 168 255 / 0.05)),
     rgb(9 19 31 / 0.64) !important;
   color: #c7e0fb !important;
-  box-shadow: inset 0 -2px 0 rgb(104 168 255 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.035) !important;
+  box-shadow:
+    inset 0 -2px 0 rgb(104 168 255 / 0.36),
+    inset 0 1px 0 rgb(255 255 255 / 0.035) !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Interaction rules                                                           */
+/* Interaction + responsive                                                    */
 /* -------------------------------------------------------------------------- */
 
-/* Preserve the system rule: controls never press, sink or move on interaction. */
 [data-page-title="Preencher Planilha"] button:active,
 [data-page-title="Preencher Planilha"] [role="button"]:active,
 [data-page-title="Preencher Planilha"] [data-slot="button"]:active {
@@ -322,208 +435,47 @@
   translate: none !important;
 }
 
-/* -------------------------------------------------------------------------- */
-/* Hard stop for any legacy rotating effect inside the processing panel.       */
-/* This selector does not depend on :has() or the Loader2 class name.           */
-/* -------------------------------------------------------------------------- */
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center > svg,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center .animate-spin,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [class*="animate-spin"] {
-  display: none !important;
-  animation: none !important;
-  animation-name: none !important;
-  transform: none !important;
-  rotate: none !important;
-}
-
-/* No child of the processing panel may run a looping rotation/orbit. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg::before,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center svg::after {
-  animation: none !important;
-  rotate: none !important;
-}
-
-/* Keep only the natural progress transition. No shimmer/orbit loop. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div::before,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center [role="progressbar"] > div::after {
-  animation: none !important;
-  animation-name: none !important;
-}
-
-/* -------------------------------------------------------------------------- */
-/* Definitive processing indicator: static activity icon + linear scan effect. */
-/* Targets the processing panel by its progressbar, not by the old Loader icon. */
-/* -------------------------------------------------------------------------- */
-
-@keyframes pcm-processing-breathe {
-  0%, 100% {
-    opacity: 0.82;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.055), 0 0 0 0 rgb(98 220 224 / 0);
-  }
-  50% {
-    opacity: 1;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 0 0 5px rgb(98 220 224 / 0.045);
-  }
-}
-
-@keyframes pcm-progress-scan {
-  0% { transform: translateX(-145%); opacity: 0; }
-  18% { opacity: 0.65; }
-  72% { opacity: 0.38; }
-  100% { transform: translateX(310%); opacity: 0; }
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) {
-  display: grid !important;
-  grid-template-columns: 2.55rem minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  gap: 0.72rem 0.9rem !important;
-  padding: 1rem 1.05rem !important;
-  text-align: left !important;
-}
-
-/* The original Loader2 is removed from layout completely. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > svg,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) .lucide-loader-circle,
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) .animate-spin {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  margin: 0 !important;
-  animation: none !important;
-  transform: none !important;
-  rotate: none !important;
-}
-
-/* New static Activity icon. It breathes softly but never rotates. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])::before {
-  content: "" !important;
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  display: block !important;
-  width: 2.35rem !important;
-  height: 2.35rem !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  border: 1px solid rgb(98 220 224 / 0.20) !important;
-  border-radius: 0.72rem !important;
-  background-color: rgb(10 24 36 / 0.82) !important;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%237fdde1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 12h-4l-3 9L9 3l-3 9H2'/%3E%3C/svg%3E") !important;
-  background-repeat: no-repeat !important;
-  background-position: center !important;
-  background-size: 1.18rem 1.18rem !important;
-  color: transparent !important;
-  font-size: 0 !important;
-  letter-spacing: 0 !important;
-  animation: pcm-processing-breathe 2.2s ease-in-out infinite !important;
-}
-
-/* Remove the old decorative dot/badge completely. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])::after {
-  content: none !important;
-  display: none !important;
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > div:not(.pointer-events-none) {
-  grid-column: 2 / 4 !important;
-  grid-row: 1 !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > div:not(.pointer-events-none) > p:first-child {
-  margin: 0 !important;
-  color: #edf7ff !important;
-  font-size: 1rem !important;
-  font-weight: 680 !important;
-  line-height: 1.2 !important;
-  letter-spacing: -0.02em !important;
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > div:not(.pointer-events-none) > p:last-child {
-  margin-top: 0.2rem !important;
-  color: #8097ab !important;
-  font-size: 0.72rem !important;
-  line-height: 1.4 !important;
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > [role="progressbar"] {
-  grid-column: 1 / 3 !important;
-  grid-row: 2 !important;
-  height: 0.78rem !important;
-  margin: 0 !important;
-  overflow: hidden !important;
-}
-
-/* Linear light sweep stays inside the progress fill; no circular motion. */
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > [role="progressbar"] > div::after {
-  content: "" !important;
-  position: absolute !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  width: 30% !important;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.30), transparent) !important;
-  animation: pcm-progress-scan 1.85s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
-  pointer-events: none !important;
-}
-
-[data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > button {
-  grid-column: 3 !important;
-  grid-row: 2 !important;
-  margin: 0 !important;
-}
-
 @media (max-width: 639px) {
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) {
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) {
     grid-template-columns: 2.35rem minmax(0, 1fr) !important;
+    padding: 0.9rem !important;
   }
 
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > div:not(.pointer-events-none) {
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+    > div:not(.pointer-events-none) {
     grid-column: 2 !important;
   }
 
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > [role="progressbar"],
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > button {
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+    > [role="progressbar"] {
     grid-column: 1 / -1 !important;
-  }
-
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > [role="progressbar"] {
     grid-row: 2 !important;
   }
 
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > button {
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+    > button {
+    grid-column: 1 / -1 !important;
     grid-row: 3 !important;
     width: 100% !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])::before,
-  [data-page-title="Preencher Planilha"] div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"]) > [role="progressbar"] > div::after {
-    animation: none !important;
-  }
-}
-
-@media (max-width: 639px) {
-  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) {
-    grid-template-columns: 1fr !important;
-    padding: 0.9rem !important;
-  }
-
-  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"],
-  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > button {
-    grid-column: 1 !important;
-    width: 100% !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] > div {
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+    > [role="progressbar"]
+    > div {
     transition-duration: 0.001ms !important;
+  }
+
+  [data-page-title="Preencher Planilha"]
+    div.rounded-3xl.space-y-5.text-center:has(> [role="progressbar"])
+    > [role="progressbar"]
+    > div::before {
+    animation: none !important;
   }
 }
