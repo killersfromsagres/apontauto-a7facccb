@@ -1,25 +1,33 @@
 /*
  * PCM · Inteligência de Ativos · Preencher Planilha
- * Compact layout repair.
- * Loaded after the premium stylesheet so it can safely neutralize the
- * over-broad workflow selector without changing application logic.
+ * Compact, single-viewport layout repair.
+ * Loaded after pcm-assets-premium.css and scoped only to this workflow.
  */
 
 [data-page-title="Preencher Planilha"] {
-  --pcm-compact-line: color-mix(in oklch, var(--border) 78%, #5b9dff 22%);
-  --pcm-compact-panel: color-mix(in oklch, var(--card) 94%, #102033 6%);
-  --pcm-compact-soft: color-mix(in oklch, var(--background) 88%, #15273d 12%);
+  --pcm-compact-line: color-mix(in oklch, var(--border) 80%, #5b9dff 20%);
+  --pcm-compact-panel: color-mix(in oklch, var(--card) 95%, #102033 5%);
+  --pcm-compact-soft: color-mix(in oklch, var(--background) 90%, #15273d 10%);
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: clip !important;
+}
+
+[data-page-title="Preencher Planilha"] > div,
+[data-page-title="Preencher Planilha"] > div:last-child,
+[data-page-title="Preencher Planilha"] > div:last-child > div:first-child,
+[data-page-title="Preencher Planilha"] > div:last-child > div:first-child > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Critical structure repair                                                   */
-/* The previous selector accidentally turned the ENTIRE workflow into one row. */
+/* Restore the workflow to a vertical document flow                            */
 /* -------------------------------------------------------------------------- */
 
 [data-page-title="Preencher Planilha"] > div:last-child > div:first-child {
   display: block !important;
   width: 100% !important;
-  max-width: 100% !important;
   padding: 0 !important;
   overflow: visible !important;
   border: 0 !important;
@@ -28,42 +36,28 @@
   box-shadow: none !important;
 }
 
-[data-page-title="Preencher Planilha"] > div:last-child > div:first-child > * {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  flex: initial !important;
+[data-page-title="Preencher Planilha"] > div:last-child > div:first-child > * + * {
+  margin-top: 0.72rem;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Compact progress navigation                                                 */
+/* Stepper: always visible, never horizontally scrollable                      */
 /* -------------------------------------------------------------------------- */
 
 [data-page-title="Preencher Planilha"]
   > div:last-child
   > div:first-child
   > .flex.min-w-0.flex-wrap.items-center.gap-2 {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
   width: 100% !important;
-  max-width: 100%;
-  align-items: center !important;
-  flex-wrap: nowrap !important;
-  gap: 0.3rem !important;
+  gap: 0.34rem !important;
   padding: 0.42rem !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
+  overflow: visible !important;
   border: 1px solid color-mix(in oklch, var(--border) 88%, transparent) !important;
   border-radius: 0.82rem !important;
-  background: color-mix(in oklch, var(--card) 76%, transparent) !important;
+  background: color-mix(in oklch, var(--card) 78%, transparent) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025) !important;
-  scrollbar-width: none;
-}
-
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > .flex.min-w-0.flex-wrap.items-center.gap-2::-webkit-scrollbar {
-  display: none;
 }
 
 [data-page-title="Preencher Planilha"]
@@ -71,11 +65,9 @@
   > div:first-child
   > .flex.min-w-0.flex-wrap.items-center.gap-2
   > div {
-  display: flex !important;
-  flex: 0 0 auto !important;
-  align-items: center !important;
-  gap: 0.3rem !important;
-  min-width: 0;
+  display: block !important;
+  min-width: 0 !important;
+  width: 100% !important;
 }
 
 [data-page-title="Preencher Planilha"]
@@ -84,44 +76,48 @@
   > .flex.min-w-0.flex-wrap.items-center.gap-2
   > div
   > span.rounded-full {
-  display: inline-flex !important;
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 2rem !important;
+  height: auto !important;
   align-items: center !important;
   justify-content: center !important;
-  min-height: 1.9rem !important;
-  height: 1.9rem !important;
-  padding: 0.34rem 0.58rem !important;
+  gap: 0.28rem !important;
+  padding: 0.42rem 0.38rem !important;
   border-radius: 0.58rem !important;
-  font-size: 0.67rem !important;
+  font-size: clamp(0.58rem, 0.8vw, 0.68rem) !important;
   font-weight: 650 !important;
-  line-height: 1 !important;
-  white-space: nowrap !important;
-  letter-spacing: -0.005em;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  text-align: center !important;
+  overflow-wrap: anywhere;
 }
 
+/* The decorative connector lines are unnecessary once the seven stages use a grid. */
 [data-page-title="Preencher Planilha"]
   > div:last-child
   > div:first-child
   > .flex.min-w-0.flex-wrap.items-center.gap-2
   > div
   > span.hidden {
-  width: 0.55rem !important;
-  margin-inline: 0 !important;
-  opacity: 0.6;
+  display: none !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Catalog row: separate from the stepper, compact and readable               */
+/* Catalog status                                                             */
 /* -------------------------------------------------------------------------- */
 
 [data-page-title="Preencher Planilha"] > div:last-child > div:first-child > div:nth-child(2) {
   display: flex !important;
   width: 100% !important;
+  min-width: 0 !important;
   align-items: center !important;
   justify-content: flex-start !important;
   flex-wrap: wrap !important;
-  gap: 0.45rem !important;
-  min-height: 1.75rem;
-  padding: 0 0.1rem !important;
+  gap: 0.42rem !important;
+  min-height: 1.6rem;
+  padding: 0 0.08rem !important;
   overflow: visible !important;
   border: 0 !important;
   background: transparent !important;
@@ -129,176 +125,289 @@
 }
 
 [data-page-title="Preencher Planilha"] > div:last-child > div:first-child > div:nth-child(2) [data-slot="badge"] {
-  min-height: 1.55rem !important;
-  padding: 0.24rem 0.55rem !important;
+  max-width: 100% !important;
+  min-height: 1.5rem !important;
+  padding: 0.22rem 0.52rem !important;
   border: 1px solid rgb(88 217 223 / 0.28) !important;
   border-radius: 999px !important;
   background: rgb(88 217 223 / 0.07) !important;
   color: color-mix(in oklch, var(--foreground) 80%, #58d9df 20%) !important;
-  font-size: 0.67rem !important;
-  line-height: 1.1 !important;
+  font-size: 0.66rem !important;
+  line-height: 1.15 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
 }
 
 [data-page-title="Preencher Planilha"] > div:last-child > div:first-child > div:nth-child(2) > span:not([data-slot="badge"]) {
-  font-size: 0.69rem !important;
+  min-width: 0;
+  font-size: 0.68rem !important;
   line-height: 1.3 !important;
   color: var(--muted-foreground) !important;
+  overflow-wrap: anywhere;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Upload card                                                                 */
+/* Upload: compact, centered and fully visible                                 */
 /* -------------------------------------------------------------------------- */
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"]) {
-  width: min(100%, 58rem) !important;
-  max-width: 58rem !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) {
+  width: min(100%, 52rem) !important;
+  max-width: 52rem !important;
   margin-inline: auto !important;
-  padding: 0.9rem !important;
+  padding: 0.76rem !important;
   overflow: hidden !important;
   border: 1px solid var(--pcm-compact-line) !important;
-  border-radius: 1rem !important;
+  border-radius: 0.95rem !important;
   background:
-    linear-gradient(135deg, rgb(91 157 255 / 0.045), transparent 38%),
-    linear-gradient(315deg, rgb(63 208 179 / 0.03), transparent 34%),
+    linear-gradient(135deg, rgb(91 157 255 / 0.04), transparent 38%),
+    linear-gradient(315deg, rgb(63 208 179 / 0.025), transparent 34%),
     var(--pcm-compact-panel) !important;
-  box-shadow: 0 18px 42px -36px rgb(0 0 0 / 0.85), inset 0 1px 0 rgb(255 255 255 / 0.03) !important;
+  box-shadow: 0 18px 42px -36px rgb(0 0 0 / 0.82), inset 0 1px 0 rgb(255 255 255 / 0.03) !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  > div:has(> input[type="file"]) {
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) > div:has(> input[type="file"]) {
   display: flex !important;
   width: 100% !important;
+  min-width: 0 !important;
   min-height: 0 !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.8rem !important;
-  padding: 1.35rem 1rem !important;
-  overflow: visible !important;
+  gap: 0.66rem !important;
+  padding: 1rem 0.9rem !important;
+  overflow: hidden !important;
   border-width: 1px !important;
-  border-radius: 0.82rem !important;
-  background: color-mix(in oklch, var(--background) 75%, transparent) !important;
+  border-radius: 0.78rem !important;
+  background: color-mix(in oklch, var(--background) 77%, transparent) !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  > div:has(> input[type="file"])
-  > div:has(svg.lucide-file-spreadsheet) {
-  margin-bottom: 0.1rem;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) > div:has(> input[type="file"]) > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  > div:has(> input[type="file"])
-  > div:has(svg.lucide-file-spreadsheet)
-  > div:last-child {
-  width: 3.65rem !important;
-  height: 3.65rem !important;
-  border-radius: 0.82rem !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) > div:has(> input[type="file"]) > div:has(svg.lucide-file-spreadsheet) > div:last-child {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  border-radius: 0.75rem !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  > div:has(> input[type="file"])
-  svg.lucide-file-spreadsheet {
-  width: 1.65rem !important;
-  height: 1.65rem !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) svg.lucide-file-spreadsheet {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  h3 {
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) h3 {
   margin: 0 !important;
-  font-size: clamp(1.05rem, 2.4vw, 1.3rem) !important;
-  line-height: 1.2 !important;
-  letter-spacing: -0.025em;
+  font-size: clamp(1rem, 2vw, 1.2rem) !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.024em;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  h3 + p {
-  max-width: 34rem !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) h3 + p {
+  width: 100%;
+  max-width: 33rem !important;
   margin-inline: auto;
-  font-size: 0.76rem !important;
-  line-height: 1.48 !important;
+  font-size: 0.73rem !important;
+  line-height: 1.42 !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  [data-slot="button"] {
-  min-height: 2.4rem !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 2.32rem !important;
   height: auto !important;
-  padding: 0.56rem 0.9rem !important;
-  border-radius: 0.68rem !important;
-  font-size: 0.75rem !important;
+  padding: 0.52rem 0.82rem !important;
+  border-radius: 0.64rem !important;
+  font-size: 0.73rem !important;
   line-height: 1.15 !important;
   white-space: normal !important;
 }
 
-[data-page-title="Preencher Planilha"]
-  > div:last-child
-  > div:first-child
-  > div.rounded-3xl:has(input[type="file"])
-  p.text-\[11px\] {
-  max-width: 38rem;
-  margin-top: 0.1rem;
-  font-size: 0.66rem !important;
-  line-height: 1.42 !important;
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) p.text-\[11px\] {
+  max-width: 35rem;
+  margin-top: 0.05rem;
+  font-size: 0.64rem !important;
+  line-height: 1.38 !important;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Header: slightly tighter so the workflow starts higher on the screen        */
+/* Header and action buttons                                                   */
 /* -------------------------------------------------------------------------- */
 
 [data-page-title="Preencher Planilha"] > .premium-page-heading {
-  padding: 0.95rem 1.05rem !important;
-  gap: 0.75rem 1rem !important;
+  max-width: 100% !important;
+  padding: 0.88rem 0.95rem !important;
+  gap: 0.65rem 0.85rem !important;
+  overflow: hidden !important;
+}
+
+[data-page-title="Preencher Planilha"] .premium-page-heading > div {
+  min-width: 0 !important;
 }
 
 [data-page-title="Preencher Planilha"] .premium-page-heading h2 {
-  font-size: clamp(1.55rem, 2.75vw, 2.15rem) !important;
+  font-size: clamp(1.45rem, 2.6vw, 2rem) !important;
 }
 
 [data-page-title="Preencher Planilha"] .premium-page-heading p {
-  margin-top: 0.35rem !important;
-  font-size: 0.78rem !important;
-  line-height: 1.48 !important;
+  margin-top: 0.3rem !important;
+  max-width: 45rem !important;
+  font-size: 0.76rem !important;
+  line-height: 1.42 !important;
+}
+
+[data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, auto)) !important;
+  width: auto !important;
+  max-width: 100% !important;
+  gap: 0.42rem !important;
 }
 
 [data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child [data-slot="button"] {
-  min-height: 2.4rem !important;
-  padding: 0.54rem 0.75rem !important;
-  font-size: 0.72rem !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 2.3rem !important;
+  padding: 0.5rem 0.68rem !important;
+  font-size: 0.69rem !important;
   white-space: nowrap !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Generic safeguards: the workflow itself must never create page overflow     */
+/* -------------------------------------------------------------------------- */
+
+[data-page-title="Preencher Planilha"] [data-slot="button"],
+[data-page-title="Preencher Planilha"] [data-slot="select-trigger"],
+[data-page-title="Preencher Planilha"] input,
+[data-page-title="Preencher Planilha"] .premium-card,
+[data-page-title="Preencher Planilha"] .rounded-2xl,
+[data-page-title="Preencher Planilha"] .rounded-3xl {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[data-page-title="Preencher Planilha"] .grid {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+[data-page-title="Preencher Planilha"] .flex {
+  min-width: 0;
+}
+
+[data-page-title="Preencher Planilha"] pre {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Navigation at the bottom of each stage */
+[data-page-title="Preencher Planilha"] .justify-between.gap-2:has(> [data-slot="button"]) {
+  display: grid !important;
+  grid-template-columns: minmax(0, auto) minmax(0, auto) !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.55rem !important;
+  width: 100% !important;
+}
+
+[data-page-title="Preencher Planilha"] .justify-between.gap-2:has(> [data-slot="button"]) > [data-slot="button"] {
+  min-width: 0 !important;
+}
+
+/* Result actions wrap inside the viewport instead of expanding it. */
+[data-page-title="Preencher Planilha"] .premium-card > .flex.flex-wrap.gap-2 {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)) !important;
+  width: 100%;
+}
+
+[data-page-title="Preencher Planilha"] .premium-card > .flex.flex-wrap.gap-2 > * {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Preview table: no sideways dragging                                         */
+/* -------------------------------------------------------------------------- */
+
+[data-page-title="Preencher Planilha"] div:has(> table) {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+[data-page-title="Preencher Planilha"] table {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  table-layout: fixed !important;
+}
+
+[data-page-title="Preencher Planilha"] table th,
+[data-page-title="Preencher Planilha"] table td {
+  min-width: 0 !important;
+  width: auto !important;
+  padding: 0.48rem 0.42rem !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+[data-page-title="Preencher Planilha"] table th {
+  font-size: 0.61rem !important;
+  line-height: 1.18 !important;
+}
+
+[data-page-title="Preencher Planilha"] table td {
+  font-size: 0.64rem !important;
+  line-height: 1.28 !important;
+}
+
+[data-page-title="Preencher Planilha"] table input {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding-inline: 0.35rem !important;
+  font-size: 0.64rem !important;
 }
 
 /* -------------------------------------------------------------------------- */
 /* Responsive                                                                 */
 /* -------------------------------------------------------------------------- */
 
-@media (max-width: 900px) {
+@media (max-width: 1050px) {
   [data-page-title="Preencher Planilha"]
     > div:last-child
     > div:first-child
     > .flex.min-w-0.flex-wrap.items-center.gap-2 {
-    padding: 0.35rem !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  [data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  [data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child [data-slot="button"] {
+    width: 100% !important;
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 760px) {
+  [data-page-title="Preencher Planilha"] {
+    padding-inline: 0.65rem !important;
+  }
+
+  [data-page-title="Preencher Planilha"]
+    > div:last-child
+    > div:first-child
+    > .flex.min-w-0.flex-wrap.items-center.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.28rem !important;
+    padding: 0.34rem !important;
   }
 
   [data-page-title="Preencher Planilha"]
@@ -307,52 +416,125 @@
     > .flex.min-w-0.flex-wrap.items-center.gap-2
     > div
     > span.rounded-full {
-    min-height: 1.82rem !important;
-    height: 1.82rem !important;
-    padding-inline: 0.5rem !important;
-    font-size: 0.64rem !important;
+    min-height: 1.85rem !important;
+    padding: 0.38rem 0.32rem !important;
+    font-size: 0.62rem !important;
   }
-}
 
-@media (max-width: 639px) {
   [data-page-title="Preencher Planilha"] > .premium-page-heading {
-    padding: 0.82rem !important;
+    padding: 0.76rem !important;
   }
 
   [data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child {
-    display: grid !important;
     grid-template-columns: 1fr !important;
+  }
+
+  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) {
+    padding: 0.62rem !important;
+  }
+
+  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) > div:has(> input[type="file"]) {
+    gap: 0.58rem !important;
+    padding: 0.82rem 0.62rem !important;
+  }
+
+  [data-page-title="Preencher Planilha"] div.rounded-3xl:has(input[type="file"]) [data-slot="button"] {
     width: 100% !important;
   }
 
-  [data-page-title="Preencher Planilha"] .premium-page-heading > div:last-child [data-slot="button"] {
+  [data-page-title="Preencher Planilha"] .justify-between.gap-2:has(> [data-slot="button"]) {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* The 10-column preview becomes stacked records on narrow screens. */
+  [data-page-title="Preencher Planilha"] div:has(> table) {
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  [data-page-title="Preencher Planilha"] table,
+  [data-page-title="Preencher Planilha"] table tbody {
+    display: block !important;
     width: 100% !important;
-    white-space: normal !important;
   }
 
-  [data-page-title="Preencher Planilha"]
-    > div:last-child
-    > div:first-child
-    > div.rounded-3xl:has(input[type="file"]) {
-    padding: 0.7rem !important;
+  [data-page-title="Preencher Planilha"] table thead {
+    display: none !important;
   }
 
-  [data-page-title="Preencher Planilha"]
-    > div:last-child
-    > div:first-child
-    > div.rounded-3xl:has(input[type="file"])
-    > div:has(> input[type="file"]) {
-    gap: 0.68rem !important;
-    padding: 1rem 0.75rem !important;
-  }
-
-  [data-page-title="Preencher Planilha"]
-    > div:last-child
-    > div:first-child
-    > div.rounded-3xl:has(input[type="file"])
-    [data-slot="button"] {
+  [data-page-title="Preencher Planilha"] table tbody tr {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0 !important;
     width: 100% !important;
-    min-width: 0 !important;
+    margin-bottom: 0.65rem;
+    overflow: hidden;
+    border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+    border-radius: 0.8rem;
+    background: color-mix(in oklch, var(--card) 82%, transparent);
+  }
+
+  [data-page-title="Preencher Planilha"] table tbody td {
+    display: grid !important;
+    grid-template-columns: 5.7rem minmax(0, 1fr) !important;
+    align-items: center;
+    gap: 0.38rem;
+    width: 100% !important;
+    padding: 0.48rem 0.52rem !important;
+    border-top: 1px solid color-mix(in oklch, var(--border) 80%, transparent) !important;
+    font-size: 0.68rem !important;
+  }
+
+  [data-page-title="Preencher Planilha"] table tbody td::before {
+    color: var(--muted-foreground);
+    font-size: 0.58rem;
+    font-weight: 700;
+    line-height: 1.15;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+  }
+
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(1)::before { content: "Linha"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(2)::before { content: "Ativo"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(3)::before { content: "Prédio atual"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(4)::before { content: "Prédio novo"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(5)::before { content: "Andar atual"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(6)::before { content: "Andar novo"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(7)::before { content: "Ambiente atual"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(8)::before { content: "Ambiente novo"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(9)::before { content: "Método"; }
+  [data-page-title="Preencher Planilha"] table tbody td:nth-child(10)::before { content: "Status"; }
+
+  [data-page-title="Preencher Planilha"] table tbody td[colspan] {
+    display: block !important;
+    grid-column: 1 / -1;
+    text-align: center;
+  }
+
+  [data-page-title="Preencher Planilha"] table tbody td[colspan]::before {
+    content: none !important;
+  }
+}
+
+@media (max-width: 430px) {
+  [data-page-title="Preencher Planilha"]
+    > div:last-child
+    > div:first-child
+    > .flex.min-w-0.flex-wrap.items-center.gap-2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  [data-page-title="Preencher Planilha"] table tbody tr {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-page-title="Preencher Planilha"] .justify-between.gap-2:has(> [data-slot="button"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-page-title="Preencher Planilha"] .justify-between.gap-2:has(> [data-slot="button"]) > [data-slot="button"] {
+    width: 100% !important;
   }
 }
 
