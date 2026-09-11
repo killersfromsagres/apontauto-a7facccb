@@ -1,0 +1,47 @@
+/* Final rendering polish for PCM · Preencher Planilha. */
+
+/* The Radix indicator is a full-width layer translated to represent progress.
+   The track must clip it; the percentage stays inside the glass rail. */
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] {
+  overflow: hidden !important;
+  isolation: isolate;
+}
+
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"]::before {
+  z-index: 2;
+}
+
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"]::after {
+  content: attr(aria-valuenow) "%";
+  position: absolute;
+  z-index: 4;
+  top: 50%;
+  right: 0.48rem;
+  min-width: 2.15rem;
+  padding: 0;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: rgb(235 247 255 / 0.92);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.68);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+[data-page-title="Preencher Planilha"] div.rounded-3xl:has(> svg.lucide-loader-circle) > [role="progressbar"] > div {
+  z-index: 1;
+}
+
+/* Preserve the system rule: controls never press, sink or move on interaction. */
+[data-page-title="Preencher Planilha"] button:active,
+[data-page-title="Preencher Planilha"] [role="button"]:active,
+[data-page-title="Preencher Planilha"] [data-slot="button"]:active {
+  transform: none !important;
+  scale: none !important;
+  translate: none !important;
+}
