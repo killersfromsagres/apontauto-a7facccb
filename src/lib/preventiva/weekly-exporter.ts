@@ -843,7 +843,223 @@ function addSlaReferenceSheet(
   };
 }
 
+/** Nome curto e válido para a aba de impressão de cada equipe. */
+export function teamPrintSheetName(equipe: Equipe): string {
+  const short = naturalText(equipe)
+    .toUpperCase()
+    .replace(/^CLIMATIZACAO E REFRIGERACAO\s*/, "REFRIG ")
+    .replace(/[\\/*?:[\]]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return `IMP ${short}`.slice(0, 31).trim();
+}
+
+const TEAM_PRINT_HEADER_ROW = 2;
+
+/**
+ * Abas de impressão contínuas por equipe: todas as OS da equipe em sequência,
+ * ordenadas por prédio → andar → local → OS, sem linhas de outras equipes e
+ * sem quebras manuais, para que cada página seja preenchida por completo.
+ */
+export function addTeamPrintSheets(
+  workbook: import("exceljs").Workbook,
+  input: WeeklyExportInput,
+  activeTeams: Equipe[],
+): void {
+  for (const equipe of activeTeams) {
+    const bucket = input.bucketsPorEquipe.get(equipe);
+    const items = sortDayItems(bucket?.os ?? []);
+    if (items.length === 0) continue;
+
+    const ws = workbook.addWorksheet(teamPrintSheetName(equipe), {
+      views: [
+        {
+          state: "frozen",
+          ySplit: TEAM_PRINT_HEADER_ROW,
+          showGridLines: false,
+        },
+      ],
+    });
+    ws.columns = COLUMNS.map((column) => ({
+      key: column.key,
+      width: column.width,
+    }));
+    ws.properties.defaultRowHeight = 32;
+
+    const teamHex = EQUIPE_COLOR[equipe];
+    const teamArgb = argbFromHex(teamHex);
+
+    ws.mergeCells("A1:J1");
+    const title = ws.getCell("A1");
+    title.value = `${equipe} • ${input.week.label.toUpperCase()} • ${formatDate(input.week.monday)} A ${formatDate(input.week.friday)} • ${items.length} OS`;
+    title.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: PALETTE.navy },
+    };
+    title.font = {
+      name: APTOS_EXTRABOLD,
+      bold: true,
+      size: 14,
+      color: { argb: PALETTE.white },
+    };
+    title.alignment = { vertical: "middle", horizontal: "center" };
+    title.border = {
+      bottom: { style: "medium", color: { argb: PALETTE.gold } },
+    };
+    ws.getRow(1).height = 26;
+
+    const header = ws.getRow(TEAM_PRINT_HEADER_ROW);
+    COLUMNS.forEach((column, index) => {
+      const cell = header.getCell(index + 1);
+      cell.value = column.label;
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: PALETTE.navySoft },
+      };
+      cell.font = {
+        name: APTOS_EXTRABOLD,
+        bold: true,
+        size: 9,
+        color: { argb: PALETTE.white },
+      };
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: "center",
+        wrapText: true,
+      };
+      cell.border = {
+        top: { style: "thin", color: { argb: PALETTE.borderStrong } },
+        bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
+        left: { style: "thin", color: { argb: PALETTE.borderStrong } },
+        right: { style: "thin", color: { argb: PALETTE.borderStrong } },
+      };
+    });
+    header.height = 22;
+
+    let rowIndex = TEAM_PRINT_HEADER_ROW + 1;
+    items.forEach((os, index) => {
+      const row = ws.getRow(rowIndex++);
+      const values = taskValues(os, input.ativoIndex);
+      COLUMNS.forEach((column, columnIndex) => {
+        const cell = row.getCell(columnIndex + 1);
+        const value = values[column.key];
+        cell.value = value === "" ? null : value;
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: index % 2 ? PALETTE.stripe : PALETTE.white },
+        };
+        cell.font = {
+          name: ["atividade", "sla"].includes(column.key)
+            ? APTOS_BODY
+            : APTOS_EXTRABOLD,
+          bold: !["atividade", "sla"].includes(column.key),
+          size: ["nome", "espaco", "equipamento", "ativo"].includes(column.key)
+            ? 10
+            : 10,
+          color: { argb: PALETTE.text },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: [
+            "nome",
+            "espaco",
+            "equipe",
+            "ativo",
+            "equipamento",
+          ].includes(column.key)
+            ? "left"
+            : "center",
+          wrapText: true,
+        };
+        cell.border = {
+          top: { style: "thin", color: { argb: PALETTE.border } },
+          bottom: { style: "thin", color: { argb: PALETTE.border } },
+          left: { style: "thin", color: { argb: PALETTE.border } },
+          right: { style: "thin", color: { argb: PALETTE.border } },
+        };
+        if (column.key === "os") {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: teamArgb },
+          };
+          cell.font = {
+            name: APTOS_EXTRABOLD,
+            bold: true,
+            size: 10,
+            color: { argb: readableTextColor(teamHex) },
+          };
+        } else if (column.key === "equipe") {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: mixWithWhite(teamHex) },
+          };
+          cell.font = {
+            name: APTOS_EXTRABOLD,
+            bold: true,
+            size: 9,
+            color: { argb: teamArgb },
+          };
+        } else if (column.key === "atividade" && isCorrective(os)) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: PALETTE.warningBg },
+          };
+          cell.font = {
+            name: APTOS_SEMIBOLD,
+            bold: true,
+            size: 10,
+            color: { argb: PALETTE.warningText },
+          };
+        } else if (
+          column.key === "ativo" &&
+          values.ativo === "Ativo não localizado"
+        ) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: PALETTE.dangerBg },
+          };
+          cell.font = {
+            name: APTOS_SEMIBOLD,
+            bold: true,
+            size: 10,
+            color: { argb: PALETTE.dangerText },
+          };
+        }
+      });
+      row.height = 36;
+    });
+
+    const lastRow = rowIndex - 1;
+    ws.pageSetup = {
+      orientation: "landscape",
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      paperSize: 9,
+      margins: {
+        left: 0.2,
+        right: 0.2,
+        top: 0.3,
+        bottom: 0.3,
+        header: 0.15,
+        footer: 0.15,
+      },
+      printTitlesRow: `1:${TEAM_PRINT_HEADER_ROW}`,
+      printArea: `A1:J${lastRow}`,
+    };
+    ws.headerFooter.oddFooter = `&L${input.titulo}&C${equipe}&R&P / &N`;
+  }
+}
+
 export async function generateWeeklyProgramacao(
+
   input: WeeklyExportInput,
 ): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
