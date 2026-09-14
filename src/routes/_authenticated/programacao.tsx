@@ -29,8 +29,12 @@ import {
 import { cn } from "@/lib/utils";
 import { downloadBlob } from "@/lib/download";
 import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
-import { weeksBetween, type WeekBucket } from "@/lib/preventiva/capacity";
+import { weeksBetween, type WeekBucket, type WeekInfo } from "@/lib/preventiva/capacity";
 import { getLatestCorretivas } from "@/lib/preventiva/corretivas.functions";
+import {
+  pruneCorrectiveProgramReservations,
+  selectCorrectiveRowsForWeekTeam,
+} from "@/lib/preventiva/corrective-program-reservations";
 import {
   clearHistorico,
   deleteHistorico,
@@ -159,6 +163,63 @@ function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
 const isoLocal = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
+function appendReservedCorrectives(
+  bucket: WeekBucket,
+  loads: DailyTeamLoad[],
+  correctives: TriagedOS[],
+  minutesPerOs: 30 | 60,
+  week: WeekInfo,
+): { bucket: WeekBucket; loads: DailyTeamLoad[] } {
+  const nextBucket: WeekBucket = {
+    ...bucket,
+    os: [...bucket.os],
+    porDia: bucket.porDia.map((items) => [...items]),
+  };
+  const nextLoads = loads.map((load) => ({
+    ...load,
+    correctiveCount: 0,
+    correctiveDeficit: 0,
+  }));
+
+  if (correctives.length === 0) return { bucket: nextBucket, loads: nextLoads };
+
+  const targetLoadIndex = Math.max(0, nextLoads.length - 1);
+  const targetLoad = nextLoads[targetLoadIndex];
+  const dayIndex = targetLoad?.dayIndex ?? 4;
+  nextBucket.os.push(...correctives);
+  nextBucket.porDia[dayIndex] = [
+    ...(nextBucket.porDia[dayIndex] ?? []),
+    ...correctives,
+  ];
+
+  const addedMinutes = correctives.length * minutesPerOs;
+  if (targetLoad) {
+    const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
+    nextLoads[targetLoadIndex] = {
+      ...targetLoad,
+      correctiveCount: correctives.length,
+      scheduledMinutes,
+      remainingMinutes: Math.max(0, targetLoad.targetMinutes - scheduledMinutes),
+      correctiveDeficit: Math.max(0, 2 - correctives.length),
+    };
+  } else {
+    const scheduledMinutes = addedMinutes;
+    nextLoads.push({
+      date: new Date(week.friday),
+      dateKey: isoLocal(week.friday),
+      dayIndex,
+      preventiveCount: 0,
+      correctiveCount: correctives.length,
+      scheduledMinutes,
+      remainingMinutes: Math.max(0, 540 - scheduledMinutes),
+      targetMinutes: 540,
+      correctiveDeficit: Math.max(0, 2 - correctives.length),
+    });
+  }
+
+  return { bucket: nextBucket, loads: nextLoads };
+}
+
 function ProgramacaoPage() {
   const [slotFiles, setSlotFiles] = useState<Record<SlotId, File | null>>({
     CCH: null,
@@ -246,6 +307,7 @@ function ProgramacaoPage() {
       const weeks = weeksBetween(startDate, monthEnd);
       const correctiveRows =
         (await getLatestCorretivas()) as unknown as CorrectiveSourceRow[];
+      pruneCorrectiveProgramReservations(correctiveRows);
       const correctiveMap = mapCorrectives(correctiveRows, startDate);
       const output: GeneratedFile[] = [];
       const allAlerts: FileAlert[] = [];
@@ -266,7 +328,7 @@ function ProgramacaoPage() {
         const preventiveItems = filterForSlot(triage(read.rows), slot.id);
         if (preventiveItems.length === 0) {
           messages.push(
-            `${slot.label}: nenhuma preventiva reconhecida; as semanas mostram corretivas e saldos pendentes.`,
+            `${slot.label}: nenhuma preventiva reconhecida; as semanas serão compostas pelas corretivas prioritárias disponíveis.`,
           );
         }
 
@@ -277,9 +339,7 @@ function ProgramacaoPage() {
             preventivas: preventiveItems.filter(
               (item) => item.equipe === equipe,
             ),
-            corretivas: correctiveMap.items.filter(
-              (item) => item.equipe === equipe,
-            ),
+            corretivas: [],
             weeks,
             from: startDate,
             until: monthEnd,
@@ -292,32 +352,52 @@ function ProgramacaoPage() {
             (total, load) => total + load.remainingMinutes,
             0,
           );
-          const deficitDays = allLoads.filter(
-            (load) => load.correctiveDeficit > 0,
-          ).length;
           messages.push(
-            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) + ${schedule.scheduledCorretivas} corretiva(s); ` +
-              `saldo mensal a apontar ${formatMinutes(remaining)}${deficitDays ? `; ${deficitDays} dia(s) sem duas corretivas disponíveis` : ""}.`,
+            `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) distribuída(s); ` +
+              `saldo mensal preventivo ${formatMinutes(remaining)}. As corretivas são reservadas em blocos de 2 por semana.`,
           );
-          if (
-            schedule.overflowPreventivas.length ||
-            schedule.overflowCorretivas.length
-          ) {
+          if (schedule.overflowPreventivas.length) {
             messages.push(
-              `${equipe}: excedente de ${schedule.overflowPreventivas.length} preventiva(s) e ${schedule.overflowCorretivas.length} corretiva(s) após preencher 09:00 em todos os dias úteis.`,
+              `${equipe}: excedente de ${schedule.overflowPreventivas.length} preventiva(s) após preencher a capacidade do mês.`,
             );
           }
         }
 
         for (let weekIndex = 0; weekIndex < weeks.length; weekIndex += 1) {
           const week = weeks[weekIndex];
+          const periodStart = isoLocal(week.monday);
+          const periodEnd = isoLocal(week.friday);
           const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
           const cargasPorEquipe = new Map<Equipe, DailyTeamLoad[]>();
+
           for (const equipe of slot.equipes) {
             const schedule = schedules.get(equipe);
             if (!schedule) continue;
-            bucketsPorEquipe.set(equipe, schedule.buckets[weekIndex]);
-            cargasPorEquipe.set(equipe, schedule.loadsByWeek[weekIndex]);
+
+            const reservedRows = selectCorrectiveRowsForWeekTeam({
+              rows: correctiveRows,
+              equipe,
+              periodStart,
+              periodEnd,
+              referenceDate: week.monday,
+              limit: 2,
+            });
+            const mappedCorrectives = mapCorrectives(
+              reservedRows,
+              week.monday,
+            ).items.filter((item) => item.equipe === equipe);
+            const augmented = appendReservedCorrectives(
+              schedule.buckets[weekIndex],
+              schedule.loadsByWeek[weekIndex],
+              mappedCorrectives,
+              tempoPorEquipe[equipe],
+              week,
+            );
+            bucketsPorEquipe.set(equipe, augmented.bucket);
+            cargasPorEquipe.set(equipe, augmented.loads);
+            messages.push(
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectives.length}/2 corretiva(s) prioritária(s) reservada(s) para a programação.`,
+            );
           }
 
           const totalOS = [...bucketsPorEquipe.values()].reduce(
@@ -343,8 +423,6 @@ function ProgramacaoPage() {
             minutosPorEquipe: tempoPorEquipe,
             ativoIndex: read.ativoIndex,
           });
-          const periodStart = isoLocal(week.monday);
-          const periodEnd = isoLocal(week.friday);
           const monthSlug = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`;
           const slotSlug = slot.id === "REFRIG" ? "REFRIGERACAO" : slot.id;
           const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
@@ -387,7 +465,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s) para o mês.`,
+        `${output.length} planilha(s) semanal(is) gerada(s), com até 2 corretivas prioritárias reservadas por equipe.`,
       );
     } catch (error) {
       console.error(error);
@@ -414,7 +492,7 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Programação mensal em semanas, com meta diária de 09:00 e corretivas abertas integradas automaticamente."
+      description="Programação mensal em semanas, com meta diária de 09:00 e reserva inteligente de corretivas prioritárias."
       actions={
         <Button
           variant="glass"
@@ -435,11 +513,11 @@ function ProgramacaoPage() {
                   1 · Planilhas mensais por equipe
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  As corretivas vêm de Corretiva › Novo › Programação de
-                  Corretivas; não é necessário importá-las.
+                  Ao gerar, o sistema busca Corretiva › Novo e reserva os 2
+                  chamados prioritários de cada equipe para cada semana.
                 </p>
               </div>
-              <Badge variant="outline">2 corretivas/dia • 09:00/equipe</Badge>
+              <Badge variant="outline">2 corretivas/equipe/semana • 09:00/equipe</Badge>
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               {SLOTS.map((slot) => (
