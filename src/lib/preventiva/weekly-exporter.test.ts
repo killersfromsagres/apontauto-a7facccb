@@ -122,9 +122,9 @@ describe("generateWeeklyProgramacao", () => {
     expect(program.getColumn(2).width).toBeCloseTo(56.7109375);
     expect(program.getColumn(10).width).toBeCloseTo(68.140625);
     expect(program.getRow(1).height).toBe(42);
-    expect(program.getRow(2).height).toBe(28);
-    expect(program.getRow(3).height).toBeCloseTo(38.1);
-    expect(program.getRow(4).height).toBeCloseTo(119.25);
+    expect(program.getRow(2).height).toBe(24);
+    expect(program.getRow(3).height).toBe(30);
+    expect(program.getRow(4).height).toBe(45);
     expect(program.getCell("J4").value).toBeNull();
     expect(program.getCell("J5").value).toBe("FANCOIL 01");
     expect(program.getCell("F4").value).toBe("Corretiva");
