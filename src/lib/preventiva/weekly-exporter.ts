@@ -265,7 +265,6 @@ function styleProgramSheet(
   );
   let rowIndex = 2;
   let firstHeaderRow = 0;
-  let printedDays = 0;
 
   for (let dayIndex = 0; dayIndex < 5; dayIndex += 1) {
     const dayLoads = activeTeams
@@ -281,8 +280,6 @@ function styleProgramSheet(
     );
     const correctiveCount = items.filter(isCorrective).length;
 
-    if (printedDays > 0) ws.getRow(rowIndex - 1).addPageBreak();
-    printedDays += 1;
     ws.mergeCells(rowIndex, 1, rowIndex, 10);
     const dayCell = ws.getCell(rowIndex, 1);
     dayCell.value = `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`;
@@ -302,7 +299,7 @@ function styleProgramSheet(
       top: { style: "medium", color: { argb: PALETTE.gold } },
       bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
     };
-    ws.getRow(rowIndex).height = 28;
+    ws.getRow(rowIndex).height = 24;
     rowIndex += 1;
 
     const header = ws.getRow(rowIndex);
@@ -333,7 +330,7 @@ function styleProgramSheet(
         right: { style: "thin", color: { argb: PALETTE.borderStrong } },
       };
     });
-    header.height = 38.1;
+    header.height = 30;
     rowIndex += 1;
 
     if (items.length === 0) {
@@ -465,7 +462,7 @@ function styleProgramSheet(
           };
         }
       });
-      row.height = 119.25;
+      row.height = 45;
     });
   }
 
