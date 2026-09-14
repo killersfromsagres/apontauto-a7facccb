@@ -109,8 +109,15 @@ describe("generateWeeklyProgramacao", () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(xlsxBuffer);
     const program = workbook.worksheets[0];
-    expect(workbook.worksheets).toHaveLength(3);
+    expect(workbook.worksheets).toHaveLength(5);
+    expect(workbook.worksheets.map((sheet) => sheet.name)).toContain(
+      "IMP CIVIL",
+    );
+    expect(workbook.worksheets.map((sheet) => sheet.name)).toContain(
+      "IMP REFRIG 1",
+    );
     expect(program.name).toBe("PROGRAMAÇÃO");
+
     expect(program.actualColumnCount).toBe(10);
     expect(program.getColumn(2).width).toBeCloseTo(56.7109375);
     expect(program.getColumn(10).width).toBeCloseTo(68.140625);
