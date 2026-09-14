@@ -1086,6 +1086,8 @@ export async function generateWeeklyProgramacao(
   );
   addSummarySheet(workbook, input, totalOS, activeTeams);
   addSlaReferenceSheet(workbook, input, activeTeams);
+  addTeamPrintSheets(workbook, input, activeTeams);
+
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
