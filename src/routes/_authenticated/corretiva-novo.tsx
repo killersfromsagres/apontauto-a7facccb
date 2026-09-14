@@ -22,6 +22,8 @@ import {
   ListChecks,
   Loader2,
   RotateCcw,
+  CalendarCheck2,
+  Unlink,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -43,6 +45,12 @@ import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
 import { designateAllCorrectiveOrders } from "@/lib/corretiva/ai-reclassifier.functions";
+import {
+  listCorrectiveProgramReservations,
+  releaseCorrectiveProgramReservation,
+  subscribeCorrectiveProgramReservations,
+  type CorrectiveProgramReservation,
+} from "@/lib/preventiva/corrective-program-reservations";
 
 export const Route = createFileRoute("/_authenticated/corretiva-novo")({
   component: CorretivaNovoPage,
@@ -51,6 +59,29 @@ export const Route = createFileRoute("/_authenticated/corretiva-novo")({
 function isCompletedStatus(status: unknown) {
   const normalized = String(status ?? "").trim().toLowerCase();
   return normalized === "concluida" || normalized === "concluido";
+}
+
+function findProgramReservation(
+  os: any,
+  reservations: CorrectiveProgramReservation[],
+): CorrectiveProgramReservation | undefined {
+  const keys = new Set(
+    [String(os?.id ?? "").trim(), String(os?.numero_os ?? "").trim()].filter(
+      Boolean,
+    ),
+  );
+  if (keys.size === 0) return undefined;
+  return reservations.find((reservation) =>
+    [reservation.id, reservation.numeroOs].some((key) => keys.has(key)),
+  );
+}
+
+function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
+  const formatDate = (value: string) => {
+    const [year, month, day] = value.split("-");
+    return year && month && day ? `${day}/${month}/${year}` : value;
+  };
+  return `${formatDate(reservation.periodStart)} a ${formatDate(reservation.periodEnd)}`;
 }
 
 function CorretivaNovoPage() {
@@ -66,12 +97,15 @@ function CorretivaNovoPage() {
   const [sortOrder, setSortOrder] = useState<"recent" | "oldest">("recent");
   const [isDesignating, setIsDesignating] = useState(false);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
+  const [programReservations, setProgramReservations] = useState<
+    CorrectiveProgramReservation[]
+  >([]);
+  const [onlyProgrammed, setOnlyProgrammed] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     console.log("[CorretivaNovo] Iniciando loadData...");
     try {
-      // 1. Tentar carregar as OS do Supabase
       const { data, error } = await supabase
         .from("corretiva_os")
         .select("*")
@@ -80,8 +114,6 @@ function CorretivaNovoPage() {
 
       if (error) {
         console.error("[CorretivaNovo] Erro Supabase:", error);
-
-        // Se der erro de permissão ou conexão, tentar ler do cache local (IndexedDB)
         console.log("[CorretivaNovo] Tentando carregar do cache local devido a erro...");
         const { getCachedOsList } = await import("@/lib/corretiva/db");
         const cached = await getCachedOsList();
@@ -97,15 +129,18 @@ function CorretivaNovoPage() {
         const list = data || [];
         setOsList(list);
 
-        // Atualizar cache local em background
         if (list.length > 0) {
           const { cacheOsList } = await import("@/lib/corretiva/db");
-          cacheOsList(list).catch((err) => console.error("[CorretivaNovo] Erro ao cachear:", err));
+          cacheOsList(list).catch((err) =>
+            console.error("[CorretivaNovo] Erro ao cachear:", err),
+          );
         }
       }
     } catch (error: any) {
       console.error("[CorretivaNovo] Erro fatal no loadData:", error);
-      toast.error(`Não foi possível carregar as OS: ${error.message || "Erro de conexão"}`);
+      toast.error(
+        `Não foi possível carregar as OS: ${error.message || "Erro de conexão"}`,
+      );
     } finally {
       setLoading(false);
     }
@@ -113,6 +148,13 @@ function CorretivaNovoPage() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const syncReservations = () =>
+      setProgramReservations(listCorrectiveProgramReservations());
+    syncReservations();
+    return subscribeCorrectiveProgramReservations(syncReservations);
   }, []);
 
   const filtered = useMemo(() => {
@@ -126,15 +168,24 @@ function CorretivaNovoPage() {
           o.nome_os?.toLowerCase().includes(search.toLowerCase());
 
         const matchesEquipe = matchEquipe(o.equipe, equipe);
+        const matchesProgram =
+          !onlyProgrammed || Boolean(findProgramReservation(o, programReservations));
 
-        return matchesSearch && matchesEquipe;
+        return matchesSearch && matchesEquipe && matchesProgram;
       })
       .sort((a, b) => {
         const dateA = new Date(a.data_criacao || 0).getTime();
         const dateB = new Date(b.data_criacao || 0).getTime();
         return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
       });
-  }, [osList, search, equipe, sortOrder]);
+  }, [osList, search, equipe, sortOrder, onlyProgrammed, programReservations]);
+
+  const programmedVisibleCount = useMemo(
+    () =>
+      osList.filter((os) => Boolean(findProgramReservation(os, programReservations)))
+        .length,
+    [osList, programReservations],
+  );
 
   const selectedIndex = selectedOs
     ? filtered.findIndex((item) => item.id === selectedOs.id)
@@ -144,18 +195,24 @@ function CorretivaNovoPage() {
 
   const navigateSelectedOs = (direction: -1 | 1) => {
     if (selectedIndex < 0) return;
-
     const nextIndex = selectedIndex + direction;
     if (nextIndex < 0 || nextIndex >= filtered.length) return;
-
     setSelectedOs(filtered[nextIndex]);
+  };
+
+  const handleReleaseFromProgram = (os: any) => {
+    releaseCorrectiveProgramReservation(os.id, os.numero_os);
+    setProgramReservations(listCorrectiveProgramReservations());
+    toast.success(
+      `OS ${os.numero_os || "selecionada"} liberada da Programação. Ela volta a ficar disponível para impressão em Corretiva › Novo.`,
+    );
   };
 
   const handleReopen = async (os: any) => {
     if (reopeningId || !isCompletedStatus(os.status)) return;
 
     const confirmed = window.confirm(
-      `Reabrir a OS ${os.numero_os}? Ela voltará para o status Aberta e será incluída novamente na programação, impressão e planilha.`,
+      `Reabrir a OS ${os.numero_os}? Ela voltará para o status Aberta e ficará elegível para futuras programações.`,
     );
     if (!confirmed) return;
 
@@ -195,11 +252,16 @@ function CorretivaNovoPage() {
         );
         await cacheOsList(updated);
       } catch (cacheError) {
-        console.warn("[CorretivaReopen] Não foi possível atualizar o cache local:", cacheError);
+        console.warn(
+          "[CorretivaReopen] Não foi possível atualizar o cache local:",
+          cacheError,
+        );
       }
 
       setOsList((current) =>
-        current.map((item) => (item.id === os.id ? { ...item, status: nextStatus } : item)),
+        current.map((item) =>
+          item.id === os.id ? { ...item, status: nextStatus } : item,
+        ),
       );
       setSelectedOs((current: any) =>
         current?.id === os.id ? { ...current, status: nextStatus } : current,
@@ -207,8 +269,8 @@ function CorretivaNovoPage() {
 
       toast.success(
         online
-          ? "Chamado reaberto. Ele voltou para a programação e será incluído nas próximas impressões e planilhas."
-          : "Modo offline: chamado reaberto e aguardando sincronização. Ele já voltou para a programação local.",
+          ? "Chamado reaberto. Ele voltou a ficar elegível para programação e impressão."
+          : "Modo offline: chamado reaberto e aguardando sincronização.",
       );
     } catch (error: any) {
       console.error("[CorretivaReopen] Erro ao reabrir OS:", error);
@@ -219,22 +281,50 @@ function CorretivaNovoPage() {
   };
 
   const exportExcelByTeam = async () => {
-    const pendentes = filtered.filter((o) => !isCompletedStatus(o.status));
-    if (!pendentes.length) return toast.error("Nenhuma OS pendente para exportar.");
+    const candidates = filtered.filter((o) => !isCompletedStatus(o.status));
+    const pendentes = candidates.filter(
+      (o) => !findProgramReservation(o, programReservations),
+    );
+    const ignored = candidates.length - pendentes.length;
+    if (!pendentes.length) {
+      return toast.error(
+        ignored > 0
+          ? `${ignored} chamado(s) já estão na Programação e foram protegidos contra impressão duplicada.`
+          : "Nenhuma OS pendente para exportar.",
+      );
+    }
     try {
-      await generateProgramacaoExcel(pendentes, "Programacao_por_Equipe", "corretiva");
-      toast.success("Excel gerado com sucesso!");
+      await generateProgramacaoExcel(
+        pendentes,
+        "Programacao_por_Equipe",
+        "corretiva",
+      );
+      toast.success(
+        `Excel gerado com sucesso!${ignored ? ` ${ignored} chamado(s) já incorporado(s) à Programação foram ignorados.` : ""}`,
+      );
     } catch (error) {
       toast.error("Erro ao gerar Excel.");
     }
   };
 
   const exportPDFByTeam = async () => {
-    const pendentes = filtered.filter((o) => !isCompletedStatus(o.status));
-    if (!pendentes.length) return toast.error("Nenhuma OS pendente para imprimir.");
+    const candidates = filtered.filter((o) => !isCompletedStatus(o.status));
+    const pendentes = candidates.filter(
+      (o) => !findProgramReservation(o, programReservations),
+    );
+    const ignored = candidates.length - pendentes.length;
+    if (!pendentes.length) {
+      return toast.error(
+        ignored > 0
+          ? `${ignored} chamado(s) já estão na Programação e não serão impressos novamente.`
+          : "Nenhuma OS pendente para imprimir.",
+      );
+    }
     try {
       await generateProgramacaoPDF(pendentes, "Programacao_Equipes");
-      toast.success("PDF preparado para impressão!");
+      toast.success(
+        `PDF preparado para impressão!${ignored ? ` ${ignored} chamado(s) já incorporado(s) à Programação foram excluídos desta impressão.` : ""}`,
+      );
     } catch (error) {
       toast.error("Erro ao gerar PDF.");
     }
@@ -244,12 +334,16 @@ function CorretivaNovoPage() {
     if (!isAdmin) return;
 
     setIsDesignating(true);
-    const id = toast.loading("Analisando o contexto dos chamados e designando equipes...");
+    const id = toast.loading(
+      "Analisando o contexto dos chamados e designando equipes...",
+    );
 
     try {
       const result = await designateAllCorrectiveOrders();
       const reviewMessage =
-        result.reviewNeeded > 0 ? ` ${result.reviewNeeded} caso(s) ambíguo(s) foram preservados.` : "";
+        result.reviewNeeded > 0
+          ? ` ${result.reviewNeeded} caso(s) ambíguo(s) foram preservados.`
+          : "";
 
       if (result.failed > 0) {
         toast.warning(
@@ -275,7 +369,7 @@ function CorretivaNovoPage() {
   return (
     <PageShell
       title="Programação de Corretivas"
-      description="Sistema chamados de Corretivas."
+      description="Sistema chamados de Corretivas. Chamados marcados como Na Programação não são impressos novamente aqui."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -333,7 +427,26 @@ function CorretivaNovoPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant={onlyProgrammed ? "secondary" : "glass"}
+                className={cn(
+                  "h-11 rounded-full gap-2 border-white/10 px-4",
+                  onlyProgrammed &&
+                    "border-emerald-400/35 bg-emerald-500/15 text-emerald-100",
+                )}
+                onClick={() => setOnlyProgrammed((current) => !current)}
+                aria-pressed={onlyProgrammed}
+                title="Mostrar somente os chamados já incorporados à Programação"
+              >
+                <CalendarCheck2 className="h-4 w-4" />
+                Na Programação
+                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
+                  {programmedVisibleCount}
+                </span>
+              </Button>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -347,32 +460,58 @@ function CorretivaNovoPage() {
                     <span className="font-medium">
                       {equipe === "todas" ? "Filtrar Equipe" : equipe}
                     </span>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", "group-data-[state=open]:rotate-180")} />
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform",
+                        "group-data-[state=open]:rotate-180",
+                      )}
+                    />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
+                <DropdownMenuContent
+                  align="start"
+                  className="w-56 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl"
+                >
                   <DropdownMenuItem
                     onClick={() => setEquipe("todas")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer transition-colors",
-                      equipe === "todas" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
+                      equipe === "todas"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     Todas as Equipes
                   </DropdownMenuItem>
-                  {["Elétrica", "Hidráulica", "Civil", "Chaveiro", "Pintura", "Refrigeração", "Limpeza"].map((e) => (
+                  {[
+                    "Elétrica",
+                    "Hidráulica",
+                    "Civil",
+                    "Chaveiro",
+                    "Pintura",
+                    "Refrigeração",
+                    "Limpeza",
+                  ].map((e) => (
                     <DropdownMenuItem
                       key={e}
                       onClick={() => setEquipe(e as any)}
                       className={cn(
                         "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center justify-between group transition-all",
                         equipe === e
-                          ? cn("text-white", equipeStyles(e as any).badge.replace("shadow-lg", ""))
+                          ? cn(
+                              "text-white",
+                              equipeStyles(e as any).badge.replace(
+                                "shadow-lg",
+                                "",
+                              ),
+                            )
                           : "text-white/60 hover:bg-white/5 hover:text-white",
                       )}
                     >
                       <span>{e}</span>
-                      {equipe === e && <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+                      {equipe === e && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      )}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -382,19 +521,27 @@ function CorretivaNovoPage() {
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="glass" className="h-11 px-6 rounded-full gap-2 border-white/10">
+                  <Button
+                    variant="glass"
+                    className="h-11 px-6 rounded-full gap-2 border-white/10"
+                  >
                     <ArrowUpDown className="h-4 w-4" />
                     <span className="font-medium">
                       {sortOrder === "recent" ? "Mais Recentes" : "Mais Antigos"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl">
+                <DropdownMenuContent
+                  align="end"
+                  className="w-48 p-2 bg-[#0A0A0A]/95 border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl"
+                >
                   <DropdownMenuItem
                     onClick={() => setSortOrder("recent")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
-                      sortOrder === "recent" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
+                      sortOrder === "recent"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <Clock className="h-4 w-4" />
@@ -404,7 +551,9 @@ function CorretivaNovoPage() {
                     onClick={() => setSortOrder("oldest")}
                     className={cn(
                       "rounded-xl mb-1 px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors",
-                      sortOrder === "oldest" ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white",
+                      sortOrder === "oldest"
+                        ? "bg-white/10 text-white"
+                        : "text-white/60 hover:bg-white/5 hover:text-white",
                     )}
                   >
                     <History className="h-4 w-4" />
@@ -438,7 +587,9 @@ function CorretivaNovoPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Wrench className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">Consultando banco de dados...</p>
+            <p className="text-muted-foreground animate-pulse">
+              Consultando banco de dados...
+            </p>
           </div>
         ) : osList.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2 space-y-4">
@@ -446,18 +597,29 @@ function CorretivaNovoPage() {
               <Search className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-white font-medium">Nenhuma Ordem de Serviço encontrada</p>
-              <p className="text-xs text-muted-foreground mt-1">Importe uma planilha ou aguarde a sincronização.</p>
+              <p className="text-white font-medium">
+                Nenhuma Ordem de Serviço encontrada
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Importe uma planilha ou aguarde a sincronização.
+              </p>
             </div>
             {isAdmin && (
-              <Button variant="outline" size="sm" onClick={loadData} className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadData}
+                className="mt-4"
+              >
                 Tentar Recarregar
               </Button>
             )}
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2">
-            <p className="text-muted-foreground">Nenhuma OS corresponde aos filtros aplicados.</p>
+            <p className="text-muted-foreground">
+              Nenhuma OS corresponde aos filtros aplicados.
+            </p>
           </div>
         ) : (
           <div
@@ -470,11 +632,19 @@ function CorretivaNovoPage() {
             {filtered.map((os) => {
               const completed = isCompletedStatus(os.status);
               const isReopening = reopeningId === String(os.id);
+              const programReservation = findProgramReservation(
+                os,
+                programReservations,
+              );
 
               return (
                 <GlassCard
                   key={os.id}
-                  className="group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
+                  className={cn(
+                    "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]",
+                    programReservation &&
+                      "border-emerald-400/20 shadow-[0_0_0_1px_rgba(52,211,153,0.06)]",
+                  )}
                   onClick={() => setSelectedOs(os)}
                 >
                   <div
@@ -485,7 +655,7 @@ function CorretivaNovoPage() {
                     )}
                   >
                     <div className="flex min-w-0 flex-col p-4 md:p-5">
-                      <div className="mb-5 flex items-center justify-between gap-2">
+                      <div className="mb-3 flex items-center justify-between gap-2">
                         <Badge
                           variant="outline"
                           className={cn(
@@ -513,9 +683,21 @@ function CorretivaNovoPage() {
                               <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
                             </span>
                           )}
-                          {completed ? "Concluída" : (os.equipe || "Sem Equipe")}
+                          {completed ? "Concluída" : os.equipe || "Sem Equipe"}
                         </Badge>
                       </div>
+
+                      {programReservation && (
+                        <div className="mb-4 flex flex-wrap items-center gap-2">
+                          <Badge className="gap-1.5 border border-emerald-300/30 bg-emerald-500/15 text-[9px] font-bold uppercase text-emerald-200 shadow-[0_0_14px_rgba(52,211,153,0.12)]">
+                            <CalendarCheck2 className="h-3 w-3" />
+                            Na Programação
+                          </Badge>
+                          <span className="text-[9px] text-emerald-100/60">
+                            {formatReservationPeriod(programReservation)}
+                          </span>
+                        </div>
+                      )}
 
                       <div className="min-w-0">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
@@ -524,7 +706,9 @@ function CorretivaNovoPage() {
                         <h3
                           className={cn(
                             "text-[15px] font-semibold leading-6 text-white/95 transition-colors group-hover:text-white md:text-base",
-                            viewMode === "list" ? "line-clamp-3" : "line-clamp-4 min-h-[6rem]",
+                            viewMode === "list"
+                              ? "line-clamp-3"
+                              : "line-clamp-4 min-h-[6rem]",
                           )}
                         >
                           {os.nome_os || "Sem descrição informada"}
@@ -580,7 +764,11 @@ function CorretivaNovoPage() {
                         <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-white/[0.06] pt-3 text-[10px] text-muted-foreground/65">
                           {os.data_criacao && (
                             <span>
-                              Abertura: {new Date(os.data_criacao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                              Abertura:{" "}
+                              {new Date(os.data_criacao).toLocaleString("pt-BR", {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
                             </span>
                           )}
                           {os.pecas_solicitadas && (
@@ -589,6 +777,25 @@ function CorretivaNovoPage() {
                               Peças solicitadas
                             </span>
                           )}
+                        </div>
+                      )}
+
+                      {programReservation && isAdmin && (
+                        <div className="mt-4 border-t border-white/[0.06] pt-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full gap-2 border-emerald-400/20 bg-emerald-400/[0.04] text-emerald-100 hover:border-emerald-300/35 hover:bg-emerald-400/10"
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleReleaseFromProgram(os);
+                            }}
+                          >
+                            <Unlink className="h-4 w-4" />
+                            Liberar da programação
+                          </Button>
                         </div>
                       )}
 
@@ -611,7 +818,8 @@ function CorretivaNovoPage() {
                             {isReopening ? "Reabrindo..." : "Reabrir chamado"}
                           </Button>
                           <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground/65">
-                            Volta para Aberta e reaparece na impressão e na planilha.
+                            Volta para Aberta e fica elegível para uma nova
+                            programação.
                           </p>
                         </div>
                       )}
@@ -625,7 +833,10 @@ function CorretivaNovoPage() {
       </div>
 
       {selectedOs && selectedIndex >= 0 && filtered.length > 1 && (
-        <div className="fixed inset-0 z-[10020] pointer-events-none flex items-center justify-center" aria-hidden="false">
+        <div
+          className="fixed inset-0 z-[10020] pointer-events-none flex items-center justify-center"
+          aria-hidden="false"
+        >
           <div className="w-[calc(100%-1.5rem)] md:w-full max-w-lg px-2 flex items-center justify-between">
             <Button
               type="button"
