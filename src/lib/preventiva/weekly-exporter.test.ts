@@ -144,7 +144,7 @@ describe("generateWeeklyProgramacao", () => {
     const programXml = await zip
       .file("xl/worksheets/sheet1.xml")!
       .async("string");
-    expect(programXml).toContain('<rowBreaks count="1" manualBreakCount="1">');
+    expect(programXml).not.toContain("<rowBreaks");
 
     const html = await buildWeeklyPrintHtml(blob);
     const printSections = html.match(
