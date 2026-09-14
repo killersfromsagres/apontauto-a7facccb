@@ -163,7 +163,7 @@ describe("generateWeeklyProgramacao", () => {
       html.indexOf('data-team="CLIMATIZAÇÃO E REFRIGERAÇÃO 1"'),
     );
     expect(html).toContain("print-color-adjust: exact !important");
-    expect(html).toContain("page-break-after: always");
+    expect(html).not.toContain("page-break-after: always");
     expect(html).toContain("background-color:#0B1F33");
   });
 
