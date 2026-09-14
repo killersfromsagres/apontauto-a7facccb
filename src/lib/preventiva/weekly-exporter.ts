@@ -34,7 +34,6 @@ const PALETTE = {
   dangerText: argbFromHex("#C62828"),
 };
 
-// Mesmas dez colunas, larguras e ordem do arquivo fornecido pelo usuário.
 const COLUMNS = [
   { key: "os", label: "OS", width: 16 },
   { key: "nome", label: "Nome", width: 56.7109375 },
@@ -113,7 +112,6 @@ function taskValues(os: TriagedOS, ativoIndex: Map<string, AtivoIndexEntry>) {
     ativo: isRefrigeracao
       ? entry?.ativo || os.ativo || "Ativo não localizado"
       : os.ativo || "",
-    // Regra solicitada: J só recebe equipamento para Refrigeração.
     equipamento: isRefrigeracao
       ? os.equipamento || entry?.equipamento || ""
       : "",
@@ -134,11 +132,6 @@ function compareNatural(a: unknown, b: unknown): number {
   });
 }
 
-/**
- * Normaliza textos de localização sem depender da grafia usada na planilha.
- * Ex.: "1º Sub-Solo", "1º Sub Solo" e "1º Subsolo" passam a ser reconhecidos
- * como o mesmo tipo de andar para fins de ordenação.
- */
 function canonicalLocationText(value: unknown): string {
   return naturalText(value)
     .toUpperCase()
@@ -153,10 +146,7 @@ function buildingSortKey(value: unknown): [number, number, string] {
     /^(?:PREDIO|BLOCO|EDIFICIO)\s+/,
     "",
   );
-  // Prédios sem identificação nunca devem aparecer antes dos prédios válidos.
   if (!normalized) return [2, 0, ""];
-  // Identificações iniciadas por letra (A, B, C...) têm precedência sobre
-  // códigos puramente numéricos/outros, preservando comparação natural.
   return [/^[A-Z]/.test(normalized) ? 0 : 1, 0, normalized];
 }
 
@@ -203,6 +193,10 @@ function compareFloors(a: unknown, b: unknown): number {
 
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
+    // Preventivas sempre primeiro. As corretivas reservadas ficam no final da
+    // lista da equipe, sem perder a ordenação física dentro de cada bloco.
+    const correctiveOrder = Number(isCorrective(a)) - Number(isCorrective(b));
+    if (correctiveOrder !== 0) return correctiveOrder;
     const buildingOrder = compareBuildings(a.predio, b.predio);
     if (buildingOrder !== 0) return buildingOrder;
     const floorOrder = compareFloors(a.andar, b.andar);
@@ -214,7 +208,7 @@ function sortDayItems(items: TriagedOS[]): TriagedOS[] {
     const teamOrder =
       EQUIPES_ORDEM.indexOf(a.equipe) - EQUIPES_ORDEM.indexOf(b.equipe);
     if (teamOrder !== 0) return teamOrder;
-    return Number(isCorrective(b)) - Number(isCorrective(a));
+    return 0;
   });
 }
 
@@ -232,19 +226,12 @@ function styleProgramSheet(
   input: WeeklyExportInput,
 ) {
   ws.views = [{ state: "frozen", xSplit: 2, ySplit: 3, showGridLines: false }];
-  ws.columns = COLUMNS.map((column) => ({
-    key: column.key,
-    width: column.width,
-  }));
+  ws.columns = COLUMNS.map((column) => ({ key: column.key, width: column.width }));
   ws.properties.defaultRowHeight = 30;
   ws.mergeCells("A1:J1");
   const title = ws.getCell("A1");
   title.value = `PROGRAMAÇÃO SEMANAL • ${input.week.label.toUpperCase()} • ${formatDate(input.week.monday)} A ${formatDate(input.week.friday)}`;
-  title.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: PALETTE.navy },
-  };
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.navy } };
   title.font = {
     name: APTOS_EXTRABOLD,
     bold: true,
@@ -283,11 +270,7 @@ function styleProgramSheet(
     ws.mergeCells(rowIndex, 1, rowIndex, 10);
     const dayCell = ws.getCell(rowIndex, 1);
     dayCell.value = `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`;
-    dayCell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: PALETTE.teal },
-    };
+    dayCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.teal } };
     dayCell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
@@ -318,11 +301,7 @@ function styleProgramSheet(
         size: 9,
         color: { argb: PALETTE.white },
       };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: "center",
-        wrapText: true,
-      };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
       cell.border = {
         top: { style: "thin", color: { argb: PALETTE.borderStrong } },
         bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
@@ -337,16 +316,8 @@ function styleProgramSheet(
       ws.mergeCells(rowIndex, 1, rowIndex, 10);
       const empty = ws.getCell(rowIndex, 1);
       empty.value = "Nenhuma OS programada para este dia.";
-      empty.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: PALETTE.stripe },
-      };
-      empty.font = {
-        name: APTOS_SEMIBOLD,
-        size: 10,
-        color: { argb: PALETTE.text },
-      };
+      empty.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.stripe } };
+      empty.font = { name: APTOS_SEMIBOLD, size: 10, color: { argb: PALETTE.text } };
       empty.alignment = { vertical: "middle", horizontal: "center" };
       ws.getRow(rowIndex).height = 34;
       rowIndex += 1;
@@ -367,13 +338,9 @@ function styleProgramSheet(
           pattern: "solid",
           fgColor: { argb: index % 2 ? PALETTE.stripe : PALETTE.white },
         };
-        const size = [
-          "nome",
-          "predio",
-          "andar",
-          "espaco",
-          "equipamento",
-        ].includes(column.key)
+        const size = ["nome", "predio", "andar", "espaco", "equipamento"].includes(
+          column.key,
+        )
           ? 16
           : column.key === "atividade"
             ? 11
@@ -392,13 +359,9 @@ function styleProgramSheet(
         };
         cell.alignment = {
           vertical: "middle",
-          horizontal: [
-            "nome",
-            "espaco",
-            "equipe",
-            "ativo",
-            "equipamento",
-          ].includes(column.key)
+          horizontal: ["nome", "espaco", "equipe", "ativo", "equipamento"].includes(
+            column.key,
+          )
             ? "left"
             : "center",
           wrapText: true,
@@ -410,11 +373,7 @@ function styleProgramSheet(
           right: { style: "thin", color: { argb: PALETTE.border } },
         };
         if (column.key === "os") {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: teamArgb },
-          };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: teamArgb } };
           cell.font = {
             name: APTOS_EXTRABOLD,
             bold: true,
@@ -503,11 +462,7 @@ function addSummarySheet(
   summary.mergeCells("A1:J1");
   const title = summary.getCell("A1");
   title.value = "RESUMO EXECUTIVO · CONTROLE DE 09:00";
-  title.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: PALETTE.navy },
-  };
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.navy } };
   title.font = {
     name: APTOS_EXTRABOLD,
     bold: true,
@@ -550,22 +505,14 @@ function addSummarySheet(
   headers.forEach((label, index) => {
     const cell = headerRow.getCell(index + 1);
     cell.value = label;
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: PALETTE.teal },
-    };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.teal } };
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
       size: 9,
       color: { argb: PALETTE.white },
     };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
-    };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
     cell.border = {
       top: { style: "thin", color: { argb: PALETTE.borderStrong } },
       bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
@@ -586,9 +533,7 @@ function addSummarySheet(
       const minutes = input.minutosPorEquipe?.[equipe] ?? 60;
       const notes: string[] = [];
       if (load.correctiveDeficit > 0)
-        notes.push(
-          `Faltam ${load.correctiveDeficit} corretiva(s) para a meta mínima`,
-        );
+        notes.push(`Faltam ${load.correctiveDeficit} corretiva(s) para a meta mínima`);
       if (load.remainingMinutes > 0)
         notes.push(`Apontar mais ${formatMinutes(load.remainingMinutes)}`);
       const values = [
@@ -649,10 +594,7 @@ function addSummarySheet(
   if (rowIndex === 5) {
     summary.mergeCells("A5:J5");
     summary.getCell("A5").value = "Nenhuma equipe programada nesta semana.";
-    summary.getCell("A5").alignment = {
-      horizontal: "center",
-      vertical: "middle",
-    };
+    summary.getCell("A5").alignment = { horizontal: "center", vertical: "middle" };
   }
   summary.autoFilter = `A4:J${Math.max(5, rowIndex - 1)}`;
   summary.pageSetup = {
@@ -674,10 +616,6 @@ function addSummarySheet(
   };
 }
 
-/**
- * Aba compacta para apontamento antecipado. O SLA é usado somente aqui como
- * referência de consulta e não participa da ordem da programação principal.
- */
 function addSlaReferenceSheet(
   workbook: import("exceljs").Workbook,
   input: WeeklyExportInput,
@@ -690,11 +628,7 @@ function addSlaReferenceSheet(
   sheet.mergeCells("A1:C1");
   const title = sheet.getCell("A1");
   title.value = "APONTAMENTO ANTECIPADO · REFERÊNCIA DE SLA";
-  title.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: PALETTE.navy },
-  };
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.navy } };
   title.font = {
     name: APTOS_EXTRABOLD,
     bold: true,
@@ -727,11 +661,7 @@ function addSlaReferenceSheet(
   headers.forEach((label, index) => {
     const cell = header.getCell(index + 1);
     cell.value = label;
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: PALETTE.teal },
-    };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.teal } };
     cell.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
@@ -843,7 +773,6 @@ function addSlaReferenceSheet(
   };
 }
 
-/** Nome curto e válido para a aba de impressão de cada equipe. */
 export function teamPrintSheetName(equipe: Equipe): string {
   const short = naturalText(equipe)
     .toUpperCase()
@@ -856,11 +785,6 @@ export function teamPrintSheetName(equipe: Equipe): string {
 
 const TEAM_PRINT_HEADER_ROW = 2;
 
-/**
- * Abas de impressão contínuas por equipe: todas as OS da equipe em sequência,
- * ordenadas por prédio → andar → local → OS, sem linhas de outras equipes e
- * sem quebras manuais, para que cada página seja preenchida por completo.
- */
 export function addTeamPrintSheets(
   workbook: import("exceljs").Workbook,
   input: WeeklyExportInput,
@@ -880,10 +804,7 @@ export function addTeamPrintSheets(
         },
       ],
     });
-    ws.columns = COLUMNS.map((column) => ({
-      key: column.key,
-      width: column.width,
-    }));
+    ws.columns = COLUMNS.map((column) => ({ key: column.key, width: column.width }));
     ws.properties.defaultRowHeight = 32;
 
     const teamHex = EQUIPE_COLOR[equipe];
@@ -892,11 +813,7 @@ export function addTeamPrintSheets(
     ws.mergeCells("A1:J1");
     const title = ws.getCell("A1");
     title.value = `${equipe} • ${input.week.label.toUpperCase()} • ${formatDate(input.week.monday)} A ${formatDate(input.week.friday)} • ${items.length} OS`;
-    title.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: PALETTE.navy },
-    };
+    title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.navy } };
     title.font = {
       name: APTOS_EXTRABOLD,
       bold: true,
@@ -904,9 +821,7 @@ export function addTeamPrintSheets(
       color: { argb: PALETTE.white },
     };
     title.alignment = { vertical: "middle", horizontal: "center" };
-    title.border = {
-      bottom: { style: "medium", color: { argb: PALETTE.gold } },
-    };
+    title.border = { bottom: { style: "medium", color: { argb: PALETTE.gold } } };
     ws.getRow(1).height = 26;
 
     const header = ws.getRow(TEAM_PRINT_HEADER_ROW);
@@ -924,11 +839,7 @@ export function addTeamPrintSheets(
         size: 9,
         color: { argb: PALETTE.white },
       };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: "center",
-        wrapText: true,
-      };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
       cell.border = {
         top: { style: "thin", color: { argb: PALETTE.borderStrong } },
         bottom: { style: "thin", color: { argb: PALETTE.borderStrong } },
@@ -956,20 +867,14 @@ export function addTeamPrintSheets(
             ? APTOS_BODY
             : APTOS_EXTRABOLD,
           bold: !["atividade", "sla"].includes(column.key),
-          size: ["nome", "espaco", "equipamento", "ativo"].includes(column.key)
-            ? 10
-            : 10,
+          size: 10,
           color: { argb: PALETTE.text },
         };
         cell.alignment = {
           vertical: "middle",
-          horizontal: [
-            "nome",
-            "espaco",
-            "equipe",
-            "ativo",
-            "equipamento",
-          ].includes(column.key)
+          horizontal: ["nome", "espaco", "equipe", "ativo", "equipamento"].includes(
+            column.key,
+          )
             ? "left"
             : "center",
           wrapText: true,
@@ -981,11 +886,7 @@ export function addTeamPrintSheets(
           right: { style: "thin", color: { argb: PALETTE.border } },
         };
         if (column.key === "os") {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: teamArgb },
-          };
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: teamArgb } };
           cell.font = {
             name: APTOS_EXTRABOLD,
             bold: true,
@@ -1059,7 +960,6 @@ export function addTeamPrintSheets(
 }
 
 export async function generateWeeklyProgramacao(
-
   input: WeeklyExportInput,
 ): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
@@ -1140,7 +1040,6 @@ function renderPrintRow(
   return `<tr class="${className}">${cells.join("")}</tr>`;
 }
 
-/** Gera a impressão semanal agrupada por equipe e, dentro dela, por dia. */
 export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
   const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
@@ -1168,9 +1067,7 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
       worksheet.eachRow({ includeEmpty: false }, (row) => {
         if (row.number === 1) return;
         const firstCellText = row.getCell(1).text;
-        const isDayBand = DAY_NAMES.some((name) =>
-          firstCellText.startsWith(name),
-        );
+        const isDayBand = DAY_NAMES.some((name) => firstCellText.startsWith(name));
         if (isDayBand) {
           flushDay();
           dayBand = row;
@@ -1247,7 +1144,6 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
   </style></head><body>${sections.join("")}</body></html>`;
 }
 
-/** Imprime a semana em um clique, com todas as páginas de cada equipe juntas. */
 export async function printWeeklyProgramacao(blob: Blob): Promise<void> {
   const printWindow = window.open("", "_blank");
   if (!printWindow)
