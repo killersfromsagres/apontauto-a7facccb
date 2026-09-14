@@ -30,6 +30,8 @@ const PALETTE = {
   successText: argbFromHex("#087A5B"),
   warningBg: argbFromHex("#FFF4D6"),
   warningText: argbFromHex("#8B5D00"),
+  correctiveBg: argbFromHex("#FFD966"),
+  correctiveText: argbFromHex("#000000"),
   dangerBg: argbFromHex("#FFE8E8"),
   dangerText: argbFromHex("#C62828"),
 };
@@ -193,8 +195,6 @@ function compareFloors(a: unknown, b: unknown): number {
 
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
-    // Preventivas sempre primeiro. As corretivas reservadas ficam no final da
-    // lista da equipe, sem perder a ordenação física dentro de cada bloco.
     const correctiveOrder = Number(isCorrective(a)) - Number(isCorrective(b));
     if (correctiveOrder !== 0) return correctiveOrder;
     const buildingOrder = compareBuildings(a.predio, b.predio);
@@ -420,8 +420,19 @@ function styleProgramSheet(
             color: { argb: PALETTE.dangerText },
           };
         }
+        if (isCorrective(os)) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: PALETTE.correctiveBg },
+          };
+          cell.font = {
+            ...cell.font,
+            color: { argb: PALETTE.correctiveText },
+          };
+        }
       });
-      row.height = 45;
+      row.height = 60;
     });
   }
 
@@ -933,8 +944,19 @@ export function addTeamPrintSheets(
             color: { argb: PALETTE.dangerText },
           };
         }
+        if (isCorrective(os)) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: PALETTE.correctiveBg },
+          };
+          cell.font = {
+            ...cell.font,
+            color: { argb: PALETTE.correctiveText },
+          };
+        }
       });
-      row.height = 36;
+      row.height = 52;
     });
 
     const lastRow = rowIndex - 1;
@@ -1132,7 +1154,7 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
     .title-row td { height: auto; padding: 5px; font-size: 12.5pt; }
     .day-band td { height: auto; padding: 4px; font-size: 8.5pt; }
     .column-header td { height: auto; padding: 4px; font-size: 7.2pt; }
-    .data-row td { height: auto; }
+    .data-row td { min-height: 52px; height: auto; padding-top: 5px; padding-bottom: 5px; }
     .title-row, .day-band, .column-header { break-after: avoid; page-break-after: avoid; }
     td:nth-child(1){width:6%} td:nth-child(2){width:18%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
     td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:11%}
