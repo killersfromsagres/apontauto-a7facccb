@@ -1,5 +1,8 @@
 import type { CorrectiveSourceRow } from "./monthly-scheduler";
-import { resolveCorrectiveTeam, sortCorrectiveRows } from "./monthly-scheduler";
+import {
+  isCorrectiveBackorder,
+  resolveCorrectiveTeam,
+} from "./monthly-scheduler";
 import type { Equipe } from "./triage";
 
 const STORAGE_KEY = "apontauto.corrective-program-reservations.v1";
@@ -20,6 +23,14 @@ function normalizeKey(value: unknown): string {
   return String(value ?? "").trim();
 }
 
+function normalizePriorityText(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .trim()
+    .toUpperCase();
+}
+
 function rowKeys(row: Pick<CorrectiveSourceRow, "id" | "numero_os">): string[] {
   return [normalizeKey(row.id), normalizeKey(row.numero_os)].filter(Boolean);
 }
@@ -36,6 +47,70 @@ function hasSharedKey(
 ): boolean {
   const rightKeys = new Set(reservationKeys(right));
   return rowKeys(left).some((key) => rightKeys.has(key));
+}
+
+function prioritySeverity(row: CorrectiveSourceRow): number {
+  let rank = 2;
+  for (const problem of row.corretiva_problemas ?? []) {
+    const managerStatus = normalizePriorityText(problem?.status_gestor);
+    if (
+      managerStatus.includes("REJEIT") ||
+      managerStatus.includes("CONCLUID") ||
+      managerStatus.includes("FECHAD") ||
+      managerStatus.includes("ENCERRAD")
+    ) {
+      continue;
+    }
+    const severity = normalizePriorityText(problem?.gravidade);
+    if (severity.includes("CRITIC")) return 0;
+    if (severity.includes("FALHA")) rank = Math.min(rank, 1);
+  }
+  return rank;
+}
+
+function priorityDate(value: unknown): number {
+  const text = normalizeKey(value);
+  if (!text) return Number.MAX_SAFE_INTEGER;
+  const timestamp = new Date(text).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.MAX_SAFE_INTEGER;
+}
+
+function comparePriorityOs(a: unknown, b: unknown): number {
+  return String(a ?? "").localeCompare(String(b ?? ""), "pt-BR", {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+/**
+ * Ordem operacional para reservar corretivas na Programação:
+ * 1) backorder vencido; 2) crítico/falha; 3) SLA/data programada mais próxima;
+ * 4) chamado mais antigo; 5) número da OS.
+ */
+function sortReservationCandidates(
+  rows: CorrectiveSourceRow[],
+  referenceDate: Date,
+): CorrectiveSourceRow[] {
+  return [...rows].sort((a, b) => {
+    const backorderOrder =
+      Number(isCorrectiveBackorder(b, referenceDate)) -
+      Number(isCorrectiveBackorder(a, referenceDate));
+    if (backorderOrder !== 0) return backorderOrder;
+
+    const severityOrder = prioritySeverity(a) - prioritySeverity(b);
+    if (severityOrder !== 0) return severityOrder;
+
+    const dueOrder =
+      priorityDate(a.data_sla ?? a.data_programada) -
+      priorityDate(b.data_sla ?? b.data_programada);
+    if (dueOrder !== 0) return dueOrder;
+
+    const createdOrder =
+      priorityDate(a.data_criacao) - priorityDate(b.data_criacao);
+    if (createdOrder !== 0) return createdOrder;
+
+    return comparePriorityOs(a.numero_os, b.numero_os);
+  });
 }
 
 function readStorage(): CorrectiveProgramReservation[] {
@@ -176,7 +251,11 @@ export function selectCorrectiveRowsForWeekTeam(options: {
   for (const reservation of currentReservations) {
     const row = rows.find((candidate) => hasSharedKey(candidate, reservation));
     if (!row || resolveCorrectiveTeam(row) !== equipe) continue;
-    if (!selected.some((candidate) => rowKeys(candidate).some((key) => rowKeys(row).includes(key)))) {
+    if (
+      !selected.some((candidate) =>
+        rowKeys(candidate).some((key) => rowKeys(row).includes(key)),
+      )
+    ) {
       selected.push(row);
     }
     if (selected.length >= limit) break;
@@ -187,10 +266,12 @@ export function selectCorrectiveRowsForWeekTeam(options: {
     (reservation) =>
       !(reservation.periodStart === periodStart && reservation.equipe === equipe),
   );
-  const reservedElsewhereKeys = new Set(reservedElsewhere.flatMap(reservationKeys));
+  const reservedElsewhereKeys = new Set(
+    reservedElsewhere.flatMap(reservationKeys),
+  );
 
   if (selected.length < limit) {
-    const candidates = sortCorrectiveRows(
+    const candidates = sortReservationCandidates(
       rows.filter((row) => {
         if (resolveCorrectiveTeam(row) !== equipe) return false;
         const keys = rowKeys(row);
