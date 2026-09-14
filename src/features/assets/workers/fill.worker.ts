@@ -47,13 +47,25 @@ ctx.onmessage = (ev: MessageEvent<WorkerRunMessage>) => {
   if (msg?.type !== "run") return;
   try {
     const graph = buildAssetGraph(msg.records);
-    const batch = msg.batchSize ?? 500;
+    // Lotes menores deixam o progresso visual perceptível sem comprometer o processamento.
+    const batch = msg.batchSize ?? 100;
     const grandTotal = msg.sheets.reduce((a, s) => a + s.rows.length, 0) || 1;
     let processedOverall = 0;
 
     msg.sheets.forEach((sheet, sheetIndex) => {
       try {
         const results: RowResult[] = [];
+
+        // Publica o início da aba para a UI exibir imediatamente o estado de carregamento.
+        ctx.postMessage({
+          type: "progress",
+          sheet: sheet.name,
+          sheetIndex,
+          done: 0,
+          total: sheet.rows.length,
+          overall: processedOverall / grandTotal,
+        } satisfies WorkerOutMessage);
+
         for (let i = 0; i < sheet.rows.length; i += batch) {
           const slice = sheet.rows.slice(i, i + batch);
           const part = processRows(graph, {
