@@ -63,11 +63,12 @@ describe("corrective program reservations", () => {
     installWindowStorage();
   });
 
-  it("reserva 2 por equipe pela prioridade, reutiliza a semana e não duplica em outra semana", () => {
+  it("prioriza backorder e criticidade antes de SLA, reutiliza a semana e não duplica em outra semana", () => {
     const rows: CorrectiveSourceRow[] = [
       row("id-backorder", "100", "2026-09-10", "observacao"),
       row("id-critical", "200", "2026-09-18", "critico"),
-      row("id-third", "300", "2026-09-25", "falha"),
+      // SLA mais próximo, porém sem criticidade: deve ficar depois da crítica.
+      row("id-third", "300", "2026-09-15", "observacao"),
     ];
     const reference = new Date(2026, 8, 14);
 
