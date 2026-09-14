@@ -1005,26 +1005,26 @@ export async function buildWeeklyPrintHtml(blob: Blob): Promise<string> {
     });
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
-    @page { size: A4 landscape; margin: 7mm; }
+    @page { size: A4 landscape; margin: 5.5mm; }
     * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     html, body { margin: 0; background: #FFFFFF; font-family: Aptos, Arial, sans-serif; color: #162231; }
-    .day-sheet { break-after: page; page-break-after: always; }
-    .day-sheet:last-child { break-after: auto; page-break-after: auto; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .day-sheet { break-before: auto; break-after: auto; page-break-before: auto; page-break-after: auto; break-inside: auto; page-break-inside: auto; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; break-inside: auto; page-break-inside: auto; }
     thead { display: table-header-group; }
-    tbody { display: table-row-group; }
+    tbody { display: table-row-group; break-inside: auto; page-break-inside: auto; }
     tr { break-inside: avoid; page-break-inside: avoid; }
-    td { border: 1px solid #DDE5EC; padding: 4.5px; font-size: 7.3pt; line-height: 1.14; overflow-wrap: anywhere; }
-    .title-row td { height: 32px; font-size: 14pt; }
-    .day-band td { height: 25px; font-size: 8.5pt; }
-    .column-header td { height: 27px; font-size: 7.2pt; }
-    .data-row td { height: 58px; }
+    td { border: 1px solid #DDE5EC; padding: 3.5px 4.5px; font-size: 7.3pt; line-height: 1.2; overflow-wrap: anywhere; vertical-align: middle; }
+    .title-row td { height: auto; padding: 5px; font-size: 12.5pt; }
+    .day-band td { height: auto; padding: 4px; font-size: 8.5pt; }
+    .column-header td { height: auto; padding: 4px; font-size: 7.2pt; }
+    .data-row td { height: auto; }
+    .title-row, .day-band, .column-header { break-after: avoid; page-break-after: avoid; }
     td:nth-child(1){width:6%} td:nth-child(2){width:18%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
     td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:11%}
     td:nth-child(9){width:11%} td:nth-child(10){width:15%}
     @media print {
       html, body, .day-sheet, table, thead, tbody, tr, td { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-      .day-sheet + .day-sheet { break-before: page; page-break-before: always; }
+      .day-sheet, .day-sheet + .day-sheet, .team-start { break-before: auto; page-break-before: auto; break-after: auto; page-break-after: auto; }
     }
   </style></head><body>${sections.join("")}</body></html>`;
 }
