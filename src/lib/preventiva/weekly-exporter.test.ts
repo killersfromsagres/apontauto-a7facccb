@@ -109,15 +109,22 @@ describe("generateWeeklyProgramacao", () => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(xlsxBuffer);
     const program = workbook.worksheets[0];
-    expect(workbook.worksheets).toHaveLength(3);
+    expect(workbook.worksheets).toHaveLength(5);
+    expect(workbook.worksheets.map((sheet) => sheet.name)).toContain(
+      "IMP CIVIL",
+    );
+    expect(workbook.worksheets.map((sheet) => sheet.name)).toContain(
+      "IMP REFRIG 1",
+    );
     expect(program.name).toBe("PROGRAMAÇÃO");
+
     expect(program.actualColumnCount).toBe(10);
     expect(program.getColumn(2).width).toBeCloseTo(56.7109375);
     expect(program.getColumn(10).width).toBeCloseTo(68.140625);
     expect(program.getRow(1).height).toBe(42);
-    expect(program.getRow(2).height).toBe(28);
-    expect(program.getRow(3).height).toBeCloseTo(38.1);
-    expect(program.getRow(4).height).toBeCloseTo(119.25);
+    expect(program.getRow(2).height).toBe(24);
+    expect(program.getRow(3).height).toBe(30);
+    expect(program.getRow(4).height).toBe(45);
     expect(program.getCell("J4").value).toBeNull();
     expect(program.getCell("J5").value).toBe("FANCOIL 01");
     expect(program.getCell("F4").value).toBe("Corretiva");
@@ -137,7 +144,7 @@ describe("generateWeeklyProgramacao", () => {
     const programXml = await zip
       .file("xl/worksheets/sheet1.xml")!
       .async("string");
-    expect(programXml).toContain('<rowBreaks count="1" manualBreakCount="1">');
+    expect(programXml).not.toContain("<rowBreaks");
 
     const html = await buildWeeklyPrintHtml(blob);
     const printSections = html.match(
@@ -291,5 +298,77 @@ describe("generateWeeklyProgramacao", () => {
     expect(slaSheet.getCell("C5").text).toBe("CIVIL");
     expect(slaSheet.getCell("A6").text).toBe("OS-100");
     expect(slaSheet.getCell("B6").text).toBe("30/09/2026");
+  });
+});
+
+describe("abas de impressão por equipe", () => {
+  it("cria abas contínuas por equipe, ordenadas, sem quebras manuais e com fit correto", async () => {
+    const monday = new Date(2026, 8, 14);
+    const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
+    const located = (
+      id: string,
+      equipe: Equipe,
+      predio: string,
+      andar: string,
+    ): TriagedOS => ({ ...os(id, equipe, ""), predio, andar });
+
+    const civilMon = located("C-1", "CIVIL", "A220", "2º Andar");
+    const civilTue = located("C-2", "CIVIL", "A160", "1º Sub-Solo");
+    const civilWed = located("C-3", "CIVIL", "A160", "Térreo");
+    const eletrica = located("E-1", "ELÉTRICA", "A160", "1º Andar");
+
+    const blob = await generateWeeklyProgramacao({
+      titulo: "GRUPO GPS",
+      week,
+      bucketsPorEquipe: new Map([
+        [
+          "CIVIL",
+          {
+            week,
+            os: [civilMon, civilTue, civilWed],
+            porDia: [[civilMon], [civilTue], [civilWed], [], []],
+          },
+        ],
+        [
+          "ELÉTRICA",
+          { week, os: [eletrica], porDia: [[eletrica], [], [], [], []] },
+        ],
+      ]),
+      minutosPorEquipe: { CIVIL: 30, "ELÉTRICA": 30 },
+      ativoIndex: new Map(),
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await blob.arrayBuffer());
+    const names = workbook.worksheets.map((sheet) => sheet.name);
+    expect(names).toContain("IMP CIVIL");
+    expect(names).toContain("IMP ELETRICA");
+    expect(names).not.toContain("IMP CHAVEIRO");
+
+    const civilSheet = workbook.getWorksheet("IMP CIVIL")!;
+    expect(civilSheet.getCell("A2").value).toBe("OS");
+    const order = [3, 4, 5].map((row) => ({
+      predio: civilSheet.getCell(row, 3).text,
+      andar: civilSheet.getCell(row, 4).text,
+      equipe: civilSheet.getCell(row, 8).text,
+    }));
+    expect(order).toEqual([
+      { predio: "A160", andar: "1º Sub-Solo", equipe: "CIVIL" },
+      { predio: "A160", andar: "Térreo", equipe: "CIVIL" },
+      { predio: "A220", andar: "2º Andar", equipe: "CIVIL" },
+    ]);
+
+    expect(civilSheet.pageSetup.fitToWidth).toBe(1);
+    expect(civilSheet.pageSetup.fitToHeight).toBe(0);
+    expect(civilSheet.pageSetup.orientation).toBe("landscape");
+    expect(civilSheet.pageSetup.printArea).toBe("A1:J5");
+
+    const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+    for (const file of Object.keys(zip.files).filter((name) =>
+      name.startsWith("xl/worksheets/sheet"),
+    )) {
+      const xml = await zip.file(file)!.async("string");
+      expect(xml).not.toContain("<rowBreaks");
+    }
   });
 });
