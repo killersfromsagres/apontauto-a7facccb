@@ -31,9 +31,7 @@ export function PageShell({
     }
   };
 
-  const handleActionsClickCapture = (
-    event: React.MouseEvent<HTMLDivElement>,
-  ) => {
+  const handleActionsClickCapture = (event: React.MouseEvent<HTMLDivElement>) => {
     if (title !== MENSAGERIA_TITLE) return;
 
     const target = event.target as HTMLElement;
@@ -44,15 +42,8 @@ export function PageShell({
     event.stopPropagation();
 
     void import("@/lib/mensageria/premium-export")
-      .then(({ exportMensageriaPremiumBackup }) =>
-        exportMensageriaPremiumBackup(),
-      )
-      .catch((error) =>
-        console.error(
-          "Falha ao carregar exportador premium da Mensageria:",
-          error,
-        ),
-      );
+      .then(({ exportMensageriaPremiumBackup }) => exportMensageriaPremiumBackup())
+      .catch((error) => console.error("Falha ao carregar exportador premium da Mensageria:", error));
   };
 
   const online = typeof navigator !== "undefined" ? navigator.onLine : true;
@@ -72,35 +63,36 @@ export function PageShell({
       )}
       <div className="premium-page-heading relative flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div className="shrink-0 pt-0.5 md:pt-1">
-            <Button
-              aria-label="Voltar"
-              variant="ghost"
-              size="icon"
-              className="premium-icon-button h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground sm:h-10 sm:w-10"
-              onClick={onBack ? handleBack : undefined}
-              asChild={!onBack}
-            >
-              {onBack ? (
-                <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-              ) : (
-                <a href={backUrl} aria-label="Voltar">
+          {(backButton || true) && (
+            <div className="shrink-0 pt-0.5 md:pt-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="premium-icon-button h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground sm:h-10 sm:w-10"
+                onClick={onBack ? handleBack : undefined}
+                asChild={!onBack}
+              >
+                {onBack ? (
                   <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                </a>
-              )}
-            </Button>
-          </div>
+                ) : (
+                  <a href={backUrl}>
+                    <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+                  </a>
+                )}
+              </Button>
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             {eyebrow && (
               <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground sm:mb-2 sm:text-xs">
                 {eyebrow}
               </div>
             )}
-            <h2 className="break-words font-sans text-xl font-semibold leading-tight tracking-[-0.025em] text-foreground sm:text-2xl md:text-3xl">
+            <h2 className="break-words font-sans text-xl font-semibold leading-tight tracking-[-0.025em] text-foreground sm:text-3xl md:text-4xl">
               {title}
             </h2>
             {description && (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-1 line-clamp-2 max-w-2xl text-[12px] leading-snug text-muted-foreground sm:mt-3 sm:line-clamp-none sm:text-base">
                 {description}
               </p>
             )}
@@ -109,7 +101,7 @@ export function PageShell({
         {actions && (
           <div
             onClickCapture={handleActionsClickCapture}
-            className="flex w-full flex-wrap gap-2 sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none"
+            className="flex w-full flex-wrap gap-2 sm:w-auto sm:flex-nowrap [&>*]:flex-1 sm:[&>*]:flex-none"
           >
             {actions}
           </div>

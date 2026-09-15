@@ -31,33 +31,20 @@ function KpiCardImpl({
   onClick?: () => void;
   className?: string;
 }) {
-  const good = trend
-    ? trend.invert
-      ? trend.value <= 0
-      : trend.value >= 0
-    : true;
+  const good = trend ? (trend.invert ? trend.value <= 0 : trend.value >= 0) : true;
   const Wrapper = onClick ? "button" : "div";
 
   return (
-    <GlassCard
-      variant="block"
-      className={cn("metric-card p-4 sm:p-5", className)}
-    >
+    <GlassCard variant="block" className={cn("hover-raise p-4 sm:p-6", className)}>
       <Wrapper
-        aria-busy={loading || undefined}
         type={onClick ? "button" : undefined}
         onClick={onClick}
-        className={cn(
-          "flex w-full min-w-0 flex-col gap-2 text-left",
-          onClick && "cursor-pointer",
-        )}
+        className={cn("flex w-full min-w-0 flex-col gap-2 text-left", onClick && "cursor-pointer")}
       >
         <div className="flex items-start justify-between gap-3">
-          <span className="text-xs font-medium leading-5 text-muted-foreground">
-            {label}
-          </span>
+          <span className="text-eyebrow truncate">{label}</span>
           {icon && (
-            <span className="shrink-0 rounded-lg bg-muted p-1.5 text-muted-foreground">
+            <span className="shrink-0 rounded-xl border border-primary/30 bg-primary/10 p-1.5 text-primary">
               {icon}
             </span>
           )}
@@ -66,7 +53,7 @@ function KpiCardImpl({
         {loading ? (
           <Skeleton className="h-8 w-24" />
         ) : (
-          <div className="font-display tabular-nums text-2xl font-semibold leading-none tracking-tight sm:text-3xl">
+          <div className="font-display text-2xl font-bold leading-none tracking-tight sm:text-3xl">
             {value}
           </div>
         )}
@@ -76,9 +63,7 @@ function KpiCardImpl({
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
-                good
-                  ? "bg-success/12 text-success"
-                  : "bg-destructive/12 text-destructive",
+                good ? "bg-success/12 text-success" : "bg-destructive/12 text-destructive",
               )}
             >
               {trend.value >= 0 ? (
@@ -93,7 +78,7 @@ function KpiCardImpl({
             </span>
           )}
           {(hint || trend?.label) && (
-            <span className="text-xs leading-5 text-muted-foreground">
+            <span className="truncate text-[11px] text-muted-foreground">
               {hint ?? trend?.label}
             </span>
           )}

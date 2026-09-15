@@ -2,7 +2,7 @@ import { memo, type ReactNode, type CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Shared operational panel with restrained depth and optional interaction.
+ * Liquid Glass panel — aprimorado com efeitos premium e animações dinâmicas.
  */
 function GlassCardImpl({
   children,
@@ -15,12 +15,12 @@ function GlassCardImpl({
   children: ReactNode;
   className?: string;
   delay?: number;
-  /** `block` identifies metric panels without changing their behavior. */
+  /** `block` usa o vidro turquesa com aresta luminosa (destaques/KPIs). */
   variant?: "surface" | "block";
   style?: CSSProperties;
   onClick?: () => void;
 }) {
-  const clamped = Math.max(0, Math.min(delay, 0.12));
+  const clamped = Math.min(delay, 0.5); // Aumentado para suportar delays maiores se necessário
   const style: CSSProperties | undefined =
     clamped > 0 ? { animationDelay: `${clamped}s`, ...styleProp } : styleProp;
 
@@ -28,32 +28,19 @@ function GlassCardImpl({
     <div
       style={style}
       onClick={onClick}
-      data-slot="glass-card"
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={
-        onClick
-          ? (event) => {
-              if (
-                event.target === event.currentTarget &&
-                (event.key === "Enter" || event.key === " ")
-              ) {
-                event.preventDefault();
-                onClick();
-              }
-            }
-          : undefined
-      }
       className={cn(
         variant === "block" ? "glass-block" : "glass-surface",
-        "relative overflow-hidden rounded-xl p-4 sm:p-6",
+        "animate-card-rise relative overflow-hidden rounded-2xl p-5 sm:p-7",
         "transition-[border-color,box-shadow,background-color,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]",
-        onClick &&
-          "hover:border-primary/40 focus-visible:outline-2 focus-visible:outline-primary",
+        "hover:border-primary/20 hover:shadow-lift",
+        "card-sheen", // Adiciona o brilho especular ao passar o mouse
         onClick && "cursor-pointer",
         className,
       )}
     >
+      {/* Overlay de gradiente interno sutil para profundidade */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50" />
+
       <div className="relative z-10">{children}</div>
     </div>
   );

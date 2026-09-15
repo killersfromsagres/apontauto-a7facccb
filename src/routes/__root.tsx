@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
-import workspaceCss from "../workspace-ui.css?url";
 import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
 import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
@@ -60,9 +59,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight">
-          Erro ao carregar a página
-        </h1>
+        <h1 className="text-xl font-semibold tracking-tight">Erro ao carregar a página</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Algo deu errado. Tente recarregar ou voltar ao dashboard.
         </p>
@@ -88,142 +85,116 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
-  {
-    head: () => ({
-      meta: [
-        { charSet: "utf-8" },
-        {
-          name: "viewport",
-          content: "width=device-width, initial-scale=1, viewport-fit=cover",
-        },
-        { name: "theme-color", content: "#050c14" },
-        { name: "mobile-web-app-capable", content: "yes" },
-        { name: "apple-mobile-web-app-capable", content: "yes" },
-        {
-          name: "apple-mobile-web-app-status-bar-style",
-          content: "black-translucent",
-        },
-        { name: "format-detection", content: "telephone=no" },
-        {
-          title:
-            "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
-        },
-        {
-          name: "description",
-          content:
-            "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
-        },
-        { name: "author", content: "Dev Gabriel Vitor" },
-        {
-          property: "og:title",
-          content:
-            "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
-        },
-        {
-          property: "og:description",
-          content:
-            "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
-        },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary_large_image" },
-        {
-          name: "twitter:title",
-          content:
-            "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
-        },
-        {
-          name: "twitter:description",
-          content:
-            "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
-        },
-        {
-          property: "og:image",
-          content:
-            "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
-        },
-        {
-          name: "twitter:image",
-          content:
-            "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
-        },
-      ],
-      links: [
-        { rel: "stylesheet", href: appCss },
-        { rel: "stylesheet", href: premiumCss },
-        { rel: "stylesheet", href: pcmAssetsPremiumCss },
-        { rel: "stylesheet", href: scrollbarCss },
-        // Carregado por último para impedir qualquer microinteração de pressão/afundamento.
-        { rel: "stylesheet", href: interactionMotionResetCss },
-        // Tipografia exclusiva das páginas institucionais; não depende do plugin prose.
-        { rel: "stylesheet", href: institutionalPagesCss },
-        // Correção final e escopada do fluxo PCM para manter upload, stepper e catálogo compactos.
-        { rel: "stylesheet", href: pcmAssetsCompactFixCss },
-        // Tema visual exclusivo do fluxo PCM; carregado após a correção de layout para não reintroduzir overflow.
-        { rel: "stylesheet", href: pcmAssetsGlassCss },
-        // Ajustes finais do trilho de progresso e interação.
-        { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
-        { rel: "stylesheet", href: workspaceCss },
-        { rel: "icon", href: "/favicon.ico" },
-        { rel: "manifest", href: "/manifest.webmanifest" },
-        { rel: "apple-touch-icon", href: "/pwa-192.png" },
-        // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
-        {
-          rel: "preload",
-          as: "image",
-          href: "/apontauto-logo.png",
-          fetchpriority: "high",
-        },
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
-          crossOrigin: "anonymous",
-        },
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#050c14" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "format-detection", content: "telephone=no" },
+      { title: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
+      {
+        name: "description",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
+      },
+      { name: "author", content: "Dev Gabriel Vitor" },
+      {
+        property: "og:title",
+        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
+      },
+      {
+        property: "og:description",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
+      },
+      {
+        name: "twitter:description",
+        content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+      },
+    ],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: premiumCss },
+      { rel: "stylesheet", href: pcmAssetsPremiumCss },
+      { rel: "stylesheet", href: scrollbarCss },
+      // Carregado por último para impedir qualquer microinteração de pressão/afundamento.
+      { rel: "stylesheet", href: interactionMotionResetCss },
+      // Tipografia exclusiva das páginas institucionais; não depende do plugin prose.
+      { rel: "stylesheet", href: institutionalPagesCss },
+      // Correção final e escopada do fluxo PCM para manter upload, stepper e catálogo compactos.
+      { rel: "stylesheet", href: pcmAssetsCompactFixCss },
+      // Tema visual exclusivo do fluxo PCM; carregado após a correção de layout para não reintroduzir overflow.
+      { rel: "stylesheet", href: pcmAssetsGlassCss },
+      // Ajustes finais do trilho de progresso e interação.
+      { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
+      { rel: "icon", href: "/favicon.ico" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/pwa-192.png" },
+      // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
+      { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
 
-        // Fonte carregada de forma NÃO-bloqueante (media=print + swap para 'all' pós-load).
-        // Elimina o render-blocking do CSS de fontes no primeiro paint (LCP/FCP).
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap",
-          media: "print",
-          onload: "this.media='all'",
-        },
-        {
-          rel: "preload",
-          as: "style",
-          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap",
-        },
-      ],
-      scripts: [
-        {
-          type: "application/ld+json",
-          children: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "ApontAuto",
-            url: "https://apontauto.online",
-            logo: "https://apontauto.online/apontauto-logo.png",
-            description:
-              "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
-            founder: { "@type": "Person", name: "Gabriel Vitor" },
-            contactPoint: {
-              "@type": "ContactPoint",
-              email: "gabrielvlp33@gmail.com",
-              contactType: "customer support",
-              areaServed: "BR",
-              availableLanguage: ["Portuguese"],
-            },
-          }),
-        },
-      ],
-    }),
-    shellComponent: RootShell,
-    component: RootComponent,
-    notFoundComponent: NotFoundComponent,
-    errorComponent: ErrorComponent,
-  },
-);
+      // Fonte carregada de forma NÃO-bloqueante (media=print + swap para 'all' pós-load).
+      // Elimina o render-blocking do CSS de fontes no primeiro paint (LCP/FCP).
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap",
+        media: "print",
+        onload: "this.media='all'",
+      },
+      {
+        rel: "preload",
+        as: "style",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "ApontAuto",
+          url: "https://apontauto.online",
+          logo: "https://apontauto.online/apontauto-logo.png",
+          description:
+            "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
+          founder: { "@type": "Person", name: "Gabriel Vitor" },
+          contactPoint: {
+            "@type": "ContactPoint",
+            email: "gabrielvlp33@gmail.com",
+            contactType: "customer support",
+            areaServed: "BR",
+            availableLanguage: ["Portuguese"],
+          },
+        }),
+      },
+    ],
+  }),
+  shellComponent: RootShell,
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+  errorComponent: ErrorComponent,
+});
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
@@ -242,9 +213,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const pathname = useRouterState({
-    select: (state) => state.location.pathname,
-  });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   useEffect(() => {
     registerServiceWorker();
