@@ -1,151 +1,193 @@
-import { OsCacheRow } from "./db";
+import type { OsCacheRow } from "./db";
+import {
+  classifyPriority,
+  PRIORITY_HEX,
+  type PriorityLevel,
+} from "./priority-classifier";
 
-export async function generateProgramacaoPDF(osList: OsCacheRow[], equipeFiltro: string) {
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace("#", "");
+  return [
+    Number.parseInt(clean.slice(0, 2), 16),
+    Number.parseInt(clean.slice(2, 4), 16),
+    Number.parseInt(clean.slice(4, 6), 16),
+  ];
+}
+
+function priorityLabel(level: PriorityLevel, score: number) {
+  return `${level} (${score})`;
+}
+
+export async function generateProgramacaoPDF(
+  osList: OsCacheRow[],
+  equipeFiltro: string,
+) {
   const { jsPDF } = await import("jspdf");
   const { default: autoTable } = await import("jspdf-autotable");
+  const generatedAt = new Date();
 
   const doc = new jsPDF({
-    orientation: "portrait",
+    orientation: "landscape",
     unit: "mm",
     format: "a4",
   });
 
-  const primaryColor = [15, 23, 42]; // #0F172A
-  const accentColor = [59, 130, 246]; // #3B82F6
-  const emeraldColor = [16, 185, 129]; // #10B981
-  const amberColor = [245, 158, 11]; // #F59E0B
-  const redColor = [239, 68, 68]; // #EF4444
+  const primaryColor: [number, number, number] = [15, 23, 42];
+  const amberColor: [number, number, number] = [245, 158, 11];
+  const redColor: [number, number, number] = [239, 68, 68];
 
-  // --- Header ---
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, 210, 40, "F");
-
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, 297, 35, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("APONT AUTO", 15, 20);
-
+  doc.setFontSize(20);
+  doc.text("APONT AUTO", 14, 16);
   doc.setFontSize(10);
+  doc.text("PROGRAMAÇÃO DE CORRETIVAS · PRIORIDADE OPERACIONAL", 14, 23);
   doc.setFont("helvetica", "normal");
-  doc.text("PROGRAMAÇÃO DE SERVIÇOS EM ABERTO", 15, 28);
-  doc.text(`EQUIPE: ${equipeFiltro.toUpperCase()}`, 15, 33);
-  doc.text(`GERADO EM: ${new Date().toLocaleString("pt-BR")}`, 145, 33);
+  doc.setFontSize(8);
+  doc.text(`EQUIPE: ${equipeFiltro.toUpperCase()}`, 14, 29);
+  doc.text(`GERADO EM: ${generatedAt.toLocaleString("pt-BR")}`, 216, 29);
 
-  // --- Summary ---
-  const total = osList.length;
-  const emAtraso = osList.filter(o => {
-    if (!o.data_criacao) return false;
-    const diff = (new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24);
-    return diff >= 30;
-  }).length;
-  const materialSolicitado = osList.filter(o => o.material_status === "solicitado").length;
+  const priorities = osList.map((item) => classifyPriority(item, generatedAt));
+  const critical = priorities.filter((item) => item.level === "CRÍTICA").length;
+  const high = priorities.filter((item) => item.level === "ALTA").length;
+  const medium = priorities.filter((item) => item.level === "MÉDIA").length;
+  const materialRequested = osList.filter(
+    (item) => String(item.material_status ?? "").toLowerCase() === "solicitado",
+  ).length;
 
-  const cardWidth = 60;
-  const startX = 15;
-  const cardY = 50;
-
-  const drawCard = (x: number, label: string, value: string | number, color: number[]) => {
+  const cards = [
+    ["TOTAL", osList.length, primaryColor],
+    ["CRÍTICA", critical, hexToRgb(PRIORITY_HEX.CRÍTICA.bg)],
+    ["ALTA", high, hexToRgb(PRIORITY_HEX.ALTA.bg)],
+    ["MÉDIA", medium, hexToRgb(PRIORITY_HEX.MÉDIA.bg)],
+    ["MATERIAL", materialRequested, amberColor],
+  ] as const;
+  const cardWidth = 50;
+  cards.forEach(([label, value, color], index) => {
+    const x = 14 + index * 54;
     doc.setDrawColor(226, 232, 240);
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(x, cardY, cardWidth, 20, 2, 2, "FD");
-    
+    doc.roundedRect(x, 42, cardWidth, 16, 2, 2, "FD");
     doc.setTextColor(100, 116, 139);
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "bold");
-    doc.text(label.toUpperCase(), x + 5, cardY + 7);
-    
+    doc.text(label, x + 4, 48);
     doc.setTextColor(color[0], color[1], color[2]);
-    doc.setFontSize(12);
-    doc.text(String(value), x + 5, cardY + 15);
-  };
+    doc.setFontSize(11);
+    doc.text(String(value), x + 4, 55);
+  });
 
-  drawCard(startX, "Total em Aberto", total, primaryColor);
-  drawCard(startX + cardWidth + 5, "Em Atraso (>30d)", emAtraso, redColor);
-  drawCard(startX + (cardWidth + 5) * 2, "Aguardando Material", materialSolicitado, amberColor);
-
-  // --- Table ---
   const tableData = osList.map((o) => {
-    const dataAbertura = o.data_criacao ? new Date(o.data_criacao).toLocaleDateString("pt-BR") : "—";
+    const priority = classifyPriority(o, generatedAt);
+    const dataAbertura = o.data_criacao
+      ? new Date(o.data_criacao).toLocaleDateString("pt-BR")
+      : "—";
     let slaText = "No prazo";
-    let isAtraso = false;
     if (o.data_criacao) {
-      const diff = Math.floor((new Date().getTime() - new Date(o.data_criacao).getTime()) / (1000 * 60 * 60 * 24));
-      if (diff >= 30) {
-        slaText = `${diff} dias`;
-        isAtraso = true;
-      }
+      const diff = Math.floor(
+        (generatedAt.getTime() - new Date(o.data_criacao).getTime()) / 86_400_000,
+      );
+      if (diff >= 30) slaText = `${diff} dias`;
     }
 
     return [
       o.numero_os,
+      priorityLabel(priority.level, priority.score),
+      priority.reasons.slice(0, 2).join(" · "),
       o.equipe || "N/A",
-      `${o.predio} / ${o.andar}\n${o.local}`,
-      o.nome_os,
+      `${o.predio || "—"} / ${o.andar || "—"}\n${o.local || "—"}`,
+      o.nome_os || "Sem descrição",
       dataAbertura,
       slaText,
-      o.material_status === "solicitado" ? "SIM" : "NÃO"
+      String(o.material_status ?? "").toLowerCase() === "solicitado" ? "SIM" : "NÃO",
     ];
   });
 
   autoTable(doc, {
-    startY: 80,
-    head: [["OS", "EQUIPE", "LOCALIZAÇÃO", "DESCRIÇÃO", "ABERTURA", "ATRASO", "MAT."]],
+    startY: 64,
+    head: [[
+      "OS",
+      "PRIORIDADE",
+      "MOTIVO",
+      "EQUIPE",
+      "LOCALIZAÇÃO",
+      "DESCRIÇÃO",
+      "ABERTURA",
+      "ATRASO",
+      "MAT.",
+    ]],
     body: tableData,
-    theme: "striped",
+    theme: "grid",
     headStyles: {
-      fillColor: primaryColor as [number, number, number],
+      fillColor: primaryColor,
       textColor: [255, 255, 255],
-      fontSize: 8,
+      fontSize: 7.2,
       fontStyle: "bold",
       halign: "center",
-      cellPadding: 3,
+      cellPadding: 2.5,
     },
     columnStyles: {
-      0: { halign: "center", fontStyle: "bold", cellWidth: 15 },
-      1: { halign: "center", cellWidth: 25 },
-      2: { halign: "left", cellWidth: 40 },
-      3: { halign: "left", cellWidth: 55 },
-      4: { halign: "center", cellWidth: 20 },
-      5: { halign: "center", cellWidth: 15 },
-      6: { halign: "center", cellWidth: 10 },
+      0: { halign: "center", fontStyle: "bold", cellWidth: 16 },
+      1: { halign: "center", fontStyle: "bold", cellWidth: 25 },
+      2: { halign: "left", cellWidth: 43 },
+      3: { halign: "center", cellWidth: 27 },
+      4: { halign: "left", cellWidth: 45 },
+      5: { halign: "left", cellWidth: 75 },
+      6: { halign: "center", cellWidth: 20 },
+      7: { halign: "center", cellWidth: 18 },
+      8: { halign: "center", cellWidth: 13 },
     },
     styles: {
       font: "helvetica",
-      fontSize: 7,
+      fontSize: 6.8,
       cellPadding: 2,
       valign: "middle",
+      overflow: "linebreak",
     },
-    didDrawCell: (data) => {
-      if (data.section === 'body' && data.column.index === 5) {
-        const text = data.cell.text[0];
-        if (text !== "No prazo") {
-          doc.setTextColor(redColor[0], redColor[1], redColor[2]);
-          doc.setFont("helvetica", "bold");
-        }
+    didParseCell: (data) => {
+      if (data.section !== "body") return;
+      const source = osList[data.row.index];
+      if (!source) return;
+      const priority = classifyPriority(source, generatedAt);
+
+      if (data.column.index === 1) {
+        const palette = PRIORITY_HEX[priority.level];
+        data.cell.styles.fillColor = hexToRgb(palette.bg);
+        data.cell.styles.textColor = hexToRgb(palette.fg);
+        data.cell.styles.fontStyle = "bold";
       }
-      if (data.section === 'body' && data.column.index === 6) {
-        const text = data.cell.text[0];
-        if (text === "SIM") {
-          doc.setTextColor(amberColor[0], amberColor[1], amberColor[2]);
-          doc.setFont("helvetica", "bold");
-        }
+      if (data.column.index === 7 && data.cell.text[0] !== "No prazo") {
+        data.cell.styles.textColor = redColor;
+        data.cell.styles.fontStyle = "bold";
       }
-    }
+      if (data.column.index === 8 && data.cell.text[0] === "SIM") {
+        data.cell.styles.textColor = amberColor;
+        data.cell.styles.fontStyle = "bold";
+      }
+    },
   });
 
   const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  for (let i = 1; i <= pageCount; i += 1) {
     doc.setPage(i);
     doc.setFontSize(7);
     doc.setTextColor(148, 163, 184);
-    doc.text(`Página ${i} de ${pageCount} - Apont Auto Sistema de Gestão`, 15, 285);
+    doc.text(
+      `Página ${i} de ${pageCount} · Apont Auto · prioridade calculada automaticamente`,
+      14,
+      202,
+    );
   }
 
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `programacao_${equipeFiltro.toLowerCase().replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+  link.download = `programacao_${equipeFiltro
+    .toLowerCase()
+    .replace(/\s+/g, "_")}_${generatedAt.toISOString().slice(0, 10)}.pdf`;
   link.click();
   URL.revokeObjectURL(url);
 }
