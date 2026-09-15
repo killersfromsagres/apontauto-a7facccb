@@ -98,7 +98,7 @@ describe("corrective program reservations", () => {
     ).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
-  it("com menos de 10 OS distribui de forma balanceada entre os dias", () => {
+  it("com menos de 10 OS preenche os dias em sequência respeitando 2 por dia", () => {
     const rows = Array.from({ length: 7 }, (_, index) =>
       row(`id-${index}`, String(2000 + index), "2026-09-30"),
     );
@@ -112,7 +112,7 @@ describe("corrective program reservations", () => {
     });
 
     expect(allocation.rows).toHaveLength(7);
-    expect(allocation.byDay.map((items) => items.length)).toEqual([2, 2, 1, 1, 1]);
+    expect(allocation.byDay.map((items) => items.length)).toEqual([2, 2, 2, 1, 0]);
   });
 
   it("prioriza backorder e criticidade antes de SLA e não duplica em outra semana", () => {
