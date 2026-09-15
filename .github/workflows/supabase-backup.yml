@@ -1,0 +1,91 @@
+name: Supabase encrypted backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: supabase-database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      PGCONNECT_TIMEOUT: "15"
+    steps:
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "::error::Repository secret SUPABASE_DB_URL is missing."
+            exit 1
+          fi
+          if [ -z "${BACKUP_ENCRYPTION_KEY:-}" ]; then
+            echo "::error::Repository secret BACKUP_ENCRYPTION_KEY is missing."
+            exit 1
+          fi
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
+      - name: Create database dump
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p backup
+          pg_dump \
+            --dbname="$SUPABASE_DB_URL" \
+            --format=custom \
+            --compress=9 \
+            --no-owner \
+            --no-privileges \
+            --file=backup/apontauto-supabase.dump
+          pg_restore --list backup/apontauto-supabase.dump >/dev/null
+
+      - name: Encrypt backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -in backup/apontauto-supabase.dump \
+            -out backup/apontauto-supabase.dump.enc \
+            -pass env:BACKUP_ENCRYPTION_KEY
+          sha256sum backup/apontauto-supabase.dump.enc > backup/apontauto-supabase.dump.enc.sha256
+          rm -f backup/apontauto-supabase.dump
+
+      - name: Upload protected workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: |
+            backup/apontauto-supabase.dump.enc
+            backup/apontauto-supabase.dump.enc.sha256
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Preserve backup as private repository release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="db-backup-$(date -u +'%Y%m%d-%H%M%S')-${GITHUB_RUN_ID}"
+          gh release create "$TAG" \
+            backup/apontauto-supabase.dump.enc \
+            backup/apontauto-supabase.dump.enc.sha256 \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Supabase backup $(date -u +'%Y-%m-%d %H:%M UTC')" \
+            --notes "Encrypted automated database backup. Restore instructions: docs/SUPABASE_BACKUP_RESTORE.md"
