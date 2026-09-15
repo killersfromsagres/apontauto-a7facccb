@@ -163,10 +163,15 @@ function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
 const isoLocal = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
+/**
+ * Distribui as corretivas reservadas nos dias úteis da semana (segunda a sexta),
+ * respeitando o teto de CORRECTIVES_PER_DAY por dia. Antes elas eram todas
+ * empilhadas na sexta-feira.
+ */
 function appendReservedCorrectives(
   bucket: WeekBucket,
   loads: DailyTeamLoad[],
-  correctives: TriagedOS[],
+  correctivesByDay: TriagedOS[][],
   minutesPerOs: 30 | 60,
   week: WeekInfo,
 ): { bucket: WeekBucket; loads: DailyTeamLoad[] } {
@@ -178,45 +183,50 @@ function appendReservedCorrectives(
   const nextLoads = loads.map((load) => ({
     ...load,
     correctiveCount: 0,
-    correctiveDeficit: 0,
+    correctiveDeficit: CORRECTIVES_PER_DAY,
   }));
 
-  if (correctives.length === 0) return { bucket: nextBucket, loads: nextLoads };
+  correctivesByDay.forEach((dayItems, dayIndex) => {
+    if (dayItems.length === 0) return;
+    nextBucket.os.push(...dayItems);
+    nextBucket.porDia[dayIndex] = [
+      ...(nextBucket.porDia[dayIndex] ?? []),
+      ...dayItems,
+    ];
 
-  const targetLoadIndex = Math.max(0, nextLoads.length - 1);
-  const targetLoad = nextLoads[targetLoadIndex];
-  const dayIndex = targetLoad?.dayIndex ?? 4;
-  nextBucket.os.push(...correctives);
-  nextBucket.porDia[dayIndex] = [
-    ...(nextBucket.porDia[dayIndex] ?? []),
-    ...correctives,
-  ];
+    const addedMinutes = dayItems.length * minutesPerOs;
+    const loadIndex = nextLoads.findIndex((load) => load.dayIndex === dayIndex);
+    if (loadIndex >= 0) {
+      const targetLoad = nextLoads[loadIndex];
+      const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
+      nextLoads[loadIndex] = {
+        ...targetLoad,
+        correctiveCount: dayItems.length,
+        scheduledMinutes,
+        remainingMinutes: Math.max(
+          0,
+          targetLoad.targetMinutes - scheduledMinutes,
+        ),
+        correctiveDeficit: Math.max(0, CORRECTIVES_PER_DAY - dayItems.length),
+      };
+    } else {
+      const date = new Date(week.monday);
+      date.setDate(date.getDate() + dayIndex);
+      nextLoads.push({
+        date,
+        dateKey: isoLocal(date),
+        dayIndex,
+        preventiveCount: 0,
+        correctiveCount: dayItems.length,
+        scheduledMinutes: addedMinutes,
+        remainingMinutes: Math.max(0, 540 - addedMinutes),
+        targetMinutes: 540,
+        correctiveDeficit: Math.max(0, CORRECTIVES_PER_DAY - dayItems.length),
+      });
+    }
+  });
 
-  const addedMinutes = correctives.length * minutesPerOs;
-  if (targetLoad) {
-    const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
-    nextLoads[targetLoadIndex] = {
-      ...targetLoad,
-      correctiveCount: correctives.length,
-      scheduledMinutes,
-      remainingMinutes: Math.max(0, targetLoad.targetMinutes - scheduledMinutes),
-      correctiveDeficit: Math.max(0, 2 - correctives.length),
-    };
-  } else {
-    const scheduledMinutes = addedMinutes;
-    nextLoads.push({
-      date: new Date(week.friday),
-      dateKey: isoLocal(week.friday),
-      dayIndex,
-      preventiveCount: 0,
-      correctiveCount: correctives.length,
-      scheduledMinutes,
-      remainingMinutes: Math.max(0, 540 - scheduledMinutes),
-      targetMinutes: 540,
-      correctiveDeficit: Math.max(0, 2 - correctives.length),
-    });
-  }
-
+  nextLoads.sort((a, b) => a.dayIndex - b.dayIndex);
   return { bucket: nextBucket, loads: nextLoads };
 }
 
