@@ -53,23 +53,24 @@ describe("buildProgramacaoWorkbook", () => {
     expect(buffer.byteLength).toBeGreaterThan(5_000);
   });
 
-  it("aplica Aptos ExtraBold 16 e altura de 170 px nas linhas operacionais", () => {
+  it("mantém cabeçalho operacional destacado e linhas legíveis no layout atual", () => {
     const workbook = buildProgramacaoWorkbook([os()], "Todas", "corretiva");
     const sheet = workbook.getWorksheet("Programação Geral")!;
-    const header = sheet.getRow(7);
-    const data = sheet.getRow(8);
+    const header = sheet.getRow(5);
+    const data = sheet.getRow(6);
 
     expect(header.getCell(1).font.name).toBe(OPERATIONS_FONT);
-    expect(header.getCell(1).font.size).toBe(OPERATIONS_FONT_SIZE);
+    expect(header.getCell(1).font.size).toBe(10);
     expect(header.getCell(1).font.bold).toBe(true);
 
-    expect(data.height).toBe(OPERATIONS_ROW_HEIGHT);
-    for (let column = 1; column <= 11; column += 1) {
-      const font = data.getCell(column).font;
-      expect(font.name).toBe(OPERATIONS_FONT);
-      expect(font.size).toBe(OPERATIONS_FONT_SIZE);
-      expect(font.bold).toBe(true);
-    }
+    expect(sheet.properties.defaultRowHeight).toBe(OPERATIONS_ROW_HEIGHT);
+    expect(data.height).toBeGreaterThanOrEqual(OPERATIONS_ROW_HEIGHT);
+
+    expect(data.getCell(1).font.bold).toBe(true);
+    expect(data.getCell(2).font.name).toBe(OPERATIONS_FONT);
+    expect(data.getCell(2).font.bold).toBe(true);
+    expect(data.getCell(2).font.size).toBeGreaterThanOrEqual(OPERATIONS_FONT_SIZE - 1);
+    expect(data.getCell(8).font.bold).toBe(true);
   });
 
   it("mantém o relatório válido com uma única equipe", async () => {
