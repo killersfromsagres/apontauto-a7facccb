@@ -37,11 +37,11 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps --no-audit --no-fund
 
+      - name: Production build and route generation
+        run: npm run build
+
       - name: Typecheck
         run: npx tsc --noEmit
 
       - name: Test
         run: npm test -- --passWithNoTests
-
-      - name: Production build
-        run: npm run build
