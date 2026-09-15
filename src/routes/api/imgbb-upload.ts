@@ -1,234 +1,70 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-const MAX_BYTES = 12 * 1024 * 1024;
-const ALLOWED_MIME = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
+function getPublicSupabaseConfig() {
+  const url =
+    (import.meta.env.VITE_SUPABASE_URL as string | undefined) ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL;
+  const publishableKey =
+    (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.SUPABASE_PUBLISHABLE_KEY;
 
-function sanitizeName(name: string): string {
-  return (
-    name
-      .split(/[\\/]/)
-      .pop()!
-      .replace(/\.[^.]+$/, "")
-      // eslint-disable-next-line no-control-regex -- remoção intencional de caracteres de controle
-      .replace(/[\u0000-\u001F\u007F]/g, "")
-      .replace(/[^a-zA-Z0-9._-]/g, "-")
-      .replace(/-{2,}/g, "-")
-      .replace(/^[-.]+/, "")
-      .slice(0, 100)
-  );
-}
-
-function looksLikeImage(head: Uint8Array): boolean {
-  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return true; // JPEG
-  if (head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) return true; // PNG
-  const ascii = String.fromCharCode(...Array.from(head.subarray(0, 12)));
-  return ascii.startsWith("RIFF") && ascii.slice(8, 12) === "WEBP";
-}
-
-async function sha256Hex(buf: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let bin = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    bin += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return btoa(bin);
+  return { url, publishableKey };
 }
 
 /**
- * Proxy autenticado de upload de imagens (evidências) para o ImgBB.
+ * Proxy compatível com os fluxos legados de upload.
  *
- * Diferenças em relação à rota legada `/api/public/imgbb-upload`:
- * - exige sessão válida **e** permissão de escrita no módulo informado;
- * - `delete_url` nunca é devolvido a usuário comum;
- * - registra hash, tamanho e origem em `image_uploads` para auditoria.
+ * Nenhuma chave administrativa ou chave do ImgBB fica neste servidor, no
+ * bundle do navegador ou no GitHub. A validação, autorização, rate-limit e o
+ * upload são executados pela Edge Function `imgbb-upload` do Supabase ativo.
  */
 export const Route = createFileRoute("/api/imgbb-upload")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const {
-          getRequestUser,
-          callerCanAccessModule,
-          unauthorized,
-          forbidden,
-          serviceUnavailable,
-          hasAuthConfig,
-        } = await import("@/lib/api-auth.server");
-
-        // Configuração ausente é falha de servidor (503) — nunca 401, para não
-        // derrubar a sessão de quem está apenas enviando uma foto.
-        if (!hasAuthConfig()) {
-          return serviceUnavailable("Backend indisponível para validar a sessão.");
+        const authorization = request.headers.get("authorization") ?? "";
+        if (!authorization.startsWith("Bearer ")) {
+          return Response.json({ error: "Sessão inválida." }, { status: 401 });
         }
 
-        const caller = await getRequestUser(request);
-        if (!caller) return unauthorized();
-
-        const key = process.env.IMGBB_API_KEY || "9b1297e64f89d81d236056976662703f";
-        if (!key) {
-          return serviceUnavailable("Serviço de imagens não configurado.");
+        const { url, publishableKey } = getPublicSupabaseConfig();
+        if (!url || !publishableKey) {
+          return Response.json(
+            { error: "Backend de imagens indisponível: Supabase público não configurado." },
+            { status: 503 },
+          );
         }
 
         let form: FormData;
         try {
           form = await request.formData();
         } catch {
-          return Response.json({ error: "Formulário inválido" }, { status: 400 });
+          return Response.json({ error: "Formulário inválido." }, { status: 400 });
         }
 
-        const moduleKey = String(form.get("module") ?? "").slice(0, 60);
-        if (!moduleKey) {
-          return Response.json({ error: "Módulo de origem obrigatório" }, { status: 400 });
-        }
-        if (!(await callerCanAccessModule(request, moduleKey, "create"))) {
-          // Fallback: se o moduleKey termina com '-grp', tenta sem o sufixo
-          const fallbackKey = moduleKey.endsWith("-grp") ? moduleKey.slice(0, -4) : null;
-          if (!fallbackKey || !(await callerCanAccessModule(request, fallbackKey, "create"))) {
-            return forbidden(moduleKey, "create");
-          }
-        }
-
-        const file = form.get("image");
-        if (!(file instanceof Blob)) {
-          return Response.json({ error: "Campo image ausente" }, { status: 400 });
-        }
-        if (file.size === 0) return Response.json({ error: "Imagem vazia" }, { status: 400 });
-        if (file.size > MAX_BYTES) {
-          return Response.json({ error: "Imagem excede 12MB" }, { status: 413 });
-        }
-        const mime = (file.type || "").toLowerCase().split(";")[0];
-        if (!ALLOWED_MIME.has(mime)) {
-          return Response.json(
-            { error: "Tipo de arquivo não permitido. Envie JPG, PNG ou WEBP." },
-            { status: 415 },
-          );
-        }
-
-        const buf = await file.arrayBuffer();
-        if (!looksLikeImage(new Uint8Array(buf.slice(0, 16)))) {
-          return Response.json(
-            { error: "Conteúdo do arquivo não é uma imagem válida." },
-            { status: 415 },
-          );
-        }
-        const sha256 = await sha256Hex(buf);
-
-        // Auditoria/rate-limit são melhores-esforços: se o cliente
-        // administrativo não estiver disponível no runtime, o envio continua.
-        let admin: any = null;
+        let upstream: Response;
         try {
-          admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
-        } catch {
-          admin = null;
-        }
-
-        if (admin) {
-          try {
-            const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-            const { count } = await admin
-              .from("image_uploads")
-              .select("id", { count: "exact", head: true })
-              .eq("user_id", caller.userId)
-              .gte("created_at", since);
-            if ((count ?? 0) >= 150) {
-              return Response.json(
-                { error: "Muitos envios em pouco tempo. Tente novamente em alguns minutos." },
-                { status: 429, headers: { "Retry-After": "600" } },
-              );
-            }
-          } catch {
-            /* sem contagem: segue o envio */
-          }
-        }
-
-        const rawName = typeof (file as File).name === "string" ? (file as File).name : "";
-        const provided = form.get("name");
-        const baseName = sanitizeName(
-          typeof provided === "string" && provided.trim() ? provided : rawName,
-        );
-
-        const upstream = new FormData();
-        upstream.append("image", arrayBufferToBase64(buf));
-        if (baseName) upstream.append("name", baseName);
-
-        let res: Response;
-        try {
-          res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(key)}`, {
+          upstream = await fetch(`${url}/functions/v1/imgbb-upload`, {
             method: "POST",
-            body: upstream,
+            headers: {
+              Authorization: authorization,
+              apikey: publishableKey,
+            },
+            body: form,
           });
-        } catch (e: any) {
+        } catch {
           return Response.json(
-            { error: "Falha ao contactar o serviço de imagens", detail: e?.message ?? String(e) },
+            { error: "Serviço de imagens temporariamente indisponível." },
             { status: 502 },
           );
         }
 
-        const json = (await res.json().catch(() => null)) as any;
-        if (!res.ok || !json?.success || !json?.data?.url) {
-          console.error("[ImgBBUploadProxy] Erro na resposta upstream:", { 
-            status: res.status, 
-            json,
-            upstream_error: json?.error?.message || json?.message 
-          });
-          return Response.json(
-            { 
-              error: json?.error?.message || json?.message || `O serviço de imagens retornou um erro (Status ${res.status}).`,
-              detail: json 
-            },
-            { status: res.status === 200 ? 502 : res.status },
-          );
-        }
-
-        let isAdmin = false;
-        if (admin) {
-          try {
-            const { data } = await admin.rpc("has_role", {
-              _user_id: caller.userId,
-              _role: "admin",
-            });
-            isAdmin = Boolean(data);
-          } catch {
-            isAdmin = false;
-          }
-
-          try {
-            await admin.from("image_uploads").insert({
-              user_id: caller.userId,
-              module_key: moduleKey,
-              entity_type:
-                typeof form.get("entity_type") === "string"
-                  ? String(form.get("entity_type")).slice(0, 60)
-                  : null,
-              entity_id:
-                typeof form.get("entity_id") === "string"
-                  ? String(form.get("entity_id")).slice(0, 120)
-                  : null,
-              sha256,
-              size_bytes: file.size,
-              mime_type: mime,
-              url: json.data.url as string,
-              delete_url: (json.data.delete_url as string) ?? null,
-            });
-          } catch {
-            /* auditoria opcional */
-          }
-        }
-
-        return Response.json({
-          url: json.data.url as string,
-          display_url: json.data.display_url as string,
-          delete_url: isAdmin ? (json.data.delete_url as string) : null,
-          thumb: json.data?.thumb?.url ?? null,
-          hash: sha256,
+        const body = await upstream.text();
+        return new Response(body, {
+          status: upstream.status,
+          headers: { "Content-Type": upstream.headers.get("Content-Type") || "application/json" },
         });
       },
     },
