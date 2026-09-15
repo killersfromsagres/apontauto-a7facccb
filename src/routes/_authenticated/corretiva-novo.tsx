@@ -41,7 +41,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { OsDetailsDialog } from "@/components/corretiva/os-details-dialog";
-import { equipeStyles, matchEquipe, type EquipeFiltro } from "@/lib/corretiva/equipe";
+import {
+  equipeStyles,
+  matchEquipe,
+  type EquipeFiltro,
+} from "@/lib/corretiva/equipe";
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import {
@@ -70,18 +74,35 @@ function isCompletedStatus(status: unknown) {
   return normalized === "concluida" || normalized === "concluido";
 }
 
+function exportKey(os: any) {
+  return String(os?.id || os?.numero_os || "")
+    .trim()
+    .toUpperCase();
+}
+
+function dedupeCorrectiveRows(rows: any[]) {
+  const unique = new Map<string, any>();
+  rows.forEach((row, index) => {
+    const key = exportKey(row) || `ROW-${index}`;
+    if (!unique.has(key)) unique.set(key, row);
+  });
+  return [...unique.values()];
+}
+
 function findProgramReservation(
   os: any,
   reservations: CorrectiveProgramReservation[],
 ): CorrectiveProgramReservation | undefined {
   const keys = new Set(
-    [String(os?.id ?? "").trim(), String(os?.numero_os ?? "").trim()].filter(
-      Boolean,
-    ),
+    [String(os?.id ?? "").trim(), String(os?.numero_os ?? "").trim()]
+      .filter(Boolean)
+      .map((value) => value.toUpperCase()),
   );
   if (keys.size === 0) return undefined;
   return reservations.find((reservation) =>
-    [reservation.id, reservation.numeroOs].some((key) => keys.has(key)),
+    [reservation.id, reservation.numeroOs]
+      .map((value) => String(value ?? "").trim().toUpperCase())
+      .some((key) => keys.has(key)),
   );
 }
 
@@ -193,6 +214,38 @@ function CorretivaNovoPage() {
   const priorityFor = (os: any) =>
     priorityMap.get(String(os.id ?? os.numero_os ?? "")) ?? classifyPriority(os);
 
+  const exportBaseRows = useMemo(
+    () => dedupeCorrectiveRows(osList),
+    [osList],
+  );
+
+  const availableExportRows = useMemo(
+    () =>
+      exportBaseRows.filter(
+        (os) => !findProgramReservation(os, programReservations),
+      ),
+    [exportBaseRows, programReservations],
+  );
+
+  const programmedExportRows = useMemo(
+    () =>
+      exportBaseRows.flatMap((os) => {
+        const reservation = findProgramReservation(os, programReservations);
+        if (!reservation) return [];
+        return [
+          {
+            ...os,
+            programacao_status: "EM PROGRAMAÇÃO",
+            programacao_dia:
+              reservationDayLabel(reservation.dayIndex) || "Semana programada",
+            programacao_periodo: formatReservationPeriod(reservation),
+            programacao_equipe: reservation.equipe,
+          },
+        ];
+      }),
+    [exportBaseRows, programReservations],
+  );
+
   const filtered = useMemo(() => {
     return osList
       .filter((o) => {
@@ -236,12 +289,7 @@ function CorretivaNovoPage() {
     priorityMap,
   ]);
 
-  const programmedVisibleCount = useMemo(
-    () =>
-      osList.filter((os) => Boolean(findProgramReservation(os, programReservations)))
-        .length,
-    [osList, programReservations],
-  );
+  const programmedVisibleCount = programmedExportRows.length;
 
   const priorityVisibleCount = useMemo(
     () =>
@@ -346,51 +394,57 @@ function CorretivaNovoPage() {
     }
   };
 
-  const exportExcelByTeam = async () => {
-    const candidates = filtered.filter((o) => !isCompletedStatus(o.status));
-    const pendentes = candidates.filter(
-      (o) => !findProgramReservation(o, programReservations),
-    );
-    const ignored = candidates.length - pendentes.length;
-    if (!pendentes.length) {
+  const exportAvailableExcel = async () => {
+    if (!availableExportRows.length) {
       return toast.error(
-        ignored > 0
-          ? `${ignored} chamado(s) estão EM PROGRAMAÇÃO e foram protegidos contra exportação duplicada.`
-          : "Nenhuma OS pendente para exportar.",
+        "Não há chamados disponíveis para exportar. Verifique se todos já estão EM PROGRAMAÇÃO.",
       );
     }
     try {
       await generateProgramacaoExcel(
-        pendentes,
-        "Programacao_por_Equipe",
+        availableExportRows,
+        "Todas as equipes · Disponíveis",
         "corretiva",
       );
       toast.success(
-        `Excel gerado com sucesso!${ignored ? ` ${ignored} chamado(s) EM PROGRAMAÇÃO foram omitidos.` : ""}`,
+        `Excel gerado com ${availableExportRows.length} chamado(s) de todas as equipes. Os filtros da tela foram ignorados.`,
       );
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao gerar Excel.");
+      toast.error("Erro ao gerar Excel dos chamados disponíveis.");
     }
   };
 
-  const exportPDFByTeam = async () => {
-    const candidates = filtered.filter((o) => !isCompletedStatus(o.status));
-    const pendentes = candidates.filter(
-      (o) => !findProgramReservation(o, programReservations),
-    );
-    const ignored = candidates.length - pendentes.length;
-    if (!pendentes.length) {
-      return toast.error(
-        ignored > 0
-          ? `${ignored} chamado(s) estão EM PROGRAMAÇÃO e não serão impressos novamente.`
-          : "Nenhuma OS pendente para imprimir.",
-      );
+  const exportProgrammedExcel = async () => {
+    if (!programmedExportRows.length) {
+      return toast.error("Nenhum chamado está EM PROGRAMAÇÃO no momento.");
     }
     try {
-      await generateProgramacaoPDF(pendentes, "Programacao_Equipes");
+      await generateProgramacaoExcel(
+        programmedExportRows,
+        "EM PROGRAMAÇÃO · Controle de campo",
+        "corretiva",
+      );
       toast.success(
-        `PDF preparado para impressão!${ignored ? ` ${ignored} chamado(s) EM PROGRAMAÇÃO foram omitidos.` : ""}`,
+        `Planilha de campo gerada com ${programmedExportRows.length} chamado(s) EM PROGRAMAÇÃO.`,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao gerar planilha dos chamados EM PROGRAMAÇÃO.");
+    }
+  };
+
+  const exportAvailablePDF = async () => {
+    if (!availableExportRows.length) {
+      return toast.error("Não há chamados disponíveis para imprimir.");
+    }
+    try {
+      await generateProgramacaoPDF(
+        availableExportRows,
+        "Todas_as_Equipes_Disponiveis",
+      );
+      toast.success(
+        `PDF preparado com ${availableExportRows.length} chamado(s) de todas as equipes.`,
       );
     } catch (error) {
       console.error(error);
@@ -437,7 +491,7 @@ function CorretivaNovoPage() {
   return (
     <PageShell
       title="Programação de Corretivas"
-      description="Chamados priorizados automaticamente. OS marcadas EM PROGRAMAÇÃO são excluídas das exportações para impedir duplicidade."
+      description="Chamados priorizados automaticamente. As exportações usam toda a base de Corretiva Novo, independentemente dos filtros visuais da tela."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -468,14 +522,34 @@ function CorretivaNovoPage() {
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={exportExcelByTeam} className="gap-2">
+            <DropdownMenuContent align="end" className="min-w-[290px]">
+              <DropdownMenuItem
+                onClick={exportAvailableExcel}
+                className="gap-2"
+              >
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
-                Exportar Planilha (Equipes Separadas)
+                <span className="flex-1">Baixar todos disponíveis</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {availableExportRows.length}
+                </span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={exportPDFByTeam} className="gap-2">
+              <DropdownMenuItem
+                onClick={exportProgrammedExcel}
+                disabled={!programmedExportRows.length}
+                className="gap-2"
+              >
+                <CalendarCheck2 className="h-4 w-4 text-sky-400" />
+                <span className="flex-1">Baixar EM PROGRAMAÇÃO</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {programmedExportRows.length}
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={exportAvailablePDF}
+                className="gap-2"
+              >
                 <Printer className="h-4 w-4 text-primary" />
-                Imprimir Programação (PDF)
+                Imprimir todos disponíveis (PDF)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -606,7 +680,9 @@ function CorretivaNovoPage() {
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     <span className="font-medium">
-                      {sortOrder === "recent" ? "Prioridade + Recentes" : "Prioridade + Antigos"}
+                      {sortOrder === "recent"
+                        ? "Prioridade + Recentes"
+                        : "Prioridade + Antigos"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -676,13 +752,19 @@ function CorretivaNovoPage() {
               <Search className="h-6 w-6 text-muted-foreground" />
             </div>
             <div>
-              <p className="font-medium text-white">Nenhuma Ordem de Serviço encontrada</p>
+              <p className="font-medium text-white">
+                Nenhuma Ordem de Serviço encontrada
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Importe uma planilha ou aguarde a sincronização.
               </p>
             </div>
             {isAdmin && (
-              <Button variant="outline" size="sm" onClick={() => void loadData()}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void loadData()}
+              >
                 Tentar Recarregar
               </Button>
             )}
@@ -781,7 +863,10 @@ function CorretivaNovoPage() {
                               EM PROGRAMAÇÃO
                             </Badge>
                             <span className="text-[9px] text-sky-100/70">
-                              {reservationDayLabel(programReservation.dayIndex) || "Semana programada"} · {formatReservationPeriod(programReservation)} · {programReservation.equipe}
+                              {reservationDayLabel(programReservation.dayIndex) ||
+                                "Semana programada"} ·{" "}
+                              {formatReservationPeriod(programReservation)} ·{" "}
+                              {programReservation.equipe}
                             </span>
                           </div>
                         </div>
