@@ -124,7 +124,7 @@ describe("generateWeeklyProgramacao", () => {
     expect(program.getRow(1).height).toBe(42);
     expect(program.getRow(2).height).toBe(24);
     expect(program.getRow(3).height).toBe(30);
-    expect(program.getRow(4).height).toBe(45);
+    expect(program.getRow(4).height).toBe(60);
     expect(program.getCell("J4").value).toBeNull();
     expect(program.getCell("J5").value).toBe("FANCOIL 01");
     expect(program.getCell("F4").value).toBe("Corretiva");
