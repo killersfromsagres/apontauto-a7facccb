@@ -9,7 +9,11 @@ import {
 } from "./monthly-scheduler";
 import type { Equipe } from "./triage";
 
-const STORAGE_KEY = "apontauto.corrective-program-reservations.v1";
+// v2 zera as marcações antigas de "EM PROGRAMAÇÃO" sem afetar futuras reservas.
+// A chave v1 é removida quando este módulo é lido no navegador.
+const STORAGE_KEY = "apontauto.corrective-program-reservations.v2";
+const LEGACY_STORAGE_KEY = "apontauto.corrective-program-reservations.v1";
+
 export const CORRECTIVE_RESERVATIONS_EVENT =
   "apontauto:corrective-program-reservations";
 
@@ -26,11 +30,6 @@ const DAY_LABELS = [
   "Sexta-feira",
 ] as const;
 
-export function reservationDayLabel(dayIndex?: number | null): string {
-  if (typeof dayIndex !== "number") return "";
-  return DAY_LABELS[dayIndex] ?? "";
-}
-
 export interface CorrectiveProgramReservation {
   id: string;
   numeroOs: string;
@@ -45,6 +44,11 @@ export interface CorrectiveProgramReservation {
 export interface WeekTeamAllocation {
   rows: CorrectiveSourceRow[];
   byDay: CorrectiveSourceRow[][];
+}
+
+export function reservationDayLabel(dayIndex?: number | null): string {
+  if (typeof dayIndex !== "number") return "";
+  return DAY_LABELS[dayIndex] ?? "";
 }
 
 function normalizeKey(value: unknown): string {
@@ -66,39 +70,12 @@ function reservationKeys(
   ].filter(Boolean);
 }
 
-function hasSharedKey(
+function sharesKey(
   row: Pick<CorrectiveSourceRow, "id" | "numero_os">,
   reservation: CorrectiveProgramReservation,
-) {
+): boolean {
   const keys = new Set(reservationKeys(reservation));
   return rowKeys(row).some((key) => keys.has(key));
-}
-
-function normalized(value: unknown) {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .trim()
-    .toUpperCase();
-}
-
-function problemSeverity(row: CorrectiveSourceRow): number {
-  let rank = 2;
-  for (const problem of row.corretiva_problemas ?? []) {
-    const manager = normalized(problem?.status_gestor);
-    if (
-      manager.includes("REJEIT") ||
-      manager.includes("CONCLUID") ||
-      manager.includes("FECHAD") ||
-      manager.includes("ENCERRAD")
-    )
-      continue;
-
-    const severity = normalized(problem?.gravidade);
-    if (severity.includes("CRITIC")) return 0;
-    if (severity.includes("FALHA")) rank = Math.min(rank, 1);
-  }
-  return rank;
 }
 
 function dateRank(value: unknown): number {
@@ -110,7 +87,7 @@ function dateRank(value: unknown): number {
     : Number.MAX_SAFE_INTEGER;
 }
 
-function compareOs(a: unknown, b: unknown) {
+function compareOs(a: unknown, b: unknown): number {
   return String(a ?? "").localeCompare(String(b ?? ""), "pt-BR", {
     numeric: true,
     sensitivity: "base",
@@ -121,52 +98,64 @@ function sortCandidates(
   rows: CorrectiveSourceRow[],
   referenceDate: Date,
 ): CorrectiveSourceRow[] {
-  const priorities = new Map<
+  const priorityCache = new Map<
     CorrectiveSourceRow,
     ReturnType<typeof classifyPriority>
   >();
+
   const priorityOf = (row: CorrectiveSourceRow) => {
-    const cached = priorities.get(row);
+    const cached = priorityCache.get(row);
     if (cached) return cached;
     const priority = classifyPriority(row, referenceDate);
-    priorities.set(row, priority);
+    priorityCache.set(row, priority);
     return priority;
   };
 
   return [...rows].sort((a, b) => {
-    const backorder =
+    // Backorders continuam entrando primeiro.
+    const backorderOrder =
       Number(isCorrectiveBackorder(b, referenceDate)) -
       Number(isCorrectiveBackorder(a, referenceDate));
-    if (backorder !== 0) return backorder;
+    if (backorderOrder !== 0) return backorderOrder;
 
-    const severity = problemSeverity(a) - problemSeverity(b);
-    if (severity !== 0) return severity;
+    const aPriority = priorityOf(a);
+    const bPriority = priorityOf(b);
+    const priorityOrder =
+      PRIORITY_ORDER[aPriority.level] - PRIORITY_ORDER[bPriority.level] ||
+      bPriority.score - aPriority.score;
+    if (priorityOrder !== 0) return priorityOrder;
 
-    const pa = priorityOf(a);
-    const pb = priorityOf(b);
-    const priority =
-      PRIORITY_ORDER[pa.level] - PRIORITY_ORDER[pb.level] ||
-      pb.score - pa.score;
-    if (priority !== 0) return priority;
-
-    const due =
+    const dueOrder =
       dateRank(a.data_sla ?? a.data_programada) -
       dateRank(b.data_sla ?? b.data_programada);
-    if (due !== 0) return due;
+    if (dueOrder !== 0) return dueOrder;
 
-    const created = dateRank(a.data_criacao) - dateRank(b.data_criacao);
-    if (created !== 0) return created;
+    const createdOrder = dateRank(a.data_criacao) - dateRank(b.data_criacao);
+    if (createdOrder !== 0) return createdOrder;
+
     return compareOs(a.numero_os, b.numero_os);
   });
 }
 
+function cleanupLegacyStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Sem ação: armazenamento pode estar indisponível em modo privado restrito.
+  }
+}
+
 function readStorage(): CorrectiveProgramReservation[] {
   if (typeof window === "undefined") return [];
+  cleanupLegacyStorage();
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
+
     return parsed.filter(
       (item): item is CorrectiveProgramReservation =>
         Boolean(item) &&
@@ -184,6 +173,8 @@ function readStorage(): CorrectiveProgramReservation[] {
 
 function writeStorage(reservations: CorrectiveProgramReservation[]): void {
   if (typeof window === "undefined") return;
+  cleanupLegacyStorage();
+
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
     window.dispatchEvent(
@@ -194,7 +185,7 @@ function writeStorage(reservations: CorrectiveProgramReservation[]): void {
   }
 }
 
-export function listCorrectiveProgramReservations() {
+export function listCorrectiveProgramReservations(): CorrectiveProgramReservation[] {
   return readStorage();
 }
 
@@ -206,12 +197,13 @@ export function reservationForCorrective(
     [normalizeKey(id), normalizeKey(numeroOs)].filter(Boolean),
   );
   if (keys.size === 0) return undefined;
+
   return readStorage().find((reservation) =>
     reservationKeys(reservation).some((key) => keys.has(key)),
   );
 }
 
-export function isCorrectiveReserved(id?: unknown, numeroOs?: unknown) {
+export function isCorrectiveReserved(id?: unknown, numeroOs?: unknown): boolean {
   return Boolean(reservationForCorrective(id, numeroOs));
 }
 
@@ -223,6 +215,7 @@ export function releaseCorrectiveProgramReservation(
     [normalizeKey(id), normalizeKey(numeroOs)].filter(Boolean),
   );
   if (keys.size === 0) return;
+
   const current = readStorage();
   const next = current.filter(
     (reservation) =>
@@ -231,7 +224,6 @@ export function releaseCorrectiveProgramReservation(
   if (next.length !== current.length) writeStorage(next);
 }
 
-/** Remove somente reservas cujas OS deixaram de existir na base atual. */
 export function pruneCorrectiveProgramReservations(
   rows: Array<Pick<CorrectiveSourceRow, "id" | "numero_os">>,
 ): CorrectiveProgramReservation[] {
@@ -239,6 +231,11 @@ export function pruneCorrectiveProgramReservations(
   if (current.length === 0) return current;
 
   const existingKeys = new Set(rows.flatMap(rowKeys));
+  if (existingKeys.size === 0) {
+    writeStorage([]);
+    return [];
+  }
+
   const next = current.filter((reservation) =>
     reservationKeys(reservation).some((key) => existingKeys.has(key)),
   );
@@ -255,6 +252,7 @@ export function setReservationsForWeekTeam(
 ): CorrectiveProgramReservation[] {
   const selectedKeys = new Set(rows.flatMap(rowKeys));
   const current = readStorage();
+
   const next = current.filter((reservation) => {
     const sameWeekTeam =
       reservation.periodStart === periodStart &&
@@ -269,9 +267,10 @@ export function setReservationsForWeekTeam(
   const reservedAt = new Date().toISOString();
   const additions = rows.map<CorrectiveProgramReservation>((row, index) => {
     const keys = rowKeys(row);
-    const mapped = keys
+    const mappedDay = keys
       .map((key) => dayIndexByRowKey?.get(key))
       .find((value): value is number => typeof value === "number");
+
     return {
       id: String(row.id ?? row.numero_os ?? "").trim(),
       numeroOs: String(row.numero_os ?? row.id ?? "").trim(),
@@ -281,7 +280,7 @@ export function setReservationsForWeekTeam(
       reservedAt,
       source: "programacao",
       dayIndex:
-        mapped ??
+        mappedDay ??
         Math.min(
           BUSINESS_DAYS_PER_WEEK - 1,
           Math.floor(index / CORRECTIVES_PER_DAY),
@@ -293,17 +292,19 @@ export function setReservationsForWeekTeam(
   return additions;
 }
 
-function nextAvailableDay(byDay: CorrectiveSourceRow[][], perDay: number) {
-  let best = -1;
-  let bestCount = Number.MAX_SAFE_INTEGER;
-  byDay.forEach((items, index) => {
-    if (items.length >= perDay) return;
-    if (items.length < bestCount) {
-      best = index;
-      bestCount = items.length;
-    }
-  });
-  return best;
+function totalAllocated(byDay: CorrectiveSourceRow[][]): number {
+  return byDay.reduce((total, day) => total + day.length, 0);
+}
+
+function nextAvailableDay(
+  byDay: CorrectiveSourceRow[][],
+  perDay: number,
+): number {
+  // Preenche 2 por dia em sequência: SEG 2, TER 2, QUA 2, QUI 2, SEX 2.
+  for (let dayIndex = 0; dayIndex < byDay.length; dayIndex += 1) {
+    if (byDay[dayIndex].length < perDay) return dayIndex;
+  }
+  return -1;
 }
 
 export function allocateCorrectivesForWeekTeam(options: {
@@ -324,9 +325,10 @@ export function allocateCorrectivesForWeekTeam(options: {
     perDay = CORRECTIVES_PER_DAY,
     businessDays = BUSINESS_DAYS_PER_WEEK,
   } = options;
+
   const limit = Math.max(0, perDay * businessDays);
   const reservations = readStorage();
-  const currentReservations = reservations.filter(
+  const sameWeekReservations = reservations.filter(
     (reservation) =>
       reservation.periodStart === periodStart &&
       reservation.periodEnd === periodEnd &&
@@ -346,53 +348,65 @@ export function allocateCorrectivesForWeekTeam(options: {
       .flatMap(reservationKeys),
   );
 
-  const eligible = rows.filter((row) => {
-    if (resolveCorrectiveTeam(row) !== equipe) return false;
-    const keys = rowKeys(row);
-    return (
-      keys.length > 0 &&
-      !keys.some((key) => reservedElsewhereKeys.has(key))
-    );
-  });
-  const sorted = sortCandidates(eligible, referenceDate);
-  const byDay = Array.from({ length: businessDays }, () => [] as CorrectiveSourceRow[]);
+  const eligible = sortCandidates(
+    rows.filter((row) => {
+      if (resolveCorrectiveTeam(row) !== equipe) return false;
+      const keys = rowKeys(row);
+      return (
+        keys.length > 0 &&
+        !keys.some((key) => reservedElsewhereKeys.has(key))
+      );
+    }),
+    referenceDate,
+  );
+
+  const byDay = Array.from(
+    { length: businessDays },
+    () => [] as CorrectiveSourceRow[],
+  );
   const selectedKeys = new Set<string>();
 
-  // Reaproveita reservas da mesma semana e mantém o dia quando possível.
-  currentReservations.forEach((reservation) => {
-    if ([...selectedKeys].length >= limit) return;
-    const row = sorted.find((candidate) => hasSharedKey(candidate, reservation));
-    if (!row) return;
+  // Mantém reservas da mesma semana quando existirem, respeitando sempre 2/dia.
+  for (const reservation of sameWeekReservations) {
+    if (totalAllocated(byDay) >= limit) break;
+    const row = eligible.find((candidate) => sharesKey(candidate, reservation));
+    if (!row) continue;
+
     const keys = rowKeys(row);
-    if (keys.some((key) => selectedKeys.has(key))) return;
-    const preferred =
+    if (keys.some((key) => selectedKeys.has(key))) continue;
+
+    const preferredDay =
       typeof reservation.dayIndex === "number" &&
       reservation.dayIndex >= 0 &&
       reservation.dayIndex < businessDays &&
       byDay[reservation.dayIndex].length < perDay
         ? reservation.dayIndex
         : nextAvailableDay(byDay, perDay);
-    if (preferred < 0) return;
-    byDay[preferred].push(row);
-    keys.forEach((key) => selectedKeys.add(key));
-  });
 
-  for (const row of sorted) {
-    if (byDay.reduce((total, day) => total + day.length, 0) >= limit) break;
+    if (preferredDay < 0) break;
+    byDay[preferredDay].push(row);
+    keys.forEach((key) => selectedKeys.add(key));
+  }
+
+  // Completa cada dia até 2 corretivas antes de avançar ao dia seguinte.
+  for (const row of eligible) {
+    if (totalAllocated(byDay) >= limit) break;
     const keys = rowKeys(row);
     if (keys.some((key) => selectedKeys.has(key))) continue;
-    const day = nextAvailableDay(byDay, perDay);
-    if (day < 0) break;
-    byDay[day].push(row);
+
+    const dayIndex = nextAvailableDay(byDay, perDay);
+    if (dayIndex < 0) break;
+
+    byDay[dayIndex].push(row);
     keys.forEach((key) => selectedKeys.add(key));
   }
 
   const finalRows = byDay.flat();
   const dayIndexByRowKey = new Map<string, number>();
   byDay.forEach((dayRows, dayIndex) => {
-    dayRows.forEach((row) =>
-      rowKeys(row).forEach((key) => dayIndexByRowKey.set(key, dayIndex)),
-    );
+    dayRows.forEach((row) => {
+      rowKeys(row).forEach((key) => dayIndexByRowKey.set(key, dayIndex));
+    });
   });
 
   setReservationsForWeekTeam(
@@ -402,10 +416,10 @@ export function allocateCorrectivesForWeekTeam(options: {
     finalRows,
     dayIndexByRowKey,
   );
+
   return { rows: finalRows, byDay };
 }
 
-/** Compatibilidade com fluxos antigos que solicitam um limite semanal explícito. */
 export function selectCorrectiveRowsForWeekTeam(options: {
   rows: CorrectiveSourceRow[];
   equipe: Equipe;
@@ -436,10 +450,14 @@ export function subscribeCorrectiveProgramReservations(
 
   const handleCustom = () => listener(readStorage());
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY) listener(readStorage());
+    if (event.key === STORAGE_KEY || event.key === LEGACY_STORAGE_KEY) {
+      listener(readStorage());
+    }
   };
+
   window.addEventListener(CORRECTIVE_RESERVATIONS_EVENT, handleCustom);
   window.addEventListener("storage", handleStorage);
+
   return () => {
     window.removeEventListener(CORRECTIVE_RESERVATIONS_EVENT, handleCustom);
     window.removeEventListener("storage", handleStorage);
