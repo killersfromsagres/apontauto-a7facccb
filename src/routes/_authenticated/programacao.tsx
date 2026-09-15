@@ -63,10 +63,11 @@ import {
   type Equipe,
   type TriagedOS,
 } from "@/lib/preventiva/triage";
+import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import {
-  generateWeeklyProgramacao,
-  printWeeklyProgramacao,
-} from "@/lib/preventiva/weekly-exporter";
+  polishWeeklyProgramacao,
+  printWeeklyProgramacaoColor,
+} from "@/lib/preventiva/weekly-export-polish";
 
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
@@ -165,10 +166,6 @@ function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
 const isoLocal = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-/**
- * Distribui as corretivas reservadas entre segunda e sexta, mantendo no máximo
- * duas por dia e somando-as às preventivas já programadas.
- */
 function appendReservedCorrectives(
   bucket: WeekBucket,
   loads: DailyTeamLoad[],
@@ -297,7 +294,7 @@ function ProgramacaoPage() {
 
   const handlePrint = useCallback(async (blob: Blob) => {
     try {
-      await printWeeklyProgramacao(blob);
+      await printWeeklyProgramacaoColor(blob);
     } catch (error) {
       console.error(error);
       toast.error(
@@ -439,7 +436,7 @@ function ProgramacaoPage() {
           const remainingMinutes = [...cargasPorEquipe.values()]
             .flat()
             .reduce((total, load) => total + load.remainingMinutes, 0);
-          const blob = await generateWeeklyProgramacao({
+          const rawBlob = await generateWeeklyProgramacao({
             titulo: TITULO_PADRAO,
             week,
             bucketsPorEquipe,
@@ -447,6 +444,7 @@ function ProgramacaoPage() {
             minutosPorEquipe: tempoPorEquipe,
             ativoIndex: read.ativoIndex,
           });
+          const blob = await polishWeeklyProgramacao(rawBlob);
           const monthSlug = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`;
           const slotSlug = slot.id === "REFRIG" ? "REFRIGERACAO" : slot.id;
           const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
