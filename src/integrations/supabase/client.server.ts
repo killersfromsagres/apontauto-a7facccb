@@ -41,21 +41,60 @@ function projectRefFromUrl(url: string): string | null {
   }
 }
 
-function resolvePrivilegedKey(): string | undefined {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (process.env.SUPABASE_SECRET_KEY) return process.env.SUPABASE_SECRET_KEY;
+function decodeJwtPayload(value: string): Record<string, unknown> | null {
+  if (value.split(".").length !== 3) return null;
+  try {
+    const raw = value.split(".")[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = raw.padEnd(Math.ceil(raw.length / 4) * 4, "=");
+    const decoded = Buffer.from(padded, "base64").toString("utf8");
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
+function legacyKeyMatchesProject(value: string, projectId?: string): boolean {
+  if (!projectId || isNewSupabaseApiKey(value)) return true;
+  const payload = decodeJwtPayload(value);
+  const ref = typeof payload?.ref === "string" ? payload.ref : null;
+  return !ref || ref === projectId;
+}
+
+function resolveSecretKeysDictionary(): string[] {
   const secretKeys = process.env.SUPABASE_SECRET_KEYS;
-  if (!secretKeys) return undefined;
+  if (!secretKeys) return [];
 
   try {
     const parsed = JSON.parse(secretKeys) as Record<string, unknown>;
-    const preferred = parsed.default ?? parsed.internal ?? Object.values(parsed)[0];
-    return typeof preferred === "string" && preferred ? preferred : undefined;
+    const ordered: unknown[] = [parsed.default, parsed.internal, ...Object.values(parsed)];
+    return ordered.filter((value): value is string => typeof value === "string" && value.length > 0);
   } catch {
     console.error("[Supabase] SUPABASE_SECRET_KEYS is not valid JSON.");
-    return undefined;
+    return [];
   }
+}
+
+function resolvePrivilegedKey(projectId?: string): string | undefined {
+  // Prefer modern project-scoped secret keys. Lovable/Supabase can inject
+  // SUPABASE_SECRET_KEYS automatically for the currently connected project.
+  const candidates = [
+    ...resolveSecretKeysDictionary(),
+    process.env.SUPABASE_SECRET_KEY,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  ].filter((value): value is string => typeof value === "string" && value.length > 0);
+
+  const unique = Array.from(new Set(candidates));
+  for (const candidate of unique) {
+    if (!legacyKeyMatchesProject(candidate, projectId)) {
+      console.warn("[Supabase] Ignoring privileged legacy key from a different project.");
+      continue;
+    }
+    return candidate;
+  }
+
+  return undefined;
 }
 
 function createSupabaseAdminClient() {
@@ -67,13 +106,13 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = viteUrl || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PROJECT_ID =
     viteProjectId || process.env.VITE_SUPABASE_PROJECT_ID || process.env.SUPABASE_PROJECT_ID;
-  const SUPABASE_PRIVILEGED_KEY = resolvePrivilegedKey();
+  const SUPABASE_PRIVILEGED_KEY = resolvePrivilegedKey(SUPABASE_PROJECT_ID);
 
   if (!SUPABASE_URL || !SUPABASE_PRIVILEGED_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["VITE_SUPABASE_URL/SUPABASE_URL"] : []),
       ...(!SUPABASE_PRIVILEGED_KEY
-        ? ["SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY/SUPABASE_SECRET_KEYS"]
+        ? ["SUPABASE_SECRET_KEYS/SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY"]
         : []),
     ];
     const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect the active Supabase project in the server environment.`;
