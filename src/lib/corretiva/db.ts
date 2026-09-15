@@ -23,6 +23,8 @@ export type OutboxItem = {
   createdAt: number;
   attempts: number;
   lastError?: string;
+  /** Usuário que originou a operação offline. Itens legados podem não possuir este campo. */
+  userId?: string | null;
 };
 
 export type OsCacheRow = {
@@ -112,6 +114,16 @@ function req<T = any>(r: IDBRequest<T>): Promise<T> {
   });
 }
 
+async function currentUserId(): Promise<string | null> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data } = await supabase.auth.getSession();
+    return data.session?.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function cacheOsList(rows: OsCacheRow[]): Promise<void> {
   await tx("os_cache", "readwrite", async (t) => {
     const s = t.objectStore("os_cache");
@@ -134,7 +146,13 @@ export async function updateCachedOs(id: string, patch: Partial<OsCacheRow>): Pr
 }
 
 export async function outboxAdd(item: OutboxItem): Promise<void> {
-  await tx("outbox", "readwrite", (t) => req(t.objectStore("outbox").put(item)));
+  // Vincula novas operações ao usuário que realmente executou o apontamento.
+  // Isso evita que uma fila criada offline por um usuário seja enviada por outro
+  // após troca de conta no mesmo navegador/dispositivo.
+  const userId = item.userId === undefined ? await currentUserId() : item.userId;
+  await tx("outbox", "readwrite", (t) =>
+    req(t.objectStore("outbox").put({ ...item, userId })),
+  );
 }
 
 export async function outboxAll(): Promise<OutboxItem[]> {
