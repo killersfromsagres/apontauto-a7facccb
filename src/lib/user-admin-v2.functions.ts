@@ -13,7 +13,6 @@ type CreateRestrictedUserInput = {
   allowedMenus: MenuKey[];
 };
 
-const LOGIN_DOMAIN = "apontauto.local";
 const LOGIN_RE = /^[a-z0-9._-]{3,30}$/;
 
 function isNewSupabaseApiKey(value: string): boolean {
@@ -76,19 +75,6 @@ function getAuthEnv() {
   return { url, publishableKey };
 }
 
-async function getAdminClient() {
-  try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    void supabaseAdmin.auth;
-    return supabaseAdmin;
-  } catch (error) {
-    console.error("[user-admin] admin client unavailable", error);
-    throw new Error(
-      "Configuração administrativa do backend indisponível. Verifique SUPABASE_SERVICE_ROLE_KEY do projeto ativo.",
-    );
-  }
-}
-
 const requireAdmin = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const request = getRequest();
   if (!request?.headers) throw new Error("Sessão inválida. Entre novamente.");
@@ -127,13 +113,8 @@ const requireAdmin = createMiddleware({ type: "function" }).server(async ({ next
   if (roleError) throw new Error(roleError.message);
   if (!isAdmin) throw new Error("Apenas administradores podem executar esta ação.");
 
-  return next({ context: { userId } });
+  return next({ context: { userId, token, url, publishableKey } });
 });
-
-function loginToEmail(login: string) {
-  const normalized = login.trim().toLowerCase();
-  return normalized.includes("@") ? normalized : `${normalized}@${LOGIN_DOMAIN}`;
-}
 
 function sanitizeMenus(raw: unknown): MenuKey[] {
   if (!Array.isArray(raw)) return [];
@@ -170,96 +151,47 @@ function validateCreate(input: unknown): CreateRestrictedUserInput {
   };
 }
 
-async function syncModuleAccess(
-  supabaseAdmin: any,
-  userId: string,
-  allowed: readonly MenuKey[],
-  grantedBy: string,
+async function invokeAdminEdge(
+  context: { token: string; url: string; publishableKey: string },
+  body: Record<string, unknown>,
 ) {
-  const { error: deleteError } = await supabaseAdmin
-    .from("user_module_access")
-    .delete()
-    .eq("user_id", userId);
-  if (deleteError) throw new Error(deleteError.message);
+  const response = await fetch(`${context.url}/functions/v1/admin-user-management`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${context.token}`,
+      apikey: context.publishableKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
-  if (allowed.length === 0) return;
-
-  const { error: insertError } = await supabaseAdmin.from("user_module_access").insert(
-    allowed.map((moduleKey) => ({
-      user_id: userId,
-      module_key: moduleKey,
-      actions: ["read"],
-      granted_by: grantedBy,
-    })),
-  );
-  if (insertError) throw new Error(insertError.message);
+  const json = (await response.json().catch(() => ({}))) as any;
+  if (!response.ok) {
+    throw new Error(json?.error || `Falha administrativa (${response.status}).`);
+  }
+  return json;
 }
 
 /**
- * Cria uma conta e configura o RBAC já na mesma operação. Se qualquer etapa de
- * autorização falhar, a conta Auth recém-criada é removida em best-effort para
- * não deixar um usuário parcialmente provisionado.
+ * Cria a conta via Edge Function do próprio Supabase. A service role nunca
+ * trafega pelo navegador/Lovable: ela existe apenas no runtime seguro do
+ * Supabase e a função valida que o chamador é administrador.
  */
 export const createAppUserWithPermissions = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
   .validator(validateCreate)
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await getAdminClient();
-    const email = loginToEmail(data.login);
-
-    const { data: authResult, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: data.password,
-      email_confirm: true,
-      user_metadata: { login: data.login, full_name: data.fullName },
-    });
-    if (authError) throw new Error(authError.message);
-
-    const user = authResult.user;
-    if (!user) throw new Error("O backend não retornou o usuário recém-criado.");
-
-    try {
-      const { error: roleError } = await supabaseAdmin
-        .from("user_roles")
-        .insert({ user_id: user.id, role: data.role });
-      if (roleError) throw new Error(roleError.message);
-
-      const { error: profileError } = await supabaseAdmin.from("profiles").upsert(
-        {
-          id: user.id,
-          full_name: data.fullName ?? null,
-          allowed_menus: data.role === "admin" ? null : data.allowedMenus,
-        } as any,
-        { onConflict: "id" },
-      );
-      if (profileError) throw new Error(profileError.message);
-
-      if (data.role === "admin") {
-        const { error: clearAccessError } = await supabaseAdmin
-          .from("user_module_access")
-          .delete()
-          .eq("user_id", user.id);
-        if (clearAccessError) throw new Error(clearAccessError.message);
-      } else {
-        await syncModuleAccess(supabaseAdmin, user.id, data.allowedMenus, context.userId);
-      }
-    } catch (error) {
-      const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
-      if (rollbackError) {
-        console.error("[user-admin] failed to rollback partially-created auth user", rollbackError);
-      }
-      throw error;
-    }
-
-    return {
-      id: user.id,
+    return invokeAdminEdge(context, {
+      action: "create",
       login: data.login,
+      password: data.password,
+      fullName: data.fullName,
       role: data.role,
-      allowedMenus: data.role === "admin" ? null : data.allowedMenus,
-    };
+      allowedMenus: data.allowedMenus,
+    });
   });
 
-/** Redefinição administrativa de senha; a senha nunca é retornada ou registrada. */
+/** Redefinição administrativa de senha pelo mesmo backend seguro. */
 export const resetAppUserPassword = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
   .validator((input: unknown) => {
@@ -271,11 +203,11 @@ export const resetAppUserPassword = createServerFn({ method: "POST" })
     }
     return { userId, password };
   })
-  .handler(async ({ data }) => {
-    const supabaseAdmin = await getAdminClient();
-    const { error } = await supabaseAdmin.auth.admin.updateUserById(data.userId, {
+  .handler(async ({ data, context }) => {
+    await invokeAdminEdge(context, {
+      action: "resetPassword",
+      userId: data.userId,
       password: data.password,
     });
-    if (error) throw new Error(error.message);
     return { ok: true };
   });
