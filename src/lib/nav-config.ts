@@ -688,6 +688,13 @@ const RESTRICTED_KEYS = [
   "mensageria",
 ];
 
+const ADMIN_ONLY_KEYS = new Set([
+  "usuarios",
+  "configuracoes",
+  "corretiva-gestor",
+  "refrigeracao-gestor",
+]);
+
 /** Ordem de preferência dos atalhos da barra inferior no mobile. */
 const QUICK_KEYS = [
   "corretiva-novo",
@@ -725,8 +732,9 @@ export function canSeeMenuItem(
   // Atalhos locais não abrem módulos e permanecem disponíveis para todos.
   if (item.key === "pesquisa" || item.key === "favoritos") return true;
 
-  // O gerenciamento de contas exige papel administrativo no backend.
-  if (item.key === "usuarios") return false;
+  // Telas administrativas permanecem exclusivas do papel admin mesmo que uma
+  // permissão antiga/legada apareça em allowed_menus.
+  if (ADMIN_ONLY_KEYS.has(item.key)) return false;
 
   // Para usuários comuns, toda seção real é explícita e falha fechada.
   if (!allowed) return false;
