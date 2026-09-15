@@ -15,47 +15,23 @@ function bearer(request: Request): string {
   return header.toLowerCase().startsWith("bearer ") ? header.slice(7).trim() : "";
 }
 
-function projectRefFromUrl(url: string): string | null {
-  try {
-    const hostname = new URL(url).hostname;
-    const suffix = ".supabase.co";
-    return hostname.endsWith(suffix) ? hostname.slice(0, -suffix.length) : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Credenciais públicas do backend.
- *
- * O build do cliente é a fonte primária para a URL/chave pública, porque a sessão
- * que chega às rotas HTTP foi emitida por esse mesmo projeto. Variáveis server-side
- * ficam como fallback, mas nunca existe um projeto hardcoded: configuração ausente
- * ou inconsistente falha fechada em vez de validar o token contra outro Supabase.
+ * Credenciais públicas do backend. Em alguns provedores (ex.: Vercel) apenas as
+ * variáveis `VITE_*` chegam ao runtime; sem esse fallback o servidor devolvia
+ * 401 para uploads perfeitamente válidos — e o app derrubava a sessão do
+ * usuário achando que o token tinha expirado.
  */
 function authConfig(): { url: string; key: string } | null {
-  const viteUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-  const viteKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
-  const viteProjectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string | undefined;
-
-  const url = viteUrl || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  // Prioridade para variáveis de ambiente do Worker, depois fallback para VITE_* injetadas
+  const url =
+    process.env.SUPABASE_URL || 
+    process.env.VITE_SUPABASE_URL || 
+    "https://uthidybbrziwvktknryr.supabase.co"; 
   const key =
-    viteKey || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
-  const expectedProjectId =
-    viteProjectId || process.env.VITE_SUPABASE_PROJECT_ID || process.env.SUPABASE_PROJECT_ID;
-
+    process.env.SUPABASE_PUBLISHABLE_KEY ||
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    "sb_publishable_4K0A758AP4Cr4mi6VcWwUg_rLMZi_VD"; 
   if (!url || !key) return null;
-
-  if (expectedProjectId) {
-    const resolvedProjectId = projectRefFromUrl(url);
-    if (resolvedProjectId && resolvedProjectId !== expectedProjectId) {
-      console.error(
-        `[Auth] Supabase project mismatch: URL=${resolvedProjectId}, expected=${expectedProjectId}.`,
-      );
-      return null;
-    }
-  }
-
   return { url, key };
 }
 

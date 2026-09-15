@@ -32,10 +32,8 @@ import { generateBlankTemplate } from "@/lib/preventiva/blank-templates";
 import { weeksBetween, type WeekBucket, type WeekInfo } from "@/lib/preventiva/capacity";
 import { getLatestCorretivas } from "@/lib/preventiva/corretivas.functions";
 import {
-  allocateCorrectivesForWeekTeam,
-  CORRECTIVES_PER_DAY,
-  CORRECTIVES_PER_WEEK,
   pruneCorrectiveProgramReservations,
+  selectCorrectiveRowsForWeekTeam,
 } from "@/lib/preventiva/corrective-program-reservations";
 import {
   clearHistorico,
@@ -63,11 +61,10 @@ import {
   type Equipe,
   type TriagedOS,
 } from "@/lib/preventiva/triage";
-import { generateWeeklyProgramacao } from "@/lib/preventiva/weekly-exporter";
 import {
-  polishWeeklyProgramacao,
-  printWeeklyProgramacaoColor,
-} from "@/lib/preventiva/weekly-export-polish";
+  generateWeeklyProgramacao,
+  printWeeklyProgramacao,
+} from "@/lib/preventiva/weekly-exporter";
 
 export const Route = createFileRoute("/_authenticated/programacao")({
   component: ProgramacaoPage,
@@ -169,7 +166,7 @@ const isoLocal = (date: Date) =>
 function appendReservedCorrectives(
   bucket: WeekBucket,
   loads: DailyTeamLoad[],
-  correctivesByDay: TriagedOS[][],
+  correctives: TriagedOS[],
   minutesPerOs: 30 | 60,
   week: WeekInfo,
 ): { bucket: WeekBucket; loads: DailyTeamLoad[] } {
@@ -181,58 +178,45 @@ function appendReservedCorrectives(
   const nextLoads = loads.map((load) => ({
     ...load,
     correctiveCount: 0,
-    correctiveDeficit: CORRECTIVES_PER_DAY,
+    correctiveDeficit: 0,
   }));
 
-  correctivesByDay.slice(0, 5).forEach((dayItems, dayIndex) => {
-    const limitedItems = dayItems.slice(0, CORRECTIVES_PER_DAY);
-    if (limitedItems.length === 0) return;
+  if (correctives.length === 0) return { bucket: nextBucket, loads: nextLoads };
 
-    nextBucket.os.push(...limitedItems);
-    nextBucket.porDia[dayIndex] = [
-      ...(nextBucket.porDia[dayIndex] ?? []),
-      ...limitedItems,
-    ];
+  const targetLoadIndex = Math.max(0, nextLoads.length - 1);
+  const targetLoad = nextLoads[targetLoadIndex];
+  const dayIndex = targetLoad?.dayIndex ?? 4;
+  nextBucket.os.push(...correctives);
+  nextBucket.porDia[dayIndex] = [
+    ...(nextBucket.porDia[dayIndex] ?? []),
+    ...correctives,
+  ];
 
-    const addedMinutes = limitedItems.length * minutesPerOs;
-    const loadIndex = nextLoads.findIndex((load) => load.dayIndex === dayIndex);
-    if (loadIndex >= 0) {
-      const targetLoad = nextLoads[loadIndex];
-      const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
-      nextLoads[loadIndex] = {
-        ...targetLoad,
-        correctiveCount: limitedItems.length,
-        scheduledMinutes,
-        remainingMinutes: Math.max(
-          0,
-          targetLoad.targetMinutes - scheduledMinutes,
-        ),
-        correctiveDeficit: Math.max(
-          0,
-          CORRECTIVES_PER_DAY - limitedItems.length,
-        ),
-      };
-    } else {
-      const date = new Date(week.monday);
-      date.setDate(date.getDate() + dayIndex);
-      nextLoads.push({
-        date,
-        dateKey: isoLocal(date),
-        dayIndex,
-        preventiveCount: 0,
-        correctiveCount: limitedItems.length,
-        scheduledMinutes: addedMinutes,
-        remainingMinutes: Math.max(0, 540 - addedMinutes),
-        targetMinutes: 540,
-        correctiveDeficit: Math.max(
-          0,
-          CORRECTIVES_PER_DAY - limitedItems.length,
-        ),
-      });
-    }
-  });
+  const addedMinutes = correctives.length * minutesPerOs;
+  if (targetLoad) {
+    const scheduledMinutes = targetLoad.scheduledMinutes + addedMinutes;
+    nextLoads[targetLoadIndex] = {
+      ...targetLoad,
+      correctiveCount: correctives.length,
+      scheduledMinutes,
+      remainingMinutes: Math.max(0, targetLoad.targetMinutes - scheduledMinutes),
+      correctiveDeficit: Math.max(0, 2 - correctives.length),
+    };
+  } else {
+    const scheduledMinutes = addedMinutes;
+    nextLoads.push({
+      date: new Date(week.friday),
+      dateKey: isoLocal(week.friday),
+      dayIndex,
+      preventiveCount: 0,
+      correctiveCount: correctives.length,
+      scheduledMinutes,
+      remainingMinutes: Math.max(0, 540 - scheduledMinutes),
+      targetMinutes: 540,
+      correctiveDeficit: Math.max(0, 2 - correctives.length),
+    });
+  }
 
-  nextLoads.sort((a, b) => a.dayIndex - b.dayIndex);
   return { bucket: nextBucket, loads: nextLoads };
 }
 
@@ -294,7 +278,7 @@ function ProgramacaoPage() {
 
   const handlePrint = useCallback(async (blob: Blob) => {
     try {
-      await printWeeklyProgramacaoColor(blob);
+      await printWeeklyProgramacao(blob);
     } catch (error) {
       console.error(error);
       toast.error(
@@ -370,7 +354,7 @@ function ProgramacaoPage() {
           );
           messages.push(
             `${equipe}: ${schedule.scheduledPreventivas} preventiva(s) distribuída(s); ` +
-              `saldo mensal preventivo ${formatMinutes(remaining)}. Meta de corretivas: ${CORRECTIVES_PER_DAY} por dia útil, até ${CORRECTIVES_PER_WEEK} por semana.`,
+              `saldo mensal preventivo ${formatMinutes(remaining)}. As corretivas são reservadas em blocos de 2 por semana.`,
           );
           if (schedule.overflowPreventivas.length) {
             messages.push(
@@ -390,34 +374,29 @@ function ProgramacaoPage() {
             const schedule = schedules.get(equipe);
             if (!schedule) continue;
 
-            const allocation = allocateCorrectivesForWeekTeam({
+            const reservedRows = selectCorrectiveRowsForWeekTeam({
               rows: correctiveRows,
               equipe,
               periodStart,
               periodEnd,
               referenceDate: week.monday,
-              perDay: CORRECTIVES_PER_DAY,
-              businessDays: 5,
+              limit: 2,
             });
-
-            const mappedCorrectivesByDay = allocation.byDay.map((dayRows) =>
-              mapCorrectives(dayRows, week.monday).items.filter(
-                (item) => item.equipe === equipe,
-              ),
-            );
-            const mappedCorrectiveCount = mappedCorrectivesByDay.flat().length;
-
+            const mappedCorrectives = mapCorrectives(
+              reservedRows,
+              week.monday,
+            ).items.filter((item) => item.equipe === equipe);
             const augmented = appendReservedCorrectives(
               schedule.buckets[weekIndex],
               schedule.loadsByWeek[weekIndex],
-              mappedCorrectivesByDay,
+              mappedCorrectives,
               tempoPorEquipe[equipe],
               week,
             );
             bucketsPorEquipe.set(equipe, augmented.bucket);
             cargasPorEquipe.set(equipe, augmented.loads);
             messages.push(
-              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectiveCount}/${CORRECTIVES_PER_WEEK} corretiva(s) prioritária(s), máximo de ${CORRECTIVES_PER_DAY} por dia útil.`,
+              `Semana ${week.isoWeek} • ${equipe}: ${mappedCorrectives.length}/2 corretiva(s) prioritária(s) reservada(s) para a programação.`,
             );
           }
 
@@ -436,7 +415,7 @@ function ProgramacaoPage() {
           const remainingMinutes = [...cargasPorEquipe.values()]
             .flat()
             .reduce((total, load) => total + load.remainingMinutes, 0);
-          const rawBlob = await generateWeeklyProgramacao({
+          const blob = await generateWeeklyProgramacao({
             titulo: TITULO_PADRAO,
             week,
             bucketsPorEquipe,
@@ -444,7 +423,6 @@ function ProgramacaoPage() {
             minutosPorEquipe: tempoPorEquipe,
             ativoIndex: read.ativoIndex,
           });
-          const blob = await polishWeeklyProgramacao(rawBlob);
           const monthSlug = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`;
           const slotSlug = slot.id === "REFRIG" ? "REFRIGERACAO" : slot.id;
           const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
@@ -487,7 +465,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade).`,
+        `${output.length} planilha(s) semanal(is) gerada(s), com até 2 corretivas prioritárias reservadas por equipe.`,
       );
     } catch (error) {
       console.error(error);
@@ -514,7 +492,7 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Programação mensal em semanas, com meta diária de 09:00 e até 2 corretivas prioritárias por dia útil junto das preventivas."
+      description="Programação mensal em semanas, com meta diária de 09:00 e reserva inteligente de corretivas prioritárias."
       actions={
         <Button
           variant="glass"
@@ -535,13 +513,11 @@ function ProgramacaoPage() {
                   1 · Planilhas mensais por equipe
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Ao gerar, o sistema busca Corretiva › Novo e reserva até 2
-                  chamados prioritários por dia útil de cada equipe (até 10 por semana).
+                  Ao gerar, o sistema busca Corretiva › Novo e reserva os 2
+                  chamados prioritários de cada equipe para cada semana.
                 </p>
               </div>
-              <Badge variant="outline">
-                2 corretivas/dia • até 10/equipe/semana • 09:00/equipe
-              </Badge>
+              <Badge variant="outline">2 corretivas/equipe/semana • 09:00/equipe</Badge>
             </div>
             <div className="grid gap-3 lg:grid-cols-3">
               {SLOTS.map((slot) => (

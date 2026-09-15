@@ -1,17 +1,5 @@
 import ExcelJS from "exceljs";
 import type { OsCacheRow } from "./db";
-import {
-  classifyPriority,
-  PRIORITY_HEX,
-  type PriorityLevel,
-} from "./priority-classifier";
-
-export type ProgramacaoExportRow = OsCacheRow & {
-  programacao_status?: string | null;
-  programacao_dia?: string | null;
-  programacao_periodo?: string | null;
-  programacao_equipe?: string | null;
-};
 
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 
@@ -21,13 +9,16 @@ const C = {
   navy800: argb("#12314C"),
   blue700: argb("#1D4ED8"),
   blue600: argb("#2563EB"),
-  sky50: argb("#F0F9FF"),
-  sky700: argb("#0369A1"),
+  blue50: argb("#EFF6FF"),
   cyan600: argb("#0891B2"),
+  cyan50: argb("#ECFEFF"),
   emerald700: argb("#047857"),
+  emerald50: argb("#ECFDF5"),
   amber700: argb("#B45309"),
   amber500: argb("#F59E0B"),
+  amber50: argb("#FFFBEB"),
   rose700: argb("#BE123C"),
+  rose50: argb("#FFF1F2"),
   white: argb("#FFFFFF"),
   slate900: argb("#0F172A"),
   slate700: argb("#334155"),
@@ -41,15 +32,10 @@ const C = {
 const FONT = "Aptos";
 const FONT_DISPLAY = "Aptos Display";
 export const OPERATIONS_FONT = "Aptos ExtraBold";
-export const OPERATIONS_FONT_SIZE = 11;
-export const OPERATIONS_ROW_HEIGHT = 54;
-
-const thinBorder = {
-  top: { style: "thin" as const, color: { argb: C.slate200 } },
-  bottom: { style: "thin" as const, color: { argb: C.slate200 } },
-  left: { style: "thin" as const, color: { argb: C.slate200 } },
-  right: { style: "thin" as const, color: { argb: C.slate200 } },
-};
+export const OPERATIONS_FONT_SIZE = 16;
+// ExcelJS usa pontos. 170 px a 96 DPI = 127,5 pt.
+export const OPERATIONS_ROW_HEIGHT = 127.5;
+const thinBorder = { style: "thin", color: { argb: C.slate200 } } as const;
 
 const TEAM_PALETTE = [
   { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
@@ -61,12 +47,13 @@ const TEAM_PALETTE = [
   { bg: "#F2F4F7", fg: "#344054", accent: "#667085" },
 ] as const;
 
-const normalize = (value: unknown) =>
-  String(value ?? "")
+function normalize(value: string | null | undefined) {
+  return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toUpperCase();
+}
 
 function hashText(value: string) {
   let hash = 0;
@@ -93,29 +80,17 @@ function teamStyle(team: string | null | undefined) {
 function statusLabel(status: string | null | undefined) {
   const value = normalize(status || "aberto");
   if (
-    [
-      "CONCLUIDO",
-      "CONCLUIDA",
-      "FINALIZADO",
-      "FINALIZADA",
-      "FECHADO",
-      "FECHADA",
-    ].includes(value)
-  )
-    return "Concluído";
-  if (
-    ["EM ANDAMENTO", "EM EXECUCAO", "EXECUCAO", "ANDAMENTO"].includes(
+    ["CONCLUIDO", "CONCLUIDA", "FINALIZADO", "FINALIZADA", "FECHADO", "FECHADA"].includes(
       value,
     )
   )
+    return "Concluído";
+  if (["EM ANDAMENTO", "EM EXECUCAO", "EXECUCAO", "ANDAMENTO"].includes(value))
     return "Em andamento";
   if (
-    [
-      "AGUARDANDO MATERIAL",
-      "MATERIAL",
-      "AGUARDANDO PECA",
-      "AGUARDANDO PECAS",
-    ].includes(value)
+    ["AGUARDANDO MATERIAL", "MATERIAL", "AGUARDANDO PECA", "AGUARDANDO PECAS"].includes(
+      value,
+    )
   )
     return "Aguardando material";
   if (["CANCELADO", "CANCELADA"].includes(value)) return "Cancelado";
@@ -157,17 +132,6 @@ function safeSheetName(value: string, used: Set<string>) {
   return candidate;
 }
 
-function excelColumnName(index: number) {
-  let value = Math.max(1, index);
-  let result = "";
-  while (value > 0) {
-    value -= 1;
-    result = String.fromCharCode(65 + (value % 26)) + result;
-    value = Math.floor(value / 26);
-  }
-  return result;
-}
-
 function setWorkbookMetadata(
   workbook: ExcelJS.Workbook,
   title: string,
@@ -177,12 +141,59 @@ function setWorkbookMetadata(
   workbook.lastModifiedBy = "Apont Auto";
   workbook.company = "Apont Auto";
   workbook.title = title;
-  workbook.subject = "Controle de chamados corretivos";
+  workbook.subject = "Programação de execução de campo";
   workbook.description =
-    "Relatório de corretivas com classificação automática de prioridade e controle de programação.";
+    "Relatório executivo premium de programação de ordens de serviço.";
   workbook.created = generatedAt;
   workbook.modified = generatedAt;
   workbook.calcProperties.fullCalcOnLoad = true;
+}
+
+function styleTitle(
+  sheet: ExcelJS.Worksheet,
+  title: string,
+  subtitle: string,
+  lastColumn: string,
+) {
+  sheet.mergeCells(`A1:${lastColumn}1`);
+  sheet.mergeCells(`A2:${lastColumn}2`);
+
+  const titleCell = sheet.getCell("A1");
+  titleCell.value = title;
+  titleCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: C.navy950 },
+  };
+  titleCell.font = {
+    name: FONT_DISPLAY,
+    size: 22,
+    bold: true,
+    color: { argb: C.white },
+  };
+  titleCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  titleCell.border = {
+    bottom: { style: "medium", color: { argb: C.amber500 } },
+  };
+
+  const subtitleCell = sheet.getCell("A2");
+  subtitleCell.value = subtitle;
+  subtitleCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: C.navy900 },
+  };
+  subtitleCell.font = {
+    name: FONT,
+    size: 10,
+    bold: true,
+    color: { argb: C.slate300 },
+  };
+  subtitleCell.alignment = { vertical: "middle", horizontal: "left", indent: 2 };
+
+  sheet.getRow(1).height = 44;
+  sheet.getRow(2).height = 25;
+  sheet.getRow(3).height = 8;
 }
 
 function configurePrint(
@@ -197,7 +208,6 @@ function configurePrint(
     fitToHeight: 0,
     paperSize: 9,
     horizontalCentered: true,
-    blackAndWhite: false,
     margins: {
       left: 0.2,
       right: 0.2,
@@ -210,94 +220,102 @@ function configurePrint(
   };
   if (repeatRows) sheet.pageSetup.printTitlesRow = repeatRows;
   sheet.headerFooter.oddFooter =
-    "&L&9Apont Auto · Corretivas&C&9Página &P de &N&R&9Controle operacional";
+    "&L&9Apont Auto · Programação de Corretivas&C&9Página &P de &N&R&9Relatório operacional";
 }
 
-function priorityArgb(level: PriorityLevel) {
+function operationalFont(color: string = C.slate900): Partial<ExcelJS.Font> {
   return {
-    bg: argb(PRIORITY_HEX[level].bg),
-    fg: argb(PRIORITY_HEX[level].fg),
+    name: OPERATIONS_FONT,
+    size: OPERATIONS_FONT_SIZE,
+    bold: true,
+    color: { argb: color },
   };
 }
 
-function stylePriorityCell(
-  cell: ExcelJS.Cell,
-  level: PriorityLevel,
-  score: number,
-) {
-  const colors = priorityArgb(level);
-  cell.value = `${level} · ${score}`;
+function applyTeamCell(cell: ExcelJS.Cell, team: string | null | undefined) {
+  const palette = teamStyle(team);
   cell.fill = {
     type: "pattern",
     pattern: "solid",
-    fgColor: { argb: colors.bg },
+    fgColor: { argb: argb(palette.bg) },
   };
-  cell.font = {
-    name: OPERATIONS_FONT,
-    size: 10.5,
-    bold: true,
-    color: { argb: colors.fg },
-  };
+  cell.font = operationalFont(argb(palette.fg));
   cell.alignment = {
     vertical: "middle",
     horizontal: "center",
     wrapText: true,
   };
-  cell.border = thinBorder;
+  cell.border = {
+    ...cell.border,
+    left: { style: "medium", color: { argb: argb(palette.accent) } },
+  };
 }
 
-function visualLineCount(value: unknown, charsPerLine: number) {
-  const text = String(value ?? "").trim();
-  if (!text) return 1;
-  return text.split(/\r?\n/).reduce((total, part) => {
-    return total + Math.max(1, Math.ceil(part.trim().length / charsPerLine));
-  }, 0);
+function applySlaCell(cell: ExcelJS.Cell, days: number) {
+  if (days >= 30) {
+    cell.value = `${days} dias`;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.rose50 } };
+    cell.font = operationalFont(C.rose700);
+  } else if (days >= 15) {
+    cell.value = `${days} dias`;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.amber50 } };
+    cell.font = operationalFont(C.amber700);
+  } else {
+    cell.value = "No prazo";
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: C.emerald50 },
+    };
+    cell.font = operationalFont(C.emerald700);
+  }
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
 }
 
-function intelligentRowHeight(
-  item: ProgramacaoExportRow,
-  priorityReasons: string,
-  includeProgramControl: boolean,
-) {
-  const lines = Math.max(
-    visualLineCount(priorityReasons, 44),
-    visualLineCount(item.equipe || "Sem equipe", 22),
-    visualLineCount(`${item.predio || ""} / ${item.andar || ""}`, 25),
-    visualLineCount(item.local || "", 34),
-    visualLineCount(item.nome_os || "", 66),
-    includeProgramControl
-      ? visualLineCount(item.programacao_periodo || "", 28)
-      : 1,
-    2,
-  );
-
-  return Math.min(300, Math.max(54, 24 + lines * 18));
+function applyMaterialCell(cell: ExcelJS.Cell, requested: boolean) {
+  cell.value = requested ? "SOLICITADO" : "N/A";
+  cell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: requested ? C.amber50 : C.slate100 },
+  };
+  cell.font = operationalFont(requested ? C.amber700 : C.slate500);
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
 }
 
-function hasProgramControl(items: ProgramacaoExportRow[]) {
-  return items.some(
-    (item) =>
-      item.programacao_status ||
-      item.programacao_dia ||
-      item.programacao_periodo ||
-      item.programacao_equipe,
-  );
+function applyStatusCell(cell: ExcelJS.Cell, status: string) {
+  const normalized = normalize(status);
+  let strong = C.slate700;
+  let soft = C.slate100;
+  if (normalized === "CONCLUIDO") [strong, soft] = [C.emerald700, C.emerald50];
+  else if (normalized === "EM ANDAMENTO") [strong, soft] = [C.blue700, C.blue50];
+  else if (normalized === "AGUARDANDO MATERIAL") [strong, soft] = [C.amber700, C.amber50];
+  else if (normalized === "CANCELADO") [strong, soft] = [C.rose700, C.rose50];
+  cell.value = status;
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: soft } };
+  cell.font = operationalFont(strong);
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
 }
 
 function buildOperationsSheet(
   workbook: ExcelJS.Workbook,
   name: string,
-  items: ProgramacaoExportRow[],
+  items: OsCacheRow[],
   title: string,
   scope: string,
   generatedAt: Date,
   tabColor: string,
 ) {
-  const includeProgramControl = hasProgramControl(items);
-  const baseHeaders = [
+  const sheet = workbook.addWorksheet(name, {
+    properties: {
+      tabColor: { argb: tabColor },
+      defaultRowHeight: OPERATIONS_ROW_HEIGHT,
+    },
+  });
+
+  const headers = [
+    "ID",
     "OS",
-    "Prioridade",
-    "Motivo da prioridade",
     "Equipe",
     "Solicitante",
     "Prédio / Andar",
@@ -308,418 +326,319 @@ function buildOperationsSheet(
     "Material",
     "Status Atual",
   ];
-  const programHeaders = [
-    "Programação",
-    "Dia programado",
-    "Período da programação",
-    "Equipe programada",
-  ];
-  const headers = includeProgramControl
-    ? [...baseHeaders, ...programHeaders]
-    : baseHeaders;
-  const widths = includeProgramControl
-    ? [16, 17, 48, 26, 26, 27, 36, 72, 16, 16, 18, 22, 22, 22, 32, 28]
-    : [16, 17, 48, 26, 26, 27, 36, 72, 16, 16, 18, 22];
-  const lastColumn = excelColumnName(headers.length);
-
-  const sheet = workbook.addWorksheet(name, {
-    properties: {
-      tabColor: { argb: tabColor },
-      defaultRowHeight: OPERATIONS_ROW_HEIGHT,
-    },
-  });
-
+  // Larguras proporcionais ao conteúdo. A altura de cada OS é 170 px.
+  const widths = [8, 18, 24, 30, 26, 30, 58, 18, 18, 20, 22];
   widths.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
-  sheet.views = [{ state: "frozen", ySplit: 5, showGridLines: false }];
 
-  sheet.mergeCells(`A1:${lastColumn}1`);
-  sheet.mergeCells(`A2:${lastColumn}2`);
-  const titleCell = sheet.getCell("A1");
-  titleCell.value = title.toUpperCase();
-  titleCell.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: C.navy950 },
-  };
-  titleCell.font = {
-    name: FONT_DISPLAY,
-    size: 22,
-    bold: true,
-    color: { argb: C.white },
-  };
-  titleCell.alignment = {
-    vertical: "middle",
-    horizontal: "left",
-    indent: 1,
-  };
+  const teamCount = new Set(items.map((item) => item.equipe || "Sem equipe")).size;
+  const slaRisk = items.filter((item) => ageInDays(item.data_criacao) >= 30).length;
+  const materials = items.filter(materialRequested).length;
 
-  const subtitle = sheet.getCell("A2");
-  subtitle.value = `${scope} • ${items.length} OS • Gerado em ${generatedAt.toLocaleString("pt-BR")}`;
-  subtitle.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: C.navy900 },
-  };
-  subtitle.font = {
-    name: FONT,
-    size: 10,
-    bold: true,
-    color: { argb: C.slate300 },
-  };
-  subtitle.alignment = {
-    vertical: "middle",
-    horizontal: "left",
-    indent: 1,
-  };
-  sheet.getRow(1).height = 44;
-  sheet.getRow(2).height = 25;
+  styleTitle(
+    sheet,
+    title.toUpperCase(),
+    `${scope}  •  ${items.length} OS  •  ${teamCount} equipe(s)  •  Gerado em ${generatedAt.toLocaleString("pt-BR")}`,
+    "K",
+  );
 
-  const priorityCounts: Record<PriorityLevel, number> = {
-    CRÍTICA: 0,
-    ALTA: 0,
-    MÉDIA: 0,
-    NORMAL: 0,
-  };
-  items.forEach((item) => {
-    priorityCounts[classifyPriority(item, generatedAt).level] += 1;
-  });
-
-  const cardRanges = includeProgramControl
-    ? ["A3:D3", "E3:H3", "I3:L3", "M3:P3"]
-    : ["A3:C3", "D3:F3", "G3:I3", "J3:L3"];
+  sheet.mergeCells("A4:C4");
+  sheet.mergeCells("D4:F4");
+  sheet.mergeCells("G4:I4");
+  sheet.mergeCells("J4:K4");
   const cards = [
-    [cardRanges[0], `TOTAL · ${items.length}`, C.blue700],
-    [
-      cardRanges[1],
-      `CRÍTICA · ${priorityCounts.CRÍTICA}`,
-      argb(PRIORITY_HEX.CRÍTICA.bg),
-    ],
-    [
-      cardRanges[2],
-      `ALTA · ${priorityCounts.ALTA}`,
-      argb(PRIORITY_HEX.ALTA.bg),
-    ],
-    [
-      cardRanges[3],
-      `MÉDIA · ${priorityCounts.MÉDIA}`,
-      argb(PRIORITY_HEX.MÉDIA.bg),
-    ],
+    ["A4", `TOTAL · ${items.length} OS`, C.blue700],
+    ["D4", `EQUIPES · ${teamCount}`, C.cyan600],
+    ["G4", `SLA CRÍTICO · ${slaRisk}`, C.rose700],
+    ["J4", `MATERIAL · ${materials}`, C.amber700],
   ] as const;
-  cards.forEach(([range, value, color]) => {
-    sheet.mergeCells(range);
-    const cell = sheet.getCell(range.split(":")[0]);
+  cards.forEach(([address, value, color]) => {
+    const cell = sheet.getCell(address);
     cell.value = value;
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: color },
-    };
-    cell.font = {
-      name: FONT_DISPLAY,
-      size: 11,
-      bold: true,
-      color: { argb: C.white },
-    };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
-    };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+    cell.font = { name: FONT_DISPLAY, size: 12, bold: true, color: { argb: C.white } };
+    cell.alignment = { vertical: "middle", horizontal: "center" };
   });
-  sheet.getRow(3).height = 30;
-  sheet.getRow(4).height = 7;
+  sheet.getRow(4).height = 30;
+  sheet.getRow(5).height = 8;
 
-  const headerRow = sheet.getRow(5);
+  sheet.mergeCells("A6:G6");
+  sheet.mergeCells("H6:K6");
+  const identity = sheet.getCell("A6");
+  identity.value = "IDENTIFICAÇÃO DO CHAMADO";
+  identity.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy800 } };
+  identity.font = { name: OPERATIONS_FONT, size: 13, bold: true, color: { argb: C.white } };
+  identity.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  const execution = sheet.getCell("H6");
+  execution.value = "EXECUÇÃO DE CAMPO & PRIORIDADE";
+  execution.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan600 } };
+  execution.font = { name: OPERATIONS_FONT, size: 13, bold: true, color: { argb: C.white } };
+  execution.alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(6).height = 27;
+
+  const headerRowNumber = 7;
+  const headerRow = sheet.getRow(headerRowNumber);
   headers.forEach((header, index) => {
     const cell = headerRow.getCell(index + 1);
     cell.value = header;
     cell.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: C.navy800 },
+      fgColor: { argb: index >= 7 ? C.cyan600 : C.navy900 },
     };
     cell.font = {
       name: OPERATIONS_FONT,
-      size: 10,
+      size: OPERATIONS_FONT_SIZE,
       bold: true,
       color: { argb: C.white },
     };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.border = {
+      top: thinBorder,
+      bottom: {
+        style: "medium",
+        color: { argb: index >= 7 ? C.cyan600 : C.amber500 },
+      },
+      left: thinBorder,
+      right: thinBorder,
     };
-    cell.border = thinBorder;
   });
-  headerRow.height = 36;
+  headerRow.height = 48;
 
-  let rowNumber = 6;
-  for (const item of items) {
-    const row = sheet.getRow(rowNumber++);
-    const priority = classifyPriority(item, generatedAt);
-    const reasons = priority.reasons.slice(0, 4).join(" · ");
-    const age = ageInDays(item.data_criacao);
-    const baseValues = [
-      item.numero_os,
-      "",
-      reasons,
-      item.equipe || "Sem equipe",
+  items.forEach((item, index) => {
+    const row = sheet.getRow(headerRowNumber + 1 + index);
+    const days = ageInDays(item.data_criacao);
+    const status = statusLabel(item.status);
+    row.values = [
+      index + 1,
+      item.numero_os || "—",
+      item.equipe || "—",
       item.solicitante || "—",
       `${item.predio || "—"} / ${item.andar || "—"}`,
       item.local || "—",
-      item.nome_os || "Sem descrição",
+      item.nome_os || "—",
       formatDate(item.data_criacao),
-      age >= 30 ? `${age} dias` : "No prazo",
-      materialRequested(item) ? "SOLICITADO" : "N/A",
-      statusLabel(item.status),
+      "",
+      "",
+      "",
     ];
-    const values = includeProgramControl
-      ? [
-          ...baseValues,
-          item.programacao_status || "EM PROGRAMAÇÃO",
-          item.programacao_dia || "—",
-          item.programacao_periodo || "—",
-          item.programacao_equipe || item.equipe || "—",
-        ]
-      : baseValues;
+    row.height = OPERATIONS_ROW_HEIGHT;
 
-    values.forEach((value, index) => {
-      const cell = row.getCell(index + 1);
-      cell.value = value;
-      cell.font = {
-        name: FONT,
-        size: index === 7 ? 10.5 : 9.5,
-        bold: index === 0 || index === 3 || index === 7,
-        color: { argb: C.slate900 },
-      };
-      cell.alignment = {
-        vertical: "middle",
-        horizontal: [0, 1, 8, 9, 10, 11, 12, 13].includes(index)
-          ? "center"
-          : "left",
-        wrapText: true,
-      };
-      cell.border = thinBorder;
+    for (let column = 1; column <= headers.length; column += 1) {
+      const cell = row.getCell(column);
       cell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: { argb: rowNumber % 2 === 0 ? C.slate50 : C.white },
+        fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 },
       };
-    });
+      cell.font = operationalFont();
+      cell.alignment = {
+        vertical: "middle",
+        horizontal: column === 1 || column === 2 || column >= 8 ? "center" : "left",
+        wrapText: true,
+        indent: column >= 3 && column <= 7 ? 1 : 0,
+      };
+      cell.border = {
+        bottom: thinBorder,
+        left: {
+          style: column === 8 ? "medium" : "thin",
+          color: { argb: column === 8 ? C.cyan600 : C.slate200 },
+        },
+        right: thinBorder,
+      };
+    }
 
-    stylePriorityCell(row.getCell(2), priority.level, priority.score);
-
-    const team = teamStyle(item.equipe);
-    const teamCell = row.getCell(4);
-    teamCell.fill = {
+    row.getCell(2).fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: argb(team.bg) },
+      fgColor: { argb: C.blue50 },
     };
-    teamCell.font = {
-      name: FONT,
-      size: 9.5,
-      bold: true,
-      color: { argb: argb(team.fg) },
-    };
-    teamCell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
-    };
+    row.getCell(2).font = operationalFont(C.blue700);
+    applyTeamCell(row.getCell(3), item.equipe);
+    applySlaCell(row.getCell(9), days);
+    applyMaterialCell(row.getCell(10), materialRequested(item));
+    applyStatusCell(row.getCell(11), status);
+  });
 
-    if (age >= 30) {
-      const slaCell = row.getCell(10);
-      slaCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: argb("#FFF1F2") },
-      };
-      slaCell.font = {
-        name: FONT,
-        size: 9.5,
-        bold: true,
-        color: { argb: C.rose700 },
-      };
-    }
+  const lastDataRow = headerRowNumber + items.length;
+  sheet.autoFilter = {
+    from: { row: headerRowNumber, column: 1 },
+    to: {
+      row: Math.max(headerRowNumber, lastDataRow),
+      column: headers.length,
+    },
+  };
+  sheet.views = [
+    {
+      state: "frozen",
+      xSplit: 2,
+      ySplit: headerRowNumber,
+      activeCell: `C${headerRowNumber + 1}`,
+      showGridLines: false,
+    },
+  ];
 
-    if (materialRequested(item)) {
-      const materialCell = row.getCell(11);
-      materialCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: argb("#FFFBEB") },
-      };
-      materialCell.font = {
-        name: FONT,
-        size: 9.5,
-        bold: true,
-        color: { argb: C.amber700 },
-      };
-    }
+  const summaryRowNumber = Math.max(headerRowNumber, lastDataRow) + 2;
+  sheet.mergeCells(summaryRowNumber, 1, summaryRowNumber, 4);
+  sheet.mergeCells(summaryRowNumber, 5, summaryRowNumber, 11);
+  const summaryLabel = sheet.getCell(summaryRowNumber, 1);
+  summaryLabel.value = "RESUMO DA PROGRAMAÇÃO";
+  summaryLabel.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  summaryLabel.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  summaryLabel.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
 
-    if (includeProgramControl) {
-      const statusCell = row.getCell(13);
-      statusCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: C.sky50 },
-      };
-      statusCell.font = {
-        name: OPERATIONS_FONT,
-        size: 9.5,
-        bold: true,
-        color: { argb: C.sky700 },
-      };
-    }
+  const summaryValue = sheet.getCell(summaryRowNumber, 5);
+  summaryValue.value = `Total: ${items.length} OS  •  ${teamCount} equipes  •  ${slaRisk} SLA crítico  •  ${materials} com material solicitado`;
+  summaryValue.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.blue700 } };
+  summaryValue.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  summaryValue.alignment = {
+    vertical: "middle",
+    horizontal: "left",
+    indent: 1,
+    wrapText: true,
+  };
+  sheet.getRow(summaryRowNumber).height = 32;
 
-    row.height = intelligentRowHeight(item, reasons, includeProgramControl);
-  }
-
-  if (items.length === 0) {
-    sheet.mergeCells(`A6:${lastColumn}7`);
-    const empty = sheet.getCell("A6");
-    empty.value = "Nenhuma OS disponível para esta exportação.";
-    empty.font = {
-      name: FONT,
-      size: 11,
-      bold: true,
-      color: { argb: C.slate500 },
-    };
-    empty.alignment = { vertical: "middle", horizontal: "center" };
-  }
-
-  const lastRow = Math.max(7, rowNumber - 1);
-  sheet.autoFilter = `A5:${lastColumn}5`;
-  configurePrint(sheet, `A1:${lastColumn}${lastRow}`, "1:5");
+  configurePrint(sheet, `A1:K${summaryRowNumber}`, `1:${headerRowNumber}`);
   return sheet;
 }
 
 function buildExecutiveSheet(
   workbook: ExcelJS.Workbook,
-  items: ProgramacaoExportRow[],
+  items: OsCacheRow[],
   title: string,
+  scope: string,
   generatedAt: Date,
 ) {
   const sheet = workbook.addWorksheet("Visão Executiva", {
     properties: { tabColor: { argb: C.amber500 } },
   });
-  for (let index = 1; index <= 12; index += 1) {
-    sheet.getColumn(index).width = 12;
-  }
+  for (let index = 1; index <= 12; index += 1) sheet.getColumn(index).width = 12;
   sheet.views = [{ state: "normal", showGridLines: false }];
 
-  const counts: Record<PriorityLevel, number> = {
-    CRÍTICA: 0,
-    ALTA: 0,
-    MÉDIA: 0,
-    NORMAL: 0,
-  };
+  const teamCounts = new Map<string, number>();
+  const statusCounts = new Map<string, number>();
   items.forEach((item) => {
-    counts[classifyPriority(item, generatedAt).level] += 1;
+    const team = item.equipe || "Sem equipe";
+    const status = statusLabel(item.status);
+    teamCounts.set(team, (teamCounts.get(team) || 0) + 1);
+    statusCounts.set(status, (statusCounts.get(status) || 0) + 1);
   });
+  const teams = [...teamCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const statuses = [...statusCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const critical = items.filter((item) => ageInDays(item.data_criacao) >= 30).length;
+  const materials = items.filter(materialRequested).length;
 
-  sheet.mergeCells("A1:L1");
-  const heading = sheet.getCell("A1");
-  heading.value = `${title.toUpperCase()} · VISÃO EXECUTIVA`;
-  heading.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: C.navy950 },
-  };
-  heading.font = {
-    name: FONT_DISPLAY,
-    size: 20,
-    bold: true,
-    color: { argb: C.white },
-  };
-  heading.alignment = {
-    vertical: "middle",
-    horizontal: "left",
-    indent: 1,
-  };
-  sheet.getRow(1).height = 44;
+  styleTitle(
+    sheet,
+    "PROGRAMAÇÃO DE CORRETIVAS · VISÃO EXECUTIVA",
+    `${title}  •  ${scope}  •  Gerado em ${generatedAt.toLocaleString("pt-BR")}`,
+    "L",
+  );
 
   const cards = [
-    ["A3:C5", `TOTAL\n${items.length}`, C.blue700],
-    ["D3:F5", `CRÍTICA\n${counts.CRÍTICA}`, argb(PRIORITY_HEX.CRÍTICA.bg)],
-    ["G3:I5", `ALTA\n${counts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg)],
-    ["J3:L5", `MÉDIA\n${counts.MÉDIA}`, argb(PRIORITY_HEX.MÉDIA.bg)],
+    ["A4:C5", `TOTAL DE OS\n${items.length}`, C.blue700],
+    ["D4:F5", `EQUIPES ATIVAS\n${teams.length}`, C.cyan600],
+    ["G4:I5", `SLA CRÍTICO\n${critical}`, C.rose700],
+    ["J4:L5", `MATERIAL SOLICITADO\n${materials}`, C.amber700],
   ] as const;
   cards.forEach(([range, value, color]) => {
     sheet.mergeCells(range);
     const cell = sheet.getCell(range.split(":")[0]);
     cell.value = value;
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: color },
-    };
-    cell.font = {
-      name: FONT_DISPLAY,
-      size: 15,
-      bold: true,
-      color: { argb: C.white },
-    };
-    cell.alignment = {
-      vertical: "middle",
-      horizontal: "center",
-      wrapText: true,
-    };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+    cell.font = { name: FONT_DISPLAY, size: 14, bold: true, color: { argb: C.white } };
+    cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   });
-  sheet.getRow(3).height = 28;
   sheet.getRow(4).height = 28;
   sheet.getRow(5).height = 28;
 
-  sheet.mergeCells("A7:L7");
-  const note = sheet.getCell("A7");
+  sheet.mergeCells("A7:F7");
+  sheet.mergeCells("H7:L7");
+  const teamTitle = sheet.getCell("A7");
+  teamTitle.value = "DISTRIBUIÇÃO POR EQUIPE";
+  teamTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navy900 } };
+  teamTitle.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  teamTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+  const statusTitle = sheet.getCell("H7");
+  statusTitle.value = "STATUS OPERACIONAL";
+  statusTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan600 } };
+  statusTitle.font = { name: FONT, size: 10, bold: true, color: { argb: C.white } };
+  statusTitle.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+
+  let rowNumber = 8;
+  const maxRows = Math.max(teams.length, statuses.length, 1);
+  for (let index = 0; index < maxRows; index += 1) {
+    const team = teams[index];
+    if (team) {
+      const palette = teamStyle(team[0]);
+      sheet.mergeCells(rowNumber, 1, rowNumber, 4);
+      sheet.mergeCells(rowNumber, 5, rowNumber, 6);
+      const nameCell = sheet.getCell(rowNumber, 1);
+      nameCell.value = team[0];
+      nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(palette.bg) } };
+      nameCell.font = { name: FONT, size: 10, bold: true, color: { argb: argb(palette.fg) } };
+      nameCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      const countCell = sheet.getCell(rowNumber, 5);
+      countCell.value = `${team[1]} OS`;
+      countCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
+      countCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.slate700 } };
+      countCell.alignment = { vertical: "middle", horizontal: "center" };
+    }
+
+    const status = statuses[index];
+    if (status) {
+      sheet.mergeCells(rowNumber, 8, rowNumber, 10);
+      sheet.mergeCells(rowNumber, 11, rowNumber, 12);
+      const statusCell = sheet.getCell(rowNumber, 8);
+      statusCell.value = status[0];
+      statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };
+      statusCell.font = { name: FONT, size: 10, bold: true, color: { argb: C.slate700 } };
+      statusCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      const countCell = sheet.getCell(rowNumber, 11);
+      countCell.value = status[1];
+      countCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyan50 } };
+      countCell.font = { name: FONT_DISPLAY, size: 11, bold: true, color: { argb: C.cyan600 } };
+      countCell.alignment = { vertical: "middle", horizontal: "center" };
+    }
+    sheet.getRow(rowNumber).height = 26;
+    rowNumber += 1;
+  }
+
+  const noteRow = rowNumber + 2;
+  sheet.mergeCells(noteRow, 1, noteRow, 12);
+  const note = sheet.getCell(noteRow, 1);
   note.value =
-    "Prioridade calculada automaticamente por descrição, local, SLA, antiguidade e contexto de risco. A exportação geral reúne todas as equipes presentes na base, independentemente dos filtros da tela.";
-  note.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: C.slate100 },
-  };
-  note.font = {
-    name: FONT,
-    size: 10,
-    bold: true,
-    color: { argb: C.slate700 },
-  };
-  note.alignment = {
-    vertical: "middle",
-    horizontal: "center",
-    wrapText: true,
-  };
-  sheet.getRow(7).height = 42;
-  configurePrint(sheet, "A1:L7");
+    "As abas Programação Geral e Equipe utilizam Aptos ExtraBold 16 e linhas operacionais com 170 px de altura.";
+  note.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate100 } };
+  note.font = { name: FONT, size: 9, bold: true, color: { argb: C.slate500 } };
+  note.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  sheet.getRow(noteRow).height = 30;
+
+  configurePrint(sheet, `A1:L${noteRow}`);
   return sheet;
 }
 
 export function buildProgramacaoWorkbook(
-  osList: ProgramacaoExportRow[],
+  osList: OsCacheRow[],
   equipeFiltro: string,
   aba: "corretiva" | "preventiva",
   generatedAt = new Date(),
 ) {
   const workbook = new ExcelJS.Workbook();
   const title =
-    aba === "preventiva"
-      ? "Programação de Backorder"
-      : hasProgramControl(osList)
-        ? "Corretivas em Programação"
-        : "Programação de Corretivas";
+    aba === "preventiva" ? "Programação de Backorder" : "Programação de Corretivas";
+  const scope = `Equipe: ${equipeFiltro}`;
   setWorkbookMetadata(workbook, title, generatedAt);
 
-  buildExecutiveSheet(workbook, osList, title, generatedAt);
+  buildExecutiveSheet(workbook, osList, title, scope, generatedAt);
   buildOperationsSheet(
     workbook,
     "Programação Geral",
     osList,
     title,
-    equipeFiltro,
+    scope,
     generatedAt,
     C.blue600,
   );
@@ -746,15 +665,12 @@ export function buildProgramacaoWorkbook(
     );
   });
 
-  workbook.worksheets.forEach((sheet) => {
-    sheet.pageSetup.blackAndWhite = false;
-  });
   workbook.worksheets[0].state = "visible";
   return workbook;
 }
 
 export async function generateProgramacaoExcel(
-  osList: ProgramacaoExportRow[],
+  osList: OsCacheRow[],
   equipeFiltro: string,
   aba: "corretiva" | "preventiva",
 ) {
@@ -767,15 +683,9 @@ export async function generateProgramacaoExcel(
   );
   const buffer = await workbook.xlsx.writeBuffer();
   const { saveAs } = await import("file-saver");
-  const slug = equipeFiltro
+  const fileName = `programacao_${aba}_${equipeFiltro
     .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  const fileName = `programacao_${aba}_${slug || "todas_equipes"}_${generatedAt
-    .toISOString()
-    .slice(0, 10)}.xlsx`;
+    .replace(/\s+/g, "_")}_${generatedAt.toISOString().slice(0, 10)}.xlsx`;
   saveAs(
     new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

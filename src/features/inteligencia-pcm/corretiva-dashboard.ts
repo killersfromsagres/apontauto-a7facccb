@@ -5,10 +5,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PAGE_SIZE = 1000;
 const MAX_PAGES = 20;
 
-// Mantém o dashboard alinhado com a estrutura realmente usada por
-// /corretiva-novo, /corretiva e /corretiva-historico. `material_status` é o
-// indicador persistido de solicitação de material na OS; `pecas_solicitadas`
-// não pertence ao schema operacional atual e fazia toda a consulta falhar.
 const DASHBOARD_COLUMNS = [
   "id",
   "numero_os",
@@ -28,7 +24,7 @@ const DASHBOARD_COLUMNS = [
   "inicio",
   "fim",
   "updated_at",
-  "material_status",
+  "pecas_solicitadas",
   "solicitante",
 ].join(", ");
 
@@ -51,7 +47,7 @@ export type CorretivaDashboardRow = {
   inicio: string | null;
   fim: string | null;
   updated_at: string | null;
-  material_status: string | null;
+  pecas_solicitadas: string | null;
   solicitante: string | null;
 };
 
@@ -121,8 +117,14 @@ function normalize(value: unknown) {
 
 function hasRequestedMaterials(value: string | null) {
   const normalized = normalize(value);
-  return ["solicitado", "solicitada", "pendente", "aguardando", "em_solicitacao"].includes(
-    normalized,
+  return Boolean(
+    normalized &&
+      normalized !== "[]" &&
+      normalized !== "{}" &&
+      normalized !== "null" &&
+      normalized !== "nenhum" &&
+      normalized !== "nao" &&
+      normalized !== "não",
   );
 }
 
@@ -387,7 +389,7 @@ export async function fetchCorretivaDashboard(params: {
       tempoMedioDias: leadTimes.length
         ? leadTimes.reduce((total, value) => total + value, 0) / leadTimes.length
         : null,
-      materiaisSolicitados: active.filter((row) => hasRequestedMaterials(row.material_status)).length,
+      materiaisSolicitados: active.filter((row) => hasRequestedMaterials(row.pecas_solicitadas)).length,
     },
     trend: buildTrend(created, history, start, days),
     teams: Array.from(teams.values())

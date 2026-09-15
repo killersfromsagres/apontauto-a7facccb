@@ -1,5 +1,6 @@
 // Módulo de Automação de Preventivas implementado em /preventiva-automacao
 import {
+
   createFileRoute,
   Outlet,
   redirect,
@@ -15,7 +16,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AppHeader } from "@/components/app-header";
 import { MobileTabBar } from "@/components/mobile-tab-bar";
 import { ForcePasswordChange } from "@/components/force-password-change";
-import { CorretivaOfflineSyncBridge } from "@/components/corretiva/offline-sync-bridge";
 
 import { useMyAccess } from "@/hooks/use-my-access";
 import { menuKeysForPath } from "@/lib/nav-config";
@@ -43,10 +43,10 @@ export const Route = createFileRoute("/")({
 });
 
 function pathKeys(pathname: string): string[] | null {
-  const isDashboard =
-    pathname === "/" ||
-    pathname === "" ||
-    pathname === "/dashboard" ||
+  const isDashboard = 
+    pathname === "/" || 
+    pathname === "" || 
+    pathname === "/dashboard" || 
     pathname === "/dashboard/" ||
     pathname === "/_authenticated" ||
     pathname === "/_authenticated/";
@@ -79,10 +79,7 @@ function AccessGuard() {
     if (!keys.some((k) => access.allowed!.includes(k))) {
       toast.error("Acesso restrito: solicite permissão ao administrador.");
       const fallback = access.allowed.find((item) => item !== "usuarios");
-      const target =
-        fallback === "dashboard" || fallback === "menu-inicial" || !fallback
-          ? "/"
-          : `/_authenticated/${fallback}`;
+      const target = fallback === "dashboard" || fallback === "menu-inicial" || !fallback ? "/" : `/_authenticated/${fallback}`;
       if (target === pathname) return;
       navigate({ to: target, replace: true });
     }
@@ -105,40 +102,20 @@ function AccessFallback({ loading, noMenus }: { loading: boolean; noMenus: boole
   const qc = useQueryClient();
   const navigate = useNavigate();
 
-  if (loading)
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center px-4 text-sm text-muted-foreground">
-        Verificando permissões…
-      </div>
-    );
+  if (loading) return <div className="flex min-h-[50vh] items-center justify-center px-4 text-sm text-muted-foreground">Verificando permissões…</div>;
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
       <div className="max-w-md space-y-4">
         <h1 className="text-lg font-semibold tracking-tight">Acesso restrito</h1>
         <p className="text-sm text-muted-foreground">
-          {noMenus
-            ? "Nenhum módulo foi liberado."
-            : "Você não tem permissão para acessar este módulo."}
+          {noMenus ? "Nenhum módulo foi liberado." : "Você não tem permissão para acessar este módulo."}
         </p>
         <div className="flex flex-wrap justify-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => qc.invalidateQueries({ queryKey: ["my-access"] })}
-          >
+          <Button size="sm" variant="outline" onClick={() => qc.invalidateQueries({ queryKey: ["my-access"] })}>
             <RefreshCw className="mr-2 h-4 w-4" /> Recarregar permissões
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={async () => {
-              await qc.cancelQueries();
-              qc.clear();
-              await supabase.auth.signOut();
-              navigate({ to: "/auth", replace: true });
-            }}
-          >
+          <Button size="sm" variant="ghost" onClick={async () => { await qc.cancelQueries(); qc.clear(); await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }}>
             <LogOut className="mr-2 h-4 w-4" /> Sair
           </Button>
         </div>
@@ -151,23 +128,13 @@ function AuthenticatedLayout() {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const { access, loading } = useMyAccess();
   const canRender = canRenderPath(pathname, access, loading);
-  const noMenus =
-    !loading &&
-    !access.isAdmin &&
-    Array.isArray(access.allowed) &&
-    access.allowed.length === 0;
-
+  const noMenus = !loading && !access.isAdmin && Array.isArray(access.allowed) && access.allowed.length === 0;
+  
   // Login exclusivo de chamados (apenas dashboard-chamados e corretiva-historico)
-  const isChamadosClient =
-    !access.isAdmin &&
-    access.allowed?.includes("dashboard-chamados") &&
-    access.allowed?.length <= 3;
+  const isChamadosClient = !access.isAdmin && access.allowed?.includes("dashboard-chamados") && access.allowed?.length <= 3;
+  
+  const isIndex = pathname === "/" || pathname === "" || pathname === "/_authenticated" || pathname === "/_authenticated/";
 
-  const isIndex =
-    pathname === "/" ||
-    pathname === "" ||
-    pathname === "/_authenticated" ||
-    pathname === "/_authenticated/";
 
   return (
     <SidebarProvider>
@@ -176,25 +143,8 @@ function AuthenticatedLayout() {
         <SidebarInset className="flex min-h-dvh min-w-0 flex-1 flex-col bg-transparent">
           <AppHeader />
           <AccessGuard />
-          <CorretivaOfflineSyncBridge />
-          <main
-            id="conteudo-principal"
-            tabIndex={-1}
-            className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]"
-          >
-            {canRender ? (
-              isIndex ? (
-                isChamadosClient ? (
-                  <CentralInteligenciaView variant="chamados" />
-                ) : (
-                  <CentralInteligenciaView />
-                )
-              ) : (
-                <Outlet />
-              )
-            ) : (
-              <AccessFallback loading={loading} noMenus={noMenus} />
-            )}
+          <main id="conteudo-principal" tabIndex={-1} className="min-w-0 flex-1 overflow-x-clip pb-[calc(env(safe-area-inset-bottom)+4.75rem)] [contain:paint] md:pb-[env(safe-area-inset-bottom)]">
+            {canRender ? (isIndex ? (isChamadosClient ? <CentralInteligenciaView variant="chamados" /> : <CentralInteligenciaView />) : <Outlet />) : <AccessFallback loading={loading} noMenus={noMenus} />}
           </main>
 
           <MobileTabBar />
