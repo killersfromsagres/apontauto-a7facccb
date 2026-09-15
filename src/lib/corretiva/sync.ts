@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { outboxAll, outboxRemove, outboxUpdate, blobGet, blobDelete } from "./db";
+import { outboxAll, outboxRemove, blobGet, blobDelete } from "./db";
 import { postImgbbForm } from "../imgbb-post";
 
 let isSyncing = false;
@@ -17,22 +17,14 @@ function asPositiveQuantity(value: unknown) {
 
 /**
  * Sincroniza o outbox da execução de campo.
- * Novas operações ficam vinculadas ao usuário que as originou. Itens legados
- * (sem userId) continuam compatíveis para não perder apontamentos já existentes.
+ * Peças e fotos usam identificadores estáveis para que autosave e finalização
+ * possam reenviar a mesma operação sem duplicar registros no servidor.
  */
 export async function syncPending() {
-  if (isSyncing || !navigator.onLine) return { sent: 0, failed: 0, skipped: 0 };
+  if (isSyncing || !navigator.onLine) return { sent: 0, failed: 0 };
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  const currentUserId = sessionData.session?.user?.id ?? null;
-  if (!currentUserId) return { sent: 0, failed: 0, skipped: 0 };
-
-  const allItems = await outboxAll();
-  if (allItems.length === 0) return { sent: 0, failed: 0, skipped: 0 };
-
-  const items = allItems.filter((item) => !item.userId || item.userId === currentUserId);
-  const skipped = allItems.length - items.length;
-  if (items.length === 0) return { sent: 0, failed: 0, skipped };
+  const items = await outboxAll();
+  if (items.length === 0) return { sent: 0, failed: 0 };
 
   isSyncing = true;
   let sent = 0;
@@ -47,6 +39,8 @@ export async function syncPending() {
           const legenda = payload.legenda ? String(payload.legenda) : null;
           const clientUuid = String(payload.clientUuid || item.id).replace(/^foto:[^:]+:/, "");
 
+          // O mesmo arquivo pode ser colocado no outbox pelo autosave da solicitação
+          // e novamente na finalização. client_uuid impede upload/insert duplicado.
           const { data: existingPhoto, error: existingPhotoError } = await (supabase.from("corretiva_fotos") as any)
             .select("id")
             .eq("client_uuid", clientUuid)
@@ -81,12 +75,14 @@ export async function syncPending() {
           const { url } = await postImgbbForm(formData);
           if (!url) throw new Error("Não foi possível obter a URL da foto.");
 
+          const { data: sess } = await supabase.auth.getSession();
+          const userId = sess.session?.user?.id ?? null;
           const { error: dbErr } = await supabase.from("corretiva_fotos").insert({
             os_id: item.osId,
             image_url: url,
             legenda,
             client_uuid: clientUuid,
-            enviado_por: currentUserId,
+            enviado_por: userId,
           } as any);
 
           if (dbErr) throw dbErr;
@@ -133,6 +129,11 @@ export async function syncPending() {
           const clientUuid = String(payload.id ?? item.id);
           const now = new Date().toISOString();
 
+          const { data: sess } = await supabase.auth.getSession();
+          const userId = sess.session?.user?.id ?? null;
+
+          // A mesma peça pode aparecer primeiro no autosave do rascunho e depois
+          // novamente durante a finalização. O client_uuid mantém a operação idempotente.
           const { data: existing, error: existingError } = await (supabase.from("corretiva_pecas") as any)
             .select("id")
             .eq("client_uuid", clientUuid)
@@ -151,13 +152,14 @@ export async function syncPending() {
               material_status: "solicitado",
               material_request_date: now,
               client_uuid: clientUuid,
-              enviado_por: currentUserId,
+              enviado_por: userId,
               created_at: now,
               updated_at: now,
             } as any);
             if (insertError) throw insertError;
           }
 
+          // Mantém o estado da OS e um histórico legível mesmo sem finalizar o atendimento.
           const { data: currentOs, error: osReadError } = await supabase
             .from("corretiva_os")
             .select("numero_os, pecas_solicitadas")
@@ -211,10 +213,13 @@ export async function syncPending() {
             observacao,
           } = item.payload;
 
+          const { data: sess } = await supabase.auth.getSession();
+          const userId = sess.session?.user?.id ?? null;
+
           const { data: solData, error } = await supabase
             .from("material_solicitacoes")
             .insert({
-              user_id: currentUserId,
+              user_id: userId,
               solicitante: solicitante || "Colaborador",
               setor: equipe || null,
               predio: predio || null,
@@ -248,11 +253,13 @@ export async function syncPending() {
         }
 
         if (item.kind === "problema") {
+          const { data: sess } = await supabase.auth.getSession();
+          const userId = sess.session?.user?.id ?? null;
           const { error } = await supabase.from("corretiva_problemas").insert({
             os_id: item.osId,
             descricao: item.payload.descricao,
             gravidade: item.payload.gravidade ?? "falha",
-            enviado_por: currentUserId,
+            enviado_por: userId,
             client_uuid: item.id,
           } as any);
           if (error) throw error;
@@ -264,18 +271,12 @@ export async function syncPending() {
         throw new Error(`Tipo de outbox desconhecido: ${String(item.kind)}`);
       } catch (err) {
         failed++;
-        const message = getErrorMessage(err);
-        console.error(`[CorretivaSync] Erro ao sincronizar ${item.kind}/${item.id}:`, message);
-        await outboxUpdate({
-          ...item,
-          attempts: (item.attempts ?? 0) + 1,
-          lastError: message,
-        }).catch(() => {});
+        console.error(`[CorretivaSync] Erro ao sincronizar ${item.kind}/${item.id}:`, getErrorMessage(err));
       }
     }
   } finally {
     isSyncing = false;
   }
 
-  return { sent, failed, skipped };
+  return { sent, failed };
 }
