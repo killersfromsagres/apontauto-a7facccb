@@ -125,9 +125,18 @@ describe("generateWeeklyProgramacao", () => {
     expect(program.getRow(2).height).toBe(24);
     expect(program.getRow(3).height).toBe(30);
     expect(program.getRow(4).height).toBe(60);
-    expect(program.getCell("J4").value).toBeNull();
-    expect(program.getCell("J5").value).toBe("FANCOIL 01");
-    expect(program.getCell("F4").value).toBe("Corretiva");
+
+    const mondayRows = [4, 5];
+    const civilRow = mondayRows.find((row) => program.getCell(row, 8).text === "CIVIL");
+    const refrigRow = mondayRows.find((row) =>
+      program.getCell(row, 8).text.startsWith("CLIMATIZAÇÃO E REFRIGERAÇÃO"),
+    );
+    expect(civilRow).toBeDefined();
+    expect(refrigRow).toBeDefined();
+    expect(program.getCell(civilRow!, 10).value).toBeNull();
+    expect(program.getCell(civilRow!, 6).value).toBe("Corretiva");
+    expect(program.getCell(refrigRow!, 10).value).toBe("FANCOIL 01");
+
     expect(program.getCell("A2").text).toContain("SEGUNDA-FEIRA");
     expect(program.getCell("A3").value).toBe("OS");
     expect(program.getCell("J3").value).toBe("Equipamento");
