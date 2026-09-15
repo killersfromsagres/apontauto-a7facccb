@@ -1,4 +1,4 @@
-// Server-side Supabase client with service role key - bypasses RLS.
+// Server-side Supabase client with privileged key - bypasses RLS.
 // Use this for admin operations in server functions and server routes only.
 // For user-authenticated queries (with RLS), use the auth middleware instead.
 import { createClient } from "@supabase/supabase-js";
@@ -41,6 +41,23 @@ function projectRefFromUrl(url: string): string | null {
   }
 }
 
+function resolvePrivilegedKey(): string | undefined {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) return process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (process.env.SUPABASE_SECRET_KEY) return process.env.SUPABASE_SECRET_KEY;
+
+  const secretKeys = process.env.SUPABASE_SECRET_KEYS;
+  if (!secretKeys) return undefined;
+
+  try {
+    const parsed = JSON.parse(secretKeys) as Record<string, unknown>;
+    const preferred = parsed.default ?? parsed.internal ?? Object.values(parsed)[0];
+    return typeof preferred === "string" && preferred ? preferred : undefined;
+  } catch {
+    console.error("[Supabase] SUPABASE_SECRET_KEYS is not valid JSON.");
+    return undefined;
+  }
+}
+
 function createSupabaseAdminClient() {
   // A URL usada pelo admin client deve ser a mesma usada pelo frontend autenticado.
   // Isso impede que uma variável server-side antiga direcione operações de usuários
@@ -50,12 +67,14 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = viteUrl || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PROJECT_ID =
     viteProjectId || process.env.VITE_SUPABASE_PROJECT_ID || process.env.SUPABASE_PROJECT_ID;
-  const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const SUPABASE_PRIVILEGED_KEY = resolvePrivilegedKey();
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_PRIVILEGED_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ["VITE_SUPABASE_URL/SUPABASE_URL"] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
+      ...(!SUPABASE_PRIVILEGED_KEY
+        ? ["SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY/SUPABASE_SECRET_KEYS"]
+        : []),
     ];
     const message = `Missing Supabase environment variable(s): ${missing.join(", ")}. Connect the active Supabase project in the server environment.`;
     console.error(`[Supabase] ${message}`);
@@ -71,9 +90,9 @@ function createSupabaseAdminClient() {
     }
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(SUPABASE_URL, SUPABASE_PRIVILEGED_KEY, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
+      fetch: createSupabaseFetch(SUPABASE_PRIVILEGED_KEY),
     },
     auth: {
       storage: undefined,
@@ -85,8 +104,8 @@ function createSupabaseAdminClient() {
 
 let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
 
-// Server-side Supabase client with service role - bypasses RLS
-// SECURITY: Only use this for trusted server-side operations, never expose to client code
+// Server-side Supabase client with privileged key - bypasses RLS.
+// SECURITY: Only use this for trusted server-side operations, never expose to client code.
 // Load inside server handlers: const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 // Top-level import is safe only in other .server.ts modules - route files and *.functions.ts ship to the client bundle.
 export const supabaseAdmin = new Proxy({} as ReturnType<typeof createSupabaseAdminClient>, {
