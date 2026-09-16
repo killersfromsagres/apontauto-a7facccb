@@ -6,10 +6,13 @@ import type { CorrectiveSourceRow } from "./monthly-scheduler";
 import { resolveCorrectiveTeam } from "./monthly-scheduler";
 import type { Equipe } from "./triage";
 
-// v2 zera as marcações antigas de "EM PROGRAMAÇÃO" sem afetar futuras reservas.
-// A chave v1 é removida quando este módulo é lido no navegador.
-const STORAGE_KEY = "apontauto.corrective-program-reservations.v2";
-const LEGACY_STORAGE_KEY = "apontauto.corrective-program-reservations.v1";
+// v3 invalida reservas antigas que podiam preservar uma distribuição diária incorreta.
+// As chaves v2 e v1 são removidas quando este módulo é lido no navegador.
+const STORAGE_KEY = "apontauto.corrective-program-reservations.v3";
+const LEGACY_STORAGE_KEYS = [
+  "apontauto.corrective-program-reservations.v2",
+  "apontauto.corrective-program-reservations.v1",
+] as const;
 
 export const CORRECTIVE_RESERVATIONS_EVENT =
   "apontauto:corrective-program-reservations";
@@ -133,7 +136,7 @@ function sortCandidates(
 function cleanupLegacyStorage(): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    LEGACY_STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
   } catch {
     // Sem ação: armazenamento pode estar indisponível em modo privado restrito.
   }
@@ -293,7 +296,6 @@ function nextAvailableDay(
   byDay: CorrectiveSourceRow[][],
   perDay: number,
 ): number {
-  // Preenche 2 por dia em sequência: SEG 2, TER 2, QUA 2, QUI 2, SEX 2.
   for (let dayIndex = 0; dayIndex < byDay.length; dayIndex += 1) {
     if (byDay[dayIndex].length < perDay) return dayIndex;
   }
@@ -454,7 +456,10 @@ export function subscribeCorrectiveProgramReservations(
 
   const handleCustom = () => listener(readStorage());
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY || event.key === LEGACY_STORAGE_KEY) {
+    if (
+      event.key === STORAGE_KEY ||
+      LEGACY_STORAGE_KEYS.includes(event.key as (typeof LEGACY_STORAGE_KEYS)[number])
+    ) {
       listener(readStorage());
     }
   };
