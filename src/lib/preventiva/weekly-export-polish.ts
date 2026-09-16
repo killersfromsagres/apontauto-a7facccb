@@ -1,5 +1,4 @@
 import { classifyPriority } from "@/lib/corretiva/priority-classifier";
-import { EQUIPE_COLOR, type Equipe } from "./triage";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -8,8 +7,8 @@ const COLORS = {
   stripe: "FFF7FAFC",
   text: "FF162231",
   border: "FFDDE5EC",
-  correctiveBg: "FFFFD966",
-  correctiveText: "FF000000",
+  correctiveBg: "FFFEE2E2",
+  correctiveText: "FF991B1B",
   criticalBg: "FFFEE2E2",
   criticalText: "FFB91C1C",
   highBg: "FFFFEDD5",
@@ -50,17 +49,6 @@ function normalize(value: unknown) {
     .replace(/\p{Diacritic}/gu, "")
     .trim()
     .toUpperCase();
-}
-
-function argbFromHex(hex: string) {
-  return `FF${hex.replace("#", "").toUpperCase()}`;
-}
-
-function mixWithWhite(hex: string, whiteWeight = 0.88) {
-  const clean = hex.replace("#", "");
-  const rgb = [0, 2, 4].map((index) => Number.parseInt(clean.slice(index, index + 2), 16));
-  const mixed = rgb.map((value) => Math.round(value * (1 - whiteWeight) + 255 * whiteWeight));
-  return `FF${mixed.map((value) => value.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
 }
 
 function isDataRow(row: import("exceljs").Row) {
@@ -143,28 +131,22 @@ function stylePriorityCell(cell: import("exceljs").Cell, level: ReturnType<typeo
   };
 }
 
-function restoreCorrectiveVisual(row: import("exceljs").Row, stripe: string) {
-  const team = row.getCell(COL.equipe).text.trim() as Equipe;
-  const teamHex = EQUIPE_COLOR[team] ?? "#64748B";
-
+function restoreCorrectiveVisual(row: import("exceljs").Row) {
   for (let column = 1; column <= COL.equipamento; column += 1) {
     const cell = row.getCell(column);
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: stripe } };
-    cell.font = { ...(cell.font ?? {}), color: { argb: COLORS.text } };
-
-    if (column === COL.equipe) {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: mixWithWhite(teamHex) } };
-      cell.font = { ...(cell.font ?? {}), color: { argb: argbFromHex(teamHex) }, bold: true };
-    }
-    if (column === COL.ativo && normalize(cell.text) === "ATIVO NAO LOCALIZADO") {
-      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.dangerBg } };
-      cell.font = { ...(cell.font ?? {}), color: { argb: COLORS.dangerText }, bold: true };
-    }
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: COLORS.correctiveBg },
+    };
+    cell.font = {
+      ...(cell.font ?? {}),
+      color: { argb: COLORS.correctiveText },
+      bold: column === COL.os || Boolean(cell.font?.bold),
+    };
   }
 
-  // Regra operacional: SOMENTE a célula da OS corretiva fica amarela.
   const osCell = row.getCell(COL.os);
-  osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.correctiveBg } };
   osCell.font = {
     ...(osCell.font ?? {}),
     name: "Aptos ExtraBold",
@@ -250,8 +232,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     }
 
     if (isCorrectiveRow(row)) {
-      const stripe = row.number % 2 === 0 ? COLORS.white : COLORS.stripe;
-      restoreCorrectiveVisual(row, stripe);
+      restoreCorrectiveVisual(row);
       stylePriorityCell(row.getCell(COL.prioridade), priorityForRow(row).level);
     } else {
       const priorityCell = row.getCell(COL.prioridade);
@@ -279,7 +260,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
 /**
  * Pós-processamento da programação semanal:
  * - preventivas permanecem primeiro e as corretivas no fim de cada dia;
- * - somente a célula OS da corretiva recebe amarelo;
+ * - a linha inteira das corretivas recebe destaque vermelho para identificação imediata;
  * - impressão do Excel recebe quebra manual entre os dias úteis;
  * - coluna Prioridade fica restrita às corretivas.
  */
@@ -432,7 +413,7 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
       .column-header td { padding: 3.5px; font-size: 6.8pt; }
       .data-row { min-height: 54px; }
       .data-row td:nth-child(2) { font-size: 7.4pt; line-height: 1.25; }
-      .corrective-row:first-of-type td { border-top-width: 2px; border-top-color: #C99A3D; }
+      .corrective-row:first-of-type td { border-top-width: 2px; border-top-color: #DC2626; }
       td:nth-child(1){width:6%} td:nth-child(2){width:25%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
       td:nth-child(5){width:11%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:9%}
       td:nth-child(9){width:7%} td:nth-child(10){width:8%} td:nth-child(11){width:7%}
