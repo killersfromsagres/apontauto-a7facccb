@@ -31,66 +31,85 @@ export function matchEquipe(osEquipe: string | null | undefined, filtro: EquipeF
 }
 
 /**
- * Cores fluorescentes por equipe de corretiva:
- *  Hidráulica  → laranja fluorescente
- *  Civil       → verde água fluorescente
- *  Chaveiro    → roxo fluorescente
- *  Elétrica    → verde fluorescente
- *  Pintura     → rosa fluorescente
- *  Refrigeração→ azul bebê fluorescente (corretiva, não preventiva)
- *  Limpeza     → azul fluorescente
+ * Paleta operacional consistente em todo o Corretiva Novo:
+ * Elétrica=âmbar, Hidráulica=azul, Civil=violeta, Chaveiro=ardósia,
+ * Pintura=rosa, Refrigeração=ciano e Limpeza=verde.
  */
-export type EquipeStyles = { row: string; dot: string; badge: string };
+export type EquipeStyles = {
+  row: string;
+  dot: string;
+  badge: string;
+  button: string;
+  menu: string;
+  hex: string;
+};
 
 const STYLES: Record<string, EquipeStyles> = {
+  eletrica: {
+    row: "border-l-4 border-amber-400 bg-amber-50/70 hover:bg-amber-100/70 dark:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.14]",
+    dot: "bg-amber-400",
+    badge: "border-amber-400/40 bg-amber-400/12 text-amber-800 dark:text-amber-200",
+    button: "border-amber-400/45 bg-amber-400/12 text-amber-800 dark:text-amber-100",
+    menu: "border-amber-400/25 bg-amber-400/10 text-amber-800 dark:text-amber-100",
+    hex: "#F59E0B",
+  },
   hidraulica: {
-    row: "border-l-4 border-orange-400 bg-orange-50/70 hover:bg-orange-100/70 dark:bg-orange-500/10 dark:hover:bg-orange-500/20",
-    dot: "bg-orange-400 shadow-[0_0_8px_2px_rgba(251,146,60,0.85)]",
-    badge:
-      "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-500/20 dark:text-orange-200 dark:border-orange-400/50 dark:shadow-[0_0_10px_-2px_rgba(251,146,60,0.7)]",
+    row: "border-l-4 border-blue-400 bg-blue-50/70 hover:bg-blue-100/70 dark:bg-blue-500/[0.08] dark:hover:bg-blue-500/[0.14]",
+    dot: "bg-blue-400",
+    badge: "border-blue-400/40 bg-blue-400/12 text-blue-800 dark:text-blue-200",
+    button: "border-blue-400/45 bg-blue-400/12 text-blue-800 dark:text-blue-100",
+    menu: "border-blue-400/25 bg-blue-400/10 text-blue-800 dark:text-blue-100",
+    hex: "#3B82F6",
   },
   civil: {
-    row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/10 dark:hover:bg-teal-500/20",
-    dot: "bg-teal-300 shadow-[0_0_8px_2px_rgba(45,212,191,0.85)]",
-    badge:
-      "bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-500/20 dark:text-teal-200 dark:border-teal-400/50 dark:shadow-[0_0_10px_-2px_rgba(45,212,191,0.7)]",
+    row: "border-l-4 border-violet-400 bg-violet-50/70 hover:bg-violet-100/70 dark:bg-violet-500/[0.08] dark:hover:bg-violet-500/[0.14]",
+    dot: "bg-violet-400",
+    badge: "border-violet-400/40 bg-violet-400/12 text-violet-800 dark:text-violet-200",
+    button: "border-violet-400/45 bg-violet-400/12 text-violet-800 dark:text-violet-100",
+    menu: "border-violet-400/25 bg-violet-400/10 text-violet-800 dark:text-violet-100",
+    hex: "#8B5CF6",
   },
   chaveiro: {
-    row: "border-l-4 border-purple-400 bg-purple-50/70 hover:bg-purple-100/70 dark:bg-purple-500/10 dark:hover:bg-purple-500/20",
-    dot: "bg-purple-400 shadow-[0_0_8px_2px_rgba(192,132,252,0.85)]",
-    badge:
-      "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/20 dark:text-purple-200 dark:border-purple-400/50 dark:shadow-[0_0_10px_-2px_rgba(192,132,252,0.7)]",
-  },
-  eletrica: {
-    row: "border-l-4 border-lime-400 bg-lime-50/70 hover:bg-lime-100/70 dark:bg-lime-500/10 dark:hover:bg-lime-500/20",
-    dot: "bg-lime-400 shadow-[0_0_8px_2px_rgba(163,230,53,0.85)]",
-    badge:
-      "bg-lime-100 text-lime-800 border-lime-300 dark:bg-lime-500/20 dark:text-lime-200 dark:border-lime-400/50 dark:shadow-[0_0_10px_-2px_rgba(163,230,53,0.7)]",
+    row: "border-l-4 border-slate-400 bg-slate-50/70 hover:bg-slate-100/70 dark:bg-slate-400/[0.08] dark:hover:bg-slate-400/[0.14]",
+    dot: "bg-slate-400",
+    badge: "border-slate-400/40 bg-slate-400/12 text-slate-800 dark:text-slate-200",
+    button: "border-slate-400/45 bg-slate-400/12 text-slate-800 dark:text-slate-100",
+    menu: "border-slate-400/25 bg-slate-400/10 text-slate-800 dark:text-slate-100",
+    hex: "#94A3B8",
   },
   pintura: {
-    row: "border-l-4 border-pink-400 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/10 dark:hover:bg-pink-500/20",
-    dot: "bg-pink-400 shadow-[0_0_8px_2px_rgba(244,114,182,0.85)]",
-    badge:
-      "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-500/20 dark:text-pink-200 dark:border-pink-400/50 dark:shadow-[0_0_10px_-2px_rgba(244,114,182,0.7)]",
+    row: "border-l-4 border-pink-400 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/[0.08] dark:hover:bg-pink-500/[0.14]",
+    dot: "bg-pink-400",
+    badge: "border-pink-400/40 bg-pink-400/12 text-pink-800 dark:text-pink-200",
+    button: "border-pink-400/45 bg-pink-400/12 text-pink-800 dark:text-pink-100",
+    menu: "border-pink-400/25 bg-pink-400/10 text-pink-800 dark:text-pink-100",
+    hex: "#EC4899",
   },
   refrigeracao: {
-    row: "border-l-4 border-sky-300 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-400/10 dark:hover:bg-sky-400/20",
-    dot: "bg-sky-300 shadow-[0_0_8px_2px_rgba(125,211,252,0.9)]",
-    badge:
-      "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-400/20 dark:text-sky-200 dark:border-sky-300/50 dark:shadow-[0_0_10px_-2px_rgba(125,211,252,0.75)]",
+    row: "border-l-4 border-cyan-400 bg-cyan-50/70 hover:bg-cyan-100/70 dark:bg-cyan-500/[0.08] dark:hover:bg-cyan-500/[0.14]",
+    dot: "bg-cyan-400",
+    badge: "border-cyan-400/40 bg-cyan-400/12 text-cyan-800 dark:text-cyan-200",
+    button: "border-cyan-400/45 bg-cyan-400/12 text-cyan-800 dark:text-cyan-100",
+    menu: "border-cyan-400/25 bg-cyan-400/10 text-cyan-800 dark:text-cyan-100",
+    hex: "#06B6D4",
   },
   limpeza: {
-    row: "border-l-4 border-cyan-400 bg-cyan-50/70 hover:bg-cyan-100/70 dark:bg-cyan-500/10 dark:hover:bg-cyan-500/20",
-    dot: "bg-cyan-400 shadow-[0_0_8px_2px_rgba(34,211,238,0.85)]",
-    badge:
-      "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-500/20 dark:text-cyan-200 dark:border-cyan-400/50 dark:shadow-[0_0_10px_-2px_rgba(34,211,238,0.7)]",
+    row: "border-l-4 border-emerald-400 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/[0.08] dark:hover:bg-emerald-500/[0.14]",
+    dot: "bg-emerald-400",
+    badge: "border-emerald-400/40 bg-emerald-400/12 text-emerald-800 dark:text-emerald-200",
+    button: "border-emerald-400/45 bg-emerald-400/12 text-emerald-800 dark:text-emerald-100",
+    menu: "border-emerald-400/25 bg-emerald-400/10 text-emerald-800 dark:text-emerald-100",
+    hex: "#10B981",
   },
 };
 
 const NEUTRAL: EquipeStyles = {
   row: "border-l-4 border-transparent hover:bg-accent/60",
   dot: "bg-muted-foreground/40",
-  badge: "",
+  badge: "border-white/10 bg-white/[0.04] text-muted-foreground",
+  button: "border-white/10 bg-white/[0.04] text-foreground",
+  menu: "border-white/10 bg-white/[0.04] text-foreground",
+  hex: "#94A3B8",
 };
 
 /** Resolve o estilo de uma equipe (tolerante a acentos, sufixos e variações). */
@@ -102,9 +121,11 @@ export function equipeStyles(equipe: string | null | undefined): EquipeStyles {
   }
   if (n.includes("eletric")) return STYLES.eletrica;
   if (n.includes("hidraul")) return STYLES.hidraulica;
-  if (n.includes("refrig") || n.includes("ar condicionado") || n.includes("climatiza"))
-    return STYLES.refrigeracao;
-  if (n.includes("limpeza") || n.includes("higien") || n.includes("conserva") || n.includes("orcamento") || n.includes("compra") || n.includes("gerencia"))
-    return STYLES.limpeza;
+  if (n.includes("refrig") || n.includes("ar condicionado") || n.includes("climatiza")) return STYLES.refrigeracao;
+  if (n.includes("limpeza") || n.includes("higien") || n.includes("conserva") || n.includes("orcamento") || n.includes("compra") || n.includes("gerencia")) return STYLES.limpeza;
   return NEUTRAL;
+}
+
+export function equipeHex(equipe: string | null | undefined): string {
+  return equipeStyles(equipe).hex;
 }
