@@ -36,15 +36,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  listAppUsers,
-  deleteAppUser,
-  setUserBanned,
-  setUserRole,
-  setUserAllowedMenus,
-  provisionEncarregadosUser,
-  provisionChamadosClientLogin,
-} from "@/lib/users.functions";
-import { createAppUserWithPermissions } from "@/lib/user-admin-v2.functions";
+  listUsers,
+  createUser,
+  deleteUser,
+  setUserBannedState,
+  setUserRoleState,
+  setUserMenus,
+  provisionEncarregados,
+  provisionChamados,
+} from "@/lib/admin-users.client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   ASSIGNABLE_MENU_KEYS,
