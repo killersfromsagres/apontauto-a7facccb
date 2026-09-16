@@ -367,10 +367,10 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
 
   useEffect(() => { setLocalAllowed(user.allowedMenus ?? []); }, [user.allowedMenus]);
 
-  const banMut = useMutation({ mutationFn: async (banned: boolean) => setBanned({ data: { userId: user.id, banned } }), onSuccess: () => { toast.success(user.banned ? "Usuário ativado." : "Usuário desativado."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar status") });
-  const roleMut = useMutation({ mutationFn: async (role: Role) => setRole({ data: { userId: user.id, role } }), onSuccess: () => { toast.success("Papel atualizado."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar papel") });
-  const delMut = useMutation({ mutationFn: async () => del({ data: { userId: user.id } }), onSuccess: () => { toast.success("Usuário removido."); setConfirmDelete(false); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao remover") });
-  const menusMut = useMutation({ mutationFn: async () => setMenus({ data: { userId: user.id, allowed: localAllowed } }), onSuccess: () => { toast.success("Permissões salvas."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar permissões") });
+  const banMut = useMutation({ mutationFn: async (banned: boolean) => setUserBannedState(user.id, banned), onSuccess: () => { toast.success(user.banned ? "Usuário ativado." : "Usuário desativado."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar status") });
+  const roleMut = useMutation({ mutationFn: async (role: Role) => setUserRoleState(user.id, role), onSuccess: () => { toast.success("Papel atualizado."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar papel") });
+  const delMut = useMutation({ mutationFn: async () => deleteUser(user.id), onSuccess: () => { toast.success("Usuário removido."); setConfirmDelete(false); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao remover") });
+  const menusMut = useMutation({ mutationFn: async () => setUserMenus(user.id, localAllowed), onSuccess: () => { toast.success("Permissões salvas."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar permissões") });
 
   const toggleMenu = (key: MenuKey, on: boolean) => setLocalAllowed((current) => on ? Array.from(new Set([...current, key])) : current.filter((item) => item !== key));
   const toggleGroup = (keys: readonly MenuKey[], on: boolean) => setLocalAllowed((current) => !on ? current.filter((item) => !keys.includes(item as MenuKey)) : Array.from(new Set([...current, ...keys])));
