@@ -70,6 +70,38 @@ describe("corrective priority classifier", () => {
     expect(result.level).toBe("NORMAL");
   });
 
+  it("não classifica automaticamente como Backorder com 30 dias exatos", () => {
+    const result = classifyPriority(
+      {
+        tipo: "Corretiva",
+        status: "aberta",
+        nome_os: "Ajustar acabamento de rodapé",
+        data_criacao: "2026-08-16",
+      },
+      reference,
+    );
+
+    expect(result.ageDays).toBe(30);
+    expect(result.isBackorder).toBe(false);
+    expect(result.reasons.some((reason) => reason.includes("Backorder automático"))).toBe(false);
+  });
+
+  it("classifica automaticamente como Backorder a partir do 31º dia em aberto", () => {
+    const result = classifyPriority(
+      {
+        tipo: "Corretiva",
+        status: "aberta",
+        nome_os: "Ajustar acabamento de rodapé",
+        data_criacao: "2026-08-15",
+      },
+      reference,
+    );
+
+    expect(result.ageDays).toBe(31);
+    expect(result.isBackorder).toBe(true);
+    expect(result.reasons.some((reason) => reason.includes("Backorder automático"))).toBe(true);
+  });
+
   it("reconhece Backorder pelo campo tipo sem tratá-lo sozinho como emergência", () => {
     const input = {
       tipo: "Backorder",
