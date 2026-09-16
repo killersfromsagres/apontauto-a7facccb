@@ -1,0 +1,26 @@
+{
+  "name": "Apont Auto - Execução de Campo",
+  "short_name": "Apont Auto",
+  "description": "Apontamentos de manutenção com suporte offline para Corretiva Novo.",
+  "lang": "pt-BR",
+  "start_url": "/corretiva-novo",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#050c14",
+  "theme_color": "#050c14",
+  "icons": [
+    {
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
