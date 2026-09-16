@@ -170,7 +170,7 @@ function ProvisionChamadosButton() {
 
 function CreateUserCard() {
   const qc = useQueryClient();
-  const create = useServerFn(createAppUserWithPermissions);
+  
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
