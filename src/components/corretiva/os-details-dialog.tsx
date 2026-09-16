@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { processarDescricaoPecaIA } from "@/lib/materiais/ia.functions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ import {
   Snowflake,
   Trash2,
   ImagePlus,
+  CloudOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { equipeStyles } from "@/lib/corretiva/equipe";
@@ -72,8 +73,30 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
   const [materialPhotos, setMaterialPhotos] = useState<MaterialPhoto[]>([]);
   const [observacao, setObservacao] = useState(os.observacao_conclusao || "");
   const [offlineMode, setOfflineMode] = useState(!navigator.onLine);
+  const evidenceObjectUrls = useRef<Set<string>>(new Set());
   const hasMaterialDraft = pecas.trim().length > 0;
   const isCompleted = ["concluida", "concluido"].includes(String(os.status || "").toLowerCase());
+
+  const rememberEvidenceUrl = (url: string) => {
+    if (url.startsWith("blob:")) evidenceObjectUrls.current.add(url);
+    return url;
+  };
+
+  const revokeEvidenceUrls = () => {
+    for (const url of evidenceObjectUrls.current) URL.revokeObjectURL(url);
+    evidenceObjectUrls.current.clear();
+  };
+
+  const syncBestEffort = async () => {
+    if (!navigator.onLine) return null;
+    try {
+      const { syncPending } = await import("@/lib/corretiva/sync");
+      return await syncPending();
+    } catch (error) {
+      console.warn("[CorretivaOffline] Sincronização imediata adiada:", error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     const handleStatus = () => setOfflineMode(!navigator.onLine);
@@ -87,11 +110,67 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
   useEffect(() => {
     if (!isOpen) return;
+
+    let cancelled = false;
+    revokeEvidenceUrls();
+    setPhotoBefore(null);
+    setPhotoAfter(null);
+    setObservacao(os.observacao_conclusao || "");
     setPecas("");
     setMaterialPhotos((current) => {
       current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
       return [];
     });
+
+    const hydrateEvidence = async () => {
+      try {
+        const { outboxAll, blobGet } = await import("@/lib/corretiva/db");
+        const queued = (await outboxAll())
+          .filter((item) => item.osId === os.id && item.kind === "foto")
+          .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+
+        for (const kind of ["antes", "depois"] as const) {
+          const label = kind === "antes" ? "evidência: antes" : "evidência: depois";
+          const pending = queued.find((item) =>
+            String(item.payload?.legenda ?? "").toLocaleLowerCase("pt-BR").startsWith(label),
+          );
+          const blobKey = String(pending?.payload?.blobKey ?? "");
+          if (!blobKey) continue;
+          const blob = await blobGet(blobKey);
+          if (!blob || cancelled) continue;
+          const url = rememberEvidenceUrl(URL.createObjectURL(blob));
+          if (kind === "antes") setPhotoBefore(url);
+          else setPhotoAfter(url);
+        }
+
+        // Se as evidências já sincronizaram, recupera suas URLs quando houver internet.
+        if (navigator.onLine && !cancelled) {
+          const { data } = await supabase
+            .from("corretiva_fotos")
+            .select("image_url, legenda, created_at")
+            .eq("os_id", os.id)
+            .order("created_at", { ascending: false });
+
+          for (const row of data ?? []) {
+            const url = String((row as any).image_url ?? "");
+            const legenda = String((row as any).legenda ?? "").toLocaleLowerCase("pt-BR");
+            if (!url || cancelled) continue;
+            if (!photoBefore && legenda.startsWith("evidência: antes")) setPhotoBefore(url);
+            if (!photoAfter && legenda.startsWith("evidência: depois")) setPhotoAfter(url);
+          }
+        }
+      } catch (error) {
+        console.warn("[CorretivaOffline] Não foi possível restaurar evidências locais:", error);
+      }
+    };
+
+    void hydrateEvidence();
+
+    return () => {
+      cancelled = true;
+      revokeEvidenceUrls();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, os.id]);
 
   const clearMaterialDraft = () => {
@@ -155,18 +234,19 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const safeDescription = description.replace(/\s+/g, " ").slice(0, 120);
 
     for (const [index, photo] of materialPhotos.entries()) {
-      const blobKey = `os-${os.id}-material-${requestRef}-${Date.now()}-${index}`;
+      const blobKey = `os-${os.id}-material-${requestRef}-${index}`;
       await blobPut(blobKey, photo.file);
       await outboxAdd({
-        id: crypto.randomUUID(),
+        id: `foto:${os.id}:${photo.id}`,
         kind: "foto",
         osId: os.id,
         numeroOs: os.numero_os,
         payload: {
           blobKey,
+          clientUuid: photo.id,
           legenda: `Pedido de material • ${requestRef} • ${safeDescription}`,
         },
-        createdAt: Date.now(),
+        createdAt: Date.now() + index,
         attempts: 0,
       });
     }
@@ -191,51 +271,43 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
     setLoading(true);
     try {
-      if (!navigator.onLine) {
-        const { outboxAdd } = await import("@/lib/corretiva/db");
-        await outboxAdd({
-          id: crypto.randomUUID(),
-          kind: "status",
-          osId: os.id,
-          numeroOs: os.numero_os,
-          payload: { status: "concluida" },
-          createdAt: Date.now(),
-          attempts: 0,
-        });
-
-        try {
-          const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-          const cached = await getCachedOsList();
-          const updated = cached.map((item) =>
-            item.id === os.id ? { ...item, status: "concluida" } : item,
-          );
-          await cacheOsList(updated);
-        } catch (error) {
-          console.warn("Erro ao atualizar cache local:", error);
-        }
-
-        toast.success("Modo Offline: OS marcada para conclusão e será sincronizada automaticamente.");
-        onUpdate();
-        onClose();
-        return;
-      }
-
-      const { error: statusError } = await supabase
-        .from("corretiva_os")
-        .update({
+      const finishedAt = new Date().toISOString();
+      const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
+      await outboxAdd({
+        id: `status:${os.id}:conclusao:${crypto.randomUUID()}`,
+        kind: "status",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: {
           status: "concluida",
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", os.id);
+          fim: finishedAt,
+          ...(observacao.trim() ? { observacao_conclusao: observacao.trim() } : {}),
+        },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+      await updateCachedOs(os.id, {
+        status: "concluida",
+        fim: finishedAt,
+        ...(observacao.trim() ? { observacao_conclusao: observacao.trim() } : {}),
+        updated_at: finishedAt,
+      });
 
-      if (statusError) throw statusError;
-
-      toast.success("Chamado concluído com sucesso!");
+      const syncResult = await syncBestEffort();
+      if (syncResult && syncResult.failed === 0) {
+        toast.success("Chamado concluído e sincronizado com sucesso.");
+      } else {
+        toast.success(
+          navigator.onLine
+            ? "Conclusão protegida neste aparelho. O envio será repetido automaticamente."
+            : "Modo offline: conclusão protegida neste aparelho e pronta para sincronizar.",
+        );
+      }
       onUpdate();
       onClose();
     } catch (error: any) {
-      console.error("[CorretivaAudit] Erro fatal ao finalizar OS:", error);
-      toast.error(error.message || "Erro ao concluir OS no servidor.");
+      console.error("[CorretivaAudit] Erro ao proteger conclusão local:", error);
+      toast.error(error?.message || "Não foi possível salvar a conclusão neste aparelho.");
     } finally {
       setLoading(false);
     }
@@ -255,165 +327,107 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
     try {
       const { data: sess } = await supabase.auth.getSession();
-      const userId = sess.session?.user?.id;
       const userName =
         sess.session?.user?.user_metadata?.nome ||
         sess.session?.user?.user_metadata?.full_name ||
         sess.session?.user?.email?.split("@")[0] ||
         "Colaborador";
 
-      const { items } = await processIA({ data: { descricao: pecaTexto } });
-      const logs = items.length > 0 ? items : [{ item: pecaTexto, qtd: 1 }];
-
+      let logs: Array<{ item: string; qtd: number }> = [{ item: pecaTexto, qtd: 1 }];
       if (navigator.onLine) {
-        for (const log of logs) {
-          await supabase.from("corretiva_pecas").insert({
-            os_id: os.id,
-            descricao: log.item,
-            quantidade: log.qtd,
-            urgencia: "Media",
-            status_gestor: "pendente",
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          } as any);
+        try {
+          const result = await processIA({ data: { descricao: pecaTexto } });
+          if (Array.isArray(result.items) && result.items.length > 0) {
+            logs = result.items.map((item) => ({
+              item: String(item.item || pecaTexto).trim() || pecaTexto,
+              qtd: Number(item.qtd) > 0 ? Number(item.qtd) : 1,
+            }));
+          }
+        } catch (error) {
+          console.warn("[CorretivaPecas] IA indisponível; usando texto digitado:", error);
         }
       }
 
-      if (!navigator.onLine) {
-        const { outboxAdd } = await import("@/lib/corretiva/db");
+      const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
+      const baseTime = Date.now();
 
+      for (const [index, log] of logs.entries()) {
+        const clientUuid = `${requestRef}:${index}`;
         await outboxAdd({
-          id: crypto.randomUUID(),
-          kind: "material",
+          id: `peca:${os.id}:${clientUuid}`,
+          kind: "peca",
           osId: os.id,
           numeroOs: os.numero_os,
           payload: {
-            descricao: pecaTexto,
-            equipe: os.equipe,
-            solicitante: userName,
-            predio: os.predio,
-            local: os.local,
-            numeroOs: os.numero_os,
-            observacao: `Solicitação automática via Execução de Campo • Ref. ${requestRef} • ${attachmentSummary}`,
+            id: clientUuid,
+            clientUuid,
+            descricao: log.item,
+            quantidade: log.qtd,
+            urgencia: "media",
+            observacao: `Execução de Campo • Ref. ${requestRef}`,
           },
-          createdAt: Date.now(),
+          createdAt: baseTime + index,
           attempts: 0,
         });
+      }
 
-        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-        const cached = await getCachedOsList();
-        const updated = cached.map((item) => {
-          if (item.id === os.id) {
-            const history = item.pecas_solicitadas
-              ? `${item.pecas_solicitadas}\n${pecaTexto}`
-              : pecaTexto;
-            return { ...item, pecas_solicitadas: history };
-          }
-          return item;
-        });
-        await cacheOsList(updated);
+      await outboxAdd({
+        id: `material:${os.id}:${requestRef}`,
+        kind: "material",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: {
+          clientUuid: requestRef,
+          descricao: pecaTexto,
+          quantidade: 1,
+          equipe: os.equipe,
+          solicitante: userName,
+          predio: os.predio,
+          local: os.local,
+          numeroOs: os.numero_os,
+          observacao: `Solicitação automática via Execução de Campo • Ref. ${requestRef} • ${attachmentSummary}`,
+        },
+        createdAt: baseTime + logs.length + 1,
+        attempts: 0,
+      });
 
-        try {
-          const queuedPhotos = await queueMaterialPhotos(requestRef, pecaTexto);
-          toast.success(
-            queuedPhotos > 0
-              ? `Pedido ${requestRef} e ${queuedPhotos} foto(s) salvos para sincronização.`
-              : `Pedido ${requestRef} salvo para sincronização.`,
-          );
-        } catch (photoError) {
-          console.error("[CorretivaPecas] Falha ao preparar fotos offline:", photoError);
-          toast.warning(`Pedido ${requestRef} salvo, mas não foi possível preparar todas as fotos.`);
-        }
+      let queuedPhotos = 0;
+      try {
+        queuedPhotos = await queueMaterialPhotos(requestRef, pecaTexto);
+      } catch (photoError) {
+        console.error("[CorretivaPecas] Falha ao proteger fotos do pedido:", photoError);
+        toast.warning("Pedido salvo, mas uma ou mais fotos não puderam ser protegidas localmente.");
+      }
+
+      const currentHistory = String(os.pecas_solicitadas ?? "");
+      const historyLine = `Ref. ${requestRef} • ${pecaTexto}`;
+      const nextHistory = currentHistory ? `${currentHistory}\n${historyLine}` : historyLine;
+      await updateCachedOs(os.id, {
+        material_status: "solicitado",
+        pecas_solicitadas: nextHistory,
+        updated_at: new Date().toISOString(),
+      });
+
+      const syncResult = await syncBestEffort();
+      if (syncResult && syncResult.failed === 0) {
+        toast.success(
+          queuedPhotos > 0
+            ? `Pedido ${requestRef} sincronizado com ${queuedPhotos} foto(s).`
+            : `Pedido ${requestRef} sincronizado com sucesso.`,
+        );
       } else {
-        const { data: solData, error: solError } = await supabase
-          .from("material_solicitacoes")
-          .insert({
-            user_id: userId,
-            solicitante: userName,
-            setor: os.equipe || null,
-            predio: os.predio || null,
-            local: os.local || null,
-            prioridade: "normal",
-            status: "enviada",
-            observacao: `[Solicitado via OS ${os.numero_os}] Requisitado via Execução de Campo • Ref. ${requestRef} • ${attachmentSummary}`,
-            enviada_em: new Date().toISOString(),
-          } as any)
-          .select("id")
-          .single();
-
-        if (solError) throw solError;
-
-        if (solData) {
-          const { error: itemError } = await supabase.from("material_solicitacao_itens").insert({
-            solicitacao_id: (solData as any).id,
-            descricao: pecaTexto,
-            quantidade: 1,
-            unidade: "UN",
-            justificativa: `Referente à OS ${os.numero_os} • Ref. ${requestRef}`,
-          } as any);
-
-          if (itemError) {
-            console.error("[CorretivaPecas] Erro ao criar item da solicitação:", itemError);
-          }
-        }
-
-        const { data: current } = await (supabase
-          .from("corretiva_os")
-          .select("pecas_solicitadas")
-          .eq("id", os.id)
-          .single() as any);
-
-        const currentHistory = current?.pecas_solicitadas || "";
-        const novoHistorico = currentHistory ? `${currentHistory}\n${pecaTexto}` : pecaTexto;
-
-        await supabase
-          .from("corretiva_os")
-          .update({
-            pecas_solicitadas: novoHistorico,
-            updated_at: new Date().toISOString(),
-          } as any)
-          .eq("id", os.id);
-
-        try {
-          const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-          const cached = await getCachedOsList();
-          const updated = cached.map((item) =>
-            item.id === os.id ? { ...item, pecas_solicitadas: novoHistorico } : item,
-          );
-          await cacheOsList(updated);
-        } catch (error) {
-          console.warn("Erro ao atualizar cache local:", error);
-        }
-
-        let queuedPhotos = 0;
-        if (materialPhotos.length > 0) {
-          try {
-            queuedPhotos = await queueMaterialPhotos(requestRef, pecaTexto);
-            const { syncPending } = await import("@/lib/corretiva/sync");
-            const syncResult = await syncPending();
-            if (syncResult.failed > 0) {
-              toast.warning(
-                `Pedido ${requestRef} salvo. Algumas fotos permaneceram na fila para nova sincronização.`,
-              );
-            }
-          } catch (photoError) {
-            console.error("[CorretivaPecas] Falha ao anexar fotos:", photoError);
-            toast.warning(`Pedido ${requestRef} salvo, mas algumas fotos não puderam ser anexadas agora.`);
-          }
-        }
-
-        if (queuedPhotos === 0) {
-          toast.success(`Material registrado no Controle de Materiais. Ref. ${requestRef}`);
-        } else {
-          toast.success(`Pedido ${requestRef} registrado com ${queuedPhotos} foto(s) anexada(s).`);
-        }
+        toast.success(
+          navigator.onLine
+            ? `Pedido ${requestRef} protegido no aparelho. O envio será repetido automaticamente.`
+            : `Pedido ${requestRef} salvo offline e pronto para sincronizar.`,
+        );
       }
 
       if (onUpdate) onUpdate();
       return true;
     } catch (error: any) {
       console.error("[CorretivaPecas] Erro:", error);
-      toast.error("Erro ao processar solicitação: " + (error.message || "Tente novamente"));
+      toast.error("Erro ao salvar a solicitação no aparelho: " + (error.message || "Tente novamente"));
       return false;
     } finally {
       setLoading(false);
@@ -427,44 +441,34 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     const toastId = toast.loading(`Reclassificando para ${novaEquipe}...`);
 
     try {
-      console.log(`[CorretivaReclassificar] Iniciando para OS ${os.id} -> ${novaEquipe}`);
+      const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
+      await outboxAdd({
+        id: `status:${os.id}:equipe:${crypto.randomUUID()}`,
+        kind: "status",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { equipe: novaEquipe },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+      await updateCachedOs(os.id, {
+        equipe: novaEquipe,
+        updated_at: new Date().toISOString(),
+      });
 
-      const { data, error } = await supabase
-        .from("corretiva_os")
-        .update({
-          equipe: novaEquipe,
-          updated_at: new Date().toISOString(),
-        } as any)
-        .eq("id", os.id)
-        .select();
-
-      if (error) {
-        console.error("[CorretivaReclassificar] Erro Supabase:", error);
-        throw error;
+      const syncResult = await syncBestEffort();
+      if (syncResult && syncResult.failed === 0) {
+        toast.success(`OS reclassificada para ${novaEquipe}`, { id: toastId });
+      } else {
+        toast.success(`Reclassificação para ${novaEquipe} protegida e aguardando sincronização.`, {
+          id: toastId,
+        });
       }
-
-      console.log("[CorretivaReclassificar] Sucesso:", data);
-
-      try {
-        const { getCachedOsList, cacheOsList } = await import("@/lib/corretiva/db");
-        const cached = await getCachedOsList();
-        const updated = cached.map((item) =>
-          item.id === os.id ? { ...item, equipe: novaEquipe } : item,
-        );
-        await cacheOsList(updated);
-      } catch (error) {
-        console.warn("[CorretivaReclassificar] Erro cache local:", error);
-      }
-
-      toast.success(`OS reclassificada para ${novaEquipe}`, { id: toastId });
 
       if (onUpdate) onUpdate();
-
-      setTimeout(() => {
-        onClose();
-      }, 500);
+      setTimeout(() => onClose(), 350);
     } catch (error: any) {
-      console.error("[CorretivaReclassificar] Erro fatal:", error);
+      console.error("[CorretivaReclassificar] Erro ao salvar localmente:", error);
       toast.error(`Erro ao reclassificar: ${error.message || "Tente novamente"}`, { id: toastId });
     } finally {
       setLoading(false);
@@ -481,27 +485,35 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
     try {
       const { outboxAdd, blobPut } = await import("@/lib/corretiva/db");
       const sourceSuffix = source === "galeria" ? "-galeria" : "";
-      const blobKey = `os-${os.id}-${kind}${sourceSuffix}-${Date.now()}`;
+      const clientUuid = crypto.randomUUID();
+      const blobKey = `os-${os.id}-${kind}${sourceSuffix}-${clientUuid}`;
       const kindLabel = kind === "antes" ? "Antes" : "Depois";
       const sourceLabel = source === "galeria" ? " (Galeria)" : "";
 
       await blobPut(blobKey, file);
       await outboxAdd({
-        id: crypto.randomUUID(),
+        id: `foto:${os.id}:${clientUuid}`,
         kind: "foto",
         osId: os.id,
         numeroOs: os.numero_os,
-        payload: { blobKey, legenda: `Evidência: ${kindLabel}${sourceLabel}` },
+        payload: {
+          blobKey,
+          clientUuid,
+          legenda: `Evidência: ${kindLabel}${sourceLabel}`,
+        },
         createdAt: Date.now(),
         attempts: 0,
       });
 
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = rememberEvidenceUrl(URL.createObjectURL(file));
       if (kind === "antes") setPhotoBefore(previewUrl);
       else setPhotoAfter(previewUrl);
 
+      const syncResult = await syncBestEffort();
       toast.success(
-        `Foto (${source === "galeria" ? "Galeria" : "Câmera"}) salva e aguardando sincronização.`,
+        syncResult && syncResult.failed === 0
+          ? `Foto de ${kindLabel.toLowerCase()} salva e sincronizada.`
+          : `Foto de ${kindLabel.toLowerCase()} protegida no aparelho e aguardando sincronização.`,
       );
     } catch (error) {
       console.error("[CorretivaFotos] Erro ao salvar evidência:", error);
@@ -517,30 +529,32 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
 
     setLoading(true);
     try {
-      if (!navigator.onLine) {
-        const { outboxAdd } = await import("@/lib/corretiva/db");
-        await outboxAdd({
-          id: crypto.randomUUID(),
-          kind: "status",
-          osId: os.id,
-          numeroOs: os.numero_os,
-          payload: { observacao_conclusao: observacao.trim() },
-          createdAt: Date.now(),
-          attempts: 0,
-        });
-        toast.success("Observação salva offline.");
-        return;
-      }
+      const value = observacao.trim();
+      const { outboxAdd, updateCachedOs } = await import("@/lib/corretiva/db");
+      await outboxAdd({
+        id: `status:${os.id}:observacao:${crypto.randomUUID()}`,
+        kind: "status",
+        osId: os.id,
+        numeroOs: os.numero_os,
+        payload: { observacao_conclusao: value },
+        createdAt: Date.now(),
+        attempts: 0,
+      });
+      await updateCachedOs(os.id, {
+        observacao_conclusao: value,
+        updated_at: new Date().toISOString(),
+      });
 
-      const { error } = await supabase
-        .from("corretiva_os")
-        .update({ observacao_conclusao: observacao.trim() } as any)
-        .eq("id", os.id);
-      if (error) throw error;
-      toast.success("Observação salva.");
+      const syncResult = await syncBestEffort();
+      toast.success(
+        syncResult && syncResult.failed === 0
+          ? "Observação salva e sincronizada."
+          : "Observação protegida no aparelho e aguardando sincronização.",
+      );
+      onUpdate();
     } catch (error) {
       console.error("[CorretivaObservacao] Erro:", error);
-      toast.error("Erro ao salvar observação.");
+      toast.error("Erro ao salvar observação no aparelho.");
     } finally {
       setLoading(false);
     }
@@ -900,6 +914,13 @@ export function OsDetailsDialog({ os, isOpen, onClose, onUpdate }: OsDetailsDial
                   {offlineMode ? "Modo offline" : "Sincronização ativa"}
                 </Badge>
               </div>
+
+              {offlineMode && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2 text-[10px] leading-relaxed text-amber-100/80">
+                  <CloudOff className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />
+                  <span>Sem internet: fotos, observações, materiais, reclassificação e conclusão ficam protegidos neste aparelho e são enviados automaticamente quando a conexão retornar.</span>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {renderEvidence("antes", photoBefore)}
