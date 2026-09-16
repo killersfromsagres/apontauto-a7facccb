@@ -28,30 +28,77 @@ export async function getActiveCatalog(): Promise<AssetCatalog | null> {
   return (data as AssetCatalog | null) ?? null;
 }
 
-/** Lê todos os ativos de um catálogo, paginando para passar do limite do PostgREST. */
+/**
+ * Lê todos os ativos de um catálogo.
+ *
+ * O PostgREST limita respostas grandes, portanto a leitura precisa ser paginada.
+ * A paginação antiga usava OFFSET/RANGE sem ORDER BY, o que pode repetir/omitir
+ * linhas quando o PostgreSQL muda o plano/ordem física entre páginas — algo que
+ * ficou visível após a troca de projeto Supabase. Aqui usamos paginação por cursor
+ * sobre `normalized_code`, que é único dentro do catálogo.
+ */
 export async function fetchCatalogAssets(catalogId: string): Promise<AssetRecord[]> {
   const pageSize = 1000;
   const out: AssetRecord[] = [];
-  for (let from = 0; ; from += pageSize) {
-    const { data, error } = await db
+  const seen = new Set<string>();
+  let afterCode: string | null = null;
+
+  const { data: catalogMeta, error: catalogMetaError } = await db
+    .from("asset_catalogs")
+    .select("total_assets")
+    .eq("id", catalogId)
+    .maybeSingle();
+  if (catalogMetaError) throw catalogMetaError;
+
+  for (;;) {
+    let query = db
       .from("assets")
       .select("code, normalized_code, name, level, parent_code, parent_name, business_unit")
       .eq("catalog_id", catalogId)
-      .range(from, from + pageSize - 1);
+      .order("normalized_code", { ascending: true })
+      .limit(pageSize);
+
+    if (afterCode) query = query.gt("normalized_code", afterCode);
+
+    const { data, error } = await query;
     if (error) throw error;
+
     const rows = (data ?? []) as any[];
-    out.push(
-      ...rows.map((r) => ({
-        code: r.normalized_code ?? r.code,
+    if (rows.length === 0) break;
+
+    for (const r of rows) {
+      const normalizedCode = normalizeCode(r.normalized_code ?? r.code);
+      if (!normalizedCode || seen.has(normalizedCode)) continue;
+      seen.add(normalizedCode);
+      out.push({
+        code: normalizedCode,
         name: r.name,
         level: r.level,
         parentCode: r.parent_code,
         parentName: r.parent_name,
         businessUnit: r.business_unit,
-      })),
-    );
+      });
+    }
+
+    const nextCursor = String(rows[rows.length - 1]?.normalized_code ?? "").trim();
+    if (!nextCursor) {
+      throw new Error("A base de ativos contém um código normalizado inválido.");
+    }
+    if (nextCursor === afterCode) {
+      throw new Error("A leitura da base de ativos não avançou para a próxima página.");
+    }
+    afterCode = nextCursor;
+
     if (rows.length < pageSize) break;
   }
+
+  const expectedTotal = Number(catalogMeta?.total_assets ?? 0);
+  if (expectedTotal > 0 && out.length !== expectedTotal) {
+    throw new Error(
+      `Base de ativos incompleta: eram esperados ${expectedTotal} ativos, mas ${out.length} foram carregados.`,
+    );
+  }
+
   return out;
 }
 
@@ -63,6 +110,7 @@ export async function fetchLegacyAssets(): Promise<AssetRecord[]> {
     const { data, error } = await supabase
       .from("assets_ref")
       .select("ativo, denominacao, nivel, codigo_pai, descricao_pai, unidade_negocio")
+      .order("ativo", { ascending: true })
       .range(from, from + pageSize - 1);
     if (error) throw error;
     const rows = (data ?? []) as any[];
