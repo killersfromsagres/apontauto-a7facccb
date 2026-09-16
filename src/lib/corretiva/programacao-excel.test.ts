@@ -7,7 +7,7 @@ import {
   OPERATIONS_ROW_HEIGHT,
 } from "./programacao-excel";
 
-function os(overrides: Partial<OsCacheRow> = {}) {
+function os(overrides: Partial<OsCacheRow> & { tipo_importacao?: string | null } = {}) {
   return {
     id: "os-test-1",
     numero_os: "223633",
@@ -17,6 +17,7 @@ function os(overrides: Partial<OsCacheRow> = {}) {
     andar: "1º",
     local: "Sala técnica",
     nome_os: "Correção de quadro elétrico",
+    tipo: "Corretiva",
     data_criacao: "2026-07-01T10:00:00.000Z",
     material_status: "solicitado",
     status: "aberta",
@@ -53,7 +54,7 @@ describe("buildProgramacaoWorkbook", () => {
     expect(buffer.byteLength).toBeGreaterThan(5_000);
   });
 
-  it("mantém cabeçalho operacional destacado e linhas legíveis no layout atual", () => {
+  it("mantém cabeçalho operacional destacado e campos de leitura maiores", () => {
     const workbook = buildProgramacaoWorkbook([os()], "Todas", "corretiva");
     const sheet = workbook.getWorksheet("Programação Geral")!;
     const header = sheet.getRow(5);
@@ -67,10 +68,30 @@ describe("buildProgramacaoWorkbook", () => {
     expect(data.height).toBeGreaterThanOrEqual(OPERATIONS_ROW_HEIGHT);
 
     expect(data.getCell(1).font.bold).toBe(true);
+    expect(data.getCell(1).font.size).toBeGreaterThanOrEqual(12);
     expect(data.getCell(2).font.name).toBe(OPERATIONS_FONT);
     expect(data.getCell(2).font.bold).toBe(true);
     expect(data.getCell(2).font.size).toBeGreaterThanOrEqual(OPERATIONS_FONT_SIZE - 1);
-    expect(data.getCell(8).font.bold).toBe(true);
+    expect(data.getCell(7).font.size).toBeGreaterThanOrEqual(12);
+    expect(data.getCell(8).font.size).toBeGreaterThanOrEqual(12);
+    expect(data.getCell(9).font.size).toBeGreaterThanOrEqual(14);
+    expect(data.getCell(9).font.bold).toBe(true);
+  });
+
+  it("marca Backorder pela coluna Tipo e no resumo sem transformar a linha inteira", () => {
+    const workbook = buildProgramacaoWorkbook(
+      [os({ tipo: "Backorder", data_criacao: "2026-08-01T10:00:00.000Z" })],
+      "Todas",
+      "corretiva",
+      new Date("2026-09-16T10:00:00.000Z"),
+    );
+    const sheet = workbook.getWorksheet("Programação Geral")!;
+    const data = sheet.getRow(6);
+
+    expect(data.getCell(3).value).toBe("BACKORDER");
+    expect(String((data.getCell(3).fill as any)?.fgColor?.argb)).toBe("FF312E81");
+    expect(sheet.getCell("J3").text).toContain("BACKORDER");
+    expect(data.getCell(9).fill).not.toEqual(data.getCell(3).fill);
   });
 
   it("mantém o relatório válido com uma única equipe", async () => {
