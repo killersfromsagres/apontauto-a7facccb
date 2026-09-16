@@ -22,11 +22,14 @@ const SIGN_IN_ROUTE = "/auth";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // getSession reads the persisted local session and does not introduce a
+    // blocking network round-trip on every navigation. Supabase/RLS remains
+    // the source of truth for all protected data calls.
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data.session?.user) {
       throw redirect({ to: SIGN_IN_ROUTE });
     }
-    return { user: data.user };
+    return { user: data.session.user };
   },
   component: AuthenticatedLayout,
 });
