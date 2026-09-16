@@ -101,7 +101,7 @@ function UsuariosPage() {
 }
 
 function ProvisionEncarregadosButton() {
-  const provision = useServerFn(provisionEncarregadosUser);
+  const provision = provisionEncarregados;
   const [loading, setLoading] = useState(false);
   const qc = useQueryClient();
 
