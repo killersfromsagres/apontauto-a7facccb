@@ -129,6 +129,29 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
   }, [initialMarcacoes]);
 
   useEffect(() => {
+    const handleDrawingKeyDown = (event: KeyboardEvent) => {
+      if (mode !== 'draw' || currentPoints.length === 0) return;
+
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName?.toLowerCase();
+      const isEditableTarget =
+        target?.isContentEditable ||
+        tagName === 'input' ||
+        tagName === 'textarea' ||
+        tagName === 'select';
+
+      if (isEditableTarget) return;
+      if (event.key !== 'Backspace' && event.key !== 'Delete') return;
+
+      event.preventDefault();
+      setCurrentPoints((points) => points.length > 0 ? points.slice(0, -1) : points);
+    };
+
+    window.addEventListener('keydown', handleDrawingKeyDown);
+    return () => window.removeEventListener('keydown', handleDrawingKeyDown);
+  }, [mode, currentPoints.length]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     try {
@@ -214,7 +237,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
-      // Use requestAnimationFrame to avoid "ResizeObserver loop completed with undelivered notifications"
       window.requestAnimationFrame(() => {
         if (!Array.isArray(entries) || !entries.length) return;
         if (imageLoaded) fitToView();
@@ -256,8 +278,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     }
     
     if (mode === 'move' && e.button === 0) {
-      // Check for label hits - expand hit area significantly
-      const labelHitRadius = 100 / zoom; 
       let closestLabel = null;
       let minDistance = Infinity;
 
@@ -273,7 +293,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const dIcone = getDistance(coords, iconePos);
         const dIconeData = getDistance(coords, iconeDataPos);
 
-        // Adjust hit radius based on current scale to make sure big labels are easy to grab
         const currentNumScale = m.numero_scale || 1;
         const currentDataScale = m.data_scale || 1;
         const currentIconeScale = m.icone_scale || 1;
@@ -375,7 +394,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     
     const coords = getMapCoords(e);
     
-    // Check for label hits first to avoid losing selection when clicking labels
     const labelHitRadius = 60 / zoom;
     for (const m of localMarcacoes) {
       const centroid = getCentroid(m.polygon);
@@ -437,14 +455,13 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     if (mode === 'draw') {
       if (currentPoints.length > 2) {
         const dist = getDistance(coords, currentPoints[0]);
-        if (dist < 30 / zoom) { // Increased hit radius for mobile/easy closing
+        if (dist < 30 / zoom) {
           handleFinishDrawing();
           return;
         }
       }
       setCurrentPoints(prev => [...prev, coords]);
     } else {
-      // If we clicked empty space and didn't hit any label, deselect
       setSelectedMarcacaoId(null);
     }
   };
@@ -467,7 +484,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       return;
     }
     
-    // Auto-calculate centroid if not provided to help with initial label placement
     const centroid = getCentroid(currentPoints);
     
     const newMarcacao: Partial<TaludeMarcacao> = {
@@ -482,7 +498,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       icone_tipo: iconeTipo,
       icone_scale: iconeScale,
       icone_visivel: iconeVisivel,
-      // Initialize label positions to centroid to avoid "missing" labels
       numero_x: centroid.x,
       numero_y: centroid.y,
       data_x: centroid.x,
@@ -491,7 +506,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       icone_y: centroid.y - 30,
       icone_data_x: centroid.x,
       icone_data_y: centroid.y + 60,
-      icone_data_visivel: false, // Default to false when adding a tree/icon
+      icone_data_visivel: false,
       icone_data_texto: iconeTipo === 'arvore' ? iconeDataTexto : null
     };
     
@@ -511,7 +526,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
 
   const handleDelete = async (id: string) => {
-    // Save state before deleting
     setHistory(prev => [...prev, { marcacoes: [...localMarcacoes] }].slice(-10));
     
     try {
@@ -521,8 +535,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     } catch (error) {
       console.error("Erro ao excluir:", error);
       toast.error("Erro ao excluir demarcação");
-      // Remove from history if failed to delete actually? 
-      // Actually, onDelete should update the parent state which updates initialMarcacoes
     }
   };
 
@@ -532,7 +544,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
     const lastState = history[history.length - 1];
     const newHistory = history.slice(0, -1);
     
-    // Find what was deleted
     const currentIds = new Set(localMarcacoes.map(m => m.id));
     const deleted = lastState.marcacoes.filter(m => !currentIds.has(m.id));
     
@@ -573,11 +584,8 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       ctx.imageSmoothingQuality = 'high';
       ctx.scale(exportScale, exportScale);
 
-      // 1. Background em resolução ampliada. As coordenadas continuam no espaço original
-      // do mapa para preservar com precisão todas as demarcações e posições manuais.
       ctx.drawImage(imgRef.current, 0, 0, imageWidth, imageHeight);
 
-      // 2. Polígonos e legendas individuais.
       localMarcacoes.forEach(m => {
         if (!m.visivel) return;
 
@@ -719,7 +727,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               ctx.fill();
               ctx.fillStyle = 'white';
               ctx.font = `900 ${scaledIconeDataFontSize}px "Inter", system-ui, sans-serif`;
-              // Data do ícone segue oculta conforme a configuração atual do editor.
             }
           } else if (m.icone_tipo === 'interdicao') {
             ctx.strokeStyle = '#ef4444';
@@ -738,7 +745,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
       });
 
       if (EXPORT_OPERATIONAL_LEGEND) {
-        // 3. Legenda operacional ampliada, com fundo transparente e vidro desfocado.
         const visibleMarcacoes = localMarcacoes.filter(m => m.visivel);
         const statusEntries = Object.entries(STATUS_CONFIG);
         const statusCounts = statusEntries.map(([_, cfg]) => ({
@@ -759,8 +765,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         const innerX = legendX + 28 * legendScale;
         const innerWidth = legendWidth - 56 * legendScale;
 
-        // Replica o trecho do próprio mapa atrás da legenda em um canvas auxiliar e
-        // reaplica com blur. Assim o efeito de vidro também fica gravado no PNG final.
         const glassBleed = 34 * legendScale;
         const sampleX = Math.max(0, legendX - glassBleed);
         const sampleY = Math.max(0, legendY - glassBleed);
@@ -808,7 +812,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
           ctx.restore();
         }
 
-        // Camada de vidro neutra: sem o antigo preenchimento escuro/colorido.
         ctx.save();
         ctx.shadowColor = 'rgba(0, 0, 0, 0.36)';
         ctx.shadowBlur = 30 * legendScale;
@@ -996,7 +999,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         ctx.restore();
       }
 
-      // 4. Geração por Blob evita uma string base64 muito grande em mapas de alta resolução.
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) resolve(result);
@@ -1227,7 +1229,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                 </div>
                 <input 
                   type="range" min="0.5" max="15" step="0.1" 
-
                   value={numeroScale} 
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
@@ -1276,7 +1277,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     onClick={() => {
                       const newType = iconeTipo === 'arvore' ? null : 'arvore';
                       setIconeTipo(newType);
-                      setIconeVisivel(true); // Auto-show icon when selected
+                      setIconeVisivel(true);
                       setLocalMarcacoes(prev => prev.map(m => m.id === selectedMarcacaoId ? { ...m, icone_tipo: newType, icone_visivel: true } : m));
                       const target = localMarcacoes.find(m => m.id === selectedMarcacaoId);
                       if (target) {
@@ -1461,6 +1462,14 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
         )}
       </div>
 
+      {mode === 'draw' && currentPoints.length > 0 && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/70 px-3 py-1.5 text-[10px] font-medium text-white/70 shadow-xl backdrop-blur-md">
+          <Undo2 className="h-3.5 w-3.5 text-cyan-300" />
+          <span className="font-semibold text-white/90">Backspace</span>
+          <span className="text-white/40">ou Delete · voltar último ponto</span>
+        </div>
+      )}
+
       <div 
         ref={containerRef}
         className={cn("flex-1 relative cursor-crosshair")}
@@ -1492,7 +1501,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
 
               return (
                 <g key={m.id} className={cn("transition-opacity duration-300", isSelected ? "opacity-100" : "opacity-90")}>
-                  {/* Polygon Area */}
                   <polygon
                     points={m.polygon.map(p => `${p.x},${p.y}`).join(' ')}
                     fill={m.cor}
@@ -1502,45 +1510,16 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     className="pointer-events-auto cursor-pointer"
                   />
 
-                  {/* Manual Labels */}
                   <g className={cn(mode === 'move' ? "pointer-events-auto cursor-move" : "pointer-events-none")}>
-                    {/* Invisible hit areas for easier dragging */}
                     {mode === 'move' && (
                       <g className="pointer-events-auto cursor-move">
-                        <circle 
-                          cx={numPos.x} 
-                          cy={numPos.y} 
-                          r={100 / zoom} 
-                          fill="transparent" 
-                        />
-                        <circle 
-                          cx={dataPos.x} 
-                          cy={dataPos.y} 
-                          r={100 / zoom} 
-                          fill="transparent" 
-                        />
-                        {m.icone_tipo && (
-                          <circle 
-                            cx={iconePos.x} 
-                            cy={iconePos.y} 
-                            r={100 / zoom} 
-                            fill="transparent" 
-                          />
-                        )}
-                        {m.icone_tipo && (
-                          <circle 
-                            cx={iconeDataPos.x} 
-                            cy={iconeDataPos.y} 
-                            r={100 / zoom} 
-                            fill="transparent" 
-                          />
-                        )}
+                        <circle cx={numPos.x} cy={numPos.y} r={100 / zoom} fill="transparent" />
+                        <circle cx={dataPos.x} cy={dataPos.y} r={100 / zoom} fill="transparent" />
+                        {m.icone_tipo && <circle cx={iconePos.x} cy={iconePos.y} r={100 / zoom} fill="transparent" />}
+                        {m.icone_tipo && <circle cx={iconeDataPos.x} cy={iconeDataPos.y} r={100 / zoom} fill="transparent" />}
                       </g>
                     )}
-                    {/* Slope Number */}
                     {m.numero_visivel !== false && (
-
-
                       <g>
                         <circle cx={numPos.x} cy={numPos.y} r={20 * (m.numero_scale || 1)} fill="rgba(0,0,0,0.7)" stroke={m.cor} strokeWidth={2} />
                         <text
@@ -1559,7 +1538,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                       </g>
                     )}
 
-                    {/* Status Dates */}
                     {m.data_visivel !== false && (
                       <g transform={`translate(${dataPos.x}, ${dataPos.y}) scale(${m.data_scale || 1})`}>
                       {(() => {
@@ -1601,7 +1579,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                fill={dateTextFill}
                                fontSize={baseFontSize}
                                fontWeight="900"
-                        className="select-none font-['Inter'] tracking-tight"
+                               className="select-none font-['Inter'] tracking-tight"
                              >
                                {displayDate}
                              </text>
@@ -1613,7 +1591,7 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                                fill={dateTextFill}
                                fontSize={baseFontSize}
                                fontWeight="900"
-                                className="select-none font-['Inter'] tracking-tight"
+                               className="select-none font-['Inter'] tracking-tight"
                              >
                                {displayDeadline || displayDate}
                              </text>
@@ -1623,7 +1601,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     </g>
                     )}
 
-                    {/* Icons (Arvore / Interdicao) */}
                     {m.icone_tipo && m.icone_visivel !== false && (
                       <g transform={`translate(${iconePos.x}, ${iconePos.y}) scale(${m.icone_scale || 1})`}>
                         <circle cx="0" cy="0" r="30" fill="rgba(255,255,255,0.15)" className="backdrop-blur-md" stroke={m.cor} strokeWidth="2" />
@@ -1647,33 +1624,12 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                             >
                               RESERVA SUVINIL
                             </text>
-                            
-                            {/* Icon Date Label (SVG) - Hidden by user request */}
                             {false && m.icone_data_visivel !== false && (m.icone_data_texto || mode === 'move') && (
                               <g transform={`translate(${iconeDataPos.x - iconePos.x}, ${iconeDataPos.y - iconePos.y}) scale(${m.icone_data_scale || 1})`}>
-                                <rect 
-                                   x="-60"
-                                   y="-20" 
-                                   width="120" 
-                                   height="40" 
-                                   rx="6" 
-                                    fill="rgba(255,255,255,0.15)" 
-                                    className="backdrop-blur-md"
-                                    stroke="rgba(255,255,255,0.25)" 
-                                    strokeWidth="1.5"
-                                  />
-                                 <text
-                                   x="0"
-                                   y="2"
-                                   textAnchor="middle"
-                                   dominantBaseline="middle"
-                                   fill="white"
-                                   fontSize="24"
-                                   fontWeight="900"
-                                   className="select-none font-['Inter']"
-                                 >
-                                   {m.icone_data_texto}
-                                 </text>
+                                <rect x="-60" y="-20" width="120" height="40" rx="6" fill="rgba(255,255,255,0.15)" className="backdrop-blur-md" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5" />
+                                <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fill="white" fontSize="24" fontWeight="900" className="select-none font-['Inter']">
+                                  {m.icone_data_texto}
+                                </text>
                               </g>
                             )}
                           </g>
@@ -1684,7 +1640,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                     )}
                   </g>
 
-                  {/* Edit Handles (only in Edit mode for selected) */}
                   {mode === 'edit' && isSelected && m.polygon.map((p, idx) => (
                     <circle
                       key={idx}
@@ -1701,7 +1656,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
               );
             })}
 
-            {/* Current Drawing Points */}
             {mode === 'draw' && (
               <g>
                 {currentPoints.length > 0 && (
@@ -1732,7 +1686,6 @@ export const PolygonEditor: React.FC<PolygonEditorProps> = ({
                   />
                 )}
                 
-                {/* Visual feedback for the very first point to start drawing */}
                 {hoverPoint && currentPoints.length === 0 && (
                   <circle cx={hoverPoint.x} cy={hoverPoint.y} r={6 / zoom} fill={currentColor} opacity={0.5} />
                 )}
