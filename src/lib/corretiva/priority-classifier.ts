@@ -3,7 +3,8 @@
  *
  * Objetivos:
  * - destacar risco real e continuidade operacional antes de simples antiguidade;
- * - reconhecer Backorder pela origem real do chamado (tipo/tipo_importacao);
+ * - reconhecer Backorder automaticamente pelo aging (> 30 dias em aberto);
+ * - preservar compatibilidade com Backorder legado via tipo/tipo_importacao;
  * - usar SLA e aging sem transformar todo Backorder em crítico;
  * - manter o mesmo resultado no sistema, Excel, PDF e Programação.
  */
@@ -76,9 +77,9 @@ export function normalizeText(value: unknown): string {
 }
 
 /**
- * A base atual identifica Backorder principalmente em `tipo = Backorder`.
- * `tipo_importacao` também é aceito para bases antigas/integrações, sem depender
- * de o texto da descrição conter a palavra backorder.
+ * Compatibilidade com bases antigas/integrações que já gravaram explicitamente
+ * Backorder em `tipo` ou `tipo_importacao`. A classificação automática por
+ * aging é calculada em `classifyPriority`, porque depende da data de referência.
  */
 export function isBackorderCorrective(input: PriorityInput): boolean {
   const values = [normalizeText(input.tipo), normalizeText(input.tipo_importacao)];
@@ -145,7 +146,13 @@ const RULES: Rule[] = [
     reason: "Vazamento/infiltração ativa",
   },
   {
-    terms: ["AGUA CORRENDO", "AGUA ESCORRENDO", "AGUA O TEMPO TODO", "AGUA TEMPO INTEIRO", "VAZAMENTO CONTINUO"],
+    terms: [
+      "AGUA CORRENDO",
+      "AGUA ESCORRENDO",
+      "AGUA O TEMPO TODO",
+      "AGUA TEMPO INTEIRO",
+      "VAZAMENTO CONTINUO",
+    ],
     points: 18,
     reason: "Perda contínua de água",
   },
@@ -155,22 +162,47 @@ const RULES: Rule[] = [
     reason: "Falta de água",
   },
   {
-    terms: ["ESGOTO", "ENTUPI", "OBSTRU", "REFLUXO", "FOSSA", "MICTORIO ENTUP", "VASO ENTUP"],
+    terms: [
+      "ESGOTO",
+      "ENTUPI",
+      "OBSTRU",
+      "REFLUXO",
+      "FOSSA",
+      "MICTORIO ENTUP",
+      "VASO ENTUP",
+    ],
     points: 32,
     reason: "Esgoto/entupimento",
   },
   {
-    terms: ["SEM ENERGIA", "FALTA DE ENERGIA", "QUEDA DE ENERGIA", "DISJUNTOR DESARM", "PAINEL DESLIG"],
+    terms: [
+      "SEM ENERGIA",
+      "FALTA DE ENERGIA",
+      "QUEDA DE ENERGIA",
+      "DISJUNTOR DESARM",
+      "PAINEL DESLIG",
+    ],
     points: 34,
     reason: "Interrupção de energia",
   },
   {
-    terms: ["ILUMINACAO DE EMERGENCIA", "LUZ DE EMERGENCIA", "ROTA DE FUGA", "ROTA DE EMERGENCIA"],
+    terms: [
+      "ILUMINACAO DE EMERGENCIA",
+      "LUZ DE EMERGENCIA",
+      "ROTA DE FUGA",
+      "ROTA DE EMERGENCIA",
+    ],
     points: 34,
     reason: "Iluminação/rota de emergência",
   },
   {
-    terms: ["ESTRADA", "ESTACIONAMENTO", "PASSAGEM DE PEDESTRE", "PASSAGEM DE PEDESTRES", "CIRCULACAO EXTERNA"],
+    terms: [
+      "ESTRADA",
+      "ESTACIONAMENTO",
+      "PASSAGEM DE PEDESTRE",
+      "PASSAGEM DE PEDESTRES",
+      "CIRCULACAO EXTERNA",
+    ],
     points: 10,
     reason: "Circulação externa afetada",
   },
@@ -185,7 +217,17 @@ const RULES: Rule[] = [
     reason: "Elevador/pessoa presa",
   },
   {
-    terms: ["BANHEIRO", "SANITARIO", "VASO SANITARIO", "VALVULA DE DESCARGA", "DESCARGA", "MICTORIO", "TORNEIRA", "LAVATORIO", "CHUVEIRO"],
+    terms: [
+      "BANHEIRO",
+      "SANITARIO",
+      "VASO SANITARIO",
+      "VALVULA DE DESCARGA",
+      "DESCARGA",
+      "MICTORIO",
+      "TORNEIRA",
+      "LAVATORIO",
+      "CHUVEIRO",
+    ],
     points: 14,
     reason: "Área sanitária afetada",
   },
@@ -200,17 +242,44 @@ const RULES: Rule[] = [
     reason: "Área operacional crítica",
   },
   {
-    terms: ["FECHADURA", "PORTA TRAVADA", "PORTA NAO ABRE", "PORTA NAO FECHA", "CATRACA", "PORTAO", "CONTROLE DE ACESSO", "CHAVE QUEBRADA"],
+    terms: [
+      "FECHADURA",
+      "PORTA TRAVADA",
+      "PORTA NAO ABRE",
+      "PORTA NAO FECHA",
+      "CATRACA",
+      "PORTAO",
+      "CONTROLE DE ACESSO",
+      "CHAVE QUEBRADA",
+    ],
     points: 20,
     reason: "Acesso comprometido",
   },
   {
-    terms: ["PARADO", "PAROU DE FUNCIONAR", "NAO FUNCIONA", "NAO ESTA FUNCIONANDO", "INOPERANTE", "FORA DE OPERACAO", "PRODUCAO PARADA", "LINHA PARADA", "QUEIMADO"],
+    terms: [
+      "PARADO",
+      "PAROU DE FUNCIONAR",
+      "NAO FUNCIONA",
+      "NAO ESTA FUNCIONANDO",
+      "INOPERANTE",
+      "FORA DE OPERACAO",
+      "PRODUCAO PARADA",
+      "LINHA PARADA",
+      "QUEIMADO",
+    ],
     points: 20,
     reason: "Equipamento/área inoperante",
   },
   {
-    terms: ["AR CONDICIONADO", "AR CONDICIONADO", "FANCOIL", "CHILLER", "SPLIT", "EVAPORADORA", "CONDENSADORA"],
+    terms: [
+      "AR CONDICIONADO",
+      "AR CONDICIONADO",
+      "FANCOIL",
+      "CHILLER",
+      "SPLIT",
+      "EVAPORADORA",
+      "CONDENSADORA",
+    ],
     points: 7,
     reason: "Climatização afetada",
   },
@@ -268,6 +337,18 @@ function containsAny(haystack: string, terms: string[]) {
   return terms.some((term) => haystack.includes(term));
 }
 
+function isOpenForAutomaticBackorder(status: unknown) {
+  const normalized = normalizeText(status);
+  if (!normalized) return true;
+  return ![
+    "CONCLUID",
+    "FINALIZ",
+    "FECHAD",
+    "ENCERRAD",
+    "CANCELAD",
+  ].some((value) => normalized.includes(value));
+}
+
 export function classifyPriority(
   input: PriorityInput,
   referenceDate: Date = new Date(),
@@ -295,9 +376,31 @@ export function classifyPriority(
     addReason(reasons, rule.reason);
   }
 
-  const hasWater = containsAny(haystack, ["VAZAMENTO", "VAZANDO", "GOTEIRA", "INFILTRAC", "ALAG", "AGUA", "ESGOTO"]);
-  const hasElectricalContext = containsAny(haystack, ["ELETR", "FIACAO", "FIO ", "FIA ", "CABO", "QUADRO", "PAINEL", "DISJUNTOR", "TOMADA", "COMPRESSOR"]);
-  const sensitiveArea = reasons.includes("Área sanitária afetada") || reasons.includes("Área de alimentação") || reasons.includes("Área operacional crítica");
+  const hasWater = containsAny(haystack, [
+    "VAZAMENTO",
+    "VAZANDO",
+    "GOTEIRA",
+    "INFILTRAC",
+    "ALAG",
+    "AGUA",
+    "ESGOTO",
+  ]);
+  const hasElectricalContext = containsAny(haystack, [
+    "ELETR",
+    "FIACAO",
+    "FIO ",
+    "FIA ",
+    "CABO",
+    "QUADRO",
+    "PAINEL",
+    "DISJUNTOR",
+    "TOMADA",
+    "COMPRESSOR",
+  ]);
+  const sensitiveArea =
+    reasons.includes("Área sanitária afetada") ||
+    reasons.includes("Área de alimentação") ||
+    reasons.includes("Área operacional crítica");
 
   if (hasWater && sensitiveArea) {
     score += 12;
@@ -307,11 +410,17 @@ export function classifyPriority(
     score += 30;
     addReason(reasons, "Água próxima de instalação elétrica");
   }
-  if (reasons.includes("Climatização afetada") && reasons.includes("Área operacional crítica")) {
+  if (
+    reasons.includes("Climatização afetada") &&
+    reasons.includes("Área operacional crítica")
+  ) {
     score += 18;
     addReason(reasons, "Climatização de área crítica");
   }
-  if (reasons.includes("Intervenção em altura") && reasons.includes("Risco de segurança identificado")) {
+  if (
+    reasons.includes("Intervenção em altura") &&
+    reasons.includes("Risco de segurança identificado")
+  ) {
     score += 10;
     addReason(reasons, "Risco associado a trabalho em altura");
   }
@@ -325,7 +434,9 @@ export function classifyPriority(
   let dueState: PriorityDueState = "NO_DUE";
   let daysToDue: number | null = null;
   if (due) {
-    const days = Math.round((startOfDay(due).getTime() - reference.getTime()) / 86_400_000);
+    const days = Math.round(
+      (startOfDay(due).getTime() - reference.getTime()) / 86_400_000,
+    );
     daysToDue = days;
     if (days < 0) {
       dueState = "OVERDUE";
@@ -346,7 +457,12 @@ export function classifyPriority(
 
   const created = parseDate(input.data_criacao);
   const ageDays = created
-    ? Math.max(0, Math.floor((reference.getTime() - startOfDay(created).getTime()) / 86_400_000))
+    ? Math.max(
+        0,
+        Math.floor(
+          (reference.getTime() - startOfDay(created).getTime()) / 86_400_000,
+        ),
+      )
     : 0;
   if (ageDays >= 90) {
     score += 19;
@@ -362,11 +478,22 @@ export function classifyPriority(
     addReason(reasons, `Aberto há ${ageDays} dias`);
   }
 
-  const isBackorder = isBackorderCorrective(input);
+  const legacyBackorder = isBackorderCorrective(input);
+  const automaticBackorder =
+    Boolean(created) && ageDays > 30 && isOpenForAutomaticBackorder(input.status);
+  const isBackorder = legacyBackorder || automaticBackorder;
+
   if (isBackorder) {
     // Backorder é visibilidade/aging, não sinônimo de emergência.
     score += ageDays >= 60 ? 12 : ageDays >= 30 ? 8 : ageDays >= 15 ? 5 : 3;
-    addReason(reasons, ageDays > 0 ? `Backorder há ${ageDays} dia(s)` : "Backorder");
+    if (automaticBackorder) {
+      addReason(reasons, `Backorder automático · ${ageDays} dias em aberto`);
+    } else {
+      addReason(
+        reasons,
+        ageDays > 0 ? `Backorder · aberto há ${ageDays} dia(s)` : "Backorder",
+      );
+    }
   }
 
   if (normalizeText(input.material_status) === "SOLICITADO") {
@@ -391,7 +518,8 @@ export function classifyPriority(
     ageDays,
     dueState,
     daysToDue,
-    reasons: reasons.length > 0 ? reasons.slice(0, 6) : ["Sem agravantes identificados"],
+    reasons:
+      reasons.length > 0 ? reasons.slice(0, 6) : ["Sem agravantes identificados"],
   };
 }
 
