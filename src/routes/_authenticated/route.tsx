@@ -82,5 +82,75 @@ function AuthenticatedLayout() {
     );
   }
 
-  return <Outlet />;
+  return (
+    <>
+      {pathname === "/corretiva-novo" && (
+        <style>{`
+          /* Corretiva Novo — hierarquia compacta dos identificadores do card. */
+          .mb-3.flex.flex-wrap.items-center.justify-between > .font-mono {
+            height: 28px !important;
+            padding: 0 10px !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.025em !important;
+            border-radius: 9999px !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18) !important;
+          }
+
+          .mb-3.flex.flex-wrap.items-center.justify-between > div:has(> [title^="Score "]) {
+            gap: 5px !important;
+          }
+
+          [title^="Equipe responsável:"] {
+            order: 1 !important;
+            height: 28px !important;
+            max-width: min(100%, 180px) !important;
+            padding: 0 10px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.025em !important;
+            border-radius: 9999px !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18) !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          [title^="Score "] {
+            order: 2 !important;
+            height: 21px !important;
+            padding: 0 7px !important;
+            font-size: 9px !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            letter-spacing: 0.025em !important;
+            border-radius: 9999px !important;
+            box-shadow: none !important;
+          }
+
+          [title^="Backorder"] {
+            order: 3 !important;
+            height: 20px !important;
+            padding: 0 7px !important;
+            font-size: 8px !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            letter-spacing: 0.04em !important;
+            border-color: rgba(248, 113, 113, 0.42) !important;
+            background: rgba(220, 38, 38, 0.88) !important;
+            box-shadow: none !important;
+          }
+
+          [class*="border-emerald-500/35"] {
+            order: 4 !important;
+            height: 20px !important;
+            padding-left: 7px !important;
+            padding-right: 7px !important;
+            font-size: 8px !important;
+            box-shadow: none !important;
+          }
+        `}</style>
+      )}
+      <Outlet />
+    </>
+  );
 }
