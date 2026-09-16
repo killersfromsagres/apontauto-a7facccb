@@ -47,6 +47,22 @@ async function requireSession() {
   return data.session;
 }
 
+function getTaludeStoragePath(imageUrl?: string | null) {
+  if (!imageUrl) return null;
+
+  try {
+    const parsed = new URL(imageUrl);
+    const marker = "/storage/v1/object/public/images/";
+    const markerIndex = parsed.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+
+    const encodedPath = parsed.pathname.slice(markerIndex + marker.length);
+    return encodedPath ? decodeURIComponent(encodedPath) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function loadImageDimensions(url: string) {
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const img = new Image();
@@ -217,6 +233,52 @@ function TaludesPage() {
     },
   });
 
+  const deleteMapMutation = useMutation({
+    mutationFn: async (map: TaludeMap) => {
+      await requireSession();
+
+      const { error } = await db
+        .from("talude_maps")
+        .delete()
+        .eq("id", map.id);
+      if (error) throw new Error(`Erro ao excluir mapa: ${error.message}`);
+
+      const storagePath = getTaludeStoragePath(map.image_url);
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from("images")
+          .remove([storagePath]);
+        if (storageError) {
+          console.warn("[Taludes] O mapa foi excluído, mas o arquivo do Storage não pôde ser removido:", storageError);
+        }
+      }
+
+      return { id: map.id };
+    },
+    onSuccess: async (_result, deletedMap) => {
+      const nextMapId = maps?.find((map) => map.id !== deletedMap.id)?.id ?? null;
+      setSelectedMapId(nextMapId);
+      queryClient.removeQueries({ queryKey: ["talude_marcacoes", deletedMap.id] });
+      await queryClient.invalidateQueries({ queryKey: ["talude_maps"] });
+      toast.success(`Mapa “${deletedMap.nome}” excluído com sucesso.`);
+    },
+    onError: (error: any) => {
+      console.error("[Taludes] Erro ao excluir mapa:", error);
+      toast.error(error?.message || "Erro ao excluir mapa.");
+    },
+  });
+
+  const handleDeleteCurrentMap = () => {
+    if (!currentMap || deleteMapMutation.isPending) return;
+
+    const confirmed = window.confirm(
+      `Excluir o mapa “${currentMap.nome}”?\n\nTodas as demarcações vinculadas a este mapa também serão excluídas. Esta ação não pode ser desfeita.`,
+    );
+    if (!confirmed) return;
+
+    deleteMapMutation.mutate(currentMap);
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -350,13 +412,27 @@ function TaludesPage() {
                   ref={fileInputRef}
                   onChange={handleFileUpload}
                 />
+                {currentMap && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-red-500/20 bg-red-500/[0.04] text-red-300 hover:border-red-500/35 hover:bg-red-500/10 hover:text-red-200"
+                    onClick={handleDeleteCurrentMap}
+                    loading={deleteMapMutation.isPending}
+                    disabled={deleteMapMutation.isPending || isUploading}
+                    title={`Excluir mapa ${currentMap.nome}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">{deleteMapMutation.isPending ? "Excluindo..." : "Excluir mapa"}</span>
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-2 border-white/10 bg-white/5"
                   onClick={() => fileInputRef.current?.click()}
                   loading={isUploading}
-                  disabled={isUploading}
+                  disabled={isUploading || deleteMapMutation.isPending}
                 >
                   <Plus className="h-4 w-4" /> {isUploading ? "Adicionando..." : "Novo Mapa"}
                 </Button>
