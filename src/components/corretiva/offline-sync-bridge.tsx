@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const QUEUE_CHANGED_EVENT = "corretiva-offline-queue-changed";
+
 /**
  * Sincronização global e silenciosa da fila offline de Corretivas.
- * Roda ao entrar no sistema, quando a internet volta, quando a sessão muda e
- * periodicamente enquanto a aplicação permanece online.
+ * Roda ao entrar no sistema, quando a internet volta, quando uma nova operação
+ * entra na fila, ao retornar para a aba e periodicamente enquanto estiver online.
  */
 export function CorretivaOfflineSyncBridge() {
   useEffect(() => {
@@ -32,21 +34,31 @@ export function CorretivaOfflineSyncBridge() {
       }
     };
 
-    const handleOnline = () => void run();
+    const scheduleRun = () => window.setTimeout(() => void run(), 0);
+    const handleOnline = () => scheduleRun();
+    const handleQueueChanged = () => scheduleRun();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") scheduleRun();
+    };
+
     window.addEventListener("online", handleOnline);
+    window.addEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged);
+    document.addEventListener("visibilitychange", handleVisibility);
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") {
-        window.setTimeout(() => void run(), 0);
+        scheduleRun();
       }
     });
 
-    const interval = window.setInterval(() => void run(), 60_000);
+    const interval = window.setInterval(() => void run(), 20_000);
     void run();
 
     return () => {
       disposed = true;
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged);
+      document.removeEventListener("visibilitychange", handleVisibility);
       window.clearInterval(interval);
       authListener.subscription.unsubscribe();
     };
