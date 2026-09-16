@@ -8,6 +8,7 @@
  */
 const PREVIEW_HOST_SUFFIXES = ["lovableproject.com", "lovableproject-dev.com", "beta.lovable.dev"];
 const SW_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
+const SW_URL = "/sw.js?v=20260916-offline-final";
 
 let controllerReloadStarted = false;
 let updateTimer: number | null = null;
@@ -77,7 +78,7 @@ export function registerServiceWorker() {
 
   window.addEventListener("load", () => {
     void navigator.serviceWorker
-      .register("/sw.js", {
+      .register(SW_URL, {
         scope: "/",
         updateViaCache: "none",
       })
