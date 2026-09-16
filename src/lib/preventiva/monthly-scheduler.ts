@@ -1,5 +1,9 @@
 import { businessDaysUntil, isoDate } from "./business-days";
-import { classifyPriority, comparePriority, isBackorderCorrective } from "@/lib/corretiva/priority-classifier";
+import {
+  classifyPriority,
+  comparePriority,
+  isBackorderCorrective,
+} from "@/lib/corretiva/priority-classifier";
 import type { WeekBucket, WeekInfo } from "./capacity";
 import {
   REFRIG_1,
@@ -26,7 +30,12 @@ export const MINUTOS_PADRAO_POR_EQUIPE: Record<Equipe, 30 | 60> = {
 export interface CorrectiveProblem {
   gravidade?: "observacao" | "falha" | "critico" | string | null;
   status_gestor?:
-    "pendente" | "aprovado" | "rejeitado" | "concluido" | string | null;
+    | "pendente"
+    | "aprovado"
+    | "rejeitado"
+    | "concluido"
+    | string
+    | null;
 }
 
 export interface CorrectiveSourceRow {
@@ -114,11 +123,9 @@ export function resolveCorrectiveTeam(row: CorrectiveSourceRow): Equipe | null {
     if (/\b3\b/.test(explicit)) return "CLIMATIZAÇÃO E REFRIGERAÇÃO 3";
     return refrigeracaoTeam(row.predio ?? "");
   }
-  if (explicit.includes("CIVIL") || explicit.includes("PINTURA"))
-    return "CIVIL";
+  if (explicit.includes("CIVIL") || explicit.includes("PINTURA")) return "CIVIL";
 
-  if (context.includes("CHAVE") || context.includes("FECHADURA"))
-    return "CHAVEIRO";
+  if (context.includes("CHAVE") || context.includes("FECHADURA")) return "CHAVEIRO";
   if (
     context.includes("HIDR") ||
     context.includes("TUBUL") ||
@@ -174,10 +181,8 @@ function problemSeverity(row: CorrectiveSourceRow): 0 | 1 | 2 {
         norm(problem.status_gestor).toLowerCase(),
       ),
   );
-  if (activeProblems.some((problem) => norm(problem.gravidade) === "CRITICO"))
-    return 0;
-  if (activeProblems.some((problem) => norm(problem.gravidade) === "FALHA"))
-    return 1;
+  if (activeProblems.some((problem) => norm(problem.gravidade) === "CRITICO")) return 0;
+  if (activeProblems.some((problem) => norm(problem.gravidade) === "FALHA")) return 1;
   return 2;
 }
 
@@ -369,10 +374,7 @@ export function mapCorrectives(
 }
 
 export function isCorrective(item: TriagedOS): boolean {
-  return (
-    norm(item.tipo).includes("CORRET") ||
-    item.raw?.programacaoTipo === "corretiva"
-  );
+  return norm(item.tipo).includes("CORRET") || item.raw?.programacaoTipo === "corretiva";
 }
 
 function weekIndexForDate(date: Date, weeks: WeekInfo[]): number {
@@ -400,6 +402,25 @@ function weekIndexForDate(date: Date, weeks: WeekInfo[]): number {
   });
 }
 
+/**
+ * Distribui uma quantidade mensal de forma uniforme por todos os dias úteis.
+ * O resto é espalhado ao longo do mês (em vez de ser concentrado na primeira semana).
+ */
+function balancedDailyQuota(
+  total: number,
+  dayPosition: number,
+  dayCount: number,
+  dailyCapacity: number,
+): number {
+  if (total <= 0 || dayCount <= 0 || dailyCapacity <= 0) return 0;
+  const schedulable = Math.min(total, dayCount * dailyCapacity);
+  const base = Math.floor(schedulable / dayCount);
+  const remainder = schedulable % dayCount;
+  const before = Math.floor((dayPosition * remainder) / dayCount);
+  const after = Math.floor(((dayPosition + 1) * remainder) / dayCount);
+  return Math.min(dailyCapacity, base + (after > before ? 1 : 0));
+}
+
 export function scheduleTeamMonth(options: {
   equipe: Equipe;
   preventivas: TriagedOS[];
@@ -410,15 +431,15 @@ export function scheduleTeamMonth(options: {
   minutosPorOS: 30 | 60;
   targetMinutes?: number;
   minCorrectivesPerDay?: number;
-  /** Reserva capacidade para corretivas que serão anexadas por outro alocador. */
+  /** Reserva capacidade para as corretivas externas da Programação. */
   reserveCorrectiveSlots?: boolean;
 }): TeamMonthlySchedule {
   const targetMinutes = options.targetMinutes ?? META_MINUTOS_DIA;
-  const minCorrectives = options.minCorrectivesPerDay ?? CORRETIVAS_MINIMAS_DIA;
-  const capSlots = Math.max(
-    1,
-    Math.floor(targetMinutes / options.minutosPorOS),
+  const maxCorrectivesPerDay = Math.max(
+    0,
+    options.minCorrectivesPerDay ?? CORRETIVAS_MINIMAS_DIA,
   );
+  const capSlots = Math.max(1, Math.floor(targetMinutes / options.minutosPorOS));
   const buckets: WeekBucket[] = options.weeks.map((week) => ({
     week,
     os: [],
@@ -426,12 +447,33 @@ export function scheduleTeamMonth(options: {
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
 
-  // A programação operacional é geográfica: prédio -> andar -> espaço -> OS.
-  // Término SLA fica apenas como referência para apontamento e não interfere
-  // na escolha de qual OS entra primeiro em um dia/semana.
   const preventivas = sortByLocation(options.preventivas);
-  const corretivas = sortByLocation(options.corretivas);
+  const corretivas = sortCorrectiveRows(
+    options.corretivas.map((item) => item.raw as CorrectiveSourceRow),
+    options.from,
+  ).length
+    ? options.corretivas
+    : sortByLocation(options.corretivas);
   const businessDays = businessDaysUntil(options.from, options.until);
+  const reservedExternalCorrectives = options.reserveCorrectiveSlots
+    ? Math.min(maxCorrectivesPerDay, capSlots)
+    : 0;
+  const preventiveCapacityPerDay = Math.max(
+    0,
+    capSlots - reservedExternalCorrectives,
+  );
+  const internalCorrectiveCapacityPerDay = options.reserveCorrectiveSlots
+    ? 0
+    : Math.min(maxCorrectivesPerDay, capSlots);
+
+  const scheduledPreventiveTarget = Math.min(
+    preventivas.length,
+    businessDays.length * preventiveCapacityPerDay,
+  );
+  const scheduledCorrectiveTarget = Math.min(
+    corretivas.length,
+    businessDays.length * internalCorrectiveCapacityPerDay,
+  );
 
   let preventivaIndex = 0;
   let corretivaIndex = 0;
@@ -442,43 +484,33 @@ export function scheduleTeamMonth(options: {
     const dow = date.getDay() - 1;
     if (dow < 0 || dow > 4) return;
 
-    const remainingDays = Math.max(1, businessDays.length - dayPosition);
-    const remainingCorretivas = corretivas.length - corretivaIndex;
-    const remainingPreventivas = preventivas.length - preventivaIndex;
-
-    const desiredCorrectivas = Math.max(
-      minCorrectives,
-      Math.ceil(Math.max(0, remainingCorretivas) / remainingDays),
+    const preventiveCount = balancedDailyQuota(
+      scheduledPreventiveTarget,
+      dayPosition,
+      businessDays.length,
+      preventiveCapacityPerDay,
     );
-    const correctiveCount = Math.min(
-      capSlots,
-      Math.max(0, remainingCorretivas),
-      desiredCorrectivas,
-    );
-    const reservedExternalCorrectives = options.reserveCorrectiveSlots
-      ? Math.min(minCorrectives, capSlots)
-      : 0;
-    const availableForPreventivas = Math.max(
-      0,
-      capSlots - Math.max(correctiveCount, reservedExternalCorrectives),
-    );
-    const desiredPreventivas = Math.ceil(
-      Math.max(0, remainingPreventivas) / remainingDays,
-    );
-    const preventiveCount = Math.min(
-      availableForPreventivas,
-      Math.max(0, remainingPreventivas),
-      desiredPreventivas,
+    const correctiveCount = balancedDailyQuota(
+      scheduledCorrectiveTarget,
+      dayPosition,
+      businessDays.length,
+      internalCorrectiveCapacityPerDay,
     );
 
-    const dayItems: TriagedOS[] = [];
-    for (let index = 0; index < correctiveCount; index += 1) {
-      dayItems.push(corretivas[corretivaIndex++]);
-    }
-    for (let index = 0; index < preventiveCount; index += 1) {
-      dayItems.push(preventivas[preventivaIndex++]);
-    }
+    const dayPreventivas = preventivas.slice(
+      preventivaIndex,
+      preventivaIndex + preventiveCount,
+    );
+    preventivaIndex += dayPreventivas.length;
 
+    const dayCorretivas = corretivas.slice(
+      corretivaIndex,
+      corretivaIndex + correctiveCount,
+    );
+    corretivaIndex += dayCorretivas.length;
+
+    // Regra operacional: todas as preventivas primeiro; corretivas sempre no fim do dia.
+    const dayItems = [...dayPreventivas, ...dayCorretivas];
     buckets[weekIndex].porDia[dow].push(...dayItems);
     buckets[weekIndex].os.push(...dayItems);
 
@@ -487,12 +519,15 @@ export function scheduleTeamMonth(options: {
       date: new Date(date),
       dateKey: isoDate(date),
       dayIndex: dow,
-      preventiveCount,
-      correctiveCount,
+      preventiveCount: dayPreventivas.length,
+      correctiveCount: dayCorretivas.length,
       scheduledMinutes,
       remainingMinutes: Math.max(0, targetMinutes - scheduledMinutes),
       targetMinutes,
-      correctiveDeficit: Math.max(0, minCorrectives - correctiveCount),
+      correctiveDeficit: Math.max(
+        0,
+        maxCorrectivesPerDay - dayCorretivas.length,
+      ),
     });
   });
 
