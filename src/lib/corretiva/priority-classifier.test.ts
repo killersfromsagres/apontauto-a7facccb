@@ -45,7 +45,7 @@ describe("corrective priority classifier", () => {
     expect(result.reasons).toContain("Água próxima de instalação elétrica");
   });
 
-  it("classifica cozinha ou banheiro sem agravante ao menos como média", () => {
+  it("considera área de alimentação sem inflar reparo simples para alta/crítica", () => {
     const kitchen = classifyPriority(
       {
         nome_os: "Reparo de bancada",
@@ -54,7 +54,8 @@ describe("corrective priority classifier", () => {
       },
       reference,
     );
-    expect(["MÉDIA", "ALTA", "CRÍTICA"]).toContain(kitchen.level);
+    expect(kitchen.reasons).toContain("Área de alimentação");
+    expect(["NORMAL", "MÉDIA"]).toContain(kitchen.level);
   });
 
   it("mantém chamado neutro e recente como normal", () => {
