@@ -135,7 +135,7 @@ function ProvisionEncarregadosButton() {
 }
 
 function ProvisionChamadosButton() {
-  const provision = useServerFn(provisionChamadosClientLogin);
+  const provision = provisionChamados;
   const [loading, setLoading] = useState(false);
   const qc = useQueryClient();
 
