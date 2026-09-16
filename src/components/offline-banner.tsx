@@ -9,18 +9,24 @@ const SYNC_STATE_EVENT = "corretiva-offline-sync-state";
 /**
  * Status global do modo de campo offline.
  * Além da conectividade, mostra quantos apontamentos do usuário atual ainda
- * estão protegidos no aparelho aguardando sincronização.
+ * estão protegidos no aparelho e se já existem OS preparadas para uso offline.
  */
 export function OfflineBanner() {
   const [offline, setOffline] = useState(false);
   const [reconnected, setReconnected] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [pending, setPending] = useState(0);
+  const [cachedOrders, setCachedOrders] = useState(0);
 
-  const refreshPending = useCallback(async () => {
+  const refreshLocalState = useCallback(async () => {
     try {
-      const { outboxCountCurrentUser } = await import("@/lib/corretiva/db");
-      setPending(await outboxCountCurrentUser());
+      const { outboxCountCurrentUser, getOfflineCacheInfo } = await import("@/lib/corretiva/db");
+      const [queueCount, cacheInfo] = await Promise.all([
+        outboxCountCurrentUser(),
+        getOfflineCacheInfo(),
+      ]);
+      setPending(queueCount);
+      setCachedOrders(cacheInfo.count);
     } catch {
       // IndexedDB pode estar indisponível em navegação privada; não bloqueia o app.
     }
@@ -36,27 +42,27 @@ export function OfflineBanner() {
         }
         return isOffline;
       });
-      void refreshPending();
+      void refreshLocalState();
     };
 
-    const handleQueueChanged = () => void refreshPending();
+    const handleQueueChanged = () => void refreshLocalState();
     const handleSyncState = (event: Event) => {
       const detail = (event as CustomEvent<{ state?: string }>).detail;
       setSyncing(detail?.state === "start");
-      if (detail?.state === "finish") void refreshPending();
+      if (detail?.state === "finish") void refreshLocalState();
     };
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") void refreshPending();
+      if (document.visibilityState === "visible") void refreshLocalState();
     };
 
     syncConnection();
-    void refreshPending();
+    void refreshLocalState();
     window.addEventListener("online", syncConnection);
     window.addEventListener("offline", syncConnection);
     window.addEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged);
     window.addEventListener(SYNC_STATE_EVENT, handleSyncState as EventListener);
     document.addEventListener("visibilitychange", handleVisibility);
-    const interval = window.setInterval(() => void refreshPending(), 5000);
+    const interval = window.setInterval(() => void refreshLocalState(), 5000);
 
     return () => {
       window.removeEventListener("online", syncConnection);
@@ -66,13 +72,13 @@ export function OfflineBanner() {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.clearInterval(interval);
     };
-  }, [refreshPending]);
+  }, [refreshLocalState]);
 
-  // Online e sem pendências: o banner some depois do feedback curto de reconexão.
   if (!offline && !reconnected && !syncing && pending === 0) return null;
 
   const onlineWithPending = !offline && pending > 0;
   const synchronized = !offline && !syncing && pending === 0 && reconnected;
+  const offlineNotPrepared = offline && cachedOrders === 0;
 
   return (
     <div
@@ -92,7 +98,11 @@ export function OfflineBanner() {
         <>
           <CloudOff className="size-4 shrink-0 text-amber-300" />
           <span>
-            Sem internet — {pending > 0 ? `${pending} apontamento${pending === 1 ? "" : "s"} protegido${pending === 1 ? "" : "s"} neste aparelho.` : "Corretiva Novo continua disponível com os dados preparados."}
+            {offlineNotPrepared
+              ? "Sem internet — este aparelho ainda não possui OS preparadas. Conecte-se e abra Corretiva Novo uma vez para habilitar o trabalho offline."
+              : pending > 0
+                ? `Sem internet — ${pending} apontamento${pending === 1 ? "" : "s"} protegido${pending === 1 ? "" : "s"} neste aparelho.`
+                : `Sem internet — ${cachedOrders} OS preparada${cachedOrders === 1 ? "" : "s"} para trabalho de campo neste aparelho.`}
           </span>
         </>
       ) : synchronized ? (
