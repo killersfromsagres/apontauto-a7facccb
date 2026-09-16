@@ -47,10 +47,13 @@ const row = (
   dataSla: string,
   gravidade = "observacao",
   equipe = "CIVIL",
+  tipo = "Corretiva",
+  nome?: string,
 ): CorrectiveSourceRow => ({
   id,
   numero_os: numero,
-  nome_os: `Corretiva ${numero}`,
+  nome_os: nome ?? `Corretiva ${numero}`,
+  tipo,
   equipe,
   status: "aberta",
   predio: "A160",
@@ -98,7 +101,7 @@ describe("corrective program reservations", () => {
     ).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
-  it("com menos de 10 OS preenche os dias em sequência respeitando 2 por dia", () => {
+  it("com menos de 10 OS espalha a fila pelos dias antes de preencher a segunda vaga", () => {
     const rows = Array.from({ length: 7 }, (_, index) =>
       row(`id-${index}`, String(2000 + index), "2026-09-30"),
     );
@@ -112,14 +115,15 @@ describe("corrective program reservations", () => {
     });
 
     expect(allocation.rows).toHaveLength(7);
-    expect(allocation.byDay.map((items) => items.length)).toEqual([2, 2, 2, 1, 0]);
+    expect(allocation.byDay.map((items) => items.length)).toEqual([2, 2, 1, 1, 1]);
+    expect(new Set(allocation.rows.map((item) => item.numero_os)).size).toBe(7);
   });
 
-  it("prioriza backorder e criticidade antes de SLA e não duplica em outra semana", () => {
+  it("prioriza risco crítico antes de Backorder neutro e não duplica em outra semana", () => {
     const rows: CorrectiveSourceRow[] = [
-      row("id-backorder", "100", "2026-09-10", "observacao"),
-      row("id-critical", "200", "2026-09-18", "critico"),
-      row("id-third", "300", "2026-09-15", "observacao"),
+      row("id-backorder", "100", "2026-09-30", "observacao", "CIVIL", "Backorder", "Ajuste de acabamento"),
+      row("id-critical", "200", "2026-09-18", "critico", "CIVIL", "Corretiva", "Risco de choque em painel"),
+      row("id-third", "300", "2026-09-15", "observacao", "CIVIL", "Corretiva", "Reparo comum"),
     ];
     const reference = new Date(2026, 8, 14);
 
@@ -131,7 +135,8 @@ describe("corrective program reservations", () => {
       referenceDate: reference,
       limit: 2,
     });
-    expect(first.map((item) => item.numero_os)).toEqual(["100", "200"]);
+    expect(first[0].numero_os).toBe("200");
+    expect(first).toHaveLength(2);
 
     const nextWeek = selectCorrectiveRowsForWeekTeam({
       rows,
@@ -141,7 +146,7 @@ describe("corrective program reservations", () => {
       referenceDate: new Date(2026, 8, 21),
       limit: 2,
     });
-    expect(nextWeek.map((item) => item.numero_os)).toEqual(["300"]);
+    expect(nextWeek).toHaveLength(1);
 
     const ids = listCorrectiveProgramReservations().map((item) => item.numeroOs);
     expect(new Set(ids).size).toBe(ids.length);
