@@ -1,9 +1,9 @@
 name: Supabase encrypted backup
 
+# Execução automática temporariamente desativada enquanto os secrets do banco
+# não estiverem configurados no repositório. O backup continua disponível manualmente.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *"
 
 permissions:
   contents: write
