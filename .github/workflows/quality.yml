@@ -1,9 +1,8 @@
 name: Quality gate
 
+# Validação sob demanda/PR. Não roda a cada push direto em Apont-Auto,
+# evitando múltiplas execuções e e-mails durante uma sequência de alterações.
 on:
-  push:
-    branches:
-      - Apont-Auto
   pull_request:
     branches:
       - Apont-Auto
