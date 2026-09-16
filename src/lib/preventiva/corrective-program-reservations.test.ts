@@ -101,11 +101,50 @@ describe("corrective program reservations", () => {
     ).toEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4]);
   });
 
-  it("com menos de 10 OS espalha a fila pelos dias antes de preencher a segunda vaga", () => {
-    const rows = Array.from({ length: 7 }, (_, index) =>
-      row(`id-${index}`, String(2000 + index), "2026-09-30"),
+  it.each([
+    { total: 5, expected: [1, 1, 1, 1, 1] },
+    { total: 6, expected: [2, 1, 1, 1, 1] },
+  ])(
+    "com $total OS cobre SEG→SEX antes de ocupar a segunda vaga",
+    ({ total, expected }) => {
+      const rows = Array.from({ length: total }, (_, index) =>
+        row(`id-${index}`, String(2000 + index), "2026-09-30"),
+      );
+
+      const allocation = allocateCorrectivesForWeekTeam({
+        rows,
+        equipe: "CIVIL",
+        periodStart: "2026-09-14",
+        periodEnd: "2026-09-18",
+        referenceDate: new Date(2026, 8, 14),
+      });
+
+      expect(allocation.rows).toHaveLength(total);
+      expect(allocation.byDay.map((items) => items.length)).toEqual(expected);
+      expect(new Set(allocation.rows.map((item) => item.numero_os)).size).toBe(total);
+    },
+  );
+
+  it("descarta reservas v2 antigas e recalcula a semana de forma balanceada", () => {
+    window.localStorage.setItem(
+      "apontauto.corrective-program-reservations.v2",
+      JSON.stringify(
+        Array.from({ length: 5 }, (_, index) => ({
+          id: `id-${index}`,
+          numeroOs: String(5000 + index),
+          equipe: "CIVIL",
+          periodStart: "2026-09-14",
+          periodEnd: "2026-09-18",
+          reservedAt: "2026-09-10T10:00:00.000Z",
+          source: "programacao",
+          dayIndex: 0,
+        })),
+      ),
     );
 
+    const rows = Array.from({ length: 5 }, (_, index) =>
+      row(`id-${index}`, String(5000 + index), "2026-09-30"),
+    );
     const allocation = allocateCorrectivesForWeekTeam({
       rows,
       equipe: "CIVIL",
@@ -114,9 +153,9 @@ describe("corrective program reservations", () => {
       referenceDate: new Date(2026, 8, 14),
     });
 
-    expect(allocation.rows).toHaveLength(7);
-    expect(allocation.byDay.map((items) => items.length)).toEqual([2, 2, 1, 1, 1]);
-    expect(new Set(allocation.rows.map((item) => item.numero_os)).size).toBe(7);
+    expect(window.localStorage.getItem("apontauto.corrective-program-reservations.v2")).toBeNull();
+    expect(allocation.byDay.map((items) => items.length)).toEqual([1, 1, 1, 1, 1]);
+    expect(listCorrectiveProgramReservations()).toHaveLength(5);
   });
 
   it("prioriza risco crítico antes de Backorder neutro e não duplica em outra semana", () => {
