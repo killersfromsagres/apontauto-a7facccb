@@ -24,6 +24,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LoadingScreen } from "@/components/loading-screen";
 import { OfflineBanner } from "@/components/offline-banner";
+import { CorretivaOfflineSyncBridge } from "@/components/corretiva/offline-sync-bridge";
 import { AuthLocationMapPortal } from "@/components/auth-location-map";
 import { registerServiceWorker } from "@/lib/pwa/register-sw";
 
@@ -220,29 +221,16 @@ function RootComponent() {
     void import("@/features/observability/services/error-log").then((m) =>
       m.installErrorTelemetry(),
     );
-
-    // Mantém a cadência existente, mas retira o módulo de sincronização do carregamento inicial global.
-    const runCorrectiveSync = () => {
-      if (!navigator.onLine) return;
-
-      void import("@/lib/corretiva/sync")
-        .then(({ syncPending }) => syncPending())
-        .catch(() => {});
-    };
-
-    const iv = window.setInterval(runCorrectiveSync, 10000);
-    return () => window.clearInterval(iv);
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        {/* Camada de Performance e Mobile: Lazy-load do LoadingScreen */}
         <LoadingScreen />
         <OfflineBanner />
+        <CorretivaOfflineSyncBridge />
         {pathname === "/auth" && <AuthLocationMapPortal />}
 
-        {/* Outlet principal envolto em suspense para rotas com lazy loading (Item 7.4) */}
         <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300">
           <Outlet />
         </div>
