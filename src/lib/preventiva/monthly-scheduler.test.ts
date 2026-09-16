@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { weeksBetween } from "./capacity";
 import {
   formatMinutes,
+  isCorrectiveBackorder,
   scheduleTeamMonth,
   sortCorrectiveRows,
   type CorrectiveSourceRow,
@@ -60,24 +61,16 @@ describe("scheduleTeamMonth", () => {
     const equipe: Equipe = "ELÉTRICA";
     const result = scheduleTeamMonth({
       equipe,
-      preventivas: Array.from({ length: 80 }, (_, index) =>
-        os(`P${index}`, equipe),
-      ),
-      corretivas: Array.from({ length: 10 }, (_, index) =>
-        os(`C${index}`, equipe, "Corretiva"),
-      ),
+      preventivas: Array.from({ length: 80 }, (_, index) => os(`P${index}`, equipe)),
+      corretivas: Array.from({ length: 10 }, (_, index) => os(`C${index}`, equipe, "Corretiva")),
       weeks,
       from: monday,
       until: friday,
       minutosPorOS: 30,
     });
     expect(result.loadsByWeek[0]).toHaveLength(5);
-    expect(
-      result.loadsByWeek[0].every((load) => load.scheduledMinutes === 540),
-    ).toBe(true);
-    expect(
-      result.loadsByWeek[0].every((load) => load.correctiveCount === 2),
-    ).toBe(true);
+    expect(result.loadsByWeek[0].every((load) => load.scheduledMinutes === 540)).toBe(true);
+    expect(result.loadsByWeek[0].every((load) => load.correctiveCount === 2)).toBe(true);
     expect(result.overflowPreventivas).toHaveLength(0);
   });
 
@@ -85,26 +78,33 @@ describe("scheduleTeamMonth", () => {
     const equipe: Equipe = "HIDRÁULICA";
     const result = scheduleTeamMonth({
       equipe,
-      preventivas: Array.from({ length: 35 }, (_, index) =>
-        os(`P${index}`, equipe),
-      ),
-      corretivas: Array.from({ length: 10 }, (_, index) =>
-        os(`C${index}`, equipe, "Corretiva"),
-      ),
+      preventivas: Array.from({ length: 35 }, (_, index) => os(`P${index}`, equipe)),
+      corretivas: Array.from({ length: 10 }, (_, index) => os(`C${index}`, equipe, "Corretiva")),
       weeks,
       from: monday,
       until: friday,
       minutosPorOS: 60,
     });
-    expect(
-      result.loadsByWeek[0].every((load) => load.scheduledMinutes === 540),
-    ).toBe(true);
-    expect(
-      result.loadsByWeek[0].every((load) => load.correctiveCount === 2),
-    ).toBe(true);
-    expect(formatMinutes(result.loadsByWeek[0][0].remainingMinutes)).toBe(
-      "00:00",
-    );
+    expect(result.loadsByWeek[0].every((load) => load.scheduledMinutes === 540)).toBe(true);
+    expect(result.loadsByWeek[0].every((load) => load.correctiveCount === 2)).toBe(true);
+    expect(formatMinutes(result.loadsByWeek[0][0].remainingMinutes)).toBe("00:00");
+  });
+
+  it("reserva duas vagas diárias para corretivas externas sem estourar 09:00", () => {
+    const equipe: Equipe = "HIDRÁULICA";
+    const result = scheduleTeamMonth({
+      equipe,
+      preventivas: Array.from({ length: 50 }, (_, index) => os(`P${index}`, equipe)),
+      corretivas: [],
+      weeks,
+      from: monday,
+      until: friday,
+      minutosPorOS: 60,
+      reserveCorrectiveSlots: true,
+    });
+    // 9 slots/dia - 2 reservados = no máximo 7 preventivas por dia.
+    expect(result.loadsByWeek[0].every((load) => load.preventiveCount <= 7)).toBe(true);
+    expect(result.loadsByWeek[0].every((load) => load.scheduledMinutes <= 420)).toBe(true);
   });
 
   it("informa o déficit quando não existem duas corretivas disponíveis", () => {
@@ -119,15 +119,11 @@ describe("scheduleTeamMonth", () => {
       minutosPorOS: 30,
     });
     expect(result.loadsByWeek[0][0].correctiveDeficit).toBe(1);
-    expect(
-      result.loadsByWeek[0]
-        .slice(1)
-        .every((load) => load.correctiveDeficit === 2),
-    ).toBe(true);
+    expect(result.loadsByWeek[0].slice(1).every((load) => load.correctiveDeficit === 2)).toBe(true);
     expect(result.loadsByWeek[0][0].remainingMinutes).toBe(510);
   });
 
-  it("ignora Término SLA na distribuição e prioriza a sequência de prédios", () => {
+  it("ignora Término SLA na distribuição preventiva e prioriza a sequência de prédios", () => {
     const equipe: Equipe = "ELÉTRICA";
     const predioBComSlaMaisCedo = {
       ...os("B-URGENTE", equipe, "Preventiva", "2026-09-14"),
@@ -148,41 +144,43 @@ describe("scheduleTeamMonth", () => {
       until: friday,
       minutosPorOS: 60,
     });
-    expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual([
-      "A-DEPOIS",
-    ]);
-    expect(result.buckets[0].porDia[1].map((item) => item.os)).toEqual([
-      "B-URGENTE",
-    ]);
+    expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual(["A-DEPOIS"]);
+    expect(result.buckets[0].porDia[1].map((item) => item.os)).toEqual(["B-URGENTE"]);
   });
 });
 
 describe("prioridade das corretivas", () => {
-  it("mantém classificação de backorder para diagnóstico, sem usar isso na ordem da programação", () => {
+  it("usa risco/SLA antes de aging de Backorder e reconhece Backorder pelo tipo", () => {
     const reference = new Date(2026, 8, 14);
     const rows: CorrectiveSourceRow[] = [
       {
-        numero_os: "normal-atrasada",
-        data_sla: "2026-09-01",
+        numero_os: "backorder-neutro",
+        tipo: "Backorder",
+        nome_os: "Ajustar acabamento",
+        data_criacao: "2026-08-01",
+        data_sla: "2026-09-30",
         corretiva_problemas: [],
       },
       {
         numero_os: "critica-futura",
+        tipo: "Corretiva",
+        nome_os: "Risco de choque em painel energizado",
         data_sla: "2026-09-20",
-        corretiva_problemas: [
-          { gravidade: "critico", status_gestor: "aprovado" },
-        ],
+        corretiva_problemas: [{ gravidade: "critico", status_gestor: "aprovado" }],
       },
       {
-        numero_os: "critica-atrasada",
-        data_sla: "2026-09-02",
-        corretiva_problemas: [
-          { gravidade: "critico", status_gestor: "pendente" },
-        ],
+        numero_os: "normal-atrasada",
+        tipo: "Corretiva",
+        nome_os: "Ajuste de rodapé",
+        data_sla: "2026-09-01",
+        corretiva_problemas: [],
       },
     ];
-    expect(
-      sortCorrectiveRows(rows, reference).map((row) => row.numero_os),
-    ).toEqual(["critica-atrasada", "normal-atrasada", "critica-futura"]);
+
+    expect(isCorrectiveBackorder(rows[0], reference)).toBe(true);
+    expect(isCorrectiveBackorder(rows[2], reference)).toBe(false);
+    const ordered = sortCorrectiveRows(rows, reference).map((row) => row.numero_os);
+    expect(ordered[0]).toBe("critica-futura");
+    expect(new Set(ordered)).toEqual(new Set(["critica-futura", "normal-atrasada", "backorder-neutro"]));
   });
 });
