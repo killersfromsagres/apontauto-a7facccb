@@ -1,59 +1,119 @@
-import { useEffect, useState } from "react";
-import { CloudOff, Wifi } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CheckCircle2, CloudOff, CloudUpload, RefreshCw, Wifi } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+const QUEUE_CHANGED_EVENT = "corretiva-offline-queue-changed";
+const SYNC_STATE_EVENT = "corretiva-offline-sync-state";
+
 /**
- * Faixa fixa avisando que o aparelho está sem internet. Os módulos de campo
- * (Refrigeração/Corretiva) continuam salvando localmente e sincronizam depois.
+ * Status global do modo de campo offline.
+ * Além da conectividade, mostra quantos apontamentos do usuário atual ainda
+ * estão protegidos no aparelho aguardando sincronização.
  */
 export function OfflineBanner() {
   const [offline, setOffline] = useState(false);
-  const [reconectou, setReconectou] = useState(false);
+  const [reconnected, setReconnected] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [pending, setPending] = useState(0);
+
+  const refreshPending = useCallback(async () => {
+    try {
+      const { outboxCountCurrentUser } = await import("@/lib/corretiva/db");
+      setPending(await outboxCountCurrentUser());
+    } catch {
+      // IndexedDB pode estar indisponível em navegação privada; não bloqueia o app.
+    }
+  }, []);
 
   useEffect(() => {
-    const sync = () => {
+    const syncConnection = () => {
       const isOffline = !navigator.onLine;
-      setOffline((prev) => {
-        if (prev && !isOffline) {
-          setReconectou(true);
-          window.setTimeout(() => setReconectou(false), 3000);
+      setOffline((wasOffline) => {
+        if (wasOffline && !isOffline) {
+          setReconnected(true);
+          window.setTimeout(() => setReconnected(false), 4500);
         }
         return isOffline;
       });
+      void refreshPending();
     };
-    sync();
-    window.addEventListener("online", sync);
-    window.addEventListener("offline", sync);
-    return () => {
-      window.removeEventListener("online", sync);
-      window.removeEventListener("offline", sync);
-    };
-  }, []);
 
-  if (!offline && !reconectou) return null;
+    const handleQueueChanged = () => void refreshPending();
+    const handleSyncState = (event: Event) => {
+      const detail = (event as CustomEvent<{ state?: string }>).detail;
+      setSyncing(detail?.state === "start");
+      if (detail?.state === "finish") void refreshPending();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") void refreshPending();
+    };
+
+    syncConnection();
+    void refreshPending();
+    window.addEventListener("online", syncConnection);
+    window.addEventListener("offline", syncConnection);
+    window.addEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged);
+    window.addEventListener(SYNC_STATE_EVENT, handleSyncState as EventListener);
+    document.addEventListener("visibilitychange", handleVisibility);
+    const interval = window.setInterval(() => void refreshPending(), 5000);
+
+    return () => {
+      window.removeEventListener("online", syncConnection);
+      window.removeEventListener("offline", syncConnection);
+      window.removeEventListener(QUEUE_CHANGED_EVENT, handleQueueChanged);
+      window.removeEventListener(SYNC_STATE_EVENT, handleSyncState as EventListener);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.clearInterval(interval);
+    };
+  }, [refreshPending]);
+
+  // Online e sem pendências: o banner some depois do feedback curto de reconexão.
+  if (!offline && !reconnected && !syncing && pending === 0) return null;
+
+  const onlineWithPending = !offline && pending > 0;
+  const synchronized = !offline && !syncing && pending === 0 && reconnected;
 
   return (
     <div
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium",
+        "fixed inset-x-0 top-0 z-[70] flex items-center justify-center gap-2 border-b px-3 py-2 text-[11px] font-medium sm:text-xs",
         "pt-[max(0.5rem,env(safe-area-inset-top))] backdrop-blur-xl",
         offline
-          ? "bg-amber-500/20 text-amber-100 border-b border-amber-400/30"
-          : "bg-emerald-500/20 text-emerald-100 border-b border-emerald-400/30",
+          ? "border-amber-400/25 bg-[#17130a]/95 text-amber-100"
+          : synchronized
+            ? "border-emerald-400/25 bg-[#07150f]/95 text-emerald-100"
+            : "border-cyan-300/20 bg-[#061119]/95 text-cyan-50",
       )}
     >
       {offline ? (
         <>
-          <CloudOff className="size-4 shrink-0" />
-          <span>Sem internet — seus apontamentos ficam salvos e sobem ao reconectar.</span>
+          <CloudOff className="size-4 shrink-0 text-amber-300" />
+          <span>
+            Sem internet — {pending > 0 ? `${pending} apontamento${pending === 1 ? "" : "s"} protegido${pending === 1 ? "" : "s"} neste aparelho.` : "Corretiva Novo continua disponível com os dados preparados."}
+          </span>
+        </>
+      ) : synchronized ? (
+        <>
+          <CheckCircle2 className="size-4 shrink-0 text-emerald-300" />
+          <span>Conexão restabelecida. Todos os apontamentos deste aparelho estão sincronizados.</span>
+        </>
+      ) : syncing ? (
+        <>
+          <RefreshCw className="size-4 shrink-0 animate-spin text-cyan-200" />
+          <span>Sincronizando {pending > 0 ? `${pending} apontamento${pending === 1 ? "" : "s"}` : "dados de campo"}…</span>
+        </>
+      ) : onlineWithPending ? (
+        <>
+          <CloudUpload className="size-4 shrink-0 text-cyan-200" />
+          <span>{pending} apontamento{pending === 1 ? "" : "s"} aguardando envio automático.</span>
         </>
       ) : (
         <>
-          <Wifi className="size-4 shrink-0" />
-          <span>Conexão restabelecida. Sincronizando…</span>
+          <Wifi className="size-4 shrink-0 text-emerald-300" />
+          <span>Conexão ativa.</span>
         </>
       )}
     </div>
