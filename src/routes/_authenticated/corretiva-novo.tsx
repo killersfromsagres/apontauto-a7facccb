@@ -116,12 +116,10 @@ function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
 
 function priorityBadgeClass(level: PriorityLevel) {
   if (level === "CRÍTICA")
-    return "border-red-300/40 bg-red-500/25 text-red-100 shadow-[0_0_18px_rgba(239,68,68,0.14)]";
-  if (level === "ALTA")
-    return "border-orange-300/35 bg-orange-500/20 text-orange-100";
-  if (level === "MÉDIA")
-    return "border-amber-300/30 bg-amber-400/15 text-amber-100";
-  return "border-white/10 bg-white/[0.04] text-white/55";
+    return "border-yellow-200/80 bg-yellow-400 text-slate-950 shadow-[0_0_18px_rgba(250,204,21,0.18)]";
+  if (level === "ALTA") return "border-orange-300/50 bg-orange-500/20 text-orange-100";
+  if (level === "MÉDIA") return "border-sky-300/45 bg-sky-400/15 text-sky-100";
+  return "border-slate-400/20 bg-slate-400/[0.08] text-slate-300";
 }
 
 function CorretivaNovoPage() {
@@ -798,9 +796,9 @@ function CorretivaNovoPage() {
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
-                    priority.level === "CRÍTICA" && "border-l-4 border-l-red-500 border-red-400/20",
+                    priority.level === "CRÍTICA" && "border-l-4 border-l-yellow-400 border-yellow-300/20",
                     priority.level === "ALTA" && "border-l-4 border-l-orange-400",
-                    priority.level === "MÉDIA" && "border-l-4 border-l-amber-300",
+                    priority.level === "MÉDIA" && "border-l-4 border-l-sky-400",
                     priority.level === "NORMAL" && "border-l-4 border-l-slate-500/40",
                   )}
                   onClick={() => setSelectedOs(os)}
@@ -817,7 +815,7 @@ function CorretivaNovoPage() {
                         <Badge
                           variant="outline"
                           className={cn(
-                            "px-2.5 py-1 font-mono text-xs font-semibold tracking-wide md:text-sm",
+                            "h-8 px-3.5 py-1.5 font-mono text-[12px] font-extrabold tracking-[0.035em] shadow-[0_0_18px_rgba(255,255,255,0.025)] md:h-9 md:px-4 md:text-sm",
                             equipeStyles(os.equipe).badge,
                           )}
                         >
@@ -837,32 +835,27 @@ function CorretivaNovoPage() {
                           {priority.isBackorder && (
                             <Badge
                               variant="outline"
-                              className="border-indigo-400/35 bg-indigo-500/15 text-[9px] font-extrabold uppercase text-indigo-100 md:text-[10px]"
+                              className="h-5 border-red-300/65 bg-red-600 px-2 text-[8px] font-extrabold uppercase tracking-[0.06em] text-white shadow-[0_0_14px_rgba(220,38,38,0.22)] md:text-[9px]"
                               title={priority.ageDays > 0 ? `Backorder · aberto há ${priority.ageDays} dia(s)` : "Backorder"}
                             >
                               BACKORDER
                             </Badge>
                           )}
-                          <Badge
-                            variant={completed ? "secondary" : "outline"}
-                            className={cn(
-                              "gap-1.5 whitespace-nowrap text-[9px] font-bold uppercase md:text-[10px]",
-                              completed
-                                ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
-                                : "opacity-80",
-                            )}
-                          >
-                            {completed && (
-                              <span
-                                className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
-                                aria-hidden="true"
-                              >
-                                <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
-                                <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
-                              </span>
-                            )}
-                            {completed ? "Concluída" : os.equipe || "Sem Equipe"}
-                          </Badge>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "h-8 max-w-full gap-1.5 whitespace-nowrap px-3.5 text-[11px] font-extrabold uppercase tracking-[0.02em] md:h-9 md:px-4 md:text-xs",
+                    equipeStyles(os.equipe).badge,
+                  )}
+                  title={`Equipe responsável: ${os.equipe || "Sem Equipe"}`}
+                >
+                  {os.equipe || "Sem Equipe"}
+                </Badge>
+                {completed && (
+                  <Badge variant="secondary" className="h-5 gap-1 border-emerald-500/35 bg-emerald-500/20 px-2 text-[8px] font-bold uppercase text-emerald-200 md:text-[9px]">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" /> Concluída
+                  </Badge>
+                )}
                         </div>
                       </div>
 

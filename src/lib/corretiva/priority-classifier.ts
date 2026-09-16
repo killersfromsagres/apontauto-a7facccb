@@ -57,13 +57,13 @@ export const PRIORITY_HEX: Record<
   PriorityLevel,
   { bg: string; fg: string }
 > = {
-  CRÍTICA: { bg: "#DC2626", fg: "#FFFFFF" },
+  CRÍTICA: { bg: "#FACC15", fg: "#111827" },
   ALTA: { bg: "#F97316", fg: "#111827" },
-  MÉDIA: { bg: "#FDE047", fg: "#111827" },
+  MÉDIA: { bg: "#38BDF8", fg: "#082F49" },
   NORMAL: { bg: "#E2E8F0", fg: "#334155" },
 };
 
-export const BACKORDER_HEX = { bg: "#312E81", fg: "#FFFFFF" } as const;
+export const BACKORDER_HEX = { bg: "#DC2626", fg: "#FFFFFF" } as const;
 
 export function normalizeText(value: unknown): string {
   return String(value ?? "")

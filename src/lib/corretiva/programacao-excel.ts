@@ -38,14 +38,15 @@ const thinBorder = {
   right: { style: "thin" as const, color: { argb: C.slate200 } },
 };
 
+
 const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
   ELETRICA: { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
-  HIDRAULICA: { bg: "#EFF6FF", fg: "#1D4ED8", accent: "#3B82F6" },
-  CIVIL: { bg: "#F5F3FF", fg: "#6D28D9", accent: "#8B5CF6" },
-  CHAVEIRO: { bg: "#F1F5F9", fg: "#475569", accent: "#94A3B8" },
+  HIDRAULICA: { bg: "#FFF7ED", fg: "#C2410C", accent: "#F97316" },
+  CIVIL: { bg: "#F0FDFA", fg: "#0F766E", accent: "#2DD4BF" },
+  CHAVEIRO: { bg: "#F5F3FF", fg: "#6D28D9", accent: "#8B5CF6" },
   PINTURA: { bg: "#FDF2F8", fg: "#BE185D", accent: "#EC4899" },
-  REFRIGERACAO: { bg: "#ECFEFF", fg: "#0E7490", accent: "#06B6D4" },
-  LIMPEZA: { bg: "#ECFDF5", fg: "#047857", accent: "#10B981" },
+  REFRIGERACAO: { bg: "#F0F9FF", fg: "#0369A1", accent: "#38BDF8" },
+  LIMPEZA: { bg: "#F0FDF4", fg: "#15803D", accent: "#22C55E" },
   OUTROS: { bg: "#F8FAFC", fg: "#475569", accent: "#94A3B8" },
 };
 
@@ -174,7 +175,8 @@ function buildOperationsSheet(
   cards.forEach(([range, value, color]) => {
     sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
-    cell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.white } };
+    const foreground = String(value).startsWith("CRÍTICA") ? argb(PRIORITY_HEX.CRÍTICA.fg) : String(value).startsWith("ALTA") ? argb(PRIORITY_HEX.ALTA.fg) : String(value).startsWith("BACKORDER") ? argb(BACKORDER_HEX.fg) : C.white;
+    cell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: foreground } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
   });
   sheet.getRow(3).height = 31; sheet.getRow(4).height = 7;
@@ -260,7 +262,8 @@ function buildExecutiveSheet(workbook: ExcelJS.Workbook, items: ProgramacaoExpor
     ["G3:I5", `ALTAS\n${counts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg)], ["J3:L5", `BACKORDER\n${backorders}`, C.backorder],
   ] as const;
   cards.forEach(([range, value, color]) => { sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } }; cell.font = { name: FONT_DISPLAY, size: 15, bold: true, color: { argb: C.white } };
+    const foreground = String(value).startsWith("CRÍTICAS") ? argb(PRIORITY_HEX.CRÍTICA.fg) : String(value).startsWith("ALTAS") ? argb(PRIORITY_HEX.ALTA.fg) : String(value).startsWith("BACKORDER") ? argb(BACKORDER_HEX.fg) : C.white;
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } }; cell.font = { name: FONT_DISPLAY, size: 15, bold: true, color: { argb: foreground } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }; });
   sheet.getRow(3).height = 28; sheet.getRow(4).height = 28; sheet.getRow(5).height = 28;
   sheet.mergeCells("A7:L7"); const note = sheet.getCell("A7");
