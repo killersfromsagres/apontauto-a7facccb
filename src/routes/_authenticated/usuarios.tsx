@@ -356,10 +356,6 @@ function UsersListCard() {
 }
 
 function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) {
-  const del = useServerFn(deleteAppUser);
-  const setBanned = useServerFn(setUserBanned);
-  const setRole = useServerFn(setUserRole);
-  const setMenus = useServerFn(setUserAllowedMenus);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [localAllowed, setLocalAllowed] = useState<string[]>(user.allowedMenus ?? []);
