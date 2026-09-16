@@ -15,6 +15,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRecoveryRouteImport } from './routes/admin-recovery'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiWhatsappEnviarRouteImport } from './routes/api/whatsapp-enviar'
@@ -31,6 +32,8 @@ import { Route as AuthenticatedRefrigeracaoHistoricoPermanenteRouteImport } from
 import { Route as AuthenticatedRefrigeracaoHistoricoRouteImport } from './routes/_authenticated/refrigeracao-historico'
 import { Route as AuthenticatedRefrigeracaoGestorRouteImport } from './routes/_authenticated/refrigeracao-gestor'
 import { Route as AuthenticatedRefrigeracaoRouteImport } from './routes/_authenticated/refrigeracao'
+import { Route as AuthenticatedRecuperacaoLocalRouteImport } from './routes/_authenticated/recuperacao-local'
+import { Route as AuthenticatedRecuperacaoCloudRouteImport } from './routes/_authenticated/recuperacao-cloud'
 import { Route as AuthenticatedQualidadeDadosRouteImport } from './routes/_authenticated/qualidade-dados'
 import { Route as AuthenticatedProgramacaoPreventivasRouteImport } from './routes/_authenticated/programacao-preventivas'
 import { Route as AuthenticatedProgramacaoGpsRouteImport } from './routes/_authenticated/programacao-gps'
@@ -129,6 +132,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecoveryRoute = AdminRecoveryRouteImport.update({
+  id: '/admin-recovery',
+  path: '/admin-recovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
@@ -215,6 +223,18 @@ const AuthenticatedRefrigeracaoRoute =
   AuthenticatedRefrigeracaoRouteImport.update({
     id: '/refrigeracao',
     path: '/refrigeracao',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRecuperacaoLocalRoute =
+  AuthenticatedRecuperacaoLocalRouteImport.update({
+    id: '/recuperacao-local',
+    path: '/recuperacao-local',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedRecuperacaoCloudRoute =
+  AuthenticatedRecuperacaoCloudRouteImport.update({
+    id: '/recuperacao-cloud',
+    path: '/recuperacao-cloud',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedQualidadeDadosRoute =
@@ -605,6 +625,7 @@ const AuthenticatedAbastecimentoAguaBagsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -648,6 +669,8 @@ export interface FileRoutesByFullPath {
   '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
+  '/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
+  '/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -695,6 +718,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -738,6 +762,8 @@ export interface FileRoutesByTo {
   '/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
+  '/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
+  '/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
   '/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -786,6 +812,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/admin-recovery': typeof AdminRecoveryRoute
   '/auth': typeof AuthRoute
   '/contato': typeof ContatoRoute
   '/privacidade': typeof PrivacidadeRoute
@@ -829,6 +856,8 @@ export interface FileRoutesById {
   '/_authenticated/programacao-gps': typeof AuthenticatedProgramacaoGpsRoute
   '/_authenticated/programacao-preventivas': typeof AuthenticatedProgramacaoPreventivasRoute
   '/_authenticated/qualidade-dados': typeof AuthenticatedQualidadeDadosRoute
+  '/_authenticated/recuperacao-cloud': typeof AuthenticatedRecuperacaoCloudRoute
+  '/_authenticated/recuperacao-local': typeof AuthenticatedRecuperacaoLocalRoute
   '/_authenticated/refrigeracao': typeof AuthenticatedRefrigeracaoRoute
   '/_authenticated/refrigeracao-gestor': typeof AuthenticatedRefrigeracaoGestorRoute
   '/_authenticated/refrigeracao-historico': typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -878,6 +907,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin-recovery'
     | '/auth'
     | '/contato'
     | '/privacidade'
@@ -921,6 +951,8 @@ export interface FileRouteTypes {
     | '/programacao-gps'
     | '/programacao-preventivas'
     | '/qualidade-dados'
+    | '/recuperacao-cloud'
+    | '/recuperacao-local'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -968,6 +1000,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-recovery'
     | '/auth'
     | '/contato'
     | '/privacidade'
@@ -1011,6 +1044,8 @@ export interface FileRouteTypes {
     | '/programacao-gps'
     | '/programacao-preventivas'
     | '/qualidade-dados'
+    | '/recuperacao-cloud'
+    | '/recuperacao-local'
     | '/refrigeracao'
     | '/refrigeracao-gestor'
     | '/refrigeracao-historico'
@@ -1058,6 +1093,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/admin-recovery'
     | '/auth'
     | '/contato'
     | '/privacidade'
@@ -1101,6 +1137,8 @@ export interface FileRouteTypes {
     | '/_authenticated/programacao-gps'
     | '/_authenticated/programacao-preventivas'
     | '/_authenticated/qualidade-dados'
+    | '/_authenticated/recuperacao-cloud'
+    | '/_authenticated/recuperacao-local'
     | '/_authenticated/refrigeracao'
     | '/_authenticated/refrigeracao-gestor'
     | '/_authenticated/refrigeracao-historico'
@@ -1150,6 +1188,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AdminRecoveryRoute: typeof AdminRecoveryRoute
   AuthRoute: typeof AuthRoute
   ContatoRoute: typeof ContatoRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
@@ -1215,6 +1254,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-recovery': {
+      id: '/admin-recovery'
+      path: '/admin-recovery'
+      fullPath: '/admin-recovery'
+      preLoaderRoute: typeof AdminRecoveryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1327,6 +1373,20 @@ declare module '@tanstack/react-router' {
       path: '/refrigeracao'
       fullPath: '/refrigeracao'
       preLoaderRoute: typeof AuthenticatedRefrigeracaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/recuperacao-local': {
+      id: '/_authenticated/recuperacao-local'
+      path: '/recuperacao-local'
+      fullPath: '/recuperacao-local'
+      preLoaderRoute: typeof AuthenticatedRecuperacaoLocalRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/recuperacao-cloud': {
+      id: '/_authenticated/recuperacao-cloud'
+      path: '/recuperacao-cloud'
+      fullPath: '/recuperacao-cloud'
+      preLoaderRoute: typeof AuthenticatedRecuperacaoCloudRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/qualidade-dados': {
@@ -1917,6 +1977,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProgramacaoGpsRoute: typeof AuthenticatedProgramacaoGpsRoute
   AuthenticatedProgramacaoPreventivasRoute: typeof AuthenticatedProgramacaoPreventivasRoute
   AuthenticatedQualidadeDadosRoute: typeof AuthenticatedQualidadeDadosRoute
+  AuthenticatedRecuperacaoCloudRoute: typeof AuthenticatedRecuperacaoCloudRoute
+  AuthenticatedRecuperacaoLocalRoute: typeof AuthenticatedRecuperacaoLocalRoute
   AuthenticatedRefrigeracaoRoute: typeof AuthenticatedRefrigeracaoRoute
   AuthenticatedRefrigeracaoGestorRoute: typeof AuthenticatedRefrigeracaoGestorRoute
   AuthenticatedRefrigeracaoHistoricoRoute: typeof AuthenticatedRefrigeracaoHistoricoRoute
@@ -1975,6 +2037,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProgramacaoPreventivasRoute:
     AuthenticatedProgramacaoPreventivasRoute,
   AuthenticatedQualidadeDadosRoute: AuthenticatedQualidadeDadosRoute,
+  AuthenticatedRecuperacaoCloudRoute: AuthenticatedRecuperacaoCloudRoute,
+  AuthenticatedRecuperacaoLocalRoute: AuthenticatedRecuperacaoLocalRoute,
   AuthenticatedRefrigeracaoRoute: AuthenticatedRefrigeracaoRoute,
   AuthenticatedRefrigeracaoGestorRoute: AuthenticatedRefrigeracaoGestorRoute,
   AuthenticatedRefrigeracaoHistoricoRoute:
@@ -2006,6 +2070,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AdminRecoveryRoute: AdminRecoveryRoute,
   AuthRoute: AuthRoute,
   ContatoRoute: ContatoRoute,
   PrivacidadeRoute: PrivacidadeRoute,

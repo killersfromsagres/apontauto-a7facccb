@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+
 import { toast } from "sonner";
 import {
   UserPlus,
@@ -36,15 +36,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  listAppUsers,
-  deleteAppUser,
-  setUserBanned,
-  setUserRole,
-  setUserAllowedMenus,
-  provisionEncarregadosUser,
-  provisionChamadosClientLogin,
-} from "@/lib/users.functions";
-import { createAppUserWithPermissions } from "@/lib/user-admin-v2.functions";
+  listUsers,
+  createUser,
+  deleteUser,
+  setUserBannedState,
+  setUserRoleState,
+  setUserMenus,
+  provisionEncarregados,
+  provisionChamados,
+} from "@/lib/admin-users.client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   ASSIGNABLE_MENU_KEYS,
@@ -101,7 +101,7 @@ function UsuariosPage() {
 }
 
 function ProvisionEncarregadosButton() {
-  const provision = useServerFn(provisionEncarregadosUser);
+  const provision = provisionEncarregados;
   const [loading, setLoading] = useState(false);
   const qc = useQueryClient();
 
@@ -135,7 +135,7 @@ function ProvisionEncarregadosButton() {
 }
 
 function ProvisionChamadosButton() {
-  const provision = useServerFn(provisionChamadosClientLogin);
+  const provision = provisionChamados;
   const [loading, setLoading] = useState(false);
   const qc = useQueryClient();
 
@@ -170,7 +170,7 @@ function ProvisionChamadosButton() {
 
 function CreateUserCard() {
   const qc = useQueryClient();
-  const create = useServerFn(createAppUserWithPermissions);
+  
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -195,14 +195,12 @@ function CreateUserCard() {
     e.preventDefault();
     setLoading(true);
     try {
-      await create({
-        data: {
-          login,
-          password,
-          fullName: fullName || undefined,
-          role,
-          allowedMenus: role === "admin" ? [] : allowedMenus,
-        },
+      await createUser({
+        login,
+        password,
+        fullName: fullName || undefined,
+        role,
+        allowedMenus: role === "admin" ? [] : allowedMenus,
       });
       toast.success(`Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`);
       setLogin("");
@@ -327,9 +325,9 @@ type AppUser = {
 
 function UsersListCard() {
   const qc = useQueryClient();
-  const list = useServerFn(listAppUsers);
+  
   const [filter, setFilter] = useState("");
-  const { data, isLoading, error, refetch, isFetching } = useQuery({ queryKey: ["app-users"], queryFn: async () => (await list()).users as AppUser[], staleTime: 0, refetchOnWindowFocus: true });
+  const { data, isLoading, error, refetch, isFetching } = useQuery({ queryKey: ["app-users"], queryFn: async () => (await listUsers()) as AppUser[], staleTime: 0, refetchOnWindowFocus: true });
   const invalidate = () => qc.invalidateQueries({ queryKey: ["app-users"] });
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -358,10 +356,6 @@ function UsersListCard() {
 }
 
 function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) {
-  const del = useServerFn(deleteAppUser);
-  const setBanned = useServerFn(setUserBanned);
-  const setRole = useServerFn(setUserRole);
-  const setMenus = useServerFn(setUserAllowedMenus);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [localAllowed, setLocalAllowed] = useState<string[]>(user.allowedMenus ?? []);
@@ -373,10 +367,10 @@ function UserRow({ user, onChanged }: { user: AppUser; onChanged: () => void }) 
 
   useEffect(() => { setLocalAllowed(user.allowedMenus ?? []); }, [user.allowedMenus]);
 
-  const banMut = useMutation({ mutationFn: async (banned: boolean) => setBanned({ data: { userId: user.id, banned } }), onSuccess: () => { toast.success(user.banned ? "Usuário ativado." : "Usuário desativado."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar status") });
-  const roleMut = useMutation({ mutationFn: async (role: Role) => setRole({ data: { userId: user.id, role } }), onSuccess: () => { toast.success("Papel atualizado."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao atualizar papel") });
-  const delMut = useMutation({ mutationFn: async () => del({ data: { userId: user.id } }), onSuccess: () => { toast.success("Usuário removido."); setConfirmDelete(false); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao remover") });
-  const menusMut = useMutation({ mutationFn: async () => setMenus({ data: { userId: user.id, allowed: localAllowed } }), onSuccess: () => { toast.success("Permissões salvas."); onChanged(); }, onError: (e: any) => toast.error(e?.message ?? "Falha ao salvar permissões") });
+  const banMut = useMutation({ mutationFn: async (banned: boolean) => setUserBannedState(user.id, banned), onSuccess: () => { toast.success(user.banned ? "Usuário ativado." : "Usuário desativado."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar status") });
+  const roleMut = useMutation({ mutationFn: async (role: Role) => setUserRoleState(user.id, role), onSuccess: () => { toast.success("Papel atualizado."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao atualizar papel") });
+  const delMut = useMutation({ mutationFn: async () => deleteUser(user.id), onSuccess: () => { toast.success("Usuário removido."); setConfirmDelete(false); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao remover") });
+  const menusMut = useMutation({ mutationFn: async () => setUserMenus(user.id, localAllowed), onSuccess: () => { toast.success("Permissões salvas."); onChanged(); }, onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Falha ao salvar permissões") });
 
   const toggleMenu = (key: MenuKey, on: boolean) => setLocalAllowed((current) => on ? Array.from(new Set([...current, key])) : current.filter((item) => item !== key));
   const toggleGroup = (keys: readonly MenuKey[], on: boolean) => setLocalAllowed((current) => !on ? current.filter((item) => !keys.includes(item as MenuKey)) : Array.from(new Set([...current, ...keys])));
