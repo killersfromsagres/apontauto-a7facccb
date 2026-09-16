@@ -325,7 +325,7 @@ type AppUser = {
 
 function UsersListCard() {
   const qc = useQueryClient();
-  const list = useServerFn(listAppUsers);
+  
   const [filter, setFilter] = useState("");
   const { data, isLoading, error, refetch, isFetching } = useQuery({ queryKey: ["app-users"], queryFn: async () => (await list()).users as AppUser[], staleTime: 0, refetchOnWindowFocus: true });
   const invalidate = () => qc.invalidateQueries({ queryKey: ["app-users"] });
