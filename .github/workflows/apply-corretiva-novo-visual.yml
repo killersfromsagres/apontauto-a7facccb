@@ -1,0 +1,400 @@
+name: Apply Corretiva Novo visual
+
+on:
+  push:
+    branches: [Apont-Auto]
+    paths:
+      - .github/workflows/apply-corretiva-novo-visual.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Apont-Auto
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply focused Corretiva Novo changes
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+          from textwrap import dedent
+
+          def must_replace(text: str, old: str, new: str, label: str) -> str:
+              if old not in text:
+                  raise SystemExit(f"Replacement not found: {label}")
+              return text.replace(old, new, 1)
+
+          route_path = Path("src/routes/_authenticated/corretiva-novo.tsx")
+          route = route_path.read_text(encoding="utf-8")
+
+          route, count = re.subn(
+              r'function priorityBadgeClass\(level: PriorityLevel\) \{.*?\n\}\n\nfunction CorretivaNovoPage',
+              dedent('''
+              function priorityBadgeClass(level: PriorityLevel) {
+                if (level === "CRÍTICA")
+                  return "border-yellow-200/80 bg-yellow-400 text-slate-950 shadow-[0_0_18px_rgba(250,204,21,0.18)]";
+                if (level === "ALTA")
+                  return "border-orange-300/50 bg-orange-500/20 text-orange-100";
+                if (level === "MÉDIA")
+                  return "border-sky-300/45 bg-sky-400/15 text-sky-100";
+                return "border-slate-400/20 bg-slate-400/[0.08] text-slate-300";
+              }
+
+              function CorretivaNovoPage'''),
+              route,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit("priorityBadgeClass replacement failed")
+
+          route = must_replace(
+              route,
+              'priority.level === "CRÍTICA" && "border-l-4 border-l-red-500 border-red-400/20",\n                    priority.level === "ALTA" && "border-l-4 border-l-orange-400",\n                    priority.level === "MÉDIA" && "border-l-4 border-l-amber-300",',
+              'priority.level === "CRÍTICA" && "border-l-4 border-l-yellow-400 border-yellow-300/20",\n                    priority.level === "ALTA" && "border-l-4 border-l-orange-400",\n                    priority.level === "MÉDIA" && "border-l-4 border-l-sky-400",',
+              "priority side accents",
+          )
+
+          route = must_replace(
+              route,
+              '"px-2.5 py-1 font-mono text-xs font-semibold tracking-wide md:text-sm",',
+              '"h-8 px-3.5 py-1.5 font-mono text-[12px] font-extrabold tracking-[0.035em] shadow-[0_0_18px_rgba(255,255,255,0.025)] md:h-9 md:px-4 md:text-sm",',
+              "OS badge size",
+          )
+
+          route = must_replace(
+              route,
+              'className="border-indigo-400/35 bg-indigo-500/15 text-[9px] font-extrabold uppercase text-indigo-100 md:text-[10px]"',
+              'className="h-5 border-red-300/65 bg-red-600 px-2 text-[8px] font-extrabold uppercase tracking-[0.06em] text-white shadow-[0_0_14px_rgba(220,38,38,0.22)] md:text-[9px]"',
+              "Backorder badge",
+          )
+
+          old_team = dedent('''
+                          <Badge
+                            variant={completed ? "secondary" : "outline"}
+                            className={cn(
+                              "gap-1.5 whitespace-nowrap text-[9px] font-bold uppercase md:text-[10px]",
+                              completed
+                                ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-300"
+                                : "opacity-80",
+                            )}
+                          >
+                            {completed && (
+                              <span
+                                className="relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_12px_rgba(52,211,153,0.85)]"
+                                aria-hidden="true"
+                              >
+                                <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
+                                <Check className="relative h-3 w-3 stroke-[3] text-emerald-200" />
+                              </span>
+                            )}
+                            {completed ? "Concluída" : os.equipe || "Sem Equipe"}
+                          </Badge>''')
+          new_team = dedent('''
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "h-8 max-w-full gap-1.5 whitespace-nowrap px-3.5 text-[11px] font-extrabold uppercase tracking-[0.02em] md:h-9 md:px-4 md:text-xs",
+                              equipeStyles(os.equipe).badge,
+                            )}
+                            title={`Equipe responsável: ${os.equipe || "Sem Equipe"}`}
+                          >
+                            {os.equipe || "Sem Equipe"}
+                          </Badge>
+                          {completed && (
+                            <Badge
+                              variant="secondary"
+                              className="h-5 gap-1 border-emerald-500/35 bg-emerald-500/20 px-2 text-[8px] font-bold uppercase text-emerald-200 md:text-[9px]"
+                            >
+                              <span
+                                className="relative inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-emerald-400/15 shadow-[0_0_10px_rgba(52,211,153,0.65)]"
+                                aria-hidden="true"
+                              >
+                                <span className="absolute inset-0 animate-pulse rounded-full border border-emerald-300/40" />
+                                <Check className="relative h-2.5 w-2.5 stroke-[3] text-emerald-200" />
+                              </span>
+                              Concluída
+                            </Badge>
+                          )}''')
+          route = must_replace(route, old_team, new_team, "team and completed badges")
+          route_path.write_text(route, encoding="utf-8")
+
+          equipe_path = Path("src/lib/corretiva/equipe.ts")
+          equipe = equipe_path.read_text(encoding="utf-8")
+          equipe = must_replace(
+              equipe,
+              ' * Elétrica=âmbar, Hidráulica=azul, Civil=violeta, Chaveiro=ardósia,\n * Pintura=rosa, Refrigeração=ciano e Limpeza=verde.',
+              ' * Elétrica=âmbar, Hidráulica=laranja, Civil=verde água, Chaveiro=roxo,\n * Pintura=rosa, Refrigeração=azul claro e Limpeza=verde.',
+              "team palette documentation",
+          )
+          equipe, count = re.subn(
+              r'const STYLES: Record<string, EquipeStyles> = \{.*?\n\};\n\nconst NEUTRAL',
+              dedent('''
+              const STYLES: Record<string, EquipeStyles> = {
+                eletrica: {
+                  row: "border-l-4 border-amber-400 bg-amber-50/70 hover:bg-amber-100/70 dark:bg-amber-500/[0.08] dark:hover:bg-amber-500/[0.14]",
+                  dot: "bg-amber-400",
+                  badge: "border-amber-400/50 bg-amber-500/[0.16] text-amber-800 dark:text-amber-100",
+                  button: "border-amber-400/50 bg-amber-500/[0.14] text-amber-800 dark:text-amber-100",
+                  menu: "border-amber-400/30 bg-amber-500/[0.12] text-amber-800 dark:text-amber-100",
+                  hex: "#F59E0B",
+                },
+                hidraulica: {
+                  row: "border-l-4 border-orange-400 bg-orange-50/70 hover:bg-orange-100/70 dark:bg-orange-500/[0.08] dark:hover:bg-orange-500/[0.14]",
+                  dot: "bg-orange-400",
+                  badge: "border-orange-400/50 bg-orange-500/[0.16] text-orange-800 dark:text-orange-100",
+                  button: "border-orange-400/50 bg-orange-500/[0.14] text-orange-800 dark:text-orange-100",
+                  menu: "border-orange-400/30 bg-orange-500/[0.12] text-orange-800 dark:text-orange-100",
+                  hex: "#F97316",
+                },
+                civil: {
+                  row: "border-l-4 border-teal-400 bg-teal-50/70 hover:bg-teal-100/70 dark:bg-teal-500/[0.08] dark:hover:bg-teal-500/[0.14]",
+                  dot: "bg-teal-400",
+                  badge: "border-teal-300/55 bg-teal-400/[0.16] text-teal-800 dark:text-teal-100",
+                  button: "border-teal-300/55 bg-teal-400/[0.14] text-teal-800 dark:text-teal-100",
+                  menu: "border-teal-300/35 bg-teal-400/[0.12] text-teal-800 dark:text-teal-100",
+                  hex: "#2DD4BF",
+                },
+                chaveiro: {
+                  row: "border-l-4 border-violet-400 bg-violet-50/70 hover:bg-violet-100/70 dark:bg-violet-500/[0.08] dark:hover:bg-violet-500/[0.14]",
+                  dot: "bg-violet-400",
+                  badge: "border-violet-400/50 bg-violet-500/[0.16] text-violet-800 dark:text-violet-100",
+                  button: "border-violet-400/50 bg-violet-500/[0.14] text-violet-800 dark:text-violet-100",
+                  menu: "border-violet-400/30 bg-violet-500/[0.12] text-violet-800 dark:text-violet-100",
+                  hex: "#8B5CF6",
+                },
+                pintura: {
+                  row: "border-l-4 border-pink-400 bg-pink-50/70 hover:bg-pink-100/70 dark:bg-pink-500/[0.08] dark:hover:bg-pink-500/[0.14]",
+                  dot: "bg-pink-400",
+                  badge: "border-pink-400/50 bg-pink-500/[0.16] text-pink-800 dark:text-pink-100",
+                  button: "border-pink-400/50 bg-pink-500/[0.14] text-pink-800 dark:text-pink-100",
+                  menu: "border-pink-400/30 bg-pink-500/[0.12] text-pink-800 dark:text-pink-100",
+                  hex: "#EC4899",
+                },
+                refrigeracao: {
+                  row: "border-l-4 border-sky-400 bg-sky-50/70 hover:bg-sky-100/70 dark:bg-sky-500/[0.08] dark:hover:bg-sky-500/[0.14]",
+                  dot: "bg-sky-400",
+                  badge: "border-sky-300/55 bg-sky-400/[0.16] text-sky-800 dark:text-sky-100",
+                  button: "border-sky-300/55 bg-sky-400/[0.14] text-sky-800 dark:text-sky-100",
+                  menu: "border-sky-300/35 bg-sky-400/[0.12] text-sky-800 dark:text-sky-100",
+                  hex: "#38BDF8",
+                },
+                limpeza: {
+                  row: "border-l-4 border-emerald-400 bg-emerald-50/70 hover:bg-emerald-100/70 dark:bg-emerald-500/[0.08] dark:hover:bg-emerald-500/[0.14]",
+                  dot: "bg-emerald-400",
+                  badge: "border-emerald-400/50 bg-emerald-500/[0.16] text-emerald-800 dark:text-emerald-100",
+                  button: "border-emerald-400/50 bg-emerald-500/[0.14] text-emerald-800 dark:text-emerald-100",
+                  menu: "border-emerald-400/30 bg-emerald-500/[0.12] text-emerald-800 dark:text-emerald-100",
+                  hex: "#22C55E",
+                },
+              };
+
+              const NEUTRAL'''),
+              equipe,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit("Team palette replacement failed")
+          equipe_path.write_text(equipe, encoding="utf-8")
+
+          priority_path = Path("src/lib/corretiva/priority-classifier.ts")
+          priority = priority_path.read_text(encoding="utf-8")
+          priority = must_replace(
+              priority,
+              '''  CRÍTICA: { bg: "#DC2626", fg: "#FFFFFF" },\n  ALTA: { bg: "#F97316", fg: "#111827" },\n  MÉDIA: { bg: "#FDE047", fg: "#111827" },\n  NORMAL: { bg: "#E2E8F0", fg: "#334155" },''',
+              '''  CRÍTICA: { bg: "#FACC15", fg: "#111827" },\n  ALTA: { bg: "#F97316", fg: "#111827" },\n  MÉDIA: { bg: "#38BDF8", fg: "#082F49" },\n  NORMAL: { bg: "#E2E8F0", fg: "#334155" },''',
+              "priority colors",
+          )
+          priority = must_replace(
+              priority,
+              'export const BACKORDER_HEX = { bg: "#312E81", fg: "#FFFFFF" } as const;',
+              'export const BACKORDER_HEX = { bg: "#DC2626", fg: "#FFFFFF" } as const;',
+              "backorder color",
+          )
+          priority_path.write_text(priority, encoding="utf-8")
+
+          excel_path = Path("src/lib/corretiva/programacao-excel.ts")
+          excel = excel_path.read_text(encoding="utf-8")
+          excel, count = re.subn(
+              r'const TEAM_STYLE: Record<string, \{ bg: string; fg: string; accent: string \}> = \{.*?\n\};',
+              dedent('''
+              const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
+                ELETRICA: { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
+                HIDRAULICA: { bg: "#FFF7ED", fg: "#C2410C", accent: "#F97316" },
+                CIVIL: { bg: "#F0FDFA", fg: "#0F766E", accent: "#2DD4BF" },
+                CHAVEIRO: { bg: "#F5F3FF", fg: "#6D28D9", accent: "#8B5CF6" },
+                PINTURA: { bg: "#FDF2F8", fg: "#BE185D", accent: "#EC4899" },
+                REFRIGERACAO: { bg: "#F0F9FF", fg: "#0369A1", accent: "#38BDF8" },
+                LIMPEZA: { bg: "#F0FDF4", fg: "#15803D", accent: "#22C55E" },
+                OUTROS: { bg: "#F8FAFC", fg: "#475569", accent: "#94A3B8" },
+              };'''),
+              excel,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit("Excel team palette replacement failed")
+
+          old_cards = dedent('''
+            const cards = [
+              [cardRanges[0], `TOTAL · ${items.length}`, C.blue700],
+              [cardRanges[1], `CRÍTICA · ${priorityCounts.CRÍTICA}`, argb(PRIORITY_HEX.CRÍTICA.bg)],
+              [cardRanges[2], `ALTA · ${priorityCounts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg)],
+              [cardRanges[3], `BACKORDER · ${backorders}`, C.backorder],
+            ] as const;
+            cards.forEach(([range, value, color]) => {
+              sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+              cell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.white } };
+              cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+            });''')
+          new_cards = dedent('''
+            const cards = [
+              [cardRanges[0], `TOTAL · ${items.length}`, C.blue700, C.white],
+              [cardRanges[1], `CRÍTICA · ${priorityCounts.CRÍTICA}`, argb(PRIORITY_HEX.CRÍTICA.bg), argb(PRIORITY_HEX.CRÍTICA.fg)],
+              [cardRanges[2], `ALTA · ${priorityCounts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg), argb(PRIORITY_HEX.ALTA.fg)],
+              [cardRanges[3], `BACKORDER · ${backorders}`, C.backorder, argb(BACKORDER_HEX.fg)],
+            ] as const;
+            cards.forEach(([range, value, color, foreground]) => {
+              sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
+              cell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: foreground } };
+              cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+            });''')
+          excel = must_replace(excel, old_cards, new_cards, "operations summary foreground")
+
+          old_exec_cards = dedent('''
+            const cards = [
+              ["A3:C5", `TOTAL\\n${items.length}`, C.blue700], ["D3:F5", `CRÍTICAS\\n${counts.CRÍTICA}`, argb(PRIORITY_HEX.CRÍTICA.bg)],
+              ["G3:I5", `ALTAS\\n${counts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg)], ["J3:L5", `BACKORDER\\n${backorders}`, C.backorder],
+            ] as const;
+            cards.forEach(([range, value, color]) => { sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } }; cell.font = { name: FONT_DISPLAY, size: 15, bold: true, color: { argb: C.white } };
+              cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }; });''')
+          new_exec_cards = dedent('''
+            const cards = [
+              ["A3:C5", `TOTAL\\n${items.length}`, C.blue700, C.white],
+              ["D3:F5", `CRÍTICAS\\n${counts.CRÍTICA}`, argb(PRIORITY_HEX.CRÍTICA.bg), argb(PRIORITY_HEX.CRÍTICA.fg)],
+              ["G3:I5", `ALTAS\\n${counts.ALTA}`, argb(PRIORITY_HEX.ALTA.bg), argb(PRIORITY_HEX.ALTA.fg)],
+              ["J3:L5", `BACKORDER\\n${backorders}`, C.backorder, argb(BACKORDER_HEX.fg)],
+            ] as const;
+            cards.forEach(([range, value, color, foreground]) => { sheet.mergeCells(range); const cell = sheet.getCell(range.split(":")[0]); cell.value = value;
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } }; cell.font = { name: FONT_DISPLAY, size: 15, bold: true, color: { argb: foreground } };
+              cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true }; });''')
+          excel = must_replace(excel, old_exec_cards, new_exec_cards, "executive summary foreground")
+          excel_path.write_text(excel, encoding="utf-8")
+
+          test_path = Path("src/lib/corretiva/visual-palette.test.ts")
+          test_path.write_text(dedent('''
+          import { describe, expect, it } from "vitest";
+          import { equipeStyles } from "./equipe";
+          import { BACKORDER_HEX, PRIORITY_HEX, classifyPriority } from "./priority-classifier";
+          import { buildProgramacaoWorkbook } from "./programacao-excel";
+
+          describe("Corretiva Novo · paleta operacional", () => {
+            it("mantém as cores solicitadas por equipe", () => {
+              expect(equipeStyles("Chaveiro").hex).toBe("#8B5CF6");
+              expect(equipeStyles("Civil").hex).toBe("#2DD4BF");
+              expect(equipeStyles("Refrigeração").hex).toBe("#38BDF8");
+              expect(equipeStyles("Hidráulica").hex).toBe("#F97316");
+              expect(equipeStyles("Pintura").hex).toBe("#EC4899");
+              expect(equipeStyles("Elétrica").hex).toBe("#F59E0B");
+              expect(equipeStyles("Limpeza").hex).toBe("#22C55E");
+            });
+
+            it("usa amarelo para crítica e vermelho forte para Backorder", () => {
+              expect(PRIORITY_HEX.CRÍTICA).toEqual({ bg: "#FACC15", fg: "#111827" });
+              expect(PRIORITY_HEX.MÉDIA).toEqual({ bg: "#38BDF8", fg: "#082F49" });
+              expect(BACKORDER_HEX).toEqual({ bg: "#DC2626", fg: "#FFFFFF" });
+            });
+
+            it("Backorder isolado continua sem virar crítico", () => {
+              const result = classifyPriority({
+                tipo: "Backorder",
+                nome_os: "Ajustar acabamento de rodapé",
+                local: "Sala administrativa",
+                data_criacao: "2026-09-15",
+              }, new Date(2026, 8, 16, 12));
+              expect(result.isBackorder).toBe(true);
+              expect(result.level).not.toBe("CRÍTICA");
+            });
+
+            it("propaga as cores para o Excel operacional", () => {
+              const workbook = buildProgramacaoWorkbook([
+                {
+                  id: "critical-1",
+                  numero_os: "100001",
+                  equipe: "Chaveiro",
+                  nome_os: "Quadro elétrico em curto com faísca e cheiro de queimado",
+                  local: "Painel principal",
+                  data_criacao: "2026-09-16",
+                  status: "aberta",
+                } as any,
+                {
+                  id: "backorder-1",
+                  numero_os: "100002",
+                  equipe: "Hidráulica",
+                  nome_os: "Ajustar acabamento simples",
+                  local: "Sala administrativa",
+                  data_criacao: "2026-09-16",
+                  tipo: "Backorder",
+                  status: "aberta",
+                } as any,
+              ], "Todas", "corretiva", new Date(2026, 8, 16, 12));
+
+              const sheet = workbook.getWorksheet("Programação Geral")!;
+              expect(sheet.getCell("B6").fill).toMatchObject({ fgColor: { argb: "FFFACC15" } });
+              expect(sheet.getCell("B6").font.color).toMatchObject({ argb: "FF111827" });
+              expect(sheet.getCell("C7").fill).toMatchObject({ fgColor: { argb: "FFDC2626" } });
+              expect(sheet.getCell("E7").fill).toMatchObject({ fgColor: { argb: "FFFFF7ED" } });
+              expect(sheet.getCell("D3").fill).toMatchObject({ fgColor: { argb: "FFFACC15" } });
+              expect(sheet.getCell("D3").font.color).toMatchObject({ argb: "FF111827" });
+              expect(sheet.getCell("J3").fill).toMatchObject({ fgColor: { argb: "FFDC2626" } });
+            });
+          });
+          '''), encoding="utf-8")
+          PY
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Production build
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Tests
+        run: npm test -- --passWithNoTests
+
+      - name: Commit focused changes
+        shell: bash
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/routes/_authenticated/corretiva-novo.tsx \
+                  src/lib/corretiva/equipe.ts \
+                  src/lib/corretiva/priority-classifier.ts \
+                  src/lib/corretiva/programacao-excel.ts \
+                  src/lib/corretiva/visual-palette.test.ts
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "Refine Corretiva Novo team and priority badges"
+          git push origin HEAD:Apont-Auto
