@@ -1,16 +1,18 @@
 /**
  * Compatibilidade de importação.
  *
- * A implementação passou para o agente client-side porque a sessão Supabase/RLS
- * do usuário autenticado vive no navegador. Manter este arquivo evita quebrar a
- * rota e qualquer import legado enquanto o botão Designar usa o agente dedicado.
+ * A rota Corretiva Novo continua importando este módulo, mas o botão "Designar"
+ * agora é encaminhado para um agente exclusivo que lê todos os chamados abertos.
  */
 export {
   analyzeCorrectiveOrder,
-  designateAllCorrectiveOrders,
   planCorrectiveDesignations,
-  reclassifyAllOsWithAi,
   type CorrectiveDesignationPlan,
   type CorrectiveDesignationRow,
   type DesignationRunResult,
 } from "@/lib/corretiva/designation-agent";
+
+export {
+  designateAllCorrectiveOrders,
+  reclassifyAllOsWithAi,
+} from "@/lib/corretiva/exclusive-designation-agent";
