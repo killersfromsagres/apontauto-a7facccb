@@ -44,7 +44,7 @@ import {
   setUserMenus,
   provisionEncarregados,
   provisionChamados,
-} from "@/lib/admin-users.client";
+} from "@/lib/admin-users-api";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import {
   ASSIGNABLE_MENU_KEYS,
