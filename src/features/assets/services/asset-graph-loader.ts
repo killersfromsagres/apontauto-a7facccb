@@ -32,19 +32,24 @@ export async function loadActiveAssetGraph(force = false): Promise<LoadedAssetGr
   let catalogName: string | null = null;
   let catalogVersion: number | null = null;
 
+  // Compatibilidade: se a tabela/versionamento novo não existir, ainda tentamos
+  // a base legada. Porém, se existe um catálogo ativo, uma falha ao carregá-lo
+  // não pode ser escondida por um fallback antigo, pois isso gera matches errados.
+  let catalog = null;
   try {
-    const catalog = await getActiveCatalog();
-    if (catalog) {
-      records = await fetchCatalogAssets(catalog.id);
-      if (records.length > 0) {
-        source = "catalog";
-        catalogId = catalog.id;
-        catalogName = catalog.name;
-        catalogVersion = catalog.version ?? null;
-      }
-    }
+    catalog = await getActiveCatalog();
   } catch {
-    // segue para o fallback legado
+    catalog = null;
+  }
+
+  if (catalog) {
+    records = await fetchCatalogAssets(catalog.id);
+    if (records.length > 0) {
+      source = "catalog";
+      catalogId = catalog.id;
+      catalogName = catalog.name;
+      catalogVersion = catalog.version ?? null;
+    }
   }
 
   if (records.length === 0) {
