@@ -153,6 +153,11 @@ function extractOsNumber(...values: Array<string | null | undefined>) {
   return null;
 }
 
+function extractRequestRef(value: unknown) {
+  const match = String(value ?? "").match(/(?:REF\.?\s*)?(MAT-[A-Z0-9-]+)/i);
+  return match?.[1]?.toUpperCase() ?? null;
+}
+
 function requestSignature(numeroOs: string, descricao: string, quantidade: number | null) {
   return `${normalize(numeroOs)}|${normalize(descricao).replace(/\s+/g, " ")}|${Number(quantidade || 1)}`;
 }
@@ -353,8 +358,20 @@ export async function fetchControleItems(): Promise<ControleItem[]> {
     });
   };
 
+  const fieldRequestRefs = new Set(
+    ((fieldRequests.data ?? []) as unknown as MaterialSolicitacaoRow[])
+      .map((request) => extractRequestRef(request.observacao))
+      .filter((value): value is string => Boolean(value)),
+  );
+
   (rPecas.data ?? []).forEach((row) => pushPeca(row, "refrigeracao"));
-  (cPecas.data ?? []).forEach((row) => pushPeca(row, "corretiva"));
+  (cPecas.data ?? []).forEach((row: any) => {
+    const ref = extractRequestRef(row.observacao);
+    // A solicitação material_solicitacoes é a representação canônica na Central.
+    // O registro em corretiva_pecas permanece ligado à OS, mas não vira uma segunda linha.
+    if (ref && fieldRequestRefs.has(ref)) return;
+    pushPeca(row, "corretiva");
+  });
   (rProblemas.data ?? []).forEach((row) => pushProblema(row, "refrigeracao"));
   (cProblemas.data ?? []).forEach((row) => pushProblema(row, "corretiva"));
 

@@ -50,8 +50,8 @@ import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import {
   classifyPriority,
+  comparePriority,
   isHighPriority,
-  PRIORITY_ORDER,
   type PriorityLevel,
 } from "@/lib/corretiva/priority-classifier";
 import { cn } from "@/lib/utils";
@@ -270,8 +270,7 @@ function CorretivaNovoPage() {
           priorityMap.get(String(a.id ?? a.numero_os ?? "")) ?? classifyPriority(a);
         const pb =
           priorityMap.get(String(b.id ?? b.numero_os ?? "")) ?? classifyPriority(b);
-        const priorityOrder =
-          PRIORITY_ORDER[pa.level] - PRIORITY_ORDER[pb.level] || pb.score - pa.score;
+        const priorityOrder = comparePriority(pa, pb);
         if (priorityOrder !== 0) return priorityOrder;
 
         const dateA = new Date(a.data_criacao || 0).getTime();
@@ -614,7 +613,7 @@ function CorretivaNovoPage() {
                     variant="glass"
                     className={cn(
                       "h-11 gap-2 rounded-full border-white/10 px-6 transition-all duration-300",
-                      equipe !== "todas" && equipeStyles(equipe as any).badge,
+                      equipe !== "todas" && equipeStyles(equipe as any).button,
                     )}
                   >
                     <Filter className="h-4 w-4" />
@@ -656,7 +655,7 @@ function CorretivaNovoPage() {
                         equipe === e
                           ? cn(
                               "text-white",
-                              equipeStyles(e as any).badge.replace("shadow-lg", ""),
+                              equipeStyles(e as any).menu,
                             )
                           : "text-white/60 hover:bg-white/5 hover:text-white",
                       )}
@@ -799,7 +798,10 @@ function CorretivaNovoPage() {
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
-                    priority.level === "CRÍTICA" && "border-red-400/20",
+                    priority.level === "CRÍTICA" && "border-l-4 border-l-red-500 border-red-400/20",
+                    priority.level === "ALTA" && "border-l-4 border-l-orange-400",
+                    priority.level === "MÉDIA" && "border-l-4 border-l-amber-300",
+                    priority.level === "NORMAL" && "border-l-4 border-l-slate-500/40",
                   )}
                   onClick={() => setSelectedOs(os)}
                 >
@@ -832,6 +834,15 @@ function CorretivaNovoPage() {
                           >
                             {priority.level} · {priority.score}
                           </Badge>
+                          {priority.isBackorder && (
+                            <Badge
+                              variant="outline"
+                              className="border-indigo-400/35 bg-indigo-500/15 text-[9px] font-extrabold uppercase text-indigo-100 md:text-[10px]"
+                              title={priority.ageDays > 0 ? `Backorder · aberto há ${priority.ageDays} dia(s)` : "Backorder"}
+                            >
+                              BACKORDER
+                            </Badge>
+                          )}
                           <Badge
                             variant={completed ? "secondary" : "outline"}
                             className={cn(

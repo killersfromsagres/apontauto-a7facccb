@@ -284,6 +284,7 @@ function ControlePage() {
     const withoutCc = items.filter((item) => !item.meta?.centro_custo).length;
     const fieldRequests = items.filter((item) => item.fonte === "execucao_campo").length;
     const received = items.filter((item) => item.meta?.status_compra === "recebido").length;
+    const urgent = items.filter((item) => /alta|urgente|crit/i.test(String(item.urgencia ?? item.gravidade ?? ""))).length;
     const inPurchase = items.filter((item) =>
       ["solicitado", "em_cotacao", "comprado"].includes(item.meta?.status_compra ?? ""),
     ).length;
@@ -294,6 +295,7 @@ function ControlePage() {
       requested,
       pending: items.length - requested,
       received,
+      urgent,
       inPurchase,
       completion: items.length ? Math.round((received / items.length) * 100) : 0,
     };
@@ -453,7 +455,7 @@ function ControlePage() {
         <Kpi icon={Package} label="Execução de Campo" value={kpis.fieldRequests} hint="Pedidos das duas operações" tone="bg-orange-500/12 text-orange-500" />
         <Kpi icon={Wallet} label="Sem centro de custo" value={kpis.withoutCc} hint="Precisam de classificação" tone="bg-rose-500/12 text-rose-500" />
         <Kpi icon={Send} label="Facilities" value={kpis.requested} hint="Pedidos encaminhados" tone="bg-sky-500/12 text-sky-500" />
-        <Kpi icon={CalendarClock} label="A solicitar" value={kpis.pending} hint="Ainda não enviados" tone="bg-amber-500/12 text-amber-500" />
+        <Kpi icon={AlertTriangle} label="Urgentes" value={kpis.urgent} hint="Alta urgência / gravidade" tone="bg-rose-500/12 text-rose-500" />
       </div>
 
       <Tabs defaultValue="pedidos" className="mt-5">

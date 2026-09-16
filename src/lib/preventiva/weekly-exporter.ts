@@ -373,12 +373,13 @@ function styleProgramSheet(
           right: { style: "thin", color: { argb: PALETTE.border } },
         };
         if (column.key === "os") {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: teamArgb } };
+          const corrective = isCorrective(os);
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: corrective ? PALETTE.correctiveBg : teamArgb } };
           cell.font = {
             name: APTOS_EXTRABOLD,
             bold: true,
             size: 11,
-            color: { argb: readableTextColor(teamHex) },
+            color: { argb: corrective ? PALETTE.correctiveText : readableTextColor(teamHex) },
           };
         } else if (column.key === "equipe") {
           cell.fill = {
@@ -391,18 +392,6 @@ function styleProgramSheet(
             bold: true,
             size: 9,
             color: { argb: teamArgb },
-          };
-        } else if (column.key === "atividade" && isCorrective(os)) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: PALETTE.warningBg },
-          };
-          cell.font = {
-            name: APTOS_SEMIBOLD,
-            bold: true,
-            size: 11,
-            color: { argb: PALETTE.warningText },
           };
         } else if (
           column.key === "ativo" &&
@@ -420,17 +409,7 @@ function styleProgramSheet(
             color: { argb: PALETTE.dangerText },
           };
         }
-        if (isCorrective(os)) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: PALETTE.correctiveBg },
-          };
-          cell.font = {
-            ...cell.font,
-            color: { argb: PALETTE.correctiveText },
-          };
-        }
+        // Corretivas mantêm o estilo normal da linha; apenas a célula OS recebe amarelo.
       });
       row.height = 60;
     });
@@ -897,12 +876,13 @@ export function addTeamPrintSheets(
           right: { style: "thin", color: { argb: PALETTE.border } },
         };
         if (column.key === "os") {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: teamArgb } };
+          const corrective = isCorrective(os);
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: corrective ? PALETTE.correctiveBg : teamArgb } };
           cell.font = {
             name: APTOS_EXTRABOLD,
             bold: true,
             size: 10,
-            color: { argb: readableTextColor(teamHex) },
+            color: { argb: corrective ? PALETTE.correctiveText : readableTextColor(teamHex) },
           };
         } else if (column.key === "equipe") {
           cell.fill = {
@@ -915,18 +895,6 @@ export function addTeamPrintSheets(
             bold: true,
             size: 9,
             color: { argb: teamArgb },
-          };
-        } else if (column.key === "atividade" && isCorrective(os)) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: PALETTE.warningBg },
-          };
-          cell.font = {
-            name: APTOS_SEMIBOLD,
-            bold: true,
-            size: 10,
-            color: { argb: PALETTE.warningText },
           };
         } else if (
           column.key === "ativo" &&
@@ -944,17 +912,7 @@ export function addTeamPrintSheets(
             color: { argb: PALETTE.dangerText },
           };
         }
-        if (isCorrective(os)) {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: PALETTE.correctiveBg },
-          };
-          cell.font = {
-            ...cell.font,
-            color: { argb: PALETTE.correctiveText },
-          };
-        }
+        // Corretivas mantêm o estilo normal da linha; apenas a célula OS recebe amarelo.
       });
       row.height = 52;
     });

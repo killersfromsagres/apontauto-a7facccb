@@ -3,10 +3,7 @@ import {
   PRIORITY_ORDER,
 } from "@/lib/corretiva/priority-classifier";
 import type { CorrectiveSourceRow } from "./monthly-scheduler";
-import {
-  isCorrectiveBackorder,
-  resolveCorrectiveTeam,
-} from "./monthly-scheduler";
+import { resolveCorrectiveTeam } from "./monthly-scheduler";
 import type { Equipe } from "./triage";
 
 // v2 zera as marcações antigas de "EM PROGRAMAÇÃO" sem afetar futuras reservas.
@@ -112,17 +109,13 @@ function sortCandidates(
   };
 
   return [...rows].sort((a, b) => {
-    // Backorders continuam entrando primeiro.
-    const backorderOrder =
-      Number(isCorrectiveBackorder(b, referenceDate)) -
-      Number(isCorrectiveBackorder(a, referenceDate));
-    if (backorderOrder !== 0) return backorderOrder;
-
     const aPriority = priorityOf(a);
     const bPriority = priorityOf(b);
     const priorityOrder =
       PRIORITY_ORDER[aPriority.level] - PRIORITY_ORDER[bPriority.level] ||
-      bPriority.score - aPriority.score;
+      bPriority.score - aPriority.score ||
+      Number(bPriority.isBackorder) - Number(aPriority.isBackorder) ||
+      bPriority.ageDays - aPriority.ageDays;
     if (priorityOrder !== 0) return priorityOrder;
 
     const dueOrder =
@@ -388,17 +381,28 @@ export function allocateCorrectivesForWeekTeam(options: {
     keys.forEach((key) => selectedKeys.add(key));
   }
 
-  // Completa cada dia até 2 corretivas antes de avançar ao dia seguinte.
-  for (const row of eligible) {
-    if (totalAllocated(byDay) >= limit) break;
+  // Distribui a fila em rodadas: primeiro cobre SEG→SEX com uma corretiva,
+  // depois completa a segunda vaga. Com 10 disponíveis ficam 2 em cada dia;
+  // com menos, evita concentrar tudo no começo da semana.
+  const remaining = eligible.filter((row) => {
     const keys = rowKeys(row);
-    if (keys.some((key) => selectedKeys.has(key))) continue;
-
+    return !keys.some((key) => selectedKeys.has(key));
+  });
+  let cursor = 0;
+  for (let round = 0; round < perDay && cursor < remaining.length; round += 1) {
+    for (let dayIndex = 0; dayIndex < businessDays && cursor < remaining.length; dayIndex += 1) {
+      if (byDay[dayIndex].length > round || byDay[dayIndex].length >= perDay) continue;
+      const row = remaining[cursor++];
+      byDay[dayIndex].push(row);
+      rowKeys(row).forEach((key) => selectedKeys.add(key));
+    }
+  }
+  while (cursor < remaining.length && totalAllocated(byDay) < limit) {
     const dayIndex = nextAvailableDay(byDay, perDay);
     if (dayIndex < 0) break;
-
+    const row = remaining[cursor++];
     byDay[dayIndex].push(row);
-    keys.forEach((key) => selectedKeys.add(key));
+    rowKeys(row).forEach((key) => selectedKeys.add(key));
   }
 
   const finalRows = byDay.flat();

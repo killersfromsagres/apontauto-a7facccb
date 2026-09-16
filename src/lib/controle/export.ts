@@ -111,10 +111,10 @@ function styleBody(ws: any, firstRow: number, lastRow: number, cols: number) {
   if (lastRow < firstRow) return;
   for (let rowIndex = firstRow; rowIndex <= lastRow; rowIndex++) {
     const row = ws.getRow(rowIndex);
-    row.height = 22;
+    row.height = 30;
     for (let col = 1; col <= cols; col++) {
       const cell = row.getCell(col);
-      cell.font = { name: FONT, size: 9, color: { argb: C.ink } };
+      cell.font = { name: FONT, size: 10, color: { argb: C.ink } };
       cell.alignment = { vertical: "middle", wrapText: true };
       if ((rowIndex - firstRow) % 2 === 1) {
         cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.slate50 } };

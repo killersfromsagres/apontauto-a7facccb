@@ -1,4 +1,5 @@
 import { businessDaysUntil, isoDate } from "./business-days";
+import { classifyPriority, comparePriority, isBackorderCorrective } from "@/lib/corretiva/priority-classifier";
 import type { WeekBucket, WeekInfo } from "./capacity";
 import {
   REFRIG_1,
@@ -186,26 +187,16 @@ function dueDate(row: CorrectiveSourceRow): Date | null {
 
 export function isCorrectiveBackorder(
   row: CorrectiveSourceRow,
-  referenceDate: Date,
+  _referenceDate: Date,
 ): boolean {
-  const due = dueDate(row);
-  if (!due) return false;
-  const reference = new Date(
-    referenceDate.getFullYear(),
-    referenceDate.getMonth(),
-    referenceDate.getDate(),
-  );
-  return due.getTime() < reference.getTime();
+  return isBackorderCorrective(row);
 }
 
 function priorityLabel(row: CorrectiveSourceRow, referenceDate: Date): string {
-  const severity = problemSeverity(row);
-  const backorder = isCorrectiveBackorder(row, referenceDate);
-  const parts: string[] = [];
-  if (severity === 0) parts.push("Crítica");
-  else if (severity === 1) parts.push("Falha");
-  if (backorder) parts.push("Backorder");
-  return parts.join(" • ") || "Corretiva aberta";
+  const priority = classifyPriority(row, referenceDate);
+  const parts = [`${priority.level} · ${priority.score}`];
+  if (priority.isBackorder) parts.push("Backorder");
+  return parts.join(" • ");
 }
 
 export function sortCorrectiveRows(
@@ -213,32 +204,18 @@ export function sortCorrectiveRows(
   referenceDate: Date,
 ): CorrectiveSourceRow[] {
   return [...rows].sort((a, b) => {
-    const backorder =
-      Number(!isCorrectiveBackorder(a, referenceDate)) -
-      Number(!isCorrectiveBackorder(b, referenceDate));
-    if (backorder !== 0) return backorder;
-
-    const bothBackorder =
-      isCorrectiveBackorder(a, referenceDate) &&
-      isCorrectiveBackorder(b, referenceDate);
-    if (bothBackorder) {
-      const severity = problemSeverity(a) - problemSeverity(b);
-      if (severity !== 0) return severity;
-    }
+    const priorityOrder = comparePriority(
+      classifyPriority(a, referenceDate),
+      classifyPriority(b, referenceDate),
+    );
+    if (priorityOrder !== 0) return priorityOrder;
 
     const dueA = dueDate(a)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     const dueB = dueDate(b)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     if (dueA !== dueB) return dueA - dueB;
 
-    if (!bothBackorder) {
-      const severity = problemSeverity(a) - problemSeverity(b);
-      if (severity !== 0) return severity;
-    }
-
-    const createdA =
-      validDate(a.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
-    const createdB =
-      validDate(b.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const createdA = validDate(a.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+    const createdB = validDate(b.data_criacao)?.getTime() ?? Number.MAX_SAFE_INTEGER;
     return createdA - createdB;
   });
 }
@@ -340,9 +317,10 @@ export function mapCorrectives(
       continue;
     }
 
+    const priority = classifyPriority(row, referenceDate);
     const severity = problemSeverity(row);
-    const backorder = isCorrectiveBackorder(row, referenceDate);
-    if (severity === 0) critical += 1;
+    const backorder = priority.isBackorder;
+    if (priority.level === "CRÍTICA") critical += 1;
     if (backorder) backorders += 1;
 
     const due = dueDate(row);
@@ -380,6 +358,8 @@ export function mapCorrectives(
         programacaoTipo: "corretiva",
         programacaoBackorder: backorder,
         programacaoGravidade: severity,
+        programacaoPrioridade: priority.level,
+        programacaoScore: priority.score,
       },
       equipe,
     });
@@ -430,6 +410,8 @@ export function scheduleTeamMonth(options: {
   minutosPorOS: 30 | 60;
   targetMinutes?: number;
   minCorrectivesPerDay?: number;
+  /** Reserva capacidade para corretivas que serão anexadas por outro alocador. */
+  reserveCorrectiveSlots?: boolean;
 }): TeamMonthlySchedule {
   const targetMinutes = options.targetMinutes ?? META_MINUTOS_DIA;
   const minCorrectives = options.minCorrectivesPerDay ?? CORRETIVAS_MINIMAS_DIA;
@@ -473,7 +455,13 @@ export function scheduleTeamMonth(options: {
       Math.max(0, remainingCorretivas),
       desiredCorrectivas,
     );
-    const availableForPreventivas = capSlots - correctiveCount;
+    const reservedExternalCorrectives = options.reserveCorrectiveSlots
+      ? Math.min(minCorrectives, capSlots)
+      : 0;
+    const availableForPreventivas = Math.max(
+      0,
+      capSlots - Math.max(correctiveCount, reservedExternalCorrectives),
+    );
     const desiredPreventivas = Math.ceil(
       Math.max(0, remainingPreventivas) / remainingDays,
     );

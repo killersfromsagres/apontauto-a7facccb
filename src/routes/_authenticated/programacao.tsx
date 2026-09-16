@@ -360,6 +360,7 @@ function ProgramacaoPage() {
             from: startDate,
             until: monthEnd,
             minutosPorOS: tempoPorEquipe[equipe],
+            reserveCorrectiveSlots: true,
           });
           schedules.set(equipe, schedule);
 
