@@ -18,7 +18,7 @@ function os(overrides: Partial<OsCacheRow> & { tipo_importacao?: string | null }
     local: "Sala técnica",
     nome_os: "Correção de quadro elétrico",
     tipo: "Corretiva",
-    data_criacao: "2026-07-01T10:00:00.000Z",
+    data_criacao: "2026-09-10T10:00:00.000Z",
     material_status: "solicitado",
     status: "aberta",
     ...overrides,
@@ -78,9 +78,15 @@ describe("buildProgramacaoWorkbook", () => {
     expect(data.getCell(9).font.bold).toBe(true);
   });
 
-  it("marca Backorder pela coluna Tipo e no resumo sem transformar a linha inteira", () => {
+  it("marca Backorder automático pela idade na coluna Tipo e no resumo sem transformar a linha inteira", () => {
     const workbook = buildProgramacaoWorkbook(
-      [os({ tipo: "Backorder", data_criacao: "2026-08-01T10:00:00.000Z" })],
+      [
+        os({
+          tipo: "Corretiva",
+          status: "aberta",
+          data_criacao: "2026-08-15T10:00:00.000Z",
+        }),
+      ],
       "Todas",
       "corretiva",
       new Date("2026-09-16T10:00:00.000Z"),
