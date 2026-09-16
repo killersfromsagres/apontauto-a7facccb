@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyPriority } from "./priority-classifier";
+import { classifyPriority, isBackorderCorrective } from "./priority-classifier";
 
 const reference = new Date(2026, 8, 15, 12);
 
@@ -31,6 +31,20 @@ describe("corrective priority classifier", () => {
     expect(result.score).toBeGreaterThanOrEqual(38);
   });
 
+  it("classifica água próxima de elétrica como crítica", () => {
+    const result = classifyPriority(
+      {
+        nome_os: "Goteira com água caindo sobre a fiação do painel elétrico",
+        local: "CCM principal",
+        equipe: "Elétrica",
+        data_criacao: "2026-09-15",
+      },
+      reference,
+    );
+    expect(result.level).toBe("CRÍTICA");
+    expect(result.reasons).toContain("Água próxima de instalação elétrica");
+  });
+
   it("classifica cozinha ou banheiro sem agravante ao menos como média", () => {
     const kitchen = classifyPriority(
       {
@@ -55,6 +69,25 @@ describe("corrective priority classifier", () => {
     expect(result.level).toBe("NORMAL");
   });
 
+  it("reconhece Backorder pelo campo tipo sem tratá-lo sozinho como emergência", () => {
+    const input = {
+      tipo: "Backorder",
+      tipo_importacao: "padrao",
+      nome_os: "Ajustar acabamento de rodapé",
+      local: "Sala administrativa",
+      data_criacao: "2026-09-14",
+    };
+    expect(isBackorderCorrective(input)).toBe(true);
+    const result = classifyPriority(input, reference);
+    expect(result.isBackorder).toBe(true);
+    expect(result.level).not.toBe("CRÍTICA");
+    expect(result.reasons.some((reason) => reason.includes("Backorder"))).toBe(true);
+  });
+
+  it("reconhece Backorder legado por tipo_importacao", () => {
+    expect(isBackorderCorrective({ tipo_importacao: "backorder mensal" })).toBe(true);
+  });
+
   it("SLA vencido e antiguidade aumentam o score", () => {
     const recent = classifyPriority(
       {
@@ -76,5 +109,6 @@ describe("corrective priority classifier", () => {
     );
     expect(overdue.score).toBeGreaterThan(recent.score);
     expect(["ALTA", "CRÍTICA"]).toContain(overdue.level);
+    expect(overdue.dueState).toBe("OVERDUE");
   });
 });
