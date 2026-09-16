@@ -402,10 +402,7 @@ function weekIndexForDate(date: Date, weeks: WeekInfo[]): number {
   });
 }
 
-/**
- * Distribui uma quantidade mensal de forma uniforme por todos os dias úteis.
- * O resto é espalhado ao longo do mês (em vez de ser concentrado na primeira semana).
- */
+/** Distribui o total mensal de forma uniforme por todos os dias úteis. */
 function balancedDailyQuota(
   total: number,
   dayPosition: number,
@@ -431,7 +428,7 @@ export function scheduleTeamMonth(options: {
   minutosPorOS: 30 | 60;
   targetMinutes?: number;
   minCorrectivesPerDay?: number;
-  /** Reserva capacidade para as corretivas externas da Programação. */
+  /** Reserva capacidade para corretivas que serão anexadas pelo alocador externo. */
   reserveCorrectiveSlots?: boolean;
 }): TeamMonthlySchedule {
   const targetMinutes = options.targetMinutes ?? META_MINUTOS_DIA;
@@ -447,14 +444,14 @@ export function scheduleTeamMonth(options: {
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
 
+  // Preventivas seguem a ordem operacional geográfica.
   const preventivas = sortByLocation(options.preventivas);
-  const corretivas = sortCorrectiveRows(
-    options.corretivas.map((item) => item.raw as CorrectiveSourceRow),
-    options.from,
-  ).length
-    ? options.corretivas
-    : sortByLocation(options.corretivas);
+  // Quando usadas diretamente por este scheduler, corretivas também permanecem determinísticas.
+  // Na tela Programação, a seleção prioritária é feita pelo alocador externo antes de anexá-las.
+  const corretivas = sortByLocation(options.corretivas);
   const businessDays = businessDaysUntil(options.from, options.until);
+
+  // Na Programação real reservamos exatamente 2 vagas por dia para corretivas.
   const reservedExternalCorrectives = options.reserveCorrectiveSlots
     ? Math.min(maxCorrectivesPerDay, capSlots)
     : 0;
@@ -509,7 +506,7 @@ export function scheduleTeamMonth(options: {
     );
     corretivaIndex += dayCorretivas.length;
 
-    // Regra operacional: todas as preventivas primeiro; corretivas sempre no fim do dia.
+    // Ordem obrigatória no dia: primeiro preventivas, depois corretivas.
     const dayItems = [...dayPreventivas, ...dayCorretivas];
     buckets[weekIndex].porDia[dow].push(...dayItems);
     buckets[weekIndex].os.push(...dayItems);
