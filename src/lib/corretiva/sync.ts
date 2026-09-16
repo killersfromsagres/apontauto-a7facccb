@@ -26,9 +26,13 @@ function asPositiveQuantity(value: unknown) {
 
 /**
  * Sincroniza o outbox da execução de campo.
- * A ordem é cronológica: fotos e apontamentos feitos antes da conclusão sobem
- * antes do patch final de status. Cada operação sensível usa client_uuid para
- * tornar novas tentativas idempotentes e evitar registros duplicados.
+ * A ordem é cronológica e também causal por OS: se uma operação de uma OS falha,
+ * operações posteriores daquela mesma OS permanecem na fila até a próxima
+ * tentativa. Assim, por exemplo, a conclusão nunca passa à frente de uma foto de
+ * evidência que ainda não conseguiu subir.
+ *
+ * Cada operação sensível usa client_uuid para tornar novas tentativas idempotentes
+ * e evitar registros duplicados.
  */
 export async function syncPending() {
   if (isSyncing || !navigator.onLine) return { sent: 0, failed: 0, skipped: 0 };
@@ -43,16 +47,24 @@ export async function syncPending() {
   const items = allItems
     .filter((item) => !item.userId || item.userId === currentUserId)
     .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
-  const skipped = allItems.length - items.length;
+  let skipped = allItems.length - items.length;
   if (items.length === 0) return { sent: 0, failed: 0, skipped };
 
   isSyncing = true;
   emitSyncState("start", { pending: items.length });
   let sent = 0;
   let failed = 0;
+  const blockedOsIds = new Set<string>();
 
   try {
     for (const item of items) {
+      // Mantém a sequência do apontamento daquela OS. Um upload de foto/material
+      // que falhou não pode ser ultrapassado por uma conclusão/reclassificação.
+      if (blockedOsIds.has(item.osId)) {
+        skipped++;
+        continue;
+      }
+
       try {
         if (item.kind === "foto") {
           const payload = item.payload ?? {};
@@ -81,8 +93,6 @@ export async function syncPending() {
 
           const blob = await blobGet(blobKey);
           if (!blob) {
-            // Não remove a operação: ausência de blob deve ficar visível como
-            // pendência/erro em vez de descartar silenciosamente uma evidência.
             throw new Error("Arquivo local da evidência não foi encontrado.");
           }
 
@@ -318,6 +328,7 @@ export async function syncPending() {
         throw new Error(`Tipo de outbox desconhecido: ${String(item.kind)}`);
       } catch (err) {
         failed++;
+        blockedOsIds.add(item.osId);
         const message = getErrorMessage(err);
         console.error(`[CorretivaSync] Erro ao sincronizar ${item.kind}/${item.id}:`, message);
         await outboxUpdate({
