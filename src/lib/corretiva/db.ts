@@ -1,8 +1,11 @@
-// Minimal IndexedDB wrapper para o módulo Corretiva.
-// Sem dependências externas: stores de OS, outbox, blobs e rascunhos.
+// IndexedDB do módulo Corretiva.
+// Armazena OS visíveis, fila de sincronização, blobs de fotos e rascunhos.
+// A fila e o cache permanecem no aparelho quando a internet cai ou a página é recarregada.
 
 const DB_NAME = "corretiva-offline";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
+
+export const CORRETIVA_QUEUE_CHANGED_EVENT = "corretiva-offline-queue-changed";
 
 export type OutboxKind =
   | "foto"
@@ -49,9 +52,21 @@ export type OsCacheRow = {
   data_criacao?: string | null;
   material_status?: string | null;
   pecas_solicitadas?: string | null;
+  observacao_conclusao?: string | null;
+};
+
+export type OfflineCacheInfo = {
+  ownerUserId: string | null;
+  cachedAt: number | null;
+  count: number;
 };
 
 let dbPromise: Promise<IDBDatabase> | null = null;
+
+function emitQueueChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent(CORRETIVA_QUEUE_CHANGED_EVENT));
+}
 
 function openDb(): Promise<IDBDatabase> {
   if (dbPromise) return dbPromise;
@@ -60,9 +75,9 @@ function openDb(): Promise<IDBDatabase> {
       reject(new Error("IndexedDB indisponível"));
       return;
     }
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
+    const reqOpen = indexedDB.open(DB_NAME, DB_VERSION);
+    reqOpen.onupgradeneeded = () => {
+      const db = reqOpen.result;
       if (!db.objectStoreNames.contains("os_cache")) {
         db.createObjectStore("os_cache", { keyPath: "id" });
       }
@@ -77,10 +92,13 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains("drafts")) {
         db.createObjectStore("drafts", { keyPath: "osId" });
       }
+      if (!db.objectStoreNames.contains("meta")) {
+        db.createObjectStore("meta");
+      }
     };
 
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    reqOpen.onsuccess = () => resolve(reqOpen.result);
+    reqOpen.onerror = () => reject(reqOpen.error);
   });
   return dbPromise;
 }
@@ -124,16 +142,57 @@ async function currentUserId(): Promise<string | null> {
   }
 }
 
+/**
+ * Atualiza o espelho local das OS que o usuário conseguiu visualizar online.
+ * O dono do cache é salvo junto dos dados para impedir que outro login no mesmo
+ * celular enxergue uma lista pertencente à sessão anterior.
+ */
 export async function cacheOsList(rows: OsCacheRow[]): Promise<void> {
-  await tx("os_cache", "readwrite", async (t) => {
-    const s = t.objectStore("os_cache");
-    await req(s.clear());
-    for (const r of rows) s.put(r);
+  const ownerUserId = await currentUserId();
+  const cachedAt = Date.now();
+
+  await tx(["os_cache", "meta"], "readwrite", async (t) => {
+    const osStore = t.objectStore("os_cache");
+    const metaStore = t.objectStore("meta");
+    await req(osStore.clear());
+    for (const r of rows) osStore.put(r);
+    metaStore.put(ownerUserId, "os_cache_owner");
+    metaStore.put(cachedAt, "os_cache_cached_at");
   });
 }
 
 export async function getCachedOsList(): Promise<OsCacheRow[]> {
-  return tx("os_cache", "readonly", (t) => req(t.objectStore("os_cache").getAll()));
+  const current = await currentUserId();
+  return tx(["os_cache", "meta"], "readonly", async (t) => {
+    const osStore = t.objectStore("os_cache");
+    const metaStore = t.objectStore("meta");
+    const rows = await req<OsCacheRow[]>(osStore.getAll());
+    const owner = (await req<string | null | undefined>(metaStore.get("os_cache_owner"))) ?? null;
+
+    // Cache antigo (sem owner) continua legível para não perder uma preparação
+    // offline já existente. Assim que houver uma carga online ele passa a ser
+    // automaticamente vinculado ao usuário atual.
+    if (!owner) return rows;
+    if (!current || owner !== current) return [];
+    return rows;
+  });
+}
+
+export async function getOfflineCacheInfo(): Promise<OfflineCacheInfo> {
+  return tx(["os_cache", "meta"], "readonly", async (t) => {
+    const osStore = t.objectStore("os_cache");
+    const metaStore = t.objectStore("meta");
+    const [count, owner, cachedAt] = await Promise.all([
+      req<number>(osStore.count()),
+      req<string | null | undefined>(metaStore.get("os_cache_owner")),
+      req<number | null | undefined>(metaStore.get("os_cache_cached_at")),
+    ]);
+    return {
+      ownerUserId: owner ?? null,
+      cachedAt: cachedAt ?? null,
+      count,
+    };
+  });
 }
 
 export async function updateCachedOs(id: string, patch: Partial<OsCacheRow>): Promise<void> {
@@ -153,14 +212,23 @@ export async function outboxAdd(item: OutboxItem): Promise<void> {
   await tx("outbox", "readwrite", (t) =>
     req(t.objectStore("outbox").put({ ...item, userId })),
   );
+  emitQueueChanged();
 }
 
 export async function outboxAll(): Promise<OutboxItem[]> {
   return tx("outbox", "readonly", (t) => req(t.objectStore("outbox").getAll()));
 }
 
+export async function outboxForCurrentUser(): Promise<OutboxItem[]> {
+  const userId = await currentUserId();
+  const items = await outboxAll();
+  if (!userId) return items.filter((item) => !item.userId);
+  return items.filter((item) => !item.userId || item.userId === userId);
+}
+
 export async function outboxRemove(id: string): Promise<void> {
   await tx("outbox", "readwrite", (t) => req(t.objectStore("outbox").delete(id)));
+  emitQueueChanged();
 }
 
 export async function outboxUpdate(item: OutboxItem): Promise<void> {
@@ -169,6 +237,11 @@ export async function outboxUpdate(item: OutboxItem): Promise<void> {
 
 export async function outboxCount(): Promise<number> {
   return tx("outbox", "readonly", (t) => req(t.objectStore("outbox").count()));
+}
+
+export async function outboxCountCurrentUser(): Promise<number> {
+  const items = await outboxForCurrentUser();
+  return items.length;
 }
 
 export async function blobPut(key: string, blob: Blob): Promise<void> {
