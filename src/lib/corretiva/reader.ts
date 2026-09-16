@@ -29,8 +29,29 @@ const norm = (s: unknown) =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "");
 
+/**
+ * Chave canônica da OS usada tanto no navegador quanto no banco.
+ * Evita duplicidades causadas por espaços, caixa diferente, NBSP/BOM e
+ * caracteres invisíveis copiados de relatórios Excel/SAP.
+ */
+export function normalizeCorrectiveOsNumber(value: unknown) {
+  return String(value ?? "")
+    .replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\u2028\u2029\uFEFF]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
 const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
-  numero_os: ["ordemdeservico", "os", "numeroos", "nos", "ordemservico", "chamado"],
+  numero_os: [
+    "ordemdeservico",
+    "os",
+    "numeroos",
+    "nos",
+    "ordemservico",
+    "chamado",
+    "ordem",
+    "ordemmanutencao",
+  ],
   nome_os: [
     "nomeos",
     "nome",
@@ -41,6 +62,8 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
     "atividade",
     "descricaodaos",
     "descricaodoatendimento",
+    "textobreve",
+    "texto",
   ],
   predio: ["predio", "edificio", "area", "predioarea"],
   andar: ["andar", "pavimento"],
@@ -50,7 +73,15 @@ const HEADER_ALIASES: Record<keyof CorretivaOsImport, string[]> = {
   data_sla: ["datasla", "sla", "prazosla", "terminosla", "datalimite"],
   data_programada: ["dataprogramada", "programada", "dataprevista"],
   inicio: ["inicio", "datainicio", "dtinicio"],
-  fim: ["fim", "datafim", "dtfim", "termino", "conclusao", "dataencerramento", "datafechamento"],
+  fim: [
+    "fim",
+    "datafim",
+    "dtfim",
+    "termino",
+    "conclusao",
+    "dataencerramento",
+    "datafechamento",
+  ],
   ativo: ["ativo", "tag", "codigoativo", "codigodoativo"],
   equipamento: ["equipamento", "descricaoequip", "descequipamento"],
   solicitante: [
@@ -83,13 +114,17 @@ function parseDate(v: unknown): Date | null {
   if (v == null || v === "") return null;
   if (v instanceof Date) return Number.isNaN(v.getTime()) ? null : v;
   if (typeof v === "number") return excelSerialToDate(v);
+
   const s = String(v).trim();
   const asNum = Number(s);
   if (!Number.isNaN(asNum)) {
     const d = excelSerialToDate(asNum);
     if (d) return d;
   }
-  const br = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+
+  const br = s.match(
+    /^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/,
+  );
   if (br) {
     const [, d, m, y, hh, mm, ss] = br;
     const year = y.length === 2 ? 2000 + Number(y) : Number(y);
@@ -102,13 +137,16 @@ function parseDate(v: unknown): Date | null {
       ss ? Number(ss) : 0,
     );
   }
+
   const iso = new Date(s);
   return Number.isNaN(iso.getTime()) ? null : iso;
 }
 
 function toISODate(d: Date | null): string | null {
   if (!d) return null;
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate(),
+  ).padStart(2, "0")}`;
 }
 
 function toISODateTime(d: Date | null): string | null {
@@ -122,6 +160,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
   const wb = XLSX.read(buf, { type: "array" });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   if (!sheet) throw new Error("Planilha vazia.");
+
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
   console.log("[Reader] Total de linhas brutas na planilha:", rows.length);
   if (rows.length === 0) return [];
@@ -139,6 +178,7 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     const exact = entries.find(([, aliases]) => aliases.some((a) => nk === a));
     if (exact) headerMap.set(rawKey, exact[0]);
   }
+
   const taken = new Set(headerMap.values());
   for (const rawKey of keys) {
     if (headerMap.has(rawKey)) continue;
@@ -164,9 +204,11 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
   const out: CorretivaOsImport[] = [];
   for (const r of rows) {
     const rec: Partial<CorretivaOsImport> = {};
+
     for (const [rawKey, target] of headerMap) {
       const raw = r[rawKey];
       const val = raw === "" || raw == null ? null : String(raw).trim();
+
       if (target === "data_sla" || target === "data_programada") {
         rec[target] = toISODate(parseDate(raw));
       } else if (target === "data_criacao") {
@@ -177,10 +219,12 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
         (rec as any)[target] = val || null;
       }
     }
-    const numero = (rec.numero_os ?? "").toString().trim();
-    const ativo = (rec.ativo ?? "").toString().trim();
-    const equipamento = (rec.equipamento ?? "").toString().trim();
+
+    const numero = normalizeCorrectiveOsNumber(rec.numero_os);
+    const ativo = String(rec.ativo ?? "").trim();
+    const equipamento = String(rec.equipamento ?? "").trim();
     if (!numero) continue;
+
     out.push({
       numero_os: numero,
       nome_os: rec.nome_os ?? null,
@@ -200,12 +244,13 @@ export async function readCorretivaOsFile(file: File): Promise<CorretivaOsImport
     });
   }
 
-  // Dedup por numero_os (mantém a última ocorrência)
+  // Dedup pela chave canônica da OS. Mantém a última ocorrência da planilha,
+  // comportamento útil para relatórios que repetem a mesma OS com dados atualizados.
   const map = new Map<string, CorretivaOsImport>();
   for (const item of out) {
-    map.set(item.numero_os, item);
+    map.set(normalizeCorrectiveOsNumber(item.numero_os), item);
   }
-  
+
   const finalRows = Array.from(map.values());
   console.log("[Reader] Total de linhas após dedup e validação de OS:", finalRows.length);
   return finalRows;
