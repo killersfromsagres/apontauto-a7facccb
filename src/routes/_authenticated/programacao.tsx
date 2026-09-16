@@ -86,10 +86,10 @@ interface SlotDef {
 const SLOTS: SlotDef[] = [
   {
     id: "CCH",
-    label: "CIVIL / CHAVEIRO / HIDRÁULICA",
-    hint: "Padrões independentes: Chaveiro e Civil 00:30; Hidráulica 01:00.",
+    label: "CIVIL / HIDRÁULICA • CHAVEIRO MANUAL",
+    hint: "Automático: Civil 00:30 e Hidráulica 01:00. Chaveiro é preenchido manualmente.",
     color: EQUIPE_COLOR.CIVIL,
-    equipes: ["CHAVEIRO", "CIVIL", "HIDRÁULICA"],
+    equipes: ["CIVIL", "HIDRÁULICA"],
   },
   {
     id: "REFRIG",
@@ -145,7 +145,7 @@ function predioMatches(predio: string, buildings: string[]): boolean {
 function filterForSlot(items: TriagedOS[], slot: SlotId): TriagedOS[] {
   if (slot === "CCH") {
     return items.filter((item) =>
-      ["CIVIL", "CHAVEIRO", "HIDRÁULICA"].includes(item.equipe),
+      ["CIVIL", "HIDRÁULICA"].includes(item.equipe),
     );
   }
   if (slot === "ELETRICA")
@@ -515,7 +515,7 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Programação mensal em semanas, com meta diária de 09:00 e até 2 corretivas prioritárias por dia útil junto das preventivas."
+      description="Programação mensal em semanas, com meta diária de 09:00 e até 2 corretivas prioritárias por dia útil. No CCH, Civil e Hidráulica são automáticos; Chaveiro permanece manual."
       actions={
         <Button
           variant="glass"
@@ -537,7 +537,7 @@ function ProgramacaoPage() {
                 </h3>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Ao gerar, o sistema busca Corretiva › Novo e reserva até 2
-                  chamados prioritários por dia útil de cada equipe (até 10 por semana).
+                  chamados prioritários por dia útil de cada equipe (até 10 por semana). No CCH, somente Civil e Hidráulica entram automaticamente; Chaveiro é manual.
                 </p>
               </div>
               <Badge variant="outline">
