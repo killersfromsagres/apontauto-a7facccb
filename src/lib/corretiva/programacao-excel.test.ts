@@ -89,7 +89,7 @@ describe("buildProgramacaoWorkbook", () => {
     const data = sheet.getRow(6);
 
     expect(data.getCell(3).value).toBe("BACKORDER");
-    expect(String((data.getCell(3).fill as any)?.fgColor?.argb)).toBe("FF312E81");
+    expect(String((data.getCell(3).fill as any)?.fgColor?.argb)).toBe("FFDC2626");
     expect(sheet.getCell("J3").text).toContain("BACKORDER");
     expect(data.getCell(9).fill).not.toEqual(data.getCell(3).fill);
   });
