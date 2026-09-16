@@ -4,6 +4,15 @@ import { postImgbbForm } from "../imgbb-post";
 
 let isSyncing = false;
 
+function emitSyncState(state: "start" | "finish", detail: Record<string, unknown> = {}) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("corretiva-offline-sync-state", {
+      detail: { state, ...detail },
+    }),
+  );
+}
+
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
@@ -17,8 +26,9 @@ function asPositiveQuantity(value: unknown) {
 
 /**
  * Sincroniza o outbox da execução de campo.
- * Novas operações ficam vinculadas ao usuário que as originou. Itens legados
- * (sem userId) continuam compatíveis para não perder apontamentos já existentes.
+ * A ordem é cronológica: fotos e apontamentos feitos antes da conclusão sobem
+ * antes do patch final de status. Cada operação sensível usa client_uuid para
+ * tornar novas tentativas idempotentes e evitar registros duplicados.
  */
 export async function syncPending() {
   if (isSyncing || !navigator.onLine) return { sent: 0, failed: 0, skipped: 0 };
@@ -30,11 +40,14 @@ export async function syncPending() {
   const allItems = await outboxAll();
   if (allItems.length === 0) return { sent: 0, failed: 0, skipped: 0 };
 
-  const items = allItems.filter((item) => !item.userId || item.userId === currentUserId);
+  const items = allItems
+    .filter((item) => !item.userId || item.userId === currentUserId)
+    .sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
   const skipped = allItems.length - items.length;
   if (items.length === 0) return { sent: 0, failed: 0, skipped };
 
   isSyncing = true;
+  emitSyncState("start", { pending: items.length });
   let sent = 0;
   let failed = 0;
 
@@ -68,9 +81,9 @@ export async function syncPending() {
 
           const blob = await blobGet(blobKey);
           if (!blob) {
-            await outboxRemove(item.id);
-            sent++;
-            continue;
+            // Não remove a operação: ausência de blob deve ficar visível como
+            // pendência/erro em vez de descartar silenciosamente uma evidência.
+            throw new Error("Arquivo local da evidência não foi encontrado.");
           }
 
           const formData = new FormData();
@@ -110,9 +123,10 @@ export async function syncPending() {
         }
 
         if (item.kind === "material_status") {
+          const requestedStatus = String(item.payload?.status || "solicitado");
           const { error } = await supabase
             .from("corretiva_os")
-            .update({ material_status: "solicitado", updated_at: new Date().toISOString() } as any)
+            .update({ material_status: requestedStatus, updated_at: new Date().toISOString() } as any)
             .eq("id", item.osId);
 
           if (error) throw error;
@@ -128,9 +142,9 @@ export async function syncPending() {
 
           const modelo = payload.modelo ? String(payload.modelo).trim() : null;
           const quantidade = asPositiveQuantity(payload.quantidade);
-          const urgencia = payload.urgencia ? String(payload.urgencia) : "media";
+          const urgencia = payload.urgencia ? String(payload.urgencia).toLowerCase() : "media";
           const observacao = payload.observacao ? String(payload.observacao).trim() : null;
-          const clientUuid = String(payload.id ?? item.id);
+          const clientUuid = String(payload.clientUuid ?? payload.id ?? item.id);
           const now = new Date().toISOString();
 
           const { data: existing, error: existingError } = await (supabase.from("corretiva_pecas") as any)
@@ -201,6 +215,7 @@ export async function syncPending() {
         }
 
         if (item.kind === "material") {
+          const payload = item.payload ?? {};
           const {
             descricao,
             equipe,
@@ -209,38 +224,66 @@ export async function syncPending() {
             local,
             numeroOs,
             observacao,
-          } = item.payload;
+          } = payload;
+          const requestClientUuid = String(payload.clientUuid || item.id);
+          const itemClientUuid = `${requestClientUuid}:item`;
 
-          const { data: solData, error } = await supabase
-            .from("material_solicitacoes")
-            .insert({
-              user_id: currentUserId,
-              solicitante: solicitante || "Colaborador",
-              setor: equipe || null,
-              predio: predio || null,
-              local: local || null,
-              prioridade: "normal",
-              status: "enviada",
-              observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
-              enviada_em: new Date().toISOString(),
-            } as any)
+          let solId: string | null = null;
+          const { data: existingRequest, error: existingRequestError } = await (supabase.from(
+            "material_solicitacoes",
+          ) as any)
             .select("id")
-            .single();
+            .eq("client_uuid", requestClientUuid)
+            .maybeSingle();
+          if (existingRequestError) throw existingRequestError;
 
-          if (error) throw error;
-          const solId = (solData as any)?.id;
+          if (existingRequest?.id) {
+            solId = String(existingRequest.id);
+          } else {
+            const { data: solData, error } = await supabase
+              .from("material_solicitacoes")
+              .insert({
+                user_id: currentUserId,
+                solicitante: solicitante || "Colaborador",
+                setor: equipe || null,
+                predio: predio || null,
+                local: local || null,
+                prioridade: "normal",
+                status: "enviada",
+                observacao: `[Solicitado via OS ${numeroOs}] ${observacao || ""}`,
+                enviada_em: new Date().toISOString(),
+                client_uuid: requestClientUuid,
+              } as any)
+              .select("id")
+              .single();
+
+            if (error) throw error;
+            solId = (solData as any)?.id ? String((solData as any).id) : null;
+          }
+
           if (!solId) throw new Error("Solicitação de material sem ID.");
 
-          const { error: itemError } = await supabase
-            .from("material_solicitacao_itens")
-            .insert({
-              solicitacao_id: solId,
-              descricao,
-              quantidade: 1,
-              unidade: "UN",
-              justificativa: `Referente à OS ${numeroOs}`,
-            } as any);
-          if (itemError) throw itemError;
+          const { data: existingItem, error: existingItemError } = await (supabase.from(
+            "material_solicitacao_itens",
+          ) as any)
+            .select("id")
+            .eq("client_uuid", itemClientUuid)
+            .maybeSingle();
+          if (existingItemError) throw existingItemError;
+
+          if (!existingItem) {
+            const { error: itemError } = await supabase
+              .from("material_solicitacao_itens")
+              .insert({
+                solicitacao_id: solId,
+                descricao,
+                quantidade: asPositiveQuantity(payload.quantidade),
+                unidade: "UN",
+                justificativa: `Referente à OS ${numeroOs}`,
+                client_uuid: itemClientUuid,
+              } as any);
+            if (itemError) throw itemError;
+          }
 
           await outboxRemove(item.id);
           sent++;
@@ -248,14 +291,25 @@ export async function syncPending() {
         }
 
         if (item.kind === "problema") {
-          const { error } = await supabase.from("corretiva_problemas").insert({
-            os_id: item.osId,
-            descricao: item.payload.descricao,
-            gravidade: item.payload.gravidade ?? "falha",
-            enviado_por: currentUserId,
-            client_uuid: item.id,
-          } as any);
-          if (error) throw error;
+          const clientUuid = String(item.payload?.clientUuid || item.id);
+          const { data: existingProblem, error: existingProblemError } = await (supabase.from(
+            "corretiva_problemas",
+          ) as any)
+            .select("id")
+            .eq("client_uuid", clientUuid)
+            .maybeSingle();
+          if (existingProblemError) throw existingProblemError;
+
+          if (!existingProblem) {
+            const { error } = await supabase.from("corretiva_problemas").insert({
+              os_id: item.osId,
+              descricao: item.payload.descricao,
+              gravidade: item.payload.gravidade ?? "falha",
+              enviado_por: currentUserId,
+              client_uuid: clientUuid,
+            } as any);
+            if (error) throw error;
+          }
           await outboxRemove(item.id);
           sent++;
           continue;
@@ -275,6 +329,7 @@ export async function syncPending() {
     }
   } finally {
     isSyncing = false;
+    emitSyncState("finish", { sent, failed, skipped });
   }
 
   return { sent, failed, skipped };
