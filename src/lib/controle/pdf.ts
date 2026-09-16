@@ -145,7 +145,14 @@ async function loadImage(url: string | null): Promise<ImageData | null> {
   }
 }
 
-function addPdfHeader(doc: any, exportedCount: number, corretivaCount: number, refrigeracaoCount: number) {
+function addPdfHeader(
+  doc: any,
+  exportedCount: number,
+  corretivaCount: number,
+  refrigeracaoCount: number,
+  fieldCount: number,
+  urgentCount: number,
+) {
   doc.setFillColor(8, 20, 38);
   doc.rect(0, 0, PAGE.width, 34, "F");
   doc.setFillColor(22, 101, 216);
@@ -167,7 +174,10 @@ function addPdfHeader(doc: any, exportedCount: number, corretivaCount: number, r
   doc.text(`${exportedCount} registro(s)`, right, 12, { align: "right" });
   doc.setFont("helvetica", "normal");
   doc.setTextColor(190, 204, 223);
-  doc.text(`Corretiva ${corretivaCount}  ·  Refrigeração ${refrigeracaoCount}`, right, 20, { align: "right" });
+  doc.text(`Corretiva ${corretivaCount}  ·  Refrigeração ${refrigeracaoCount}`, right, 19, { align: "right" });
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(125, 211, 252);
+  doc.text(`Campo ${fieldCount}  ·  Urgentes ${urgentCount}`, right, 26, { align: "right" });
 }
 
 function addPageFooter(doc: any, page: number, total: number) {
@@ -285,14 +295,19 @@ export async function exportControleMateriaisPdf(itens: ControleItem[]): Promise
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
   const corretivaCount = itens.filter((item) => item.origem === "corretiva").length;
   const refrigeracaoCount = itens.filter((item) => item.origem === "refrigeracao").length;
-  const renderHeader = () => addPdfHeader(doc, itens.length, corretivaCount, refrigeracaoCount);
+  const fieldCount = itens.filter((item) => item.fonte === "execucao_campo").length;
+  const urgentCount = itens.filter((item) =>
+    /alta|urgente|crit/i.test(String(item.urgencia ?? item.gravidade ?? "")),
+  ).length;
+  const renderHeader = () =>
+    addPdfHeader(doc, itens.length, corretivaCount, refrigeracaoCount, fieldCount, urgentCount);
 
   renderHeader();
   let y = 43;
 
   for (const [index, item] of itens.entries()) {
     const photos = photoMap.get(`${item.origem}:${item.osId}`) ?? [];
-    y = ensureSpace(doc, y, 72, renderHeader);
+    y = ensureSpace(doc, y, 78, renderHeader);
 
     const cardX = PAGE.margin;
     const cardW = PAGE.contentWidth;
@@ -300,9 +315,9 @@ export async function exportControleMateriaisPdf(itens: ControleItem[]): Promise
 
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(215, 223, 233);
-    doc.roundedRect(cardX, cardTop, cardW, 64, 3, 3, "FD");
+    doc.roundedRect(cardX, cardTop, cardW, 70, 3, 3, "FD");
     doc.setFillColor(item.origem === "refrigeracao" ? 14 : 234, item.origem === "refrigeracao" ? 116 : 88, item.origem === "refrigeracao" ? 144 : 12);
-    doc.roundedRect(cardX, cardTop, 2.2, 64, 1, 1, "F");
+    doc.roundedRect(cardX, cardTop, 2.2, 70, 1, 1, "F");
 
     let px = cardX + 6;
     const py = cardTop + 8;
@@ -316,32 +331,35 @@ export async function exportControleMateriaisPdf(itens: ControleItem[]): Promise
     ) + 2;
     px += pill(doc, `OS ${item.numeroOs}`, px, py, [238, 242, 247], [28, 43, 61]) + 2;
     const status = item.meta?.status_compra ?? "aguardando";
-    pill(doc, STATUS_COMPRA_LABEL[status], px, py, status === "recebido" ? [220, 252, 231] : [239, 246, 255], status === "recebido" ? [22, 101, 52] : [30, 86, 160]);
+    px += pill(doc, STATUS_COMPRA_LABEL[status], px, py, status === "recebido" ? [220, 252, 231] : [239, 246, 255], status === "recebido" ? [22, 101, 52] : [30, 86, 160]) + 2;
+    if (item.fonte === "execucao_campo") {
+      pill(doc, "CAMPO", px, py, [219, 234, 254], [30, 64, 175]);
+    }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(11.2);
+    doc.setFontSize(12.4);
     doc.setTextColor(17, 27, 41);
     const title = `${item.tipo === "peca" ? "Material" : "Defeito"}: ${item.descricao}`;
     doc.text(doc.splitTextToSize(title, cardW - 12).slice(0, 2), cardX + 6, cardTop + 16);
 
-    const firstY = cardTop + 28;
+    const firstY = cardTop + 30;
     const colGap = 4;
     const colW = (cardW - 12 - colGap * 2) / 3;
     detailLine(doc, "Quantidade", item.quantidade != null ? String(item.quantidade) : "—", cardX + 6, firstY, colW);
     detailLine(doc, "Modelo / referência", item.modelo || "—", cardX + 6 + colW + colGap, firstY, colW);
     detailLine(doc, item.tipo === "peca" ? "Urgência" : "Gravidade", item.urgencia || item.gravidade || "—", cardX + 6 + (colW + colGap) * 2, firstY, colW);
 
-    const secondY = firstY + 12;
+    const secondY = firstY + 13;
     detailLine(doc, "Local", [item.predio, item.andar, item.local].filter(Boolean).join(" · ") || "—", cardX + 6, secondY, colW);
     detailLine(doc, "Equipe / solicitante", [item.equipe, item.solicitante].filter(Boolean).join(" · ") || "—", cardX + 6 + colW + colGap, secondY, colW);
     detailLine(doc, "Centro de custo", item.meta?.centro_custo || "Pendente", cardX + 6 + (colW + colGap) * 2, secondY, colW);
 
-    const thirdY = secondY + 12;
+    const thirdY = secondY + 13;
     detailLine(doc, "Requisição / fornecedor", [item.meta?.numero_requisicao, item.meta?.fornecedor].filter(Boolean).join(" · ") || "—", cardX + 6, thirdY, colW);
     detailLine(doc, "Facilities", [fmtDate(item.meta?.data_solicitacao_facilities), item.meta?.solicitado_por].filter((value) => value !== "—" && Boolean(value)).join(" · ") || "—", cardX + 6 + colW + colGap, thirdY, colW);
     detailLine(doc, "Valor estimado", fmtMoney(item.meta?.valor_estimado), cardX + 6 + (colW + colGap) * 2, thirdY, colW);
 
-    y = cardTop + 69;
+    y = cardTop + 75;
 
     const longBlocks = [
       ["ATIVIDADE / OS", item.descricaoOs],
