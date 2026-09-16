@@ -195,14 +195,12 @@ function CreateUserCard() {
     e.preventDefault();
     setLoading(true);
     try {
-      await create({
-        data: {
-          login,
-          password,
-          fullName: fullName || undefined,
-          role,
-          allowedMenus: role === "admin" ? [] : allowedMenus,
-        },
+      await createUser({
+        login,
+        password,
+        fullName: fullName || undefined,
+        role,
+        allowedMenus: role === "admin" ? [] : allowedMenus,
       });
       toast.success(`Usuário "${login}" criado como ${role === "admin" ? "administrador" : "usuário"}.`);
       setLogin("");
