@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import "./responsive-system.css";
 
 export const getRouter = () => {
   const queryClient = new QueryClient({
@@ -24,14 +25,10 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
-    // Preload agressivo no hover/foco → dados e chunks prontos quando o clique acontece.
     defaultPreload: "intent",
     defaultPreloadDelay: 30,
     defaultPreloadStaleTime: 0,
-    // Cross-fade nativo entre rotas (React 19 + View Transitions API) — remove piscadas.
     defaultViewTransition: true,
-    // Só mostra o pending state em navegações lentas (>500ms) — sem mínimo forçado,
-    // rotas cacheadas trocam instantaneamente sem flicker do loader.
     defaultPendingMs: 500,
     defaultPendingMinMs: 0,
   });
