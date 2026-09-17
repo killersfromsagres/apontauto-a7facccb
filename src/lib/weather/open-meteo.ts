@@ -64,12 +64,38 @@ export type WeatherDaily = {
   wind_speed_10m_max: number[];
 };
 
+export type WeatherSource = "met.no" | "open-meteo";
+
 export type WeatherResponse = {
   current: WeatherCurrent;
   hourly: WeatherHourly;
   daily: WeatherDaily;
   fetched_at: string;
+  source?: WeatherSource;
 };
+
+/**
+ * Localiza o índice da série horária correspondente ao horário atual.
+ * A série pode começar em 00h (Open-Meteo) ou no horário atual (MET Norway),
+ * então nunca use `new Date().getHours()` como índice direto.
+ */
+export function currentHourIndex(times: string[] | undefined | null): number {
+  if (!times?.length) return -1;
+  const now = Date.now();
+  let best = -1;
+  let bestDelta = Infinity;
+  for (let i = 0; i < times.length; i++) {
+    const t = new Date(times[i]).getTime();
+    if (!Number.isFinite(t)) continue;
+    if (t > now + 30 * 60_000) break;
+    const delta = Math.abs(now - t);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = i;
+    }
+  }
+  return best;
+}
 
 async function fetchFrom(endpoint: string, signal?: AbortSignal): Promise<WeatherResponse> {
   const res = await fetch(endpoint, { signal, cache: "no-store" });
