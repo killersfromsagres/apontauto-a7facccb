@@ -11,11 +11,13 @@ import {
   type Equipe,
 } from "./triage";
 
-// v4 recalcula a distribuição diária a cada geração e invalida reservas antigas
-// que podiam preservar lacunas na semana. Reservas de outras semanas continuam
-// protegendo a mesma OS contra duplicidade.
-const STORAGE_KEY = "apontauto.corrective-program-reservations.v4";
+// v5: cada semana é recalculada diretamente a partir dos chamados que continuam
+// abertos em Corretiva-Novo. Uma reserva de outra semana não pode mais esconder
+// uma OS ainda aberta da programação atual/futura. A reserva fica apenas como
+// registro visual da última distribuição feita no navegador.
+const STORAGE_KEY = "apontauto.corrective-program-reservations.v5";
 const LEGACY_STORAGE_KEYS = [
+  "apontauto.corrective-program-reservations.v4",
   "apontauto.corrective-program-reservations.v3",
   "apontauto.corrective-program-reservations.v2",
   "apontauto.corrective-program-reservations.v1",
@@ -85,6 +87,17 @@ function reservationKeys(
     normalizeKey(reservation.id),
     normalizeKey(reservation.numeroOs),
   ].filter(Boolean);
+}
+
+function uniqueRows(rows: CorrectiveSourceRow[]): CorrectiveSourceRow[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const keys = rowKeys(row);
+    const stableKey = keys[1] || keys[0];
+    if (!stableKey || seen.has(stableKey)) return false;
+    seen.add(stableKey);
+    return true;
+  });
 }
 
 function buildingMatches(predio: unknown, buildings: readonly string[]): boolean {
@@ -326,19 +339,18 @@ export function setReservationsForWeekTeam(
   rows: CorrectiveSourceRow[],
   dayIndexByRowKey?: Map<string, number>,
 ): CorrectiveProgramReservation[] {
-  const selectedKeys = new Set(rows.flatMap(rowKeys));
   const current = readStorage();
 
-  const next = current.filter((reservation) => {
-    const sameWeekTeam =
-      reservation.periodStart === periodStart &&
-      reservation.periodEnd === periodEnd &&
-      reservation.equipe === equipe;
-    const selectedHere = reservationKeys(reservation).some((key) =>
-      selectedKeys.has(key),
-    );
-    return !sameWeekTeam && !selectedHere;
-  });
+  // A reserva é somente informativa. Nunca usamos uma reserva de outra semana
+  // para excluir uma OS que ainda está aberta no Supabase.
+  const next = current.filter(
+    (reservation) =>
+      !(
+        reservation.periodStart === periodStart &&
+        reservation.periodEnd === periodEnd &&
+        reservation.equipe === equipe
+      ),
+  );
 
   const reservedAt = new Date().toISOString();
   const additions = rows.map<CorrectiveProgramReservation>((row, index) => {
@@ -388,32 +400,13 @@ export function allocateCorrectivesForWeekTeam(options: {
   } = options;
 
   const limit = Math.max(0, perDay * businessDays);
-  const reservations = readStorage();
 
-  // Apenas reservas de outras semanas/equipes bloqueiam a OS. A própria semana
-  // é recalculada integralmente para refletir novos Backorders, SLAs e urgências.
-  const reservedElsewhereKeys = new Set(
-    reservations
-      .filter(
-        (reservation) =>
-          !(
-            reservation.periodStart === periodStart &&
-            reservation.periodEnd === periodEnd &&
-            reservation.equipe === equipe
-          ),
-      )
-      .flatMap(reservationKeys),
-  );
-
+  // Fonte de verdade: chamados que continuam abertos em Corretiva-Novo neste
+  // momento. Reservas antigas não reduzem a fila da semana atual nem futura.
   const eligible = sortCandidates(
-    rows.filter((row) => {
-      if (resolveProgramCorrectiveTeam(row) !== equipe) return false;
-      const keys = rowKeys(row);
-      return (
-        keys.length > 0 &&
-        !keys.some((key) => reservedElsewhereKeys.has(key))
-      );
-    }),
+    uniqueRows(
+      rows.filter((row) => resolveProgramCorrectiveTeam(row) === equipe),
+    ),
     referenceDate,
   ).map((row) => ({ ...row, equipe }));
 
@@ -425,8 +418,9 @@ export function allocateCorrectivesForWeekTeam(options: {
 
   // Distribuição balanceada em rodadas:
   // - 5+ corretivas: todos os dias recebem pelo menos 1;
-  // - 10+ corretivas: todos os dias recebem 2;
-  // - menos de 5: uma por dia até a fila acabar, sem repetir OS.
+  // - 10+ corretivas: todos os dias recebem exatamente 2;
+  // - menos de 10: distribui todas as OS únicas disponíveis sem inventar ou
+  //   repetir um chamado dentro da mesma semana.
   let cursor = 0;
   for (let round = 0; round < perDay && cursor < selected.length; round += 1) {
     for (
