@@ -11,10 +11,7 @@ export const WEATHER_LOCATION = {
 };
 
 // Fonte primária: MET Norway (via server route) com fallback automático para Open-Meteo.
-// O server route proxy identifica-se corretamente com User-Agent, exigido pelo MET Norway.
 const PRIMARY_ENDPOINT = `/api/public/clima-forecast?lat=${WEATHER_LOCATION.latitude}&lon=${WEATHER_LOCATION.longitude}`;
-
-// Fallback direto do navegador (caso o servidor Lovable esteja fora).
 const FALLBACK_ENDPOINT =
   "https://api.open-meteo.com/v1/forecast" +
   `?latitude=${WEATHER_LOCATION.latitude}` +
@@ -75,23 +72,23 @@ export type WeatherResponse = {
 };
 
 /**
- * Localiza o índice da série horária correspondente ao horário atual.
- * A série pode começar em 00h (Open-Meteo) ou no horário atual (MET Norway),
- * então nunca use `new Date().getHours()` como índice direto.
+ * Localiza o timestep horário correspondente ao momento atual.
+ * A série pode iniciar à meia-noite (Open-Meteo) ou na hora atual (MET Norway).
  */
 export function currentHourIndex(times: string[] | undefined | null): number {
   if (!times?.length) return -1;
   const now = Date.now();
   let best = -1;
-  let bestDelta = Infinity;
-  for (let i = 0; i < times.length; i++) {
-    const t = new Date(times[i]).getTime();
-    if (!Number.isFinite(t)) continue;
-    if (t > now + 30 * 60_000) break;
-    const delta = Math.abs(now - t);
+  let bestDelta = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < times.length; index += 1) {
+    const timestamp = new Date(times[index]).getTime();
+    if (!Number.isFinite(timestamp)) continue;
+    // Não considera um timestep claramente futuro como a "hora atual".
+    if (timestamp > now + 30 * 60_000) break;
+    const delta = Math.abs(now - timestamp);
     if (delta < bestDelta) {
       bestDelta = delta;
-      best = i;
+      best = index;
     }
   }
   return best;
@@ -113,13 +110,12 @@ async function fetchFrom(endpoint: string, signal?: AbortSignal): Promise<Weathe
 }
 
 export async function fetchWeather(signal?: AbortSignal): Promise<WeatherResponse> {
-  // 1) Tenta o proxy servidor (MET Norway → Open-Meteo, com User-Agent apropriado).
   try {
     return await fetchFrom(PRIMARY_ENDPOINT, signal);
   } catch (primaryErr) {
-    // 2) Fallback direto no navegador (Open-Meteo público).
     try {
-      return await fetchFrom(FALLBACK_ENDPOINT, signal);
+      const fallback = await fetchFrom(FALLBACK_ENDPOINT, signal);
+      return { ...fallback, source: "open-meteo" };
     } catch (fallbackErr) {
       throw new Error(
         `Falha em todas as fontes de clima. Primária: ${(primaryErr as Error).message}. Fallback: ${(fallbackErr as Error).message}`,
@@ -128,9 +124,6 @@ export async function fetchWeather(signal?: AbortSignal): Promise<WeatherRespons
   }
 }
 
-// ────────────────────────────────────────────────────────────
-// Tradução dos códigos WMO (Open-Meteo)
-// ────────────────────────────────────────────────────────────
 export type WeatherCodeInfo = {
   emoji: string;
   label: string;
@@ -173,9 +166,6 @@ export function weatherCodeInfo(code: number | null | undefined): WeatherCodeInf
   return WEATHER_CODES[code] ?? { emoji: "🌡", label: "Condição desconhecida", bucket: "nublado" };
 }
 
-// ────────────────────────────────────────────────────────────
-// Situação operacional baseada na probabilidade de chuva
-// ────────────────────────────────────────────────────────────
 export type OperationalStatus = {
   nivel: "normal" | "atencao" | "alto" | "reprogramar" | "suspenso";
   cor: string;
@@ -187,42 +177,14 @@ export type OperationalStatus = {
 export function situationStatus(probability: number | null | undefined): OperationalStatus {
   const p = Math.max(0, Math.min(100, Math.round(probability ?? 0)));
   if (p < 20)
-    return {
-      nivel: "normal",
-      cor: "emerald",
-      emoji: "🟢",
-      titulo: "Operação Normal",
-      descricao: "Condições favoráveis para atividades externas.",
-    };
+    return { nivel: "normal", cor: "emerald", emoji: "🟢", titulo: "Operação Normal", descricao: "Condições favoráveis para atividades externas." };
   if (p < 60)
-    return {
-      nivel: "atencao",
-      cor: "amber",
-      emoji: "🟡",
-      titulo: "Atenção",
-      descricao: "Possibilidade moderada de chuva — monitore.",
-    };
+    return { nivel: "atencao", cor: "amber", emoji: "🟡", titulo: "Atenção", descricao: "Possibilidade moderada de chuva — monitore." };
   if (p <= 80)
-    return {
-      nivel: "alto",
-      cor: "orange",
-      emoji: "🟠",
-      titulo: "Alto risco de chuva",
-      descricao: "Considere antecipar tarefas críticas e proteger áreas expostas.",
-    };
-  return {
-    nivel: "reprogramar",
-    cor: "red",
-    emoji: "🔴",
-    titulo: "Recomenda-se reprogramação",
-    descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados.",
-  };
+    return { nivel: "alto", cor: "orange", emoji: "🟠", titulo: "Alto risco de chuva", descricao: "Considere antecipar tarefas críticas e proteger áreas expostas." };
+  return { nivel: "reprogramar", cor: "red", emoji: "🔴", titulo: "Recomenda-se reprogramação", descricao: "Alta probabilidade de chuva — serviços externos devem ser reprogramados." };
 }
 
-/**
- * Status efetivo para TALUDES — qualquer chuva (inclusive garoa) suspende a
- * atividade por segurança, independente da probabilidade prevista.
- */
 export function effectiveTaludeStatus(
   probability: number | null | undefined,
   rain: { detected: boolean; intensity: RainIntensity | null; label: string; mm_atual: number } | null | undefined,
@@ -233,17 +195,13 @@ export function effectiveTaludeStatus(
       nivel: "suspenso",
       cor: "red",
       emoji: "⛈",
-      titulo: isDrizzle
-        ? "ATIVIDADE PARALISADA — Garoa/Chuva em curso"
-        : `ATIVIDADE PARALISADA — ${rain.label} em curso`,
-      descricao:
-        "Qualquer precipitação interrompe as atividades de talude por segurança. Aguarde a liberação formal.",
+      titulo: isDrizzle ? "ATIVIDADE PARALISADA — Garoa/Chuva em curso" : `ATIVIDADE PARALISADA — ${rain.label} em curso`,
+      descricao: "Qualquer precipitação interrompe as atividades de talude por segurança. Aguarde a liberação formal.",
     };
   }
   return situationStatus(probability);
 }
 
-/** Atividades externas que sofrem impacto direto de chuva. */
 export const EXTERNAL_ACTIVITIES = [
   "Civil",
   "Pintura",
@@ -254,9 +212,7 @@ export const EXTERNAL_ACTIVITIES = [
   "Trabalho em altura",
 ] as const;
 
-/** Limite acima do qual atividades externas recebem alerta VERMELHO. */
 export const EXTERNAL_ACTIVITY_ALERT_THRESHOLD = 60;
-/** Qualquer risco relevante de chuva — mesmo fraca — dispara marcação amarela. */
 export const ANY_RAIN_RISK_THRESHOLD = 20;
 
 export function shouldAlertExternalActivities(probability: number | null | undefined): boolean {
@@ -276,11 +232,6 @@ export function riskLevelForProbability(probability: number | null | undefined):
   return "safe";
 }
 
-// ────────────────────────────────────────────────────────────
-// Detecção de chuva em tempo real (qualquer intensidade)
-// A operação de taludes é interrompida para qualquer chuva, então
-// aqui detectamos garoa/chuva fraca também — não apenas alta prob.
-// ────────────────────────────────────────────────────────────
 export type RainIntensity = "garoa" | "fraca" | "moderada" | "forte" | "tempestade";
 
 export type RainDetection = {
@@ -288,9 +239,9 @@ export type RainDetection = {
   intensity: RainIntensity | null;
   label: string;
   emoji: string;
-  mm_atual: number; // mm na última hora (precipitation)
-  mm_dia: number; // acumulado do dia (precipitation_sum)
-  mm_acumulado_3h: number; // acumulado últimas 3h
+  mm_atual: number;
+  mm_dia: number;
+  mm_acumulado_3h: number;
   weather_code: number | null;
 };
 
@@ -320,15 +271,12 @@ const INTENSITY_LABEL: Record<RainIntensity, { label: string; emoji: string }> =
   tempestade: { label: "Tempestade", emoji: "⛈" },
 };
 
-export const RAIN_INTENSITY_ORDER: RainIntensity[] = [
-  "garoa",
-  "fraca",
-  "moderada",
-  "forte",
-  "tempestade",
-];
+export const RAIN_INTENSITY_ORDER: RainIntensity[] = ["garoa", "fraca", "moderada", "forte", "tempestade"];
 
-/** Detecta qualquer chuva em curso a partir do current + hourly do Open-Meteo. */
+/**
+ * Detecta qualquer precipitação em curso. O acumulado recente usa a posição
+ * temporal real em hourly.time; nunca o número da hora como índice do array.
+ */
 export function detectRain(data: WeatherResponse | undefined | null): RainDetection {
   if (!data) {
     return {
@@ -342,25 +290,25 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
       weather_code: null,
     };
   }
+
   const code = data.current?.weather_code ?? null;
   const bucket = weatherCodeInfo(code).bucket;
   const mmAtual = Math.max(0, Number(data.current?.precipitation ?? data.current?.rain ?? 0));
-  const mmDia = Math.max(
-    0,
-    Number(data.daily?.precipitation_sum?.[0] ?? data.daily?.rain_sum?.[0] ?? 0),
-  );
+  const mmDia = Math.max(0, Number(data.daily?.precipitation_sum?.[0] ?? data.daily?.rain_sum?.[0] ?? 0));
+  const hourlyPrecip = data.hourly?.precipitation?.length ? data.hourly.precipitation : data.hourly?.rain ?? [];
+  const index = currentHourIndex(data.hourly?.time);
 
-  // Cálculo acumulado 3h
-  const nowHour = new Date().getHours();
-  const hourlyPrecip = data.hourly?.precipitation || data.hourly?.rain || [];
-  const mm3h = hourlyPrecip
-    .slice(Math.max(0, nowHour - 2), nowHour + 1)
-    .reduce((a, b) => a + (b || 0), 0);
+  // Soma a hora atual e, quando a fonte fornece histórico no mesmo array,
+  // até duas horas imediatamente anteriores. Não soma horas futuras.
+  const mm3h = index >= 0
+    ? hourlyPrecip
+        .slice(Math.max(0, index - 2), index + 1)
+        .reduce((total, value) => total + Math.max(0, Number(value || 0)), 0)
+    : mmAtual;
 
-  const hourlyRain = Number(hourlyPrecip[nowHour] ?? 0);
+  const hourlyRain = index >= 0 ? Math.max(0, Number(hourlyPrecip[index] ?? 0)) : 0;
   const mmReferencia = Math.max(mmAtual, hourlyRain);
-
-  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.01; // Sensibilidade aumentada para 0.01mm
+  const chuvaAtiva = RAIN_BUCKETS.has(bucket) || mmReferencia > 0.01;
 
   if (!chuvaAtiva) {
     return {
@@ -375,10 +323,8 @@ export function detectRain(data: WeatherResponse | undefined | null): RainDetect
     };
   }
 
-  const intensity =
-    intensityFromCode(code) ?? (mmReferencia > 0 ? intensityFromMm(mmReferencia) : "garoa");
+  const intensity = intensityFromCode(code) ?? (mmReferencia > 0 ? intensityFromMm(mmReferencia) : "garoa");
   const meta = INTENSITY_LABEL[intensity];
-
   return {
     detected: true,
     intensity,
