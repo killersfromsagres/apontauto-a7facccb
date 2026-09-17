@@ -3,16 +3,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
+  Activity,
   AlertTriangle,
+  ArrowRight,
+  Building2,
+  CalendarDays,
   CalendarIcon,
+  CheckCircle2,
+  Clock3,
   Download,
+  FileCheck2,
   FileSpreadsheet,
+  Gauge,
   History,
+  Layers3,
   Loader2,
   Printer,
+  ShieldCheck,
+  Snowflake,
+  Sparkles,
   Trash2,
   Upload,
   X,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -269,6 +282,10 @@ function ProgramacaoPage() {
     () => Object.values(slotFiles).some(Boolean),
     [slotFiles],
   );
+  const attachedCount = useMemo(
+    () => Object.values(slotFiles).filter(Boolean).length,
+    [slotFiles],
+  );
   const historyGroups = useMemo(() => {
     const groups = new Map<string, HistoricoItem[]>();
     historico.forEach((item) => {
@@ -521,36 +538,62 @@ function ProgramacaoPage() {
   return (
     <PageShell
       title="Programação"
-      description="Programação mensal em semanas, com meta diária de 09:00 e até 2 corretivas prioritárias por dia útil. No CCH, Civil e Hidráulica são automáticos; Chaveiro permanece manual."
+      description="Planejamento semanal de manutenção com capacidade por equipe, preventivas organizadas e corretivas priorizadas por backorder, SLA e urgência."
       actions={
         <Button
           variant="glass"
           onClick={downloadTemplate}
-          className="h-9 border-emerald-500/20 hover:bg-emerald-500/10"
+          className="group h-10 rounded-xl border-emerald-500/20 bg-emerald-500/[0.04] px-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-emerald-500/10 hover:shadow-md"
         >
-          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" /> Baixar
-          modelo da programação
+          <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500 transition-transform duration-200 group-hover:scale-110" />
+          Baixar modelo
         </Button>
       }
     >
-      <div className="space-y-6">
-        <GlassCard>
-          <div className="space-y-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                  1 · Planilhas mensais por equipe
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Ao gerar, o sistema busca Corretiva › Novo e reserva até 2
-                  chamados prioritários por dia útil de cada equipe (até 10 por semana). No CCH, somente Civil e Hidráulica entram automaticamente; Chaveiro é manual.
-                </p>
+      <div className="space-y-6 pb-4">
+        <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-background/90 via-background/70 to-primary/[0.04] p-5 shadow-sm sm:p-6">
+          <div className="pointer-events-none absolute -right-20 -top-20 h-52 w-52 rounded-full bg-primary/[0.07] blur-3xl" />
+          <div className="relative flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="max-w-2xl">
+              <div className="mb-2 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                <Sparkles className="h-3.5 w-3.5" /> Central de planejamento PCM
               </div>
-              <Badge variant="outline">
-                2 corretivas/dia • até 10/equipe/semana • 09:00/equipe
-              </Badge>
+              <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                Monte o mês com equilíbrio de capacidade e prioridade operacional
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+                Anexe as preventivas por grupo, defina o período e gere as semanas. Backorders e chamados mais urgentes entram primeiro, com distribuição de corretivas ao longo de segunda a sexta sempre que houver disponibilidade.
+              </p>
             </div>
-            <div className="grid gap-3 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:min-w-[500px]">
+              <MetricCard icon={Clock3} value="09:00" label="Meta / equipe" />
+              <MetricCard icon={ShieldCheck} value="2 / dia" label="Corretivas" />
+              <MetricCard icon={Activity} value="Prioridade" label="Backorder + SLA" />
+              <MetricCard icon={FileCheck2} value={`${attachedCount}/3`} label="Arquivos anexados" />
+            </div>
+          </div>
+        </div>
+
+        <GlassCard>
+          <div className="space-y-5">
+            <SectionHeading
+              step="01"
+              icon={Layers3}
+              title="Planilhas mensais por equipe"
+              description="Envie as planilhas de preventivas e confirme o tempo padrão por OS. A leitura e a distribuição existentes permanecem automáticas."
+              aside={
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-primary/20 bg-primary/[0.04] px-3 py-1 text-[10px] font-semibold"
+                >
+                  {attachedCount === 0
+                    ? "Aguardando arquivos"
+                    : `${attachedCount} de 3 grupos preparados`}
+                </Badge>
+              }
+            />
+
+            <div className="grid gap-4 xl:grid-cols-3">
               {SLOTS.map((slot) => (
                 <SlotUpload
                   key={slot.id}
@@ -562,115 +605,191 @@ function ProgramacaoPage() {
                 />
               ))}
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Início da programação no mês
-                </label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal sm:w-[290px]",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", {
-                        locale: ptBR,
-                      })}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={(date: Date | undefined) =>
-                        date && setStartDate(date)
-                      }
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="space-y-4">
+              <SectionHeading
+                step="02"
+                icon={CalendarDays}
+                title="Período da programação"
+                description="Escolha a data inicial do mês. O sistema calcula as semanas úteis e mantém as regras atuais de capacidade e distribuição."
+              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "group h-auto min-h-14 w-full justify-start rounded-xl border-border/70 bg-background/60 px-4 py-3 text-left font-normal shadow-sm transition-all duration-200 hover:border-primary/35 hover:bg-accent/30 sm:w-[390px]",
+                    )}
+                  >
+                    <span className="mr-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
+                      <CalendarIcon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Início da programação
+                      </span>
+                      <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">
+                        {format(startDate, "EEEE, dd 'de' MMMM 'de' yyyy", {
+                          locale: ptBR,
+                        })}
+                      </span>
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date: Date | undefined) => date && setStartDate(date)}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="min-w-0 rounded-2xl border border-primary/15 bg-gradient-to-br from-primary/[0.07] to-primary/[0.02] p-4 lg:w-[390px]">
+              <div className="mb-3 flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Gauge className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Gerar programação semanal</p>
+                  <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                    Prioriza backorders e urgências e busca distribuir 1–2 corretivas por dia útil quando houver chamados elegíveis.
+                  </p>
+                </div>
               </div>
               <Button
                 onClick={generate}
                 disabled={!hasAnyFile || processing}
-                className="min-w-[220px]"
+                className={cn(
+                  "group h-12 w-full rounded-xl text-sm font-semibold shadow-sm transition-all duration-200",
+                  hasAnyFile && !processing &&
+                    "hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/10",
+                )}
               >
                 {processing ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarDays className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
                 )}
                 {processing ? "Montando o mês..." : "Gerar todas as semanas"}
+                {!processing && <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />}
               </Button>
+              {!hasAnyFile && (
+                <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                  Anexe pelo menos uma planilha para habilitar a geração.
+                </p>
+              )}
             </div>
           </div>
         </GlassCard>
 
         {(alerts.length > 0 || statusMessages.length > 0) && (
           <GlassCard>
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold">
-                Relatório de capacidade e triagem
-              </h3>
-              {alerts.map((alert) => (
-                <p
-                  key={`${alert.arquivo}-${alert.real}`}
-                  className="flex gap-2 text-xs text-amber-600 dark:text-amber-400"
-                >
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />{" "}
-                  {alert.arquivo}: conteúdo identificado como {alert.real}.
-                </p>
-              ))}
-              {statusMessages.map((message, index) => (
-                <p key={index} className="text-xs text-muted-foreground">
-                  {message}
-                </p>
-              ))}
+            <div className="space-y-4">
+              <SectionHeading
+                step="03"
+                icon={Activity}
+                title="Relatório operacional"
+                description="Resumo da triagem, capacidade e distribuição calculada pelo sistema."
+              />
+
+              {alerts.length > 0 && (
+                <div className="grid gap-2 md:grid-cols-2">
+                  {alerts.map((alert) => (
+                    <div
+                      key={`${alert.arquivo}-${alert.real}`}
+                      className="flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3 text-xs text-amber-700 dark:text-amber-300"
+                    >
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
+                        <AlertTriangle className="h-3.5 w-3.5" />
+                      </span>
+                      <span className="leading-5">
+                        <strong>{alert.arquivo}</strong>: conteúdo identificado como {alert.real}.
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {statusMessages.length > 0 && (
+                <div className="grid gap-2 lg:grid-cols-2">
+                  {statusMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/35 p-3 transition-colors duration-200 hover:bg-background/55"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                      <p className="text-xs leading-5 text-muted-foreground">{message}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </GlassCard>
         )}
 
         {generated.length > 0 && (
           <GlassCard>
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                Planilhas prontas para baixar e imprimir
-              </h3>
-              <div className="grid gap-2 md:grid-cols-2">
+            <div className="space-y-4">
+              <SectionHeading
+                step="04"
+                icon={FileCheck2}
+                title="Planilhas prontas"
+                description="Arquivos semanais gerados e prontos para download ou impressão."
+                aside={
+                  <Badge className="rounded-full px-3 py-1 text-[10px]">
+                    {generated.length} arquivo(s)
+                  </Badge>
+                }
+              />
+              <div className="grid gap-3 xl:grid-cols-2">
                 {generated.map((file) => (
                   <div
                     key={file.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
+                    className="group relative overflow-hidden rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-background/60 hover:shadow-md"
                   >
-                    <div className="min-w-0">
-                      <p
-                        className="truncate text-xs font-semibold"
-                        title={file.filename}
-                      >
-                        {file.filename}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {file.preventiveCount} preventivas •{" "}
-                        {file.correctiveCount} corretivas • falta{" "}
-                        {formatMinutes(file.remainingMinutes)}
-                      </p>
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/15 bg-emerald-500/[0.07] text-emerald-500">
+                        <FileSpreadsheet className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="min-w-0 flex-1 truncate text-sm font-semibold" title={file.filename}>
+                            {file.filename}
+                          </p>
+                          <Badge variant="outline" className="shrink-0 rounded-full text-[9px]">
+                            Semana {file.week}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 truncate text-[11px] text-muted-foreground">
+                          {file.slotLabel}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          <ResultChip label="Preventivas" value={file.preventiveCount} />
+                          <ResultChip label="Corretivas" value={file.correctiveCount} emphasis />
+                          <ResultChip label="Saldo" value={formatMinutes(file.remainingMinutes)} />
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex shrink-0 gap-1">
+                    <div className="mt-4 grid grid-cols-2 gap-2">
                       <Button
-                        size="sm"
                         variant="secondary"
+                        className="h-10 rounded-xl transition-all duration-200 hover:bg-accent"
                         onClick={() => downloadBlob(file.blob, file.filename)}
                       >
-                        <Download className="mr-1 h-3.5 w-3.5" /> Baixar
+                        <Download className="mr-2 h-4 w-4" /> Baixar
                       </Button>
                       <Button
-                        size="sm"
+                        className="h-10 rounded-xl transition-all duration-200"
                         onClick={() => void handlePrint(file.blob)}
                       >
-                        <Printer className="mr-1 h-3.5 w-3.5" /> Imprimir
+                        <Printer className="mr-2 h-4 w-4" /> Imprimir
                       </Button>
                     </div>
                   </div>
@@ -681,90 +800,104 @@ function ProgramacaoPage() {
         )}
 
         <GlassCard>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <History className="h-4 w-4" />
-                <h3 className="text-sm font-semibold">Histórico semanal</h3>
-              </div>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <SectionHeading
+                icon={History}
+                title="Histórico semanal"
+                description="Programações salvas neste navegador, organizadas por semana e período."
+              />
               {historico.length > 0 && (
                 <Button
                   size="sm"
                   variant="ghost"
+                  className="self-start rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:self-auto"
                   onClick={async () => {
-                    if (
-                      !window.confirm(
-                        "Limpar todo o histórico de programações?",
-                      )
-                    )
-                      return;
+                    if (!window.confirm("Limpar todo o histórico de programações?")) return;
                     await clearHistorico();
                     await reloadHistorico();
                   }}
                 >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" /> Limpar
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Limpar histórico
                 </Button>
               )}
             </div>
+
             {historyGroups.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Nenhuma programação gerada neste navegador.
-              </p>
+              <div className="flex min-h-32 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/25 px-4 py-8 text-center">
+                <History className="mb-3 h-6 w-6 text-muted-foreground/50" />
+                <p className="text-sm font-medium">Nenhuma programação no histórico</p>
+                <p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">
+                  Quando você gerar uma programação, os arquivos ficarão disponíveis aqui para baixar ou imprimir novamente.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {historyGroups.map(([group, items]) => (
                   <details
                     key={group}
-                    className="rounded-xl border border-border/60 bg-background/30"
+                    className="group overflow-hidden rounded-2xl border border-border/60 bg-background/30 transition-all duration-200 open:border-primary/20 open:bg-background/45"
                     open={historyGroups.length <= 2}
                   >
-                    <summary className="cursor-pointer px-3 py-2 text-xs font-semibold">
-                      Semana {items[0].week} •{" "}
-                      {items[0].periodStart ?? "arquivo anterior"} a{" "}
-                      {items[0].periodEnd ?? "—"} • {items.length} arquivo(s)
+                    <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 outline-none transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-primary/40">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/8 text-primary">
+                        <CalendarDays className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold">Semana {items[0].week}</span>
+                        <span className="mt-0.5 block text-[10px] text-muted-foreground">
+                          {items[0].periodStart ?? "arquivo anterior"} a {items[0].periodEnd ?? "—"}
+                        </span>
+                      </span>
+                      <Badge variant="outline" className="rounded-full text-[9px]">
+                        {items.length} arquivo(s)
+                      </Badge>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-open:rotate-90" />
                     </summary>
-                    <div className="grid gap-2 border-t border-border/50 p-2 lg:grid-cols-2">
+                    <div className="grid gap-2 border-t border-border/50 p-3 xl:grid-cols-2">
                       {items.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between gap-2 rounded-lg bg-background/50 p-2"
+                          className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-3 transition-colors duration-200 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-[11px] font-medium">
-                              {item.slotLabel}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {item.preventiveCount ?? item.totalOS} prev. •{" "}
-                              {item.correctiveCount ?? 0} corr. • falta{" "}
-                              {formatMinutes(item.remainingMinutes ?? 0)}
-                            </p>
+                            <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              <ResultChip label="Prev." value={item.preventiveCount ?? item.totalOS} compact />
+                              <ResultChip label="Corr." value={item.correctiveCount ?? 0} compact emphasis />
+                              <ResultChip label="Saldo" value={formatMinutes(item.remainingMinutes ?? 0)} compact />
+                            </div>
                           </div>
-                          <div className="flex shrink-0 gap-1">
+                          <div className="grid shrink-0 grid-cols-3 gap-1.5 sm:flex">
                             <Button
                               size="sm"
                               variant="secondary"
-                              onClick={() =>
-                                downloadBlob(item.blob, item.filename)
-                              }
+                              className="rounded-lg"
+                              onClick={() => downloadBlob(item.blob, item.filename)}
                               aria-label="Baixar"
+                              title="Baixar arquivo"
                             >
                               <Download className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
+                              className="rounded-lg"
                               onClick={() => void handlePrint(item.blob)}
                               aria-label="Imprimir"
+                              title="Imprimir programação"
                             >
                               <Printer className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               variant="ghost"
+                              className="rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               onClick={async () => {
                                 await deleteHistorico(item.id);
                                 await reloadHistorico();
                               }}
                               aria-label="Excluir"
+                              title="Excluir do histórico"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -780,6 +913,80 @@ function ProgramacaoPage() {
         </GlassCard>
       </div>
     </PageShell>
+  );
+}
+
+interface SectionHeadingProps {
+  step?: string;
+  icon: typeof Activity;
+  title: string;
+  description: string;
+  aside?: React.ReactNode;
+}
+
+function SectionHeading({ step, icon: Icon, title, description, aside }: SectionHeadingProps) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/10 bg-primary/[0.06] text-primary">
+          <Icon className="h-4.5 w-4.5" />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            {step && (
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-primary/80">
+                Etapa {step}
+              </span>
+            )}
+          </div>
+          <h3 className="mt-0.5 text-sm font-semibold tracking-tight sm:text-base">{title}</h3>
+          <p className="mt-1 max-w-2xl text-xs leading-5 text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      {aside && <div className="shrink-0">{aside}</div>}
+    </div>
+  );
+}
+
+interface MetricCardProps {
+  icon: typeof Activity;
+  value: string;
+  label: string;
+}
+
+function MetricCard({ icon: Icon, value, label }: MetricCardProps) {
+  return (
+    <div className="rounded-xl border border-border/50 bg-background/55 p-3 shadow-sm backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/20 hover:bg-background/70">
+      <div className="mb-2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+        <Icon className="h-3.5 w-3.5" />
+      </div>
+      <p className="text-sm font-semibold tracking-tight">{value}</p>
+      <p className="mt-0.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+interface ResultChipProps {
+  label: string;
+  value: string | number;
+  compact?: boolean;
+  emphasis?: boolean;
+}
+
+function ResultChip({ label, value, compact, emphasis }: ResultChipProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px]",
+        compact && "px-2 py-0.5 text-[9px]",
+        emphasis
+          ? "border-rose-500/15 bg-rose-500/[0.05] text-rose-600 dark:text-rose-300"
+          : "border-border/50 bg-background/55 text-muted-foreground",
+      )}
+    >
+      <span>{label}</span>
+      <strong className="font-semibold text-foreground">{value}</strong>
+    </span>
   );
 }
 
@@ -799,39 +1006,71 @@ function SlotUpload({
   onMinutesChange,
 }: SlotUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const SlotIcon = slot.id === "REFRIG" ? Snowflake : slot.id === "ELETRICA" ? Zap : Building2;
+
   return (
     <div
-      className="flex flex-col gap-3 rounded-xl border border-border/60 bg-background/40 p-3"
-      style={{ boxShadow: `inset 4px 0 0 ${slot.color}` }}
+      className="group relative flex min-h-[320px] flex-col overflow-hidden rounded-2xl border border-border/60 bg-background/40 p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-background/55 hover:shadow-md"
+      style={{ boxShadow: `inset 0 3px 0 ${slot.color}` }}
     >
-      <div>
-        <p className="text-xs font-semibold">{slot.label}</p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">{slot.hint}</p>
+      <div
+        className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full opacity-[0.08] blur-3xl"
+        style={{ backgroundColor: slot.color }}
+      />
+
+      <div className="relative flex items-start gap-3">
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border bg-background/70"
+          style={{ borderColor: `${slot.color}33`, color: slot.color }}
+        >
+          <SlotIcon className="h-4.5 w-4.5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-bold tracking-tight">{slot.label}</p>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold",
+                file
+                  ? "border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-600 dark:text-emerald-300"
+                  : "border-border/50 bg-background/60 text-muted-foreground",
+              )}
+            >
+              {file ? <CheckCircle2 className="h-2.5 w-2.5" /> : <Upload className="h-2.5 w-2.5" />}
+              {file ? "Arquivo anexado" : "Aguardando arquivo"}
+            </span>
+          </div>
+          <p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">{slot.hint}</p>
+        </div>
       </div>
-      <div className="space-y-1.5">
+
+      <div className="relative mt-4 space-y-2">
+        <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+          Tempo padrão por OS
+        </p>
         {slot.equipes.map((equipe) => (
           <div
             key={equipe}
-            className="flex items-center justify-between gap-2 rounded-lg border border-border/40 bg-background/50 px-2 py-1.5"
+            className="flex items-center justify-between gap-2 rounded-xl border border-border/45 bg-background/45 px-3 py-2.5 transition-colors duration-200 hover:bg-background/65"
           >
             <span
               className="min-w-0 truncate text-[10px] font-semibold"
               style={{ color: EQUIPE_COLOR[equipe] }}
+              title={equipe}
             >
               {equipe}
             </span>
-            <div className="inline-flex shrink-0 overflow-hidden rounded-md border border-border/60">
+            <div className="inline-flex shrink-0 rounded-lg border border-border/60 bg-background/60 p-0.5 shadow-inner">
               {([30, 60] as const).map((value) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => onMinutesChange(equipe, value)}
                   className={cn(
-                    "px-2 py-1 font-mono text-[10px]",
-                    value === 60 && "border-l border-border/60",
+                    "rounded-md px-2.5 py-1.5 font-mono text-[10px] font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                     minutes[equipe] === value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent/40",
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                   )}
                   aria-pressed={minutes[equipe] === value}
                 >
@@ -842,41 +1081,56 @@ function SlotUpload({
           </div>
         ))}
       </div>
-      {file ? (
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/60 px-2 py-2 text-[11px]">
-          <span className="truncate" title={file.name}>
-            {file.name}
-          </span>
+
+      <div className="relative mt-auto pt-4">
+        {file ? (
+          <div className="flex items-center gap-3 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.045] p-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+              <FileCheck2 className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[11px] font-semibold" title={file.name}>{file.name}</p>
+              <p className="mt-0.5 text-[9px] text-muted-foreground">Planilha pronta para processamento</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              aria-label="Remover arquivo"
+              title="Remover arquivo"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={() => onChange(null)}
-            aria-label="Remover arquivo"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault();
+              const dropped = event.dataTransfer.files?.[0];
+              if (dropped) onChange(dropped);
+            }}
+            className="group/upload flex min-h-20 w-full items-center justify-center gap-3 rounded-xl border border-dashed border-border/70 bg-background/30 px-4 py-3 text-left transition-all duration-200 hover:border-primary/35 hover:bg-primary/[0.035] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <X className="h-3.5 w-3.5" />
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/[0.06] text-primary transition-transform duration-200 group-hover/upload:-translate-y-0.5 group-hover/upload:scale-105">
+              <Upload className="h-4 w-4" />
+            </span>
+            <span>
+              <span className="block text-[11px] font-semibold text-foreground">Anexar OS do mês</span>
+              <span className="mt-0.5 block text-[9px] text-muted-foreground">Clique ou arraste um arquivo .xlsx</span>
+            </span>
           </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={(event) => {
-            event.preventDefault();
-            const dropped = event.dataTransfer.files?.[0];
-            if (dropped) onChange(dropped);
-          }}
-          className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 px-3 py-2 text-[11px] text-muted-foreground hover:border-primary/50 hover:bg-accent/30"
-        >
-          <Upload className="h-3.5 w-3.5" /> Anexar OS do mês (.xlsx)
-        </button>
-      )}
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".xlsx"
-        className="hidden"
-        onChange={(event) => onChange(event.target.files?.[0] ?? null)}
-      />
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx"
+          className="hidden"
+          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+        />
+      </div>
     </div>
   );
 }
