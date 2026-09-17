@@ -415,7 +415,8 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     };
   }
 
-  row.height = 85.5;
+  // Excel trabalha em pontos: 120 pt equivalem a aproximadamente 160 px em 96 DPI.
+  row.height = 120;
 
   const osCell = row.getCell(COL.os);
   osCell.font = {
@@ -426,7 +427,13 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   const nomeCell = row.getCell(COL.nome);
   nomeCell.font = {
     ...(nomeCell.font ?? {}),
-    size: 22,
+    size: 28,
+  };
+
+  const ativoCell = row.getCell(COL.ativo);
+  ativoCell.font = {
+    ...(ativoCell.font ?? {}),
+    size: 16,
   };
 
   for (const column of [COL.espaco, COL.ativo, COL.equipamento]) {
@@ -624,7 +631,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
       const ideal = idealDailyRowHeight(section.rows.length);
       section.rows.forEach((row) => {
         row.height = Math.max(contentRowHeight(row), ideal);
-        row.height = 85.5;
+        row.height = 120;
       });
     });
   }
