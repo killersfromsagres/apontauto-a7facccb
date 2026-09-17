@@ -98,6 +98,7 @@ function dayDate(week: WeekInfo, dayIndex: number): Date {
 }
 
 function taskValues(os: TriagedOS, ativoIndex: Map<string, AtivoIndexEntry>) {
+  const corrective = isCorrective(os);
   const isRefrigeracao = os.equipe.startsWith("CLIMAT");
   const entry = isRefrigeracao
     ? lookupAtivoEntry(ativoIndex, os.predio, os.andar, os.local)
@@ -108,15 +109,19 @@ function taskValues(os: TriagedOS, ativoIndex: Map<string, AtivoIndexEntry>) {
     predio: os.predio,
     andar: os.andar,
     espaco: os.local,
-    atividade: isCorrective(os) ? "Corretiva" : "Preventiva",
-    sla: formatSLA(os.terminoSLA),
+    atividade: corrective ? "Corretiva" : "Preventiva",
+    // Para corretivas, a coluna G exibe a data de abertura vinda de Corretiva-Novo.
+    sla: formatSLA(corrective ? os.inicioSLA : os.terminoSLA),
     equipe: os.equipe,
     ativo: isRefrigeracao
       ? entry?.ativo || os.ativo || "Ativo não localizado"
       : os.ativo || "",
-    equipamento: isRefrigeracao
-      ? os.equipamento || entry?.equipamento || ""
-      : "",
+    // Para corretivas, a coluna J exibe o solicitante; preventivas preservam equipamento.
+    equipamento: corrective
+      ? os.solicitante || ""
+      : isRefrigeracao
+        ? os.equipamento || entry?.equipamento || ""
+        : "",
   };
 }
 
