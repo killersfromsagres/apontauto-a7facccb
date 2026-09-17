@@ -495,6 +495,14 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
   sheet.pageSetup.fitToHeight = 0;
   sheet.pageSetup.orientation = "landscape";
   sheet.pageSetup.paperSize = 9;
+  sheet.pageSetup.margins = {
+    left: 0.12,
+    right: 0.12,
+    top: 0.12,
+    bottom: 0.12,
+    header: 0.08,
+    footer: 0.08,
+  };
 
   sheet.getColumn(COL.os).width = 15;
   sheet.getColumn(COL.nome).width = 72;
@@ -778,7 +786,7 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     });
 
     const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Programação semanal</title><style>
-      @page { size: A4 landscape; margin: 5mm; }
+      @page { size: A4 landscape; margin: 3mm; }
       * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
       html, body { margin: 0; background: #fff; font-family: Aptos, Arial, sans-serif; color: #162231; }
       .day-sheet { break-before: page; page-break-before: always; break-after: page; page-break-after: always; }
@@ -788,11 +796,11 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
       thead { display: table-header-group; }
       tbody { display: table-row-group; }
       tr { break-inside: avoid; page-break-inside: avoid; }
-      td { border: 1px solid #DDE5EC; padding: 4px; font-size: 6.8pt; line-height: 1.2; vertical-align: middle; overflow-wrap: anywhere; white-space: normal; }
-      .title-row td { padding: 5px; font-size: 11pt; }
-      .day-band td { padding: 4px; font-size: 8.2pt; }
-      .column-header td { padding: 3.5px; font-size: 6.8pt; }
-      .data-row td:nth-child(2) { font-size: 7.4pt; line-height: 1.25; }
+      td { border: 1px solid #DDE5EC; padding: 4.2px; font-size: 7.5pt; line-height: 1.18; vertical-align: middle; overflow-wrap: anywhere; white-space: normal; }
+      .title-row td { padding: 5px; font-size: 12pt; }
+      .day-band td { padding: 4px; font-size: 9pt; }
+      .column-header td { padding: 3.5px; font-size: 7.4pt; }
+      .data-row td:nth-child(2) { font-size: 8.2pt; line-height: 1.22; }
       td:nth-child(1){width:6%} td:nth-child(2){width:25%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
       td:nth-child(5){width:11%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:9%}
       td:nth-child(9){width:7%} td:nth-child(10){width:8%} td:nth-child(11){width:7%}
