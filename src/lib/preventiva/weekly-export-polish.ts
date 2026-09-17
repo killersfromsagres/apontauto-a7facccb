@@ -1,4 +1,5 @@
 import { classifyPriority } from "@/lib/corretiva/priority-classifier";
+import { getLatestCorretivas } from "./corretivas.functions";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -9,9 +10,19 @@ const COLORS = {
   border: "FFDDE5EC",
   borderStrong: "FFB9C7D3",
   navySoft: "FF17324D",
-  correctiveBg: "FFFEE2E2",
-  correctiveText: "FF991B1B",
+  correctiveBg: "FFFFFFCC",
+  correctiveText: "FF162231",
 } as const;
+
+const PREVENTIVE_OS_COLORS: Record<string, string> = {
+  ELETRICA: "FFCCFFFF",
+  CIVIL: "FFD9EAD3",
+  CHAVEIRO: "FFEADCF8",
+  "CLIMATIZACAO E REFRIGERACAO 1": "FFCCFFFF",
+  "CLIMATIZACAO E REFRIGERACAO 2": "FFD9EAD3",
+  "CLIMATIZACAO E REFRIGERACAO 3": "FFF4CCCC",
+  HIDRAULICA: "FFFCE5CD",
+};
 
 const DAY_NAMES = [
   "SEGUNDA-FEIRA",
@@ -63,7 +74,10 @@ function cloneStyle(style: unknown) {
   return JSON.parse(JSON.stringify(style ?? {}));
 }
 
-function captureRow(row: import("exceljs").Row, maxColumn = COL.equipamento): RowSnapshot {
+function captureRow(
+  row: import("exceljs").Row,
+  maxColumn = COL.equipamento,
+): RowSnapshot {
   const values: unknown[] = [];
   const styles: unknown[] = [];
   for (let column = 1; column <= maxColumn; column += 1) {
@@ -111,6 +125,16 @@ function parseBrDate(value: string): string | undefined {
   return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
+function formatDatePtBr(value: unknown): string {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  return date.toLocaleDateString("pt-BR");
+}
+
 function priorityForRow(row: import("exceljs").Row) {
   return classifyPriority({
     numero_os: row.getCell(COL.os).text,
@@ -126,23 +150,34 @@ function priorityForRow(row: import("exceljs").Row) {
 function visualLineCount(value: string, charsPerLine: number) {
   if (!value.trim()) return 1;
   return value.split(/\r?\n/).reduce(
-    (total, part) => total + Math.max(1, Math.ceil(part.trim().length / charsPerLine)),
+    (total, part) =>
+      total + Math.max(1, Math.ceil(Math.max(1, part.trim().length) / charsPerLine)),
     0,
   );
 }
 
-function intelligentRowHeight(row: import("exceljs").Row) {
+function dataRowHeight(row: import("exceljs").Row) {
+  const corrective = isCorrectiveRow(row);
   const lines = Math.max(
-    visualLineCount(row.getCell(COL.nome).text, 52),
-    visualLineCount(row.getCell(COL.espaco).text, 30),
-    visualLineCount(row.getCell(COL.equipamento).text, 42),
+    visualLineCount(row.getCell(COL.nome).text, corrective ? 42 : 52),
+    visualLineCount(row.getCell(COL.espaco).text, corrective ? 26 : 30),
+    visualLineCount(row.getCell(COL.equipamento).text, corrective ? 36 : 42),
     visualLineCount(row.getCell(COL.equipe).text, 24),
     2,
   );
-  return Math.min(180, Math.max(64, 24 + lines * 20));
+
+  if (corrective) {
+    // Corretivas podem ter descrições extensas. A altura cresce conforme o texto,
+    // com margem suficiente para o wrap do Excel não cortar nenhuma palavra.
+    return Math.min(420, Math.max(74, 30 + lines * 22));
+  }
+  return Math.min(170, Math.max(62, 24 + lines * 18));
 }
 
-function copyHeaderStyle(source: import("exceljs").Cell, target: import("exceljs").Cell) {
+function copyHeaderStyle(
+  source: import("exceljs").Cell,
+  target: import("exceljs").Cell,
+) {
   target.style = cloneStyle(source.style) as import("exceljs").Style;
   target.alignment = {
     ...(target.alignment ?? {}),
@@ -152,7 +187,9 @@ function copyHeaderStyle(source: import("exceljs").Cell, target: import("exceljs
   };
 }
 
-function readSourceDaySections(sheet: import("exceljs").Worksheet): SourceDaySection[] {
+function readSourceDaySections(
+  sheet: import("exceljs").Worksheet,
+): SourceDaySection[] {
   const sections: SourceDaySection[] = [];
   let band: import("exceljs").Row | undefined;
   let header: import("exceljs").Row | undefined;
@@ -189,6 +226,7 @@ function readSourceDaySections(sheet: import("exceljs").Worksheet): SourceDaySec
     }
     if (header) rows.push(row);
   });
+
   flush();
   return sections;
 }
@@ -204,21 +242,28 @@ function rebuildCchProgramSheet(sheet: import("exceljs").Worksheet) {
   );
   const isCch =
     discoveredTeams.size > 0 &&
-    [...discoveredTeams].every((team) => CCH_TEAM_ORDER.includes(team as (typeof CCH_TEAM_ORDER)[number]));
+    [...discoveredTeams].every((team) =>
+      CCH_TEAM_ORDER.includes(team as (typeof CCH_TEAM_ORDER)[number]),
+    );
   if (!isCch) return;
 
   const titleSnapshot = captureRow(sheet.getRow(1));
   const originalViews = sheet.views;
   const originalPageSetup = { ...sheet.pageSetup };
   const originalFooter = sheet.headerFooter.oddFooter;
-  const columnWidths = Array.from({ length: COL.equipamento }, (_, index) => sheet.getColumn(index + 1).width);
+  const columnWidths = Array.from(
+    { length: COL.equipamento },
+    (_, index) => sheet.getColumn(index + 1).width,
+  );
 
-  const merges = [...((((sheet.model as unknown as { merges?: string[] }).merges) ?? []))];
+  const merges = [
+    ...(((sheet.model as unknown as { merges?: string[] }).merges ?? [])),
+  ];
   merges.forEach((range) => {
     try {
       sheet.unMergeCells(range);
     } catch {
-      // Ignore intervalos já desfeitos pelo ExcelJS.
+      // Intervalo já desfeito pelo ExcelJS.
     }
   });
   if (sheet.rowCount > 0) sheet.spliceRows(1, sheet.rowCount);
@@ -243,22 +288,29 @@ function rebuildCchProgramSheet(sheet: import("exceljs").Worksheet) {
     sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
     const teamCell = sheet.getCell(rowIndex, 1);
     teamCell.value = `EQUIPE • ${team}`;
-    teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navySoft } };
+    teamCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: COLORS.navySoft },
+    };
     teamCell.font = {
       name: "Aptos ExtraBold",
       bold: true,
       size: 13,
       color: { argb: COLORS.white },
     };
-    teamCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    teamCell.alignment = {
+      vertical: "middle",
+      horizontal: "left",
+      indent: 1,
+    };
     teamCell.border = {
       bottom: { style: "medium", color: { argb: COLORS.borderStrong } },
     };
     sheet.getRow(rowIndex).height = 28;
     rowIndex += 1;
 
-    for (const dayName of DAY_NAMES) {
-      const dayIndex = DAY_NAMES.indexOf(dayName);
+    for (let dayIndex = 0; dayIndex < DAY_NAMES.length; dayIndex += 1) {
       const source = sections.find((section) => section.dayIndex === dayIndex);
       if (!source) continue;
 
@@ -266,13 +318,12 @@ function rebuildCchProgramSheet(sheet: import("exceljs").Worksheet) {
       const preventiveRows = teamRows.filter((row) => !isCorrectiveSnapshot(row));
       const correctiveRows = teamRows.filter(isCorrectiveSnapshot).slice(0, 2);
       const orderedRows = [...preventiveRows, ...correctiveRows];
-      const correctiveCount = correctiveRows.length;
       const bandParts = source.bandText.split(" • ");
       const dayAndDate = bandParts.slice(0, 2).join(" • ");
 
       sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
       const bandCell = sheet.getCell(rowIndex, 1);
-      bandCell.value = `${dayAndDate} • ${team} • ${orderedRows.length} OS (${correctiveCount} CORRETIVAS)`;
+      bandCell.value = `${dayAndDate} • ${team} • ${orderedRows.length} OS (${correctiveRows.length} CORRETIVAS)`;
       bandCell.style = cloneStyle(source.band.styles[0]) as import("exceljs").Style;
       if (source.band.height) sheet.getRow(rowIndex).height = source.band.height;
       rowIndex += 1;
@@ -284,7 +335,11 @@ function rebuildCchProgramSheet(sheet: import("exceljs").Worksheet) {
         sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
         const empty = sheet.getCell(rowIndex, 1);
         empty.value = `Nenhuma OS de ${team} programada para este dia.`;
-        empty.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.stripe } };
+        empty.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: COLORS.stripe },
+        };
         empty.font = { name: "Aptos", size: 10, color: { argb: COLORS.text } };
         empty.alignment = { vertical: "middle", horizontal: "center" };
         empty.border = {
@@ -304,16 +359,59 @@ function rebuildCchProgramSheet(sheet: import("exceljs").Worksheet) {
   }
 }
 
-function extendMergedRowToPriority(sheet: import("exceljs").Worksheet, rowNumber: number) {
+function collectProgramTeams(sheet: import("exceljs").Worksheet): string[] {
+  const teams = new Set<string>();
+  sheet.eachRow({ includeEmpty: false }, (row) => {
+    if (!isDataRow(row)) return;
+    const team = row.getCell(COL.equipe).text.trim();
+    if (team) teams.add(team);
+  });
+  return [...teams];
+}
+
+function shortTeamName(team: string) {
+  const normalized = normalize(team);
+  if (normalized.startsWith("CLIMATIZACAO E REFRIGERACAO ")) {
+    const number = normalized.match(/(\d+)$/)?.[1];
+    return number ? `REFRIGERAÇÃO ${number}` : "REFRIGERAÇÃO";
+  }
+  return team.toUpperCase();
+}
+
+function programTeamLabel(teams: string[]) {
+  const refrigeracao = teams
+    .map((team) => shortTeamName(team))
+    .filter((team) => team.startsWith("REFRIGERAÇÃO"));
+  if (teams.length === 3 && refrigeracao.length === 3) {
+    return "REFRIGERAÇÃO 1 / REFRIGERAÇÃO 2 / REFRIGERAÇÃO 3";
+  }
+  return teams.map(shortTeamName).join(" / ");
+}
+
+function updateProgramTitle(sheet: import("exceljs").Worksheet) {
+  if (sheet.name !== "PROGRAMAÇÃO") return;
+  const teams = collectProgramTeams(sheet);
+  if (teams.length === 0) return;
+
+  const current = sheet.getCell(1, 1).text.trim();
+  const suffix = current.match(/SEMANA\s+.*$/i)?.[0] ?? current;
+  sheet.getCell(1, 1).value =
+    `PROGRAMAÇÃO SEMANAL • ${programTeamLabel(teams)} • ${suffix}`;
+}
+
+function extendMergedRowToPriority(
+  sheet: import("exceljs").Worksheet,
+  rowNumber: number,
+) {
   try {
     sheet.unMergeCells(`A${rowNumber}:J${rowNumber}`);
   } catch {
-    // já expandido
+    // Já expandido.
   }
   try {
     sheet.mergeCells(`A${rowNumber}:K${rowNumber}`);
   } catch {
-    // já mesclado
+    // Já mesclado.
   }
 }
 
@@ -322,10 +420,7 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   for (let column = 1; column <= COL.equipamento; column += 1) {
     const cell = row.getCell(column);
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: base } };
-    cell.font = {
-      ...(cell.font ?? {}),
-      color: { argb: COLORS.text },
-    };
+    cell.font = { ...(cell.font ?? {}), color: { argb: COLORS.text } };
     cell.border = {
       top: { style: "thin", color: { argb: COLORS.border } },
       bottom: { style: "thin", color: { argb: COLORS.border } },
@@ -349,6 +444,24 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
         color: { argb: COLORS.correctiveText },
       };
     }
+    return;
+  }
+
+  const teamKey = normalize(row.getCell(COL.equipe).text);
+  const preventiveColor = PREVENTIVE_OS_COLORS[teamKey];
+  if (preventiveColor) {
+    const osCell = row.getCell(COL.os);
+    osCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: preventiveColor },
+    };
+    osCell.font = {
+      ...(osCell.font ?? {}),
+      name: "Aptos ExtraBold",
+      bold: true,
+      color: { argb: COLORS.text },
+    };
   }
 }
 
@@ -359,13 +472,16 @@ function addDayPageBreaks(sheet: import("exceljs").Worksheet) {
     const first = row.getCell(1).text.trim();
     if (DAY_NAMES.some((day) => first.startsWith(day))) dayRows.push(row.number);
   });
-  (sheet as unknown as { rowBreaks: Array<{ id: number; min: number; max: number; man: number }> }).rowBreaks =
-    dayRows.slice(1).map((rowNumber) => ({
-      id: rowNumber - 1,
-      min: 0,
-      max: COL.prioridade - 1,
-      man: 1,
-    }));
+  (
+    sheet as unknown as {
+      rowBreaks: Array<{ id: number; min: number; max: number; man: number }>;
+    }
+  ).rowBreaks = dayRows.slice(1).map((rowNumber) => ({
+    id: rowNumber - 1,
+    min: 0,
+    max: COL.prioridade - 1,
+    man: 1,
+  }));
 }
 
 function prepareSheet(sheet: import("exceljs").Worksheet) {
@@ -419,7 +535,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     if (!isDataRow(row)) return;
 
     lastDataRow = Math.max(lastDataRow, row.number);
-    row.height = intelligentRowHeight(row);
+    row.height = dataRowHeight(row);
     for (let column = 1; column <= COL.equipamento; column += 1) {
       const cell = row.getCell(column);
       cell.alignment = {
@@ -434,14 +550,22 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     const priorityCell = row.getCell(COL.prioridade);
     const base = row.number % 2 === 0 ? COLORS.white : COLORS.stripe;
     priorityCell.value = isCorrectiveRow(row) ? priorityForRow(row).level : null;
-    priorityCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: base } };
+    priorityCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: base },
+    };
     priorityCell.font = {
       name: "Aptos SemiBold",
       bold: isCorrectiveRow(row),
       size: 9,
       color: { argb: COLORS.text },
     };
-    priorityCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    priorityCell.alignment = {
+      vertical: "middle",
+      horizontal: "center",
+      wrapText: true,
+    };
     priorityCell.border = {
       top: { style: "thin", color: { argb: COLORS.border } },
       bottom: { style: "thin", color: { argb: COLORS.border } },
@@ -455,21 +579,68 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
   addDayPageBreaks(sheet);
 }
 
+async function openingDateMap() {
+  const map = new Map<string, string>();
+  try {
+    const rows = (await getLatestCorretivas()) as Array<{
+      numero_os?: unknown;
+      id?: unknown;
+      data_criacao?: unknown;
+    }>;
+    rows.forEach((row) => {
+      const date = formatDatePtBr(row.data_criacao);
+      if (!date) return;
+      [row.numero_os, row.id].forEach((key) => {
+        const normalized = normalize(key);
+        if (normalized) map.set(normalized, date);
+      });
+    });
+  } catch (error) {
+    console.warn(
+      "[Programacao] Não foi possível atualizar a data de abertura das corretivas:",
+      error,
+    );
+  }
+  return map;
+}
+
+function applyCorrectiveOpeningDates(
+  workbook: import("exceljs").Workbook,
+  dates: Map<string, string>,
+) {
+  if (dates.size === 0) return;
+  workbook.worksheets.forEach((sheet) => {
+    if (sheet.name !== "PROGRAMAÇÃO" && !sheet.name.startsWith("IMP ")) return;
+    sheet.eachRow({ includeEmpty: false }, (row) => {
+      if (!isCorrectiveRow(row)) return;
+      const date = dates.get(normalize(row.getCell(COL.os).text));
+      if (date) row.getCell(COL.sla).value = date;
+    });
+  });
+}
+
 /**
- * Pós-processamento da programação semanal:
- * - CCH é reorganizado por equipe: CIVIL SEG→SEX, depois HIDRÁULICA SEG→SEX;
- * - cada dia mantém preventivas primeiro e até 2 corretivas da MESMA equipe no final;
- * - linhas de dados permanecem somente branco/#F7FAFC;
- * - em corretivas, apenas OS e Atividade recebem destaque vermelho;
- * - coluna Prioridade permanece disponível, sem pintar a linha.
+ * Pós-processamento da Programação conforme o modelo operacional:
+ * - CCH permanece separado por equipe (Civil SEG→SEX, depois Hidráulica SEG→SEX);
+ * - preventiva: somente a célula OS recebe a cor da equipe;
+ * - corretiva: somente OS + Atividade recebem amarelo;
+ * - linhas permanecem branco/#F7FAFC;
+ * - Término SLA da corretiva exibe a data de abertura;
+ * - altura de corretivas cresce automaticamente para mostrar a descrição completa.
  */
 export async function polishWeeklyProgramacao(blob: Blob): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
+  const [dates] = await Promise.all([openingDateMap()]);
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await blob.arrayBuffer());
 
   const programSheet = workbook.getWorksheet("PROGRAMAÇÃO");
-  if (programSheet) rebuildCchProgramSheet(programSheet);
+  if (programSheet) {
+    rebuildCchProgramSheet(programSheet);
+    updateProgramTitle(programSheet);
+  }
+
+  applyCorrectiveOpeningDates(workbook, dates);
   workbook.worksheets.forEach(prepareSheet);
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -504,10 +675,18 @@ function renderRow(
     const fill = cell.fill && "fgColor" in cell.fill ? cell.fill.fgColor : undefined;
     const background = excelColor(fill, "#FFFFFF");
     const color = excelColor(cell.font?.color, "#162231");
-    const align = cell.alignment?.horizontal ??
-      ([COL.nome, COL.espaco, COL.equipe, COL.ativo, COL.equipamento].includes(column as 2 | 5 | 8 | 9 | 10) ? "left" : "center");
-    const value = column === 1 && firstOverride !== undefined ? firstOverride : cell.text;
-    cells.push(`<td${merged ? ` colspan="${COL.prioridade}"` : ""} style="background:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`);
+    const align =
+      cell.alignment?.horizontal ??
+      ([COL.nome, COL.espaco, COL.equipe, COL.ativo, COL.equipamento].includes(
+        column as 2 | 5 | 8 | 9 | 10,
+      )
+        ? "left"
+        : "center");
+    const value =
+      column === 1 && firstOverride !== undefined ? firstOverride : cell.text;
+    cells.push(
+      `<td${merged ? ` colspan="${COL.prioridade}"` : ""} style="background:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`,
+    );
   }
   return `<tr class="${className}">${cells.join("")}</tr>`;
 }
@@ -526,11 +705,7 @@ function readDaySections(sheet: import("exceljs").Worksheet): DaySection[] {
 
   const flush = () => {
     if (!band || !header) return;
-    days.push({
-      band,
-      header,
-      rows: rows.filter(isDataRow),
-    });
+    days.push({ band, header, rows: rows.filter(isDataRow) });
   };
 
   sheet.eachRow({ includeEmpty: false }, (row) => {
@@ -550,16 +725,21 @@ function readDaySections(sheet: import("exceljs").Worksheet): DaySection[] {
     }
     if (header) rows.push(row);
   });
+
   flush();
   return days;
 }
 
 export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
   const printWindow = window.open("", "_blank");
-  if (!printWindow) throw new Error("O navegador bloqueou a janela de impressão.");
+  if (!printWindow) {
+    throw new Error("O navegador bloqueou a janela de impressão.");
+  }
 
   printWindow.opener = null;
-  printWindow.document.write("<p style='font-family:Arial;padding:24px'>Preparando impressão por equipe e dia...</p>");
+  printWindow.document.write(
+    "<p style='font-family:Arial;padding:24px'>Preparando impressão por equipe e dia...</p>",
+  );
 
   try {
     const { default: ExcelJS } = await import("exceljs");
@@ -573,7 +753,10 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     const sections = days.map((day, index) => {
       const preventiveCount = day.rows.filter((row) => !isCorrectiveRow(row)).length;
       const correctiveCount = day.rows.filter(isCorrectiveRow).length;
-      const team = day.rows[0]?.getCell(COL.equipe).text.trim() || day.band.getCell(1).text.split(" • ")[2] || "";
+      const team =
+        day.rows[0]?.getCell(COL.equipe).text.trim() ||
+        day.band.getCell(1).text.split(" • ")[2] ||
+        "";
       const bandParts = day.band.getCell(1).text.split(" • ");
       const dayLabel = bandParts.slice(0, 2).join(" • ");
       const bandLabel = `${dayLabel} • ${team} • ${preventiveCount} PREVENTIVAS • ${correctiveCount} CORRETIVAS`;
@@ -583,7 +766,14 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
           ${renderRow(day.band, "day-band", true, bandLabel)}
           ${renderRow(day.header, "column-header")}
         </thead>
-        <tbody>${day.rows.map((row) => renderRow(row, `data-row ${isCorrectiveRow(row) ? "corrective-row" : "preventive-row"}`)).join("")}</tbody>
+        <tbody>${day.rows
+          .map((row) =>
+            renderRow(
+              row,
+              `data-row ${isCorrectiveRow(row) ? "corrective-row" : "preventive-row"}`,
+            ),
+          )
+          .join("")}</tbody>
       </table></section>`;
     });
 
@@ -602,7 +792,6 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
       .title-row td { padding: 5px; font-size: 11pt; }
       .day-band td { padding: 4px; font-size: 8.2pt; }
       .column-header td { padding: 3.5px; font-size: 6.8pt; }
-      .data-row { min-height: 54px; }
       .data-row td:nth-child(2) { font-size: 7.4pt; line-height: 1.25; }
       td:nth-child(1){width:6%} td:nth-child(2){width:25%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
       td:nth-child(5){width:11%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:9%}
