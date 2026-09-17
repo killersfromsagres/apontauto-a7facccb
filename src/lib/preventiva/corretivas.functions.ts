@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { cacheOsList, getCachedOsList } from "@/lib/corretiva/db";
+import { normalizeCorrectiveRefrigeracaoRows } from "./refrigeracao-routing";
 
 const normalizeStatus = (status: unknown) =>
   String(status ?? "")
@@ -25,13 +26,24 @@ const isOpenCorrective = (status: unknown) => {
 const onlyOpen = <T extends { status?: unknown }>(rows: T[]) =>
   rows.filter((item) => isOpenCorrective(item.status));
 
+const normalizeForProgramacao = <T extends {
+  equipe?: unknown;
+  nome_os?: unknown;
+  tipo?: unknown;
+  ativo?: unknown;
+  equipamento?: unknown;
+  predio?: unknown;
+}>(rows: T[]) => normalizeCorrectiveRefrigeracaoRows(rows);
+
 async function readCachedCorrectives() {
   try {
     const cached = await getCachedOsList();
-    return onlyOpen(cached).map((item) => ({
-      ...item,
-      corretiva_problemas: [],
-    }));
+    return normalizeForProgramacao(
+      onlyOpen(cached).map((item) => ({
+        ...item,
+        corretiva_problemas: [],
+      })),
+    );
   } catch (error) {
     console.warn("[Programacao] Cache de corretivas indisponível:", error);
     return [];
@@ -42,6 +54,9 @@ async function readCachedCorrectives() {
  * Usa exatamente a sessão autenticada do navegador, como a tela Corretiva > Novo.
  * Não exclui `backorder_mensal`: backorders também precisam concorrer à programação
  * e têm prioridade na seleção das 2 corretivas por equipe.
+ *
+ * Para climatização/refrigeração, a equipe usada na Programação é sempre
+ * recalculada pelo prédio com a mesma matriz das preventivas (REFRIG_1/2/3).
  */
 export async function getLatestCorretivas() {
   const withProblems = await supabase
@@ -53,7 +68,7 @@ export async function getLatestCorretivas() {
     .limit(2000);
 
   if (!withProblems.error && (withProblems.data?.length ?? 0) > 0) {
-    const rows = onlyOpen(withProblems.data ?? []);
+    const rows = normalizeForProgramacao(onlyOpen(withProblems.data ?? []));
     cacheOsList((withProblems.data ?? []) as any).catch((error) =>
       console.warn("[Programacao] Não foi possível atualizar o cache:", error),
     );
@@ -79,10 +94,12 @@ export async function getLatestCorretivas() {
     cacheOsList(plain.data as any).catch((error) =>
       console.warn("[Programacao] Não foi possível atualizar o cache:", error),
     );
-    return onlyOpen(plain.data ?? []).map((item) => ({
-      ...item,
-      corretiva_problemas: [],
-    }));
+    return normalizeForProgramacao(
+      onlyOpen(plain.data ?? []).map((item) => ({
+        ...item,
+        corretiva_problemas: [],
+      })),
+    );
   }
 
   const cached = await readCachedCorrectives();
