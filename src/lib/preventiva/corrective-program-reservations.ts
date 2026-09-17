@@ -4,12 +4,19 @@ import {
 } from "@/lib/corretiva/priority-classifier";
 import type { CorrectiveSourceRow } from "./monthly-scheduler";
 import { resolveCorrectiveTeam } from "./monthly-scheduler";
-import type { Equipe } from "./triage";
+import {
+  REFRIG_1,
+  REFRIG_2,
+  REFRIG_3,
+  type Equipe,
+} from "./triage";
 
-// v3 invalida reservas antigas que podiam preservar uma distribuição diária incorreta.
-// As chaves v2 e v1 são removidas quando este módulo é lido no navegador.
-const STORAGE_KEY = "apontauto.corrective-program-reservations.v3";
+// v4 recalcula a distribuição diária a cada geração e invalida reservas antigas
+// que podiam preservar lacunas na semana. Reservas de outras semanas continuam
+// protegendo a mesma OS contra duplicidade.
+const STORAGE_KEY = "apontauto.corrective-program-reservations.v4";
 const LEGACY_STORAGE_KEYS = [
+  "apontauto.corrective-program-reservations.v3",
   "apontauto.corrective-program-reservations.v2",
   "apontauto.corrective-program-reservations.v1",
 ] as const;
@@ -55,6 +62,16 @@ function normalizeKey(value: unknown): string {
   return String(value ?? "").trim().toUpperCase();
 }
 
+function normalizeText(value: unknown): string {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/[^A-Za-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
 function rowKeys(
   row: Pick<CorrectiveSourceRow, "id" | "numero_os">,
 ): string[] {
@@ -70,12 +87,44 @@ function reservationKeys(
   ].filter(Boolean);
 }
 
-function sharesKey(
-  row: Pick<CorrectiveSourceRow, "id" | "numero_os">,
-  reservation: CorrectiveProgramReservation,
-): boolean {
-  const keys = new Set(reservationKeys(reservation));
-  return rowKeys(row).some((key) => keys.has(key));
+function buildingMatches(predio: unknown, buildings: readonly string[]): boolean {
+  const current = normalizeText(predio);
+  if (!current) return false;
+  return buildings.some((building) => {
+    const target = normalizeText(building);
+    return current === target || current.startsWith(`${target} `);
+  });
+}
+
+/**
+ * Na Programação, corretivas de Refrigeração obedecem primeiro à matriz de
+ * prédios das equipes 1/2/3. Para as demais especialidades usa a classificação
+ * normal do chamado.
+ */
+function resolveProgramCorrectiveTeam(row: CorrectiveSourceRow): Equipe | null {
+  const resolved = resolveCorrectiveTeam(row);
+  const context = normalizeText(
+    `${row.equipe ?? ""} ${row.nome_os ?? ""} ${row.tipo ?? ""} ${row.ativo ?? ""} ${row.equipamento ?? ""}`,
+  );
+  const isRefrigeration =
+    Boolean(resolved?.startsWith("CLIMATIZAÇÃO E REFRIGERAÇÃO")) ||
+    context.includes("REFRIG") ||
+    context.includes("CLIMAT") ||
+    context.includes("AR CONDIC") ||
+    context.includes("FANCOIL") ||
+    context.includes("CHILLER");
+
+  if (!isRefrigeration) return resolved;
+  if (buildingMatches(row.predio, REFRIG_2)) {
+    return "CLIMATIZAÇÃO E REFRIGERAÇÃO 2";
+  }
+  if (buildingMatches(row.predio, REFRIG_3)) {
+    return "CLIMATIZAÇÃO E REFRIGERAÇÃO 3";
+  }
+  if (buildingMatches(row.predio, REFRIG_1)) {
+    return "CLIMATIZAÇÃO E REFRIGERAÇÃO 1";
+  }
+  return resolved;
 }
 
 function dateRank(value: unknown): number {
@@ -94,6 +143,22 @@ function compareOs(a: unknown, b: unknown): number {
   });
 }
 
+const DUE_ORDER = {
+  OVERDUE: 0,
+  DUE_SOON: 1,
+  DUE_WEEK: 2,
+  ON_TIME: 3,
+  NO_DUE: 4,
+} as const;
+
+/**
+ * Ordem operacional da fila:
+ * 1. Backorders;
+ * 2. SLA/data programada mais urgente (vencido → vence logo → semana);
+ * 3. criticidade e score;
+ * 4. chamados mais antigos;
+ * 5. número da OS como desempate estável.
+ */
 function sortCandidates(
   rows: CorrectiveSourceRow[],
   referenceDate: Date,
@@ -114,17 +179,32 @@ function sortCandidates(
   return [...rows].sort((a, b) => {
     const aPriority = priorityOf(a);
     const bPriority = priorityOf(b);
-    const priorityOrder =
-      PRIORITY_ORDER[aPriority.level] - PRIORITY_ORDER[bPriority.level] ||
-      bPriority.score - aPriority.score ||
-      Number(bPriority.isBackorder) - Number(aPriority.isBackorder) ||
-      bPriority.ageDays - aPriority.ageDays;
-    if (priorityOrder !== 0) return priorityOrder;
+
+    const backorderOrder =
+      Number(bPriority.isBackorder) - Number(aPriority.isBackorder);
+    if (backorderOrder !== 0) return backorderOrder;
+
+    const dueStateOrder =
+      DUE_ORDER[aPriority.dueState] - DUE_ORDER[bPriority.dueState];
+    if (dueStateOrder !== 0) return dueStateOrder;
+
+    const daysToDueA = aPriority.daysToDue ?? Number.MAX_SAFE_INTEGER;
+    const daysToDueB = bPriority.daysToDue ?? Number.MAX_SAFE_INTEGER;
+    if (daysToDueA !== daysToDueB) return daysToDueA - daysToDueB;
 
     const dueOrder =
       dateRank(a.data_sla ?? a.data_programada) -
       dateRank(b.data_sla ?? b.data_programada);
     if (dueOrder !== 0) return dueOrder;
+
+    const priorityOrder =
+      PRIORITY_ORDER[aPriority.level] - PRIORITY_ORDER[bPriority.level] ||
+      bPriority.score - aPriority.score;
+    if (priorityOrder !== 0) return priorityOrder;
+
+    if (aPriority.ageDays !== bPriority.ageDays) {
+      return bPriority.ageDays - aPriority.ageDays;
+    }
 
     const createdOrder = dateRank(a.data_criacao) - dateRank(b.data_criacao);
     if (createdOrder !== 0) return createdOrder;
@@ -288,20 +368,6 @@ export function setReservationsForWeekTeam(
   return additions;
 }
 
-function totalAllocated(byDay: CorrectiveSourceRow[][]): number {
-  return byDay.reduce((total, day) => total + day.length, 0);
-}
-
-function nextAvailableDay(
-  byDay: CorrectiveSourceRow[][],
-  perDay: number,
-): number {
-  for (let dayIndex = 0; dayIndex < byDay.length; dayIndex += 1) {
-    if (byDay[dayIndex].length < perDay) return dayIndex;
-  }
-  return -1;
-}
-
 export function allocateCorrectivesForWeekTeam(options: {
   rows: CorrectiveSourceRow[];
   equipe: Equipe;
@@ -323,13 +389,9 @@ export function allocateCorrectivesForWeekTeam(options: {
 
   const limit = Math.max(0, perDay * businessDays);
   const reservations = readStorage();
-  const sameWeekReservations = reservations.filter(
-    (reservation) =>
-      reservation.periodStart === periodStart &&
-      reservation.periodEnd === periodEnd &&
-      reservation.equipe === equipe,
-  );
 
+  // Apenas reservas de outras semanas/equipes bloqueiam a OS. A própria semana
+  // é recalculada integralmente para refletir novos Backorders, SLAs e urgências.
   const reservedElsewhereKeys = new Set(
     reservations
       .filter(
@@ -345,7 +407,7 @@ export function allocateCorrectivesForWeekTeam(options: {
 
   const eligible = sortCandidates(
     rows.filter((row) => {
-      if (resolveCorrectiveTeam(row) !== equipe) return false;
+      if (resolveProgramCorrectiveTeam(row) !== equipe) return false;
       const keys = rowKeys(row);
       return (
         keys.length > 0 &&
@@ -353,58 +415,27 @@ export function allocateCorrectivesForWeekTeam(options: {
       );
     }),
     referenceDate,
-  );
+  ).map((row) => ({ ...row, equipe }));
 
+  const selected = eligible.slice(0, limit);
   const byDay = Array.from(
     { length: businessDays },
     () => [] as CorrectiveSourceRow[],
   );
-  const selectedKeys = new Set<string>();
 
-  // Mantém reservas da mesma semana quando existirem, respeitando sempre 2/dia.
-  for (const reservation of sameWeekReservations) {
-    if (totalAllocated(byDay) >= limit) break;
-    const row = eligible.find((candidate) => sharesKey(candidate, reservation));
-    if (!row) continue;
-
-    const keys = rowKeys(row);
-    if (keys.some((key) => selectedKeys.has(key))) continue;
-
-    const preferredDay =
-      typeof reservation.dayIndex === "number" &&
-      reservation.dayIndex >= 0 &&
-      reservation.dayIndex < businessDays &&
-      byDay[reservation.dayIndex].length < perDay
-        ? reservation.dayIndex
-        : nextAvailableDay(byDay, perDay);
-
-    if (preferredDay < 0) break;
-    byDay[preferredDay].push(row);
-    keys.forEach((key) => selectedKeys.add(key));
-  }
-
-  // Distribui a fila em rodadas: primeiro cobre SEG→SEX com uma corretiva,
-  // depois completa a segunda vaga. Com 10 disponíveis ficam 2 em cada dia;
-  // com menos, evita concentrar tudo no começo da semana.
-  const remaining = eligible.filter((row) => {
-    const keys = rowKeys(row);
-    return !keys.some((key) => selectedKeys.has(key));
-  });
+  // Distribuição balanceada em rodadas:
+  // - 5+ corretivas: todos os dias recebem pelo menos 1;
+  // - 10+ corretivas: todos os dias recebem 2;
+  // - menos de 5: uma por dia até a fila acabar, sem repetir OS.
   let cursor = 0;
-  for (let round = 0; round < perDay && cursor < remaining.length; round += 1) {
-    for (let dayIndex = 0; dayIndex < businessDays && cursor < remaining.length; dayIndex += 1) {
-      if (byDay[dayIndex].length > round || byDay[dayIndex].length >= perDay) continue;
-      const row = remaining[cursor++];
-      byDay[dayIndex].push(row);
-      rowKeys(row).forEach((key) => selectedKeys.add(key));
+  for (let round = 0; round < perDay && cursor < selected.length; round += 1) {
+    for (
+      let dayIndex = 0;
+      dayIndex < businessDays && cursor < selected.length;
+      dayIndex += 1
+    ) {
+      byDay[dayIndex].push(selected[cursor++]);
     }
-  }
-  while (cursor < remaining.length && totalAllocated(byDay) < limit) {
-    const dayIndex = nextAvailableDay(byDay, perDay);
-    if (dayIndex < 0) break;
-    const row = remaining[cursor++];
-    byDay[dayIndex].push(row);
-    rowKeys(row).forEach((key) => selectedKeys.add(key));
   }
 
   const finalRows = byDay.flat();
