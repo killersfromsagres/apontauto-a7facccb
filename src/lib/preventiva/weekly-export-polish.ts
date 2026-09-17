@@ -39,6 +39,8 @@ const REFRIG_TEAM_ORDER = [
   "CLIMATIZAÇÃO E REFRIGERAÇÃO 3",
 ] as const;
 const ELECTRICAL_TEAM = "ELÉTRICA" as const;
+const BASE_DATA_ROW_HEIGHT_PT = 120;
+const MAX_CORRECTIVE_ROW_HEIGHT_PT = 420;
 
 const COL = {
   os: 1,
@@ -138,17 +140,43 @@ function visualLineCount(value: string, charsPerLine: number) {
   );
 }
 
-function contentRowHeight(row: import("exceljs").Row) {
-  const corrective = isCorrectiveRow(row);
-  const lines = Math.max(
-    visualLineCount(row.getCell(COL.nome).text, 58),
-    visualLineCount(row.getCell(COL.espaco).text, 34),
-    visualLineCount(row.getCell(COL.equipamento).text, 46),
-    visualLineCount(row.getCell(COL.equipe).text, 28),
-    2,
+/**
+ * Calcula um Height seguro para corretivas levando em conta o conteúdo que mais
+ * costuma cortar no Excel. A coluna B usa fonte 28, por isso ela pesa mais no
+ * cálculo. O valor mínimo continua 120 pt (~160 px) e cresce somente quando
+ * necessário, até um limite alto o suficiente para descrições extensas.
+ */
+function intelligentCorrectiveRowHeight(row: import("exceljs").Row) {
+  const nomeLines = visualLineCount(row.getCell(COL.nome).text, 38);
+  const espacoLines = visualLineCount(row.getCell(COL.espaco).text, 28);
+  const ativoLines = visualLineCount(row.getCell(COL.ativo).text, 23);
+  const equipamentoLines = visualLineCount(
+    row.getCell(COL.equipamento).text,
+    34,
   );
-  const calculated = (corrective ? 28 : 24) + lines * (corrective ? 17 : 15);
-  return Math.min(corrective ? 120 : 104, Math.max(corrective ? 60 : 56, calculated));
+  const equipeLines = visualLineCount(row.getCell(COL.equipe).text, 24);
+
+  // Coluna B usa 28 pt: reserva ~36 pt por linha visual + margens.
+  const descriptionHeight = 42 + nomeLines * 36;
+  // Campos secundários possuem fontes menores, mas também precisam de folga
+  // para wrapText e centralização vertical.
+  const secondaryLines = Math.max(
+    espacoLines,
+    ativoLines,
+    equipamentoLines,
+    equipeLines,
+  );
+  const secondaryHeight = 38 + secondaryLines * 24;
+
+  return Math.min(
+    MAX_CORRECTIVE_ROW_HEIGHT_PT,
+    Math.max(BASE_DATA_ROW_HEIGHT_PT, descriptionHeight, secondaryHeight),
+  );
+}
+
+function contentRowHeight(row: import("exceljs").Row) {
+  if (isCorrectiveRow(row)) return intelligentCorrectiveRowHeight(row);
+  return BASE_DATA_ROW_HEIGHT_PT;
 }
 
 function idealDailyRowHeight(rowCount: number) {
@@ -255,7 +283,8 @@ function programTeamLabel(teams: string[]) {
   const refrigeration = teams.filter((team) =>
     normalize(team).startsWith("CLIMATIZACAO E REFRIGERACAO "),
   );
-  if (refrigeration.length > 0) return "REFRIGERAÇÃO 1 / REFRIGERAÇÃO 2 / REFRIGERAÇÃO 3";
+  if (refrigeration.length > 0)
+    return "REFRIGERAÇÃO 1 / REFRIGERAÇÃO 2 / REFRIGERAÇÃO 3";
   return teams.map(shortTeamName).join(" / ");
 }
 
@@ -315,8 +344,16 @@ function rebuildProgramSheetByTeam(
     size: 23,
     color: { argb: COLORS.white },
   };
-  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navy } };
-  title.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  title.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: COLORS.navy },
+  };
+  title.alignment = {
+    vertical: "middle",
+    horizontal: "center",
+    wrapText: true,
+  };
   sheet.getRow(1).height = 48;
 
   let rowIndex = 2;
@@ -325,7 +362,9 @@ function rebuildProgramSheetByTeam(
       const teamRows = source.rows.filter(
         (row) => normalize(snapshotTeam(row)) === normalize(team),
       );
-      const preventiveRows = teamRows.filter((row) => !isCorrectiveSnapshot(row));
+      const preventiveRows = teamRows.filter(
+        (row) => !isCorrectiveSnapshot(row),
+      );
       const correctiveRows = teamRows.filter(isCorrectiveSnapshot);
       const orderedRows = [...preventiveRows, ...correctiveRows];
       const bandParts = source.bandText.split(" • ");
@@ -335,7 +374,11 @@ function rebuildProgramSheetByTeam(
       const bandCell = sheet.getCell(rowIndex, 1);
       bandCell.value = `${dayAndDate} • ${shortTeamName(team)} • ${orderedRows.length} OS (${correctiveRows.length} CORRETIVAS)`;
       bandCell.style = cloneStyle(source.band.styles[0]) as import("exceljs").Style;
-      bandCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.teal } };
+      bandCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: COLORS.teal },
+      };
       bandCell.font = {
         ...(bandCell.font ?? {}),
         name: "Aptos ExtraBold",
@@ -343,7 +386,11 @@ function rebuildProgramSheetByTeam(
         size: 12.5,
         color: { argb: COLORS.white },
       };
-      bandCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      bandCell.alignment = {
+        vertical: "middle",
+        horizontal: "left",
+        indent: 1,
+      };
       sheet.getRow(rowIndex).height = 32;
       rowIndex += 1;
 
@@ -358,8 +405,16 @@ function rebuildProgramSheetByTeam(
           size: 10,
           color: { argb: COLORS.white },
         };
-        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navySoft } };
-        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: COLORS.navySoft },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
       }
       header.height = 35;
       rowIndex += 1;
@@ -368,9 +423,22 @@ function rebuildProgramSheetByTeam(
         sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
         const empty = sheet.getCell(rowIndex, 1);
         empty.value = `Nenhuma OS de ${shortTeamName(team)} programada para este dia.`;
-        empty.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.stripe } };
-        empty.font = { name: "Aptos SemiBold", bold: true, size: 12, color: { argb: COLORS.text } };
-        empty.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+        empty.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: COLORS.stripe },
+        };
+        empty.font = {
+          name: "Aptos SemiBold",
+          bold: true,
+          size: 12,
+          color: { argb: COLORS.text },
+        };
+        empty.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
         empty.border = {
           top: { style: "thin", color: { argb: COLORS.border } },
           bottom: { style: "thin", color: { argb: COLORS.border } },
@@ -393,10 +461,16 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   for (let column = 1; column <= COL.equipamento; column += 1) {
     const cell = row.getCell(column);
     const currentSize = Number(cell.font?.size ?? 10);
-    const minimumSize = [COL.nome, COL.espaco, COL.equipamento].includes(column as 2 | 5 | 10)
+    const minimumSize = [COL.nome, COL.espaco, COL.equipamento].includes(
+      column as 2 | 5 | 10,
+    )
       ? 11
       : 10;
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: base } };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: base },
+    };
     cell.font = {
       ...(cell.font ?? {}),
       size: Math.max(currentSize, minimumSize),
@@ -414,9 +488,6 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
       right: { style: "thin", color: { argb: COLORS.border } },
     };
   }
-
-  // Excel trabalha em pontos: 120 pt equivalem a aproximadamente 160 px em 96 DPI.
-  row.height = 120;
 
   const osCell = row.getCell(COL.os);
   osCell.font = {
@@ -445,6 +516,12 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
       wrapText: true,
     };
   }
+
+  // Preventivas permanecem com 160 px (~120 pt). Corretivas usam o cálculo
+  // inteligente para crescer conforme a quantidade real de texto.
+  row.height = isCorrectiveRow(row)
+    ? intelligentCorrectiveRowHeight(row)
+    : BASE_DATA_ROW_HEIGHT_PT;
 
   // A data de Término SLA permanece sempre neutra. Nenhum destaque amarelo/vermelho
   // deve alcançar a coluna de data.
@@ -481,14 +558,14 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   const teamKey = normalize(row.getCell(COL.equipe).text);
   const preventiveColor = PREVENTIVE_OS_COLORS[teamKey];
   if (preventiveColor) {
-    const osCell = row.getCell(COL.os);
-    osCell.fill = {
+    const preventiveOsCell = row.getCell(COL.os);
+    preventiveOsCell.fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: preventiveColor },
     };
-    osCell.font = {
-      ...(osCell.font ?? {}),
+    preventiveOsCell.font = {
+      ...(preventiveOsCell.font ?? {}),
       name: "Aptos ExtraBold",
       bold: true,
       color: { argb: COLORS.text },
@@ -569,8 +646,6 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     footer: 0.08,
   };
 
-  // A:J somente. As larguras foram equilibradas para aproveitar A4 paisagem
-  // sem sacrificar o wrap das descrições.
   sheet.getColumn(COL.os).width = 15;
   sheet.getColumn(COL.nome).width = 72;
   sheet.getColumn(COL.predio).width = 16;
@@ -617,7 +692,11 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
           size: 10,
           color: { argb: COLORS.white },
         };
-        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
       }
       return;
     }
@@ -630,13 +709,20 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     readDaySections(sheet).forEach((section) => {
       const ideal = idealDailyRowHeight(section.rows.length);
       section.rows.forEach((row) => {
-        row.height = Math.max(contentRowHeight(row), ideal);
-        row.height = 120;
+        if (isCorrectiveRow(row)) {
+          row.height = Math.max(
+            BASE_DATA_ROW_HEIGHT_PT,
+            intelligentCorrectiveRowHeight(row),
+          );
+        } else {
+          row.height = Math.max(BASE_DATA_ROW_HEIGHT_PT, ideal);
+        }
       });
     });
   }
 
-  if (firstHeaderRow) sheet.autoFilter = `A${firstHeaderRow}:J${firstHeaderRow}`;
+  if (firstHeaderRow)
+    sheet.autoFilter = `A${firstHeaderRow}:J${firstHeaderRow}`;
   sheet.pageSetup.printArea = `A1:J${Math.max(lastUsedRow, sheet.rowCount)}`;
   addDayPageBreaks(sheet);
 }
@@ -649,7 +735,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
  * - cada equipe/dia vira uma página de impressão independente;
  * - corretivas recebem vermelho apenas em OS + Atividade;
  * - Término SLA preserva a data original e permanece com fundo neutro;
- * - altura e tipografia são ajustadas para aproveitar melhor a folha A4 paisagem.
+ * - preventivas mantêm 160 px; corretivas crescem automaticamente conforme texto.
  */
 export async function polishWeeklyProgramacao(blob: Blob): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
@@ -730,14 +816,20 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     const titleRow = sheet.getRow(1);
     const days = readDaySections(sheet);
     const sections = days.map((day, index) => {
-      const preventiveCount = day.rows.filter((row) => !isCorrectiveRow(row)).length;
+      const preventiveCount = day.rows.filter(
+        (row) => !isCorrectiveRow(row),
+      ).length;
       const correctiveCount = day.rows.filter(isCorrectiveRow).length;
       const bandParts = day.band.getCell(1).text.split(" • ");
       const dayLabel = bandParts.slice(0, 2).join(" • ");
-      const team = bandParts[2]?.trim() || day.rows[0]?.getCell(COL.equipe).text.trim() || "";
+      const team =
+        bandParts[2]?.trim() ||
+        day.rows[0]?.getCell(COL.equipe).text.trim() ||
+        "";
       const bandLabel = `${dayLabel} • ${team} • ${preventiveCount} PREVENTIVAS • ${correctiveCount} CORRETIVAS`;
       const rowCount = Math.max(day.rows.length, 1);
-      const bodyFont = rowCount >= 18 ? 7.9 : rowCount >= 15 ? 8.25 : 8.65;
+      const bodyFont =
+        rowCount >= 18 ? 7.9 : rowCount >= 15 ? 8.25 : 8.65;
       const body = day.rows.length
         ? day.rows
             .map((row) =>
@@ -779,6 +871,8 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
       .column-header td { padding: 3.5px; font-size: 8.1pt; }
       tbody tr { height: calc(170mm / var(--row-count)); }
       .data-row td:nth-child(2), .data-row td:nth-child(5), .data-row td:nth-child(10) { font-size: calc(var(--body-font) + .45pt); line-height: 1.19; }
+      .corrective-row { height: auto; min-height: calc(170mm / var(--row-count)); }
+      .corrective-row td { white-space: normal; overflow-wrap: anywhere; }
       .empty-row td { text-align: center; font-size: 12pt; font-weight: 700; background: #F7FAFC; }
       td:nth-child(1){width:6%} td:nth-child(2){width:27%} td:nth-child(3){width:7%} td:nth-child(4){width:6%}
       td:nth-child(5){width:12%} td:nth-child(6){width:7%} td:nth-child(7){width:7%} td:nth-child(8){width:10%}
