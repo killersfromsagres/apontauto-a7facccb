@@ -415,6 +415,30 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     };
   }
 
+  row.height = 85.5;
+
+  const osCell = row.getCell(COL.os);
+  osCell.font = {
+    ...(osCell.font ?? {}),
+    size: 18,
+  };
+
+  const nomeCell = row.getCell(COL.nome);
+  nomeCell.font = {
+    ...(nomeCell.font ?? {}),
+    size: 22,
+  };
+
+  for (const column of [COL.espaco, COL.ativo, COL.equipamento]) {
+    const cell = row.getCell(column);
+    cell.alignment = {
+      ...(cell.alignment ?? {}),
+      horizontal: "center",
+      vertical: "middle",
+      wrapText: true,
+    };
+  }
+
   // A data de Término SLA permanece sempre neutra. Nenhum destaque amarelo/vermelho
   // deve alcançar a coluna de data.
   row.getCell(COL.sla).fill = {
@@ -595,13 +619,12 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     normalizeDataRowVisual(row);
   });
 
-  // Distribui melhor a altura disponível de cada página. Dias com poucas OS ficam
-  // mais altos; dias cheios permanecem compactos o suficiente para caber em uma folha.
   if (isProgram) {
     readDaySections(sheet).forEach((section) => {
       const ideal = idealDailyRowHeight(section.rows.length);
       section.rows.forEach((row) => {
         row.height = Math.max(contentRowHeight(row), ideal);
+        row.height = 85.5;
       });
     });
   }
