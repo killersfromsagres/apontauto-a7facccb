@@ -446,12 +446,18 @@ function ProgramacaoPage() {
             ativoIndex: read.ativoIndex,
           });
           const blob = await polishWeeklyProgramacao(rawBlob);
-          const monthSlug = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, "0")}`;
-          const slotSlug = slot.id === "REFRIG" ? "REFRIGERACAO" : slot.id;
+          const filenameBase =
+            slot.id === "CCH"
+              ? "Civil e Hidraulica"
+              : slot.id === "REFRIG"
+                ? "Refrigeracao"
+                : "Eletrica";
+          const fileStart = format(week.monday, "dd-MM-yyyy");
+          const fileEnd = format(week.friday, "dd-MM-yyyy");
           const id = `${slot.id}-${periodStart}-${Date.now()}-${weekIndex}`;
           const item: GeneratedFile = {
             id,
-            filename: `PROGRAMACAO_${monthSlug}_SEM${week.isoWeek}_${slotSlug}.xlsx`,
+            filename: `${filenameBase} SEMANA ${week.isoWeek} ${fileStart} a ${fileEnd}.xlsx`,
             blob,
             week: week.isoWeek,
             slot: slot.id,
