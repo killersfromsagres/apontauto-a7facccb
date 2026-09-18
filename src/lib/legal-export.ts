@@ -149,29 +149,32 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   const m = metrics(items, execs, year);
 
   const palette = {
-    ink: [7, 15, 28] as [number, number, number],
-    navy: [15, 32, 55] as [number, number, number],
-    navySoft: [25, 48, 78] as [number, number, number],
-    blue: [63, 126, 255] as [number, number, number],
-    cyan: [70, 211, 255] as [number, number, number],
+    ink: [8, 18, 34] as [number, number, number],
+    navy: [14, 32, 57] as [number, number, number],
+    navySoft: [25, 51, 86] as [number, number, number],
+    blue: [50, 107, 255] as [number, number, number],
+    blueSoft: [230, 238, 255] as [number, number, number],
+    cyan: [55, 201, 238] as [number, number, number],
     white: [255, 255, 255] as [number, number, number],
-    text: [28, 39, 56] as [number, number, number],
-    muted: [104, 116, 134] as [number, number, number],
-    line: [220, 226, 234] as [number, number, number],
-    lineStrong: [203, 211, 222] as [number, number, number],
+    paper: [252, 253, 255] as [number, number, number],
+    text: [28, 40, 58] as [number, number, number],
+    muted: [103, 117, 137] as [number, number, number],
+    subtle: [143, 154, 171] as [number, number, number],
+    line: [220, 227, 236] as [number, number, number],
+    lineStrong: [202, 212, 225] as [number, number, number],
     surface: [247, 249, 252] as [number, number, number],
-    surface2: [241, 245, 249] as [number, number, number],
-    green: [16, 185, 129] as [number, number, number],
-    greenBg: [226, 248, 240] as [number, number, number],
+    surface2: [241, 245, 250] as [number, number, number],
+    green: [12, 169, 116] as [number, number, number],
+    greenBg: [225, 247, 239] as [number, number, number],
     greenText: [5, 122, 85] as [number, number, number],
-    amber: [245, 158, 11] as [number, number, number],
+    amber: [239, 153, 15] as [number, number, number],
     amberBg: [255, 247, 224] as [number, number, number],
     amberText: [157, 91, 0] as [number, number, number],
-    red: [239, 68, 68] as [number, number, number],
+    red: [232, 70, 70] as [number, number, number],
     redBg: [255, 237, 237] as [number, number, number],
-    redText: [185, 28, 28] as [number, number, number],
-    slateBg: [241, 245, 249] as [number, number, number],
-    violet: [99, 102, 241] as [number, number, number],
+    redText: [181, 35, 35] as [number, number, number],
+    slateBg: [239, 243, 248] as [number, number, number],
+    violet: [103, 92, 222] as [number, number, number],
   };
 
   doc.setProperties({
@@ -184,7 +187,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const marginX = 36;
+  const marginX = 38;
   const contentW = pageW - marginX * 2;
 
   const statuses = items.map(statusOf);
@@ -193,215 +196,394 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   const empresas = new Set(items.map((item) => item.empresa.trim()).filter(Boolean)).size;
   const critical = m.vencidos + m.proximos;
   const nextItems = items
-    .filter((item) => item.proximaExecucao)
-    .sort((a, b) => a.proximaExecucao.localeCompare(b.proximaExecucao))
+    .filter((item) => Boolean(item.proximaExecucao))
+    .sort((a, b) => (a.proximaExecucao ?? "").localeCompare(b.proximaExecucao ?? ""))
     .slice(0, 3);
 
-  const drawBrandMark = (x: number, y: number) => {
+  const addContainedImage = (
+    data: string,
+    x: number,
+    y: number,
+    maxW: number,
+    maxH: number,
+  ) => {
+    const properties = doc.getImageProperties(data);
+    const sourceW = Math.max(1, Number(properties.width) || 1);
+    const sourceH = Math.max(1, Number(properties.height) || 1);
+    const scale = Math.min(maxW / sourceW, maxH / sourceH);
+    const width = sourceW * scale;
+    const height = sourceH * scale;
+    doc.addImage(
+      data,
+      "PNG",
+      x + (maxW - width) / 2,
+      y + (maxH - height) / 2,
+      width,
+      height,
+      undefined,
+      "FAST",
+    );
+  };
+
+  const drawBrandMark = (x: number, y: number, size = 52) => {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(x, y, size, size, 10, 10, "FD");
+
     if (logoData) {
       try {
-        doc.addImage(logoData, "PNG", x, y, 98, 42, undefined, "FAST");
+        addContainedImage(logoData, x + 5, y + 5, size - 10, size - 10);
         return;
       } catch {
-        // Mantém o fallback vetorial abaixo.
+        // Mantém o fallback vetorial caso o arquivo da logo não carregue.
       }
     }
+
     doc.setFillColor(...palette.blue);
-    doc.roundedRect(x, y + 4, 34, 34, 8, 8, "F");
+    doc.roundedRect(x + 8, y + 8, size - 16, size - 16, 8, 8, "F");
     doc.setDrawColor(...palette.white);
-    doc.setLineWidth(2.2);
-    doc.line(x + 8, y + 29, x + 17, y + 10);
-    doc.line(x + 17, y + 10, x + 26, y + 29);
-    doc.line(x + 12, y + 22, x + 22, y + 22);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(...palette.white);
-    doc.text("APONT AUTO", x + 44, y + 25);
+    doc.setLineWidth(2.1);
+    doc.line(x + 16, y + size - 17, x + size / 2, y + 15);
+    doc.line(x + size / 2, y + 15, x + size - 16, y + size - 17);
+    doc.line(x + 20, y + size - 24, x + size - 20, y + size - 24);
   };
 
   const drawCompactPageHeader = (pageNumber: number) => {
     doc.setFillColor(...palette.ink);
-    doc.rect(0, 0, pageW, 50, "F");
+    doc.rect(0, 0, pageW, 58, "F");
+    doc.setFillColor(...palette.navy);
+    doc.rect(pageW * 0.79, 0, pageW * 0.21, 58, "F");
     doc.setFillColor(...palette.blue);
-    doc.rect(0, 48, pageW, 2, "F");
+    doc.rect(0, 56, pageW, 2, "F");
+
+    drawBrandMark(marginX, 10, 34);
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10.5);
     doc.setTextColor(...palette.white);
-    doc.text("PAINEL DE ITENS LEGAIS", marginX, 22);
+    doc.text("PAINEL DE ITENS LEGAIS", marginX + 47, 25);
     doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(170, 186, 208);
+    doc.text(`Relatório executivo de conformidade · Ano-base ${year}`, marginX + 47, 39);
+
+    const right = `CONTINUAÇÃO  ·  ${String(pageNumber).padStart(2, "0")}`;
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(7.2);
-    doc.setTextColor(167, 181, 201);
-    doc.text(`Relatório de conformidade · Ano-base ${year}`, marginX, 35);
-    const right = `APONT AUTO  ·  Continuação  ·  ${String(pageNumber).padStart(2, "0")}`;
-    doc.text(right, pageW - marginX - doc.getTextWidth(right), 29);
+    doc.setTextColor(202, 214, 230);
+    doc.text(right, pageW - marginX - doc.getTextWidth(right), 31);
   };
 
-  // Fundo e cabeçalho principal.
-  doc.setFillColor(...palette.white);
-  doc.rect(0, 0, pageW, pageH, "F");
-  doc.setFillColor(...palette.ink);
-  doc.rect(0, 0, pageW, 94, "F");
-  doc.setFillColor(...palette.navy);
-  doc.rect(pageW * 0.67, 0, pageW * 0.33, 94, "F");
-  doc.setFillColor(...palette.blue);
-  doc.rect(0, 91, pageW, 3, "F");
-  doc.setFillColor(...palette.cyan);
-  doc.rect(0, 91, pageW * 0.16, 3, "F");
-
-  drawBrandMark(marginX, 21);
-
-  const titleX = logoData ? marginX + 118 : marginX + 152;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.2);
-  doc.setTextColor(136, 157, 186);
-  doc.text("GESTÃO DE COMPLIANCE E RECORRÊNCIAS", titleX, 28);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20.5);
-  doc.setTextColor(...palette.white);
-  doc.text("PAINEL DE ITENS LEGAIS", titleX, 50);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.2);
-  doc.setTextColor(183, 198, 219);
-  doc.text("Visão executiva de obrigações, vencimentos, agendamentos e evidências documentais", titleX, 68);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9.2);
-  doc.setTextColor(...palette.white);
-  const docType = "RELATÓRIO EXECUTIVO";
-  doc.text(docType, pageW - marginX - doc.getTextWidth(docType), 29);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.3);
-  doc.setTextColor(155, 171, 194);
-  const meta1 = `Ano-base  ${year}`;
-  const meta2 = `Emissão  ${generatedLabel}`;
-  doc.text(meta1, pageW - marginX - doc.getTextWidth(meta1), 48);
-  doc.text(meta2, pageW - marginX - doc.getTextWidth(meta2), 63);
-  doc.setTextColor(113, 132, 158);
-  const control = "Controle interno · Documento gerado pelo sistema";
-  doc.text(control, pageW - marginX - doc.getTextWidth(control), 78);
-
-  // KPIs em cartões independentes.
-  const cardsY = 112;
-  const cardsH = 62;
-  const gap = 10;
-  const cards = [
-    { label: "TOTAL DE ITENS", value: String(m.total), accent: palette.blue, note: `${empresas} empresa(s)` },
-    { label: "REGULARIDADE", value: `${m.regularidade}%`, accent: palette.green, note: `${m.emDia} em dia` },
-    { label: "VENCIDOS", value: String(m.vencidos), accent: palette.red, note: "ação imediata" },
-    { label: "PRÓXIMOS", value: String(m.proximos), accent: palette.amber, note: "até 15 dias" },
-    { label: "AGENDADOS", value: String(m.agendados), accent: palette.cyan, note: `${semAgenda} sem agenda` },
-    { label: "EXECUÇÕES", value: String(m.execucoesAno), accent: palette.violet, note: `realizadas em ${year}` },
-  ];
-  const cardW = (contentW - gap * (cards.length - 1)) / cards.length;
-
-  cards.forEach((card, index) => {
-    const x = marginX + index * (cardW + gap);
-    doc.setFillColor(229, 234, 241);
-    doc.roundedRect(x + 1.6, cardsY + 2.2, cardW, cardsH, 8, 8, "F");
+  const drawMetricCard = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    label: string,
+    value: string,
+    note: string,
+    accent: [number, number, number],
+  ) => {
+    doc.setFillColor(228, 234, 242);
+    doc.roundedRect(x + 1.8, y + 2.4, w, h, 9, 9, "F");
     doc.setFillColor(...palette.white);
     doc.setDrawColor(...palette.line);
     doc.setLineWidth(0.55);
-    doc.roundedRect(x, cardsY, cardW, cardsH, 8, 8, "FD");
-    doc.setFillColor(...card.accent);
-    doc.roundedRect(x, cardsY, 4.5, cardsH, 2.2, 2.2, "F");
+    doc.roundedRect(x, y, w, h, 9, 9, "FD");
+    doc.setFillColor(...accent);
+    doc.roundedRect(x, y, w, 4.2, 9, 9, "F");
+    doc.rect(x, y + 3, w, 2, "F");
+
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(15.5);
+    doc.setFontSize(16.5);
     doc.setTextColor(...palette.ink);
-    doc.text(card.value, x + 18, cardsY + 26);
+    doc.text(value, x + 15, y + 29);
+
     doc.setFontSize(6.6);
     doc.setTextColor(...palette.muted);
-    doc.text(card.label, x + 18, cardsY + 40);
+    doc.text(label, x + 15, y + 44);
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.4);
-    doc.setTextColor(139, 150, 166);
-    doc.text(card.note, x + 18, cardsY + 52);
+    doc.setFontSize(6.3);
+    doc.setTextColor(...palette.subtle);
+    doc.text(note, x + 15, y + 57);
+  };
+
+  // Página inicial: cabeçalho institucional.
+  doc.setFillColor(...palette.paper);
+  doc.rect(0, 0, pageW, pageH, "F");
+  doc.setFillColor(...palette.ink);
+  doc.rect(0, 0, pageW, 112, "F");
+  doc.setFillColor(...palette.navy);
+  doc.rect(pageW * 0.69, 0, pageW * 0.31, 112, "F");
+  doc.setFillColor(...palette.navySoft);
+  doc.rect(pageW * 0.86, 0, pageW * 0.14, 112, "F");
+  doc.setFillColor(...palette.blue);
+  doc.rect(0, 108, pageW, 4, "F");
+  doc.setFillColor(...palette.cyan);
+  doc.rect(0, 108, pageW * 0.13, 4, "F");
+
+  drawBrandMark(marginX, 28, 56);
+
+  const titleX = marginX + 76;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.3);
+  doc.setTextColor(126, 154, 194);
+  doc.text("PCM  /  COMPLIANCE  /  CONTROLE DE RECORRÊNCIAS", titleX, 35);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(23);
+  doc.setTextColor(...palette.white);
+  doc.text("PAINEL DE ITENS LEGAIS", titleX, 61);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.6);
+  doc.setTextColor(187, 201, 220);
+  doc.text(
+    "Relatório executivo de obrigações, vencimentos, agendamentos e evidências documentais",
+    titleX,
+    80,
+  );
+  doc.setFontSize(6.8);
+  doc.setTextColor(126, 148, 180);
+  doc.text("Documento de controle interno · visão consolidada para acompanhamento e tomada de decisão", titleX, 95);
+
+  const metaRight = pageW - marginX;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.1);
+  doc.setTextColor(156, 177, 205);
+  const reportLabel = "RELATÓRIO EXECUTIVO";
+  doc.text(reportLabel, metaRight - doc.getTextWidth(reportLabel), 31);
+
+  doc.setFontSize(14.5);
+  doc.setTextColor(...palette.white);
+  const yearLabel = String(year);
+  doc.text(yearLabel, metaRight - doc.getTextWidth(yearLabel), 54);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.1);
+  doc.setTextColor(175, 192, 214);
+  const emitted = `Emitido em ${generatedLabel}`;
+  doc.text(emitted, metaRight - doc.getTextWidth(emitted), 73);
+  doc.setTextColor(126, 148, 180);
+  const system = "Apont Auto · Gestão de Manutenção";
+  doc.text(system, metaRight - doc.getTextWidth(system), 91);
+
+  // Linha de KPIs.
+  const cardsY = 132;
+  const cardsH = 68;
+  const gap = 10;
+  const cards = [
+    { label: "TOTAL DE ITENS", value: String(m.total), note: `${empresas} empresa(s) no escopo`, accent: palette.blue },
+    { label: "REGULARIDADE", value: `${m.regularidade}%`, note: `${m.emDia} item(ns) em dia`, accent: palette.green },
+    { label: "VENCIDOS", value: String(m.vencidos), note: "tratamento prioritário", accent: palette.red },
+    { label: "PRÓXIMOS", value: String(m.proximos), note: "janela de até 15 dias", accent: palette.amber },
+    { label: "AGENDADOS", value: String(m.agendados), note: `${semAgenda} item(ns) sem agenda`, accent: palette.cyan },
+    { label: "EXECUÇÕES", value: String(m.execucoesAno), note: `realizadas em ${year}`, accent: palette.violet },
+  ];
+  const cardW = (contentW - gap * (cards.length - 1)) / cards.length;
+  cards.forEach((card, index) => {
+    drawMetricCard(
+      marginX + index * (cardW + gap),
+      cardsY,
+      cardW,
+      cardsH,
+      card.label,
+      card.value,
+      card.note,
+      card.accent,
+    );
   });
 
-  // Faixa executiva com score e prioridades.
-  const executiveY = 190;
-  const executiveH = 55;
-  const leftW = 330;
-  doc.setFillColor(...palette.surface);
+  // Leitura executiva em três blocos.
+  const executiveY = 219;
+  const executiveH = 82;
+  const panelGap = 10;
+  const scoreW = 330;
+  const operationalW = 245;
+  const riskW = contentW - scoreW - operationalW - panelGap * 2;
+
+  doc.setFillColor(...palette.white);
   doc.setDrawColor(...palette.line);
-  doc.roundedRect(marginX, executiveY, contentW, executiveH, 8, 8, "FD");
+  doc.setLineWidth(0.55);
+  doc.roundedRect(marginX, executiveY, scoreW, executiveH, 9, 9, "FD");
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
-  doc.setTextColor(...palette.navy);
-  doc.text("ÍNDICE DE CONFORMIDADE", marginX + 16, executiveY + 17);
-  doc.setFontSize(18);
-  doc.setTextColor(...palette.ink);
-  doc.text(`${m.regularidade}%`, marginX + 16, executiveY + 38);
-
-  const progressX = marginX + 78;
-  const progressY = executiveY + 30;
-  const progressW = leftW - 100;
-  doc.setFillColor(226, 231, 238);
-  doc.roundedRect(progressX, progressY, progressW, 7, 3.5, 3.5, "F");
-  const progressColor = m.regularidade >= 90 ? palette.green : m.regularidade >= 70 ? palette.amber : palette.red;
-  doc.setFillColor(...progressColor);
-  doc.roundedRect(progressX, progressY, Math.max(5, progressW * (m.regularidade / 100)), 7, 3.5, 3.5, "F");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(6.5);
-  doc.setTextColor(...palette.muted);
-  doc.text("Percentual de itens classificados como em dia/concluídos", progressX, executiveY + 46);
-
-  doc.setDrawColor(...palette.lineStrong);
-  doc.line(marginX + leftW, executiveY + 12, marginX + leftW, executiveY + executiveH - 12);
-
-  const priorityX = marginX + leftW + 22;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.2);
-  doc.setTextColor(...palette.navy);
-  doc.text("LEITURA EXECUTIVA", priorityX, executiveY + 17);
-
-  const executiveText = critical > 0
-    ? `${critical} item(ns) exigem atenção: ${m.vencidos} vencido(s) e ${m.proximos} próximo(s) do vencimento.`
-    : "Nenhum item vencido ou próximo do vencimento no recorte atual.";
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.3);
-  doc.setTextColor(...palette.text);
-  doc.text(executiveText, priorityX, executiveY + 34);
-  doc.setTextColor(...palette.muted);
-  doc.text(`${andaime} item(ns) requerem andaime · ${m.agendados} possuem agendamento específico · ${semAgenda} sem agenda`, priorityX, executiveY + 47);
-
-  // Próximos vencimentos em uma linha discreta antes da tabela.
-  const nextY = 260;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(...palette.navy);
-  doc.text("PRÓXIMAS REFERÊNCIAS", marginX, nextY);
-
-  let nextX = marginX + 102;
-  doc.setFont("helvetica", "normal");
   doc.setFontSize(6.7);
   doc.setTextColor(...palette.muted);
-  if (nextItems.length === 0) {
-    doc.text("Nenhuma próxima execução cadastrada.", nextX, nextY);
-  } else {
-    nextItems.forEach((item, index) => {
-      const label = `${fmt(item.proximaExecucao)} · ${item.titulo}`;
-      const maxW = (contentW - 110) / Math.max(1, nextItems.length) - 14;
-      const clipped = doc.splitTextToSize(label, maxW)[0] ?? label;
-      doc.text(clipped, nextX, nextY);
-      nextX += maxW + 14;
-      if (index < nextItems.length - 1) {
-        doc.setFillColor(...palette.lineStrong);
-        doc.circle(nextX - 8, nextY - 2, 1.2, "F");
-      }
-    });
-  }
+  doc.text("ÍNDICE DE CONFORMIDADE", marginX + 16, executiveY + 20);
 
+  doc.setFontSize(22);
+  doc.setTextColor(...palette.ink);
+  doc.text(`${m.regularidade}%`, marginX + 16, executiveY + 48);
+
+  const scoreText = m.regularidade >= 90 ? "NÍVEL ELEVADO" : m.regularidade >= 70 ? "ATENÇÃO" : "AÇÃO NECESSÁRIA";
+  const scoreColor = m.regularidade >= 90 ? palette.green : m.regularidade >= 70 ? palette.amber : palette.red;
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(marginX + 92, executiveY + 31, 86, 18, 9, 9, "F");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.2);
+  doc.setTextColor(...palette.white);
+  doc.text(scoreText, marginX + 135 - doc.getTextWidth(scoreText) / 2, executiveY + 43);
+
+  const progressX = marginX + 16;
+  const progressY = executiveY + 61;
+  const progressW = scoreW - 32;
+  doc.setFillColor(229, 234, 241);
+  doc.roundedRect(progressX, progressY, progressW, 7, 3.5, 3.5, "F");
+  if (m.regularidade > 0) {
+    doc.setFillColor(...scoreColor);
+    doc.roundedRect(
+      progressX,
+      progressY,
+      Math.max(7, progressW * (m.regularidade / 100)),
+      7,
+      3.5,
+      3.5,
+      "F",
+    );
+  }
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.1);
+  doc.setTextColor(...palette.subtle);
+  doc.text("Percentual de itens em dia ou concluídos", progressX, executiveY + 76);
+
+  const riskX = marginX + scoreW + panelGap;
+  doc.setFillColor(...palette.white);
   doc.setDrawColor(...palette.line);
-  doc.line(marginX, 272, pageW - marginX, 272);
+  doc.roundedRect(riskX, executiveY, riskW, executiveH, 9, 9, "FD");
+  doc.setFillColor(...(critical > 0 ? palette.red : palette.green));
+  doc.roundedRect(riskX, executiveY, 4, executiveH, 2, 2, "F");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.7);
+  doc.setTextColor(...palette.muted);
+  doc.text("LEITURA DE RISCO", riskX + 17, executiveY + 20);
+
+  doc.setFontSize(14.5);
+  doc.setTextColor(...palette.ink);
+  doc.text(String(critical), riskX + 17, executiveY + 45);
+  doc.setFontSize(7.2);
+  doc.setTextColor(...palette.text);
+  doc.text("item(ns) exigem atenção no recorte atual", riskX + 43, executiveY + 44);
+
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.5);
   doc.setTextColor(...palette.muted);
+  doc.text(`${m.vencidos} vencido(s)  ·  ${m.proximos} próximo(s) do vencimento`, riskX + 17, executiveY + 62);
+  doc.setTextColor(...palette.subtle);
   doc.text(
-    "Legenda de status:  Em dia / Concluído   ·   Próximo do vencimento   ·   Vencido   ·   Sem agenda",
-    marginX,
-    285,
+    critical > 0 ? "Priorize vencidos e confirme os próximos agendamentos." : "Nenhuma criticidade imediata identificada.",
+    riskX + 17,
+    executiveY + 76,
   );
+
+  const operationalX = riskX + riskW + panelGap;
+  doc.setFillColor(...palette.navy);
+  doc.setDrawColor(...palette.navy);
+  doc.roundedRect(operationalX, executiveY, operationalW, executiveH, 9, 9, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.7);
+  doc.setTextColor(139, 166, 201);
+  doc.text("LEITURA OPERACIONAL", operationalX + 16, executiveY + 20);
+  doc.setFontSize(10.5);
+  doc.setTextColor(...palette.white);
+  doc.text(`${andaime} com andaime`, operationalX + 16, executiveY + 42);
+  doc.text(`${m.agendados} agendados`, operationalX + 16, executiveY + 58);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.4);
+  doc.setTextColor(169, 187, 211);
+  doc.text(`${semAgenda} item(ns) sem agenda definida`, operationalX + 16, executiveY + 73);
+
+  // Próximas referências em cartões curtos.
+  const referencesY = 318;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.2);
+  doc.setTextColor(...palette.navy);
+  doc.text("PRÓXIMAS REFERÊNCIAS", marginX, referencesY);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.4);
+  doc.setTextColor(...palette.subtle);
+  doc.text("Três próximas execuções cadastradas", marginX + 111, referencesY);
+
+  const refCardsY = referencesY + 10;
+  const refGap = 9;
+  const refW = (contentW - refGap * 2) / 3;
+  const refH = 42;
+
+  if (nextItems.length === 0) {
+    doc.setFillColor(...palette.surface);
+    doc.setDrawColor(...palette.line);
+    doc.roundedRect(marginX, refCardsY, contentW, refH, 7, 7, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...palette.muted);
+    doc.text("Nenhuma próxima execução cadastrada para o período.", marginX + 14, refCardsY + 25);
+  } else {
+    for (let index = 0; index < 3; index += 1) {
+      const x = marginX + index * (refW + refGap);
+      const item = nextItems[index];
+      doc.setFillColor(...palette.surface);
+      doc.setDrawColor(...palette.line);
+      doc.roundedRect(x, refCardsY, refW, refH, 7, 7, "FD");
+
+      if (!item) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6.5);
+        doc.setTextColor(169, 178, 191);
+        doc.text("Sem outra referência cadastrada", x + 13, refCardsY + 25);
+        continue;
+      }
+
+      doc.setFillColor(...palette.blue);
+      doc.roundedRect(x + 11, refCardsY + 10, 60, 21, 10.5, 10.5, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...palette.white);
+      const dateText = fmt(item.proximaExecucao);
+      doc.text(dateText, x + 41 - doc.getTextWidth(dateText) / 2, refCardsY + 24);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(6.7);
+      doc.setTextColor(...palette.text);
+      const clippedTitle = doc.splitTextToSize(item.titulo || "Item legal", refW - 94)[0] ?? "Item legal";
+      doc.text(clippedTitle, x + 82, refCardsY + 20);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.1);
+      doc.setTextColor(...palette.muted);
+      const clippedMeta = doc.splitTextToSize(`${item.empresa || "Sem empresa"} · ${item.predio || "Sem prédio"}`, refW - 94)[0] ?? "";
+      doc.text(clippedMeta, x + 82, refCardsY + 32);
+    }
+  }
+
+  // Legenda e tabela detalhada.
+  const legendY = 384;
+  const legend = [
+    { label: "Em dia / concluído", color: palette.green },
+    { label: "Próximo", color: palette.amber },
+    { label: "Vencido", color: palette.red },
+    { label: "Sem agenda", color: palette.muted },
+  ];
+
+  doc.setDrawColor(...palette.line);
+  doc.line(marginX, legendY - 10, pageW - marginX, legendY - 10);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...palette.muted);
+  doc.text("LEGENDA", marginX, legendY + 2);
+
+  let legendX = marginX + 52;
+  legend.forEach((entry) => {
+    doc.setFillColor(...entry.color);
+    doc.circle(legendX, legendY, 2.6, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.4);
+    doc.setTextColor(...palette.muted);
+    doc.text(entry.label, legendX + 7, legendY + 2);
+    legendX += doc.getTextWidth(entry.label) + 34;
+  });
 
   const head = [[
     "ITEM LEGAL",
@@ -432,15 +614,15 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   autoTable(doc, {
     head,
     body,
-    startY: 298,
+    startY: 398,
     theme: "plain",
     showHead: "everyPage",
     rowPageBreak: "avoid",
-    margin: { top: 66, right: marginX, bottom: 46, left: marginX },
+    margin: { top: 73, right: marginX, bottom: 47, left: marginX },
     styles: {
       font: "helvetica",
-      fontSize: 7.25,
-      cellPadding: { top: 5.4, right: 4.8, bottom: 5.4, left: 4.8 },
+      fontSize: 7.15,
+      cellPadding: { top: 5.7, right: 5, bottom: 5.7, left: 5 },
       textColor: palette.text,
       valign: "middle",
       overflow: "linebreak",
@@ -450,25 +632,25 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
       fillColor: palette.navy,
       textColor: palette.white,
       fontStyle: "bold",
-      fontSize: 6.7,
+      fontSize: 6.55,
       halign: "center",
       valign: "middle",
-      cellPadding: { top: 7, right: 4, bottom: 7, left: 4 },
+      cellPadding: { top: 7.5, right: 4, bottom: 7.5, left: 4 },
       lineColor: palette.navySoft,
       lineWidth: 0.35,
     },
     bodyStyles: { fillColor: palette.white },
     alternateRowStyles: { fillColor: palette.surface },
     columnStyles: {
-      0: { cellWidth: 168, fontStyle: "bold" },
-      1: { cellWidth: 120 },
-      2: { cellWidth: 76 },
-      3: { cellWidth: 75, halign: "center" },
+      0: { cellWidth: 170, fontStyle: "bold" },
+      1: { cellWidth: 118 },
+      2: { cellWidth: 77 },
+      3: { cellWidth: 76, halign: "center" },
       4: { cellWidth: 77, halign: "center" },
-      5: { cellWidth: 77, halign: "center", fontStyle: "bold" },
-      6: { cellWidth: 77, halign: "center" },
-      7: { cellWidth: 55, halign: "center", fontStyle: "bold" },
-      8: { cellWidth: 78, halign: "center", fontStyle: "bold" },
+      5: { cellWidth: 79, halign: "center", fontStyle: "bold" },
+      6: { cellWidth: 79, halign: "center" },
+      7: { cellWidth: 56, halign: "center", fontStyle: "bold" },
+      8: { cellWidth: 80, halign: "center", fontStyle: "bold" },
       9: { cellWidth: "auto" },
     },
     didParseCell: (data: any) => {
@@ -492,6 +674,7 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
 
       if (data.column.index === 8) {
         const value = String(data.cell.raw ?? "");
+        data.cell.styles.fontStyle = "bold";
         if (value === "Vencido") {
           data.cell.styles.fillColor = palette.redBg;
           data.cell.styles.textColor = palette.redText;
@@ -520,10 +703,11 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
             : status === "em_dia" || status === "concluido"
               ? palette.green
               : palette.muted;
+
       doc.setFillColor(...accent);
-      doc.rect(data.cell.x, data.cell.y + 2, 2.2, Math.max(2, data.cell.height - 4), "F");
+      doc.rect(data.cell.x, data.cell.y + 2.5, 2.5, Math.max(2, data.cell.height - 5), "F");
       doc.setDrawColor(...palette.line);
-      doc.setLineWidth(0.35);
+      doc.setLineWidth(0.34);
       doc.line(data.cell.x, data.cell.y + data.cell.height, pageW - marginX, data.cell.y + data.cell.height);
     },
     didDrawPage: () => {
@@ -540,12 +724,12 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
 
     doc.setDrawColor(...palette.line);
     doc.setLineWidth(0.45);
-    doc.line(marginX, height - 31, width - marginX, height - 31);
+    doc.line(marginX, height - 32, width - marginX, height - 32);
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(6.6);
+    doc.setFontSize(6.4);
     doc.setTextColor(...palette.muted);
-    doc.text("APONT AUTO  ·  PCM / COMPLIANCE  ·  Documento de controle interno", marginX, height - 17);
+    doc.text("APONT AUTO  ·  PCM / COMPLIANCE  ·  DOCUMENTO DE CONTROLE INTERNO", marginX, height - 17);
 
     const center = `Emitido em ${generatedLabel}`;
     doc.text(center, width / 2 - doc.getTextWidth(center) / 2, height - 17);
