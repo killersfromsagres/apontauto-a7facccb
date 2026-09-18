@@ -1,0 +1,96 @@
+/* Corretiva Novo · alinhamento visual dos cards operacionais */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 {
+  align-items: stretch;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer {
+  height: 100%;
+  min-height: 100%;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 {
+  height: 100%;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div {
+  display: flex;
+  height: 100%;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+/* Cabeçalho do card: OS / Backorder / Equipe sempre partem da mesma linha visual. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:first-child > div:first-child {
+  min-height: 2.5rem;
+  align-items: center;
+}
+
+/* Reserva uma área consistente para a descrição sem cortar conteúdos curtos. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:first-child div:has(> p + h3) {
+  min-height: 7.75rem;
+}
+
+/* O painel inferior ocupa todo o espaço restante para manter os rodapés nivelados. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+/* Bloco Prédio / Andar / Ambiente / Solicitante com ritmo vertical uniforme. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > .grid.grid-cols-2 {
+  align-content: start;
+  min-height: 14.25rem;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > .grid.grid-cols-2 > div {
+  min-height: 3.35rem;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > .grid.grid-cols-2 > .col-span-2 {
+  min-height: 4.25rem;
+}
+
+/* Abertura / peças preserva altura para não empurrar os botões de um card para outro. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > div.mt-4.flex.flex-wrap {
+  min-height: 3rem;
+  align-content: center;
+}
+
+/* Qualquer ação operacional fica ancorada no rodapé do card. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > div:has(> button) {
+  margin-top: auto !important;
+  padding-top: 0.9rem;
+}
+
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > div:has(> button) > button {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 0.75rem;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* Evita diferenças perceptíveis de espaçamento entre cards sem ação e cards com ação. */
+[data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child::after {
+  content: "";
+  display: block;
+  min-height: 0.1px;
+}
+
+@media (min-width: 1024px) {
+  [data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer {
+    min-height: 36.5rem;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer {
+    min-height: 0;
+  }
+
+  [data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:first-child div:has(> p + h3),
+  [data-page-title="Programação de Corretivas"] .grid.grid-cols-1 > .glass-surface.group.cursor-pointer > .relative.z-10 > div > div:last-child > .grid.grid-cols-2 {
+    min-height: 0;
+  }
+}
