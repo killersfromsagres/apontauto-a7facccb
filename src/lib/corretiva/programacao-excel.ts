@@ -29,9 +29,9 @@ const FONT_DISPLAY = "Aptos Display";
 const FONT_DESCRIPTION = "Aptos SemiBold";
 
 /**
- * Larguras copiadas do arquivo de referência corrigido pelo usuário
- * (modelo corretivas exemplo2.xlsx). Elas foram ajustadas manualmente para
- * manter A:I dentro de uma folha A3 horizontal em aproximadamente 99%.
+ * Larguras copiadas do arquivo de referência corrigido pelo usuário.
+ * O modo de impressão abaixo força A:I em uma única página A4 horizontal,
+ * preservando estas proporções e evitando cortes nas colunas finais.
  */
 const PRINT_COLUMN_WIDTHS = [
   16,
@@ -192,23 +192,26 @@ function configurePrint(
 ) {
   sheet.pageSetup = {
     orientation: "landscape",
-    fitToPage: false,
-    scale: 99,
+    paperSize: 9,
+    fitToPage: true,
+    fitToWidth: 1,
     fitToHeight: 0,
-    paperSize: 8,
     horizontalCentered: true,
+    verticalCentered: false,
     blackAndWhite: false,
     margins: {
-      left: 0.18,
-      right: 0.18,
-      top: 0.22,
-      bottom: 0.34,
+      left: 0.1,
+      right: 0.1,
+      top: 0.18,
+      bottom: 0.28,
       header: 0,
-      footer: 0.12,
+      footer: 0.1,
     },
     printArea: `A1:I${lastRow}`,
   };
 
+  // A4 horizontal: todas as colunas A:I são reduzidas proporcionalmente para
+  // caber em uma única página de largura. A altura pode continuar em várias páginas.
   // Repete somente o cabeçalho da tabela; o título fica apenas na primeira página.
   sheet.pageSetup.printTitlesRow = "2:2";
 
@@ -222,7 +225,7 @@ function configurePrint(
   sheet.headerFooter.oddHeader = "";
   sheet.headerFooter.evenHeader = "";
   sheet.headerFooter.oddFooter =
-    `&L&10Apont Auto · PCM · Corretivas&C&10Página &P de &N&R&10Emitido em ${emitted}`;
+    `&L&9Apont Auto · PCM · Corretivas&C&9Página &P de &N&R&9Emitido em ${emitted}`;
 }
 
 function buildOperationsSheet(
