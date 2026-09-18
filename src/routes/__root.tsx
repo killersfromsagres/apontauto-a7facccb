@@ -34,14 +34,9 @@ function NotFoundComponent() {
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
         <h2 className="mt-4 text-xl font-semibold">Página não encontrada</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          O endereço acessado não existe ou foi movido.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">O endereço acessado não existe ou foi movido.</p>
         <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
+          <Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
             Voltar ao início
           </Link>
         </div>
@@ -61,9 +56,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight">Erro ao carregar a página</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Algo deu errado. Tente recarregar ou voltar ao dashboard.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Algo deu errado. Tente recarregar ou voltar ao dashboard.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
@@ -74,10 +67,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           >
             Tentar novamente
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
-          >
+          <a href="/" className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent">
             Ir para o início
           </a>
         </div>
@@ -102,33 +92,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { name: "author", content: "Dev Gabriel Vitor" },
-      {
-        property: "og:title",
-        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
-      },
+      { property: "og:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
       {
         property: "og:description",
         content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      {
-        name: "twitter:title",
-        content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)",
-      },
+      { name: "twitter:title", content: "# Sistema de Gerenciamento de Backorders e Ordens de Serviço (OS)" },
       {
         name: "twitter:description",
         content: "Sistema robusto e moderno para gerenciar Ordens de Serviço (OS) com foco em backorders e um fluxo de trabalho eficiente, utilizando inteligência para classificação e filtragem.",
       },
       {
         property: "og:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+        content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
       },
       {
         name: "twitter:image",
-        content:
-          "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
+        content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/b7d6aea0-3819-4924-ac91-46d2f02fb587",
       },
     ],
     links: [
@@ -136,26 +118,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: premiumCss },
       { rel: "stylesheet", href: pcmAssetsPremiumCss },
       { rel: "stylesheet", href: scrollbarCss },
-      // Carregado por último para impedir qualquer microinteração de pressão/afundamento.
       { rel: "stylesheet", href: interactionMotionResetCss },
-      // Tipografia exclusiva das páginas institucionais; não depende do plugin prose.
       { rel: "stylesheet", href: institutionalPagesCss },
-      // Correção final e escopada do fluxo PCM para manter upload, stepper e catálogo compactos.
       { rel: "stylesheet", href: pcmAssetsCompactFixCss },
-      // Tema visual exclusivo do fluxo PCM; carregado após a correção de layout para não reintroduzir overflow.
       { rel: "stylesheet", href: pcmAssetsGlassCss },
-      // Ajustes finais do trilho de progresso e interação.
       { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
+      { rel: "stylesheet", href: "/legal-panel-premium.css" },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
-      // Preload do logo (LCP) — mesma imagem usada em header/sidebar/auth
       { rel: "preload", as: "image", href: "/apontauto-logo.png", fetchpriority: "high" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-
-      // Fonte carregada de forma NÃO-bloqueante (media=print + swap para 'all' pós-load).
-      // Elimina o render-blocking do CSS de fontes no primeiro paint (LCP/FCP).
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap",
@@ -177,8 +151,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           name: "ApontAuto",
           url: "https://apontauto.online",
           logo: "https://apontauto.online/apontauto-logo.png",
-          description:
-            "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
+          description: "Sistema corporativo de apontamento e planejamento de manutenção industrial (PCM).",
           founder: { "@type": "Person", name: "Gabriel Vitor" },
           contactPoint: {
             "@type": "ContactPoint",
@@ -200,10 +173,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
-      <head>
-        <HeadContent />
-      </head>
-
+      <head><HeadContent /></head>
       <body className="app-premium-surface min-h-dvh overscroll-y-none [text-size-adjust:100%] [-webkit-text-size-adjust:100%] [-webkit-tap-highlight-color:transparent]">
         {children}
         <Scripts />
@@ -218,9 +188,7 @@ function RootComponent() {
 
   useEffect(() => {
     registerServiceWorker();
-    void import("@/features/observability/services/error-log").then((m) =>
-      m.installErrorTelemetry(),
-    );
+    void import("@/features/observability/services/error-log").then((m) => m.installErrorTelemetry());
   }, []);
 
   return (
@@ -230,11 +198,7 @@ function RootComponent() {
         <OfflineBanner />
         <CorretivaOfflineSyncBridge />
         {pathname === "/auth" && <AuthLocationMapPortal />}
-
-        <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300">
-          <Outlet />
-        </div>
-
+        <div className="app-premium-root flex min-h-dvh flex-col transition-opacity duration-300"><Outlet /></div>
         <Toaster richColors position="top-right" closeButton />
       </ThemeProvider>
     </QueryClientProvider>
