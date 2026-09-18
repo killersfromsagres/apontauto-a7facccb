@@ -1,6 +1,5 @@
-// Vendors pesados (xlsx, jsPDF) são carregados sob demanda apenas quando
-// o usuário clica em exportar — mantém o bundle inicial enxuto.
-import type { LegalItem, LegalExecution } from "@/lib/legal-items";
+// Bibliotecas pesadas continuam carregadas sob demanda, apenas no momento da exportação.
+import type { LegalExecution, LegalItem } from "@/lib/legal-items";
 import { buildMonthMap, statusOf } from "@/lib/legal-items";
 
 const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -20,60 +19,99 @@ const PERIOD_LABEL: Record<string, string> = {
   anual: "Anual",
 };
 
-function fmt(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d + "T00:00:00").toLocaleDateString("pt-BR");
+function fmt(date: string | null | undefined) {
+  if (!date) return "—";
+  return new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR");
+}
+
+function dateStamp(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function metrics(items: LegalItem[], execs: LegalExecution[], year: number) {
+  const statuses = items.map(statusOf);
+  const emDia = statuses.filter((status) => status === "em_dia" || status === "concluido").length;
+  const proximos = statuses.filter((status) => status === "proximo").length;
+  const vencidos = statuses.filter((status) => status === "vencido").length;
+  const agendados = items.filter((item) => Boolean(item.agendamento)).length;
+  const execucoesAno = execs.filter((exec) => exec.data.startsWith(`${year}-`)).length;
+  return {
+    total: items.length,
+    emDia,
+    proximos,
+    vencidos,
+    agendados,
+    execucoesAno,
+    regularidade: items.length ? Math.round((emDia / items.length) * 100) : 0,
+  };
 }
 
 export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
   const XLSX = await import("xlsx");
-  const rows = items.map((it) => {
-    const cells = buildMonthMap(it, execs, year);
+  const generatedAt = new Date();
+  const m = metrics(items, execs, year);
+
+  const summaryRows = [
+    ["PAINEL DE ITENS LEGAIS"],
+    ["Resumo executivo de conformidade e recorrências"],
+    [],
+    ["Ano-base", year],
+    ["Emitido em", generatedAt.toLocaleString("pt-BR")],
+    [],
+    ["Indicador", "Valor"],
+    ["Total de itens", m.total],
+    ["Em dia / concluídos", m.emDia],
+    ["Regularidade", `${m.regularidade}%`],
+    ["Próximos do vencimento", m.proximos],
+    ["Vencidos", m.vencidos],
+    ["Agendados", m.agendados],
+    ["Execuções no ano", m.execucoesAno],
+  ];
+  const summary = XLSX.utils.aoa_to_sheet(summaryRows);
+  summary["!cols"] = [{ wch: 34 }, { wch: 24 }];
+
+  const rows = items.map((item) => {
+    const cells = buildMonthMap(item, execs, year);
     const monthCols: Record<string, string> = {};
-    MONTHS.forEach((m, i) => {
-      monthCols[m] =
-        cells[i] === "done"
-          ? "✓"
-          : cells[i] === "scheduled"
-            ? "•"
-            : cells[i] === "overdue"
-              ? "X"
+    MONTHS.forEach((month, index) => {
+      monthCols[month] =
+        cells[index] === "done"
+          ? "Concluído"
+          : cells[index] === "scheduled"
+            ? "Programado"
+            : cells[index] === "overdue"
+              ? "Vencido"
               : "";
     });
     return {
-      Tarefa: it.titulo,
-      Empresa: it.empresa,
-      Prédio: it.predio,
-      "Última Execução": it.ultimaExecucao ?? "",
-      "Próxima Execução": it.proximaExecucao ?? "",
-      Agendamento: it.agendamento ?? "",
-      Periodicidade: PERIOD_LABEL[it.periodicidade] ?? it.periodicidade,
-      Andaime: it.precisaAndaime ? "SIM" : "NÃO",
-      Status: STATUS_LABEL[statusOf(it)] ?? statusOf(it),
+      "Item legal": item.titulo,
+      Empresa: item.empresa,
+      Prédio: item.predio,
+      Periodicidade: PERIOD_LABEL[item.periodicidade] ?? item.periodicidade,
+      "Última execução": item.ultimaExecucao ? fmt(item.ultimaExecucao) : "",
+      "Próxima execução": item.proximaExecucao ? fmt(item.proximaExecucao) : "",
+      Agendamento: item.agendamento ? fmt(item.agendamento) : "",
+      Status: STATUS_LABEL[statusOf(item)] ?? statusOf(item),
+      Andaime: item.precisaAndaime ? "Sim" : "Não",
       ...monthCols,
-      Observações: it.observacoes,
+      Observações: item.observacoes,
     };
   });
 
-  const ws = XLSX.utils.json_to_sheet(rows);
-  ws["!cols"] = [
-    { wch: 42 },
-    { wch: 24 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 11 },
-    { wch: 18 },
-    ...MONTHS.map(() => ({ wch: 5 })),
-    { wch: 48 },
+  const details = XLSX.utils.json_to_sheet(rows);
+  details["!cols"] = [
+    { wch: 42 }, { wch: 28 }, { wch: 18 }, { wch: 16 }, { wch: 17 }, { wch: 17 },
+    { wch: 17 }, { wch: 21 }, { wch: 10 }, ...MONTHS.map(() => ({ wch: 12 })), { wch: 52 },
   ];
-  ws["!autofilter"] = { ref: ws["!ref"] ?? "A1:A1" };
+  details["!autofilter"] = { ref: details["!ref"] ?? "A1:A1" };
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, `Painel ${year}`);
-  XLSX.writeFile(wb, `painel-itens-legais-${year}.xlsx`);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, summary, "Resumo");
+  XLSX.utils.book_append_sheet(workbook, details, "Itens Legais");
+  XLSX.writeFile(workbook, `painel-legal-${year}-${dateStamp(generatedAt)}.xlsx`);
 }
 
 export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
@@ -82,34 +120,16 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     import("jspdf-autotable"),
   ]);
 
-  const total = items.length;
-  const baseFormat = total <= 45 ? "a3" : total <= 95 ? "a2" : "a1";
-  const extendedHeight = 245 + total * 9.5;
-  const useExtendedSheet = total > 150;
-  const extendedWidth = Math.max(2384, extendedHeight * 1.4142);
-  const pdfFormat: string | [number, number] = useExtendedSheet
-    ? [extendedWidth, extendedHeight]
-    : baseFormat;
-  const formatLabel = useExtendedSheet ? "A1 ESTENDIDO" : baseFormat.toUpperCase();
-
-  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: pdfFormat });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const marginX = Math.max(28, pageW * 0.025);
-  const contentW = pageW - marginX * 2;
-
-  doc.setProperties({
-    title: `Painel de Itens Legais ${year}`,
-    subject: "Relatório executivo de itens legais, agendamentos e conformidade",
-    author: "Apont Auto",
-    creator: "Apont Auto",
-    keywords: "itens legais, agendamento, compliance, manutenção, Apont Auto",
+  const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
+  const generatedAt = new Date();
+  const generatedLabel = generatedAt.toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
   });
+  const m = metrics(items, execs, year);
 
   const palette = {
-    ink: [7, 18, 35] as [number, number, number],
-    navy: [12, 29, 52] as [number, number, number],
-    navy2: [17, 42, 73] as [number, number, number],
+    ink: [10, 22, 39] as [number, number, number],
+    navy: [17, 42, 73] as [number, number, number],
     blue: [37, 99, 235] as [number, number, number],
     cyan: [14, 165, 233] as [number, number, number],
     white: [255, 255, 255] as [number, number, number],
@@ -117,7 +137,6 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     muted: [100, 116, 139] as [number, number, number],
     line: [218, 226, 236] as [number, number, number],
     surface: [248, 250, 252] as [number, number, number],
-    surfaceBlue: [239, 246, 255] as [number, number, number],
     greenBg: [220, 252, 231] as [number, number, number],
     greenText: [21, 128, 61] as [number, number, number],
     amberBg: [254, 243, 199] as [number, number, number],
@@ -127,190 +146,90 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     slateBg: [241, 245, 249] as [number, number, number],
   };
 
-  const clamp = (value: number, min: number, max: number) =>
-    Math.min(max, Math.max(min, value));
-
-  const generatedAt = new Date();
-  const generatedLabel = generatedAt.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+  doc.setProperties({
+    title: `Painel de Itens Legais ${year}`,
+    subject: "Relatório de obrigações, vencimentos, agendamentos e conformidade",
+    author: "Apont Auto",
+    creator: "Apont Auto",
   });
 
-  const statuses = items.map((item) => statusOf(item));
-  const emDia = statuses.filter((status) => status === "em_dia" || status === "concluido").length;
-  const proximos = statuses.filter((status) => status === "proximo").length;
-  const vencidos = statuses.filter((status) => status === "vencido").length;
-  const agendados = items.filter((item) => Boolean(item.agendamento)).length;
-  const semAgendamento = total - agendados;
-  const regularidade = total > 0 ? Math.round((emDia / total) * 100) : 0;
-  const execucoesAno = execs.filter((exec) => exec.data.startsWith(`${year}-`)).length;
-  const empresas = new Set(items.map((item) => item.empresa.trim()).filter(Boolean)).size;
+  const pageW = doc.internal.pageSize.getWidth();
+  const marginX = 34;
+  const contentW = pageW - marginX * 2;
 
-  const nextScheduled = items
-    .filter((item) => item.agendamento)
-    .sort((a, b) => String(a.agendamento).localeCompare(String(b.agendamento)))[0];
-
-  doc.setFillColor(...palette.white);
-  doc.rect(0, 0, pageW, pageH, "F");
+  // Cabeçalho executivo da primeira página.
   doc.setFillColor(...palette.ink);
   doc.rect(0, 0, pageW, 82, "F");
-  doc.setFillColor(...palette.navy2);
-  doc.rect(pageW * 0.68, 0, pageW * 0.32, 82, "F");
   doc.setFillColor(...palette.blue);
   doc.rect(0, 80, pageW, 2, "F");
-  doc.setFillColor(...palette.cyan);
-  doc.rect(0, 80, pageW * 0.2, 2, "F");
-
-  const logoX = marginX;
-  const logoY = 23;
-  doc.setFillColor(...palette.blue);
-  doc.roundedRect(logoX, logoY, 28, 28, 7, 7, "F");
-  doc.setDrawColor(...palette.white);
-  doc.setLineWidth(2);
-  doc.line(logoX + 7, logoY + 20, logoX + 14, logoY + 7);
-  doc.line(logoX + 14, logoY + 7, logoX + 21, logoY + 20);
-  doc.line(logoX + 10, logoY + 15, logoX + 18, logoY + 15);
-
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(baseFormat === "a1" ? 24 : baseFormat === "a2" ? 21 : 18);
+  doc.setFontSize(20);
   doc.setTextColor(...palette.white);
-  doc.text("PAINEL DE ITENS LEGAIS", logoX + 40, 37);
-
+  doc.text("PAINEL DE ITENS LEGAIS", marginX, 34);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(baseFormat === "a1" ? 10.5 : 8.5);
+  doc.setFontSize(9);
   doc.setTextColor(191, 205, 224);
-  doc.text(
-    "Relatório consolidado de obrigações, responsáveis, vencimentos e agendamentos",
-    logoX + 40,
-    55,
-  );
+  doc.text("Relatório executivo de conformidade, recorrências e evidências", marginX, 54);
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(baseFormat === "a1" ? 13 : 10.5);
+  doc.setFontSize(11);
   doc.setTextColor(...palette.white);
   const brand = "APONT AUTO";
-  doc.text(brand, pageW - marginX - doc.getTextWidth(brand), 31);
-
+  doc.text(brand, pageW - marginX - doc.getTextWidth(brand), 32);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(baseFormat === "a1" ? 9 : 7.5);
+  doc.setFontSize(8);
   doc.setTextColor(148, 163, 184);
   const issue = `Ano-base ${year} · Emitido em ${generatedLabel}`;
-  doc.text(issue, pageW - marginX - doc.getTextWidth(issue), 49);
-  const sheetLabel = `Folha única · Formato ${formatLabel}`;
-  doc.text(sheetLabel, pageW - marginX - doc.getTextWidth(sheetLabel), 63);
+  doc.text(issue, pageW - marginX - doc.getTextWidth(issue), 51);
 
-  const bandY = 96;
-  const bandH = baseFormat === "a1" ? 62 : baseFormat === "a2" ? 56 : 52;
+  const bandY = 98;
+  const bandH = 58;
   doc.setFillColor(...palette.surface);
   doc.setDrawColor(...palette.line);
-  doc.setLineWidth(0.6);
   doc.roundedRect(marginX, bandY, contentW, bandH, 7, 7, "FD");
-
-  const metrics = [
-    { label: "ITENS", value: String(total), accent: palette.blue },
-    {
-      label: "REGULARIDADE",
-      value: `${regularidade}%`,
-      accent: [16, 185, 129] as [number, number, number],
-    },
-    {
-      label: "VENCIDOS",
-      value: String(vencidos),
-      accent: [239, 68, 68] as [number, number, number],
-    },
-    {
-      label: "PRÓXIMOS",
-      value: String(proximos),
-      accent: [245, 158, 11] as [number, number, number],
-    },
-    { label: "AGENDADOS", value: String(agendados), accent: palette.cyan },
-    {
-      label: "EXECUÇÕES NO ANO",
-      value: String(execucoesAno),
-      accent: [99, 102, 241] as [number, number, number],
-    },
-  ];
-  const metricW = contentW / metrics.length;
-
-  metrics.forEach((metric, index) => {
-    const x = marginX + metricW * index;
-    if (index > 0) {
+  const cards = [
+    ["ITENS", String(m.total), palette.blue],
+    ["REGULARIDADE", `${m.regularidade}%`, [16, 185, 129] as [number, number, number]],
+    ["VENCIDOS", String(m.vencidos), [239, 68, 68] as [number, number, number]],
+    ["PRÓXIMOS", String(m.proximos), [245, 158, 11] as [number, number, number]],
+    ["AGENDADOS", String(m.agendados), palette.cyan],
+    ["EXECUÇÕES NO ANO", String(m.execucoesAno), [99, 102, 241] as [number, number, number]],
+  ] as const;
+  const cardW = contentW / cards.length;
+  cards.forEach(([label, value, accent], index) => {
+    const x = marginX + cardW * index;
+    if (index) {
       doc.setDrawColor(...palette.line);
-      doc.line(x, bandY + 11, x, bandY + bandH - 11);
+      doc.line(x, bandY + 12, x, bandY + bandH - 12);
     }
-    doc.setFillColor(...metric.accent);
-    doc.roundedRect(x + 13, bandY + 13, 4, bandH - 26, 2, 2, "F");
+    doc.setFillColor(...accent);
+    doc.roundedRect(x + 12, bandY + 14, 4, bandH - 28, 2, 2, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(baseFormat === "a1" ? 18 : 14.5);
+    doc.setFontSize(15);
     doc.setTextColor(...palette.ink);
-    doc.text(metric.value, x + 26, bandY + 26);
-    doc.setFontSize(baseFormat === "a1" ? 7.5 : 6.4);
+    doc.text(value, x + 25, bandY + 28);
+    doc.setFontSize(6.8);
     doc.setTextColor(...palette.muted);
-    doc.text(metric.label, x + 26, bandY + 41);
+    doc.text(label, x + 25, bandY + 43);
   });
 
-  const infoY = bandY + bandH + 13;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(baseFormat === "a1" ? 9.5 : 7.5);
-  doc.setTextColor(...palette.navy);
-  doc.text("VISÃO CONSOLIDADA", marginX, infoY);
-
   doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
   doc.setTextColor(...palette.muted);
-  const contextParts = [
-    `${empresas} empresa(s)`,
-    `${emDia} item(ns) em dia/concluído(s)`,
-    `${semAgendamento} sem agendamento específico`,
-  ];
-  if (nextScheduled?.agendamento) {
-    contextParts.push(`próximo agendamento: ${fmt(nextScheduled.agendamento)} · ${nextScheduled.titulo}`);
-  }
-  const context = contextParts.join("  •  ");
-  const contextX = marginX + doc.getTextWidth("VISÃO CONSOLIDADA") + 16;
-  doc.text(doc.splitTextToSize(context, pageW - marginX - contextX), contextX, infoY);
-
-  const tableStartY = infoY + (baseFormat === "a1" ? 20 : 16);
-  const footerY = pageH - 25;
-  const availableTableH = footerY - tableStartY - 10;
-  const headerH = baseFormat === "a1" ? 31 : baseFormat === "a2" ? 27 : 25;
-  const targetRowH = total > 0 ? (availableTableH - headerH) / total : 18;
-  const rowFont = clamp(
-    targetRowH * 0.4,
-    useExtendedSheet ? 5.1 : baseFormat === "a1" ? 5.4 : 4.8,
-    baseFormat === "a1" ? 8.6 : 7.2,
+  doc.text(
+    "Legenda: verde = em dia/concluído  ·  amarelo = próximo do vencimento  ·  vermelho = vencido  ·  cinza = sem agenda",
+    marginX,
+    173,
   );
-  const rowPadding = clamp((targetRowH - rowFont * 1.15) / 2, 0.45, 3.1);
-  const headerFont = clamp(rowFont + 0.8, 5.5, baseFormat === "a1" ? 9.2 : 8);
-  const allowWrappedDetails = total <= 25;
-
-  const weights = [2.65, 2.15, 1.45, 1.2, 1.55, 1.05, 1.05, 1.05, 1.15, 0.8, 1.15, 2.35];
-  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
-  const widths = weights.map((weight) => (weight / weightSum) * contentW);
 
   const head = [[
-    "Item legal",
-    "Descrição / requisito",
-    "Empresa",
-    "Prédio",
-    "Responsável",
-    "Periodic.",
-    "Última exec.",
-    "Próxima exec.",
-    "Agendamento",
-    "Andaime",
-    "Status",
-    "Observações",
+    "Item legal", "Empresa", "Prédio", "Periodic.", "Última exec.", "Próxima exec.",
+    "Agendamento", "Andaime", "Status", "Observações",
   ]];
-
   const body = items.map((item) => [
     item.titulo || "—",
-    item.descricao || "—",
     item.empresa || "—",
     item.predio || "—",
-    item.responsavel || "—",
     PERIOD_LABEL[item.periodicidade] ?? item.periodicidade,
     fmt(item.ultimaExecucao),
     fmt(item.proximaExecucao),
@@ -323,83 +242,59 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   autoTable(doc, {
     head,
     body,
-    startY: tableStartY,
+    startY: 184,
     theme: "grid",
-    showHead: "firstPage",
-    pageBreak: "avoid",
+    showHead: "everyPage",
     rowPageBreak: "avoid",
+    margin: { top: 42, right: marginX, bottom: 42, left: marginX },
     styles: {
       font: "helvetica",
-      fontSize: rowFont,
-      cellPadding: { top: rowPadding, right: 2.8, bottom: rowPadding, left: 2.8 },
+      fontSize: 7.4,
+      cellPadding: { top: 5, right: 4, bottom: 5, left: 4 },
       lineColor: palette.line,
       lineWidth: 0.4,
       textColor: palette.text,
       valign: "middle",
-      overflow: allowWrappedDetails ? "linebreak" : "ellipsize",
-      minCellHeight: Math.max(6.5, targetRowH * 0.96),
+      overflow: "linebreak",
     },
     headStyles: {
-      fillColor: palette.navy2,
+      fillColor: palette.navy,
       textColor: palette.white,
       fontStyle: "bold",
-      fontSize: headerFont,
+      fontSize: 7.5,
       halign: "center",
-      valign: "middle",
-      minCellHeight: headerH,
-      cellPadding: { top: 4, right: 3, bottom: 4, left: 3 },
+      cellPadding: 6,
       lineColor: [49, 67, 91],
-      lineWidth: 0.5,
     },
-    bodyStyles: {
-      fillColor: palette.white,
-    },
-    alternateRowStyles: {
-      fillColor: palette.surface,
-    },
-    margin: { top: tableStartY, left: marginX, right: marginX, bottom: 28 },
+    bodyStyles: { fillColor: palette.white },
+    alternateRowStyles: { fillColor: palette.surface },
     columnStyles: {
-      0: { cellWidth: widths[0], fontStyle: "bold", halign: "left" },
-      1: { cellWidth: widths[1], halign: "left" },
-      2: { cellWidth: widths[2], halign: "left" },
-      3: { cellWidth: widths[3], halign: "center" },
-      4: { cellWidth: widths[4], halign: "left" },
-      5: { cellWidth: widths[5], halign: "center" },
-      6: { cellWidth: widths[6], halign: "center" },
-      7: { cellWidth: widths[7], halign: "center" },
-      8: { cellWidth: widths[8], halign: "center", fontStyle: "bold" },
-      9: { cellWidth: widths[9], halign: "center", fontStyle: "bold" },
-      10: { cellWidth: widths[10], halign: "center", fontStyle: "bold" },
-      11: { cellWidth: widths[11], halign: "left" },
+      0: { cellWidth: 155, fontStyle: "bold" },
+      1: { cellWidth: 118 },
+      2: { cellWidth: 72 },
+      3: { cellWidth: 70, halign: "center" },
+      4: { cellWidth: 72, halign: "center" },
+      5: { cellWidth: 72, halign: "center" },
+      6: { cellWidth: 72, halign: "center" },
+      7: { cellWidth: 52, halign: "center", fontStyle: "bold" },
+      8: { cellWidth: 75, halign: "center", fontStyle: "bold" },
+      9: { cellWidth: "auto" },
     },
     didParseCell: (data: any) => {
       if (data.section !== "body") return;
-
-      if (data.column.index === 8) {
-        const value = String(data.cell.raw ?? "");
-        if (value !== "—") {
-          data.cell.styles.fillColor = palette.surfaceBlue;
-          data.cell.styles.textColor = palette.blue;
-        } else {
-          data.cell.styles.fillColor = palette.slateBg;
-          data.cell.styles.textColor = palette.muted;
-        }
-      }
-
-      if (data.column.index === 9 && String(data.cell.raw ?? "") === "SIM") {
+      if (data.column.index === 7 && String(data.cell.raw) === "SIM") {
         data.cell.styles.fillColor = palette.amberBg;
         data.cell.styles.textColor = palette.amberText;
       }
-
-      if (data.column.index === 10) {
-        const status = String(data.cell.raw ?? "");
-        if (status === "Vencido") {
+      if (data.column.index === 8) {
+        const value = String(data.cell.raw ?? "");
+        if (value === "Vencido") {
           data.cell.styles.fillColor = palette.redBg;
           data.cell.styles.textColor = palette.redText;
-        } else if (status === "Próximo") {
+        } else if (value === "Próximo") {
           data.cell.styles.fillColor = palette.amberBg;
           data.cell.styles.textColor = palette.amberText;
-        } else if (status === "Em dia" || status === "Concluído") {
+        } else if (value === "Em dia" || value === "Concluído") {
           data.cell.styles.fillColor = palette.greenBg;
           data.cell.styles.textColor = palette.greenText;
         } else {
@@ -410,21 +305,24 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
     },
   });
 
-  doc.setDrawColor(...palette.line);
-  doc.setLineWidth(0.5);
-  doc.line(marginX, footerY - 10, pageW - marginX, footerY - 10);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(baseFormat === "a1" ? 8.5 : 6.8);
-  doc.setTextColor(...palette.muted);
-  doc.text(
-    "Apont Auto · Painel de Itens Legais · Todos os itens desta exportação consolidados em uma única folha",
-    marginX,
-    footerY,
-  );
-  const pageLabel = "FOLHA 01 / 01";
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...palette.navy);
-  doc.text(pageLabel, pageW - marginX - doc.getTextWidth(pageLabel), footerY);
+  // Paginação final, aplicada depois da tabela para conhecer o total real.
+  const totalPages = doc.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const width = doc.internal.pageSize.getWidth();
+    doc.setDrawColor(...palette.line);
+    doc.setLineWidth(0.5);
+    doc.line(marginX, pageHeight - 28, width - marginX, pageHeight - 28);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...palette.muted);
+    doc.text(`Apont Auto · Painel de Itens Legais · Emitido em ${generatedLabel}`, marginX, pageHeight - 14);
+    const pageLabel = `Página ${page} de ${totalPages}`;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...palette.navy);
+    doc.text(pageLabel, width - marginX - doc.getTextWidth(pageLabel), pageHeight - 14);
+  }
 
-  doc.save(`painel-itens-legais-${year}.pdf`);
+  doc.save(`painel-legal-${year}-${dateStamp(generatedAt)}.pdf`);
 }
