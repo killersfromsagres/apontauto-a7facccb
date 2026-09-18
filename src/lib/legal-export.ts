@@ -15,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = {
 const PERIOD_LABEL: Record<string, string> = {
   bimestral: "Bimestral",
   trimestral: "Trimestral",
+  quadrimestral: "Quadrimestral",
   semestral: "Semestral",
   anual: "Anual",
 };

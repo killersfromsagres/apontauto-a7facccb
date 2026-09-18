@@ -119,10 +119,11 @@ const MONTHS_FULL = [
   "Dezembro",
 ];
 
-const PERIODICIDADES: Periodicidade[] = ["bimestral", "trimestral", "semestral", "anual"];
+const PERIODICIDADES: Periodicidade[] = ["bimestral", "trimestral", "quadrimestral", "semestral", "anual"];
 const PERIODICIDADE_LABEL: Record<Periodicidade, string> = {
   bimestral: "Bimestral",
   trimestral: "Trimestral",
+  quadrimestral: "Quadrimestral",
   semestral: "Semestral",
   anual: "Anual",
 };

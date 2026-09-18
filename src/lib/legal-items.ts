@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type Periodicidade = "bimestral" | "trimestral" | "semestral" | "anual";
+export type Periodicidade = "bimestral" | "trimestral" | "quadrimestral" | "semestral" | "anual";
 export type LegalStatus = "em_dia" | "proximo" | "vencido" | "concluido" | "sem_agenda";
 
 export interface LegalItem {
@@ -74,7 +74,7 @@ function fromRow(r: Row): LegalItem {
 }
 
 export function monthsFor(p: Periodicidade): number {
-  return p === "bimestral" ? 2 : p === "trimestral" ? 3 : p === "semestral" ? 6 : 12;
+  return p === "bimestral" ? 2 : p === "trimestral" ? 3 : p === "quadrimestral" ? 4 : p === "semestral" ? 6 : 12;
 }
 
 export function addMonths(dateStr: string, months: number): string {
