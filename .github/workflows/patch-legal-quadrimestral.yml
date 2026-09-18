@@ -1,0 +1,73 @@
+name: Patch legal quadrimestral
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/patch-legal-quadrimestral.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Add quadrimestral periodicity
+        shell: python
+        run: |
+          from pathlib import Path
+
+          replacements = {
+              Path('src/lib/legal-items.ts'): [
+                  (
+                      'export type Periodicidade = "bimestral" | "trimestral" | "semestral" | "anual";',
+                      'export type Periodicidade = "bimestral" | "trimestral" | "quadrimestral" | "semestral" | "anual";',
+                  ),
+                  (
+                      'return p === "bimestral" ? 2 : p === "trimestral" ? 3 : p === "semestral" ? 6 : 12;',
+                      'return p === "bimestral" ? 2 : p === "trimestral" ? 3 : p === "quadrimestral" ? 4 : p === "semestral" ? 6 : 12;',
+                  ),
+              ],
+              Path('src/routes/_authenticated/painel-legal.tsx'): [
+                  (
+                      'const PERIODICIDADES: Periodicidade[] = ["bimestral", "trimestral", "semestral", "anual"];',
+                      'const PERIODICIDADES: Periodicidade[] = ["bimestral", "trimestral", "quadrimestral", "semestral", "anual"];',
+                  ),
+                  (
+                      '  trimestral: "Trimestral",\n  semestral: "Semestral",',
+                      '  trimestral: "Trimestral",\n  quadrimestral: "Quadrimestral",\n  semestral: "Semestral",',
+                  ),
+              ],
+              Path('src/lib/legal-export.ts'): [
+                  (
+                      '  trimestral: "Trimestral",\n  semestral: "Semestral",',
+                      '  trimestral: "Trimestral",\n  quadrimestral: "Quadrimestral",\n  semestral: "Semestral",',
+                  ),
+              ],
+          }
+
+          for path, pairs in replacements.items():
+              text = path.read_text(encoding='utf-8')
+              for old, new in pairs:
+                  if old not in text:
+                      raise SystemExit(f'Expected text not found in {path}: {old}')
+                  text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+
+          migration = Path('supabase/migrations/20260918161000_expand_legal_items_periodicidade.sql')
+          migration.write_text('''-- Permite todas as periodicidades disponíveis no Painel Legal.\nalter table public.legal_items\n  drop constraint if exists legal_items_periodicidade_check;\n\nalter table public.legal_items\n  add constraint legal_items_periodicidade_check\n  check (periodicidade = any (array[\n    'bimestral'::text,\n    'trimestral'::text,\n    'quadrimestral'::text,\n    'semestral'::text,\n    'anual'::text\n  ]));\n''', encoding='utf-8')
+
+      - name: Commit patch
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/lib/legal-items.ts src/routes/_authenticated/painel-legal.tsx src/lib/legal-export.ts supabase/migrations/20260918161000_expand_legal_items_periodicidade.sql
+          git commit -m "feat(legal): add quadrimestral periodicity"
+          git push origin HEAD:Apont-Auto
