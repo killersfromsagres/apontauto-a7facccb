@@ -1,0 +1,195 @@
+/* Painel Legal — acabamento corporativo escopado. */
+[data-page-title="Painel de Itens Legais"] {
+  --legal-line: color-mix(in oklch, var(--border) 82%, transparent);
+  --legal-surface: color-mix(in oklch, var(--card) 90%, transparent);
+  --legal-surface-2: color-mix(in oklch, var(--card) 70%, var(--background));
+  --legal-accent: color-mix(in oklch, var(--primary) 82%, white 18%);
+  gap: 1rem;
+}
+
+[data-page-title="Painel de Itens Legais"] > .premium-page-heading {
+  margin-bottom: .15rem;
+  padding: .35rem .15rem .85rem;
+  border-bottom: 1px solid var(--legal-line);
+}
+
+[data-page-title="Painel de Itens Legais"] > .premium-page-heading h2 {
+  letter-spacing: -.035em;
+}
+
+[data-page-title="Painel de Itens Legais"] .glass-surface {
+  background: linear-gradient(180deg, color-mix(in oklch, var(--card) 92%, transparent), color-mix(in oklch, var(--card) 78%, transparent));
+  border-color: var(--legal-line);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .035), 0 18px 42px -34px rgb(0 0 0 / .72);
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+[data-page-title="Painel de Itens Legais"] .glass-surface::before,
+[data-page-title="Painel de Itens Legais"] .card-sheen::after {
+  display: none !important;
+}
+
+[data-page-title="Painel de Itens Legais"] .glass-surface:hover {
+  border-color: color-mix(in oklch, var(--primary) 18%, var(--border));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .045), 0 20px 44px -36px rgb(0 0 0 / .78);
+}
+
+/* Cabeçalho funcional interno. */
+[data-page-title="Painel de Itens Legais"] > div:nth-of-type(2) {
+  padding: .35rem 0 .2rem;
+}
+
+[data-page-title="Painel de Itens Legais"] button,
+[data-page-title="Painel de Itens Legais"] input,
+[data-page-title="Painel de Itens Legais"] textarea,
+[data-page-title="Painel de Itens Legais"] [role="combobox"] {
+  transition: border-color .16s ease, background-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+[data-page-title="Painel de Itens Legais"] input,
+[data-page-title="Painel de Itens Legais"] textarea,
+[data-page-title="Painel de Itens Legais"] [role="combobox"] {
+  border-color: var(--legal-line);
+  background: color-mix(in oklch, var(--background) 55%, var(--card));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .025);
+}
+
+[data-page-title="Painel de Itens Legais"] input:focus,
+[data-page-title="Painel de Itens Legais"] textarea:focus,
+[data-page-title="Painel de Itens Legais"] [role="combobox"]:focus {
+  border-color: color-mix(in oklch, var(--primary) 48%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 10%, transparent);
+}
+
+/* Toolbar de filtros. */
+[data-page-title="Painel de Itens Legais"] .glass-surface:has(input[placeholder*="Buscar por tarefa"]) {
+  padding: .9rem 1rem;
+  border-radius: 1rem;
+  background: color-mix(in oklch, var(--card) 86%, var(--background));
+}
+
+/* Tabela executiva. */
+[data-page-title="Painel de Itens Legais"] table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-page-title="Painel de Itens Legais"] thead th {
+  height: 2.7rem;
+  background: color-mix(in oklch, var(--card) 96%, var(--background)) !important;
+  color: color-mix(in oklch, var(--muted-foreground) 92%, white 8%);
+  border-bottom: 1px solid var(--legal-line);
+  box-shadow: 0 1px 0 rgb(255 255 255 / .02);
+  letter-spacing: .085em;
+}
+
+[data-page-title="Painel de Itens Legais"] tbody td {
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 62%, transparent);
+}
+
+[data-page-title="Painel de Itens Legais"] tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+[data-page-title="Painel de Itens Legais"] tbody tr {
+  transition: background-color .14s ease;
+}
+
+[data-page-title="Painel de Itens Legais"] tbody tr:hover {
+  background: color-mix(in oklch, var(--primary) 4.5%, transparent) !important;
+}
+
+[data-page-title="Painel de Itens Legais"] tbody button[title] {
+  border-radius: .55rem;
+}
+
+/* Nome da tarefa sem aspecto chamativo; hierarquia documental. */
+[data-page-title="Painel de Itens Legais"] table tbody td:first-child button {
+  border-color: color-mix(in oklch, var(--border) 70%, transparent);
+  background: color-mix(in oklch, var(--card) 78%, transparent);
+  font-weight: 650;
+  box-shadow: none;
+}
+
+[data-page-title="Painel de Itens Legais"] table tbody td:first-child button:hover {
+  border-color: color-mix(in oklch, var(--primary) 32%, var(--border));
+  background: color-mix(in oklch, var(--primary) 7%, var(--card));
+}
+
+/* Calendário. */
+[data-page-title="Painel de Itens Legais"] .grid.grid-cols-7 > button {
+  min-height: 2.8rem;
+  border-color: color-mix(in oklch, var(--border) 55%, transparent);
+  background: color-mix(in oklch, var(--background) 22%, transparent);
+}
+
+[data-page-title="Painel de Itens Legais"] .grid.grid-cols-7 > button:hover {
+  border-color: color-mix(in oklch, var(--primary) 30%, var(--border));
+  background: color-mix(in oklch, var(--primary) 6%, var(--card));
+}
+
+/* Cards mobile. */
+[data-page-title="Painel de Itens Legais"] [id^="legal-row-"] .glass-surface {
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+/* Modal de criação/edição, identificado pelo campo Tarefa. */
+[role="dialog"]:has(#titulo) {
+  border: 1px solid color-mix(in oklch, var(--border) 82%, transparent);
+  background: color-mix(in oklch, var(--background) 94%, var(--card));
+  box-shadow: 0 32px 90px -36px rgb(0 0 0 / .88);
+}
+
+[role="dialog"]:has(#titulo) form > .grid,
+[role="dialog"]:has(#titulo) form > .space-y-1\.5 {
+  position: relative;
+}
+
+[role="dialog"]:has(#titulo) label {
+  color: color-mix(in oklch, var(--foreground) 80%, var(--muted-foreground));
+  font-size: .76rem;
+  font-weight: 650;
+  letter-spacing: .015em;
+}
+
+[role="dialog"]:has(#titulo) input,
+[role="dialog"]:has(#titulo) textarea,
+[role="dialog"]:has(#titulo) [role="combobox"] {
+  border-color: color-mix(in oklch, var(--border) 82%, transparent);
+  background: color-mix(in oklch, var(--card) 72%, var(--background));
+}
+
+[role="dialog"]:has(#titulo) textarea {
+  resize: vertical;
+}
+
+@media (min-width: 1024px) {
+  [data-page-title="Painel de Itens Legais"] .glass-surface:has(table) {
+    padding: .4rem;
+    border-radius: 1rem;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-page-title="Painel de Itens Legais"] {
+    gap: .8rem;
+  }
+
+  [data-page-title="Painel de Itens Legais"] > .premium-page-heading {
+    padding-bottom: .65rem;
+  }
+
+  [data-page-title="Painel de Itens Legais"] .glass-surface:has(input[placeholder*="Buscar por tarefa"]) {
+    padding: .75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-page-title="Painel de Itens Legais"] *,
+  [role="dialog"]:has(#titulo) * {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
