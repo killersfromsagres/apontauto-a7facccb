@@ -24,6 +24,7 @@ import {
   RotateCcw,
   CalendarCheck2,
   Unlink,
+  Archive,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
@@ -45,6 +46,7 @@ import {
   matchEquipe,
   type EquipeFiltro,
 } from "@/lib/corretiva/equipe";
+import { getBackorderInfo } from "@/lib/corretiva/backorder-classifier";
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
@@ -124,6 +126,7 @@ function CorretivaNovoPage() {
     CorrectiveProgramReservation[]
   >([]);
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
+  const [onlyBackorder, setOnlyBackorder] = useState(false);
 
   const applyLoadedList = async (list: any[], cache = false) => {
     setOsList(list);
@@ -184,6 +187,19 @@ function CorretivaNovoPage() {
     return subscribeCorrectiveProgramReservations(syncReservations);
   }, []);
 
+  const backorderMap = useMemo(() => {
+    const reference = new Date();
+    return new Map(
+      osList.map((os) => [
+        String(os.id ?? os.numero_os ?? ""),
+        getBackorderInfo(os, reference),
+      ]),
+    );
+  }, [osList]);
+
+  const backorderFor = (os: any) =>
+    backorderMap.get(String(os.id ?? os.numero_os ?? "")) ?? getBackorderInfo(os);
+
   const exportBaseRows = useMemo(
     () => dedupeCorrectiveRows(osList),
     [osList],
@@ -230,17 +246,40 @@ function CorretivaNovoPage() {
         const matchesEquipe = matchEquipe(o.equipe, equipe);
         const matchesProgram =
           !onlyProgrammed || Boolean(findProgramReservation(o, programReservations));
+        const backorder =
+          backorderMap.get(String(o.id ?? o.numero_os ?? "")) ?? getBackorderInfo(o);
+        const matchesBackorder =
+          !onlyBackorder || (backorder.isBackorder && !isCompletedStatus(o.status));
 
-        return matchesSearch && matchesEquipe && matchesProgram;
+        return matchesSearch && matchesEquipe && matchesProgram && matchesBackorder;
       })
       .sort((a, b) => {
         const dateA = new Date(a.data_criacao || 0).getTime();
         const dateB = new Date(b.data_criacao || 0).getTime();
         return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
       });
-  }, [osList, search, equipe, sortOrder, onlyProgrammed, programReservations]);
+  }, [
+    osList,
+    search,
+    equipe,
+    sortOrder,
+    onlyProgrammed,
+    onlyBackorder,
+    programReservations,
+    backorderMap,
+  ]);
 
   const programmedVisibleCount = programmedExportRows.length;
+
+  const backorderVisibleCount = useMemo(
+    () =>
+      osList.filter((os) => {
+        const info =
+          backorderMap.get(String(os.id ?? os.numero_os ?? "")) ?? getBackorderInfo(os);
+        return info.isBackorder && !isCompletedStatus(os.status);
+      }).length,
+    [osList, backorderMap],
+  );
 
   const selectedIndex = selectedOs
     ? filtered.findIndex((item) => item.id === selectedOs.id)
@@ -493,34 +532,53 @@ function CorretivaNovoPage() {
     >
       <div className="space-y-6">
         <GlassCard className="p-4">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-            <div className="relative w-full xl:max-w-md">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative w-full xl:w-[320px] xl:flex-none">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar OS, Ativo, Local..."
-                className="h-11 border-white/10 bg-white/5 pl-9"
+                className="h-11 rounded-xl border-white/10 bg-white/5 pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2 xl:justify-end">
               <Button
                 type="button"
                 variant={onlyProgrammed ? "secondary" : "glass"}
                 className={cn(
-                  "h-11 gap-2 rounded-full border-white/10 px-4",
+                  "h-11 gap-2 rounded-xl border-white/10 px-4",
                   onlyProgrammed &&
-                    "border-sky-400/35 bg-sky-500/15 text-sky-100",
+                    "border-sky-400/40 bg-sky-500/15 text-sky-100 shadow-[0_0_0_1px_rgba(56,189,248,0.08)]",
                 )}
                 onClick={() => setOnlyProgrammed((current) => !current)}
                 aria-pressed={onlyProgrammed}
                 title="Mostrar somente chamados já incorporados à Programação"
               >
                 <CalendarCheck2 className="h-4 w-4" />
-                EM PROGRAMAÇÃO
-                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
+                <span className="font-semibold">Em Programação</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
                   {programmedVisibleCount}
+                </span>
+              </Button>
+
+              <Button
+                type="button"
+                variant={onlyBackorder ? "secondary" : "glass"}
+                className={cn(
+                  "h-11 gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.055] px-4 text-red-100 shadow-[0_8px_28px_rgba(127,29,29,0.08)] transition-all hover:border-red-400/35 hover:bg-red-500/[0.10] hover:text-white",
+                  onlyBackorder &&
+                    "border-red-400/50 bg-red-500/20 text-white shadow-[0_0_0_1px_rgba(248,113,113,0.10),0_12px_32px_rgba(127,29,29,0.16)]",
+                )}
+                onClick={() => setOnlyBackorder((current) => !current)}
+                aria-pressed={onlyBackorder}
+                title="Mostrar somente chamados identificados como Backorder"
+              >
+                <Archive className="h-4 w-4" />
+                <span className="font-extrabold tracking-[0.04em]">BACKORDER</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-md border border-red-300/10 bg-red-950/60 px-1.5 py-0.5 text-[10px] font-extrabold text-red-100">
+                  {backorderVisibleCount}
                 </span>
               </Button>
 
@@ -529,7 +587,7 @@ function CorretivaNovoPage() {
                   <Button
                     variant="glass"
                     className={cn(
-                      "h-11 gap-2 rounded-full border-white/10 px-6 transition-all duration-300",
+                      "h-11 gap-2 rounded-xl border-white/10 px-5 transition-all duration-300",
                       equipe !== "todas" && equipeStyles(equipe as any).button,
                     )}
                   >
@@ -582,19 +640,18 @@ function CorretivaNovoPage() {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
 
-            <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="glass"
-                    className="h-11 gap-2 rounded-full border-white/10 px-6"
+                    className="h-11 gap-2 rounded-xl border-white/10 px-5"
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     <span className="font-medium">
                       {sortOrder === "recent" ? "Mais recentes" : "Mais antigos"}
                     </span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -628,20 +685,22 @@ function CorretivaNovoPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+              <div className="flex h-11 items-center gap-1 rounded-xl border border-white/10 bg-white/[0.045] p-1 shadow-inner shadow-black/10">
                 <Button
                   variant={viewMode === "grid" ? "secondary" : "ghost"}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-9 w-9 rounded-lg"
                   onClick={() => setViewMode("grid")}
+                  title="Visualização em cards"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={viewMode === "list" ? "secondary" : "ghost"}
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-9 w-9 rounded-lg"
                   onClick={() => setViewMode("list")}
+                  title="Visualização em lista"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -697,6 +756,7 @@ function CorretivaNovoPage() {
                 os,
                 programReservations,
               );
+              const backorder = backorderFor(os);
 
               return (
                 <GlassCard
@@ -705,6 +765,8 @@ function CorretivaNovoPage() {
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
+                    backorder.isBackorder &&
+                      "border-red-400/20 shadow-[0_0_0_1px_rgba(248,113,113,0.05),0_18px_44px_rgba(127,29,29,0.06)]",
                   )}
                   onClick={() => setSelectedOs(os)}
                 >
@@ -727,6 +789,27 @@ function CorretivaNovoPage() {
                           OS {os.numero_os}
                         </Badge>
                         <div className="flex flex-wrap items-center gap-1.5">
+                          {backorder.isBackorder && (
+                            <Badge
+                              variant="outline"
+                              className="h-8 gap-1.5 border-red-400/35 bg-gradient-to-r from-red-950/85 to-rose-950/60 px-3 text-[9px] font-extrabold uppercase tracking-[0.08em] text-red-100 shadow-[0_8px_24px_rgba(127,29,29,0.18)] md:h-9 md:text-[10px]"
+                              title={
+                                backorder.source === "automatic"
+                                  ? `Backorder automático: ${backorder.ageDays} dias em aberto`
+                                  : backorder.ageDays > 0
+                                    ? `Backorder registrado · ${backorder.ageDays} dias desde a abertura`
+                                    : "Backorder registrado"
+                              }
+                            >
+                              <Archive className="h-3.5 w-3.5" />
+                              BACKORDER
+                              {backorder.ageDays > 0 && (
+                                <span className="rounded-md border border-red-200/10 bg-black/20 px-1.5 py-0.5 text-[8px] tracking-normal text-red-100/80 md:text-[9px]">
+                                  {backorder.ageDays}d
+                                </span>
+                              )}
+                            </Badge>
+                          )}
                           <Badge
                             variant="outline"
                             className={cn(
