@@ -49,6 +49,22 @@ function metrics(items: LegalItem[], execs: LegalExecution[], year: number) {
   };
 }
 
+async function loadImageData(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise<string | null>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[], year: number) {
   const XLSX = await import("xlsx");
   const generatedAt = new Date();
@@ -115,117 +131,291 @@ export async function exportLegalXLSX(items: LegalItem[], execs: LegalExecution[
 }
 
 export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[], year: number) {
-  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+  const [{ jsPDF }, { default: autoTable }, logoData] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
+    loadImageData("/apontauto-logo.png"),
   ]);
 
   const doc = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3" });
   const generatedAt = new Date();
   const generatedLabel = generatedAt.toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
   const m = metrics(items, execs, year);
 
   const palette = {
-    ink: [10, 22, 39] as [number, number, number],
-    navy: [17, 42, 73] as [number, number, number],
-    blue: [37, 99, 235] as [number, number, number],
-    cyan: [14, 165, 233] as [number, number, number],
+    ink: [7, 15, 28] as [number, number, number],
+    navy: [15, 32, 55] as [number, number, number],
+    navySoft: [25, 48, 78] as [number, number, number],
+    blue: [63, 126, 255] as [number, number, number],
+    cyan: [70, 211, 255] as [number, number, number],
     white: [255, 255, 255] as [number, number, number],
-    text: [30, 41, 59] as [number, number, number],
-    muted: [100, 116, 139] as [number, number, number],
-    line: [218, 226, 236] as [number, number, number],
-    surface: [248, 250, 252] as [number, number, number],
-    greenBg: [220, 252, 231] as [number, number, number],
-    greenText: [21, 128, 61] as [number, number, number],
-    amberBg: [254, 243, 199] as [number, number, number],
-    amberText: [161, 98, 7] as [number, number, number],
-    redBg: [254, 226, 226] as [number, number, number],
+    text: [28, 39, 56] as [number, number, number],
+    muted: [104, 116, 134] as [number, number, number],
+    line: [220, 226, 234] as [number, number, number],
+    lineStrong: [203, 211, 222] as [number, number, number],
+    surface: [247, 249, 252] as [number, number, number],
+    surface2: [241, 245, 249] as [number, number, number],
+    green: [16, 185, 129] as [number, number, number],
+    greenBg: [226, 248, 240] as [number, number, number],
+    greenText: [5, 122, 85] as [number, number, number],
+    amber: [245, 158, 11] as [number, number, number],
+    amberBg: [255, 247, 224] as [number, number, number],
+    amberText: [157, 91, 0] as [number, number, number],
+    red: [239, 68, 68] as [number, number, number],
+    redBg: [255, 237, 237] as [number, number, number],
     redText: [185, 28, 28] as [number, number, number],
     slateBg: [241, 245, 249] as [number, number, number],
+    violet: [99, 102, 241] as [number, number, number],
   };
 
   doc.setProperties({
     title: `Painel de Itens Legais ${year}`,
-    subject: "Relatório de obrigações, vencimentos, agendamentos e conformidade",
+    subject: "Relatório executivo de conformidade legal, vencimentos, agendamentos e evidências",
     author: "Apont Auto",
     creator: "Apont Auto",
+    keywords: "painel legal, compliance, PCM, manutenção, conformidade, vencimentos",
   });
 
   const pageW = doc.internal.pageSize.getWidth();
-  const marginX = 34;
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 36;
   const contentW = pageW - marginX * 2;
 
-  // Cabeçalho executivo da primeira página.
-  doc.setFillColor(...palette.ink);
-  doc.rect(0, 0, pageW, 82, "F");
-  doc.setFillColor(...palette.blue);
-  doc.rect(0, 80, pageW, 2, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(...palette.white);
-  doc.text("PAINEL DE ITENS LEGAIS", marginX, 34);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(191, 205, 224);
-  doc.text("Relatório executivo de conformidade, recorrências e evidências", marginX, 54);
+  const statuses = items.map(statusOf);
+  const semAgenda = statuses.filter((status) => status === "sem_agenda").length;
+  const andaime = items.filter((item) => item.precisaAndaime).length;
+  const empresas = new Set(items.map((item) => item.empresa.trim()).filter(Boolean)).size;
+  const critical = m.vencidos + m.proximos;
+  const nextItems = items
+    .filter((item) => item.proximaExecucao)
+    .sort((a, b) => a.proximaExecucao.localeCompare(b.proximaExecucao))
+    .slice(0, 3);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(...palette.white);
-  const brand = "APONT AUTO";
-  doc.text(brand, pageW - marginX - doc.getTextWidth(brand), 32);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(148, 163, 184);
-  const issue = `Ano-base ${year} · Emitido em ${generatedLabel}`;
-  doc.text(issue, pageW - marginX - doc.getTextWidth(issue), 51);
-
-  const bandY = 98;
-  const bandH = 58;
-  doc.setFillColor(...palette.surface);
-  doc.setDrawColor(...palette.line);
-  doc.roundedRect(marginX, bandY, contentW, bandH, 7, 7, "FD");
-  const cards = [
-    ["ITENS", String(m.total), palette.blue],
-    ["REGULARIDADE", `${m.regularidade}%`, [16, 185, 129] as [number, number, number]],
-    ["VENCIDOS", String(m.vencidos), [239, 68, 68] as [number, number, number]],
-    ["PRÓXIMOS", String(m.proximos), [245, 158, 11] as [number, number, number]],
-    ["AGENDADOS", String(m.agendados), palette.cyan],
-    ["EXECUÇÕES NO ANO", String(m.execucoesAno), [99, 102, 241] as [number, number, number]],
-  ] as const;
-  const cardW = contentW / cards.length;
-  cards.forEach(([label, value, accent], index) => {
-    const x = marginX + cardW * index;
-    if (index) {
-      doc.setDrawColor(...palette.line);
-      doc.line(x, bandY + 12, x, bandY + bandH - 12);
+  const drawBrandMark = (x: number, y: number) => {
+    if (logoData) {
+      try {
+        doc.addImage(logoData, "PNG", x, y, 98, 42, undefined, "FAST");
+        return;
+      } catch {
+        // Mantém o fallback vetorial abaixo.
+      }
     }
-    doc.setFillColor(...accent);
-    doc.roundedRect(x + 12, bandY + 14, 4, bandH - 28, 2, 2, "F");
+    doc.setFillColor(...palette.blue);
+    doc.roundedRect(x, y + 4, 34, 34, 8, 8, "F");
+    doc.setDrawColor(...palette.white);
+    doc.setLineWidth(2.2);
+    doc.line(x + 8, y + 29, x + 17, y + 10);
+    doc.line(x + 17, y + 10, x + 26, y + 29);
+    doc.line(x + 12, y + 22, x + 22, y + 22);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(15);
+    doc.setFontSize(11);
+    doc.setTextColor(...palette.white);
+    doc.text("APONT AUTO", x + 44, y + 25);
+  };
+
+  const drawCompactPageHeader = (pageNumber: number) => {
+    doc.setFillColor(...palette.ink);
+    doc.rect(0, 0, pageW, 50, "F");
+    doc.setFillColor(...palette.blue);
+    doc.rect(0, 48, pageW, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...palette.white);
+    doc.text("PAINEL DE ITENS LEGAIS", marginX, 22);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.2);
+    doc.setTextColor(167, 181, 201);
+    doc.text(`Relatório de conformidade · Ano-base ${year}`, marginX, 35);
+    const right = `APONT AUTO  ·  Continuação  ·  ${String(pageNumber).padStart(2, "0")}`;
+    doc.text(right, pageW - marginX - doc.getTextWidth(right), 29);
+  };
+
+  // Fundo e cabeçalho principal.
+  doc.setFillColor(...palette.white);
+  doc.rect(0, 0, pageW, pageH, "F");
+  doc.setFillColor(...palette.ink);
+  doc.rect(0, 0, pageW, 94, "F");
+  doc.setFillColor(...palette.navy);
+  doc.rect(pageW * 0.67, 0, pageW * 0.33, 94, "F");
+  doc.setFillColor(...palette.blue);
+  doc.rect(0, 91, pageW, 3, "F");
+  doc.setFillColor(...palette.cyan);
+  doc.rect(0, 91, pageW * 0.16, 3, "F");
+
+  drawBrandMark(marginX, 21);
+
+  const titleX = logoData ? marginX + 118 : marginX + 152;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.2);
+  doc.setTextColor(136, 157, 186);
+  doc.text("GESTÃO DE COMPLIANCE E RECORRÊNCIAS", titleX, 28);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20.5);
+  doc.setTextColor(...palette.white);
+  doc.text("PAINEL DE ITENS LEGAIS", titleX, 50);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.2);
+  doc.setTextColor(183, 198, 219);
+  doc.text("Visão executiva de obrigações, vencimentos, agendamentos e evidências documentais", titleX, 68);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.2);
+  doc.setTextColor(...palette.white);
+  const docType = "RELATÓRIO EXECUTIVO";
+  doc.text(docType, pageW - marginX - doc.getTextWidth(docType), 29);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.3);
+  doc.setTextColor(155, 171, 194);
+  const meta1 = `Ano-base  ${year}`;
+  const meta2 = `Emissão  ${generatedLabel}`;
+  doc.text(meta1, pageW - marginX - doc.getTextWidth(meta1), 48);
+  doc.text(meta2, pageW - marginX - doc.getTextWidth(meta2), 63);
+  doc.setTextColor(113, 132, 158);
+  const control = "Controle interno · Documento gerado pelo sistema";
+  doc.text(control, pageW - marginX - doc.getTextWidth(control), 78);
+
+  // KPIs em cartões independentes.
+  const cardsY = 112;
+  const cardsH = 62;
+  const gap = 10;
+  const cards = [
+    { label: "TOTAL DE ITENS", value: String(m.total), accent: palette.blue, note: `${empresas} empresa(s)` },
+    { label: "REGULARIDADE", value: `${m.regularidade}%`, accent: palette.green, note: `${m.emDia} em dia` },
+    { label: "VENCIDOS", value: String(m.vencidos), accent: palette.red, note: "ação imediata" },
+    { label: "PRÓXIMOS", value: String(m.proximos), accent: palette.amber, note: "até 15 dias" },
+    { label: "AGENDADOS", value: String(m.agendados), accent: palette.cyan, note: `${semAgenda} sem agenda` },
+    { label: "EXECUÇÕES", value: String(m.execucoesAno), accent: palette.violet, note: `realizadas em ${year}` },
+  ];
+  const cardW = (contentW - gap * (cards.length - 1)) / cards.length;
+
+  cards.forEach((card, index) => {
+    const x = marginX + index * (cardW + gap);
+    doc.setFillColor(229, 234, 241);
+    doc.roundedRect(x + 1.6, cardsY + 2.2, cardW, cardsH, 8, 8, "F");
+    doc.setFillColor(...palette.white);
+    doc.setDrawColor(...palette.line);
+    doc.setLineWidth(0.55);
+    doc.roundedRect(x, cardsY, cardW, cardsH, 8, 8, "FD");
+    doc.setFillColor(...card.accent);
+    doc.roundedRect(x, cardsY, 4.5, cardsH, 2.2, 2.2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15.5);
     doc.setTextColor(...palette.ink);
-    doc.text(value, x + 25, bandY + 28);
-    doc.setFontSize(6.8);
+    doc.text(card.value, x + 18, cardsY + 26);
+    doc.setFontSize(6.6);
     doc.setTextColor(...palette.muted);
-    doc.text(label, x + 25, bandY + 43);
+    doc.text(card.label, x + 18, cardsY + 40);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.4);
+    doc.setTextColor(139, 150, 166);
+    doc.text(card.note, x + 18, cardsY + 52);
   });
 
+  // Faixa executiva com score e prioridades.
+  const executiveY = 190;
+  const executiveH = 55;
+  const leftW = 330;
+  doc.setFillColor(...palette.surface);
+  doc.setDrawColor(...palette.line);
+  doc.roundedRect(marginX, executiveY, contentW, executiveH, 8, 8, "FD");
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.2);
+  doc.setTextColor(...palette.navy);
+  doc.text("ÍNDICE DE CONFORMIDADE", marginX + 16, executiveY + 17);
+  doc.setFontSize(18);
+  doc.setTextColor(...palette.ink);
+  doc.text(`${m.regularidade}%`, marginX + 16, executiveY + 38);
+
+  const progressX = marginX + 78;
+  const progressY = executiveY + 30;
+  const progressW = leftW - 100;
+  doc.setFillColor(226, 231, 238);
+  doc.roundedRect(progressX, progressY, progressW, 7, 3.5, 3.5, "F");
+  const progressColor = m.regularidade >= 90 ? palette.green : m.regularidade >= 70 ? palette.amber : palette.red;
+  doc.setFillColor(...progressColor);
+  doc.roundedRect(progressX, progressY, Math.max(5, progressW * (m.regularidade / 100)), 7, 3.5, 3.5, "F");
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
+  doc.setFontSize(6.5);
+  doc.setTextColor(...palette.muted);
+  doc.text("Percentual de itens classificados como em dia/concluídos", progressX, executiveY + 46);
+
+  doc.setDrawColor(...palette.lineStrong);
+  doc.line(marginX + leftW, executiveY + 12, marginX + leftW, executiveY + executiveH - 12);
+
+  const priorityX = marginX + leftW + 22;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.2);
+  doc.setTextColor(...palette.navy);
+  doc.text("LEITURA EXECUTIVA", priorityX, executiveY + 17);
+
+  const executiveText = critical > 0
+    ? `${critical} item(ns) exigem atenção: ${m.vencidos} vencido(s) e ${m.proximos} próximo(s) do vencimento.`
+    : "Nenhum item vencido ou próximo do vencimento no recorte atual.";
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.3);
+  doc.setTextColor(...palette.text);
+  doc.text(executiveText, priorityX, executiveY + 34);
+  doc.setTextColor(...palette.muted);
+  doc.text(`${andaime} item(ns) requerem andaime · ${m.agendados} possuem agendamento específico · ${semAgenda} sem agenda`, priorityX, executiveY + 47);
+
+  // Próximos vencimentos em uma linha discreta antes da tabela.
+  const nextY = 260;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.setTextColor(...palette.navy);
+  doc.text("PRÓXIMAS REFERÊNCIAS", marginX, nextY);
+
+  let nextX = marginX + 102;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.7);
+  doc.setTextColor(...palette.muted);
+  if (nextItems.length === 0) {
+    doc.text("Nenhuma próxima execução cadastrada.", nextX, nextY);
+  } else {
+    nextItems.forEach((item, index) => {
+      const label = `${fmt(item.proximaExecucao)} · ${item.titulo}`;
+      const maxW = (contentW - 110) / Math.max(1, nextItems.length) - 14;
+      const clipped = doc.splitTextToSize(label, maxW)[0] ?? label;
+      doc.text(clipped, nextX, nextY);
+      nextX += maxW + 14;
+      if (index < nextItems.length - 1) {
+        doc.setFillColor(...palette.lineStrong);
+        doc.circle(nextX - 8, nextY - 2, 1.2, "F");
+      }
+    });
+  }
+
+  doc.setDrawColor(...palette.line);
+  doc.line(marginX, 272, pageW - marginX, 272);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
   doc.setTextColor(...palette.muted);
   doc.text(
-    "Legenda: verde = em dia/concluído  ·  amarelo = próximo do vencimento  ·  vermelho = vencido  ·  cinza = sem agenda",
+    "Legenda de status:  Em dia / Concluído   ·   Próximo do vencimento   ·   Vencido   ·   Sem agenda",
     marginX,
-    173,
+    285,
   );
 
   const head = [[
-    "Item legal", "Empresa", "Prédio", "Periodic.", "Última exec.", "Próxima exec.",
-    "Agendamento", "Andaime", "Status", "Observações",
+    "ITEM LEGAL",
+    "EMPRESA",
+    "PRÉDIO",
+    "PERIODICIDADE",
+    "ÚLTIMA EXEC.",
+    "PRÓXIMA EXEC.",
+    "AGENDAMENTO",
+    "ANDAIME",
+    "STATUS",
+    "OBSERVAÇÕES",
   ]];
+
   const body = items.map((item) => [
     item.titulo || "—",
     item.empresa || "—",
@@ -242,50 +432,64 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
   autoTable(doc, {
     head,
     body,
-    startY: 184,
-    theme: "grid",
+    startY: 298,
+    theme: "plain",
     showHead: "everyPage",
     rowPageBreak: "avoid",
-    margin: { top: 42, right: marginX, bottom: 42, left: marginX },
+    margin: { top: 66, right: marginX, bottom: 46, left: marginX },
     styles: {
       font: "helvetica",
-      fontSize: 7.4,
-      cellPadding: { top: 5, right: 4, bottom: 5, left: 4 },
-      lineColor: palette.line,
-      lineWidth: 0.4,
+      fontSize: 7.25,
+      cellPadding: { top: 5.4, right: 4.8, bottom: 5.4, left: 4.8 },
       textColor: palette.text,
       valign: "middle",
       overflow: "linebreak",
+      lineWidth: 0,
     },
     headStyles: {
       fillColor: palette.navy,
       textColor: palette.white,
       fontStyle: "bold",
-      fontSize: 7.5,
+      fontSize: 6.7,
       halign: "center",
-      cellPadding: 6,
-      lineColor: [49, 67, 91],
+      valign: "middle",
+      cellPadding: { top: 7, right: 4, bottom: 7, left: 4 },
+      lineColor: palette.navySoft,
+      lineWidth: 0.35,
     },
     bodyStyles: { fillColor: palette.white },
     alternateRowStyles: { fillColor: palette.surface },
     columnStyles: {
-      0: { cellWidth: 155, fontStyle: "bold" },
-      1: { cellWidth: 118 },
-      2: { cellWidth: 72 },
-      3: { cellWidth: 70, halign: "center" },
-      4: { cellWidth: 72, halign: "center" },
-      5: { cellWidth: 72, halign: "center" },
-      6: { cellWidth: 72, halign: "center" },
-      7: { cellWidth: 52, halign: "center", fontStyle: "bold" },
-      8: { cellWidth: 75, halign: "center", fontStyle: "bold" },
+      0: { cellWidth: 168, fontStyle: "bold" },
+      1: { cellWidth: 120 },
+      2: { cellWidth: 76 },
+      3: { cellWidth: 75, halign: "center" },
+      4: { cellWidth: 77, halign: "center" },
+      5: { cellWidth: 77, halign: "center", fontStyle: "bold" },
+      6: { cellWidth: 77, halign: "center" },
+      7: { cellWidth: 55, halign: "center", fontStyle: "bold" },
+      8: { cellWidth: 78, halign: "center", fontStyle: "bold" },
       9: { cellWidth: "auto" },
     },
     didParseCell: (data: any) => {
       if (data.section !== "body") return;
-      if (data.column.index === 7 && String(data.cell.raw) === "SIM") {
-        data.cell.styles.fillColor = palette.amberBg;
-        data.cell.styles.textColor = palette.amberText;
+      const item = items[data.row.index];
+      const status = item ? statusOf(item) : null;
+
+      if (data.column.index === 5 && status === "vencido") {
+        data.cell.styles.textColor = palette.redText;
+        data.cell.styles.fontStyle = "bold";
       }
+
+      if (data.column.index === 7) {
+        if (String(data.cell.raw) === "SIM") {
+          data.cell.styles.fillColor = palette.amberBg;
+          data.cell.styles.textColor = palette.amberText;
+        } else {
+          data.cell.styles.textColor = palette.muted;
+        }
+      }
+
       if (data.column.index === 8) {
         const value = String(data.cell.raw ?? "");
         if (value === "Vencido") {
@@ -303,25 +507,53 @@ export async function exportLegalPDF(items: LegalItem[], execs: LegalExecution[]
         }
       }
     },
+    didDrawCell: (data: any) => {
+      if (data.section !== "body" || data.column.index !== 0) return;
+      const item = items[data.row.index];
+      if (!item) return;
+      const status = statusOf(item);
+      const accent =
+        status === "vencido"
+          ? palette.red
+          : status === "proximo"
+            ? palette.amber
+            : status === "em_dia" || status === "concluido"
+              ? palette.green
+              : palette.muted;
+      doc.setFillColor(...accent);
+      doc.rect(data.cell.x, data.cell.y + 2, 2.2, Math.max(2, data.cell.height - 4), "F");
+      doc.setDrawColor(...palette.line);
+      doc.setLineWidth(0.35);
+      doc.line(data.cell.x, data.cell.y + data.cell.height, pageW - marginX, data.cell.y + data.cell.height);
+    },
+    didDrawPage: () => {
+      const current = doc.internal.getCurrentPageInfo().pageNumber;
+      if (current > 1) drawCompactPageHeader(current);
+    },
   });
 
-  // Paginação final, aplicada depois da tabela para conhecer o total real.
   const totalPages = doc.getNumberOfPages();
   for (let page = 1; page <= totalPages; page += 1) {
     doc.setPage(page);
-    const pageHeight = doc.internal.pageSize.getHeight();
+    const height = doc.internal.pageSize.getHeight();
     const width = doc.internal.pageSize.getWidth();
+
     doc.setDrawColor(...palette.line);
-    doc.setLineWidth(0.5);
-    doc.line(marginX, pageHeight - 28, width - marginX, pageHeight - 28);
+    doc.setLineWidth(0.45);
+    doc.line(marginX, height - 31, width - marginX, height - 31);
+
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(7);
+    doc.setFontSize(6.6);
     doc.setTextColor(...palette.muted);
-    doc.text(`Apont Auto · Painel de Itens Legais · Emitido em ${generatedLabel}`, marginX, pageHeight - 14);
-    const pageLabel = `Página ${page} de ${totalPages}`;
+    doc.text("APONT AUTO  ·  PCM / COMPLIANCE  ·  Documento de controle interno", marginX, height - 17);
+
+    const center = `Emitido em ${generatedLabel}`;
+    doc.text(center, width / 2 - doc.getTextWidth(center) / 2, height - 17);
+
+    const pageLabel = `PÁGINA ${String(page).padStart(2, "0")} / ${String(totalPages).padStart(2, "0")}`;
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...palette.navy);
-    doc.text(pageLabel, width - marginX - doc.getTextWidth(pageLabel), pageHeight - 14);
+    doc.text(pageLabel, width - marginX - doc.getTextWidth(pageLabel), height - 17);
   }
 
   doc.save(`painel-legal-${year}-${dateStamp(generatedAt)}.pdf`);
