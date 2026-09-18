@@ -10,30 +10,24 @@ export type ProgramacaoExportRow = OsCacheRow & {
 };
 
 const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
-
-const C = {
+const C: Record<string, string> = {
   ink: argb("#07111F"),
   navy: argb("#0D2238"),
   navySoft: argb("#173B5C"),
   blue: argb("#2563EB"),
   blueSoft: argb("#EAF2FF"),
-  cyan: argb("#38BDF8"),
-  cyanSoft: argb("#E0F2FE"),
+  sky: argb("#0369A1"),
+  skySoft: argb("#E0F2FE"),
   emerald: argb("#059669"),
   emeraldSoft: argb("#D1FAE5"),
   amber: argb("#D97706"),
   amberSoft: argb("#FEF3C7"),
   red: argb("#DC2626"),
   redSoft: argb("#FEE2E2"),
-  violet: argb("#7C3AED"),
-  violetSoft: argb("#EDE9FE"),
   white: argb("#FFFFFF"),
-  slate950: argb("#020617"),
   slate900: argb("#0F172A"),
   slate700: argb("#334155"),
-  slate600: argb("#475569"),
   slate500: argb("#64748B"),
-  slate400: argb("#94A3B8"),
   slate300: argb("#CBD5E1"),
   slate200: argb("#E2E8F0"),
   slate100: argb("#F1F5F9"),
@@ -42,7 +36,7 @@ const C = {
 
 const FONT = "Aptos";
 const FONT_DISPLAY = "Aptos Display";
-export const OPERATIONS_FONT = "Aptos Display";
+export const OPERATIONS_FONT = FONT_DISPLAY;
 export const OPERATIONS_FONT_SIZE = 13;
 export const OPERATIONS_ROW_HEIGHT = 74;
 
@@ -73,14 +67,9 @@ const normalize = (value: unknown) =>
     .toUpperCase();
 
 function isCompletedStatus(status: unknown) {
-  return [
-    "CONCLUIDA",
-    "CONCLUIDO",
-    "FINALIZADA",
-    "FINALIZADO",
-    "FECHADA",
-    "FECHADO",
-  ].includes(normalize(status));
+  return ["CONCLUIDA", "CONCLUIDO", "FINALIZADA", "FINALIZADO", "FECHADA", "FECHADO"].includes(
+    normalize(status),
+  );
 }
 
 function onlyOpenItems(items: ProgramacaoExportRow[]) {
@@ -94,9 +83,7 @@ function teamStyle(team: string | null | undefined) {
   if (value.includes("CIVIL")) return TEAM_STYLE.CIVIL;
   if (value.includes("CHAVE")) return TEAM_STYLE.CHAVEIRO;
   if (value.includes("PINT")) return TEAM_STYLE.PINTURA;
-  if (value.includes("REFRIG") || value.includes("CLIMAT") || value.includes("AR COND")) {
-    return TEAM_STYLE.REFRIGERACAO;
-  }
+  if (value.includes("REFRIG") || value.includes("CLIMAT") || value.includes("AR COND")) return TEAM_STYLE.REFRIGERACAO;
   if (value.includes("LIMPE") || value.includes("HIGIEN")) return TEAM_STYLE.LIMPEZA;
   return TEAM_STYLE.OUTROS;
 }
@@ -126,28 +113,22 @@ function materialDetails(item: OsCacheRow) {
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
   const raw = String(value);
-  const date = /^\d{4}-\d{2}-\d{2}/.test(raw)
-    ? new Date(`${raw.slice(0, 10)}T12:00:00`)
-    : new Date(raw);
+  const date = /^\d{4}-\d{2}-\d{2}/.test(raw) ? new Date(`${raw.slice(0, 10)}T12:00:00`) : new Date(raw);
   return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR");
 }
 
 function slaInfo(value: string | null | undefined, generatedAt: Date) {
   if (!value) return { label: "—", overdue: false, dueSoon: false };
   const raw = String(value);
-  const due = /^\d{4}-\d{2}-\d{2}/.test(raw)
-    ? new Date(`${raw.slice(0, 10)}T12:00:00`)
-    : new Date(raw);
+  const due = /^\d{4}-\d{2}-\d{2}/.test(raw) ? new Date(`${raw.slice(0, 10)}T12:00:00`) : new Date(raw);
   if (Number.isNaN(due.getTime())) return { label: "—", overdue: false, dueSoon: false };
-
   const reference = new Date(generatedAt);
   reference.setHours(12, 0, 0, 0);
   due.setHours(12, 0, 0, 0);
   const days = Math.round((due.getTime() - reference.getTime()) / 86400000);
-
   if (days < 0) {
-    const n = Math.abs(days);
-    return { label: `VENCIDO HÁ ${n} DIA${n === 1 ? "" : "S"}`, overdue: true, dueSoon: false };
+    const count = Math.abs(days);
+    return { label: `VENCIDO HÁ ${count} DIA${count === 1 ? "" : "S"}`, overdue: true, dueSoon: false };
   }
   if (days === 0) return { label: "VENCE HOJE", overdue: false, dueSoon: true };
   if (days <= 3) return { label: `VENCE EM ${days} DIA${days === 1 ? "" : "S"}`, overdue: false, dueSoon: true };
@@ -156,31 +137,18 @@ function slaInfo(value: string | null | undefined, generatedAt: Date) {
 
 function hasProgramControl(items: ProgramacaoExportRow[]) {
   return items.some(
-    (item) =>
-      item.programacao_status ||
-      item.programacao_dia ||
-      item.programacao_periodo ||
-      item.programacao_equipe,
+    (item) => item.programacao_status || item.programacao_dia || item.programacao_periodo || item.programacao_equipe,
   );
 }
 
 function programCount(items: ProgramacaoExportRow[]) {
   return items.filter((item) =>
-    Boolean(
-      item.programacao_status ||
-        item.programacao_dia ||
-        item.programacao_periodo ||
-        item.programacao_equipe,
-    ),
+    Boolean(item.programacao_status || item.programacao_dia || item.programacao_periodo || item.programacao_equipe),
   ).length;
 }
 
 function safeSheetName(value: string, used: Set<string>) {
-  const base = value
-    .replace(/[\\/*?:\[\]]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 31) || "Equipe";
+  const base = value.replace(/[\\/*?:\[\]]/g, " ").replace(/\s+/g, " ").trim().slice(0, 31) || "Equipe";
   let candidate = base;
   let suffix = 2;
   while (used.has(candidate)) {
@@ -205,9 +173,7 @@ function excelColumnName(index: number) {
 function visualLineCount(value: unknown, charsPerLine: number) {
   const text = String(value ?? "").trim();
   if (!text) return 1;
-  return text
-    .split(/\r?\n/)
-    .reduce((total, part) => total + Math.max(1, Math.ceil(part.length / charsPerLine)), 0);
+  return text.split(/\r?\n/).reduce((total, part) => total + Math.max(1, Math.ceil(part.length / charsPerLine)), 0);
 }
 
 function intelligentRowHeight(item: ProgramacaoExportRow, includeProgramControl: boolean) {
@@ -243,14 +209,7 @@ function configurePrint(sheet: ExcelJS.Worksheet, printArea: string, generatedAt
     paperSize: 8,
     horizontalCentered: true,
     blackAndWhite: false,
-    margins: {
-      left: 0.18,
-      right: 0.18,
-      top: 0.28,
-      bottom: 0.42,
-      header: 0.1,
-      footer: 0.15,
-    },
+    margins: { left: 0.18, right: 0.18, top: 0.28, bottom: 0.42, header: 0.1, footer: 0.15 },
     printArea,
   };
   if (repeatRows) sheet.pageSetup.printTitlesRow = repeatRows;
@@ -288,12 +247,7 @@ function styleKpi(
   cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: fill } };
   cell.font = { name: FONT_DISPLAY, size: 13, bold: true, color: { argb: foreground } };
   cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
-  cell.border = {
-    top: { style: "thin", color: { argb: C.slate200 } },
-    bottom: { style: "thin", color: { argb: C.slate200 } },
-    left: { style: "thin", color: { argb: C.slate200 } },
-    right: { style: "thin", color: { argb: C.slate200 } },
-  };
+  cell.border = thinBorder;
 }
 
 function buildOperationsSheet(
@@ -321,12 +275,7 @@ function buildOperationsSheet(
     "Material Solicitado",
     "Detalhes do Material",
   ];
-  const programHeaders = [
-    "Programação",
-    "Dia programado",
-    "Período da programação",
-    "Equipe programada",
-  ];
+  const programHeaders = ["Programação", "Dia programado", "Período da programação", "Equipe programada"];
   const headers = includeProgramControl ? [...baseHeaders, ...programHeaders] : baseHeaders;
   const widths = includeProgramControl
     ? [16, 17, 23, 26, 22, 17, 34, 72, 17, 24, 22, 48, 23, 23, 34, 28]
@@ -340,20 +289,10 @@ function buildOperationsSheet(
   widths.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
-  sheet.views = [
-    {
-      state: "frozen",
-      xSplit: 1,
-      ySplit: 7,
-      showGridLines: false,
-      zoomScale: 90,
-      zoomScaleNormal: 90,
-    },
-  ];
+  sheet.views = [{ state: "frozen", xSplit: 1, ySplit: 7, showGridLines: false, zoomScale: 90, zoomScaleNormal: 90 }];
 
   sheet.mergeCells(`A1:${lastColumn}1`);
   sheet.mergeCells(`A2:${lastColumn}2`);
-
   const titleCell = sheet.getCell("A1");
   titleCell.value = title.toUpperCase();
   titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.ink } };
@@ -373,15 +312,29 @@ function buildOperationsSheet(
     : ["A3:C4", "D3:F4", "G3:I4", "J3:L4"];
   styleKpi(sheet, ranges[0], "OS ABERTAS", metrics.total, C.blue, C.white);
   styleKpi(sheet, ranges[1], "MATERIAL SOLICITADO", metrics.material, C.amberSoft, C.amber);
-  styleKpi(sheet, ranges[2], "SLA VENCIDO", metrics.overdue, metrics.overdue ? C.redSoft : C.emeraldSoft, metrics.overdue ? C.red : C.emerald);
-  styleKpi(sheet, ranges[3], includeProgramControl ? "EM PROGRAMAÇÃO" : "EQUIPES", includeProgramControl ? metrics.programmed : metrics.teams, includeProgramControl ? C.cyanSoft : C.slate100, includeProgramControl ? C.sky700 ?? C.blue : C.slate700);
+  styleKpi(
+    sheet,
+    ranges[2],
+    "SLA VENCIDO",
+    metrics.overdue,
+    metrics.overdue ? C.redSoft : C.emeraldSoft,
+    metrics.overdue ? C.red : C.emerald,
+  );
+  styleKpi(
+    sheet,
+    ranges[3],
+    includeProgramControl ? "EM PROGRAMAÇÃO" : "EQUIPES",
+    includeProgramControl ? metrics.programmed : metrics.teams,
+    includeProgramControl ? C.skySoft : C.slate100,
+    includeProgramControl ? C.sky : C.slate700,
+  );
   sheet.getRow(3).height = 28;
   sheet.getRow(4).height = 28;
   sheet.getRow(5).height = 9;
 
   sheet.mergeCells(`A6:${lastColumn}6`);
   const note = sheet.getCell("A6");
-  note.value = "Somente chamados abertos entram nesta planilha. Solicitações de material são identificadas pelo status do material e pelo histórico de peças solicitadas.";
+  note.value = "Somente chamados abertos entram nesta planilha. Material solicitado é identificado pelo status do material e pelo histórico de peças solicitadas.";
   note.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.blueSoft } };
   note.font = { name: FONT, size: 11, bold: true, color: { argb: C.navySoft } };
   note.alignment = { vertical: "middle", horizontal: "left", indent: 1, wrapText: true };
@@ -417,7 +370,6 @@ function buildOperationsSheet(
       material ? "SIM · SOLICITADO" : "NÃO",
       materialDetails(item),
     ];
-
     if (includeProgramControl) {
       values.push(
         item.programacao_status || "EM PROGRAMAÇÃO",
@@ -445,11 +397,7 @@ function buildOperationsSheet(
         wrapText: true,
       };
       cell.border = thinBorder;
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: itemIndex % 2 === 0 ? C.white : C.slate50 },
-      };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: itemIndex % 2 === 0 ? C.white : C.slate50 } };
     });
 
     const team = teamStyle(item.equipe);
@@ -457,8 +405,8 @@ function buildOperationsSheet(
     teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb(team.bg) } };
     teamCell.font = { name: FONT_DISPLAY, size: 12.5, bold: true, color: { argb: argb(team.fg) } };
 
-    const typeCell = row.getCell(2);
     if (isExplicitBackorder(item)) {
+      const typeCell = row.getCell(2);
       typeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.redSoft } };
       typeCell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.red } };
     }
@@ -473,21 +421,21 @@ function buildOperationsSheet(
     }
 
     const materialCell = row.getCell(11);
-    const materialDetailsCell = row.getCell(12);
+    const detailCell = row.getCell(12);
     if (material) {
       materialCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.amberSoft } };
       materialCell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.amber } };
-      materialDetailsCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#FFFBEB") } };
-      materialDetailsCell.font = { name: FONT, size: 11.5, bold: true, color: { argb: C.slate700 } };
+      detailCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: argb("#FFFBEB") } };
+      detailCell.font = { name: FONT, size: 11.5, bold: true, color: { argb: C.slate700 } };
     } else {
       materialCell.font = { name: FONT, size: 11, color: { argb: C.slate500 } };
-      materialDetailsCell.font = { name: FONT, size: 11, color: { argb: C.slate500 } };
+      detailCell.font = { name: FONT, size: 11, color: { argb: C.slate500 } };
     }
 
     if (includeProgramControl) {
       const programCell = row.getCell(13);
-      programCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.cyanSoft } };
-      programCell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.sky700 ?? C.blue } };
+      programCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.skySoft } };
+      programCell.font = { name: FONT_DISPLAY, size: 11.5, bold: true, color: { argb: C.sky } };
     }
 
     row.height = intelligentRowHeight(item, includeProgramControl);
@@ -507,17 +455,10 @@ function buildOperationsSheet(
   return sheet;
 }
 
-function buildExecutiveSheet(
-  workbook: ExcelJS.Workbook,
-  sourceItems: ProgramacaoExportRow[],
-  title: string,
-  generatedAt: Date,
-) {
+function buildExecutiveSheet(workbook: ExcelJS.Workbook, sourceItems: ProgramacaoExportRow[], title: string, generatedAt: Date) {
   const items = onlyOpenItems(sourceItems);
   const metrics = operationalMetrics(items, generatedAt);
-  const sheet = workbook.addWorksheet("Resumo Executivo", {
-    properties: { tabColor: { argb: C.blue } },
-  });
+  const sheet = workbook.addWorksheet("Resumo Executivo", { properties: { tabColor: { argb: C.blue } } });
   for (let index = 1; index <= 12; index += 1) sheet.getColumn(index).width = 14;
   sheet.views = [{ state: "normal", showGridLines: false, zoomScale: 100 }];
 
@@ -533,7 +474,7 @@ function buildExecutiveSheet(
   styleKpi(sheet, "A4:C6", "OS ABERTAS", metrics.total, C.blue, C.white);
   styleKpi(sheet, "D4:F6", "MATERIAL SOLICITADO", metrics.material, C.amberSoft, C.amber);
   styleKpi(sheet, "G4:I6", "SLA VENCIDO", metrics.overdue, metrics.overdue ? C.redSoft : C.emeraldSoft, metrics.overdue ? C.red : C.emerald);
-  styleKpi(sheet, "J4:L6", "EM PROGRAMAÇÃO", metrics.programmed, C.cyanSoft, C.sky700 ?? C.blue);
+  styleKpi(sheet, "J4:L6", "EM PROGRAMAÇÃO", metrics.programmed, C.skySoft, C.sky);
 
   sheet.mergeCells("A8:L9");
   const note = sheet.getCell("A8");
@@ -558,24 +499,23 @@ function buildExecutiveSheet(
   sheet.getRow(11).height = 28;
 
   teams.slice(0, 8).forEach(([team, count], index) => {
-    const row = 12 + index;
-    sheet.mergeCells(`A${row}:H${row}`);
-    sheet.mergeCells(`I${row}:L${row}`);
-    const nameCell = sheet.getCell(`A${row}`);
-    nameCell.value = team;
-    nameCell.font = { name: FONT_DISPLAY, size: 12.5, bold: true, color: { argb: C.slate900 } };
-    nameCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 } };
-    nameCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-    const countCell = sheet.getCell(`I${row}`);
+    const rowNumber = 12 + index;
+    sheet.mergeCells(`A${rowNumber}:H${rowNumber}`);
+    sheet.mergeCells(`I${rowNumber}:L${rowNumber}`);
+    const teamCell = sheet.getCell(`A${rowNumber}`);
+    teamCell.value = team;
+    teamCell.font = { name: FONT_DISPLAY, size: 12.5, bold: true, color: { argb: C.slate900 } };
+    teamCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 } };
+    teamCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+    const countCell = sheet.getCell(`I${rowNumber}`);
     countCell.value = `${count} OS`;
     countCell.font = { name: FONT_DISPLAY, size: 12.5, bold: true, color: { argb: C.blue } };
     countCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: index % 2 === 0 ? C.white : C.slate50 } };
     countCell.alignment = { vertical: "middle", horizontal: "center" };
-    sheet.getRow(row).height = 26;
+    sheet.getRow(rowNumber).height = 26;
   });
 
-  const lastRow = Math.max(20, 11 + Math.min(teams.length, 8));
-  configurePrint(sheet, `A1:L${lastRow}`, generatedAt);
+  configurePrint(sheet, `A1:L${Math.max(20, 11 + Math.min(teams.length, 8))}`, generatedAt);
   return sheet;
 }
 
@@ -596,27 +536,16 @@ export function buildProgramacaoWorkbook(
 
   setWorkbookMetadata(workbook, title, generatedAt);
   buildExecutiveSheet(workbook, openItems, title, generatedAt);
-  buildOperationsSheet(
-    workbook,
-    "Programação Geral",
-    openItems,
-    title,
-    equipeFiltro,
-    generatedAt,
-    C.blue,
-  );
+  buildOperationsSheet(workbook, "Programação Geral", openItems, title, equipeFiltro, generatedAt, C.blue);
 
   const usedNames = new Set(["Resumo Executivo", "Programação Geral"]);
-  const teams = [...new Set(openItems.map((item) => item.equipe || "Sem equipe"))].sort((a, b) =>
-    a.localeCompare(b, "pt-BR"),
-  );
+  const teams = [...new Set(openItems.map((item) => item.equipe || "Sem equipe"))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   teams.forEach((team) => {
     const teamItems = openItems.filter((item) => (item.equipe || "Sem equipe") === team);
-    const sheetName = safeSheetName(`Equipe · ${team}`, usedNames);
     const palette = teamStyle(team);
     buildOperationsSheet(
       workbook,
-      sheetName,
+      safeSheetName(`Equipe · ${team}`, usedNames),
       teamItems,
       `${title} · ${team}`,
       `Equipe: ${team}`,
@@ -649,9 +578,7 @@ export async function generateProgramacaoExcel(
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
   saveAs(
-    new Blob([buffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    }),
+    new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }),
     `programacao_${aba}_${slug || "todas_equipes"}_${generatedAt.toISOString().slice(0, 10)}.xlsx`,
   );
   return { exported: openItems.length, excludedCompleted: osList.length - openItems.length };
