@@ -124,6 +124,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: pcmAssetsGlassCss },
       { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
       { rel: "stylesheet", href: "/legal-panel-premium.css" },
+      { rel: "stylesheet", href: "/corretiva-card-alignment.css" },
       { rel: "icon", href: "/favicon.ico" },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/pwa-192.png" },
