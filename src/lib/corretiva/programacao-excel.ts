@@ -28,6 +28,23 @@ const FONT = "Aptos";
 const FONT_DISPLAY = "Aptos Display";
 const FONT_DESCRIPTION = "Aptos SemiBold";
 
+/**
+ * Larguras copiadas do arquivo de referência corrigido pelo usuário
+ * (modelo corretivas exemplo2.xlsx). Elas foram ajustadas manualmente para
+ * manter A:I dentro de uma folha A3 horizontal em aproximadamente 99%.
+ */
+const PRINT_COLUMN_WIDTHS = [
+  16,
+  18,
+  25.85546875,
+  13.140625,
+  16,
+  22.7109375,
+  57.42578125,
+  18,
+  22,
+] as const;
+
 const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
   ELETRICA: { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
   HIDRAULICA: { bg: "#EFF6FF", fg: "#1D4ED8", accent: "#3B82F6" },
@@ -129,7 +146,7 @@ function setWorkbookMetadata(workbook: ExcelJS.Workbook, title: string, generate
   workbook.calcProperties.fullCalcOnLoad = true;
 }
 
-function estimateWrappedLines(value: unknown, charsPerLine = 56) {
+function estimateWrappedLines(value: unknown, charsPerLine = 42) {
   const text = String(value ?? "").replace(/\r/g, "").trim();
   if (!text) return 1;
 
@@ -156,15 +173,16 @@ function estimateWrappedLines(value: unknown, charsPerLine = 56) {
 }
 
 /**
- * Excel limita a altura de uma linha a aproximadamente 409 pt. A altura abaixo é
- * calculada principalmente pela descrição da coluna G, exatamente para evitar que
- * textos curtos criem linhas gigantes e que textos longos fiquem cortados.
+ * A coluna G do modelo corrigido ficou com largura ~57,43. Como a descrição usa
+ * Aptos SemiBold 20, calculamos a altura por quantidade estimada de linhas nessa
+ * largura. Mantemos um piso visual próximo ao modelo e aumentamos a linha sempre
+ * que necessário, evitando que descrições longas sejam cortadas na tela ou na
+ * impressão. Excel limita a altura a aproximadamente 409 pt.
  */
 function descriptionDrivenRowHeight(description: unknown) {
-  const lines = estimateWrappedLines(description, 56);
-  const estimatedPixels = 34 + lines * 31;
-  const points = Math.ceil(estimatedPixels * 0.75);
-  return Math.min(405, Math.max(78, points));
+  const lines = estimateWrappedLines(description, 42);
+  const points = 42 + lines * 25;
+  return Math.min(405, Math.max(150, points));
 }
 
 function configurePrint(
@@ -174,8 +192,8 @@ function configurePrint(
 ) {
   sheet.pageSetup = {
     orientation: "landscape",
-    fitToPage: true,
-    fitToWidth: 1,
+    fitToPage: false,
+    scale: 99,
     fitToHeight: 0,
     paperSize: 8,
     horizontalCentered: true,
@@ -191,8 +209,7 @@ function configurePrint(
     printArea: `A1:I${lastRow}`,
   };
 
-  // Repete somente o cabeçalho da tabela. O título não é repetido nas páginas
-  // seguintes, evitando a página em branco que aparecia apenas com o header.
+  // Repete somente o cabeçalho da tabela; o título fica apenas na primeira página.
   sheet.pageSetup.printTitlesRow = "2:2";
 
   const emitted = generatedAt.toLocaleString("pt-BR", {
@@ -221,9 +238,8 @@ function buildOperationsSheet(
     properties: { tabColor: { argb: tabColor }, defaultRowHeight: 20 },
   });
 
-  // Estrutura baseada no arquivo de referência enviado pelo usuário.
-  const widths = [16, 18, 29, 17, 16, 34, 82, 18, 22];
-  widths.forEach((width, index) => {
+  // Replica as larguras do arquivo corrigido para todas as equipes e Programação Geral.
+  PRINT_COLUMN_WIDTHS.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
 
@@ -252,7 +268,7 @@ function buildOperationsSheet(
     horizontal: "left",
     indent: 1,
   };
-  sheet.getRow(1).height = 52;
+  sheet.getRow(1).height = 51.95;
 
   const headers = [
     "OS",
@@ -284,7 +300,7 @@ function buildOperationsSheet(
     };
     cell.border = thinBorder;
   });
-  headerRow.height = 38;
+  headerRow.height = 38.1;
 
   let rowNumber = 3;
 
@@ -359,7 +375,7 @@ function buildOperationsSheet(
       };
     });
 
-    // Coluna G — Aptos SemiBold 20, em negrito e com altura calculada pelo texto.
+    // Coluna G — Aptos SemiBold 20, em negrito, com altura dinâmica pelo conteúdo.
     const descriptionCell = row.getCell(7);
     descriptionCell.font = {
       name: FONT_DESCRIPTION,
@@ -421,7 +437,7 @@ function buildOperationsSheet(
   }
 
   const lastRow = Math.max(2, rowNumber - 1);
-  sheet.autoFilter = `A2:I2`;
+  sheet.autoFilter = "A2:I2";
   configurePrint(sheet, lastRow, generatedAt);
 
   return sheet;
