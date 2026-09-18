@@ -4,7 +4,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { toast } from "sonner";
 import {
-  AlertTriangle,
   Wrench,
   Search,
   FileSpreadsheet,
@@ -48,12 +47,6 @@ import {
 } from "@/lib/corretiva/equipe";
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
-import {
-  classifyPriority,
-  comparePriority,
-  isHighPriority,
-  type PriorityLevel,
-} from "@/lib/corretiva/priority-classifier";
 import { cn } from "@/lib/utils";
 import { designateAllCorrectiveOrders } from "@/lib/corretiva/ai-reclassifier.functions";
 import {
@@ -114,14 +107,6 @@ function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
   return `${formatDate(reservation.periodStart)} a ${formatDate(reservation.periodEnd)}`;
 }
 
-function priorityBadgeClass(level: PriorityLevel) {
-  if (level === "CRÍTICA")
-    return "border-yellow-200/80 bg-yellow-400 text-slate-950 shadow-[0_0_18px_rgba(250,204,21,0.18)]";
-  if (level === "ALTA") return "border-orange-300/50 bg-orange-500/20 text-orange-100";
-  if (level === "MÉDIA") return "border-sky-300/45 bg-sky-400/15 text-sky-100";
-  return "border-slate-400/20 bg-slate-400/[0.08] text-slate-300";
-}
-
 function CorretivaNovoPage() {
   const { isAdmin } = useIsAdmin();
   const { access } = useMyAccess();
@@ -139,7 +124,6 @@ function CorretivaNovoPage() {
     CorrectiveProgramReservation[]
   >([]);
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
-  const [onlyPriority, setOnlyPriority] = useState(false);
 
   const applyLoadedList = async (list: any[], cache = false) => {
     setOsList(list);
@@ -200,18 +184,6 @@ function CorretivaNovoPage() {
     return subscribeCorrectiveProgramReservations(syncReservations);
   }, []);
 
-  const priorityMap = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof classifyPriority>>();
-    for (const os of osList) {
-      const key = String(os.id ?? os.numero_os ?? "");
-      map.set(key, classifyPriority(os));
-    }
-    return map;
-  }, [osList]);
-
-  const priorityFor = (os: any) =>
-    priorityMap.get(String(os.id ?? os.numero_os ?? "")) ?? classifyPriority(os);
-
   const exportBaseRows = useMemo(
     () => dedupeCorrectiveRows(osList),
     [osList],
@@ -247,56 +219,28 @@ function CorretivaNovoPage() {
   const filtered = useMemo(() => {
     return osList
       .filter((o) => {
+        const query = search.toLowerCase();
         const matchesSearch =
           !search ||
-          o.numero_os?.toLowerCase().includes(search.toLowerCase()) ||
-          o.ativo?.toLowerCase().includes(search.toLowerCase()) ||
-          o.local?.toLowerCase().includes(search.toLowerCase()) ||
-          o.nome_os?.toLowerCase().includes(search.toLowerCase());
+          o.numero_os?.toLowerCase().includes(query) ||
+          o.ativo?.toLowerCase().includes(query) ||
+          o.local?.toLowerCase().includes(query) ||
+          o.nome_os?.toLowerCase().includes(query);
 
         const matchesEquipe = matchEquipe(o.equipe, equipe);
         const matchesProgram =
           !onlyProgrammed || Boolean(findProgramReservation(o, programReservations));
-        const priority =
-          priorityMap.get(String(o.id ?? o.numero_os ?? "")) ?? classifyPriority(o);
-        const matchesPriority = !onlyPriority || isHighPriority(priority.level);
 
-        return matchesSearch && matchesEquipe && matchesProgram && matchesPriority;
+        return matchesSearch && matchesEquipe && matchesProgram;
       })
       .sort((a, b) => {
-        const pa =
-          priorityMap.get(String(a.id ?? a.numero_os ?? "")) ?? classifyPriority(a);
-        const pb =
-          priorityMap.get(String(b.id ?? b.numero_os ?? "")) ?? classifyPriority(b);
-        const priorityOrder = comparePriority(pa, pb);
-        if (priorityOrder !== 0) return priorityOrder;
-
         const dateA = new Date(a.data_criacao || 0).getTime();
         const dateB = new Date(b.data_criacao || 0).getTime();
         return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
       });
-  }, [
-    osList,
-    search,
-    equipe,
-    sortOrder,
-    onlyProgrammed,
-    onlyPriority,
-    programReservations,
-    priorityMap,
-  ]);
+  }, [osList, search, equipe, sortOrder, onlyProgrammed, programReservations]);
 
   const programmedVisibleCount = programmedExportRows.length;
-
-  const priorityVisibleCount = useMemo(
-    () =>
-      osList.filter((os) => {
-        const priority =
-          priorityMap.get(String(os.id ?? os.numero_os ?? "")) ?? classifyPriority(os);
-        return isHighPriority(priority.level) && !isCompletedStatus(os.status);
-      }).length,
-    [osList, priorityMap],
-  );
 
   const selectedIndex = selectedOs
     ? filtered.findIndex((item) => item.id === selectedOs.id)
@@ -488,7 +432,7 @@ function CorretivaNovoPage() {
   return (
     <PageShell
       title="Programação de Corretivas"
-      description="Chamados priorizados automaticamente. As exportações usam toda a base de Corretiva Novo, independentemente dos filtros visuais da tela."
+      description="Gerencie, programe e exporte os chamados corretivos por equipe, localização e data de abertura."
       actions={
         <div className="flex items-center gap-2">
           {isAdmin && (
@@ -520,10 +464,7 @@ function CorretivaNovoPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[290px]">
-              <DropdownMenuItem
-                onClick={exportAvailableExcel}
-                className="gap-2"
-              >
+              <DropdownMenuItem onClick={exportAvailableExcel} className="gap-2">
                 <FileSpreadsheet className="h-4 w-4 text-emerald-500" />
                 <span className="flex-1">Baixar todos disponíveis</span>
                 <span className="text-[10px] text-muted-foreground">
@@ -541,10 +482,7 @@ function CorretivaNovoPage() {
                   {programmedExportRows.length}
                 </span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={exportAvailablePDF}
-                className="gap-2"
-              >
+              <DropdownMenuItem onClick={exportAvailablePDF} className="gap-2">
                 <Printer className="h-4 w-4 text-primary" />
                 Imprimir todos disponíveis (PDF)
               </DropdownMenuItem>
@@ -583,25 +521,6 @@ function CorretivaNovoPage() {
                 EM PROGRAMAÇÃO
                 <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
                   {programmedVisibleCount}
-                </span>
-              </Button>
-
-              <Button
-                type="button"
-                variant={onlyPriority ? "secondary" : "glass"}
-                className={cn(
-                  "h-11 gap-2 rounded-full border-white/10 px-4",
-                  onlyPriority &&
-                    "border-orange-400/35 bg-orange-500/15 text-orange-100",
-                )}
-                onClick={() => setOnlyPriority((current) => !current)}
-                aria-pressed={onlyPriority}
-                title="Mostrar prioridades CRÍTICA e ALTA"
-              >
-                <AlertTriangle className="h-4 w-4" />
-                Prioritários
-                <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
-                  {priorityVisibleCount}
                 </span>
               </Button>
 
@@ -651,10 +570,7 @@ function CorretivaNovoPage() {
                       className={cn(
                         "group mb-1 flex cursor-pointer items-center justify-between rounded-xl px-4 py-2.5 transition-all",
                         equipe === e
-                          ? cn(
-                              "text-white",
-                              equipeStyles(e as any).menu,
-                            )
+                          ? cn("text-white", equipeStyles(e as any).menu)
                           : "text-white/60 hover:bg-white/5 hover:text-white",
                       )}
                     >
@@ -677,9 +593,7 @@ function CorretivaNovoPage() {
                   >
                     <ArrowUpDown className="h-4 w-4" />
                     <span className="font-medium">
-                      {sortOrder === "recent"
-                        ? "Prioridade + Recentes"
-                        : "Prioridade + Antigos"}
+                      {sortOrder === "recent" ? "Mais recentes" : "Mais antigos"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -697,7 +611,7 @@ function CorretivaNovoPage() {
                     )}
                   >
                     <Clock className="h-4 w-4" />
-                    Prioridade + Recentes
+                    Mais recentes
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => setSortOrder("oldest")}
@@ -709,7 +623,7 @@ function CorretivaNovoPage() {
                     )}
                   >
                     <History className="h-4 w-4" />
-                    Prioridade + Antigos
+                    Mais antigos
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -757,11 +671,7 @@ function CorretivaNovoPage() {
               </p>
             </div>
             {isAdmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void loadData()}
-              >
+              <Button variant="outline" size="sm" onClick={() => void loadData()}>
                 Tentar Recarregar
               </Button>
             )}
@@ -787,7 +697,6 @@ function CorretivaNovoPage() {
                 os,
                 programReservations,
               );
-              const priority = priorityFor(os);
 
               return (
                 <GlassCard
@@ -796,10 +705,6 @@ function CorretivaNovoPage() {
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
-                    priority.level === "CRÍTICA" && "border-l-4 border-l-yellow-400 border-yellow-300/20",
-                    priority.level === "ALTA" && "border-l-4 border-l-orange-400",
-                    priority.level === "MÉDIA" && "border-l-4 border-l-sky-400",
-                    priority.level === "NORMAL" && "border-l-4 border-l-slate-500/40",
                   )}
                   onClick={() => setSelectedOs(os)}
                 >
@@ -825,37 +730,21 @@ function CorretivaNovoPage() {
                           <Badge
                             variant="outline"
                             className={cn(
-                              "text-[9px] font-extrabold uppercase md:text-[10px]",
-                              priorityBadgeClass(priority.level),
+                              "h-8 max-w-full gap-1.5 whitespace-nowrap px-3.5 text-[11px] font-extrabold uppercase tracking-[0.02em] md:h-9 md:px-4 md:text-xs",
+                              equipeStyles(os.equipe).badge,
                             )}
-                            title={`Score ${priority.score}/100 · ${priority.reasons.join(" · ")}`}
+                            title={`Equipe responsável: ${os.equipe || "Sem Equipe"}`}
                           >
-                            {priority.level} · {priority.score}
+                            {os.equipe || "Sem Equipe"}
                           </Badge>
-                          {priority.isBackorder && (
+                          {completed && (
                             <Badge
-                              variant="outline"
-                              className="h-5 border-red-300/65 bg-red-600 px-2 text-[8px] font-extrabold uppercase tracking-[0.06em] text-white shadow-[0_0_14px_rgba(220,38,38,0.22)] md:text-[9px]"
-                              title={priority.ageDays > 0 ? `Backorder · aberto há ${priority.ageDays} dia(s)` : "Backorder"}
+                              variant="secondary"
+                              className="h-5 gap-1 border-emerald-500/35 bg-emerald-500/20 px-2 text-[8px] font-bold uppercase text-emerald-200 md:text-[9px]"
                             >
-                              BACKORDER
+                              <Check className="h-2.5 w-2.5 stroke-[3]" /> Concluída
                             </Badge>
                           )}
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "h-8 max-w-full gap-1.5 whitespace-nowrap px-3.5 text-[11px] font-extrabold uppercase tracking-[0.02em] md:h-9 md:px-4 md:text-xs",
-                    equipeStyles(os.equipe).badge,
-                  )}
-                  title={`Equipe responsável: ${os.equipe || "Sem Equipe"}`}
-                >
-                  {os.equipe || "Sem Equipe"}
-                </Badge>
-                {completed && (
-                  <Badge variant="secondary" className="h-5 gap-1 border-emerald-500/35 bg-emerald-500/20 px-2 text-[8px] font-bold uppercase text-emerald-200 md:text-[9px]">
-                    <Check className="h-2.5 w-2.5 stroke-[3]" /> Concluída
-                  </Badge>
-                )}
                         </div>
                       </div>
 
@@ -890,12 +779,6 @@ function CorretivaNovoPage() {
                         >
                           {os.nome_os || "Sem descrição informada"}
                         </h3>
-                        <p
-                          className="mt-2 line-clamp-2 text-[10px] leading-4 text-muted-foreground/60"
-                          title={priority.reasons.join(" · ")}
-                        >
-                          Prioridade: {priority.reasons.slice(0, 3).join(" · ")}
-                        </p>
                       </div>
                     </div>
 
