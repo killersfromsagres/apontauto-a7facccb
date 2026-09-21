@@ -271,15 +271,17 @@ function CorretivaNovoPage() {
 
   const programmedVisibleCount = programmedExportRows.length;
 
-  const backorderVisibleCount = useMemo(
+  const backorderExportRows = useMemo(
     () =>
-      osList.filter((os) => {
+      exportBaseRows.filter((os) => {
         const info =
           backorderMap.get(String(os.id ?? os.numero_os ?? "")) ?? getBackorderInfo(os);
         return info.isBackorder && !isCompletedStatus(os.status);
-      }).length,
-    [osList, backorderMap],
+      }),
+    [exportBaseRows, backorderMap],
   );
+
+  const backorderVisibleCount = backorderExportRows.length;
 
   const selectedIndex = selectedOs
     ? filtered.findIndex((item) => item.id === selectedOs.id)
@@ -395,6 +397,25 @@ function CorretivaNovoPage() {
     }
   };
 
+  const exportBackorderExcel = async () => {
+    if (!backorderExportRows.length) {
+      return toast.error("Nenhum Backorder aberto foi identificado para exportação.");
+    }
+    try {
+      await generateProgramacaoExcel(
+        backorderExportRows,
+        "BACKORDERS · Todas as equipes",
+        "backorder",
+      );
+      toast.success(
+        `Planilha de Backorders gerada com ${backorderExportRows.length} chamado(s).`,
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao gerar a planilha de Backorders.");
+    }
+  };
+
   const exportProgrammedExcel = async () => {
     if (!programmedExportRows.length) {
       return toast.error("Nenhum chamado está EM PROGRAMAÇÃO no momento.");
@@ -494,6 +515,20 @@ function CorretivaNovoPage() {
               <PreventivaImportDialog mode="corretiva" onDone={loadData} />
             </>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportBackorderExcel}
+            disabled={!backorderExportRows.length}
+            className="gap-2 border-red-500/30 bg-red-500/[0.08] text-red-100 shadow-[0_8px_26px_rgba(127,29,29,0.10)] hover:border-red-400/45 hover:bg-red-500/[0.14] hover:text-white disabled:opacity-45"
+            title="Baixar planilha exclusiva dos Backorders abertos"
+          >
+            <Archive className="h-4 w-4 text-red-400" />
+            <span className="font-semibold">Planilha Backorders</span>
+            <span className="inline-flex min-w-5 items-center justify-center rounded-md border border-red-300/10 bg-red-950/70 px-1.5 py-0.5 text-[10px] font-extrabold text-red-100">
+              {backorderExportRows.length}
+            </span>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="glass" size="sm" className="gap-2">

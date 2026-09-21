@@ -14,6 +14,9 @@ const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 const C = {
   ink: argb("#07111F"),
   navySoft: argb("#173B5C"),
+  backorderInk: argb("#2A0B10"),
+  backorderHeader: argb("#7F1D1D"),
+  backorderAccent: argb("#EF4444"),
   white: argb("#FFFFFF"),
   slate900: argb("#0F172A"),
   slate700: argb("#334155"),
@@ -235,6 +238,8 @@ function buildOperationsSheet(
   teamLabel: string,
   generatedAt: Date,
   tabColor: string,
+  reportTitle = "Programação de Corretivas",
+  backorderTheme = false,
 ) {
   const items = onlyOpenItems(sourceItems);
   const sheet = workbook.addWorksheet(name, {
@@ -258,8 +263,12 @@ function buildOperationsSheet(
 
   sheet.mergeCells("A1:I1");
   const titleCell = sheet.getCell("A1");
-  titleCell.value = `PROGRAMAÇÃO DE CORRETIVAS · ${teamLabel.toUpperCase()}`;
-  titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.ink } };
+  titleCell.value = `${reportTitle.toUpperCase()} · ${teamLabel.toUpperCase()}`;
+  titleCell.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: backorderTheme ? C.backorderInk : C.ink },
+  };
   titleCell.font = {
     name: FONT_DISPLAY,
     size: 26,
@@ -289,7 +298,11 @@ function buildOperationsSheet(
   headers.forEach((header, index) => {
     const cell = headerRow.getCell(index + 1);
     cell.value = header;
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: C.navySoft } };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: backorderTheme ? C.backorderHeader : C.navySoft },
+    };
     cell.font = {
       name: FONT_DISPLAY,
       size: 12,
@@ -449,12 +462,17 @@ function buildOperationsSheet(
 export function buildProgramacaoWorkbook(
   osList: ProgramacaoExportRow[],
   equipeFiltro: string,
-  aba: "corretiva" | "preventiva",
+  aba: "corretiva" | "preventiva" | "backorder",
   generatedAt = new Date(),
 ) {
   const openItems = onlyOpenItems(osList);
   const workbook = new ExcelJS.Workbook();
-  const title = aba === "preventiva" ? "Programação de Backorder" : "Programação de Corretivas";
+  const title =
+    aba === "backorder"
+      ? "Relatório de Backorders"
+      : aba === "preventiva"
+        ? "Programação de Backorder"
+        : "Programação de Corretivas";
 
   setWorkbookMetadata(workbook, title, generatedAt);
 
@@ -465,7 +483,9 @@ export function buildProgramacaoWorkbook(
     openItems,
     equipeFiltro || "Todas as equipes",
     generatedAt,
-    C.navySoft,
+    aba === "backorder" ? C.backorderAccent : C.navySoft,
+    title,
+    aba === "backorder",
   );
 
   const usedNames = new Set(["Programação Geral"]);
@@ -487,6 +507,8 @@ export function buildProgramacaoWorkbook(
       team,
       generatedAt,
       argb(palette.accent),
+      title,
+      aba === "backorder",
     );
   });
 
@@ -500,7 +522,7 @@ export function buildProgramacaoWorkbook(
 export async function generateProgramacaoExcel(
   osList: ProgramacaoExportRow[],
   equipeFiltro: string,
-  aba: "corretiva" | "preventiva",
+  aba: "corretiva" | "preventiva" | "backorder",
 ) {
   const generatedAt = new Date();
   const openItems = onlyOpenItems(osList);
@@ -519,7 +541,7 @@ export async function generateProgramacaoExcel(
     new Blob([buffer], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }),
-    `programacao_${aba}_${slug || "todas_equipes"}_${generatedAt.toISOString().slice(0, 10)}.xlsx`,
+    `${aba === "backorder" ? "backorders" : `programacao_${aba}`}_${slug || "todas_equipes"}_${generatedAt.toISOString().slice(0, 10)}.xlsx`,
   );
 
   return {
