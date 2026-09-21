@@ -1,0 +1,31 @@
+name: Patch asset fill premium UI
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/patch-asset-fill-ui.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Apply premium UI patch
+        run: python .github/scripts/patch_asset_fill_ui.py
+
+      - name: Commit changes
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/routes/_authenticated/inteligencia-ativos.preencher.tsx src/routes/__root.tsx
+          git commit -m "style(assets): refine spreadsheet fill experience"
+          git push origin HEAD:Apont-Auto
