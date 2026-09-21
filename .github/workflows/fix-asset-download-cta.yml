@@ -1,0 +1,29 @@
+name: Fix asset processed download CTA
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/fix-asset-download-cta.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+      - name: Apply processed download CTA fix
+        run: python .github/scripts/fix_asset_download_cta.py
+      - name: Commit CTA fix
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add public/inteligencia-ativos-preencher-premium.css
+          git commit -m "style(assets): improve processed spreadsheet download CTA"
+          git push origin HEAD:Apont-Auto
