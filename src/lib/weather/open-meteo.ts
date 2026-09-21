@@ -95,18 +95,34 @@ export function currentHourIndex(times: string[] | undefined | null): number {
 }
 
 async function fetchFrom(endpoint: string, signal?: AbortSignal): Promise<WeatherResponse> {
-  const res = await fetch(endpoint, { signal, cache: "no-store" });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`,
-    );
+  const controller = new AbortController();
+  const forwardAbort = () => controller.abort();
+  if (signal?.aborted) controller.abort();
+  else signal?.addEventListener("abort", forwardAbort, { once: true });
+  const timer = setTimeout(() => controller.abort(), 9000);
+
+  try {
+    const res = await fetch(endpoint, { signal: controller.signal, cache: "no-store" });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new Error(
+        `${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} respondeu ${res.status}${body ? ` — ${body.slice(0, 120)}` : ""}`,
+      );
+    }
+    const json = (await res.json()) as Omit<WeatherResponse, "fetched_at"> & { fetched_at?: string };
+    if (!json?.current || !json?.hourly?.temperature_2m || !json?.daily?.time) {
+      throw new Error("Resposta de clima inválida (campos ausentes).");
+    }
+    return { ...json, fetched_at: json.fetched_at ?? new Date().toISOString() };
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError" && !signal?.aborted) {
+      throw new Error(`${endpoint.startsWith("/") ? "clima-forecast" : "open-meteo"} excedeu 9s de resposta`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener("abort", forwardAbort);
   }
-  const json = (await res.json()) as Omit<WeatherResponse, "fetched_at"> & { fetched_at?: string };
-  if (!json?.current || !json?.hourly?.temperature_2m) {
-    throw new Error("Resposta de clima inválida (campos ausentes).");
-  }
-  return { ...json, fetched_at: json.fetched_at ?? new Date().toISOString() };
 }
 
 export async function fetchWeather(signal?: AbortSignal): Promise<WeatherResponse> {

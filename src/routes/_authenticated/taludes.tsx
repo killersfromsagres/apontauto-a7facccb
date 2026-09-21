@@ -205,8 +205,28 @@ function TaludesPage() {
       if (error) throw new Error(`Erro ao salvar demarcação: ${error.message}`);
       return data;
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["talude_marcacoes", effectiveMapId] });
+    onSuccess: (result, input) => {
+      const queryKey = ["talude_marcacoes", effectiveMapId] as const;
+      queryClient.setQueryData<TaludeMarcacao[]>(queryKey, (current = []) => {
+        if (input.id) {
+          return current.map((item) =>
+            item.id === input.id ? ({ ...item, ...input } as TaludeMarcacao) : item,
+          );
+        }
+
+        const created = result as TaludeMarcacao;
+        if (!created?.id) return current;
+        const normalized = {
+          ...created,
+          polygon: Array.isArray(created.polygon) ? created.polygon : [],
+        } as TaludeMarcacao;
+        return [...current.filter((item) => item.id !== normalized.id), normalized].sort(
+          (a, b) => Number(a.numero ?? 0) - Number(b.numero ?? 0),
+        );
+      });
+
+      // Atualiza em segundo plano, sem manter o editor bloqueado aguardando novo SELECT.
+      void queryClient.invalidateQueries({ queryKey });
       toast.success("Demarcação salva com sucesso");
     },
     onError: (error: any) => {
@@ -366,8 +386,8 @@ function TaludesPage() {
       title="Gestão de Taludes e Clima"
       description="Monitoramento avançado de áreas de risco e condições climáticas em tempo real."
     >
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100dvh-10rem)]">
-        <div className="lg:col-span-1 flex flex-col gap-6 overflow-y-auto pr-2">
+      <div className="grid min-h-[calc(100dvh-10rem)] grid-cols-1 gap-5 lg:h-[calc(100dvh-10rem)] lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-5 lg:overflow-y-auto lg:overflow-x-hidden lg:pr-2">
           <WeatherWidget />
           <GlassCard className="p-4">
             <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
@@ -393,7 +413,7 @@ function TaludesPage() {
           <AlertsWidget />
         </div>
 
-        <div className="lg:col-span-3 flex flex-col h-full">
+        <div className="flex min-h-[620px] min-w-0 flex-col lg:min-h-0 lg:h-full">
           <Tabs defaultValue="mapa" className="flex-1 flex flex-col">
             <div className="flex justify-between items-center mb-4">
               <TabsList className="bg-slate-900/50 border border-white/5">
@@ -437,7 +457,7 @@ function TaludesPage() {
                   <Plus className="h-4 w-4" /> {isUploading ? "Adicionando..." : "Novo Mapa"}
                 </Button>
                 <div className="text-xs text-muted-foreground hidden sm:block">
-                  Sincronizado com: <span className="text-emerald-400 font-mono">Open-Meteo V2</span>
+                  Clima: <span className="text-emerald-400 font-mono">MET Norway + Open-Meteo</span>
                 </div>
               </div>
             </div>
@@ -547,30 +567,41 @@ function TaludesPage() {
 }
 
 function WeatherWidget() {
-  const { data, isLoading, isError, refetch } = useWeather();
+  const { data, isLoading, isError, error, refetch, isFetching } = useWeather();
 
   if (isLoading) {
     return (
-      <GlassCard className="p-4 bg-blue-500/5 animate-pulse">
-        <div className="h-20 w-full bg-white/5 rounded-lg mb-4" />
-        <div className="grid grid-cols-3 gap-2">
-          <div className="h-10 bg-white/5 rounded" />
-          <div className="h-10 bg-white/5 rounded" />
-          <div className="h-10 bg-white/5 rounded" />
+      <GlassCard className="overflow-hidden border-white/[0.08] bg-white/[0.025] p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="h-12 w-28 rounded-xl bg-white/[0.06]" />
+            <div className="h-10 w-24 rounded-xl bg-white/[0.05]" />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-16 rounded-xl bg-white/[0.045]" />
+            ))}
+          </div>
         </div>
       </GlassCard>
     );
   }
 
   if (isError || !data) {
+    const message = error instanceof Error ? error.message : "Não foi possível consultar as fontes meteorológicas.";
     return (
-      <GlassCard className="p-4 border-red-500/20 bg-red-500/5">
-        <div className="flex flex-col items-center justify-center text-center py-4">
-          <AlertTriangle className="h-8 w-8 text-red-400 mb-2" />
-          <p className="text-xs text-red-200">Erro ao carregar clima</p>
-          <Button variant="ghost" size="sm" className="mt-2 text-[10px] hover:bg-white/5" onClick={() => refetch()}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Tentar novamente
-          </Button>
+      <GlassCard className="overflow-hidden border-red-400/20 bg-red-400/[0.045] p-4">
+        <div className="flex items-start gap-3">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-red-400/20 bg-red-400/[0.07] text-red-300">
+            <AlertTriangle className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Clima temporariamente indisponível</p>
+            <p className="mt-1 break-words text-xs leading-relaxed text-muted-foreground">{message}</p>
+            <Button variant="outline" size="sm" className="mt-3 gap-2" onClick={() => void refetch()}>
+              <RefreshCw className="h-3.5 w-3.5" /> Atualizar clima
+            </Button>
+          </div>
         </div>
       </GlassCard>
     );
@@ -579,55 +610,89 @@ function WeatherWidget() {
   const current = data.current;
   const chuva = detectRain(data);
   const info = weatherCodeInfo(current.weather_code);
+  const temperature = Math.round(Number(current.temperature_2m ?? 0));
+  const apparent = Math.round(Number(current.apparent_temperature ?? current.temperature_2m ?? 0));
+  const humidity = Math.round(Number(current.relative_humidity_2m ?? 0));
+  const wind = Math.round(Number(current.wind_speed_10m ?? 0));
+  const rainProbability = Math.round(Number(data.daily?.precipitation_probability_max?.[0] ?? 0));
+  const updatedAt = new Date(data.fetched_at);
+  const updatedLabel = Number.isNaN(updatedAt.getTime())
+    ? "agora"
+    : updatedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const sourceLabel = data.source === "met.no" ? "MET Norway" : "Open-Meteo";
+
+  const metricClass = "min-w-0 rounded-xl border border-white/[0.07] bg-white/[0.035] p-3";
 
   return (
-    <GlassCard className={cn(
-      "p-4 bg-gradient-to-br border-white/10 transition-all duration-500",
-      chuva.detected
-        ? "from-red-500/20 to-slate-900/40 border-red-500/30"
-        : "from-blue-500/15 to-slate-900/40 border-blue-500/20",
-    )}>
-      <div className="flex justify-between items-start mb-6">
-        <div>
-          <div className="flex items-baseline gap-2">
-            <h2 className="text-3xl font-black tracking-tighter tabular-nums">{Math.round(current.temperature_2m)}°</h2>
-            <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Celsius</span>
-          </div>
-          <p className="text-[10px] font-medium text-muted-foreground mt-1 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-            {WEATHER_LOCATION.bairro}, {WEATHER_LOCATION.cidade}
-          </p>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-2xl" title={info.label}>{info.emoji}</span>
-          <span className="text-[9px] font-bold text-white/30 uppercase mt-1 tracking-tighter">{info.label}</span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-3">
-        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
-          <Droplets className="h-3.5 w-3.5 mb-1.5 text-blue-400" />
-          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Umidade</p>
-          <p className="text-xs font-black tabular-nums">{Math.round(current.relative_humidity_2m)}%</p>
-        </div>
-        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
-          <Wind className="h-3.5 w-3.5 mb-1.5 text-blue-400" />
-          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Vento</p>
-          <p className="text-xs font-black tabular-nums">{Math.round(current.wind_speed_10m)}<span className="text-[8px] ml-0.5">km/h</span></p>
-        </div>
-        <div className="flex flex-col items-center p-2 rounded-xl bg-white/5 border border-white/5">
-          <CloudRain className={cn("h-3.5 w-3.5 mb-1.5", chuva.detected ? "text-red-400 animate-bounce" : "text-blue-400")} />
-          <p className="text-[8px] text-white/40 font-bold uppercase tracking-widest">Chuva</p>
-          <p className="text-xs font-black tabular-nums">{chuva.mm_atual.toFixed(1)}<span className="text-[8px] ml-0.5">mm</span></p>
-        </div>
-      </div>
-
-      {chuva.detected && (
-        <div className="mt-4 p-2 rounded-lg bg-red-500/20 border border-red-500/30 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <AlertTriangle className="h-3 w-3 text-red-400 shrink-0" />
-          <p className="text-[10px] font-bold text-red-200 leading-tight">{chuva.label.toUpperCase()} DETECTADA: OPERAÇÃO SUSPENSA</p>
-        </div>
+    <GlassCard
+      className={cn(
+        "min-w-0 overflow-hidden p-0 transition-colors duration-300",
+        chuva.detected
+          ? "border-red-400/25 bg-red-400/[0.045]"
+          : "border-white/[0.09] bg-white/[0.025]",
       )}
+    >
+      <div className="p-4 sm:p-5">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
+              <span className="text-4xl font-bold tracking-[-0.06em] tabular-nums text-foreground">{temperature}°</span>
+              <span className="pb-1 text-xs font-semibold text-muted-foreground">sensação {apparent}°C</span>
+            </div>
+            <p className="mt-2 break-words text-xs font-medium leading-relaxed text-muted-foreground">
+              {WEATHER_LOCATION.bairro} · {WEATHER_LOCATION.cidade} / {WEATHER_LOCATION.estado}
+            </p>
+          </div>
+          <div className="max-w-[42%] shrink-0 text-right">
+            <div className="text-3xl leading-none" title={info.label}>{info.emoji}</div>
+            <p className="mt-2 break-words text-[10px] font-bold uppercase leading-snug tracking-[0.08em] text-white/55">{info.label}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className={metricClass}>
+            <div className="flex items-center gap-2 text-muted-foreground"><Droplets className="h-4 w-4 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-[0.08em]">Umidade</span></div>
+            <p className="mt-2 text-lg font-bold tabular-nums">{humidity}%</p>
+          </div>
+          <div className={metricClass}>
+            <div className="flex items-center gap-2 text-muted-foreground"><Wind className="h-4 w-4 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-[0.08em]">Vento</span></div>
+            <p className="mt-2 text-lg font-bold tabular-nums">{wind}<span className="ml-1 text-[10px] font-semibold text-muted-foreground">km/h</span></p>
+          </div>
+          <div className={metricClass}>
+            <div className="flex items-center gap-2 text-muted-foreground"><CloudRain className="h-4 w-4 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-[0.08em]">Chuva agora</span></div>
+            <p className="mt-2 text-lg font-bold tabular-nums">{chuva.mm_atual.toFixed(1)}<span className="ml-1 text-[10px] font-semibold text-muted-foreground">mm</span></p>
+          </div>
+          <div className={metricClass}>
+            <div className="flex items-center gap-2 text-muted-foreground"><CloudRain className="h-4 w-4 shrink-0" /><span className="text-[10px] font-bold uppercase tracking-[0.08em]">Chance hoje</span></div>
+            <p className="mt-2 text-lg font-bold tabular-nums">{rainProbability}%</p>
+          </div>
+        </div>
+
+        {chuva.detected && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-400/25 bg-red-400/[0.08] p-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.06em] text-red-200">{chuva.label}: atividade suspensa</p>
+              <p className="mt-1 text-[10px] leading-relaxed text-red-100/65">Precipitação em curso. Aguarde liberação antes de retomar atividades no talude.</p>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.07] pt-3">
+          <p className="min-w-0 text-[10px] leading-relaxed text-muted-foreground">
+            Fonte: <span className="font-semibold text-foreground/75">{sourceLabel}</span> · atualizado às {updatedLabel}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Atualizar clima"
+            loading={isFetching}
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
     </GlassCard>
   );
 }
@@ -636,7 +701,7 @@ function AlertsWidget() {
   const { data } = useWeather();
   if (!data) return null;
 
-  const probHoje = data.daily.precipitation_probability_max[0] ?? 0;
+  const probHoje = data.daily?.precipitation_probability_max?.[0] ?? 0;
   const chuva = detectRain(data);
   situationStatus(probHoje);
   const alerts: Array<{ id: string; title: string; desc: string; variant: "danger" | "warning" | "info" }> = [];

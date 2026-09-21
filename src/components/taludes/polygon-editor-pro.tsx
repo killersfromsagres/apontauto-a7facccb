@@ -173,6 +173,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
   const [hoverPoint, setHoverPoint] = useState<Point | null>(null);
   const [draggedPoint, setDraggedPoint] = useState<{ id: string; index: number } | null>(null);
   const [draggedLabel, setDraggedLabel] = useState<{ id: string; type: LabelType } | null>(null);
+  const [isSavingArea, setIsSavingArea] = useState(false);
 
   const [statusType, setStatusType] = useState<StatusType>("programado");
   const [statusDate, setStatusDate] = useState(new Date().toISOString().slice(0, 10));
@@ -290,15 +291,26 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
   );
 
   const finishDrawing = useCallback(async () => {
+    if (isSavingArea) return;
     if (currentPoints.length < 3) {
       toast.error("Marque pelo menos 3 vértices para concluir a área.");
       return;
     }
-    const centroid = getCentroid(currentPoints);
+
+    const draftPoints = [...currentPoints];
+    const centroid = getCentroid(draftPoints);
     const config = STATUS_CONFIG[statusType];
+
+    // Fecha o modo de desenho imediatamente para a interface continuar fluida.
+    // Se o servidor falhar, o rascunho é restaurado automaticamente.
+    setIsSavingArea(true);
+    setCurrentPoints([]);
+    setHoverPoint(null);
+    setMode("view");
+
     try {
       await onSave({
-        polygon: currentPoints,
+        polygon: draftPoints,
         rotulo: `${config.label} - ${statusDate}`,
         prazo_rotulo: prazoDate || null,
         cor: config.color,
@@ -317,15 +329,16 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
         data_x: centroid.x,
         data_y: centroid.y + 46,
       });
-      setCurrentPoints([]);
-      setHoverPoint(null);
-      setMode("view");
       toast.success("Área demarcada com sucesso.");
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao salvar a demarcação.");
+      setCurrentPoints(draftPoints);
+      setMode("draw");
+      toast.error("Erro ao salvar a demarcação. O desenho foi preservado para nova tentativa.");
+    } finally {
+      setIsSavingArea(false);
     }
-  }, [currentPoints, numeroBg, numeroText, onSave, prazoDate, statusDate, statusType]);
+  }, [currentPoints, isSavingArea, numeroBg, numeroText, onSave, prazoDate, statusDate, statusType]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -569,7 +582,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
           ctx.textBaseline = "middle";
           ctx.fillStyle = hexToRgba(dateText, 0.62);
           ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-          ctx.fillText("STATUS", dataPos.x - 62 * s, dataPos.y - (deadline ? 19 : 9) * s);
+          ctx.fillText("DE", dataPos.x - 62 * s, dataPos.y - (deadline ? 19 : 9) * s);
           ctx.fillStyle = dateText;
           ctx.font = `800 ${16 * s}px Inter, Arial, sans-serif`;
           ctx.fillText(currentDate || "—", dataPos.x - 6 * s, dataPos.y - (deadline ? 19 : 9) * s);
@@ -581,7 +594,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
             ctx.stroke();
             ctx.fillStyle = hexToRgba(dateText, 0.62);
             ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-            ctx.fillText("PRAZO", dataPos.x - 62 * s, dataPos.y + 19 * s);
+            ctx.fillText("ATÉ", dataPos.x - 62 * s, dataPos.y + 19 * s);
             ctx.fillStyle = dateText;
             ctx.font = `800 ${16 * s}px Inter, Arial, sans-serif`;
             ctx.fillText(deadline, dataPos.x - 6 * s, dataPos.y + 19 * s);
@@ -829,12 +842,32 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <label className="space-y-1.5"><FieldLabel>Data do status</FieldLabel><input type="date" value={statusDate} onChange={(e) => { setStatusDate(e.target.value); void persistPatch(selected.id, { rotulo: `${STATUS_CONFIG[statusType].label} - ${e.target.value}` }); }} className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[10px] outline-none" /></label>
-                <label className="space-y-1.5"><FieldLabel>Prazo</FieldLabel><input type="date" value={prazoDate} onChange={(e) => { setPrazoDate(e.target.value); void persistPatch(selected.id, { prazo_rotulo: e.target.value || null }); }} className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[10px] outline-none" /></label>
+                <label className="space-y-1.5"><FieldLabel>De</FieldLabel><input type="date" value={statusDate} onChange={(e) => { setStatusDate(e.target.value); void persistPatch(selected.id, { rotulo: `${STATUS_CONFIG[statusType].label} - ${e.target.value}` }); }} className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[10px] outline-none" /></label>
+                <label className="space-y-1.5"><FieldLabel>Até</FieldLabel><input type="date" value={prazoDate} onChange={(e) => { setPrazoDate(e.target.value); void persistPatch(selected.id, { prazo_rotulo: e.target.value || null }); }} className="h-9 w-full rounded-lg border border-white/10 bg-white/[0.04] px-2 text-[10px] outline-none" /></label>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="space-y-1"><FieldLabel>Fundo das datas</FieldLabel><input type="color" value={dateBg} onChange={(e) => persistDateColors(e.target.value, dateText)} className="h-8 w-full cursor-pointer rounded-lg border border-white/10 bg-transparent p-0.5" /></label>
                 <label className="space-y-1"><FieldLabel>Texto das datas</FieldLabel><input type="color" value={dateText} onChange={(e) => persistDateColors(dateBg, e.target.value)} className="h-8 w-full cursor-pointer rounded-lg border border-white/10 bg-transparent p-0.5" /></label>
+              </div>
+              <div className="space-y-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <FieldLabel>Tamanho de DE / ATÉ</FieldLabel>
+                  <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 font-mono text-[9px] font-bold tabular-nums text-white/70">
+                    {(selected.data_scale || 1).toFixed(1)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.6"
+                  max="3.5"
+                  step="0.1"
+                  value={selected.data_scale || 1}
+                  onChange={(e) => updateLocal(selected.id, { data_scale: Number(e.target.value) })}
+                  onPointerUp={() => void persistPatch(selected.id, { data_scale: local.find((m) => m.id === selected.id)?.data_scale || 1 })}
+                  onKeyUp={() => void persistPatch(selected.id, { data_scale: local.find((m) => m.id === selected.id)?.data_scale || 1 })}
+                  className="w-full accent-slate-300"
+                  aria-label="Tamanho dos campos De e Até"
+                />
               </div>
             </AccordionSection>
 
@@ -895,7 +928,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
       {mode === "draw" && (
         <div className="pointer-events-auto absolute bottom-4 left-1/2 z-50 flex max-w-[calc(100%-24px)] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-950/92 p-2 shadow-2xl backdrop-blur-xl">
           <div className="px-2 text-[9px] text-white/45"><span className="font-bold text-white/80">{currentPoints.length}</span> vértices · Enter finalizar · Esc cancelar · Backspace voltar</div>
-          <Button size="sm" variant="success" disabled={currentPoints.length < 3} onClick={() => void finishDrawing()} className="h-8 gap-1 text-[9px]"><Check /> Finalizar área</Button>
+          <Button size="sm" variant="success" disabled={currentPoints.length < 3 || isSavingArea} loading={isSavingArea} loadingText="Salvando..." onClick={() => void finishDrawing()} className="h-8 gap-1 text-[9px]"><Check /> Finalizar área</Button>
           <Button size="sm" variant="outline" onClick={() => { setCurrentPoints([]); setHoverPoint(null); setMode("view"); }} className="h-8 gap-1 text-[9px]"><X /> Cancelar</Button>
         </div>
       )}
@@ -939,9 +972,9 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
                   {marking.data_visivel !== false && (
                     <g transform={`translate(${dataPos.x} ${dataPos.y}) scale(${marking.data_scale || 1})`}>
                       <rect x="-77" y={deadline ? -38 : -26} width="154" height={deadline ? 76 : 52} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
-                      <text x="-63" y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">STATUS</text>
+                      <text x="-63" y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
                       <text x="-6" y={deadline ? -17 : -5} fill={dateText} fontSize="16" fontWeight="900">{statusDate || "—"}</text>
-                      {deadline && <><line x1="-63" x2="63" y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x="-63" y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">PRAZO</text><text x="-6" y="22" fill={dateText} fontSize="16" fontWeight="900">{deadline}</text></>}
+                      {deadline && <><line x1="-63" x2="63" y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x="-63" y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x="-6" y="22" fill={dateText} fontSize="16" fontWeight="900">{deadline}</text></>}
                     </g>
                   )}
 

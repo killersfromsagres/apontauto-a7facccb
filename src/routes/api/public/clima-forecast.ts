@@ -186,6 +186,24 @@ function num(v: string | null, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+async function withWeatherTimeout<T>(
+  loader: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await loader(controller.signal);
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") {
+      throw new Error(`timeout após ${Math.round(timeoutMs / 1000)}s`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export const Route = createFileRoute("/api/public/clima-forecast")({
   server: {
     handlers: {
@@ -193,13 +211,13 @@ export const Route = createFileRoute("/api/public/clima-forecast")({
         const url = new URL(request.url);
         const lat = num(url.searchParams.get("lat"), DEFAULT_LAT);
         const lon = num(url.searchParams.get("lon"), DEFAULT_LON);
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 12000);
         const errors: string[] = [];
 
         try {
-          const data = await fromMetNorway(lat, lon, ctrl.signal);
-          clearTimeout(timer);
+          const data = await withWeatherTimeout(
+            (signal) => fromMetNorway(lat, lon, signal),
+            6500,
+          );
           return Response.json(data, {
             headers: { "Cache-Control": CACHE_CONTROL, "Access-Control-Allow-Origin": "*" },
           });
@@ -209,7 +227,10 @@ export const Route = createFileRoute("/api/public/clima-forecast")({
 
         const tryOpenMeteo = async (retryCount = 0): Promise<Response | null> => {
           try {
-            const data = await fromOpenMeteo(lat, lon, ctrl.signal);
+            const data = await withWeatherTimeout(
+              (signal) => fromOpenMeteo(lat, lon, signal),
+              6500,
+            );
             return Response.json(data, {
               headers: {
                 "Cache-Control": CACHE_CONTROL,
@@ -220,7 +241,7 @@ export const Route = createFileRoute("/api/public/clima-forecast")({
           } catch (error) {
             const message = (error as Error).message;
             if (message.includes("429") && retryCount < 1) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
+              await new Promise((resolve) => setTimeout(resolve, 750));
               return tryOpenMeteo(retryCount + 1);
             }
             errors.push(`open-meteo: ${message}`);
@@ -229,14 +250,11 @@ export const Route = createFileRoute("/api/public/clima-forecast")({
         };
 
         const fallback = await tryOpenMeteo();
-        if (fallback) {
-          clearTimeout(timer);
-          return fallback;
-        }
-        clearTimeout(timer);
+        if (fallback) return fallback;
+
         return Response.json(
           { error: "all_sources_failed", details: errors },
-          { status: 502, headers: { "Cache-Control": "no-store" } },
+          { status: 502, headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" } },
         );
       },
       OPTIONS: async () =>
