@@ -1,0 +1,49 @@
+name: Refine Backorder builder branding
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/refine-backorder-builder-branding.yml
+      - .github/scripts/refine_backorder_builder_branding.py
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+
+      - name: Apply visual refinement
+        run: python .github/scripts/refine_backorder_builder_branding.py
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Commit changes
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/components/backorder/spreadsheet-builder.tsx src/routes/_authenticated/corretiva-novo.tsx
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "style(corretiva): refine Backorder builder branding"
+            git push origin Apont-Auto
+          fi
