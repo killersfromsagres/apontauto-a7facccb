@@ -1,0 +1,31 @@
+name: Fix asset fill upload flow
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/fix-asset-fill-upload.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Repair upload flow
+        run: python .github/scripts/fix_asset_fill_upload.py
+
+      - name: Commit repair
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/routes/_authenticated/inteligencia-ativos.preencher.tsx
+          git commit -m "fix(assets): restore spreadsheet import flow"
+          git push origin HEAD:Apont-Auto
