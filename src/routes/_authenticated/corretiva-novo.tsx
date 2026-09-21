@@ -572,7 +572,7 @@ function CorretivaNovoPage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold tracking-tight text-foreground">Montador de Backorders</span>
-                <Badge variant="outline" className="border-rose-400/20 bg-rose-400/[0.055] text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-200">
+                <Badge variant="outline" className="border-amber-300/30 bg-[linear-gradient(145deg,rgba(251,191,36,0.14),rgba(245,158,11,0.055))] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_24px_-20px_rgba(245,158,11,0.8)]">
                   Área exclusiva
                 </Badge>
               </div>

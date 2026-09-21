@@ -9,7 +9,6 @@ import {
   ScanSearch,
   ShieldCheck,
   Upload,
-  WandSparkles,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -174,17 +173,17 @@ export function BackorderSpreadsheetBuilder() {
   };
 
   return (
-    <GlassCard className="overflow-hidden border-rose-400/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012))]">
+    <GlassCard className="overflow-hidden border-amber-300/[0.10] bg-[linear-gradient(145deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012))]">
       <div className="space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3.5">
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl border border-rose-400/20 bg-rose-400/[0.07] text-rose-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-              <WandSparkles className="h-5 w-5" />
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-amber-300/20 bg-[linear-gradient(145deg,rgba(251,191,36,0.12),rgba(255,255,255,0.025))] text-amber-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.10),0_14px_32px_-26px_rgba(245,158,11,0.85)] backdrop-blur-xl">
+              <FileSpreadsheet className="h-[1.35rem] w-[1.35rem]" strokeWidth={1.8} />
             </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-display text-lg font-semibold tracking-tight">Planilha rápida de Backorders</h2>
-                <Badge variant="outline" className="border-white/10 bg-white/[0.035] text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                <Badge variant="outline" className="border-white/[0.10] bg-white/[0.035] text-[10px] font-semibold uppercase tracking-[0.13em] text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                   processamento local
                 </Badge>
               </div>
