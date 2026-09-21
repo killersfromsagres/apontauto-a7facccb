@@ -12,10 +12,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
-import pcmAssetsPremiumCss from "../pcm-assets-premium.css?url";
-import pcmAssetsCompactFixCss from "../pcm-assets-compact-fix.css?url";
-import pcmAssetsGlassCss from "../pcm-assets-glass.css?url";
-import pcmAssetsGlassPolishCss from "../pcm-assets-glass-polish.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
@@ -116,13 +112,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: premiumCss },
-      { rel: "stylesheet", href: pcmAssetsPremiumCss },
       { rel: "stylesheet", href: scrollbarCss },
       { rel: "stylesheet", href: interactionMotionResetCss },
       { rel: "stylesheet", href: institutionalPagesCss },
-      { rel: "stylesheet", href: pcmAssetsCompactFixCss },
-      { rel: "stylesheet", href: pcmAssetsGlassCss },
-      { rel: "stylesheet", href: pcmAssetsGlassPolishCss },
       { rel: "stylesheet", href: "/legal-panel-premium.css" },
       { rel: "stylesheet", href: "/corretiva-card-alignment.css" },
       { rel: "stylesheet", href: "/inteligencia-ativos-preencher-premium.css" },
