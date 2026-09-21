@@ -584,7 +584,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
           ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
           ctx.fillText("DE", dataPos.x - 62 * s, dataPos.y - (deadline ? 19 : 9) * s);
           ctx.fillStyle = dateText;
-          ctx.font = `800 ${16 * s}px Inter, Arial, sans-serif`;
+          ctx.font = `800 ${18 * s}px Inter, Arial, sans-serif`;
           ctx.fillText(currentDate || "—", dataPos.x - 6 * s, dataPos.y - (deadline ? 19 : 9) * s);
           if (deadline) {
             ctx.strokeStyle = hexToRgba(dateText, 0.12);
@@ -596,7 +596,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
             ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
             ctx.fillText("ATÉ", dataPos.x - 62 * s, dataPos.y + 19 * s);
             ctx.fillStyle = dateText;
-            ctx.font = `800 ${16 * s}px Inter, Arial, sans-serif`;
+            ctx.font = `800 ${18 * s}px Inter, Arial, sans-serif`;
             ctx.fillText(deadline, dataPos.x - 6 * s, dataPos.y + 19 * s);
           }
           ctx.restore();
@@ -973,8 +973,8 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
                     <g transform={`translate(${dataPos.x} ${dataPos.y}) scale(${marking.data_scale || 1})`}>
                       <rect x="-77" y={deadline ? -38 : -26} width="154" height={deadline ? 76 : 52} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
                       <text x="-63" y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
-                      <text x="-6" y={deadline ? -17 : -5} fill={dateText} fontSize="16" fontWeight="900">{statusDate || "—"}</text>
-                      {deadline && <><line x1="-63" x2="63" y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x="-63" y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x="-6" y="22" fill={dateText} fontSize="16" fontWeight="900">{deadline}</text></>}
+                      <text x="-6" y={deadline ? -17 : -5} fill={dateText} fontSize="18" fontWeight="900">{statusDate || "—"}</text>
+                      {deadline && <><line x1="-63" x2="63" y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x="-63" y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x="-6" y="22" fill={dateText} fontSize="18" fontWeight="900">{deadline}</text></>}
                     </g>
                   )}
 
