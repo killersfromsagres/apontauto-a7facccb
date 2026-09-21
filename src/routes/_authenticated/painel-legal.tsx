@@ -1,5 +1,5 @@
 import { useConfirm } from "@/components/ui/use-confirm";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -1380,20 +1380,23 @@ function LegalItemForm({
   const [empresa, setEmpresa] = useState("");
   const [predio, setPredio] = useState("");
   const [periodicidade, setPeriodicidade] = useState<Periodicidade>("anual");
-  const [dataInicio, setDataInicio] = useState(todayISO());
+  const [dataInicio, setDataInicio] = useState("");
+  const [proximaManual, setProximaManual] = useState(false);
   const [ultimaExecucao, setUltimaExecucao] = useState<string>("");
   const [agendamento, setAgendamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [precisaAndaime, setPrecisaAndaime] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  useMemo(() => {
+  useEffect(() => {
+    if (!open) return;
     if (editing) {
       setTitulo(editing.titulo);
       setEmpresa(editing.empresa);
       setPredio(editing.predio);
       setPeriodicidade(editing.periodicidade);
-      setDataInicio(editing.proximaExecucao || todayISO());
+      setDataInicio(editing.proximaExecucao ?? "");
+      setProximaManual(false);
       setUltimaExecucao(editing.ultimaExecucao ?? "");
       setAgendamento(editing.agendamento ?? "");
       setObservacoes(editing.observacoes);
@@ -1403,7 +1406,8 @@ function LegalItemForm({
       setEmpresa("");
       setPredio("");
       setPeriodicidade("anual");
-      setDataInicio(todayISO());
+      setDataInicio("");
+      setProximaManual(false);
       setUltimaExecucao("");
       setAgendamento("");
       setObservacoes("");
@@ -1411,11 +1415,34 @@ function LegalItemForm({
     }
   }, [editing, open]);
 
-  // Se última execução mudar e não houver próxima definida manualmente, sugerir próxima automática.
   const autoNext = useMemo(() => {
     if (!ultimaExecucao) return "";
     return addMonths(ultimaExecucao, monthsFor(periodicidade));
   }, [ultimaExecucao, periodicidade]);
+
+  const handlePeriodicidadeChange = (value: Periodicidade) => {
+    setPeriodicidade(value);
+    if (!proximaManual && ultimaExecucao) {
+      setDataInicio(addMonths(ultimaExecucao, monthsFor(value)));
+    }
+  };
+
+  const handleUltimaExecucaoChange = (value: string) => {
+    setUltimaExecucao(value);
+    if (!proximaManual) {
+      setDataInicio(value ? addMonths(value, monthsFor(periodicidade)) : "");
+    }
+  };
+
+  const handleProximaExecucaoChange = (value: string) => {
+    if (value) {
+      setDataInicio(value);
+      setProximaManual(true);
+      return;
+    }
+    setProximaManual(false);
+    setDataInicio(autoNext);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1507,7 +1534,7 @@ function LegalItemForm({
               <Label>Periodicidade</Label>
               <Select
                 value={periodicidade}
-                onValueChange={(v) => setPeriodicidade(v as Periodicidade)}
+                onValueChange={(v) => handlePeriodicidadeChange(v as Periodicidade)}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1527,7 +1554,7 @@ function LegalItemForm({
                 id="ult"
                 type="date"
                 value={ultimaExecucao}
-                onChange={(e) => setUltimaExecucao(e.target.value)}
+                onChange={(e) => handleUltimaExecucaoChange(e.target.value)}
               />
             </div>
           </div>
@@ -1538,18 +1565,19 @@ function LegalItemForm({
                 id="ini"
                 type="date"
                 value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
+                onChange={(e) => handleProximaExecucaoChange(e.target.value)}
                 required
               />
-              {autoNext && autoNext !== dataInicio && (
-                <button
-                  type="button"
-                  className="text-[11px] text-primary underline underline-offset-2"
-                  onClick={() => setDataInicio(autoNext)}
-                >
-                  Sugerir {new Date(autoNext + "T00:00:00").toLocaleDateString("pt-BR")} (base
-                  última + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()})
-                </button>
+              {ultimaExecucao && dataInicio && !proximaManual ? (
+                <p className="text-[11px] text-emerald-400">
+                  Preenchida automaticamente: última execução + {PERIODICIDADE_LABEL[periodicidade].toLowerCase()}.
+                </p>
+              ) : proximaManual ? (
+                <p className="text-[11px] text-muted-foreground">Data definida manualmente.</p>
+              ) : (
+                <p className="text-[11px] text-muted-foreground">
+                  Informe a última execução para calcular automaticamente a próxima data.
+                </p>
               )}
             </div>
             <div className="space-y-1.5">
