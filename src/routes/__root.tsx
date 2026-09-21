@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import premiumCss from "../premium-ui.css?url";
+import globalButtonInteractionsCss from "../global-button-interactions.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
@@ -112,6 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: premiumCss },
+      { rel: "stylesheet", href: globalButtonInteractionsCss },
       { rel: "stylesheet", href: scrollbarCss },
       { rel: "stylesheet", href: interactionMotionResetCss },
       { rel: "stylesheet", href: institutionalPagesCss },
