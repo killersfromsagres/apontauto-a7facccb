@@ -31,6 +31,7 @@ import { toast } from "sonner";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
+import { BackorderSpreadsheetBuilder } from "@/components/backorder/spreadsheet-builder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -573,6 +574,8 @@ function ProgramacaoPage() {
             </div>
           </div>
         </div>
+
+        <BackorderSpreadsheetBuilder />
 
         <GlassCard>
           <div className="space-y-5">
