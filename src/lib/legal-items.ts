@@ -34,6 +34,7 @@ export interface LegalAttachment {
   fileName: string;
   mimeType: string | null;
   sizeBytes: number | null;
+  isCurrent: boolean;
   createdAt: string;
 }
 
@@ -253,32 +254,42 @@ export async function listExecutions(): Promise<LegalExecution[]> {
 }
 
 // ---------- Attachments ----------
-export async function listAttachments(itemId: string): Promise<LegalAttachment[]> {
-  const { data, error } = await supabase
-    .from("legal_item_attachments" as any)
-    .select("*")
-    .eq("item_id", itemId)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return (
-    data as unknown as Array<{
-      id: string;
-      item_id: string;
-      storage_path: string;
-      file_name: string;
-      mime_type: string | null;
-      size_bytes: number | null;
-      created_at: string;
-    }>
-  ).map((r) => ({
+
+type AttachmentRow = {
+  id: string;
+  item_id: string;
+  storage_path: string;
+  file_name: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  is_current: boolean | null;
+  created_at: string;
+};
+
+export type LegalAttachmentMode = "current" | "history";
+
+function fromAttachmentRow(r: AttachmentRow): LegalAttachment {
+  return {
     id: r.id,
     itemId: r.item_id,
     storagePath: r.storage_path,
     fileName: r.file_name,
     mimeType: r.mime_type,
     sizeBytes: r.size_bytes,
+    isCurrent: r.is_current ?? false,
     createdAt: r.created_at,
-  }));
+  };
+}
+
+export async function listAttachments(itemId: string): Promise<LegalAttachment[]> {
+  const { data, error } = await supabase
+    .from("legal_item_attachments" as any)
+    .select("*")
+    .eq("item_id", itemId)
+    .order("is_current", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data as unknown as AttachmentRow[]) ?? []).map(fromAttachmentRow);
 }
 
 export async function countAttachments(): Promise<Record<string, number>> {
@@ -302,13 +313,30 @@ function safeSegment(s: string): string {
   );
 }
 
-export async function uploadAttachment(item: LegalItem, file: File): Promise<LegalAttachment> {
+async function setCurrentAttachment(itemId: string, attachmentId: string): Promise<void> {
+  const { error } = await (supabase as any).rpc("set_legal_attachment_current", {
+    p_item_id: itemId,
+    p_attachment_id: attachmentId,
+  });
+  if (error) throw error;
+}
+
+export async function promoteAttachment(attachment: LegalAttachment): Promise<void> {
+  await setCurrentAttachment(attachment.itemId, attachment.id);
+}
+
+export async function uploadAttachment(
+  item: LegalItem,
+  file: File,
+  mode: LegalAttachmentMode = "current",
+): Promise<LegalAttachment> {
   const { data: userRes } = await supabase.auth.getUser();
   const empresa = safeSegment(item.empresa || "sem-empresa");
   const tarefa = safeSegment(item.titulo);
   const stamp = Date.now();
   const filename = `${stamp}-${safeSegment(file.name)}`;
-  const path = `${empresa}/${tarefa}/${filename}`;
+  const folder = mode === "current" ? "atual" : "historico";
+  const path = `${empresa}/${tarefa}/${folder}/${filename}`;
 
   const { error: upErr } = await supabase.storage
     .from("legal-certificates")
@@ -323,29 +351,30 @@ export async function uploadAttachment(item: LegalItem, file: File): Promise<Leg
       file_name: file.name,
       mime_type: file.type || null,
       size_bytes: file.size,
+      is_current: false,
       uploaded_by: userRes.user?.id ?? null,
     } as any)
     .select("*")
     .single();
-  if (error) throw error;
-  const r = data as unknown as {
-    id: string;
-    item_id: string;
-    storage_path: string;
-    file_name: string;
-    mime_type: string | null;
-    size_bytes: number | null;
-    created_at: string;
-  };
-  return {
-    id: r.id,
-    itemId: r.item_id,
-    storagePath: r.storage_path,
-    fileName: r.file_name,
-    mimeType: r.mime_type,
-    sizeBytes: r.size_bytes,
-    createdAt: r.created_at,
-  };
+
+  if (error) {
+    await supabase.storage.from("legal-certificates").remove([path]);
+    throw error;
+  }
+
+  const row = data as unknown as AttachmentRow;
+  if (mode === "current") {
+    try {
+      await setCurrentAttachment(item.id, row.id);
+      row.is_current = true;
+    } catch (promotionError) {
+      await supabase.from("legal_item_attachments" as any).delete().eq("id", row.id);
+      await supabase.storage.from("legal-certificates").remove([path]);
+      throw promotionError;
+    }
+  }
+
+  return fromAttachmentRow(row);
 }
 
 export async function signedUrl(path: string, expiresInSec = 3600): Promise<string> {
@@ -357,12 +386,29 @@ export async function signedUrl(path: string, expiresInSec = 3600): Promise<stri
 }
 
 export async function deleteAttachment(att: LegalAttachment): Promise<void> {
-  await supabase.storage.from("legal-certificates").remove([att.storagePath]);
+  const { error: storageError } = await supabase.storage
+    .from("legal-certificates")
+    .remove([att.storagePath]);
+  if (storageError) throw storageError;
+
   const { error } = await supabase
     .from("legal_item_attachments" as any)
     .delete()
     .eq("id", att.id);
   if (error) throw error;
+
+  if (!att.isCurrent) return;
+
+  const { data: remaining, error: remainingError } = await supabase
+    .from("legal_item_attachments" as any)
+    .select("id")
+    .eq("item_id", att.itemId)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (remainingError) throw remainingError;
+
+  const next = (remaining as unknown as Array<{ id: string }> | null)?.[0];
+  if (next) await setCurrentAttachment(att.itemId, next.id);
 }
 
 // ---------- Helpers de mapa mensal (Jan..Dez) ----------
