@@ -6,6 +6,7 @@ on:
       - Apont-Auto
     paths:
       - .github/scripts/fix_taludes_runtime.py
+      - .github/workflows/fix-taludes-runtime.yml
 
 permissions:
   contents: write
