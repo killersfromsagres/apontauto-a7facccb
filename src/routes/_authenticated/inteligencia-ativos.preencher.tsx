@@ -26,7 +26,6 @@ import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -1181,13 +1180,26 @@ function ToggleRow({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-border/60 bg-background/40 p-3">
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
-    </div>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      data-state={checked ? "checked" : "unchecked"}
+      className="asset-fill-option-card"
+      onClick={() => onChange(!checked)}
+    >
+      <span className="asset-fill-option-copy">
+        <span className="asset-fill-option-title">{label}</span>
+        <span className="asset-fill-option-hint">{hint}</span>
+      </span>
+
+      <span className="asset-fill-option-control" data-state={checked ? "checked" : "unchecked"} aria-hidden="true">
+        <span className="asset-fill-option-state">{checked ? "Ativado" : "Desativado"}</span>
+        <span className="asset-fill-option-indicator">
+          {checked ? <CheckCircle2 className="h-4 w-4" /> : <X className="h-4 w-4" />}
+        </span>
+      </span>
+    </button>
   );
 }
 
