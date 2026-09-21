@@ -1,0 +1,29 @@
+name: Polish asset fill buttons
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/polish-asset-fill-buttons.yml
+
+permissions:
+  contents: write
+
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+      - name: Apply premium button polish
+        run: python .github/scripts/polish_asset_fill_buttons.py
+      - name: Commit polish
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add public/inteligencia-ativos-preencher-premium.css
+          git commit -m "style(assets): refine fill workflow actions"
+          git push origin HEAD:Apont-Auto
