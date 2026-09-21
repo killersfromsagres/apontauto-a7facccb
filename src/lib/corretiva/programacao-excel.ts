@@ -22,6 +22,7 @@ const C = {
   slate700: argb("#334155"),
   slate500: argb("#64748B"),
   slate200: argb("#E2E8F0"),
+  printLine: argb("#94A3B8"),
   slate50: argb("#F8FAFC"),
   amber: argb("#D97706"),
   amberSoft: argb("#FEF3C7"),
@@ -49,21 +50,21 @@ const PRINT_COLUMN_WIDTHS = [
 ] as const;
 
 const TEAM_STYLE: Record<string, { bg: string; fg: string; accent: string }> = {
-  ELETRICA: { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },
-  HIDRAULICA: { bg: "#EFF6FF", fg: "#1D4ED8", accent: "#3B82F6" },
-  CIVIL: { bg: "#ECFDF5", fg: "#047857", accent: "#10B981" },
-  CHAVEIRO: { bg: "#F5F3FF", fg: "#6D28D9", accent: "#8B5CF6" },
-  PINTURA: { bg: "#FDF2F8", fg: "#BE185D", accent: "#EC4899" },
-  REFRIGERACAO: { bg: "#ECFEFF", fg: "#0E7490", accent: "#06B6D4" },
-  LIMPEZA: { bg: "#F0FDF4", fg: "#15803D", accent: "#22C55E" },
-  OUTROS: { bg: "#F8FAFC", fg: "#475569", accent: "#94A3B8" },
+  ELETRICA: { bg: "#FDECC8", fg: "#92400E", accent: "#F59E0B" },
+  HIDRAULICA: { bg: "#DBEAFE", fg: "#1D4ED8", accent: "#3B82F6" },
+  CIVIL: { bg: "#D1FAE5", fg: "#047857", accent: "#10B981" },
+  CHAVEIRO: { bg: "#EDE9FE", fg: "#6D28D9", accent: "#8B5CF6" },
+  PINTURA: { bg: "#FCE7F3", fg: "#BE185D", accent: "#EC4899" },
+  REFRIGERACAO: { bg: "#CFFAFE", fg: "#0E7490", accent: "#06B6D4" },
+  LIMPEZA: { bg: "#DCFCE7", fg: "#15803D", accent: "#22C55E" },
+  OUTROS: { bg: "#E2E8F0", fg: "#475569", accent: "#94A3B8" },
 };
 
 const thinBorder = {
-  top: { style: "thin" as const, color: { argb: C.slate200 } },
-  bottom: { style: "thin" as const, color: { argb: C.slate200 } },
-  left: { style: "thin" as const, color: { argb: C.slate200 } },
-  right: { style: "thin" as const, color: { argb: C.slate200 } },
+  top: { style: "thin" as const, color: { argb: C.printLine } },
+  bottom: { style: "thin" as const, color: { argb: C.printLine } },
+  left: { style: "thin" as const, color: { argb: C.printLine } },
+  right: { style: "thin" as const, color: { argb: C.printLine } },
 };
 
 const normalize = (value: unknown) =>
@@ -202,6 +203,7 @@ function configurePrint(
     horizontalCentered: true,
     verticalCentered: false,
     blackAndWhite: false,
+    draft: false,
     margins: {
       left: 0.1,
       right: 0.1,
@@ -514,6 +516,7 @@ export function buildProgramacaoWorkbook(
 
   workbook.worksheets.forEach((sheet) => {
     sheet.pageSetup.blackAndWhite = false;
+    sheet.pageSetup.draft = false;
   });
 
   return workbook;
