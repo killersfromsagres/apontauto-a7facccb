@@ -1119,7 +1119,7 @@ function StepNav({
       <Button
         onClick={onNext}
         disabled={nextDisabled}
-        className="bg-primary text-primary-foreground shadow-[0_0_15px_-3px_oklch(0.85_0.12_220/0.4)] hover:shadow-[0_0_20px_-3px_oklch(0.85_0.12_220/0.5)] transition-all"
+        className="asset-fill-primary-action text-primary-foreground transition-all"
       >
         {nextLabel} {nextIcon ?? <ArrowRight className="ml-2 h-4 w-4" />}
       </Button>
