@@ -21,6 +21,15 @@ export type QualityCheck = {
 
 const isBlank = (v: unknown) => !String(v ?? "").trim();
 
+/** Normaliza códigos vindos de SAP/Prisma/planilhas sem perder o identificador real. */
+const normalizeAssetCode = (v: unknown) =>
+  String(v ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
+
 function cpfValido(raw: string): boolean {
   const cpf = raw.replace(/\D/g, "");
   if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
@@ -37,7 +46,7 @@ function cpfValido(raw: string): boolean {
 export async function runQualityChecks(): Promise<QualityCheck[]> {
   const osCols =
     "id,numero_os,nome_os,ativo,equipamento,predio,andar,local,equipe,status,created_at";
-  const [cor, ref, veic, abast, chk, pt, obs, fotos] = await Promise.all([
+  const [cor, ref, veic, abast, chk, pt] = await Promise.all([
     supabase.from("corretiva_os").select(osCols).limit(3000),
     supabase.from("refrigeracao_os").select(osCols).limit(3000),
     supabase.from("vehicles").select("id,prefix,plate,current_odometer_km").limit(1000),
@@ -54,12 +63,6 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
       .from("talude_pt_releases")
       .select("id,numero_pt,status,data_trabalho,encerrada_em")
       .limit(1000),
-    supabase
-      .from("weather_observations")
-      .select("id,observed_at")
-      .order("observed_at", { ascending: false })
-      .limit(1),
-    supabase.from("corretiva_fotos").select("os_id").limit(5000),
   ]);
 
   const rows = <T>(r: { data: unknown }) => (r.data ?? []) as T[];
@@ -92,34 +95,112 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
       .map(({ o, t }) => osRow(o, t, "ativo")),
   });
 
-  const assetsRes = await supabase.from("assets").select("normalized_code").limit(20000);
-  const known = new Set(
-    (assetsRes.data ?? []).map((a) =>
-      String((a as { normalized_code?: string }).normalized_code ?? "").toUpperCase(),
-    ),
-  );
+  type CatalogAsset = {
+    code?: string | null;
+    normalized_code?: string | null;
+    name?: string | null;
+    level?: string | null;
+    parent_code?: string | null;
+    parent_name?: string | null;
+  };
+
+  const assetsRes = await supabase
+    .from("assets")
+    .select("code,normalized_code,name,level,parent_code,parent_name")
+    .limit(20000);
+  const catalogAssets = (assetsRes.data ?? []) as CatalogAsset[];
+  const assetByCode = new Map<string, CatalogAsset>();
+  for (const asset of catalogAssets) {
+    const normalized = normalizeAssetCode(asset.normalized_code);
+    const raw = normalizeAssetCode(asset.code);
+    if (normalized) assetByCode.set(normalized, asset);
+    if (raw) assetByCode.set(raw, asset);
+  }
+
+  const catalogForOs = (o: OS) => {
+    const primary = normalizeAssetCode(o.ativo);
+    if (primary) return assetByCode.get(primary);
+    const equipment = normalizeAssetCode(o.equipamento);
+    return equipment ? assetByCode.get(equipment) : undefined;
+  };
+
   checks.push({
     key: "ativo-nao-encontrado",
     title: "Ativo não encontrado no catálogo",
-    description: "Código informado na OS não existe na Base de Ativos ativa.",
+    description:
+      "Código informado na OS não existe na Base de Ativos ativa após normalização segura do identificador.",
     severity: "alta",
-    rows: known.size
+    rows: assetByCode.size
       ? allOs
-          .filter(({ o }) => !isBlank(o.ativo) && !known.has(String(o.ativo).trim().toUpperCase()))
+          .filter(({ o }) => {
+            const code = normalizeAssetCode(o.ativo);
+            return !!code && !assetByCode.has(code);
+          })
           .map(({ o, t }) => osRow(o, t, "ativo"))
       : [],
   });
 
+  /**
+   * Resolve a localização pela árvore oficial de ativos. A OS pode apontar para
+   * Planta, Prédio, Andar, Ambiente ou Equipamento; campos abaixo do nível
+   * apontado não são obrigatórios e não devem virar falso positivo.
+   */
+  const resolveCatalogLocation = (asset: CatalogAsset | undefined) => {
+    const resolved = { predio: "", andar: "", local: "", level: "" };
+    let current = asset;
+    const visited = new Set<string>();
+    for (let depth = 0; current && depth < 10; depth += 1) {
+      const level = String(current.level ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+      const name = String(current.name ?? "").trim();
+      if (level.includes("PREDIO") && !resolved.predio) resolved.predio = name;
+      if ((level.includes("ANDAR") || level.includes("PAVIMENTO")) && !resolved.andar) resolved.andar = name;
+      if ((level.includes("AMBIENTE") || level.includes("LOCAL")) && !resolved.local) resolved.local = name;
+      if (!resolved.level) resolved.level = level;
+
+      const parentKey = normalizeAssetCode(current.parent_code);
+      if (!parentKey || visited.has(parentKey)) break;
+      visited.add(parentKey);
+      current = assetByCode.get(parentKey);
+    }
+    return resolved;
+  };
+
+  const missingLocationColumn = (o: OS): "predio" | "andar" | "local" | null => {
+    const asset = catalogForOs(o);
+    if (!asset) {
+      // Um código ausente do catálogo já é tratado pela verificação específica;
+      // não duplicamos a mesma ocorrência como problema de localização.
+      return null;
+    }
+    const resolved = resolveCatalogLocation(asset);
+    const level = resolved.level;
+    const predio = String(o.predio ?? "").trim() || resolved.predio;
+    const andar = String(o.andar ?? "").trim() || resolved.andar;
+    const local = String(o.local ?? "").trim() || resolved.local;
+
+    // A granularidade exigida acompanha o nível do ativo na árvore.
+    if (level.includes("PLANTA")) return null;
+    if (level.includes("PREDIO")) return predio ? null : "predio";
+    if (level.includes("ANDAR") || level.includes("PAVIMENTO")) {
+      if (!predio) return "predio";
+      return andar ? null : "andar";
+    }
+    // Ambiente e equipamento devem conseguir chegar até o local pela árvore.
+    if (!predio) return "predio";
+    if (!andar) return "andar";
+    return local ? null : "local";
+  };
+
   checks.push({
     key: "local-incompleto",
     title: "Local incompleto",
-    description: "Prédio, andar ou local em branco.",
+    description:
+      "Valida a localização conforme o nível do ativo e usa a árvore oficial como referência antes de sinalizar pendência.",
     severity: "media",
     rows: allOs
-      .filter(({ o }) => isBlank(o.predio) || isBlank(o.andar) || isBlank(o.local))
-      .map(({ o, t }) =>
-        osRow(o, t, isBlank(o.predio) ? "predio" : isBlank(o.andar) ? "andar" : "local"),
-      ),
+      .map(({ o, t }) => ({ o, t, missing: missingLocationColumn(o) }))
+      .filter((x): x is { o: OS; t: string; missing: "predio" | "andar" | "local" } => !!x.missing)
+      .map(({ o, t, missing }) => osRow(o, t, missing)),
   });
 
   checks.push({
@@ -216,20 +297,11 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
     rows: regressive,
   });
 
-  const comFoto = new Set(
-    (fotos.data ?? []).map((f) => String((f as { os_id?: string }).os_id ?? "")),
-  );
-  checks.push({
-    key: "fotos-ausentes",
-    title: "Fotos ausentes",
-    description: "Corretivas concluídas sem nenhuma evidência fotográfica.",
-    severity: "media",
-    rows: corOs
-      .filter(
-        (o) => toCanonicalStatus(o.status as string) === "concluida" && !comFoto.has(String(o.id)),
-      )
-      .map((o) => osRow(o, "corretiva_os", "numero_os")),
-  });
+  // Evidência fotográfica é opcional no fluxo atual de corretivas. A ausência
+  // de foto não representa inconsistência cadastral e, portanto, não entra no
+  // score/pendências da Central de Qualidade. Fotos existentes continuam
+  // disponíveis normalmente no módulo operacional.
+
 
   type PT = {
     id: string;
@@ -279,29 +351,11 @@ export async function runQualityChecks(): Promise<QualityCheck[]> {
       })),
   });
 
-  const lastObs = (obs.data ?? [])[0] as { observed_at?: string } | undefined;
-  const stale =
-    !lastObs?.observed_at || Date.now() - new Date(lastObs.observed_at).getTime() > 6 * 3600_000;
-  checks.push({
-    key: "clima-indisponivel",
-    title: "Dados meteorológicos indisponíveis",
-    description: "Sem observação de clima registrada nas últimas 6 horas.",
-    severity: "baixa",
-    rows: stale
-      ? [
-          {
-            id: "weather_observations:stale",
-            label: "Monitoramento climático",
-            detail: lastObs?.observed_at
-              ? `Última leitura em ${new Date(lastObs.observed_at).toLocaleString("pt-BR")}.`
-              : "Nenhuma leitura registrada.",
-            table: "weather_observations",
-            column: "observed_at",
-            current: lastObs?.observed_at ?? "",
-          },
-        ]
-      : [],
-  });
+  // Clima é uma integração externa e opcional. Indisponibilidade/atraso de
+  // telemetria não é erro dos dados internos e não deve gerar pendência nem
+  // reduzir a qualidade da base. O módulo consumidor deve tratar seu próprio
+  // estado de indisponibilidade de forma não bloqueante.
+
 
   return checks;
 }
