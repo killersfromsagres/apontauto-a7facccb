@@ -1,0 +1,45 @@
+name: Refine asset fill glass controls
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - '.github/scripts/refine_asset_fill_glass_controls.py'
+      - '.github/workflows/refine-asset-fill-glass-controls.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Apply UI refinement
+        run: python .github/scripts/refine_asset_fill_glass_controls.py
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Commit UI refinement
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/routes/_authenticated/inteligencia-ativos.preencher.tsx public/inteligencia-ativos-preencher-premium.css
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "style(assets): redesign option controls with glassmorphism"
+          git push origin Apont-Auto
