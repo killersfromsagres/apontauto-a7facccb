@@ -1,0 +1,69 @@
+name: Fix corretiva print colors and borders
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/fix-corretiva-print-colors.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+
+      - name: Strengthen print colors and separators
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/lib/corretiva/programacao-excel.ts')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  '  slate200: argb("#E2E8F0"),\n  slate50: argb("#F8FAFC"),',
+                  '  slate200: argb("#E2E8F0"),\n  printLine: argb("#94A3B8"),\n  slate50: argb("#F8FAFC"),'
+              ),
+              (
+                  '  ELETRICA: { bg: "#FFF7E6", fg: "#92400E", accent: "#F59E0B" },\n  HIDRAULICA: { bg: "#EFF6FF", fg: "#1D4ED8", accent: "#3B82F6" },\n  CIVIL: { bg: "#ECFDF5", fg: "#047857", accent: "#10B981" },\n  CHAVEIRO: { bg: "#F5F3FF", fg: "#6D28D9", accent: "#8B5CF6" },\n  PINTURA: { bg: "#FDF2F8", fg: "#BE185D", accent: "#EC4899" },\n  REFRIGERACAO: { bg: "#ECFEFF", fg: "#0E7490", accent: "#06B6D4" },\n  LIMPEZA: { bg: "#F0FDF4", fg: "#15803D", accent: "#22C55E" },\n  OUTROS: { bg: "#F8FAFC", fg: "#475569", accent: "#94A3B8" },',
+                  '  ELETRICA: { bg: "#FDECC8", fg: "#92400E", accent: "#F59E0B" },\n  HIDRAULICA: { bg: "#DBEAFE", fg: "#1D4ED8", accent: "#3B82F6" },\n  CIVIL: { bg: "#D1FAE5", fg: "#047857", accent: "#10B981" },\n  CHAVEIRO: { bg: "#EDE9FE", fg: "#6D28D9", accent: "#8B5CF6" },\n  PINTURA: { bg: "#FCE7F3", fg: "#BE185D", accent: "#EC4899" },\n  REFRIGERACAO: { bg: "#CFFAFE", fg: "#0E7490", accent: "#06B6D4" },\n  LIMPEZA: { bg: "#DCFCE7", fg: "#15803D", accent: "#22C55E" },\n  OUTROS: { bg: "#E2E8F0", fg: "#475569", accent: "#94A3B8" },'
+              ),
+              (
+                  '  top: { style: "thin" as const, color: { argb: C.slate200 } },\n  bottom: { style: "thin" as const, color: { argb: C.slate200 } },\n  left: { style: "thin" as const, color: { argb: C.slate200 } },\n  right: { style: "thin" as const, color: { argb: C.slate200 } },',
+                  '  top: { style: "thin" as const, color: { argb: C.printLine } },\n  bottom: { style: "thin" as const, color: { argb: C.printLine } },\n  left: { style: "thin" as const, color: { argb: C.printLine } },\n  right: { style: "thin" as const, color: { argb: C.printLine } },'
+              ),
+              (
+                  '    blackAndWhite: false,\n    margins:',
+                  '    blackAndWhite: false,\n    draft: false,\n    margins:'
+              ),
+          ]
+
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f'Expected block not found:\n{old}')
+              text = text.replace(old, new, 1)
+
+          # Reforça explicitamente a impressão colorida em todas as abas.
+          old = '''  workbook.worksheets.forEach((sheet) => {\n    sheet.pageSetup.blackAndWhite = false;\n  });'''
+          new = '''  workbook.worksheets.forEach((sheet) => {\n    sheet.pageSetup.blackAndWhite = false;\n    sheet.pageSetup.draft = false;\n  });'''
+          if old not in text:
+              raise SystemExit('Worksheet print options block not found')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Commit changes
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/lib/corretiva/programacao-excel.ts
+          git commit -m "fix(corretiva): improve printed borders and team colors"
+          git push origin HEAD:Apont-Auto
