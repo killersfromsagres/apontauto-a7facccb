@@ -404,7 +404,7 @@ function CorretivaNovoPage() {
     try {
       await generateProgramacaoExcel(
         backorderExportRows,
-        "BACKORDERS · Todas as equipes",
+        "Todas as equipes",
         "backorder",
       );
       toast.success(
