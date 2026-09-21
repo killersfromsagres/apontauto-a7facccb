@@ -1,0 +1,35 @@
+name: Fix quality false positives
+
+on:
+  push:
+    branches:
+      - Apont-Auto
+    paths:
+      - .github/workflows/fix-quality-false-positives.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: Apont-Auto
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply quality fixes
+        run: python .github/scripts/fix_quality_false_positives.py
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build
+        run: bun run build
+      - name: Commit quality fixes
+        run: |
+          git config user.name "Dev Gabriel Vitor"
+          git config user.email "contatoswampzin@gmail.com"
+          git add src/features/quality/checks.ts
+          git commit -m "fix(quality): resolve false data quality alerts"
+          git push origin HEAD:Apont-Auto
