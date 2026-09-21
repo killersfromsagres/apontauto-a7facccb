@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
+import { BackorderSpreadsheetBuilder } from "@/components/backorder/spreadsheet-builder";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -566,6 +567,26 @@ function CorretivaNovoPage() {
       }
     >
       <div className="space-y-6">
+        <details className="group overflow-hidden rounded-[1.4rem] border border-white/[0.08] bg-white/[0.018] shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-white/[0.025] [&::-webkit-details-marker]:hidden sm:px-6">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold tracking-tight text-foreground">Montador de Backorders</span>
+                <Badge variant="outline" className="border-rose-400/20 bg-rose-400/[0.055] text-[10px] font-semibold uppercase tracking-[0.12em] text-rose-200">
+                  Área exclusiva
+                </Badge>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Importe uma planilha de Backorder, classifique automaticamente os chamados por equipe e gere o Excel pronto para impressão.
+              </p>
+            </div>
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+          </summary>
+          <div className="border-t border-white/[0.07] p-3 sm:p-4">
+            <BackorderSpreadsheetBuilder />
+          </div>
+        </details>
+
         <GlassCard className="p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative w-full xl:w-[320px] xl:flex-none">
