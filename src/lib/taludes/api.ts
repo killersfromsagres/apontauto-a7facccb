@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import type { TaludePlanningSummary } from "@/lib/taludes/planning";
 
 export interface Point {
   x: number;
@@ -42,6 +43,16 @@ export interface TaludeMarcacao {
   icone_data_scale?: number;
   icone_data_visivel?: boolean;
   icone_data_texto?: string | null;
+  planejamento_automatico?: boolean;
+  duracao_dias?: number | null;
+  considerar_sabado?: boolean;
+  considerar_domingo?: boolean;
+  chuva_prob_limite?: number;
+  chuva_mm_limite?: number;
+  planejamento_atualizado_em?: string | null;
+  planejamento_previsao_ate?: string | null;
+  planejamento_provisorio?: boolean;
+  planejamento_resumo?: TaludePlanningSummary | null;
 }
 
 export interface TaludeMap {
@@ -78,6 +89,10 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
       numero_cor_fundo: (m as any).numero_cor_fundo || "#0f172a",
       numero_cor_texto: (m as any).numero_cor_texto || "#ffffff",
       data_text_scale: Number((m as any).data_text_scale ?? 1),
+      duracao_dias: (m as any).duracao_dias == null ? null : Number((m as any).duracao_dias),
+      chuva_prob_limite: Number((m as any).chuva_prob_limite ?? 60),
+      chuva_mm_limite: Number((m as any).chuva_mm_limite ?? 0.1),
+      planejamento_resumo: ((m as any).planejamento_resumo ?? null) as TaludePlanningSummary | null,
     })) as unknown as TaludeMarcacao[];
   });
 
@@ -166,6 +181,16 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
         icone_data_scale: payload.icone_data_scale ?? 1,
         icone_data_visivel: payload.icone_data_visivel ?? true,
         icone_data_texto: payload.icone_data_texto ?? null,
+        planejamento_automatico: payload.planejamento_automatico ?? false,
+        duracao_dias: payload.duracao_dias ?? null,
+        considerar_sabado: payload.considerar_sabado ?? false,
+        considerar_domingo: payload.considerar_domingo ?? false,
+        chuva_prob_limite: payload.chuva_prob_limite ?? 60,
+        chuva_mm_limite: payload.chuva_mm_limite ?? 0.1,
+        planejamento_atualizado_em: payload.planejamento_atualizado_em ?? null,
+        planejamento_previsao_ate: payload.planejamento_previsao_ate ?? null,
+        planejamento_provisorio: payload.planejamento_provisorio ?? false,
+        planejamento_resumo: payload.planejamento_resumo ?? {},
       };
 
       const { data: inserted, error } = await supabaseAdmin
