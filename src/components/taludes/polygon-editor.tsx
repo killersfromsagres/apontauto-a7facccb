@@ -7,6 +7,7 @@ import {
   EyeOff,
   Loader2,
   ShieldCheck,
+  Trash2,
   Umbrella,
   X,
 } from "lucide-react";
@@ -14,10 +15,13 @@ import { toast } from "sonner";
 
 import type { TaludeMarcacao } from "@/lib/taludes/api";
 import {
+  AUTOMATIC_RAIN_MM_BLOCK,
+  AUTOMATIC_RAIN_PROBABILITY_BLOCK,
   buildTaludeSchedule,
   fetchTaludePlanningForecast,
   formatPlanningDate,
   type TaludePlanningResult,
+  type TaludeRainRiskLevel,
 } from "@/lib/taludes/planning";
 import { Button } from "@/components/ui/button";
 import { PolygonEditorPro } from "./polygon-editor-pro";
@@ -31,15 +35,28 @@ interface PolygonEditorProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-function formatShortDate(value?: string | null) {
+function storedDate(value?: string | null) {
   const raw = value?.split(" - ")[1] ?? "";
-  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return match ? `${match[3]}/${match[2]}` : raw || "Sem data";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : "";
+}
+
+function formatShortDate(value?: string | null) {
+  const raw = storedDate(value);
+  if (!raw) return "Sem data";
+  const [, year, month, day] = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/) ?? [];
+  return year ? `${day}/${month}` : "Sem data";
 }
 
 function extractStartDate(value?: string | null) {
-  const raw = value?.split(" - ")[1] ?? "";
-  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : new Date().toISOString().slice(0, 10);
+  return storedDate(value) || new Date().toISOString().slice(0, 10);
+}
+
+function hasDateField(marking: TaludeMarcacao) {
+  return Boolean(storedDate(marking.rotulo) || marking.prazo_rotulo || marking.icone_data_texto);
+}
+
+function statusOnly(marking: TaludeMarcacao) {
+  return marking.rotulo?.split(" - ")[0]?.trim() || "Programado";
 }
 
 function formatUpdatedAt(value?: string | null) {
@@ -54,11 +71,17 @@ function formatUpdatedAt(value?: string | null) {
   }).format(date);
 }
 
+function riskLabel(level?: TaludeRainRiskLevel | null) {
+  if (level === "critico") return "Crítico";
+  if (level === "alto") return "Alto";
+  if (level === "atencao") return "Atenção";
+  return "Baixo";
+}
+
 /**
  * Fachada estável do editor de Taludes.
- *
- * Mantém os controles operacionais fora da árvore SVG do editor para evitar
- * regressões em desenho, pan/zoom e movimentação de etiquetas.
+ * Controles de planejamento e datas ficam fora da árvore SVG para não interferir
+ * no desenho, pan/zoom e movimentação das demarcações.
  */
 export function PolygonEditor(props: PolygonEditorProps) {
   const [datePanelOpen, setDatePanelOpen] = useState(false);
@@ -70,8 +93,6 @@ export function PolygonEditor(props: PolygonEditorProps) {
   const [planningDuration, setPlanningDuration] = useState("5");
   const [includeSaturday, setIncludeSaturday] = useState(false);
   const [includeSunday, setIncludeSunday] = useState(false);
-  const [rainProbability, setRainProbability] = useState("60");
-  const [rainMm, setRainMm] = useState("0.1");
   const [isPlanning, setIsPlanning] = useState(false);
   const [planningResult, setPlanningResult] = useState<TaludePlanningResult | null>(null);
 
@@ -96,12 +117,21 @@ export function PolygonEditor(props: PolygonEditorProps) {
     setPlanningDuration(String(selectedPlanning.duracao_dias ?? 5));
     setIncludeSaturday(Boolean(selectedPlanning.considerar_sabado));
     setIncludeSunday(Boolean(selectedPlanning.considerar_domingo));
-    setRainProbability(String(selectedPlanning.chuva_prob_limite ?? 60));
-    setRainMm(String(selectedPlanning.chuva_mm_limite ?? 0.1));
     setPlanningResult(null);
   }, [selectedPlanning?.id]);
 
+  const openPlanningFor = (marking: TaludeMarcacao) => {
+    setPlanningId(marking.id);
+    setPlanningPanelOpen(true);
+    setDatePanelOpen(false);
+  };
+
   const toggleDateVisibility = async (marking: TaludeMarcacao) => {
+    if (!hasDateField(marking)) {
+      openPlanningFor(marking);
+      return;
+    }
+
     const showDate = marking.data_visivel === false;
     setSavingId(marking.id);
 
@@ -111,15 +141,52 @@ export function PolygonEditor(props: PolygonEditorProps) {
         data_visivel: showDate,
         ...(showDate ? {} : { numero_visivel: true }),
       });
-
       toast.success(
         showDate
           ? `Data do Talude ${marking.numero ?? "—"} exibida novamente.`
-          : `Data do Talude ${marking.numero ?? "—"} ocultada. O número foi mantido no mapa.`,
+          : `Data do Talude ${marking.numero ?? "—"} ocultada. O número foi mantido.`,
       );
     } catch (error) {
       console.error("[Taludes] Falha ao alterar visibilidade da data:", error);
       toast.error("Não foi possível alterar a visibilidade da data.");
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const deleteDateField = async (marking: TaludeMarcacao) => {
+    if (!hasDateField(marking)) return;
+    const confirmed = window.confirm(
+      `Excluir o campo de data do Talude ${marking.numero ?? "—"}?\n\n` +
+        "Serão removidos DE, ATÉ e o planejamento automático deste campo. O número, a área e o talude continuarão no mapa.",
+    );
+    if (!confirmed) return;
+
+    setSavingId(marking.id);
+    try {
+      await props.onSave({
+        id: marking.id,
+        rotulo: statusOnly(marking),
+        prazo_rotulo: null,
+        data_visivel: false,
+        data_x: null,
+        data_y: null,
+        icone_data_visivel: false,
+        icone_data_texto: null,
+        icone_data_x: null,
+        icone_data_y: null,
+        planejamento_automatico: false,
+        duracao_dias: null,
+        planejamento_atualizado_em: null,
+        planejamento_previsao_ate: null,
+        planejamento_provisorio: false,
+        planejamento_resumo: null,
+      });
+      if (planningId === marking.id) setPlanningResult(null);
+      toast.success(`Campo de data do Talude ${marking.numero ?? "—"} excluído. Área e número foram preservados.`);
+    } catch (error) {
+      console.error("[Taludes] Falha ao excluir campo de data:", error);
+      toast.error("Não foi possível excluir o campo de data.");
     } finally {
       setSavingId(null);
     }
@@ -132,9 +199,6 @@ export function PolygonEditor(props: PolygonEditorProps) {
     }
 
     const duration = Math.trunc(Number(planningDuration));
-    const probability = Math.round(Number(rainProbability));
-    const precipitationMm = Number(rainMm.replace(",", "."));
-
     if (!/^\d{4}-\d{2}-\d{2}$/.test(planningStartDate)) {
       toast.error("Informe uma data de início válida.");
       return;
@@ -143,17 +207,9 @@ export function PolygonEditor(props: PolygonEditorProps) {
       toast.error("Informe entre 1 e 365 dias de execução.");
       return;
     }
-    if (!Number.isFinite(probability) || probability < 0 || probability > 100) {
-      toast.error("O limite de probabilidade de chuva deve ficar entre 0% e 100%.");
-      return;
-    }
-    if (!Number.isFinite(precipitationMm) || precipitationMm < 0) {
-      toast.error("Informe um limite de precipitação válido.");
-      return;
-    }
 
     setIsPlanning(true);
-    const toastId = toast.loading("Consultando clima e montando o cronograma do talude...");
+    const toastId = toast.loading("Analisando automaticamente a chuva e montando o cronograma...");
 
     try {
       const forecastDays = await fetchTaludePlanningForecast();
@@ -162,22 +218,21 @@ export function PolygonEditor(props: PolygonEditorProps) {
         durationDays: duration,
         includeSaturday,
         includeSunday,
-        rainProbabilityThreshold: probability,
-        rainMmThreshold: precipitationMm,
         forecastDays,
       });
 
-      const currentStatus = selectedPlanning.rotulo?.split(" - ")[0]?.trim() || "Programado";
       await props.onSave({
         id: selectedPlanning.id,
-        rotulo: `${currentStatus} - ${planningStartDate}`,
+        rotulo: `${statusOnly(selectedPlanning)} - ${planningStartDate}`,
         prazo_rotulo: result.endDate,
+        data_visivel: true,
         planejamento_automatico: true,
         duracao_dias: duration,
         considerar_sabado: includeSaturday,
         considerar_domingo: includeSunday,
-        chuva_prob_limite: probability,
-        chuva_mm_limite: precipitationMm,
+        // Mantidos no banco para auditoria/compatibilidade, mas não são mais editados manualmente.
+        chuva_prob_limite: AUTOMATIC_RAIN_PROBABILITY_BLOCK,
+        chuva_mm_limite: AUTOMATIC_RAIN_MM_BLOCK,
         planejamento_atualizado_em: result.summary.generatedAt,
         planejamento_previsao_ate: result.summary.forecastHorizonEnd,
         planejamento_provisorio: result.hasProvisionalWeather,
@@ -187,8 +242,8 @@ export function PolygonEditor(props: PolygonEditorProps) {
       setPlanningResult(result);
       toast.success(
         result.hasProvisionalWeather
-          ? `Datas calculadas até ${formatPlanningDate(result.endDate)}. Parte do período ainda está fora da janela meteorológica.`
-          : `Planejamento calculado com término em ${formatPlanningDate(result.endDate)}.`,
+          ? `Término em ${formatPlanningDate(result.endDate)}. O sistema calculou a chuva automaticamente; parte do período ainda está fora da janela meteorológica.`
+          : `Planejamento automático concluído. Término em ${formatPlanningDate(result.endDate)}.`,
         { id: toastId, duration: 6500 },
       );
     } catch (error) {
@@ -215,15 +270,15 @@ export function PolygonEditor(props: PolygonEditorProps) {
 
       <div className="pointer-events-none absolute bottom-3 left-3 z-[70] flex flex-col items-start gap-2">
         {datePanelOpen && (
-          <div className="pointer-events-auto w-[min(330px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur-xl">
+          <div className="pointer-events-auto w-[min(370px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-white/10 bg-slate-950/95 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.07] px-3 py-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4 text-cyan-300" />
-                  <p className="text-xs font-extrabold text-white">Datas no mapa</p>
+                  <p className="text-xs font-extrabold text-white">Campos de data</p>
                 </div>
                 <p className="mt-1 text-[9px] leading-relaxed text-white/40">
-                  Oculte somente a data para ganhar espaço. Número, polígono e histórico continuam salvos.
+                  Oculte temporariamente ou exclua somente o campo de data para eliminar duplicidades sem apagar o talude.
                 </p>
               </div>
               <Button type="button" variant="ghost" size="icon-sm" className="shrink-0" onClick={() => setDatePanelOpen(false)} title="Fechar">
@@ -231,9 +286,10 @@ export function PolygonEditor(props: PolygonEditorProps) {
               </Button>
             </div>
 
-            <div className="max-h-[42vh] space-y-1.5 overflow-y-auto p-2.5">
+            <div className="max-h-[46vh] space-y-1.5 overflow-y-auto p-2.5">
               {props.marcacoes.map((marking) => {
-                const hidden = marking.data_visivel === false;
+                const exists = hasDateField(marking);
+                const hidden = exists && marking.data_visivel === false;
                 const saving = savingId === marking.id;
                 return (
                   <div key={marking.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5">
@@ -244,23 +300,46 @@ export function PolygonEditor(props: PolygonEditorProps) {
                         </span>
                         <div className="min-w-0">
                           <p className="truncate text-[10px] font-bold text-white/85">Talude {marking.numero ?? "—"}</p>
-                          <p className="truncate text-[9px] text-white/40">{formatShortDate(marking.rotulo)} · {hidden ? "data oculta" : "data visível"}</p>
+                          <p className="truncate text-[9px] text-white/40">
+                            {exists ? `${formatShortDate(marking.rotulo)} · ${hidden ? "campo oculto" : "campo visível"}` : "Campo de data removido"}
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={hidden ? "outline" : "ghost"}
-                      className="h-8 gap-1.5 px-2.5 text-[9px]"
-                      disabled={Boolean(savingId)}
-                      onClick={() => void toggleDateVisibility(marking)}
-                      title={hidden ? "Mostrar data deste talude" : "Ocultar data e manter o número"}
-                    >
-                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                      {hidden ? "Mostrar" : "Ocultar"}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {exists ? (
+                        <>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={hidden ? "outline" : "ghost"}
+                            className="h-8 gap-1.5 px-2 text-[9px]"
+                            disabled={Boolean(savingId)}
+                            onClick={() => void toggleDateVisibility(marking)}
+                            title={hidden ? "Mostrar campo de data" : "Ocultar campo de data"}
+                          >
+                            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                            {hidden ? "Mostrar" : "Ocultar"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            className="text-red-300 hover:bg-red-500/10 hover:text-red-200"
+                            disabled={Boolean(savingId)}
+                            onClick={() => void deleteDateField(marking)}
+                            title="Excluir somente o campo de data"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button type="button" size="sm" variant="outline" className="h-8 gap-1.5 px-2 text-[9px]" onClick={() => openPlanningFor(marking)}>
+                          <CalendarClock className="h-3.5 w-3.5" /> Criar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -271,7 +350,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
         )}
 
         {planningPanelOpen && (
-          <div className="pointer-events-auto w-[min(410px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-cyan-300/15 bg-slate-950/97 shadow-2xl backdrop-blur-xl">
+          <div className="pointer-events-auto w-[min(430px,calc(100vw-32px))] overflow-hidden rounded-2xl border border-cyan-300/15 bg-slate-950/97 shadow-2xl backdrop-blur-xl">
             <div className="flex items-start justify-between gap-3 border-b border-white/[0.07] bg-gradient-to-r from-cyan-400/[0.055] to-transparent px-3.5 py-3.5">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -279,7 +358,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
                   <p className="text-xs font-extrabold text-white">Planejamento automático</p>
                 </div>
                 <p className="mt-1 text-[9px] leading-relaxed text-white/42">
-                  Calcula o término considerando expediente, feriados e chuva prevista para Demarchi.
+                  Calcula o término com expediente, feriados e risco de chuva analisado automaticamente para Demarchi.
                 </p>
               </div>
               <Button type="button" variant="ghost" size="icon-sm" className="shrink-0" onClick={() => setPlanningPanelOpen(false)} title="Fechar">
@@ -287,7 +366,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
               </Button>
             </div>
 
-            <div className="max-h-[68vh] space-y-3 overflow-y-auto p-3.5">
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto p-3.5">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-white/45">Talude</label>
                 <select
@@ -348,30 +427,29 @@ export function PolygonEditor(props: PolygonEditorProps) {
                     </p>
                   </div>
 
-                  <div className="rounded-xl border border-sky-300/10 bg-sky-300/[0.025] p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <CloudRain className="h-3.5 w-3.5 text-sky-300" />
-                      <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/60">Critério de chuva</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <label className="space-y-1">
-                        <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-white/35">Probabilidade</span>
-                        <div className="relative">
-                          <input type="number" min="0" max="100" value={rainProbability} onChange={(event) => setRainProbability(event.target.value)} className="h-9 w-full rounded-lg border border-white/10 bg-black/15 px-2.5 pr-7 text-[10px] font-bold outline-none focus:border-sky-300/30" />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-white/35">%</span>
+                  <div className="rounded-xl border border-sky-300/15 bg-sky-300/[0.035] p-3">
+                    <div className="flex items-start gap-2.5">
+                      <CloudRain className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/65">Chuva 100% automática</p>
+                          <span className="rounded-md border border-emerald-300/15 bg-emerald-300/[0.06] px-1.5 py-0.5 text-[7px] font-black uppercase text-emerald-200">sem preenchimento manual</span>
                         </div>
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-white/35">Precipitação</span>
-                        <div className="relative">
-                          <input type="number" min="0" step="0.1" value={rainMm} onChange={(event) => setRainMm(event.target.value)} className="h-9 w-full rounded-lg border border-white/10 bg-black/15 px-2.5 pr-9 text-[10px] font-bold outline-none focus:border-sky-300/30" />
-                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-white/35">mm</span>
+                        <p className="mt-1.5 text-[8px] leading-relaxed text-white/40">
+                          A probabilidade diária é obtida da previsão e cruzada com volume de precipitação e condição meteorológica. O sistema calcula um risco de 0 a 100 e decide automaticamente se o dia pode entrar na execução.
+                        </p>
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                          <div className="rounded-lg border border-white/[0.06] bg-black/15 p-2">
+                            <p className="text-[7px] font-bold uppercase text-white/30">Regra operacional</p>
+                            <p className="mt-0.5 text-[9px] font-black text-white/75">≥ {AUTOMATIC_RAIN_PROBABILITY_BLOCK}% ou chuva prevista</p>
+                          </div>
+                          <div className="rounded-lg border border-white/[0.06] bg-black/15 p-2">
+                            <p className="text-[7px] font-bold uppercase text-white/30">Volume impeditivo</p>
+                            <p className="mt-0.5 text-[9px] font-black text-white/75">≥ {AUTOMATIC_RAIN_MM_BLOCK.toFixed(1)} mm</p>
+                          </div>
                         </div>
-                      </label>
+                      </div>
                     </div>
-                    <p className="mt-2 text-[8px] leading-relaxed text-white/32">
-                      O dia é descartado se houver código meteorológico de chuva, precipitação igual/acima do limite ou probabilidade igual/acima do percentual definido.
-                    </p>
                   </div>
 
                   <Button
@@ -383,7 +461,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
                     onClick={() => void handleAutomaticPlanning()}
                   >
                     {isPlanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
-                    {isPlanning ? "Calculando cronograma..." : "Calcular datas automaticamente"}
+                    {isPlanning ? "Analisando clima e calculando..." : "Calcular datas automaticamente"}
                   </Button>
 
                   {storedSummary && plannedEndDate && (
@@ -396,6 +474,21 @@ export function PolygonEditor(props: PolygonEditorProps) {
                         <div className="text-right">
                           <p className="text-[8px] font-bold uppercase text-white/30">Duração</p>
                           <p className="mt-0.5 text-[11px] font-black text-white/80">{storedSummary.executionDays} dia(s)</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="rounded-lg border border-sky-300/10 bg-sky-300/[0.025] p-2 text-center">
+                          <p className="text-[7px] font-bold uppercase tracking-wide text-white/30">Maior prob.</p>
+                          <p className="mt-1 text-[11px] font-black tabular-nums text-sky-200">{storedSummary.highestRainProbability ?? 0}%</p>
+                        </div>
+                        <div className="rounded-lg border border-sky-300/10 bg-sky-300/[0.025] p-2 text-center">
+                          <p className="text-[7px] font-bold uppercase tracking-wide text-white/30">Risco máx.</p>
+                          <p className="mt-1 text-[11px] font-black tabular-nums text-sky-200">{storedSummary.highestRainRiskScore ?? 0}/100</p>
+                        </div>
+                        <div className="rounded-lg border border-white/[0.06] bg-black/15 p-2 text-center">
+                          <p className="text-[7px] font-bold uppercase tracking-wide text-white/30">Dias avaliados</p>
+                          <p className="mt-1 text-[11px] font-black tabular-nums text-white/80">{storedSummary.evaluatedForecastDays ?? 0}</p>
                         </div>
                       </div>
 
@@ -427,7 +520,7 @@ export function PolygonEditor(props: PolygonEditorProps) {
                       <div>
                         <p className="text-[9px] font-extrabold text-amber-200">Trecho provisório</p>
                         <p className="mt-0.5 text-[8px] leading-relaxed text-white/42">
-                          Parte da execução está além da janela meteorológica disponível. O cronograma foi montado, mas esses dias devem ser recalculados quando entrarem na previsão de 16 dias.
+                          Parte da execução está além da janela meteorológica disponível. Esses dias devem ser recalculados quando entrarem na previsão.
                         </p>
                       </div>
                     </div>
@@ -438,12 +531,17 @@ export function PolygonEditor(props: PolygonEditorProps) {
                       <div className="border-b border-white/[0.06] px-3 py-2">
                         <p className="text-[8px] font-extrabold uppercase tracking-[0.13em] text-white/45">Dias descartados no cálculo</p>
                       </div>
-                      <div className="max-h-36 space-y-1 overflow-y-auto p-2">
+                      <div className="max-h-40 space-y-1 overflow-y-auto p-2">
                         {skippedDays.map((day) => (
                           <div key={`${day.date}-${day.reason}`} className="flex items-start justify-between gap-3 rounded-lg bg-black/15 px-2.5 py-2">
                             <div className="min-w-0">
                               <p className="text-[9px] font-black tabular-nums text-white/75">{formatPlanningDate(day.date)}</p>
                               <p className="truncate text-[8px] text-white/34">{day.reasonLabel}</p>
+                              {day.rainAssessment && (
+                                <p className="mt-0.5 text-[8px] font-semibold text-sky-300/70">
+                                  {day.rainAssessment.probability}% · risco {riskLabel(day.rainAssessment.riskLevel)} ({day.rainAssessment.riskScore}/100)
+                                </p>
+                              )}
                             </div>
                             <span className="shrink-0 rounded-md border border-white/[0.07] px-1.5 py-0.5 text-[7px] font-bold uppercase text-white/40">
                               {day.reason === "chuva" ? "Chuva" : day.reason === "feriado" ? "Feriado" : "Folga"}
@@ -489,13 +587,13 @@ export function PolygonEditor(props: PolygonEditorProps) {
               setDatePanelOpen((open) => !open);
               setPlanningPanelOpen(false);
             }}
-            title="Controlar datas exibidas no mapa"
+            title="Controlar campos de data"
           >
             <CalendarDays className="h-4 w-4" />
             Datas
-            {props.marcacoes.some((marking) => marking.data_visivel === false) && (
+            {props.marcacoes.some((marking) => hasDateField(marking) && marking.data_visivel === false) && (
               <span className="rounded-md bg-amber-300/10 px-1.5 py-0.5 text-[8px] font-black text-amber-200">
-                {props.marcacoes.filter((marking) => marking.data_visivel === false).length} oculta(s)
+                {props.marcacoes.filter((marking) => hasDateField(marking) && marking.data_visivel === false).length} oculta(s)
               </span>
             )}
           </Button>
