@@ -5,18 +5,23 @@ import { toast } from "sonner";
 import {
   Boxes,
   CalendarClock,
+  CheckCircle2,
   Eye,
   FileSpreadsheet,
   FileText,
+  ImageIcon,
   Landmark,
   ListChecks,
   Loader2,
+  MailCheck,
+  MailOpen,
   MapPin,
   Package,
   PencilLine,
   RefreshCw,
   Search,
   ShieldCheck,
+  Undo2,
   Upload,
   UserRound,
   Wrench,
@@ -47,7 +52,6 @@ import {
   MaterialRequestEditDialog,
   type EditableMaterialRequest,
 } from "@/components/materiais/material-request-edit-dialog";
-import { MaterialRequestPhotoGallery } from "@/components/materiais/material-request-photo-gallery";
 import { MaterialRequestDetailsDialog } from "@/components/materiais/material-request-details-dialog";
 
 export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
@@ -58,12 +62,14 @@ export const Route = createFileRoute("/_authenticated/corretiva-pecas-status")({
       {
         name: "description",
         content:
-          "Central corporativa de peças solicitadas em Corretiva e Refrigeração, com evidências, centro de custo e relatórios profissionais.",
+          "Central de peças com evidências, controle de encaminhamento por e-mail e exportação de pendências.",
       },
-      { property: "og:title", content: "Solicitações de Materiais" },
     ],
   }),
 });
+
+type Origin = "refrigeracao" | "corretiva";
+type EmailFilter = "pendentes" | "enviados" | "todos";
 
 function display(value: unknown, fallback = "—") {
   const text = String(value ?? "").trim();
@@ -79,17 +85,7 @@ function formatDate(value: unknown) {
     : date.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
 }
 
-function Kpi({
-  icon: Icon,
-  label,
-  value,
-  hint,
-}: {
-  icon: typeof Package;
-  label: string;
-  value: number | string;
-  hint: string;
-}) {
+function Kpi({ icon: Icon, label, value, hint }: any) {
   return (
     <GlassCard className="relative overflow-hidden border-white/[0.08] bg-white/[0.025] p-4 shadow-none">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
@@ -107,22 +103,9 @@ function Kpi({
   );
 }
 
-function MetaPill({
-  icon: Icon,
-  children,
-  className,
-}: {
-  icon: typeof Package;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function MetaPill({ icon: Icon, children }: any) {
   return (
-    <span
-      className={cn(
-        "inline-flex min-w-0 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-muted-foreground",
-        className,
-      )}
-    >
+    <span className="inline-flex min-w-0 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-muted-foreground">
       <Icon className="h-3.5 w-3.5 shrink-0" />
       <span className="truncate">{children}</span>
     </span>
@@ -139,8 +122,10 @@ function CentralMateriaisUnificadaPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [importingCc, setImportingCc] = useState(false);
+  const [updatingEmailKey, setUpdatingEmailKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [fOrigem, setFOrigem] = useState<"todas" | "refrigeracao" | "corretiva">("todas");
+  const [fOrigem, setFOrigem] = useState<"todas" | Origin>("todas");
+  const [fEnvio, setFEnvio] = useState<EmailFilter>("pendentes");
   const [editingRequest, setEditingRequest] = useState<EditableMaterialRequest | null>(null);
   const [detailRequest, setDetailRequest] = useState<any | null>(null);
   const [structureInput, setStructureInput] = useState("");
@@ -153,6 +138,7 @@ function CentralMateriaisUnificadaPage() {
   const loadData = async (silent = false) => {
     if (silent) setRefreshing(true);
     else setLoading(true);
+
     try {
       const [rRes, cRes, mappings] = await Promise.all([
         supabase.from("refrigeracao_pecas").select("*").order("created_at", { ascending: false }),
@@ -163,8 +149,8 @@ function CentralMateriaisUnificadaPage() {
       if (rRes.error) throw rRes.error;
       if (cRes.error) throw cRes.error;
 
-      const rData = (rRes.data || []).map((p) => ({ ...p, origem: "refrigeracao" as const }));
-      const cData = (cRes.data || []).map((p) => ({ ...p, origem: "corretiva" as const }));
+      const rData = (rRes.data || []).map((p: any) => ({ ...p, origem: "refrigeracao" as const }));
+      const cData = (cRes.data || []).map((p: any) => ({ ...p, origem: "corretiva" as const }));
       const all = [...rData, ...cData].sort(
         (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
@@ -173,8 +159,12 @@ function CentralMateriaisUnificadaPage() {
       const cIds = Array.from(new Set(cData.map((p) => p.os_id).filter(Boolean))) as string[];
 
       const [rOs, cOs, photoMap] = await Promise.all([
-        rIds.length ? supabase.from("refrigeracao_os").select("*").in("id", rIds) : Promise.resolve({ data: [], error: null }),
-        cIds.length ? supabase.from("corretiva_os").select("*").in("id", cIds) : Promise.resolve({ data: [], error: null }),
+        rIds.length
+          ? supabase.from("refrigeracao_os").select("*").in("id", rIds)
+          : Promise.resolve({ data: [], error: null }),
+        cIds.length
+          ? supabase.from("corretiva_os").select("*").in("id", cIds)
+          : Promise.resolve({ data: [], error: null }),
         loadMaterialRequestPhotos(rIds, cIds),
       ]);
 
@@ -182,16 +172,16 @@ function CentralMateriaisUnificadaPage() {
       if (cOs.error) throw cOs.error;
 
       const map = new Map<string, any>();
-      (rOs.data || []).forEach((o) => map.set(o.id, { ...o, origem: "refrigeracao" }));
-      (cOs.data || []).forEach((o) => map.set(o.id, { ...o, origem: "corretiva" }));
+      (rOs.data || []).forEach((o: any) => map.set(o.id, { ...o, origem: "refrigeracao" }));
+      (cOs.data || []).forEach((o: any) => map.set(o.id, { ...o, origem: "corretiva" }));
 
       setPecas(all);
       setOsById(map);
       setPhotosByOs(photoMap);
       setCostCenterMap(mappings);
-    } catch (err: any) {
-      console.error("[Materiais] Falha ao carregar central:", err);
-      toast.error("Erro ao carregar materiais: " + (err?.message || "falha desconhecida"));
+    } catch (error: any) {
+      console.error("[Materiais] Falha ao carregar central:", error);
+      toast.error("Erro ao carregar materiais: " + (error?.message || "falha desconhecida"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -199,18 +189,15 @@ function CentralMateriaisUnificadaPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, []);
 
   const withResolvedCostCenter = (item: any) => {
     const os = osById.get(item.os_id);
-    return {
-      ...item,
-      centro_custo: resolveCostCenter(item, os, costCenterMap) || null,
-    };
+    return { ...item, centro_custo: resolveCostCenter(item, os, costCenterMap) || null };
   };
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return pecas.filter((p) => {
       if (fOrigem !== "todas" && p.origem !== fOrigem) return false;
@@ -228,30 +215,84 @@ function CentralMateriaisUnificadaPage() {
     });
   }, [pecas, search, fOrigem, osById, costCenterMap]);
 
-  const exportItems = useMemo(
-    () => filtered.map((item) => withResolvedCostCenter(item)),
-    [filtered, osById, costCenterMap],
+  const filtered = useMemo(
+    () =>
+      baseFiltered.filter((item) => {
+        const sent = Boolean(item.email_enviado_em);
+        if (fEnvio === "pendentes") return !sent;
+        if (fEnvio === "enviados") return sent;
+        return true;
+      }),
+    [baseFiltered, fEnvio],
+  );
+
+  const pendingExportItems = useMemo(
+    () =>
+      baseFiltered
+        .filter((item) => !item.email_enviado_em)
+        .map((item) => withResolvedCostCenter(item)),
+    [baseFiltered, osById, costCenterMap],
   );
 
   const metrics = useMemo(() => {
-    const totalQuantity = filtered.reduce((sum, item) => sum + Number(item.quantidade || 1), 0);
-    const mapped = filtered.filter((item) => {
-      const os = osById.get(item.os_id);
-      return Boolean(resolveCostCenter(item, os, costCenterMap));
-    }).length;
-    const withPhotos = filtered.filter((item) => {
-      const origin = item.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+    const pending = baseFiltered.filter((item) => !item.email_enviado_em);
+    const sent = baseFiltered.filter((item) => Boolean(item.email_enviado_em));
+    const pendingQuantity = pending.reduce((sum, item) => sum + Number(item.quantidade || 1), 0);
+    const withPhotos = baseFiltered.filter((item) => {
+      const origin: Origin = item.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
       return (photosByOs.get(materialPhotoKey(origin, item.os_id)) || []).length > 0;
     }).length;
-    return { totalQuantity, mapped, withPhotos };
-  }, [filtered, osById, costCenterMap, photosByOs]);
+    return { pending: pending.length, sent: sent.length, pendingQuantity, withPhotos };
+  }, [baseFiltered, photosByOs]);
+
+  const setEmailForwarded = async (item: any, forwarded: boolean) => {
+    const origin: Origin = item.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+    const table = origin === "refrigeracao" ? "refrigeracao_pecas" : "corretiva_pecas";
+    const key = `${origin}-${item.id}`;
+    const emailEnviadoEm = forwarded ? new Date().toISOString() : null;
+    setUpdatingEmailKey(key);
+
+    try {
+      const { error } = await (supabase.from(table) as any)
+        .update({ email_enviado_em: emailEnviadoEm, updated_at: new Date().toISOString() })
+        .eq("id", item.id);
+      if (error) throw error;
+
+      setPecas((current) =>
+        current.map((row) =>
+          row.id === item.id && row.origem === origin
+            ? { ...row, email_enviado_em: emailEnviadoEm }
+            : row,
+        ),
+      );
+
+      toast.success(
+        forwarded
+          ? "Peça marcada como encaminhada por e-mail. Ela não entrará nas próximas planilhas."
+          : "Marcação removida. A peça voltou para as próximas planilhas de pendências.",
+      );
+    } catch (error: any) {
+      console.error("[Materiais] Falha ao atualizar encaminhamento:", error);
+      toast.error(error?.message || "Não foi possível atualizar o encaminhamento por e-mail.");
+    } finally {
+      setUpdatingEmailKey(null);
+    }
+  };
 
   const exportExcel = async () => {
+    if (!pendingExportItems.length) {
+      toast.info("Não há peças pendentes de encaminhamento para exportar.");
+      return;
+    }
+
     setExportingExcel(true);
-    const toastId = toast.loading("Gerando planilha corporativa...");
+    const toastId = toast.loading("Gerando planilha somente com peças pendentes...");
     try {
-      await exportComprasPremiumExcel(exportItems, osById);
-      toast.success("Planilha corporativa gerada com sucesso.", { id: toastId });
+      await exportComprasPremiumExcel(pendingExportItems, osById);
+      toast.success(
+        `Planilha gerada com ${pendingExportItems.length} peça(s) ainda não encaminhada(s) por e-mail.`,
+        { id: toastId },
+      );
     } catch (error) {
       console.error("[Materiais] Erro ao exportar Excel:", error);
       toast.error("Não foi possível gerar a planilha.", { id: toastId });
@@ -264,7 +305,9 @@ function CentralMateriaisUnificadaPage() {
     setExportingPdf(true);
     const toastId = toast.loading("Montando relatório PDF com evidências...");
     try {
-      const source = onlyItem ? [withResolvedCostCenter(onlyItem)] : exportItems;
+      const source = onlyItem
+        ? [withResolvedCostCenter(onlyItem)]
+        : filtered.map((item) => withResolvedCostCenter(item));
       const os = onlyItem ? osById.get(onlyItem.os_id) : null;
       await exportComprasPremiumPdf(source, osById, photosByOs, {
         title: onlyItem ? `Solicitação de Material · OS ${display(os?.numero_os)}` : undefined,
@@ -272,7 +315,7 @@ function CentralMateriaisUnificadaPage() {
           ? `Solicitacao_Material_OS_${display(os?.numero_os, "sem-numero")}.pdf`
           : undefined,
       });
-      toast.success("PDF corporativo gerado com sucesso.", { id: toastId });
+      toast.success("PDF gerado com sucesso.", { id: toastId });
     } catch (error: any) {
       console.error("[Materiais] Erro ao exportar PDF:", error);
       toast.error(error?.message || "Não foi possível gerar o PDF.", { id: toastId });
@@ -287,13 +330,9 @@ function CentralMateriaisUnificadaPage() {
     const toastId = toast.loading("Validando vínculos Ativo × Centro de Custo...");
     try {
       const result = await importAssetCostCentersFromFile(file);
-      const conflictText = result.conflicts
-        ? ` ${result.conflicts} ativo(s) com conflito foram preservados para revisão.`
-        : "";
-      toast.success(`${result.imported} vínculo(s) atualizado(s).${conflictText}`, { id: toastId });
+      toast.success(`${result.imported} vínculo(s) atualizado(s).`, { id: toastId });
       await loadData(true);
     } catch (error: any) {
-      console.error("[Materiais] Falha ao importar centros de custo:", error);
       toast.error(error?.message || "Não foi possível importar os centros de custo.", { id: toastId });
     } finally {
       setImportingCc(false);
@@ -329,7 +368,7 @@ function CentralMateriaisUnificadaPage() {
 
   const editingOs = editingRequest ? osById.get(editingRequest.os_id ?? "") : null;
   const detailOs = detailRequest ? osById.get(detailRequest.os_id ?? "") : null;
-  const detailOrigin: "refrigeracao" | "corretiva" =
+  const detailOrigin: Origin =
     detailRequest?.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
   const detailPhotos = detailRequest
     ? photosByOs.get(materialPhotoKey(detailOrigin, detailRequest.os_id)) || []
@@ -341,7 +380,7 @@ function CentralMateriaisUnificadaPage() {
   return (
     <PageShell
       title="Solicitações de Materiais"
-      description="Gestão corporativa de peças solicitadas em Corretiva e Refrigeração · Grupo GPS / operação Suvinil - Sherwin-Williams."
+      description="Controle de peças solicitadas, evidências e encaminhamento para compras por e-mail."
       actions={
         <div className="flex flex-wrap items-center justify-end gap-2">
           <input
@@ -349,7 +388,7 @@ function CentralMateriaisUnificadaPage() {
             type="file"
             accept=".xlsx,.xls,.csv"
             className="hidden"
-            onChange={(event) => importCostCenters(event.target.files?.[0] || null)}
+            onChange={(event) => void importCostCenters(event.target.files?.[0] || null)}
           />
           <Button
             variant="outline"
@@ -365,27 +404,26 @@ function CentralMateriaisUnificadaPage() {
             variant="outline"
             size="sm"
             className="h-9 gap-2 border-white/10 bg-white/[0.025]"
-            onClick={() => exportPdf()}
+            onClick={() => void exportPdf()}
             disabled={loading || exportingPdf || !filtered.length}
           >
             {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-            PDF profissional
+            PDF
           </Button>
           <Button
-            variant="outline"
             size="sm"
-            className="h-9 gap-2 border-white/10 bg-white/[0.025]"
-            onClick={exportExcel}
-            disabled={loading || exportingExcel || !filtered.length}
+            className="h-9 gap-2"
+            onClick={() => void exportExcel()}
+            disabled={loading || exportingExcel || !pendingExportItems.length}
           >
             {exportingExcel ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSpreadsheet className="h-4 w-4" />}
-            Excel corporativo
+            Baixar pendentes ({pendingExportItems.length})
           </Button>
           <Button
             variant="outline"
             size="sm"
             className="h-9 gap-2 border-white/10 bg-white/[0.025]"
-            onClick={() => loadData(true)}
+            onClick={() => void loadData(true)}
             disabled={refreshing}
           >
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
@@ -396,19 +434,14 @@ function CentralMateriaisUnificadaPage() {
     >
       <div className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Kpi icon={Package} label="Solicitações" value={filtered.length} hint="Peças exibidas no filtro atual" />
-          <Kpi icon={Boxes} label="Quantidade total" value={metrics.totalQuantity} hint="Soma de unidades solicitadas" />
-          <Kpi
-            icon={Landmark}
-            label="Centro de custo"
-            value={`${metrics.mapped}/${filtered.length}`}
-            hint="Preenchimento automático por ativo"
-          />
-          <Kpi icon={ShieldCheck} label="Com evidência" value={metrics.withPhotos} hint="Solicitações com fotos vinculadas" />
+          <Kpi icon={MailOpen} label="Pendentes de e-mail" value={metrics.pending} hint="Entram na próxima planilha" />
+          <Kpi icon={MailCheck} label="Já encaminhadas" value={metrics.sent} hint="Ficam fora das próximas planilhas" />
+          <Kpi icon={Boxes} label="Qtd. pendente" value={metrics.pendingQuantity} hint="Unidades ainda a encaminhar" />
+          <Kpi icon={ShieldCheck} label="Com evidência" value={metrics.withPhotos} hint="Solicitações com fotos disponíveis" />
         </div>
 
         <GlassCard className="border-white/[0.08] bg-white/[0.018] p-3.5 shadow-none sm:p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
             <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -418,62 +451,81 @@ function CentralMateriaisUnificadaPage() {
                 className="h-10 border-white/[0.08] bg-black/10 pl-9 shadow-none"
               />
             </div>
-            <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.07] bg-black/10 p-1 lg:w-auto">
-              {[
-                ["todas", "Todas"],
-                ["corretiva", "Corretiva"],
-                ["refrigeracao", "Refrigeração"],
-              ].map(([value, label]) => (
-                <Button
-                  key={value}
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setFOrigem(value as typeof fOrigem)}
-                  className={cn(
-                    "h-8 rounded-lg px-3 text-xs font-semibold",
-                    fOrigem === value
-                      ? "border border-white/10 bg-white/[0.08] text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </Button>
-              ))}
+
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.07] bg-black/10 p-1">
+                {[
+                  ["pendentes", "Pendentes"],
+                  ["enviados", "Enviados"],
+                  ["todos", "Todos"],
+                ].map(([value, label]) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setFEnvio(value as EmailFilter)}
+                    className={cn(
+                      "h-8 rounded-lg px-3 text-xs font-semibold",
+                      fEnvio === value
+                        ? "border border-white/10 bg-white/[0.08] text-foreground"
+                        : "text-muted-foreground hover:bg-white/[0.04]",
+                    )}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-1 rounded-xl border border-white/[0.07] bg-black/10 p-1">
+                {[
+                  ["todas", "Todas"],
+                  ["corretiva", "Corretiva"],
+                  ["refrigeracao", "Refrigeração"],
+                ].map(([value, label]) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setFOrigem(value as typeof fOrigem)}
+                    className={cn(
+                      "h-8 rounded-lg px-3 text-xs font-semibold",
+                      fOrigem === value
+                        ? "border border-white/10 bg-white/[0.08] text-foreground"
+                        : "text-muted-foreground hover:bg-white/[0.04]",
+                    )}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </GlassCard>
 
         <GlassCard className="border-white/[0.08] bg-white/[0.018] p-4 shadow-none">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
-            <div className="flex min-w-0 items-start gap-3 xl:w-[320px]">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035] text-foreground/80">
-                <ListChecks className="h-4.5 w-4.5" />
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="flex min-w-0 items-center gap-3 lg:w-[300px]">
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.035]">
+                <ListChecks className="h-4 w-4" />
               </div>
-              <div className="min-w-0">
-                <h3 className="text-sm font-semibold text-foreground">Padronização rápida de materiais</h3>
-                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                  Separe uma descrição livre em itens e quantidades antes de registrar ou encaminhar a solicitação.
-                </p>
+              <div>
+                <p className="text-sm font-semibold">Padronização rápida</p>
+                <p className="text-xs text-muted-foreground">Organize descrições antes de solicitar.</p>
               </div>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row">
+            <div className="flex min-w-0 flex-1 gap-2">
               <Input
                 value={structureInput}
                 onChange={(event) => setStructureInput(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter") structureDescription();
+                  if (event.key === "Enter") void structureDescription();
                 }}
-                placeholder="Ex.: 10 lâmpadas LED, 2 reatores, 4 m de cabo 2,5 mm"
-                className="h-10 border-white/[0.08] bg-black/10 shadow-none"
+                placeholder="Ex.: 10 lâmpadas LED, 2 reatores..."
+                className="h-10 border-white/[0.08] bg-black/10"
               />
-              <Button
-                type="button"
-                variant="outline"
-                className="h-10 shrink-0 gap-2 border-white/10 bg-white/[0.035]"
-                onClick={structureDescription}
-                disabled={structuring}
-              >
+              <Button variant="outline" onClick={() => void structureDescription()} disabled={structuring}>
                 {structuring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ListChecks className="h-4 w-4" />}
                 Estruturar
               </Button>
@@ -482,12 +534,8 @@ function CentralMateriaisUnificadaPage() {
           {structuredItems.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
               {structuredItems.map((item, index) => (
-                <span
-                  key={`${item.item}-${index}`}
-                  className="inline-flex items-center gap-2 rounded-lg border border-white/[0.07] bg-black/10 px-2.5 py-1.5 text-xs"
-                >
-                  <span className="font-semibold text-foreground">{item.item}</span>
-                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Qtd. {item.qtd}</Badge>
+                <span key={`${item.item}-${index}`} className="rounded-lg border border-white/[0.07] bg-black/10 px-2.5 py-1.5 text-xs">
+                  <strong>{item.item}</strong> · Qtd. {item.qtd}
                 </span>
               ))}
             </div>
@@ -503,54 +551,72 @@ function CentralMateriaisUnificadaPage() {
           <GlassCard className="border-white/[0.08] bg-white/[0.018] p-12 text-center shadow-none">
             <Package className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
             <p className="font-semibold">Nenhuma solicitação encontrada</p>
-            <p className="mt-1 text-sm text-muted-foreground">Ajuste a busca ou o filtro de origem.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou a busca.</p>
           </GlassCard>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {filtered.map((p) => {
               const os = osById.get(p.os_id);
-              const origem: "refrigeracao" | "corretiva" =
-                p.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
-              const photos = photosByOs.get(materialPhotoKey(origem, p.os_id)) || [];
+              const origin: Origin = p.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+              const photos = photosByOs.get(materialPhotoKey(origin, p.os_id)) || [];
+              const firstPhoto = photos[0]?.image_url;
               const cc = resolveCostCenter(p, os, costCenterMap);
+              const sent = Boolean(p.email_enviado_em);
+              const emailKey = `${origin}-${p.id}`;
+              const updating = updatingEmailKey === emailKey;
 
               return (
                 <GlassCard
-                  key={`${p.origem}-${p.id}`}
-                  className="group overflow-hidden border-white/[0.075] bg-white/[0.018] p-0 shadow-none transition-colors hover:border-white/[0.13] hover:bg-white/[0.028]"
+                  key={emailKey}
+                  className="group overflow-hidden border-white/[0.075] bg-white/[0.018] p-0 shadow-none transition-all hover:border-white/[0.14] hover:bg-white/[0.028]"
                 >
-                  <div className="grid gap-0 xl:grid-cols-[1fr_260px]">
+                  <div className="grid min-h-[190px] md:grid-cols-[170px_minmax(0,1fr)] xl:grid-cols-[190px_minmax(0,1fr)_250px]">
+                    <button
+                      type="button"
+                      onClick={() => setDetailRequest(p)}
+                      className="relative min-h-[170px] overflow-hidden border-b border-white/[0.07] bg-black/20 text-left md:min-h-full md:border-b-0 md:border-r"
+                    >
+                      {firstPhoto ? (
+                        <img
+                          src={firstPhoto}
+                          alt={`Evidência da OS ${display(os?.numero_os)}`}
+                          className="h-full min-h-[170px] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                        />
+                      ) : (
+                        <div className="flex h-full min-h-[170px] flex-col items-center justify-center gap-2 text-muted-foreground/50">
+                          <ImageIcon className="h-8 w-8" />
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.12em]">Sem foto</span>
+                        </div>
+                      )}
+                      {photos.length > 0 && (
+                        <span className="absolute bottom-2 left-2 rounded-lg border border-white/15 bg-black/65 px-2 py-1 text-[10px] font-semibold text-white backdrop-blur-md">
+                          {photos.length} foto{photos.length > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </button>
+
                     <div className="min-w-0 p-4 sm:p-5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Badge
-                          variant="outline"
-                          className="border-white/[0.09] bg-white/[0.035] text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground"
-                        >
-                          {origem === "refrigeracao" ? "Refrigeração" : "Corretiva"}
+                        <Badge variant="outline" className="border-white/[0.09] bg-white/[0.035] text-[9px] uppercase tracking-[0.1em]">
+                          {origin === "refrigeracao" ? "Refrigeração" : "Corretiva"}
                         </Badge>
                         <span className="rounded-md bg-foreground px-2 py-1 font-mono text-[10px] font-bold text-background">
                           OS {display(os?.numero_os)}
                         </span>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-bold",
-                            cc
-                              ? "border-emerald-400/15 bg-emerald-400/[0.07] text-emerald-200"
-                              : "border-amber-400/20 bg-amber-400/[0.08] text-amber-200",
-                          )}
-                        >
-                          <Landmark className="h-3 w-3" />
-                          CC {cc || "não mapeado"}
-                        </span>
-                        <span className="ml-auto flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                          <CalendarClock className="h-3 w-3" />
-                          {formatDate(p.material_request_date || p.created_at)}
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-bold",
+                          sent
+                            ? "border-emerald-400/20 bg-emerald-400/[0.08] text-emerald-200"
+                            : "border-amber-400/20 bg-amber-400/[0.08] text-amber-200",
+                        )}>
+                          {sent ? <MailCheck className="h-3 w-3" /> : <MailOpen className="h-3 w-3" />}
+                          {sent ? "Encaminhado por e-mail" : "Pendente de e-mail"}
                         </span>
                       </div>
 
-                      <div className="mt-4 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Peça / material solicitado</p>
-                        <h3 className="mt-1 break-words text-base font-semibold leading-snug text-foreground sm:text-lg">
+                      <div className="mt-4">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Peça / material</p>
+                        <h3 className="mt-1 break-words text-lg font-semibold leading-snug text-foreground">
                           {display(p.descricao)}
                         </h3>
                         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
@@ -561,60 +627,63 @@ function CentralMateriaisUnificadaPage() {
                       <div className="mt-3 flex flex-wrap gap-1.5">
                         <MetaPill icon={Wrench}>{display(os?.ativo, "Ativo não informado")}</MetaPill>
                         <MetaPill icon={MapPin}>{[os?.predio, os?.andar, os?.local].filter(Boolean).join(" · ") || "Local não informado"}</MetaPill>
+                        <MetaPill icon={Landmark}>CC {cc || "não mapeado"}</MetaPill>
                         <MetaPill icon={UserRound}>{display(os?.solicitante, "Solicitante não informado")}</MetaPill>
                       </div>
 
-                      <MaterialRequestPhotoGallery
-                        photos={photos}
-                        osNumber={os?.numero_os}
-                        materialDescription={p.descricao}
-                        variant="compact"
-                      />
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <CalendarClock className="h-3 w-3" /> Solicitado: {formatDate(p.material_request_date || p.created_at)}
+                        </span>
+                        {sent && (
+                          <span className="inline-flex items-center gap-1.5 text-emerald-300/80">
+                            <CheckCircle2 className="h-3 w-3" /> E-mail: {formatDate(p.email_enviado_em)}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="border-t border-white/[0.065] bg-black/[0.08] p-4 xl:border-l xl:border-t-0 sm:p-5">
+                    <div className="border-t border-white/[0.065] bg-black/[0.08] p-4 md:col-span-2 xl:col-span-1 xl:border-l xl:border-t-0 sm:p-5">
                       <div className="grid grid-cols-2 gap-2 xl:grid-cols-1">
                         <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                           <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Quantidade</p>
-                          <p className="mt-1 font-display text-2xl font-bold text-foreground">{Number(p.quantidade || 1)}</p>
+                          <p className="mt-1 font-display text-2xl font-bold">{Number(p.quantidade || 1)}</p>
                         </div>
                         <div className="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3">
                           <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Equipe</p>
-                          <p className="mt-1 truncate text-sm font-semibold text-foreground">{display(os?.equipe)}</p>
+                          <p className="mt-1 truncate text-sm font-semibold">{display(os?.equipe)}</p>
                         </div>
                       </div>
 
-                      <div className="mt-3 grid grid-cols-3 gap-1.5">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => setDetailRequest(p)}
-                          className="h-9 gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 text-[11px] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
-                          title="Visualizar detalhes"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Detalhes
+                      <Button
+                        type="button"
+                        variant={sent ? "outline" : "default"}
+                        className={cn(
+                          "mt-3 h-10 w-full gap-2 text-xs font-semibold",
+                          sent && "border-white/10 bg-white/[0.025]",
+                        )}
+                        disabled={updating}
+                        onClick={() => void setEmailForwarded(p, !sent)}
+                      >
+                        {updating ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : sent ? (
+                          <Undo2 className="h-4 w-4" />
+                        ) : (
+                          <MailCheck className="h-4 w-4" />
+                        )}
+                        {sent ? "Desfazer encaminhamento" : "Marcar como enviado por e-mail"}
+                      </Button>
+
+                      <div className="mt-2 grid grid-cols-3 gap-1.5">
+                        <Button type="button" variant="ghost" onClick={() => setDetailRequest(p)} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                          <Eye className="h-3.5 w-3.5" /> Detalhes
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => setEditingRequest(p as EditableMaterialRequest)}
-                          className="h-9 gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 text-[11px] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
-                          title="Editar solicitação"
-                        >
-                          <PencilLine className="h-3.5 w-3.5" />
-                          Editar
+                        <Button type="button" variant="ghost" onClick={() => setEditingRequest(p as EditableMaterialRequest)} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                          <PencilLine className="h-3.5 w-3.5" /> Editar
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => exportPdf(p)}
-                          disabled={exportingPdf}
-                          className="h-9 gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 text-[11px] text-muted-foreground hover:bg-white/[0.06] hover:text-foreground"
-                          title="Gerar PDF desta solicitação"
-                        >
-                          <FileText className="h-3.5 w-3.5" />
-                          PDF
+                        <Button type="button" variant="ghost" onClick={() => void exportPdf(p)} disabled={exportingPdf} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                          <FileText className="h-3.5 w-3.5" /> PDF
                         </Button>
                       </div>
                     </div>
