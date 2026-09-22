@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CalendarDays, Eye, EyeOff, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import type { TaludeMap, TaludeMarcacao } from "@/lib/taludes/api";
+import type { TaludeMarcacao } from "@/lib/taludes/api";
 import { Button } from "@/components/ui/button";
 import { PolygonEditorPro } from "./polygon-editor-pro";
 
