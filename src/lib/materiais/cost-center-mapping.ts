@@ -43,9 +43,11 @@ const ASSET_NAME_HEADERS = [
 
 export function normalizeAssetCode(value: unknown) {
   return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toUpperCase()
-    .replace(/\s+/g, "");
+    .replace(/[^A-Z0-9]/g, "");
 }
 
 export function normalizeCostCenter(value: unknown) {
@@ -98,9 +100,29 @@ export function resolveCostCenter(
 ) {
   const persisted = normalizeCostCenter(item?.centro_custo);
   if (persisted) return persisted;
+
   const asset = normalizeAssetCode(os?.ativo);
-  if (!asset || !mappings) return "";
-  return mappings.get(asset)?.cost_center || "";
+  if (!asset || !mappings?.size) return "";
+
+  // Primeiro respeita um vínculo exato. Quando a OS possui um ativo detalhado
+  // (ex.: DEMPATESAL15), aplica o prefixo patrimonial mais específico cadastrado
+  // na base oficial (ex.: DEMPA -> Centro de Custo do prédio A160).
+  const exact = mappings.get(asset)?.cost_center;
+  if (exact) return exact;
+
+  let bestCostCenter = "";
+  let bestPrefixLength = 0;
+  for (const [prefix, record] of mappings.entries()) {
+    const normalizedPrefix = normalizeAssetCode(prefix);
+    if (!normalizedPrefix || normalizedPrefix.length <= bestPrefixLength) continue;
+    if (!asset.startsWith(normalizedPrefix)) continue;
+    const candidate = normalizeCostCenter(record.cost_center);
+    if (!candidate) continue;
+    bestPrefixLength = normalizedPrefix.length;
+    bestCostCenter = candidate;
+  }
+
+  return bestCostCenter;
 }
 
 export async function importAssetCostCentersFromFile(file: File): Promise<CostCenterImportResult> {

@@ -233,7 +233,7 @@ async function drawPhotos(doc: jsPDF, photos: MaterialEvidencePhoto[], y: number
   const columns = 2;
   const cellW = (usable - gap) / columns;
   const cellH = 50;
-  const selected = photos.slice(0, 6);
+  const selected = photos;
 
   y = ensureSpace(doc, y, 18, title);
   doc.setTextColor(...COLORS.ink);
@@ -283,12 +283,6 @@ async function drawPhotos(doc: jsPDF, photos: MaterialEvidencePhoto[], y: number
     if (col === columns - 1 || index === selected.length - 1) y += cellH + gap;
   }
 
-  if (photos.length > selected.length) {
-    doc.setTextColor(...COLORS.muted);
-    doc.setFontSize(6.8);
-    doc.text(`+ ${photos.length - selected.length} evidência(s) permanecem disponíveis no sistema.`, left, y + 1);
-    y += 5;
-  }
   return y;
 }
 
