@@ -61,7 +61,6 @@ export const sections: MenuSection[] = [
   { kind: "group", key: "corretiva-novo-grp", title: "Programação de Corretivas", icon: Wrench, items: [
     { key: "corretiva-novo", title: "Execução de Campo", short: "Campo", url: "/corretiva-novo", icon: Wrench, keywords: ["campo", "executar", "os", "corretiva", "equipe"] },
     { key: "avaliacao-chamados", title: "Avaliação de Chamados", short: "Avaliação", url: "/avaliacao-chamados", icon: MessageSquareCheck, keywords: ["avaliação", "satisfação", "feedback", "email", "solicitante"] },
-    { key: "corretiva-pecas-status", title: "Central de Materiais", short: "Materiais", url: "/corretiva-pecas-status", icon: PackageOpen, keywords: ["materiais", "peças", "solicitações", "central"] },
     { key: "corretiva-historico", title: "Histórico de Execuções", short: "Histórico", url: "/corretiva-historico", icon: ScrollText, keywords: ["concluídas", "finalizadas", "relatórios"] },
   ]},
   { kind: "group", key: "os-grp", title: "Ordens de Serviço (Preventiva)", icon: CalendarDays, items: [
@@ -87,8 +86,7 @@ export const sections: MenuSection[] = [
   ]},
   { kind: "group", key: "materiais-grp", title: "Materiais e Serviços", icon: ClipboardList, items: [
     { key: "solicitacao-materiais", title: "Solicitação de Materiais", short: "Solicitar", url: "/solicitacao-materiais", icon: Boxes, keywords: ["pedido", "material", "catálogo", "suprimentos"] },
-    { key: "controle-materiais", title: "Controle de Materiais", short: "Materiais", url: "/controle-materiais", icon: ClipboardList, keywords: ["peças", "compras", "centro de custo", "facilities"] },
-    { key: "central-materiais-unificada", title: "Central de Materiais Solicitados", short: "Central", url: "/corretiva-pecas-status", icon: PackageOpen, keywords: ["central", "materiais", "peças", "solicitações", "compras"] },
+    { key: "corretiva-pecas-status", aliases: ["central-materiais-unificada", "controle-materiais"], title: "Central de Materiais", short: "Central", url: "/corretiva-pecas-status", icon: PackageOpen, keywords: ["central", "materiais", "peças", "solicitações", "compras", "centro de custo", "facilities"] },
     { key: "lavanderia", title: "Controle de Lavanderia", short: "Lavanderia", url: "/lavanderia", icon: WashingMachine },
     { key: "mensageria", title: "Mensageria e Malotes", short: "Malotes", url: "/mensageria", icon: PackageOpen, keywords: ["mensageria", "malote", "correspondência", "protocolo", "recebimento", "entrega"] },
   ]},
@@ -115,6 +113,9 @@ function itemMatchesPath(item: MenuItem, pathname: string) {
 }
 
 export function menuItemForPath(pathname: string): MenuItem | null {
+  if (pathname === "/controle-materiais" || pathname === "/_authenticated/controle-materiais") {
+    return allMenuItems.find((item) => item.key === "corretiva-pecas-status") ?? null;
+  }
   let best: MenuItem | null = null;
   for (const item of allMenuItems) {
     if (!itemMatchesPath(item, pathname)) continue;
@@ -124,6 +125,9 @@ export function menuItemForPath(pathname: string): MenuItem | null {
 }
 
 export function menuKeysForPath(pathname: string): string[] | null {
+  if (pathname === "/controle-materiais" || pathname === "/_authenticated/controle-materiais" || pathname === "/_authenticated/controle-materiais/") {
+    return ["corretiva-pecas-status", "central-materiais-unificada", "controle-materiais"];
+  }
   const matching = allMenuItems.filter((item) => itemMatchesPath(item, pathname));
   if (matching.length > 0) return Array.from(new Set(matching.flatMap(itemKeys)));
   const segment = pathname.split("/").filter(Boolean)[0];
