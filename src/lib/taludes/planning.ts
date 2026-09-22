@@ -1,6 +1,7 @@
 import { WEATHER_LOCATION, weatherCodeInfo } from "@/lib/weather/open-meteo";
 
 export type TaludePlanningDayReason = "execucao" | "fim_de_semana" | "feriado" | "chuva";
+export type TaludeRainRiskLevel = "baixo" | "atencao" | "alto" | "critico";
 
 export interface TaludeForecastDay {
   date: string;
@@ -16,6 +17,16 @@ export interface TaludeHoliday {
   scope: "nacional" | "estadual" | "municipal";
 }
 
+export interface TaludeRainAssessment {
+  probability: number;
+  precipitationMm: number;
+  weatherLabel: string;
+  riskScore: number;
+  riskLevel: TaludeRainRiskLevel;
+  blocksExecution: boolean;
+  reason: string;
+}
+
 export interface TaludePlanningDay {
   date: string;
   counted: boolean;
@@ -23,6 +34,7 @@ export interface TaludePlanningDay {
   reasonLabel: string;
   holiday?: TaludeHoliday;
   forecast?: TaludeForecastDay;
+  rainAssessment?: TaludeRainAssessment;
   weatherKnown: boolean;
   provisional: boolean;
 }
@@ -32,8 +44,6 @@ export interface TaludePlanningOptions {
   durationDays: number;
   includeSaturday?: boolean;
   includeSunday?: boolean;
-  rainProbabilityThreshold?: number;
-  rainMmThreshold?: number;
   forecastDays?: TaludeForecastDay[];
 }
 
@@ -45,8 +55,12 @@ export interface TaludePlanningSummary {
   skippedWeekendDays: number;
   provisionalExecutionDays: number;
   weatherSource: "open-meteo";
+  weatherDecisionMode: "automatic";
   location: string;
   forecastHorizonEnd: string | null;
+  highestRainProbability: number;
+  highestRainRiskScore: number;
+  evaluatedForecastDays: number;
   generatedAt: string;
 }
 
@@ -58,8 +72,9 @@ export interface TaludePlanningResult {
   hasProvisionalWeather: boolean;
 }
 
-const DEFAULT_RAIN_PROBABILITY_THRESHOLD = 60;
-const DEFAULT_RAIN_MM_THRESHOLD = 0.1;
+// Regras operacionais internas. O usuário não precisa informar percentuais manualmente.
+export const AUTOMATIC_RAIN_PROBABILITY_BLOCK = 60;
+export const AUTOMATIC_RAIN_MM_BLOCK = 0.1;
 const MAX_PLANNING_DAYS = 730;
 
 function pad(value: number) {
@@ -90,7 +105,6 @@ function addDays(value: string, days: number) {
 }
 
 function easterSunday(year: number) {
-  // Algoritmo gregoriano de Meeus/Jones/Butcher.
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -112,12 +126,7 @@ function holiday(date: string, name: string, scope: TaludeHoliday["scope"]): Tal
   return { date, name, scope };
 }
 
-/**
- * Calendário operacional da unidade Demarchi / São Bernardo do Campo.
- * Inclui feriados nacionais, 9 de Julho (SP), aniversário municipal,
- * Sexta-feira da Paixão e Corpus Christi. Carnaval não é tratado como feriado
- * automaticamente porque é ponto facultativo e pode haver expediente na planta.
- */
+/** Calendário operacional da unidade Demarchi / São Bernardo do Campo. */
 export function getTaludeOperationalHolidays(year: number): TaludeHoliday[] {
   const easter = easterSunday(year);
   return [
@@ -145,15 +154,51 @@ function holidayMapForRange(startYear: number, endYear: number) {
   return entries;
 }
 
-function isRainForecast(day: TaludeForecastDay, probabilityThreshold: number, mmThreshold: number) {
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function riskLevel(score: number): TaludeRainRiskLevel {
+  if (score >= 75) return "critico";
+  if (score >= 50) return "alto";
+  if (score >= 25) return "atencao";
+  return "baixo";
+}
+
+/**
+ * Analisa automaticamente o risco de chuva do dia.
+ * A probabilidade vem da previsão diária e é cruzada com volume e código WMO.
+ * Não há percentual configurável pelo usuário: a decisão operacional é padronizada.
+ */
+export function calculateAutomaticRainRisk(day: TaludeForecastDay): TaludeRainAssessment {
+  const probability = clamp(Math.round(Number(day.precipitationProbability || 0)), 0, 100);
+  const precipitationMm = Math.max(0, Number(day.rainMm || 0), Number(day.precipitationMm || 0));
   const info = weatherCodeInfo(day.weatherCode);
   const rainCode = info.bucket === "garoa" || info.bucket === "chuva" || info.bucket === "tempestade";
-  return (
-    day.rainMm >= mmThreshold ||
-    day.precipitationMm >= mmThreshold ||
-    day.precipitationProbability >= probabilityThreshold ||
-    rainCode
-  );
+
+  const codeScore = info.bucket === "tempestade" ? 35 : info.bucket === "chuva" ? 25 : info.bucket === "garoa" ? 15 : 0;
+  const volumeScore = precipitationMm >= 10 ? 35 : precipitationMm >= 5 ? 30 : precipitationMm >= 2 ? 25 : precipitationMm >= 0.5 ? 18 : precipitationMm >= AUTOMATIC_RAIN_MM_BLOCK ? 10 : 0;
+  const probabilityScore = Math.round(probability * 0.55);
+  const riskScore = clamp(probabilityScore + volumeScore + codeScore, 0, 100);
+
+  const blocksExecution =
+    rainCode ||
+    precipitationMm >= AUTOMATIC_RAIN_MM_BLOCK ||
+    probability >= AUTOMATIC_RAIN_PROBABILITY_BLOCK;
+
+  const reasonParts = [`${probability}% de probabilidade`];
+  if (precipitationMm > 0) reasonParts.push(`${precipitationMm.toFixed(1)} mm`);
+  if (rainCode) reasonParts.push(info.label);
+
+  return {
+    probability,
+    precipitationMm,
+    weatherLabel: info.label,
+    riskScore,
+    riskLevel: riskLevel(riskScore),
+    blocksExecution,
+    reason: reasonParts.join(" · "),
+  };
 }
 
 export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlanningResult {
@@ -168,11 +213,6 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
   const forecastMap = new Map((options.forecastDays ?? []).map((day) => [day.date, day]));
   const forecastDates = [...forecastMap.keys()].sort();
   const forecastHorizonEnd = forecastDates.at(-1) ?? null;
-  const probabilityThreshold = Math.max(
-    0,
-    Math.min(100, Math.round(options.rainProbabilityThreshold ?? DEFAULT_RAIN_PROBABILITY_THRESHOLD)),
-  );
-  const mmThreshold = Math.max(0, Number(options.rainMmThreshold ?? DEFAULT_RAIN_MM_THRESHOLD));
 
   const timeline: TaludePlanningDay[] = [];
   let executionDays = 0;
@@ -180,6 +220,9 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
   let skippedHolidayDays = 0;
   let skippedWeekendDays = 0;
   let provisionalExecutionDays = 0;
+  let highestRainProbability = 0;
+  let highestRainRiskScore = 0;
+  let evaluatedForecastDays = 0;
   let cursor = options.startDate;
 
   for (let safety = 0; safety < MAX_PLANNING_DAYS && executionDays < durationDays; safety += 1) {
@@ -187,8 +230,15 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
     const weekDay = current.getDay();
     const holidayItem = holidayMap.get(cursor);
     const forecast = forecastMap.get(cursor);
+    const rainAssessment = forecast ? calculateAutomaticRainRisk(forecast) : undefined;
     const saturdayBlocked = weekDay === 6 && !options.includeSaturday;
     const sundayBlocked = weekDay === 0 && !options.includeSunday;
+
+    if (rainAssessment) {
+      evaluatedForecastDays += 1;
+      highestRainProbability = Math.max(highestRainProbability, rainAssessment.probability);
+      highestRainRiskScore = Math.max(highestRainRiskScore, rainAssessment.riskScore);
+    }
 
     if (saturdayBlocked || sundayBlocked) {
       skippedWeekendDays += 1;
@@ -200,6 +250,7 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
         weatherKnown: Boolean(forecast),
         provisional: false,
         forecast,
+        rainAssessment,
       });
     } else if (holidayItem) {
       skippedHolidayDays += 1;
@@ -212,17 +263,19 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
         weatherKnown: Boolean(forecast),
         provisional: false,
         forecast,
+        rainAssessment,
       });
-    } else if (forecast && isRainForecast(forecast, probabilityThreshold, mmThreshold)) {
+    } else if (rainAssessment?.blocksExecution) {
       skippedRainDays += 1;
       timeline.push({
         date: cursor,
         counted: false,
         reason: "chuva",
-        reasonLabel: `Chuva prevista (${forecast.precipitationProbability}% · ${Math.max(forecast.rainMm, forecast.precipitationMm).toFixed(1)} mm)`,
+        reasonLabel: `Risco automático de chuva · ${rainAssessment.reason} · risco ${rainAssessment.riskLevel}`,
         weatherKnown: true,
         provisional: false,
         forecast,
+        rainAssessment,
       });
     } else {
       executionDays += 1;
@@ -232,10 +285,13 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
         date: cursor,
         counted: true,
         reason: "execucao",
-        reasonLabel: provisional ? "Execução planejada · clima fora da janela de previsão" : "Execução planejada",
+        reasonLabel: provisional
+          ? "Execução planejada · clima fora da janela de previsão"
+          : `Execução planejada · chuva ${rainAssessment?.probability ?? 0}% · risco ${rainAssessment?.riskLevel ?? "baixo"}`,
         weatherKnown: Boolean(forecast),
         provisional,
         forecast,
+        rainAssessment,
       });
     }
 
@@ -255,8 +311,12 @@ export function buildTaludeSchedule(options: TaludePlanningOptions): TaludePlann
     skippedWeekendDays,
     provisionalExecutionDays,
     weatherSource: "open-meteo",
+    weatherDecisionMode: "automatic",
     location: `${WEATHER_LOCATION.bairro}, ${WEATHER_LOCATION.cidade} - ${WEATHER_LOCATION.estado}`,
     forecastHorizonEnd,
+    highestRainProbability,
+    highestRainRiskScore,
+    evaluatedForecastDays,
     generatedAt,
   };
 
@@ -305,7 +365,7 @@ export async function fetchTaludePlanningForecast(signal?: AbortSignal): Promise
     return daily.time.map((date, index) => ({
       date,
       weatherCode: daily.weather_code?.[index] ?? null,
-      precipitationProbability: Math.max(0, Math.min(100, Number(daily.precipitation_probability_max?.[index] ?? 0))),
+      precipitationProbability: clamp(Number(daily.precipitation_probability_max?.[index] ?? 0), 0, 100),
       precipitationMm: Math.max(0, Number(daily.precipitation_sum?.[index] ?? 0)),
       rainMm: Math.max(0, Number(daily.rain_sum?.[index] ?? 0)),
     }));
