@@ -224,6 +224,42 @@ function drawLabelValue(doc: jsPDF, label: string, value: string, x: number, y: 
   doc.text(lines.slice(0, 3), x, y + 4.3);
 }
 
+function drawCostCenterHighlight(doc: jsPDF, value: string, x: number, y: number, width: number) {
+  const missing = value === "Não mapeado";
+  const fill = missing ? COLORS.amberSoft : COLORS.tealSoft;
+  const accent = missing ? COLORS.amber : COLORS.teal;
+  const valueColor = missing ? COLORS.red : COLORS.teal;
+  const mainValue = missing ? "NÃO MAPEADO" : value;
+
+  doc.setFillColor(...fill);
+  doc.setDrawColor(...accent);
+  doc.setLineWidth(0.35);
+  doc.roundedRect(x, y, width, 19, 2.2, 2.2, "FD");
+  doc.setFillColor(...accent);
+  doc.roundedRect(x, y, 3.2, 19, 1.6, 1.6, "F");
+
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6.8);
+  doc.text("CENTRO DE CUSTO", x + 7, y + 5.2);
+
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.3);
+  doc.text(
+    missing ? "Revisar antes de encaminhar para compra" : "Referência para compra / apropriação",
+    x + width - 5,
+    y + 5.2,
+    { align: "right" },
+  );
+
+  doc.setTextColor(...valueColor);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13.5);
+  const lines = doc.splitTextToSize(mainValue, width - 14);
+  doc.text(lines.slice(0, 1), x + 7, y + 13.5);
+}
+
 async function drawPhotos(doc: jsPDF, photos: MaterialEvidencePhoto[], y: number, title: string) {
   if (!photos.length) return y;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -326,7 +362,7 @@ export async function exportComprasPremiumPdf(
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
     const group = groups[groupIndex];
     const os = group.os;
-    y = ensureSpace(doc, y, 68, title);
+    y = ensureSpace(doc, y, 88, title);
 
     doc.setFillColor(...COLORS.navy);
     doc.roundedRect(14, y, pageWidth - 28, 14, 2, 2, "F");
@@ -340,12 +376,11 @@ export async function exportComprasPremiumPdf(
     doc.setFont("helvetica", "normal");
     doc.setTextColor(207, 220, 230);
     doc.text(originLabel(group.origem).toUpperCase(), 20, y + 10.7);
+    y += 18;
 
     const cc = costCenterFor(group.items);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(cc === "Não mapeado" ? 255 : 220, cc === "Não mapeado" ? 211 : 238, cc === "Não mapeado" ? 126 : 234);
-    doc.text(`CENTRO DE CUSTO  ${cc}`, pageWidth - 18, y + 8.2, { align: "right" });
-    y += 20;
+    drawCostCenterHighlight(doc, cc, 14, y, pageWidth - 28);
+    y += 25;
 
     drawLabelValue(doc, "Descrição do chamado", display(os?.nome_os, "Sem descrição da OS"), 14, y, pageWidth - 28);
     const descriptionLines = doc.splitTextToSize(display(os?.nome_os, "Sem descrição da OS"), pageWidth - 28);
@@ -404,9 +439,15 @@ export async function exportComprasPremiumPdf(
         3: { cellWidth: 42, fontStyle: "bold" },
       },
       didParseCell: (data) => {
-        if (data.section === "body" && data.column.index === 3 && String(data.cell.raw).includes("Não mapeado")) {
+        if (data.section !== "body" || data.column.index !== 3) return;
+        const raw = String(data.cell.raw || "");
+        data.cell.styles.fontStyle = "bold";
+        if (raw.includes("Não mapeado")) {
           data.cell.styles.fillColor = COLORS.amberSoft;
           data.cell.styles.textColor = COLORS.red;
+        } else {
+          data.cell.styles.fillColor = COLORS.tealSoft;
+          data.cell.styles.textColor = COLORS.teal;
         }
       },
     });
