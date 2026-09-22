@@ -921,6 +921,22 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
                   ))}
                 </div>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full gap-2 text-[10px]"
+                onClick={() =>
+                  void persistPatch(
+                    selected.id,
+                    { data_visivel: selected.data_visivel === false },
+                    selected.data_visivel === false ? "Data exibida no mapa" : "Data ocultada no mapa",
+                  )
+                }
+              >
+                {selected.data_visivel === false ? <EyeOff /> : <Eye />}
+                {selected.data_visivel === false ? "Mostrar data" : "Ocultar data"}
+              </Button>
             </AccordionSection>
 
             <AccordionSection title="Aparência" icon={<Palette className="h-3.5 w-3.5" />}>

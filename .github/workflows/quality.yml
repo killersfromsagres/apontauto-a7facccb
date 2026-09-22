@@ -1,52 +1,46 @@
-name: Temporary Taludes date visibility patch
+name: Quality gate
 
+# Validação sob demanda/PR. Não roda a cada push direto em Apont-Auto,
+# evitando múltiplas execuções e e-mails durante uma sequência de alterações.
 on:
-  push:
+  pull_request:
     branches:
       - Apont-Auto
-    paths:
-      - .github/workflows/quality.yml
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  patch:
-    if: github.actor != 'github-actions[bot]'
+  validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 25
+    env:
+      VITE_SUPABASE_URL: https://fbhpdqykoptxnrbdcspr.supabase.co
+      VITE_SUPABASE_PROJECT_ID: fbhpdqykoptxnrbdcspr
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_660hxNRSWPXuCne6oba5iQ_5DEZthmB
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          ref: Apont-Auto
-          fetch-depth: 2
+          node-version: 22
+          cache: npm
 
-      - name: Add date visibility control
-        shell: python
-        run: |
-          from pathlib import Path
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
 
-          path = Path("src/components/taludes/polygon-editor-pro.tsx")
-          text = path.read_text(encoding="utf-8")
+      - name: Production build and route generation
+        run: npm run build
 
-          if 'selected.data_visivel === false ? "Mostrar data" : "Ocultar data"' not in text:
-              marker = '''              </div>\n            </AccordionSection>\n\n            <AccordionSection title="Aparência"'''
-              replacement = '''              </div>\n              <Button\n                type="button"\n                variant="outline"\n                size="sm"\n                className="w-full gap-2 text-[10px]"\n                onClick={() =>\n                  void persistPatch(\n                    selected.id,\n                    { data_visivel: selected.data_visivel === false },\n                    selected.data_visivel === false ? "Data exibida no mapa" : "Data ocultada no mapa",\n                  )\n                }\n              >\n                {selected.data_visivel === false ? <EyeOff /> : <Eye />}\n                {selected.data_visivel === false ? "Mostrar data" : "Ocultar data"}\n              </Button>\n            </AccordionSection>\n\n            <AccordionSection title="Aparência"'''
-              if marker not in text:
-                  raise SystemExit("Marcador de Status e datas não encontrado; patch cancelado com segurança.")
-              text = text.replace(marker, replacement, 1)
-              path.write_text(text, encoding="utf-8")
+      - name: Typecheck
+        run: npx tsc --noEmit
 
-      - name: Restore quality workflow and commit feature
-        run: |
-          git show HEAD^:.github/workflows/quality.yml > .github/workflows/quality.yml
-          git config user.name "Dev Gabriel Vitor"
-          git config user.email "contatoswampzin@gmail.com"
-          git add src/components/taludes/polygon-editor-pro.tsx .github/workflows/quality.yml
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
-          git commit -m "feat: adicionar botão para ocultar data do talude"
-          git push origin HEAD:Apont-Auto
+      - name: Test
+        run: npm test -- --passWithNoTests
