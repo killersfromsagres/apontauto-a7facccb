@@ -92,7 +92,9 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
       duracao_dias: (m as any).duracao_dias == null ? null : Number((m as any).duracao_dias),
       chuva_prob_limite: Number((m as any).chuva_prob_limite ?? 60),
       chuva_mm_limite: Number((m as any).chuva_mm_limite ?? 0.1),
-      planejamento_resumo: ((m as any).planejamento_resumo ?? null) as TaludePlanningSummary | null,
+      planejamento_resumo: (m as any).planejamento_automatico
+        ? (((m as any).planejamento_resumo ?? null) as TaludePlanningSummary | null)
+        : null,
     })) as unknown as TaludeMarcacao[];
   });
 
