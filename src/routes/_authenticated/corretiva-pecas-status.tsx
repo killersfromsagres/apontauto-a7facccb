@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Trash2,
   Undo2,
   Upload,
   UserRound,
@@ -123,6 +124,7 @@ function CentralMateriaisUnificadaPage() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [importingCc, setImportingCc] = useState(false);
   const [updatingEmailKey, setUpdatingEmailKey] = useState<string | null>(null);
+  const [deletingRequestKey, setDeletingRequestKey] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [fOrigem, setFOrigem] = useState<"todas" | Origin>("todas");
   const [fEnvio, setFEnvio] = useState<EmailFilter>("pendentes");
@@ -276,6 +278,49 @@ function CentralMateriaisUnificadaPage() {
       toast.error(error?.message || "Não foi possível atualizar o encaminhamento por e-mail.");
     } finally {
       setUpdatingEmailKey(null);
+    }
+  };
+
+  const deleteRequest = async (item: any) => {
+    const origin: Origin = item.origem === "refrigeracao" ? "refrigeracao" : "corretiva";
+    const table = origin === "refrigeracao" ? "refrigeracao_pecas" : "corretiva_pecas";
+    const os = osById.get(item.os_id);
+    const key = `${origin}-${item.id}`;
+    const confirmed = window.confirm(
+      `Excluir a solicitação de peça da OS ${display(os?.numero_os)}?\n\nPeça: ${display(item.descricao)}\n\nEsta ação é definitiva e removerá a solicitação da Central de Materiais e das próximas exportações. A OS e suas fotos não serão excluídas.`,
+    );
+
+    if (!confirmed) return;
+    setDeletingRequestKey(key);
+
+    try {
+      const { data, error } = await (supabase.from(table) as any)
+        .delete()
+        .eq("id", item.id)
+        .select("id");
+
+      if (error) throw error;
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("A solicitação não foi excluída. Verifique sua permissão ou atualize a lista e tente novamente.");
+      }
+
+      setPecas((current) =>
+        current.filter((row) => !(row.id === item.id && row.origem === origin)),
+      );
+
+      if (detailRequest?.id === item.id && detailRequest?.origem === origin) {
+        setDetailRequest(null);
+      }
+      if (editingRequest?.id === item.id && editingRequest?.origem === origin) {
+        setEditingRequest(null);
+      }
+
+      toast.success("Solicitação excluída. A peça não aparecerá mais na central nem nas exportações.");
+    } catch (error: any) {
+      console.error("[Materiais] Falha ao excluir solicitação:", error);
+      toast.error(error?.message || "Não foi possível excluir a solicitação de peça.");
+    } finally {
+      setDeletingRequestKey(null);
     }
   };
 
@@ -564,6 +609,7 @@ function CentralMateriaisUnificadaPage() {
               const sent = Boolean(p.email_enviado_em);
               const emailKey = `${origin}-${p.id}`;
               const updating = updatingEmailKey === emailKey;
+              const deleting = deletingRequestKey === emailKey;
 
               return (
                 <GlassCard
@@ -662,7 +708,7 @@ function CentralMateriaisUnificadaPage() {
                           "mt-3 h-10 w-full gap-2 text-xs font-semibold",
                           sent && "border-white/10 bg-white/[0.025]",
                         )}
-                        disabled={updating}
+                        disabled={updating || deleting}
                         onClick={() => void setEmailForwarded(p, !sent)}
                       >
                         {updating ? (
@@ -675,15 +721,26 @@ function CentralMateriaisUnificadaPage() {
                         {sent ? "Desfazer encaminhamento" : "Marcar como enviado por e-mail"}
                       </Button>
 
-                      <div className="mt-2 grid grid-cols-3 gap-1.5">
-                        <Button type="button" variant="ghost" onClick={() => setDetailRequest(p)} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                      <div className="mt-2 grid grid-cols-4 gap-1.5">
+                        <Button type="button" variant="ghost" onClick={() => setDetailRequest(p)} disabled={deleting} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
                           <Eye className="h-3.5 w-3.5" /> Detalhes
                         </Button>
-                        <Button type="button" variant="ghost" onClick={() => setEditingRequest(p as EditableMaterialRequest)} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                        <Button type="button" variant="ghost" onClick={() => setEditingRequest(p as EditableMaterialRequest)} disabled={deleting} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
                           <PencilLine className="h-3.5 w-3.5" /> Editar
                         </Button>
-                        <Button type="button" variant="ghost" onClick={() => void exportPdf(p)} disabled={exportingPdf} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
+                        <Button type="button" variant="ghost" onClick={() => void exportPdf(p)} disabled={exportingPdf || deleting} className="h-9 gap-1 rounded-lg border border-white/[0.07] bg-white/[0.025] px-1 text-[10px]">
                           <FileText className="h-3.5 w-3.5" /> PDF
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => void deleteRequest(p)}
+                          disabled={deleting}
+                          className="h-9 gap-1 rounded-lg border border-red-400/15 bg-red-400/[0.045] px-1 text-[10px] text-red-300 hover:border-red-400/25 hover:bg-red-400/[0.10] hover:text-red-200"
+                          title="Excluir solicitação de peça"
+                        >
+                          {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                          Excluir
                         </Button>
                       </div>
                     </div>
