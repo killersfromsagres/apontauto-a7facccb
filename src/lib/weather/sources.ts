@@ -15,6 +15,8 @@ export type WeatherSourceKey =
   | "inmet"
   | "open-meteo"
   | "met-norway"
+  | "weather-aggregate"
+  | "metar-sbsp"
   | "pluviometro"
   | "manual";
 
@@ -46,7 +48,19 @@ export const SOURCE_META: Record<
     label: "MET Norway",
     type: "previsao",
     confidence: 0.55,
-    description: "Modelo numérico de fallback — previsão, não medição local.",
+    description: "Modelo numérico de apoio — previsão, não medição local.",
+  },
+  "weather-aggregate": {
+    label: "Condição atual · São Bernardo",
+    type: "previsao",
+    confidence: 0.72,
+    description: "Condição atual agregada para São Bernardo do Campo; usada como evidência operacional, não como pluviômetro físico.",
+  },
+  "metar-sbsp": {
+    label: "METAR Congonhas (SBSP)",
+    type: "observacao",
+    confidence: 0.85,
+    description: "Observação física de estação meteorológica aeroportuária próxima, usada principalmente para temperatura, vento e fenômenos reportados.",
   },
   pluviometro: {
     label: "Pluviômetro local",
@@ -62,12 +76,11 @@ export const SOURCE_META: Record<
   },
 };
 
-export const SOURCE_LABEL = (source: string) =>
-  SOURCE_META[source as WeatherSourceKey]?.label ?? source;
+export const SOURCE_LABEL = (source: string) => SOURCE_META[source as WeatherSourceKey]?.label ?? source;
 
 export const SOURCE_TYPE_LABEL: Record<WeatherDataType, string> = {
   observacao: "Observação de estação",
-  previsao: "Previsão (modelo)",
+  previsao: "Previsão/estimativa",
   medicao_local: "Medição local",
   manual: "Registro manual",
 };
@@ -77,18 +90,9 @@ export const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 8
 
 export type RainIntensityKey = "garoa" | "fraca" | "moderada" | "forte" | "tempestade";
 
-export const INTENSITY_ORDER: RainIntensityKey[] = [
-  "garoa",
-  "fraca",
-  "moderada",
-  "forte",
-  "tempestade",
-];
+export const INTENSITY_ORDER: RainIntensityKey[] = ["garoa", "fraca", "moderada", "forte", "tempestade"];
 
-export function intensityFromReading(
-  mm: number,
-  code: number | null | undefined,
-): RainIntensityKey {
+export function intensityFromReading(mm: number, code: number | null | undefined): RainIntensityKey {
   if (code != null && [95, 96, 99].includes(code)) return "tempestade";
   if (mm >= 8) return "forte";
   if (code != null && [65, 67, 82].includes(code)) return "forte";
@@ -118,9 +122,7 @@ export function distanceKm(lat1: number, lon1: number, lat2: number, lon2: numbe
   const toRad = (v: number) => (v * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
   return Math.round(2 * R * Math.asin(Math.sqrt(a)) * 100) / 100;
 }
 

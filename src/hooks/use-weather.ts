@@ -1,19 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchWeather, type WeatherResponse } from "@/lib/weather/open-meteo";
 
-/** Hook para consumir a previsão do Open-Meteo com auto-refresh de 30 min. */
+/**
+ * Condição meteorológica operacional para Taludes.
+ * Atualiza a cada 2 min porque chuva convectiva/local pode mudar rapidamente.
+ */
 export function useWeather() {
   return useQuery<WeatherResponse>({
-    queryKey: ["open-meteo-weather"],
+    queryKey: ["taludes-weather-consensus-v2"],
     queryFn: ({ signal }) => fetchWeather(signal),
-    // Precisão: refetch a cada 5 min + ao voltar o foco da aba (para detectar
-    // chuva iniciando o quanto antes na operação de taludes).
-    staleTime: 4 * 60_000,
-    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+    refetchInterval: 2 * 60_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    refetchOnMount: "always",
     retry: 2,
-    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 8000),
+    retryDelay: (attempt) => Math.min(1200 * 2 ** attempt, 6000),
   });
 }

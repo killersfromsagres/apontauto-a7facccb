@@ -22,9 +22,10 @@ import {
 import { cn } from "@/lib/utils";
 
 function sourceLabel(source?: string) {
+  if (source === "observed-consensus") return "Consenso multifonte · observações + modelos";
   if (source === "met.no") return "MET Norway · modelo de previsão";
   if (source === "open-meteo") return "Open-Meteo · modelo de previsão";
-  return "Modelo meteorológico";
+  return "Monitoramento meteorológico";
 }
 
 function fmtUpdate(iso?: string) {
@@ -98,6 +99,10 @@ export function TaludesClimatePanel() {
   const probability = data.daily.precipitation_probability_max?.[0] ?? 0;
   const status = effectiveTaludeStatus(probability, rain);
   const condition = weatherCodeInfo(current.weather_code);
+  const meta = (data as unknown as {
+    observation_meta?: { current_sources?: string[]; metar_report_time?: string | null; rain_evidence?: boolean };
+  }).observation_meta;
+  const rainNowValue = rain.detected && rain.mm_atual <= 0 ? "Detectada" : `${rain.mm_atual.toFixed(1)} mm`;
 
   return (
     <div className="space-y-5 pb-8">
@@ -126,6 +131,11 @@ export function TaludesClimatePanel() {
                 <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/35">
                   {WEATHER_LOCATION.bairro} · {WEATHER_LOCATION.cidade}
                 </span>
+                {rain.detected && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-sky-300/25 bg-sky-400/[0.08] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.12em] text-sky-200">
+                    <CloudRain className="h-3 w-3" /> Chuva em curso
+                  </span>
+                )}
               </div>
               <div className="mt-3 flex items-center gap-3">
                 <span className="text-4xl" aria-hidden="true">{condition.emoji}</span>
@@ -158,18 +168,25 @@ export function TaludesClimatePanel() {
           <Metric label="Umidade" value={`${Math.round(current.relative_humidity_2m)}%`} icon={<Droplets className="h-3 w-3" />} />
           <Metric label="Vento" value={`${Math.round(current.wind_speed_10m)} km/h`} icon={<Wind className="h-3 w-3" />} />
           <Metric label="Rajada" value={`${Math.round(current.wind_gusts_10m)} km/h`} icon={<Wind className="h-3 w-3" />} />
-          <Metric label="Chuva agora" value={`${rain.mm_atual.toFixed(1)} mm`} icon={<CloudRain className="h-3 w-3" />} accent={rain.detected} />
+          <Metric label="Chuva agora" value={rainNowValue} icon={<CloudRain className="h-3 w-3" />} accent={rain.detected} />
           <Metric label="Acum. dia" value={`${rain.mm_dia.toFixed(1)} mm`} icon={<Gauge className="h-3 w-3" />} />
           <Metric label="Prob. hoje" value={`${Math.round(probability)}%`} icon={<CloudRain className="h-3 w-3" />} />
         </div>
 
-        <div className="mx-4 mb-4 flex flex-col justify-between gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-[10px] sm:mx-5 sm:mb-5 sm:flex-row sm:items-center">
-          <span className="text-white/60">
-            Acumulado recente (até 3h disponíveis): <strong className="text-white">{rain.mm_acumulado_3h.toFixed(1)} mm</strong>
-          </span>
-          <span className="text-white/35">
-            Previsão de modelo ≠ medição física local. Observações locais aparecem no histórico abaixo.
-          </span>
+        <div className="mx-4 mb-4 space-y-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-2.5 text-[10px] sm:mx-5 sm:mb-5">
+          <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+            <span className="text-white/60">
+              Acumulado recente (até 3h disponíveis): <strong className="text-white">{rain.mm_acumulado_3h.toFixed(1)} mm</strong>
+            </span>
+            <span className="text-white/35">
+              Volume em mm só é exibido quando uma fonte fornece quantidade. Detecção de chuva pode ocorrer mesmo sem pluviômetro local.
+            </span>
+          </div>
+          {meta?.current_sources?.length ? (
+            <div className="border-t border-white/[0.05] pt-2 text-white/40">
+              Fontes da condição atual: <span className="text-white/65">{meta.current_sources.join(" · ")}</span>
+            </div>
+          ) : null}
         </div>
       </GlassCard>
 
