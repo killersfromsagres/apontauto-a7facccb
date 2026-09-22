@@ -7,6 +7,7 @@ import {
   type MaterialPhotosByOs,
 } from "@/lib/materiais/material-request-photos";
 import type { MaterialCompraRow, MaterialOsRow } from "@/lib/materiais/compras-premium-excel";
+import { GRUPO_GPS_LOGO_PNG, SHERWIN_WILLIAMS_LOGO_PNG } from "@/lib/materiais/pdf-brand-assets";
 
 const COLORS = {
   navy: [9, 25, 41] as [number, number, number],
@@ -149,26 +150,34 @@ async function imageUrlToJpeg(url: string) {
 
 function drawPageHeader(doc: jsPDF, title: string) {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const headerHeight = 41;
+
   doc.setFillColor(...COLORS.navy);
-  doc.rect(0, 0, pageWidth, 31, "F");
+  doc.rect(0, 0, pageWidth, headerHeight, "F");
   doc.setFillColor(...COLORS.teal);
-  doc.rect(0, 31, pageWidth, 1.8, "F");
+  doc.rect(0, headerHeight, pageWidth, 1.6, "F");
+
+  try {
+    doc.addImage(SHERWIN_WILLIAMS_LOGO_PNG, "PNG", 14, 7.2, 40, 20, "sherwin-logo", "FAST");
+    doc.addImage(GRUPO_GPS_LOGO_PNG, "PNG", pageWidth - 50, 7.5, 36, 24, "gps-logo", "FAST");
+  } catch (error) {
+    console.warn("[MateriaisPDF] Não foi possível incorporar uma das logos:", error);
+  }
 
   doc.setTextColor(...COLORS.white);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.8);
-  doc.text("GRUPO GPS  |  FACILITIES", 14, 9.2);
-  doc.setFontSize(16.5);
-  doc.text(title.toUpperCase(), 14, 19.2);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.8);
-  doc.setTextColor(202, 215, 226);
-  doc.text("Operação Suvinil / Sherwin-Williams · Gestão de materiais e manutenção", 14, 26.1);
+  doc.setFontSize(8.2);
+  doc.text("SHERWIN-WILLIAMS  ·  GRUPO GPS", pageWidth / 2, 11.8, { align: "center" });
 
-  doc.setFontSize(7.3);
-  doc.setTextColor(202, 215, 226);
-  doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, pageWidth - 14, 10, { align: "right" });
-  doc.text("Documento operacional · Apont Auto", pageWidth - 14, 15, { align: "right" });
+  doc.setFontSize(13.8);
+  const cleanTitle = title.replace(/·/g, "-").toUpperCase();
+  doc.text(cleanTitle, pageWidth / 2, 20.5, { align: "center", maxWidth: 92 });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.8);
+  doc.setTextColor(201, 215, 226);
+  doc.text("GESTÃO DE MATERIAIS E MANUTENÇÃO", pageWidth / 2, 27.2, { align: "center" });
+  doc.text(`Emitido em ${new Date().toLocaleString("pt-BR")}`, pageWidth / 2, 34.2, { align: "center" });
 }
 
 function drawPageFooter(doc: jsPDF) {
@@ -180,10 +189,12 @@ function drawPageFooter(doc: jsPDF) {
     doc.setPage(page);
     doc.setDrawColor(...COLORS.border);
     doc.line(14, height - 13, width - 14, height - 13);
-    doc.setFont("helvetica", "normal");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
+    doc.setTextColor(...COLORS.navy2);
+    doc.text("SHERWIN-WILLIAMS · GRUPO GPS", 14, height - 7.5);
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.muted);
-    doc.text("Grupo GPS · Facilities  |  Operação Suvinil / Sherwin-Williams", 14, height - 7.5);
     doc.text(`Página ${page} de ${pages}`, width - 14, height - 7.5, { align: "right" });
   }
 }
@@ -193,7 +204,7 @@ function ensureSpace(doc: jsPDF, y: number, needed: number, title: string) {
   if (y + needed <= height - 18) return y;
   doc.addPage();
   drawPageHeader(doc, title);
-  return 41;
+  return 50;
 }
 
 function drawKpi(doc: jsPDF, x: number, y: number, w: number, value: string, label: string, accent: [number, number, number]) {
@@ -247,7 +258,7 @@ function drawCostCenterHighlight(doc: jsPDF, value: string, x: number, y: number
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6.3);
   doc.text(
-    missing ? "Revisar antes de encaminhar para compra" : "Referência para compra / apropriação",
+    missing ? "Revisar antes do encaminhamento" : "Referência para compra / apropriação",
     x + width - 5,
     y + 5.2,
     { align: "right" },
@@ -342,7 +353,7 @@ export async function exportComprasPremiumPdf(
   const pageWidth = doc.internal.pageSize.getWidth();
   const gap = 3.5;
   const kpiW = (pageWidth - 28 - gap * 3) / 4;
-  let y = 40;
+  let y = 50;
   drawKpi(doc, 14, y, kpiW, String(items.length), "Solicitações", COLORS.teal);
   drawKpi(doc, 14 + (kpiW + gap), y, kpiW, String(groups.length), "Chamados / OS", COLORS.navy2);
   drawKpi(doc, 14 + (kpiW + gap) * 2, y, kpiW, String(totalQty), "Itens / unidades", COLORS.amber);
@@ -353,7 +364,7 @@ export async function exportComprasPremiumPdf(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.2);
   doc.text(
-    `${photoCount} evidência(s) fotográfica(s) vinculada(s). O relatório reflete os filtros aplicados na Central de Materiais no momento da exportação.`,
+    `${photoCount} evidência(s) fotográfica(s) vinculada(s). Documento gerado a partir das solicitações exibidas no momento da exportação.`,
     14,
     y,
   );
@@ -465,5 +476,5 @@ export async function exportComprasPremiumPdf(
 
   drawPageFooter(doc);
   const suffix = new Date().toISOString().slice(0, 10);
-  doc.save(options.filename || `Relatorio_Materiais_GPS_Suvinil_${suffix}.pdf`);
+  doc.save(options.filename || `Sherwin_Williams_Grupo_GPS_Materiais_${suffix}.pdf`);
 }
