@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { MaterialEvidencePhoto } from "@/lib/materiais/material-request-photos";
+import { cn } from "@/lib/utils";
 
 function formatPhotoDate(value: string | null | undefined) {
   if (!value) return null;
@@ -22,9 +23,15 @@ type Props = {
   photos: MaterialEvidencePhoto[];
   osNumber?: string | null;
   materialDescription?: string | null;
+  variant?: "default" | "compact";
 };
 
-export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescription }: Props) {
+export function MaterialRequestPhotoGallery({
+  photos,
+  osNumber,
+  materialDescription,
+  variant = "default",
+}: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [failed, setFailed] = useState<Set<string>>(() => new Set());
 
@@ -41,29 +48,45 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
     });
   };
 
+  const compact = variant === "compact";
+
   return (
     <>
       <div
-        className="mt-4 rounded-2xl border border-sky-500/10 bg-sky-500/[0.04] p-3"
+        className={cn(
+          "mt-3",
+          compact
+            ? "flex items-center gap-2"
+            : "rounded-2xl border border-white/[0.07] bg-white/[0.02] p-3",
+        )}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <div className="rounded-lg border border-sky-400/15 bg-sky-500/10 p-1.5 text-sky-300">
-              <Camera className="h-4 w-4" />
+        {!compact && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="rounded-lg border border-white/[0.08] bg-white/[0.035] p-1.5 text-muted-foreground">
+                <Camera className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Evidências vinculadas</p>
+                <p className="text-[10px] text-muted-foreground">Fotos registradas na mesma OS</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-bold text-white">Fotos anexadas à solicitação</p>
-              <p className="text-[10px] text-muted-foreground">Evidências vinculadas à mesma OS do material</p>
-            </div>
+            <Badge variant="outline" className="border-white/[0.08] bg-white/[0.025] text-[10px] text-muted-foreground">
+              {visiblePhotos.length} {visiblePhotos.length === 1 ? "foto" : "fotos"}
+            </Badge>
           </div>
-          <Badge variant="outline" className="border-sky-500/20 bg-sky-500/10 text-[10px] text-sky-300">
-            {visiblePhotos.length} {visiblePhotos.length === 1 ? "foto" : "fotos"}
-          </Badge>
-        </div>
+        )}
 
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+        {compact && (
+          <div className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 text-[10px] font-semibold text-muted-foreground">
+            <Camera className="h-3.5 w-3.5" />
+            {visiblePhotos.length}
+          </div>
+        )}
+
+        <div className={cn("flex overflow-x-auto [scrollbar-width:thin]", compact ? "gap-1.5 pb-0" : "gap-2 pb-1")}>
           {visiblePhotos.map((photo, index) => (
             <Button
               key={photo.id}
@@ -73,7 +96,10 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
                 event.stopPropagation();
                 setSelectedId(photo.id);
               }}
-              className="group/photo relative h-24 w-28 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/20 p-0 hover:border-sky-400/40"
+              className={cn(
+                "group/photo relative shrink-0 overflow-hidden border border-white/[0.08] bg-black/20 p-0 hover:border-white/25",
+                compact ? "h-14 w-16 rounded-lg" : "h-24 w-28 rounded-xl",
+              )}
               title={`Abrir foto ${index + 1}`}
             >
               <img
@@ -85,9 +111,9 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
                 className="h-full w-full object-cover transition duration-300 group-hover/photo:scale-105"
               />
               <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition group-hover/photo:bg-black/35 group-hover/photo:opacity-100">
-                <ZoomIn className="h-5 w-5" />
+                <ZoomIn className="h-4 w-4" />
               </span>
-              <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/65 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+              <span className="absolute bottom-1 left-1 rounded bg-black/65 px-1 py-0.5 text-[8px] font-bold text-white backdrop-blur-sm">
                 {index + 1}/{visiblePhotos.length}
               </span>
             </Button>
@@ -102,7 +128,7 @@ export function MaterialRequestPhotoGallery({ photos, osNumber, materialDescript
         >
           <DialogHeader className="border-b border-white/10 px-5 py-4 text-left">
             <div className="flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-sky-300" />
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
               <DialogTitle className="text-base">Evidência do material · OS {osNumber || "—"}</DialogTitle>
             </div>
             <DialogDescription className="line-clamp-2">
