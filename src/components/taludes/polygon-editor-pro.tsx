@@ -568,8 +568,14 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
           const currentDate = formatShortDate(marking.rotulo?.split(" - ")[1] || "");
           const deadline = formatShortDate(marking.prazo_rotulo);
           const baseWidth = 154 + Math.max(0, textScale - 1) * 92;
+          const valueFontSize = 18 * textScale;
+          const rowHeight = Math.max(38, valueFontSize + 16);
+          const innerGap = deadline ? Math.max(8, 4 * textScale) : 0;
+          const baseHeight = deadline ? rowHeight * 2 + innerGap + 12 : rowHeight + 14;
           const width = baseWidth * s;
-          const height = (deadline ? 76 : 52) * s;
+          const height = baseHeight * s;
+          const firstRowY = deadline ? dataPos.y - ((rowHeight + innerGap) / 2) * s : dataPos.y;
+          const secondRowY = deadline ? dataPos.y + ((rowHeight + innerGap) / 2) * s : dataPos.y;
           const labelX = dataPos.x - width / 2 + 14 * s;
           const valueX = dataPos.x - width / 2 + 72 * s;
           ctx.save();
@@ -587,10 +593,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
           ctx.textBaseline = "middle";
           ctx.fillStyle = hexToRgba(dateText, 0.62);
           ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-          ctx.fillText("DE", labelX, dataPos.y - (deadline ? 19 : 9) * s);
+          ctx.fillText("DE", labelX, firstRowY);
           ctx.fillStyle = dateText;
           ctx.font = `800 ${18 * s * textScale}px Inter, Arial, sans-serif`;
-          ctx.fillText(currentDate || "—", valueX, dataPos.y - (deadline ? 19 : 9) * s);
+          ctx.fillText(currentDate || "—", valueX, firstRowY);
           if (deadline) {
             ctx.strokeStyle = hexToRgba(dateText, 0.12);
             ctx.beginPath();
@@ -599,10 +605,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
             ctx.stroke();
             ctx.fillStyle = hexToRgba(dateText, 0.62);
             ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-            ctx.fillText("ATÉ", labelX, dataPos.y + 19 * s);
+            ctx.fillText("ATÉ", labelX, secondRowY);
             ctx.fillStyle = dateText;
             ctx.font = `800 ${18 * s * textScale}px Inter, Arial, sans-serif`;
-            ctx.fillText(deadline, valueX, dataPos.y + 19 * s);
+            ctx.fillText(deadline, valueX, secondRowY);
           }
           ctx.restore();
         }
@@ -1001,6 +1007,12 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
               const deadline = formatShortDate(marking.prazo_rotulo);
               const dateTextScale = marking.data_text_scale || 1;
               const dateCardWidth = 154 + Math.max(0, dateTextScale - 1) * 92;
+              const dateValueFontSize = 18 * dateTextScale;
+              const dateRowHeight = Math.max(38, dateValueFontSize + 16);
+              const dateInnerGap = deadline ? Math.max(8, 4 * dateTextScale) : 0;
+              const dateCardHeight = deadline ? dateRowHeight * 2 + dateInnerGap + 12 : dateRowHeight + 14;
+              const dateFirstRowY = deadline ? -(dateRowHeight + dateInnerGap) / 2 : 0;
+              const dateSecondRowY = deadline ? (dateRowHeight + dateInnerGap) / 2 : 0;
               const dateLabelX = -dateCardWidth / 2 + 14;
               const dateValueX = -dateCardWidth / 2 + 72;
 
@@ -1017,10 +1029,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
 
                   {marking.data_visivel !== false && (
                     <g transform={`translate(${dataPos.x} ${dataPos.y}) scale(${marking.data_scale || 1})`}>
-                      <rect x={-dateCardWidth / 2} y={deadline ? -38 : -26} width={dateCardWidth} height={deadline ? 76 : 52} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
-                      <text x={dateLabelX} y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
-                      <text x={dateValueX} y={deadline ? -17 : -5} fill={dateText} fontSize={18 * dateTextScale} fontWeight="900">{statusDate || "—"}</text>
-                      {deadline && <><line x1={-dateCardWidth / 2 + 14} x2={dateCardWidth / 2 - 14} y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x={dateLabelX} y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x={dateValueX} y="22" fill={dateText} fontSize={18 * dateTextScale} fontWeight="900">{deadline}</text></>}
+                      <rect x={-dateCardWidth / 2} y={-dateCardHeight / 2} width={dateCardWidth} height={dateCardHeight} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
+                      <text x={dateLabelX} y={dateFirstRowY} dominantBaseline="middle" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
+                      <text x={dateValueX} y={dateFirstRowY} dominantBaseline="middle" fill={dateText} fontSize={dateValueFontSize} fontWeight="900">{statusDate || "—"}</text>
+                      {deadline && <><line x1={-dateCardWidth / 2 + 14} x2={dateCardWidth / 2 - 14} y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x={dateLabelX} y={dateSecondRowY} dominantBaseline="middle" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x={dateValueX} y={dateSecondRowY} dominantBaseline="middle" fill={dateText} fontSize={dateValueFontSize} fontWeight="900">{deadline}</text></>}
                     </g>
                   )}
 
