@@ -373,7 +373,7 @@ function buildRequests(
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
-    paperSize: 8,
+    paperSize: 9,
     horizontalCentered: true,
     margins: { left: 0.2, right: 0.2, top: 0.45, bottom: 0.45, header: 0.2, footer: 0.2 },
     printArea: `A1:M${lastRow}`,
