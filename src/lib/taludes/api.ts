@@ -28,6 +28,7 @@ export interface TaludeMarcacao {
   data_x?: number | null;
   data_y?: number | null;
   data_scale?: number;
+  data_text_scale?: number;
   prazo_rotulo?: string | null;
   numero_visivel?: boolean;
   data_visivel?: boolean;
@@ -76,6 +77,7 @@ export const getTaludeMarcacoes = createServerFn({ method: "GET" })
       polygon: m.polygon as unknown as Point[],
       numero_cor_fundo: (m as any).numero_cor_fundo || "#0f172a",
       numero_cor_texto: (m as any).numero_cor_texto || "#ffffff",
+      data_text_scale: Number((m as any).data_text_scale ?? 1),
     })) as unknown as TaludeMarcacao[];
   });
 
@@ -151,6 +153,7 @@ export const saveTaludeMarcacao = createServerFn({ method: "POST" })
         data_x: payload.data_x ?? null,
         data_y: payload.data_y ?? null,
         data_scale: payload.data_scale ?? 1,
+        data_text_scale: payload.data_text_scale ?? 1,
         numero_visivel: payload.numero_visivel ?? true,
         data_visivel: payload.data_visivel ?? true,
         icone_tipo: payload.icone_tipo ?? null,

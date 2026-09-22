@@ -320,6 +320,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
         espessura_linha: 4,
         numero_scale: 1,
         data_scale: 1,
+        data_text_scale: 1.2,
         numero_visivel: true,
         data_visivel: true,
         numero_cor_fundo: numeroBg,
@@ -563,10 +564,14 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
 
         if (marking.data_visivel !== false) {
           const s = marking.data_scale || 1;
+          const textScale = marking.data_text_scale || 1;
           const currentDate = formatShortDate(marking.rotulo?.split(" - ")[1] || "");
           const deadline = formatShortDate(marking.prazo_rotulo);
-          const width = 154 * s;
+          const baseWidth = 154 + Math.max(0, textScale - 1) * 92;
+          const width = baseWidth * s;
           const height = (deadline ? 76 : 52) * s;
+          const labelX = dataPos.x - width / 2 + 14 * s;
+          const valueX = dataPos.x - width / 2 + 72 * s;
           ctx.save();
           ctx.shadowColor = "rgba(0,0,0,.32)";
           ctx.shadowBlur = 9 * s;
@@ -582,22 +587,22 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
           ctx.textBaseline = "middle";
           ctx.fillStyle = hexToRgba(dateText, 0.62);
           ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-          ctx.fillText("DE", dataPos.x - 62 * s, dataPos.y - (deadline ? 19 : 9) * s);
+          ctx.fillText("DE", labelX, dataPos.y - (deadline ? 19 : 9) * s);
           ctx.fillStyle = dateText;
-          ctx.font = `800 ${18 * s}px Inter, Arial, sans-serif`;
-          ctx.fillText(currentDate || "—", dataPos.x - 6 * s, dataPos.y - (deadline ? 19 : 9) * s);
+          ctx.font = `800 ${18 * s * textScale}px Inter, Arial, sans-serif`;
+          ctx.fillText(currentDate || "—", valueX, dataPos.y - (deadline ? 19 : 9) * s);
           if (deadline) {
             ctx.strokeStyle = hexToRgba(dateText, 0.12);
             ctx.beginPath();
-            ctx.moveTo(dataPos.x - 62 * s, dataPos.y);
-            ctx.lineTo(dataPos.x + 62 * s, dataPos.y);
+            ctx.moveTo(dataPos.x - width / 2 + 14 * s, dataPos.y);
+            ctx.lineTo(dataPos.x + width / 2 - 14 * s, dataPos.y);
             ctx.stroke();
             ctx.fillStyle = hexToRgba(dateText, 0.62);
             ctx.font = `700 ${10 * s}px Inter, Arial, sans-serif`;
-            ctx.fillText("ATÉ", dataPos.x - 62 * s, dataPos.y + 19 * s);
+            ctx.fillText("ATÉ", labelX, dataPos.y + 19 * s);
             ctx.fillStyle = dateText;
-            ctx.font = `800 ${18 * s}px Inter, Arial, sans-serif`;
-            ctx.fillText(deadline, dataPos.x - 6 * s, dataPos.y + 19 * s);
+            ctx.font = `800 ${18 * s * textScale}px Inter, Arial, sans-serif`;
+            ctx.fillText(deadline, valueX, dataPos.y + 19 * s);
           }
           ctx.restore();
         }
@@ -851,7 +856,7 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
               </div>
               <div className="space-y-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <FieldLabel>Tamanho de DE / ATÉ</FieldLabel>
+                  <FieldLabel>Tamanho do campo de datas</FieldLabel>
                   <span className="rounded-md border border-white/10 bg-black/20 px-2 py-1 font-mono text-[9px] font-bold tabular-nums text-white/70">
                     {(selected.data_scale || 1).toFixed(1)}x
                   </span>
@@ -868,6 +873,43 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
                   className="w-full accent-slate-300"
                   aria-label="Tamanho dos campos De e Até"
                 />
+              </div>
+              <div className="space-y-2 rounded-xl border border-amber-300/15 bg-amber-300/[0.035] p-2.5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <FieldLabel>Tamanho dos números da data</FieldLabel>
+                    <p className="mt-1 text-[9px] leading-relaxed text-white/35">Aumenta somente 21/09, 22/09 etc. Ideal para impressão em folha A4.</p>
+                  </div>
+                  <span className="shrink-0 rounded-md border border-amber-300/15 bg-amber-300/[0.06] px-2 py-1 font-mono text-[9px] font-black tabular-nums text-amber-200">
+                    {(selected.data_text_scale || 1).toFixed(1)}x
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="2.4"
+                  step="0.1"
+                  value={selected.data_text_scale || 1}
+                  onChange={(e) => updateLocal(selected.id, { data_text_scale: Number(e.target.value) })}
+                  onPointerUp={() => void persistPatch(selected.id, { data_text_scale: local.find((m) => m.id === selected.id)?.data_text_scale || 1 })}
+                  onKeyUp={() => void persistPatch(selected.id, { data_text_scale: local.find((m) => m.id === selected.id)?.data_text_scale || 1 })}
+                  className="w-full accent-amber-300"
+                  aria-label="Tamanho dos números das datas"
+                />
+                <div className="grid grid-cols-3 gap-1.5">
+                  {([[1, "Normal"], [1.7, "A4"], [2.2, "A4 grande"]] as const).map(([value, label]) => (
+                    <Button
+                      key={label}
+                      type="button"
+                      size="sm"
+                      variant={Math.abs((selected.data_text_scale || 1) - value) < 0.05 ? "warning" : "outline"}
+                      className="h-8 px-2 text-[9px]"
+                      onClick={() => void persistPatch(selected.id, { data_text_scale: value }, `Tamanho ${label} aplicado`)}
+                    >
+                      {label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </AccordionSection>
 
@@ -957,6 +999,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
               const badgeHeight = 42 * numberScale;
               const statusDate = formatShortDate(marking.rotulo?.split(" - ")[1] || "");
               const deadline = formatShortDate(marking.prazo_rotulo);
+              const dateTextScale = marking.data_text_scale || 1;
+              const dateCardWidth = 154 + Math.max(0, dateTextScale - 1) * 92;
+              const dateLabelX = -dateCardWidth / 2 + 14;
+              const dateValueX = -dateCardWidth / 2 + 72;
 
               return (
                 <g key={marking.id} opacity={isSelected ? 1 : 0.92}>
@@ -971,10 +1017,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
 
                   {marking.data_visivel !== false && (
                     <g transform={`translate(${dataPos.x} ${dataPos.y}) scale(${marking.data_scale || 1})`}>
-                      <rect x="-77" y={deadline ? -38 : -26} width="154" height={deadline ? 76 : 52} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
-                      <text x="-63" y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
-                      <text x="-6" y={deadline ? -17 : -5} fill={dateText} fontSize="18" fontWeight="900">{statusDate || "—"}</text>
-                      {deadline && <><line x1="-63" x2="63" y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x="-63" y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x="-6" y="22" fill={dateText} fontSize="18" fontWeight="900">{deadline}</text></>}
+                      <rect x={-dateCardWidth / 2} y={deadline ? -38 : -26} width={dateCardWidth} height={deadline ? 76 : 52} rx="12" fill={hexToRgba(dateBg, 0.9)} stroke={hexToRgba(dateText, 0.25)} strokeWidth="1.2" className="drop-shadow-lg" />
+                      <text x={dateLabelX} y={deadline ? -17 : -5} fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">DE</text>
+                      <text x={dateValueX} y={deadline ? -17 : -5} fill={dateText} fontSize={18 * dateTextScale} fontWeight="900">{statusDate || "—"}</text>
+                      {deadline && <><line x1={-dateCardWidth / 2 + 14} x2={dateCardWidth / 2 - 14} y1="0" y2="0" stroke={hexToRgba(dateText, 0.12)} /><text x={dateLabelX} y="22" fill={hexToRgba(dateText, 0.58)} fontSize="9" fontWeight="800">ATÉ</text><text x={dateValueX} y="22" fill={dateText} fontSize={18 * dateTextScale} fontWeight="900">{deadline}</text></>}
                     </g>
                   )}
 
