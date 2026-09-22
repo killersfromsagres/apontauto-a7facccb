@@ -142,6 +142,84 @@ async function currentUserId(): Promise<string | null> {
   }
 }
 
+function normalizePartDescription(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLocaleLowerCase("pt-BR");
+}
+
+function duplicatePartError() {
+  return new Error(
+    "Esta peça já foi solicitada para este chamado. Evite criar uma solicitação em duplicidade.",
+  );
+}
+
+async function assertNoDuplicatePartRequest(item: OutboxItem) {
+  if (item.kind !== "peca") return;
+
+  const description = normalizePartDescription(item.payload?.descricao ?? item.payload?.pecas);
+  if (!description) return;
+
+  // Primeiro protege contra duplo clique, reenvio e solicitações repetidas ainda
+  // não sincronizadas neste mesmo aparelho.
+  const queued = await outboxAll();
+  const pendingDuplicate = queued.some(
+    (queuedItem) =>
+      queuedItem.kind === "peca" &&
+      queuedItem.osId === item.osId &&
+      queuedItem.id !== item.id &&
+      normalizePartDescription(queuedItem.payload?.descricao ?? queuedItem.payload?.pecas) === description,
+  );
+  if (pendingDuplicate) throw duplicatePartError();
+
+  // Em modo offline também consulta o histórico já espelhado da OS. O histórico
+  // contém os registros "Peça:" e "Ref. ... •" gravados pelo próprio fluxo.
+  if (typeof navigator === "undefined" || !navigator.onLine) {
+    const cached = await getCachedOsList();
+    const row = cached.find((cachedOs) => cachedOs.id === item.osId);
+    const history = normalizePartDescription(row?.pecas_solicitadas);
+    if (
+      history &&
+      (history.includes(`peça: ${description}`) || history.includes(`• ${description}`))
+    ) {
+      throw duplicatePartError();
+    }
+    return;
+  }
+
+  // Online, o banco é a fonte definitiva. A comparação usa a mesma normalização
+  // aplicada pelo índice único do PostgreSQL (trim, espaços consecutivos e caixa).
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await (supabase.from("corretiva_pecas") as any)
+      .select("id, descricao, client_uuid")
+      .eq("os_id", item.osId);
+
+    if (error) {
+      console.warn("[CorretivaPecas] Não foi possível validar duplicidade online:", error);
+      return;
+    }
+
+    const currentClientUuid = String(item.payload?.clientUuid ?? item.payload?.id ?? "");
+    const duplicate = (data ?? []).some((row: any) => {
+      if (normalizePartDescription(row?.descricao) !== description) return false;
+      const existingClientUuid = String(row?.client_uuid ?? "");
+      return !currentClientUuid || !existingClientUuid || existingClientUuid !== currentClientUuid;
+    });
+
+    if (duplicate) throw duplicatePartError();
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("Esta peça já foi solicitada para este chamado")
+    ) {
+      throw error;
+    }
+    console.warn("[CorretivaPecas] Validação de duplicidade indisponível:", error);
+  }
+}
+
 /**
  * Atualiza o espelho local das OS que o usuário conseguiu visualizar online.
  * O dono do cache é salvo junto dos dados para impedir que outro login no mesmo
@@ -205,6 +283,8 @@ export async function updateCachedOs(id: string, patch: Partial<OsCacheRow>): Pr
 }
 
 export async function outboxAdd(item: OutboxItem): Promise<void> {
+  await assertNoDuplicatePartRequest(item);
+
   // Vincula novas operações ao usuário que realmente executou o apontamento.
   // Isso evita que uma fila criada offline por um usuário seja enviada por outro
   // após troca de conta no mesmo navegador/dispositivo.
@@ -253,7 +333,7 @@ export async function blobGet(key: string): Promise<Blob | undefined> {
 }
 
 export async function blobDelete(key: string): Promise<void> {
-  await tx("blobs", "readwrite", (t) => req(t.objectStore("blobs").delete(key)));
+  return tx("blobs", "readwrite", (t) => req(t.objectStore("blobs").delete(key)));
 }
 
 // ---------- Drafts (rascunho em andamento por OS) ----------
