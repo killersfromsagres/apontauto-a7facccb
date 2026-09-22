@@ -206,6 +206,10 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
 
   const selected = useMemo(() => local.find((m) => m.id === selectedId) ?? null, [local, selectedId]);
   const visibleMarcacoes = useMemo(() => local.filter((m) => m.visivel !== false), [local]);
+  const renderOffset = useMemo(
+    () => ({ x: Math.round(offset.x), y: Math.round(offset.y) }),
+    [offset.x, offset.y],
+  );
 
   const metrics = useMemo(() => {
     if (!selected) return null;
@@ -283,11 +287,11 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return { x: 0, y: 0 };
       return {
-        x: (event.clientX - rect.left - offset.x) / zoom,
-        y: (event.clientY - rect.top - offset.y) / zoom,
+        x: (event.clientX - rect.left - renderOffset.x) / zoom,
+        y: (event.clientY - rect.top - renderOffset.y) / zoom,
       };
     },
-    [offset.x, offset.y, zoom],
+    [renderOffset.x, renderOffset.y, zoom],
   );
 
   const finishDrawing = useCallback(async () => {
@@ -990,9 +994,37 @@ export const PolygonEditorPro: React.FC<PolygonEditorProProps> = ({
         onMouseLeave={() => { panningRef.current = false; }}
         onClick={handleClick}
       >
-        <div style={{ width: imageWidth, height: imageHeight, transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: "0 0", position: "absolute", inset: 0, willChange: "transform" }}>
-          <img ref={imageRef} src={imageUrl} alt="Mapa de taludes" className="block select-none" draggable={false} crossOrigin="anonymous" onLoad={() => setImageLoaded(true)} style={{ width: imageWidth, height: imageHeight }} />
-          <svg viewBox={`0 0 ${imageWidth} ${imageHeight}`} className="pointer-events-none absolute inset-0 h-full w-full overflow-visible">
+        <div
+          style={{
+            width: Math.max(1, imageWidth * zoom),
+            height: Math.max(1, imageHeight * zoom),
+            position: "absolute",
+            left: renderOffset.x,
+            top: renderOffset.y,
+          }}
+        >
+          <img
+            ref={imageRef}
+            src={imageUrl}
+            alt="Mapa de taludes"
+            className="block select-none"
+            draggable={false}
+            crossOrigin="anonymous"
+            decoding="sync"
+            fetchPriority="high"
+            onLoad={() => setImageLoaded(true)}
+            style={{
+              width: "100%",
+              height: "100%",
+              maxWidth: "none",
+              imageRendering: "auto",
+            }}
+          />
+          <svg
+            viewBox={`0 0 ${imageWidth} ${imageHeight}`}
+            preserveAspectRatio="none"
+            className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+          >
             {visibleMarcacoes.map((marking) => {
               const centroid = getCentroid(marking.polygon);
               const numberPos = { x: marking.numero_x ?? centroid.x, y: marking.numero_y ?? centroid.y };
