@@ -9,9 +9,16 @@ const COLORS = {
   navy: "FF0B1F33",
   navySoft: "FF17324D",
   teal: "FF0F6B78",
+  gold: "FFC99A3D",
   correctiveBg: "FFFFE4E6",
   correctiveText: "FFB42318",
   correctiveBorder: "FFFDA4AF",
+} as const;
+
+const BRAND_ASSETS = {
+  sherwin:
+    "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png",
+  gps: "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png",
 } as const;
 
 const PREVENTIVE_OS_COLORS: Record<string, string> = {
@@ -39,6 +46,7 @@ const REFRIG_TEAM_ORDER = [
   "CLIMATIZAÇÃO E REFRIGERAÇÃO 3",
 ] as const;
 const ELECTRICAL_TEAM = "ELÉTRICA" as const;
+
 const BASE_DATA_ROW_HEIGHT_PT = 120;
 const MAX_CORRECTIVE_ROW_HEIGHT_PT = 420;
 
@@ -140,33 +148,15 @@ function visualLineCount(value: string, charsPerLine: number) {
   );
 }
 
-/**
- * Calcula um Height seguro para corretivas levando em conta o conteúdo que mais
- * costuma cortar no Excel. A coluna B usa fonte 28, por isso ela pesa mais no
- * cálculo. O valor mínimo continua 120 pt (~160 px) e cresce somente quando
- * necessário, até um limite alto o suficiente para descrições extensas.
- */
 function intelligentCorrectiveRowHeight(row: import("exceljs").Row) {
   const nomeLines = visualLineCount(row.getCell(COL.nome).text, 38);
   const espacoLines = visualLineCount(row.getCell(COL.espaco).text, 28);
   const ativoLines = visualLineCount(row.getCell(COL.ativo).text, 23);
-  const equipamentoLines = visualLineCount(
-    row.getCell(COL.equipamento).text,
-    34,
-  );
+  const equipamentoLines = visualLineCount(row.getCell(COL.equipamento).text, 34);
   const equipeLines = visualLineCount(row.getCell(COL.equipe).text, 24);
-
-  // Coluna B usa 28 pt: reserva ~36 pt por linha visual + margens.
   const descriptionHeight = 42 + nomeLines * 36;
-  // Campos secundários possuem fontes menores, mas também precisam de folga
-  // para wrapText e centralização vertical.
-  const secondaryLines = Math.max(
-    espacoLines,
-    ativoLines,
-    equipamentoLines,
-    equipeLines,
-  );
-  const secondaryHeight = 38 + secondaryLines * 24;
+  const secondaryHeight =
+    38 + Math.max(espacoLines, ativoLines, equipamentoLines, equipeLines) * 24;
 
   return Math.min(
     MAX_CORRECTIVE_ROW_HEIGHT_PT,
@@ -174,14 +164,87 @@ function intelligentCorrectiveRowHeight(row: import("exceljs").Row) {
   );
 }
 
-function contentRowHeight(row: import("exceljs").Row) {
-  if (isCorrectiveRow(row)) return intelligentCorrectiveRowHeight(row);
-  return BASE_DATA_ROW_HEIGHT_PT;
+function canonicalKnownTeam(value: string): string | undefined {
+  const normalized = normalize(value);
+  const known = [...CCH_TEAM_ORDER, ...REFRIG_TEAM_ORDER, ELECTRICAL_TEAM];
+  return known.find((team) => normalize(team) === normalized);
 }
 
-function idealDailyRowHeight(rowCount: number) {
-  if (rowCount <= 0) return 0;
-  return Math.max(52, Math.min(92, 930 / rowCount));
+function summaryTeams(workbook: import("exceljs").Workbook) {
+  const summary = workbook.getWorksheet("RESUMO");
+  if (!summary) return [];
+  const teams = new Set<string>();
+  summary.eachRow({ includeEmpty: false }, (row) => {
+    const team = canonicalKnownTeam(row.getCell(1).text.trim());
+    if (team) teams.add(team);
+  });
+  return [...teams];
+}
+
+function resolveTeamOrder(
+  workbook: import("exceljs").Workbook,
+  sections: SourceDaySection[],
+): string[] | undefined {
+  const teams = new Set<string>(summaryTeams(workbook));
+  sections.forEach((section) =>
+    section.rows.forEach((row) => {
+      const team = canonicalKnownTeam(snapshotTeam(row));
+      if (team) teams.add(team);
+    }),
+  );
+
+  if ([...teams].some((team) => REFRIG_TEAM_ORDER.includes(team as never))) {
+    return [...REFRIG_TEAM_ORDER];
+  }
+  if (
+    teams.size > 0 &&
+    [...teams].every((team) => CCH_TEAM_ORDER.includes(team as never))
+  ) {
+    return [...CCH_TEAM_ORDER];
+  }
+  if (teams.has(ELECTRICAL_TEAM) && teams.size === 1) return [ELECTRICAL_TEAM];
+  return teams.size === 1 ? [...teams] : undefined;
+}
+
+function fullTeamFromPrintSheet(sheet: import("exceljs").Worksheet) {
+  for (let rowNumber = 3; rowNumber <= Math.min(sheet.rowCount, 20); rowNumber += 1) {
+    const team = sheet.getRow(rowNumber).getCell(COL.equipe).text.trim();
+    if (team) return team.toUpperCase();
+  }
+
+  const normalized = normalize(sheet.name.replace(/^IMP\s+/i, ""));
+  if (normalized.startsWith("REFRIG")) {
+    const number = normalized.match(/(\d+)$/)?.[1];
+    return `CLIMATIZAÇÃO E REFRIGERAÇÃO${number ? ` ${number}` : ""}`;
+  }
+  if (normalized === "ELETRICA") return "ELÉTRICA";
+  if (normalized === "HIDRAULICA") return "HIDRÁULICA";
+  if (normalized === "CORRETIVA") return "CORRETIVA";
+  return normalized || "EQUIPE";
+}
+
+function extractWeekNumber(workbook: import("exceljs").Workbook) {
+  const candidates: string[] = [];
+  const program = workbook.getWorksheet("PROGRAMAÇÃO");
+  if (program) candidates.push(program.getCell("A1").text);
+  const summary = workbook.getWorksheet("RESUMO");
+  if (summary) {
+    candidates.push(summary.getCell("A1").text);
+    candidates.push(summary.getCell("A2").text);
+  }
+  workbook.worksheets
+    .filter((sheet) => sheet.name.startsWith("IMP "))
+    .forEach((sheet) => candidates.push(sheet.getCell("A1").text));
+
+  for (const candidate of candidates) {
+    const match = candidate.match(/\bSEMANA\s*(\d{1,2})\b/i);
+    if (match?.[1]) return Number(match[1]);
+  }
+  return null;
+}
+
+function weekLabel(weekNumber: number | null) {
+  return weekNumber ? `SEMANA ${weekNumber}` : "SEMANA";
 }
 
 function readSourceDaySections(
@@ -228,66 +291,6 @@ function readSourceDaySections(
   return sections.sort((a, b) => a.dayIndex - b.dayIndex);
 }
 
-function canonicalKnownTeam(value: string): string | undefined {
-  const normalized = normalize(value);
-  const known = [...CCH_TEAM_ORDER, ...REFRIG_TEAM_ORDER, ELECTRICAL_TEAM];
-  return known.find((team) => normalize(team) === normalized);
-}
-
-function summaryTeams(workbook: import("exceljs").Workbook) {
-  const summary = workbook.getWorksheet("RESUMO");
-  if (!summary) return [];
-  const teams = new Set<string>();
-  summary.eachRow({ includeEmpty: false }, (row) => {
-    const team = canonicalKnownTeam(row.getCell(1).text.trim());
-    if (team) teams.add(team);
-  });
-  return [...teams];
-}
-
-function resolveTeamOrder(
-  workbook: import("exceljs").Workbook,
-  sections: SourceDaySection[],
-): string[] | undefined {
-  const teams = new Set<string>(summaryTeams(workbook));
-  sections.forEach((section) =>
-    section.rows.forEach((row) => {
-      const team = canonicalKnownTeam(snapshotTeam(row));
-      if (team) teams.add(team);
-    }),
-  );
-
-  if ([...teams].some((team) => REFRIG_TEAM_ORDER.includes(team as never))) {
-    return [...REFRIG_TEAM_ORDER];
-  }
-  if (
-    teams.size > 0 &&
-    [...teams].every((team) => CCH_TEAM_ORDER.includes(team as never))
-  ) {
-    return [...CCH_TEAM_ORDER];
-  }
-  if (teams.has(ELECTRICAL_TEAM) && teams.size === 1) return [ELECTRICAL_TEAM];
-  return teams.size === 1 ? [...teams] : undefined;
-}
-
-function shortTeamName(team: string) {
-  const normalized = normalize(team);
-  if (normalized.startsWith("CLIMATIZACAO E REFRIGERACAO ")) {
-    const number = normalized.match(/(\d+)$/)?.[1];
-    return number ? `REFRIGERAÇÃO ${number}` : "REFRIGERAÇÃO";
-  }
-  return team.toUpperCase();
-}
-
-function programTeamLabel(teams: string[]) {
-  const refrigeration = teams.filter((team) =>
-    normalize(team).startsWith("CLIMATIZACAO E REFRIGERACAO "),
-  );
-  if (refrigeration.length > 0)
-    return "REFRIGERAÇÃO 1 / REFRIGERAÇÃO 2 / REFRIGERAÇÃO 3";
-  return teams.map(shortTeamName).join(" / ");
-}
-
 function unmergeAll(sheet: import("exceljs").Worksheet) {
   const merges = [
     ...(((sheet.model as unknown as { merges?: string[] }).merges ?? [])),
@@ -296,7 +299,7 @@ function unmergeAll(sheet: import("exceljs").Worksheet) {
     try {
       sheet.unMergeCells(range);
     } catch {
-      // Intervalo já desfeito pelo ExcelJS.
+      // Já desfeito.
     }
   });
 }
@@ -304,17 +307,13 @@ function unmergeAll(sheet: import("exceljs").Worksheet) {
 function rebuildProgramSheetByTeam(
   workbook: import("exceljs").Workbook,
   sheet: import("exceljs").Worksheet,
+  weekNumber: number | null,
 ) {
-  if (sheet.name !== "PROGRAMAÇÃO") return;
   const sections = readSourceDaySections(sheet);
   if (sections.length === 0) return;
-
   const teamOrder = resolveTeamOrder(workbook, sections);
   if (!teamOrder?.length) return;
 
-  const titleSnapshot = captureRow(sheet.getRow(1));
-  const currentTitle = String(titleSnapshot.values[0] ?? "").trim();
-  const titleSuffix = currentTitle.match(/SEMANA\s+.*$/i)?.[0] ?? currentTitle;
   const originalViews = sheet.views;
   const originalPageSetup = { ...sheet.pageSetup };
   const originalFooter = sheet.headerFooter.oddFooter;
@@ -325,7 +324,6 @@ function rebuildProgramSheetByTeam(
 
   unmergeAll(sheet);
   if (sheet.rowCount > 0) sheet.spliceRows(1, sheet.rowCount);
-
   columnWidths.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
@@ -335,25 +333,16 @@ function rebuildProgramSheetByTeam(
 
   sheet.mergeCells(1, 1, 1, COL.equipamento);
   const title = sheet.getCell(1, 1);
-  title.value = `PROGRAMAÇÃO SEMANAL • ${programTeamLabel(teamOrder)} • ${titleSuffix}`;
-  title.style = cloneStyle(titleSnapshot.styles[0]) as import("exceljs").Style;
+  title.value = `PROGRAMAÇÃO SEMANAL • ${weekLabel(weekNumber)} •`;
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navy } };
   title.font = {
-    ...(title.font ?? {}),
     name: "Aptos ExtraBold",
     bold: true,
     size: 23,
     color: { argb: COLORS.white },
   };
-  title.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: COLORS.navy },
-  };
-  title.alignment = {
-    vertical: "middle",
-    horizontal: "center",
-    wrapText: true,
-  };
+  title.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  title.border = { bottom: { style: "medium", color: { argb: COLORS.gold } } };
   sheet.getRow(1).height = 48;
 
   let rowIndex = 2;
@@ -362,9 +351,7 @@ function rebuildProgramSheetByTeam(
       const teamRows = source.rows.filter(
         (row) => normalize(snapshotTeam(row)) === normalize(team),
       );
-      const preventiveRows = teamRows.filter(
-        (row) => !isCorrectiveSnapshot(row),
-      );
+      const preventiveRows = teamRows.filter((row) => !isCorrectiveSnapshot(row));
       const correctiveRows = teamRows.filter(isCorrectiveSnapshot);
       const orderedRows = [...preventiveRows, ...correctiveRows];
       const bandParts = source.bandText.split(" • ");
@@ -372,24 +359,18 @@ function rebuildProgramSheetByTeam(
 
       sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
       const bandCell = sheet.getCell(rowIndex, 1);
-      bandCell.value = `${dayAndDate} • ${shortTeamName(team)} • ${orderedRows.length} OS (${correctiveRows.length} CORRETIVAS)`;
-      bandCell.style = cloneStyle(source.band.styles[0]) as import("exceljs").Style;
-      bandCell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: COLORS.teal },
-      };
+      bandCell.value = `${dayAndDate} • ${team.toUpperCase()} • ${orderedRows.length} OS (${correctiveRows.length} CORRETIVAS)`;
+      bandCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.teal } };
       bandCell.font = {
-        ...(bandCell.font ?? {}),
         name: "Aptos ExtraBold",
         bold: true,
         size: 12.5,
         color: { argb: COLORS.white },
       };
-      bandCell.alignment = {
-        vertical: "middle",
-        horizontal: "left",
-        indent: 1,
+      bandCell.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      bandCell.border = {
+        top: { style: "medium", color: { argb: COLORS.gold } },
+        bottom: { style: "thin", color: { argb: COLORS.borderStrong } },
       };
       sheet.getRow(rowIndex).height = 32;
       rowIndex += 1;
@@ -398,6 +379,7 @@ function rebuildProgramSheetByTeam(
       applySnapshot(header, source.header);
       for (let column = 1; column <= COL.equipamento; column += 1) {
         const cell = header.getCell(column);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navySoft } };
         cell.font = {
           ...(cell.font ?? {}),
           name: "Aptos ExtraBold",
@@ -405,15 +387,12 @@ function rebuildProgramSheetByTeam(
           size: 10,
           color: { argb: COLORS.white },
         };
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: COLORS.navySoft },
-        };
-        cell.alignment = {
-          vertical: "middle",
-          horizontal: "center",
-          wrapText: true,
+        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+        cell.border = {
+          top: { style: "thin", color: { argb: COLORS.borderStrong } },
+          bottom: { style: "thin", color: { argb: COLORS.borderStrong } },
+          left: { style: "thin", color: { argb: COLORS.borderStrong } },
+          right: { style: "thin", color: { argb: COLORS.borderStrong } },
         };
       }
       header.height = 35;
@@ -422,23 +401,15 @@ function rebuildProgramSheetByTeam(
       if (orderedRows.length === 0) {
         sheet.mergeCells(rowIndex, 1, rowIndex, COL.equipamento);
         const empty = sheet.getCell(rowIndex, 1);
-        empty.value = `Nenhuma OS de ${shortTeamName(team)} programada para este dia.`;
-        empty.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: COLORS.stripe },
-        };
+        empty.value = `Nenhuma OS de ${team.toUpperCase()} programada para este dia.`;
+        empty.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.stripe } };
         empty.font = {
           name: "Aptos SemiBold",
           bold: true,
           size: 12,
           color: { argb: COLORS.text },
         };
-        empty.alignment = {
-          vertical: "middle",
-          horizontal: "center",
-          wrapText: true,
-        };
+        empty.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
         empty.border = {
           top: { style: "thin", color: { argb: COLORS.border } },
           bottom: { style: "thin", color: { argb: COLORS.border } },
@@ -466,11 +437,7 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     )
       ? 11
       : 10;
-    cell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: base },
-    };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: base } };
     cell.font = {
       ...(cell.font ?? {}),
       size: Math.max(currentSize, minimumSize),
@@ -489,21 +456,16 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     };
   }
 
-  const osCell = row.getCell(COL.os);
-  osCell.font = {
-    ...(osCell.font ?? {}),
+  row.getCell(COL.os).font = {
+    ...(row.getCell(COL.os).font ?? {}),
     size: 18,
   };
-
-  const nomeCell = row.getCell(COL.nome);
-  nomeCell.font = {
-    ...(nomeCell.font ?? {}),
+  row.getCell(COL.nome).font = {
+    ...(row.getCell(COL.nome).font ?? {}),
     size: 28,
   };
-
-  const ativoCell = row.getCell(COL.ativo);
-  ativoCell.font = {
-    ...(ativoCell.font ?? {}),
+  row.getCell(COL.ativo).font = {
+    ...(row.getCell(COL.ativo).font ?? {}),
     size: 16,
   };
 
@@ -517,14 +479,10 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     };
   }
 
-  // Preventivas permanecem com 160 px (~120 pt). Corretivas usam o cálculo
-  // inteligente para crescer conforme a quantidade real de texto.
   row.height = isCorrectiveRow(row)
     ? intelligentCorrectiveRowHeight(row)
     : BASE_DATA_ROW_HEIGHT_PT;
 
-  // A data de Término SLA permanece sempre neutra. Nenhum destaque amarelo/vermelho
-  // deve alcançar a coluna de data.
   row.getCell(COL.sla).fill = {
     type: "pattern",
     pattern: "solid",
@@ -534,11 +492,7 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   if (isCorrectiveRow(row)) {
     for (const column of [COL.os, COL.atividade]) {
       const cell = row.getCell(column);
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: COLORS.correctiveBg },
-      };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.correctiveBg } };
       cell.font = {
         ...(cell.font ?? {}),
         name: "Aptos ExtraBold",
@@ -558,14 +512,10 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   const teamKey = normalize(row.getCell(COL.equipe).text);
   const preventiveColor = PREVENTIVE_OS_COLORS[teamKey];
   if (preventiveColor) {
-    const preventiveOsCell = row.getCell(COL.os);
-    preventiveOsCell.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: preventiveColor },
-    };
-    preventiveOsCell.font = {
-      ...(preventiveOsCell.font ?? {}),
+    const osCell = row.getCell(COL.os);
+    osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: preventiveColor } };
+    osCell.font = {
+      ...(osCell.font ?? {}),
       name: "Aptos ExtraBold",
       bold: true,
       color: { argb: COLORS.text },
@@ -606,18 +556,18 @@ function readDaySections(sheet: import("exceljs").Worksheet): DaySection[] {
   return days;
 }
 
-function addDayPageBreaks(sheet: import("exceljs").Worksheet) {
+function addSectionPageBreaks(sheet: import("exceljs").Worksheet) {
   if (sheet.name !== "PROGRAMAÇÃO") return;
-  const dayRows: number[] = [];
+  const sectionRows: number[] = [];
   sheet.eachRow({ includeEmpty: false }, (row) => {
     const first = row.getCell(1).text.trim();
-    if (DAY_NAMES.some((day) => first.startsWith(day))) dayRows.push(row.number);
+    if (DAY_NAMES.some((day) => first.startsWith(day))) sectionRows.push(row.number);
   });
   (
     sheet as unknown as {
       rowBreaks: Array<{ id: number; min: number; max: number; man: number }>;
     }
-  ).rowBreaks = dayRows.slice(1).map((rowNumber) => ({
+  ).rowBreaks = sectionRows.slice(1).map((rowNumber) => ({
     id: rowNumber - 1,
     min: 0,
     max: COL.equipamento - 1,
@@ -625,10 +575,44 @@ function addDayPageBreaks(sheet: import("exceljs").Worksheet) {
   }));
 }
 
-function prepareSheet(sheet: import("exceljs").Worksheet) {
+function styleTitleRow(
+  sheet: import("exceljs").Worksheet,
+  text: string,
+  size = 20,
+) {
+  try {
+    sheet.mergeCells("A1:J1");
+  } catch {
+    // Já mesclado.
+  }
+  const title = sheet.getCell("A1");
+  title.value = text;
+  title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navy } };
+  title.font = {
+    name: "Aptos ExtraBold",
+    bold: true,
+    size,
+    color: { argb: COLORS.white },
+  };
+  title.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  title.border = { bottom: { style: "medium", color: { argb: COLORS.gold } } };
+  sheet.getRow(1).height = 48;
+}
+
+function prepareSheet(sheet: import("exceljs").Worksheet, weekNumber: number | null) {
   const isProgram = sheet.name === "PROGRAMAÇÃO";
   const isTeam = sheet.name.startsWith("IMP ");
   if (!isProgram && !isTeam) return;
+
+  if (isProgram) {
+    styleTitleRow(sheet, `PROGRAMAÇÃO SEMANAL • ${weekLabel(weekNumber)} •`, 23);
+  } else {
+    styleTitleRow(
+      sheet,
+      `${fullTeamFromPrintSheet(sheet)} • ${weekLabel(weekNumber)} •`,
+      18,
+    );
+  }
 
   sheet.pageSetup.blackAndWhite = false;
   sheet.pageSetup.fitToPage = true;
@@ -636,7 +620,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
   sheet.pageSetup.fitToHeight = 0;
   sheet.pageSetup.orientation = "landscape";
   sheet.pageSetup.paperSize = 9;
-  sheet.pageSetup.printTitlesRow = "1:1";
+  sheet.pageSetup.printTitlesRow = isTeam ? "1:2" : "1:1";
   sheet.pageSetup.margins = {
     left: 0.12,
     right: 0.12,
@@ -661,7 +645,6 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
 
   let firstHeaderRow = 0;
   let lastUsedRow = 1;
-
   sheet.eachRow({ includeEmpty: false }, (row) => {
     lastUsedRow = Math.max(lastUsedRow, row.number);
     const firstText = row.getCell(1).text.trim();
@@ -669,14 +652,6 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
 
     if (isProgram && DAY_NAMES.some((day) => firstText.startsWith(day))) {
       row.height = Math.max(row.height || 0, 32);
-      const cell = row.getCell(1);
-      cell.font = {
-        ...(cell.font ?? {}),
-        name: "Aptos ExtraBold",
-        bold: true,
-        size: 12.5,
-        color: { argb: COLORS.white },
-      };
       return;
     }
 
@@ -685,6 +660,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
       row.height = Math.max(row.height || 0, 35);
       for (let column = 1; column <= COL.equipamento; column += 1) {
         const cell = row.getCell(column);
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.navySoft } };
         cell.font = {
           ...(cell.font ?? {}),
           name: "Aptos ExtraBold",
@@ -692,11 +668,7 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
           size: 10,
           color: { argb: COLORS.white },
         };
-        cell.alignment = {
-          vertical: "middle",
-          horizontal: "center",
-          wrapText: true,
-        };
+        cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
       }
       return;
     }
@@ -705,47 +677,69 @@ function prepareSheet(sheet: import("exceljs").Worksheet) {
     normalizeDataRowVisual(row);
   });
 
-  if (isProgram) {
-    readDaySections(sheet).forEach((section) => {
-      const ideal = idealDailyRowHeight(section.rows.length);
-      section.rows.forEach((row) => {
-        if (isCorrectiveRow(row)) {
-          row.height = Math.max(
-            BASE_DATA_ROW_HEIGHT_PT,
-            intelligentCorrectiveRowHeight(row),
-          );
-        } else {
-          row.height = Math.max(BASE_DATA_ROW_HEIGHT_PT, ideal);
-        }
-      });
-    });
-  }
-
-  if (firstHeaderRow)
-    sheet.autoFilter = `A${firstHeaderRow}:J${firstHeaderRow}`;
+  if (firstHeaderRow) sheet.autoFilter = `A${firstHeaderRow}:J${firstHeaderRow}`;
   sheet.pageSetup.printArea = `A1:J${Math.max(lastUsedRow, sheet.rowCount)}`;
-  addDayPageBreaks(sheet);
+  if (isProgram) addSectionPageBreaks(sheet);
+}
+
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("Falha ao carregar logo."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function imageUrlToDataUrl(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`Falha ao carregar logo (${response.status}).`);
+  return blobToDataUrl(await response.blob());
+}
+
+async function applyCorporateBranding(workbook: import("exceljs").Workbook) {
+  try {
+    const [sherwinBase64, gpsBase64] = await Promise.all([
+      imageUrlToDataUrl(BRAND_ASSETS.sherwin),
+      imageUrlToDataUrl(BRAND_ASSETS.gps),
+    ]);
+    const sherwinId = workbook.addImage({ base64: sherwinBase64, extension: "png" });
+    const gpsId = workbook.addImage({ base64: gpsBase64, extension: "png" });
+
+    workbook.worksheets
+      .filter((sheet) => sheet.name === "PROGRAMAÇÃO" || sheet.name.startsWith("IMP "))
+      .forEach((sheet) => {
+        sheet.addImage(sherwinId, {
+          tl: { col: 0.08, row: 0.07 },
+          ext: { width: 78, height: 42 },
+        });
+        sheet.addImage(gpsId, {
+          tl: { col: 8.8, row: 0.08 },
+          ext: { width: 92, height: 42 },
+        });
+      });
+  } catch (error) {
+    console.warn("[Programacao] Logos corporativas indisponíveis; mantendo layout textual.", error);
+  }
 }
 
 /**
- * Pós-processamento operacional da Programação:
- * - somente A:J (sem coluna K/Prioridade);
- * - CCH: Civil SEG→SEX e Hidráulica SEG→SEX;
- * - Refrigeração: equipe 1 SEG→SEX, depois equipe 2 SEG→SEX e equipe 3 SEG→SEX;
- * - cada equipe/dia vira uma página de impressão independente;
- * - corretivas recebem vermelho apenas em OS + Atividade;
- * - Término SLA preserva a data original e permanece com fundo neutro;
- * - preventivas mantêm 160 px; corretivas crescem automaticamente conforme texto.
+ * Pós-processamento visual da programação semanal.
+ * Mantém a lógica/dados do gerador e adequa o XLSX ao template corporativo:
+ * semana no título, identidade navy/teal/gold, títulos de impressão por equipe
+ * e páginas A4 horizontais com leitura confortável.
  */
 export async function polishWeeklyProgramacao(blob: Blob): Promise<Blob> {
   const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await blob.arrayBuffer());
 
+  const weekNumber = extractWeekNumber(workbook);
   const programSheet = workbook.getWorksheet("PROGRAMAÇÃO");
-  if (programSheet) rebuildProgramSheetByTeam(workbook, programSheet);
+  if (programSheet) rebuildProgramSheetByTeam(workbook, programSheet, weekNumber);
 
-  workbook.worksheets.forEach(prepareSheet);
+  workbook.worksheets.forEach((sheet) => prepareSheet(sheet, weekNumber));
+  await applyCorporateBranding(workbook);
 
   const buffer = await workbook.xlsx.writeBuffer();
   return new Blob([buffer], { type: XLSX_MIME });
@@ -786,8 +780,7 @@ function renderRow(
       )
         ? "left"
         : "center");
-    const value =
-      column === 1 && firstOverride !== undefined ? firstOverride : cell.text;
+    const value = column === 1 && firstOverride !== undefined ? firstOverride : cell.text;
     cells.push(
       `<td${merged ? ` colspan="${COL.equipamento}"` : ""} style="background:${background};color:${color};text-align:${align};font-weight:${cell.font?.bold ? 800 : 500}">${escapeHtml(value)}</td>`,
     );
@@ -797,13 +790,11 @@ function renderRow(
 
 export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
   const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    throw new Error("O navegador bloqueou a janela de impressão.");
-  }
+  if (!printWindow) throw new Error("O navegador bloqueou a janela de impressão.");
 
   printWindow.opener = null;
   printWindow.document.write(
-    "<p style='font-family:Arial;padding:24px'>Preparando impressão por equipe e dia...</p>",
+    "<p style='font-family:Arial;padding:24px'>Preparando impressão por equipe e semana...</p>",
   );
 
   try {
@@ -813,23 +804,22 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
     const sheet = workbook.getWorksheet("PROGRAMAÇÃO");
     if (!sheet) throw new Error("A aba PROGRAMAÇÃO não foi encontrada.");
 
+    const weekNumber = extractWeekNumber(workbook);
     const titleRow = sheet.getRow(1);
     const days = readDaySections(sheet);
     const sections = days.map((day, index) => {
-      const preventiveCount = day.rows.filter(
-        (row) => !isCorrectiveRow(row),
-      ).length;
+      const preventiveCount = day.rows.filter((row) => !isCorrectiveRow(row)).length;
       const correctiveCount = day.rows.filter(isCorrectiveRow).length;
       const bandParts = day.band.getCell(1).text.split(" • ");
       const dayLabel = bandParts.slice(0, 2).join(" • ");
       const team =
-        bandParts[2]?.trim() ||
-        day.rows[0]?.getCell(COL.equipe).text.trim() ||
-        "";
-      const bandLabel = `${dayLabel} • ${team} • ${preventiveCount} PREVENTIVAS • ${correctiveCount} CORRETIVAS`;
+        day.rows[0]?.getCell(COL.equipe).text.trim().toUpperCase() ||
+        bandParts[2]?.trim().toUpperCase() ||
+        "EQUIPE";
+      const pageTitle = `${team} • ${weekLabel(weekNumber)} •`;
+      const bandLabel = `${dayLabel} • ${preventiveCount} PREVENTIVAS • ${correctiveCount} CORRETIVAS`;
       const rowCount = Math.max(day.rows.length, 1);
-      const bodyFont =
-        rowCount >= 18 ? 7.9 : rowCount >= 15 ? 8.25 : 8.65;
+      const bodyFont = rowCount >= 18 ? 7.9 : rowCount >= 15 ? 8.25 : 8.65;
       const body = day.rows.length
         ? day.rows
             .map((row) =>
@@ -843,7 +833,7 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
 
       return `<section class="day-sheet${index === days.length - 1 ? " last-day" : ""}" style="--row-count:${rowCount};--body-font:${bodyFont}pt"><table>
         <thead>
-          ${renderRow(titleRow, "title-row", true)}
+          ${renderRow(titleRow, "title-row", true, pageTitle)}
           ${renderRow(day.band, "day-band", true, bandLabel)}
           ${renderRow(day.header, "column-header")}
         </thead>
@@ -864,7 +854,7 @@ export async function printWeeklyProgramacaoColor(blob: Blob): Promise<void> {
       tr { break-inside: avoid; page-break-inside: avoid; }
       td { border: 1px solid #DDE5EC; padding: 4px 4.5px; font-size: var(--body-font); line-height: 1.16; vertical-align: middle; overflow-wrap: anywhere; white-space: normal; }
       .title-row { height: 13mm; }
-      .title-row td { padding: 5px; font-size: 13.5pt; }
+      .title-row td { padding: 5px; font-size: 15pt; letter-spacing: .02em; }
       .day-band { height: 9mm; }
       .day-band td { padding: 4px 6px; font-size: 10pt; }
       .column-header { height: 9mm; }
