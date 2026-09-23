@@ -14,9 +14,9 @@ const argb = (hex: string) => `FF${hex.replace("#", "").toUpperCase()}`;
 const C = {
   ink: argb("#07111F"),
   navySoft: argb("#173B5C"),
-  backorderInk: argb("#2A0B10"),
-  backorderHeader: argb("#7F1D1D"),
-  backorderAccent: argb("#EF4444"),
+  backorderInk: argb("#3366CC"),
+  backorderHeader: argb("#3399FF"),
+  backorderAccent: argb("#3366CC"),
   white: argb("#FFFFFF"),
   slate900: argb("#0F172A"),
   slate700: argb("#334155"),
@@ -32,6 +32,12 @@ const FONT = "Aptos";
 const FONT_DISPLAY = "Aptos Display";
 const FONT_DESCRIPTION = "Aptos SemiBold";
 
+const BACKORDER_BRAND_ASSETS = {
+  gps: "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png",
+  sherwin:
+    "/__l5e/assets-v1/76b6660e-a690-4ff2-8943-c6f831b5ded6/sherwin-williams.png",
+} as const;
+
 /**
  * Larguras copiadas do arquivo de referência corrigido pelo usuário.
  * O modo de impressão abaixo força A:I em uma única página A4 horizontal,
@@ -40,6 +46,22 @@ const FONT_DESCRIPTION = "Aptos SemiBold";
 const PRINT_COLUMN_WIDTHS = [
   16,
   18,
+  25.85546875,
+  13.140625,
+  16,
+  22.7109375,
+  57.42578125,
+  18,
+  22,
+] as const;
+
+/**
+ * O Montador de Backorders usa a largura exata da coluna Equipe do modelo
+ * corporativo enviado pelo usuário. As demais larguras permanecem idênticas.
+ */
+const BACKORDER_COLUMN_WIDTHS = [
+  16,
+  19.7109375,
   25.85546875,
   13.140625,
   16,
@@ -249,7 +271,8 @@ function buildOperationsSheet(
   });
 
   // Replica as larguras do arquivo corrigido para todas as equipes e Programação Geral.
-  PRINT_COLUMN_WIDTHS.forEach((width, index) => {
+  const columnWidths = backorderTheme ? BACKORDER_COLUMN_WIDTHS : PRINT_COLUMN_WIDTHS;
+  columnWidths.forEach((width, index) => {
     sheet.getColumn(index + 1).width = width;
   });
 
@@ -277,11 +300,16 @@ function buildOperationsSheet(
     bold: true,
     color: { argb: C.white },
   };
-  titleCell.alignment = {
-    vertical: "middle",
-    horizontal: "left",
-    indent: 1,
-  };
+  titleCell.alignment = backorderTheme
+    ? {
+        vertical: "middle",
+        horizontal: "center",
+      }
+    : {
+        vertical: "middle",
+        horizontal: "left",
+        indent: 1,
+      };
   sheet.getRow(1).height = 51.95;
 
   const headers = [
@@ -471,7 +499,7 @@ export function buildProgramacaoWorkbook(
   const workbook = new ExcelJS.Workbook();
   const title =
     aba === "backorder"
-      ? "Relatório de Backorders"
+      ? "Backorders"
       : aba === "preventiva"
         ? "Programação de Backorder"
         : "Programação de Corretivas";
@@ -522,6 +550,52 @@ export function buildProgramacaoWorkbook(
   return workbook;
 }
 
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Não foi possível carregar a logo corporativa."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function imageUrlToDataUrl(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Não foi possível carregar a logo corporativa (${response.status}).`);
+  }
+  return blobToDataUrl(await response.blob());
+}
+
+async function applyBackorderBranding(workbook: ExcelJS.Workbook) {
+  const [gpsBase64, sherwinBase64] = await Promise.all([
+    imageUrlToDataUrl(BACKORDER_BRAND_ASSETS.gps),
+    imageUrlToDataUrl(BACKORDER_BRAND_ASSETS.sherwin),
+  ]);
+
+  const gpsImageId = workbook.addImage({
+    base64: gpsBase64,
+    extension: "png",
+  });
+  const sherwinImageId = workbook.addImage({
+    base64: sherwinBase64,
+    extension: "png",
+  });
+
+  workbook.worksheets.forEach((sheet) => {
+    // Posicionamento e proporções reproduzem a planilha de referência enviada.
+    sheet.addImage(gpsImageId, {
+      tl: { col: 0.06, row: 0 },
+      ext: { width: 134, height: 89 },
+    });
+    sheet.addImage(sherwinImageId, {
+      tl: { col: 8.15, row: 0.15 },
+      ext: { width: 66, height: 33 },
+    });
+  });
+}
+
 export async function generateProgramacaoExcel(
   osList: ProgramacaoExportRow[],
   equipeFiltro: string,
@@ -530,6 +604,11 @@ export async function generateProgramacaoExcel(
   const generatedAt = new Date();
   const openItems = onlyOpenItems(osList);
   const workbook = buildProgramacaoWorkbook(openItems, equipeFiltro, aba, generatedAt);
+
+  if (aba === "backorder") {
+    await applyBackorderBranding(workbook);
+  }
+
   const buffer = await workbook.xlsx.writeBuffer();
   const { saveAs } = await import("file-saver");
 
