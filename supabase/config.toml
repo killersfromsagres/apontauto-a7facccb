@@ -1,1 +1,4 @@
 project_id = "fbhpdqykoptxnrbdcspr"
+
+[functions.maintenance-team-classifier]
+verify_jwt = true
