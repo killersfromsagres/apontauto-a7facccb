@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Archive,
   BadgeCheck,
+  Download,
   ExternalLink,
   FileImage,
   FileText,
@@ -34,7 +35,8 @@ import { cn } from "@/lib/utils";
 
 const ACCEPT = "application/pdf,image/png,image/jpeg";
 const ALLOWED_TYPES = new Set(["application/pdf", "image/png", "image/jpeg"]);
-const MAX_MB = 10;
+const MAX_PDF_MB = 25;
+const MAX_IMAGE_MB = 10;
 
 type UploadMode = LegalAttachmentMode;
 
@@ -71,8 +73,9 @@ function validateFiles(files: File[], mode: UploadMode): string | null {
     if (!ALLOWED_TYPES.has(file.type)) {
       return `Formato não permitido em “${file.name}”. Envie PDF, JPG ou PNG.`;
     }
-    if (file.size > MAX_MB * 1024 * 1024) {
-      return `“${file.name}” ultrapassa o limite de ${MAX_MB} MB.`;
+    const maxMb = file.type === "application/pdf" ? MAX_PDF_MB : MAX_IMAGE_MB;
+    if (file.size > maxMb * 1024 * 1024) {
+      return `“${file.name}” ultrapassa o limite de ${maxMb} MB.`;
     }
   }
   return null;
@@ -94,6 +97,7 @@ export function LegalAttachmentsModal({
   const [uploadingMode, setUploadingMode] = useState<UploadMode | null>(null);
   const [draggingMode, setDraggingMode] = useState<UploadMode | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const {
     data: attachments = [],
@@ -122,6 +126,7 @@ export function LegalAttachmentsModal({
       setDraggingMode(null);
       setUploadingMode(null);
       setPromotingId(null);
+      setDownloadingId(null);
     }
   }, [open]);
 
@@ -180,6 +185,32 @@ export function LegalAttachmentsModal({
     }
   };
 
+  const downloadAttachment = async (attachment: LegalAttachment) => {
+    if (downloadingId) return;
+    setDownloadingId(attachment.id);
+    try {
+      const url = await signedUrl(attachment.storagePath);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Não foi possível preparar o arquivo para download.");
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = attachment.fileName || "certificado";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      toast.success("Download iniciado.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível baixar o certificado.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const makeCurrent = async (attachment: LegalAttachment) => {
     if (!item || attachment.isCurrent || promotingId) return;
     setPromotingId(attachment.id);
@@ -227,6 +258,9 @@ export function LegalAttachmentsModal({
         ? "border-emerald-400/45 bg-emerald-500/[0.08] shadow-[inset_0_0_0_1px_rgba(52,211,153,0.05)]"
         : "border-border/70 bg-muted/[0.10] hover:border-border hover:bg-muted/[0.16]",
     );
+
+  const downloadButtonClass =
+    "h-8 w-8 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.07] text-emerald-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition hover:border-emerald-400/35 hover:bg-emerald-500/[0.14] hover:text-emerald-300";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -314,6 +348,17 @@ export function LegalAttachmentsModal({
                         <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void openAttachment(currentAttachment)} aria-label={`Abrir ${currentAttachment.fileName}`} title="Abrir certificado">
                           <ExternalLink className="h-4 w-4" />
                         </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={downloadButtonClass}
+                          disabled={Boolean(downloadingId)}
+                          onClick={() => void downloadAttachment(currentAttachment)}
+                          aria-label={`Baixar ${currentAttachment.fileName}`}
+                          title="Baixar certificado"
+                        >
+                          {downloadingId === currentAttachment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                        </Button>
                         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" onClick={() => void removeAttachment(currentAttachment)} aria-label={`Remover ${currentAttachment.fileName}`} title="Remover certificado">
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -345,7 +390,7 @@ export function LegalAttachmentsModal({
                       <div>
                         <p className="text-sm font-semibold">{currentAttachment ? "Substituir certificado atual" : "Anexar certificado atual"}</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          Ao substituir, o documento vigente anterior será movido automaticamente para o histórico.
+                          Ao substituir, o documento vigente anterior será movido automaticamente para o histórico. PDF até {MAX_PDF_MB} MB · JPG/PNG até {MAX_IMAGE_MB} MB.
                         </p>
                       </div>
                     </div>
@@ -400,7 +445,7 @@ export function LegalAttachmentsModal({
                       <div>
                         <p className="text-sm font-semibold">Adicionar certificados ao histórico</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          Selecione vários arquivos de uma vez ou arraste-os para cá. PDF, JPG ou PNG, até {MAX_MB} MB cada.
+                          Selecione vários arquivos de uma vez ou arraste-os para cá. PDF até {MAX_PDF_MB} MB · JPG/PNG até {MAX_IMAGE_MB} MB cada.
                         </p>
                       </div>
                     </div>
@@ -447,6 +492,17 @@ export function LegalAttachmentsModal({
                           </Button>
                           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => void openAttachment(attachment)} aria-label={`Abrir ${attachment.fileName}`} title="Abrir certificado">
                             <ExternalLink className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={downloadButtonClass}
+                            disabled={Boolean(downloadingId)}
+                            onClick={() => void downloadAttachment(attachment)}
+                            aria-label={`Baixar ${attachment.fileName}`}
+                            title="Baixar certificado"
+                          >
+                            {downloadingId === attachment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                           </Button>
                           <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:text-destructive" onClick={() => void removeAttachment(attachment)} aria-label={`Remover ${attachment.fileName}`} title="Remover certificado">
                             <Trash2 className="h-4 w-4" />
