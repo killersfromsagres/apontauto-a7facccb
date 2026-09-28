@@ -461,8 +461,17 @@ export function allocateCorrectivesForWeekTeam(options: {
   // Para uma NOVA programação, porém, não repetimos OS que já foram programadas
   // anteriormente enquanto continuarem abertas. Isso faz a fila avançar e traz
   // novas corretivas a cada geração. Backorders continuam no topo pelo sortCandidates.
+  const currentReservations = readStorage();
+  const history = readHistory();
+  const historyKeys = new Set(history.flatMap(reservationKeys));
+  const legacyCurrent = currentReservations.filter(
+    (reservation) =>
+      !reservationKeys(reservation).some((key) => historyKeys.has(key)),
+  );
+  if (legacyCurrent.length > 0) writeHistory([...history, ...legacyCurrent]);
+
   const consumedKeys = new Set(
-    [...readHistory(), ...readStorage()].flatMap(reservationKeys),
+    [...history, ...currentReservations].flatMap(reservationKeys),
   );
   const eligible = sortCandidates(
     uniqueRows(
