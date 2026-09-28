@@ -1,0 +1,30 @@
+name: Programacao targeted tests
+
+on:
+  pull_request:
+    branches:
+      - Apont-Auto
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-programacao:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Test programacao semanal
+        run: npx vitest run src/lib/preventiva/corrective-program-reservations.test.ts src/lib/preventiva/weekly-exporter.test.ts src/lib/preventiva/weekly-exporter-corrective-style.test.ts
