@@ -38,6 +38,7 @@ import {
   type BackorderBuilderRow,
   type BackorderBuilderTeam,
 } from "@/lib/corretiva/backorder-spreadsheet-builder";
+import { enrichBackorderRowsWithMaterialRequests } from "@/lib/corretiva/backorder-material-enrichment";
 import { equipeStyles } from "@/lib/corretiva/equipe";
 import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { cn } from "@/lib/utils";
@@ -247,16 +248,49 @@ export function BackorderSpreadsheetBuilder() {
     setAiSummary(null);
     try {
       const parsed = await parseBackorderSpreadsheet(file);
-      setRows(parsed.rows);
-      setResult(parsed);
+      let enrichedRows = parsed.rows;
+      let recoveredMaterialCount = 0;
+
+      try {
+        const enrichment = await enrichBackorderRowsWithMaterialRequests(parsed.rows);
+        enrichedRows = enrichment.rows;
+        recoveredMaterialCount = enrichment.recoveredCount;
+
+        if (enrichment.partial) {
+          toast.warning(
+            "Os Backorders foram cruzados com as OS, mas parte do histórico detalhado de peças não pôde ser consultada.",
+          );
+        }
+      } catch (materialError) {
+        console.warn(
+          "[BackorderBuilder] Consulta de materiais indisponível; mantendo dados da planilha:",
+          materialError,
+        );
+        toast.warning(
+          "Backorders lidos, mas não foi possível consultar as solicitações de material agora. Os dados da planilha foram preservados.",
+        );
+      }
+
+      const enrichedResult: BackorderBuilderResult = {
+        ...parsed,
+        rows: enrichedRows,
+      };
+
+      setRows(enrichedRows);
+      setResult(enrichedResult);
       setFileName(file.name);
       setReviewOnly(false);
-      setRowMeta(Object.fromEntries(parsed.rows.map((row) => [row.builderId, {
+      setRowMeta(Object.fromEntries(enrichedRows.map((row) => [row.builderId, {
         source: row.score > 0 ? "technical" : row.originalTeam ? "preserved" : "technical",
       }])));
-      toast.success(`${parsed.rows.length} Backorder(s) lido(s). Iniciando revisão inteligente das equipes.`);
+
+      toast.success(
+        recoveredMaterialCount > 0
+          ? `${enrichedRows.length} Backorder(s) lido(s). ${recoveredMaterialCount} chamado(s) tiveram material solicitado recuperado do sistema. Iniciando revisão inteligente das equipes.`
+          : `${enrichedRows.length} Backorder(s) lido(s). Iniciando revisão inteligente das equipes.`,
+      );
       setReading(false);
-      await reviewRowsWithAi(parsed.rows);
+      await reviewRowsWithAi(enrichedRows);
     } catch (error) {
       console.error("[BackorderBuilder] Falha ao ler planilha:", error);
       reset();
