@@ -11,6 +11,7 @@ import { PlateBadge } from "@/components/frota/plate-badge";
 import { BrandMark, inferBrand } from "@/components/frota/brand-mark";
 import { cn } from "@/lib/utils";
 import {
+  CHECKLIST_TEMPLATES,
   listChecklistPhotos,
   listFleetChecklists,
   listFleetVehicles,
@@ -148,9 +149,12 @@ export function FleetHistory() {
                       {v ? `${v.prefix} · ${vehicleTitle(v)}` : "Veículo removido"}
                     </p>
                     <p className="break-words text-xs text-muted-foreground [overflow-wrap:anywhere]">
-                      {new Date(c.created_at).toLocaleString("pt-BR")} ·{" "}
-                      {c.kind === "saida" ? "Saída" : "Retorno"} · {c.driver_name} ·{" "}
+                      {new Date(c.created_at).toLocaleString("pt-BR")} · {c.driver_name} ·{" "}
                       {Number(c.odometer_km).toLocaleString("pt-BR")} km
+                    </p>
+                    <p className="mt-1 truncate text-[10px] text-muted-foreground">
+                      {CHECKLIST_TEMPLATES[c.template_code] ?? c.template_code}
+                      {c.inspector_name ? ` · Responsável: ${c.inspector_name}` : ""}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">

@@ -19,6 +19,7 @@ import {
 import { PlateBadge } from "@/components/frota/plate-badge";
 import { BrandMark, inferBrand } from "@/components/frota/brand-mark";
 import {
+  CHECKLIST_TEMPLATES,
   createFleetVehicle,
   listFleetVehicles,
   updateFleetVehicle,
@@ -42,6 +43,9 @@ const EMPTY: VehicleInput = {
   current_odometer_km: 0,
   status: "disponivel",
   notes: "",
+  unit: "",
+  sector_default: "",
+  checklist_template_code: "fiorino_van",
 };
 
 export function FleetVehicles() {
@@ -75,6 +79,9 @@ export function FleetVehicles() {
         version: form.version?.trim() || null,
         color: form.color?.trim() || null,
         notes: form.notes?.trim() || null,
+        unit: form.unit?.trim() || null,
+        sector_default: form.sector_default?.trim() || null,
+        checklist_template_code: form.checklist_template_code,
         current_odometer_km: Number(form.current_odometer_km) || 0,
       };
       if (editing) await updateFleetVehicle(editing.id, payload);
@@ -111,6 +118,9 @@ export function FleetVehicles() {
       current_odometer_km: Number(v.current_odometer_km) || 0,
       status: v.status,
       notes: v.notes ?? "",
+      unit: v.unit ?? "",
+      sector_default: v.sector_default ?? "",
+      checklist_template_code: v.checklist_template_code ?? "fiorino_van",
     });
     setOpen(true);
   }
@@ -221,6 +231,42 @@ export function FleetVehicles() {
                   ))}
                 </select>
               </Field>
+              <Field label="Unidade">
+                <Input
+                  value={form.unit ?? ""}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                  placeholder="Ex.: Demarchi"
+                />
+              </Field>
+              <Field label="Setor padrão">
+                <Input
+                  value={form.sector_default ?? ""}
+                  onChange={(e) => setForm({ ...form, sector_default: e.target.value })}
+                  placeholder="Ex.: Manutenção / PCM"
+                />
+              </Field>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">Certificado do checklist *</Label>
+                <select
+                  className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  value={form.checklist_template_code}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      checklist_template_code: e.target.value as VehicleInput["checklist_template_code"],
+                    })
+                  }
+                >
+                  {Object.entries(CHECKLIST_TEMPLATES).map(([code, label]) => (
+                    <option key={code} value={code}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-muted-foreground">
+                  O certificado selecionado será usado automaticamente quando este veículo preencher um checklist.
+                </p>
+              </div>
             </div>
             <DialogFooter>
               <Button
@@ -263,6 +309,9 @@ export function FleetVehicles() {
                 <Badge variant="outline">{VEHICLE_STATUS[v.status] ?? v.status}</Badge>
                 <span>{Number(v.current_odometer_km).toLocaleString("pt-BR")} km</span>
                 <span className="capitalize">{v.fuel_type}</span>
+                <Badge variant="outline">
+                  {CHECKLIST_TEMPLATES[v.checklist_template_code] ?? "Certificado não definido"}
+                </Badge>
               </div>
               <Button variant="outline" className="h-10 w-full" onClick={() => startEdit(v)}>
                 Editar
