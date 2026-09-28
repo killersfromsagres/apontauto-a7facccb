@@ -65,33 +65,22 @@ export async function generateChecklistCertificate({
   vehicle,
   photos = [],
 }: CertificateInput): Promise<void> {
-  const model = (vehicle?.model || "").toLowerCase();
-  const prefix = (vehicle?.prefix || "").toLowerCase();
-
-  // Se for um dos veículos que tem template PDF dedicado (água, máscara ou saveiro)
-  if (
-    vehicle && (
-    model.includes("água") ||
-    model.includes("máscara") ||
-    model.includes("saveiro") ||
-    prefix.includes("água") ||
-    prefix.includes("máscara") ||
-    prefix.includes("saveiro")
-    )
-  ) {
+  // Todos os veículos usam o certificado escolhido no cadastro.
+  // O template também fica salvo no checklist para preservar o histórico.
+  if (vehicle) {
     try {
       const pdfBytes = await generateVehicleCertificate(
         checklist,
         vehicle,
-        certificateCode(checklist)
+        certificateCode(checklist),
       );
 
       const code = certificateCode(checklist);
       downloadUint8Array(pdfBytes, `certificado-${code}.pdf`);
       return;
     } catch (err) {
-      console.error("Erro ao gerar certificado via template PDF:", err);
-      // Fallback para o gerador legado caso o template falhe
+      console.error("Erro ao gerar certificado pelo template selecionado:", err);
+      // Mantém o gerador programático abaixo como fallback de contingência.
     }
   }
 
