@@ -245,7 +245,14 @@ describe("corrective program reservations", () => {
     const firstIds = new Set(first.rows.map((item) => item.numero_os));
     expect(regenerated.rows).toHaveLength(CORRECTIVES_PER_WEEK);
     expect(regenerated.rows.every((item) => !firstIds.has(item.numero_os))).toBe(true);
-    expect(first.rows.slice(0, 3).every((item) => item.tipo === "Backorder")).toBe(true);
+    expect(first.rows.filter((item) => item.tipo === "Backorder")).toHaveLength(3);
+    expect(
+      first.byDay.every((items) => {
+        const firstRegular = items.findIndex((item) => item.tipo !== "Backorder");
+        const lastBackorder = items.map((item) => item.tipo).lastIndexOf("Backorder");
+        return firstRegular === -1 || lastBackorder < firstRegular;
+      }),
+    ).toBe(true);
   });
 
   it("libera uma corretiva para voltar às programações e exportações", () => {
