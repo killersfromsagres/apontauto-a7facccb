@@ -11,11 +11,12 @@ import {
   type Equipe,
 } from "./triage";
 
-// v5: cada semana é recalculada diretamente a partir dos chamados que continuam
-// abertos em Corretiva-Novo. Uma reserva de outra semana não pode mais esconder
-// uma OS ainda aberta da programação atual/futura. A reserva fica apenas como
-// registro visual da última distribuição feita no navegador.
+// v5 mantém a última distribuição visual por semana/equipe.
+// HISTORY_STORAGE_KEY registra toda OS corretiva já enviada para uma programação
+// neste navegador. Enquanto o chamado continuar aberto, ele não volta para uma
+// nova programação automática; ao liberar a reserva, ele fica elegível novamente.
 const STORAGE_KEY = "apontauto.corrective-program-reservations.v5";
+const HISTORY_STORAGE_KEY = "apontauto.corrective-program-history.v1";
 const LEGACY_STORAGE_KEYS = [
   "apontauto.corrective-program-reservations.v4",
   "apontauto.corrective-program-reservations.v3",
@@ -274,6 +275,38 @@ function writeStorage(reservations: CorrectiveProgramReservation[]): void {
   }
 }
 
+function readHistory(): CorrectiveProgramReservation[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed.filter(
+      (item): item is CorrectiveProgramReservation =>
+        Boolean(item) &&
+        typeof item.id === "string" &&
+        typeof item.numeroOs === "string" &&
+        typeof item.equipe === "string" &&
+        typeof item.periodStart === "string" &&
+        typeof item.periodEnd === "string",
+    );
+  } catch (error) {
+    console.warn("[CorrectiveReservations] Falha ao ler histórico:", error);
+    return [];
+  }
+}
+
+function writeHistory(reservations: CorrectiveProgramReservation[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(reservations));
+  } catch (error) {
+    console.warn("[CorrectiveReservations] Falha ao salvar histórico:", error);
+  }
+}
+
 export function listCorrectiveProgramReservations(): CorrectiveProgramReservation[] {
   return readStorage();
 }
@@ -311,24 +344,37 @@ export function releaseCorrectiveProgramReservation(
       !reservationKeys(reservation).some((key) => keys.has(key)),
   );
   if (next.length !== current.length) writeStorage(next);
+
+  const history = readHistory();
+  const nextHistory = history.filter(
+    (reservation) =>
+      !reservationKeys(reservation).some((key) => keys.has(key)),
+  );
+  if (nextHistory.length !== history.length) writeHistory(nextHistory);
 }
 
 export function pruneCorrectiveProgramReservations(
   rows: Array<Pick<CorrectiveSourceRow, "id" | "numero_os">>,
 ): CorrectiveProgramReservation[] {
   const current = readStorage();
-  if (current.length === 0) return current;
-
+  const history = readHistory();
   const existingKeys = new Set(rows.flatMap(rowKeys));
+
   if (existingKeys.size === 0) {
-    writeStorage([]);
+    if (current.length > 0) writeStorage([]);
+    if (history.length > 0) writeHistory([]);
     return [];
   }
 
   const next = current.filter((reservation) =>
     reservationKeys(reservation).some((key) => existingKeys.has(key)),
   );
+  const nextHistory = history.filter((reservation) =>
+    reservationKeys(reservation).some((key) => existingKeys.has(key)),
+  );
+
   if (next.length !== current.length) writeStorage(next);
+  if (nextHistory.length !== history.length) writeHistory(nextHistory);
   return next;
 }
 
@@ -341,8 +387,9 @@ export function setReservationsForWeekTeam(
 ): CorrectiveProgramReservation[] {
   const current = readStorage();
 
-  // A reserva é somente informativa. Nunca usamos uma reserva de outra semana
-  // para excluir uma OS que ainda está aberta no Supabase.
+  // Mantém somente a distribuição visual mais recente desta semana/equipe.
+  // O histórico permanente de OS já programadas é salvo separadamente para
+  // impedir que a mesma corretiva volte automaticamente em uma nova geração.
   const next = current.filter(
     (reservation) =>
       !(
@@ -377,6 +424,15 @@ export function setReservationsForWeekTeam(
   });
 
   writeStorage([...next, ...additions]);
+
+  const history = readHistory();
+  const historyKeys = new Set(history.flatMap(reservationKeys));
+  const freshHistory = additions.filter(
+    (reservation) =>
+      !reservationKeys(reservation).some((key) => historyKeys.has(key)),
+  );
+  if (freshHistory.length > 0) writeHistory([...history, ...freshHistory]);
+
   return additions;
 }
 
@@ -401,11 +457,29 @@ export function allocateCorrectivesForWeekTeam(options: {
 
   const limit = Math.max(0, perDay * businessDays);
 
-  // Fonte de verdade: chamados que continuam abertos em Corretiva-Novo neste
-  // momento. Reservas antigas não reduzem a fila da semana atual nem futura.
+  // Fonte de verdade: chamados que continuam abertos em Corretiva-Novo.
+  // Para uma NOVA programação, porém, não repetimos OS que já foram programadas
+  // anteriormente enquanto continuarem abertas. Isso faz a fila avançar e traz
+  // novas corretivas a cada geração. Backorders continuam no topo pelo sortCandidates.
+  const currentReservations = readStorage();
+  const history = readHistory();
+  const historyKeys = new Set(history.flatMap(reservationKeys));
+  const legacyCurrent = currentReservations.filter(
+    (reservation) =>
+      !reservationKeys(reservation).some((key) => historyKeys.has(key)),
+  );
+  if (legacyCurrent.length > 0) writeHistory([...history, ...legacyCurrent]);
+
+  const consumedKeys = new Set(
+    [...history, ...currentReservations].flatMap(reservationKeys),
+  );
   const eligible = sortCandidates(
     uniqueRows(
-      rows.filter((row) => resolveProgramCorrectiveTeam(row) === equipe),
+      rows.filter(
+        (row) =>
+          resolveProgramCorrectiveTeam(row) === equipe &&
+          !rowKeys(row).some((key) => consumedKeys.has(key)),
+      ),
     ),
     referenceDate,
   ).map((row) => ({ ...row, equipe }));

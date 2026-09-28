@@ -10,9 +10,9 @@ const COLORS = {
   navySoft: "FF17324D",
   teal: "FF0F6B78",
   gold: "FFC99A3D",
-  correctiveBg: "FFFFE4E6",
-  correctiveText: "FFB42318",
-  correctiveBorder: "FFFDA4AF",
+  correctiveBg: "FFDC2626",
+  correctiveText: "FFFFFFFF",
+  correctiveBorder: "FFB91C1C",
 } as const;
 
 const BRAND_ASSETS = {
@@ -21,14 +21,14 @@ const BRAND_ASSETS = {
   gps: "/__l5e/assets-v1/d386a336-b420-4782-9d48-85d30cbb6fee/grupo-gps.png",
 } as const;
 
-const PREVENTIVE_OS_COLORS: Record<string, string> = {
-  ELETRICA: "FFCCFFFF",
-  CIVIL: "FFD9EAD3",
-  CHAVEIRO: "FFEADCF8",
-  "CLIMATIZACAO E REFRIGERACAO 1": "FFCCFFFF",
-  "CLIMATIZACAO E REFRIGERACAO 2": "FFD9EAD3",
-  "CLIMATIZACAO E REFRIGERACAO 3": "FFF4CCCC",
-  HIDRAULICA: "FFFCE5CD",
+const TEAM_OS_STYLE: Record<string, { bg: string; fg: string }> = {
+  ELETRICA: { bg: "FF35B8C4", fg: "FF0B1F33" },
+  CIVIL: { bg: "FF0B8F55", fg: "FFFFFFFF" },
+  CHAVEIRO: { bg: "FF5B5CE2", fg: "FFFFFFFF" },
+  "CLIMATIZACAO E REFRIGERACAO 1": { bg: "FF1597D5", fg: "FFFFFFFF" },
+  "CLIMATIZACAO E REFRIGERACAO 2": { bg: "FF168B75", fg: "FFFFFFFF" },
+  "CLIMATIZACAO E REFRIGERACAO 3": { bg: "FFB65C72", fg: "FFFFFFFF" },
+  HIDRAULICA: { bg: "FFE29A16", fg: "FF0B1F33" },
 };
 
 const DAY_NAMES = [
@@ -47,8 +47,8 @@ const REFRIG_TEAM_ORDER = [
 ] as const;
 const ELECTRICAL_TEAM = "ELÉTRICA" as const;
 
-const BASE_DATA_ROW_HEIGHT_PT = 120;
-const MAX_CORRECTIVE_ROW_HEIGHT_PT = 420;
+const BASE_DATA_ROW_HEIGHT_PT = 132;
+const MAX_DATA_ROW_HEIGHT_PT = 405;
 
 const COL = {
   os: 1,
@@ -148,18 +148,18 @@ function visualLineCount(value: string, charsPerLine: number) {
   );
 }
 
-function intelligentCorrectiveRowHeight(row: import("exceljs").Row) {
-  const nomeLines = visualLineCount(row.getCell(COL.nome).text, 38);
-  const espacoLines = visualLineCount(row.getCell(COL.espaco).text, 28);
-  const ativoLines = visualLineCount(row.getCell(COL.ativo).text, 23);
-  const equipamentoLines = visualLineCount(row.getCell(COL.equipamento).text, 34);
+function intelligentDataRowHeight(row: import("exceljs").Row) {
+  const nomeLines = visualLineCount(row.getCell(COL.nome).text, 48);
+  const espacoLines = visualLineCount(row.getCell(COL.espaco).text, 32);
+  const ativoLines = visualLineCount(row.getCell(COL.ativo).text, 26);
+  const equipamentoLines = visualLineCount(row.getCell(COL.equipamento).text, 38);
   const equipeLines = visualLineCount(row.getCell(COL.equipe).text, 24);
-  const descriptionHeight = 42 + nomeLines * 36;
+  const descriptionHeight = 50 + nomeLines * 40;
   const secondaryHeight =
-    38 + Math.max(espacoLines, ativoLines, equipamentoLines, equipeLines) * 24;
+    44 + Math.max(espacoLines, ativoLines, equipamentoLines, equipeLines) * 27;
 
   return Math.min(
-    MAX_CORRECTIVE_ROW_HEIGHT_PT,
+    MAX_DATA_ROW_HEIGHT_PT,
     Math.max(BASE_DATA_ROW_HEIGHT_PT, descriptionHeight, secondaryHeight),
   );
 }
@@ -351,9 +351,9 @@ function rebuildProgramSheetByTeam(
       const teamRows = source.rows.filter(
         (row) => normalize(snapshotTeam(row)) === normalize(team),
       );
-      const preventiveRows = teamRows.filter((row) => !isCorrectiveSnapshot(row));
       const correctiveRows = teamRows.filter(isCorrectiveSnapshot);
-      const orderedRows = [...preventiveRows, ...correctiveRows];
+      // Preserva a ordem produzida pelo gerador: backorders já vêm primeiro.
+      const orderedRows = teamRows;
       const bandParts = source.bandText.split(" • ");
       const dayAndDate = bandParts.slice(0, 2).join(" • ");
 
@@ -479,9 +479,9 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
     };
   }
 
-  row.height = isCorrectiveRow(row)
-    ? intelligentCorrectiveRowHeight(row)
-    : BASE_DATA_ROW_HEIGHT_PT;
+  // Altura dinâmica para todas as OS: a coluna Nome pode ter descrições longas
+  // tanto em preventivas quanto em corretivas.
+  row.height = intelligentDataRowHeight(row);
 
   row.getCell(COL.sla).fill = {
     type: "pattern",
@@ -510,15 +510,15 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
   }
 
   const teamKey = normalize(row.getCell(COL.equipe).text);
-  const preventiveColor = PREVENTIVE_OS_COLORS[teamKey];
-  if (preventiveColor) {
+  const teamStyle = TEAM_OS_STYLE[teamKey];
+  if (teamStyle) {
     const osCell = row.getCell(COL.os);
-    osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: preventiveColor } };
+    osCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: teamStyle.bg } };
     osCell.font = {
       ...(osCell.font ?? {}),
       name: "Aptos ExtraBold",
       bold: true,
-      color: { argb: COLORS.text },
+      color: { argb: teamStyle.fg },
     };
   }
 }
@@ -631,15 +631,15 @@ function prepareSheet(sheet: import("exceljs").Worksheet, weekNumber: number | n
   };
 
   sheet.getColumn(COL.os).width = 15;
-  sheet.getColumn(COL.nome).width = 72;
-  sheet.getColumn(COL.predio).width = 16;
-  sheet.getColumn(COL.andar).width = 15;
-  sheet.getColumn(COL.espaco).width = 38;
+  sheet.getColumn(COL.nome).width = 84;
+  sheet.getColumn(COL.predio).width = 17;
+  sheet.getColumn(COL.andar).width = 16;
+  sheet.getColumn(COL.espaco).width = 42;
   sheet.getColumn(COL.atividade).width = 16;
   sheet.getColumn(COL.sla).width = 18;
   sheet.getColumn(COL.equipe).width = 30;
-  sheet.getColumn(COL.ativo).width = 30;
-  sheet.getColumn(COL.equipamento).width = 50;
+  sheet.getColumn(COL.ativo).width = 34;
+  sheet.getColumn(COL.equipamento).width = 56;
   sheet.getColumn(11).hidden = true;
   sheet.getColumn(11).width = 0;
 

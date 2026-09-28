@@ -42,7 +42,7 @@ function fillArgb(cell: ExcelJS.Cell) {
 }
 
 describe("weekly corrective visual identification", () => {
-  it("pinta somente a célula OS da corretiva em amarelo com texto preto", async () => {
+  it("pinta a OS corretiva em vermelho com texto branco", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
     const item = corrective();
@@ -62,14 +62,14 @@ describe("weekly corrective visual identification", () => {
 
     // A4 é OS; B4 em diante devem manter o estilo normal da linha.
     expect(program.getCell("A4").text).toBe("1700001");
-    expect(fillArgb(program.getCell("A4"))).toBe("FFFFD966");
-    expect(String(program.getCell("A4").font.color?.argb)).toBe("FF000000");
-    expect(fillArgb(program.getCell("B4"))).not.toBe("FFFFD966");
-    expect(fillArgb(program.getCell("C4"))).not.toBe("FFFFD966");
-    expect(fillArgb(program.getCell("F4"))).not.toBe("FFFFD966");
+    expect(fillArgb(program.getCell("A4"))).toBe("FFDC2626");
+    expect(String(program.getCell("A4").font.color?.argb)).toBe("FFFFFFFF");
+    expect(fillArgb(program.getCell("B4"))).not.toBe("FFDC2626");
+    expect(fillArgb(program.getCell("C4"))).not.toBe("FFDC2626");
 
     const teamSheet = workbook.getWorksheet("IMP CIVIL")!;
-    expect(fillArgb(teamSheet.getCell("A3"))).toBe("FFFFD966");
-    expect(fillArgb(teamSheet.getCell("B3"))).not.toBe("FFFFD966");
+    expect(fillArgb(teamSheet.getCell("A3"))).toBe("FFDC2626");
+    expect(String(teamSheet.getCell("A3").font.color?.argb)).toBe("FFFFFFFF");
+    expect(fillArgb(teamSheet.getCell("B3"))).not.toBe("FFDC2626");
   });
 });

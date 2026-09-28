@@ -158,7 +158,7 @@ describe("corrective program reservations", () => {
     expect(listCorrectiveProgramReservations()).toHaveLength(5);
   });
 
-  it("prioriza risco crítico antes de Backorder neutro e não duplica em outra semana", () => {
+  it("prioriza Backorder antes das demais corretivas e não duplica em outra semana", () => {
     const rows: CorrectiveSourceRow[] = [
       row("id-backorder", "100", "2026-09-30", "observacao", "CIVIL", "Backorder", "Ajuste de acabamento"),
       row("id-critical", "200", "2026-09-18", "critico", "CIVIL", "Corretiva", "Risco de choque em painel"),
@@ -174,7 +174,7 @@ describe("corrective program reservations", () => {
       referenceDate: reference,
       limit: 2,
     });
-    expect(first[0].numero_os).toBe("200");
+    expect(first[0].numero_os).toBe("100");
     expect(first).toHaveLength(2);
 
     const nextWeek = selectCorrectiveRowsForWeekTeam({
@@ -213,6 +213,46 @@ describe("corrective program reservations", () => {
     const firstIds = new Set(first.rows.map((item) => item.id));
     expect(second.rows.every((item) => !firstIds.has(item.id))).toBe(true);
     expect(second.rows).toHaveLength(2);
+  });
+
+  it("ao regenerar a mesma semana avança para corretivas novas sem reciclar as anteriores", () => {
+    const rows = Array.from({ length: 24 }, (_, index) =>
+      row(
+        `id-rotate-${index}`,
+        String(7000 + index),
+        "2026-10-30",
+        "observacao",
+        "CIVIL",
+        index < 3 ? "Backorder" : "Corretiva",
+      ),
+    );
+
+    const first = allocateCorrectivesForWeekTeam({
+      rows,
+      equipe: "CIVIL",
+      periodStart: "2026-09-14",
+      periodEnd: "2026-09-18",
+      referenceDate: new Date(2026, 8, 14),
+    });
+    const regenerated = allocateCorrectivesForWeekTeam({
+      rows,
+      equipe: "CIVIL",
+      periodStart: "2026-09-14",
+      periodEnd: "2026-09-18",
+      referenceDate: new Date(2026, 8, 14),
+    });
+
+    const firstIds = new Set(first.rows.map((item) => item.numero_os));
+    expect(regenerated.rows).toHaveLength(CORRECTIVES_PER_WEEK);
+    expect(regenerated.rows.every((item) => !firstIds.has(item.numero_os))).toBe(true);
+    expect(first.rows.filter((item) => item.tipo === "Backorder")).toHaveLength(3);
+    expect(
+      first.byDay.every((items) => {
+        const firstRegular = items.findIndex((item) => item.tipo !== "Backorder");
+        const lastBackorder = items.map((item) => item.tipo).lastIndexOf("Backorder");
+        return firstRegular === -1 || lastBackorder < firstRegular;
+      }),
+    ).toBe(true);
   });
 
   it("libera uma corretiva para voltar às programações e exportações", () => {
