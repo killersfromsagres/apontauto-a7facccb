@@ -519,7 +519,6 @@ function normalizeDataRowVisual(row: import("exceljs").Row) {
       name: "Aptos ExtraBold",
       bold: true,
       color: { argb: teamStyle.fg },
-      color: { argb: COLORS.text },
     };
   }
 }
