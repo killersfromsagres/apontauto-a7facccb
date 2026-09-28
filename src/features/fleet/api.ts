@@ -7,6 +7,13 @@ const db = supabase as unknown as { from: (t: string) => any };
 /* Veículos                                                            */
 /* ------------------------------------------------------------------ */
 
+export type ChecklistTemplateCode = "pickup" | "fiorino_van";
+
+export const CHECKLIST_TEMPLATES: Record<ChecklistTemplateCode, string> = {
+  pickup: "Checklist In-Haus – Pickup",
+  fiorino_van: "Checklist In-Haus – Fiorino / Van",
+};
+
 export type FleetVehicle = {
   id: string;
   prefix: string;
@@ -20,10 +27,13 @@ export type FleetVehicle = {
   current_odometer_km: number;
   status: string;
   notes: string | null;
+  unit: string | null;
+  sector_default: string | null;
+  checklist_template_code: ChecklistTemplateCode;
 };
 
 const VEHICLE_FIELDS =
-  "id, prefix, plate, brand, model, version, year_model, color, fuel_type, current_odometer_km, status, notes";
+  "id, prefix, plate, brand, model, version, year_model, color, fuel_type, current_odometer_km, status, notes, unit, sector_default, checklist_template_code";
 
 export const VEHICLE_STATUS: Record<string, string> = {
   disponivel: "Disponível",
@@ -55,6 +65,9 @@ export type VehicleInput = {
   current_odometer_km: number;
   status: string;
   notes?: string | null;
+  unit?: string | null;
+  sector_default?: string | null;
+  checklist_template_code: ChecklistTemplateCode;
 };
 
 export async function createFleetVehicle(input: VehicleInput): Promise<FleetVehicle> {
@@ -134,24 +147,41 @@ export async function deleteFueling(id: string): Promise<void> {
 export type ChecklistItemResult = {
   key: string;
   label: string;
-  status: "ok" | "atencao" | "critico";
+  status: "ok" | "nok" | "atencao" | "critico";
+  observation?: string | null;
+};
+
+export type ChecklistDamage = {
+  type: "batido" | "riscado" | "amassado" | "quebrado" | "barulho";
+  description?: string | null;
 };
 
 export type FleetChecklist = {
   id: string;
   vehicle_id: string;
+  template_code: ChecklistTemplateCode;
   kind: string;
+  inspection_date: string;
   driver_name: string;
+  sector: string | null;
+  unit: string | null;
   odometer_km: number;
+  odometer_initial_km: number | null;
+  odometer_final_km: number | null;
   fuel_level_pct: number | null;
+  itinerary_destination: string | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  inspector_name: string | null;
   items: ChecklistItemResult[];
+  damages: ChecklistDamage[];
   overall_status: string;
   notes: string | null;
   created_at: string;
 };
 
 const CHECKLIST_FIELDS =
-  "id, vehicle_id, kind, driver_name, odometer_km, fuel_level_pct, items, overall_status, notes, created_at";
+  "id, vehicle_id, template_code, kind, inspection_date, driver_name, sector, unit, odometer_km, odometer_initial_km, odometer_final_km, fuel_level_pct, itinerary_destination, departure_time, arrival_time, inspector_name, items, damages, overall_status, notes, created_at";
 
 export async function listFleetChecklists(limit = 200): Promise<FleetChecklist[]> {
   const { data, error } = await db
@@ -165,11 +195,22 @@ export async function listFleetChecklists(limit = 200): Promise<FleetChecklist[]
 
 export type ChecklistInput = {
   vehicle_id: string;
+  template_code: ChecklistTemplateCode;
   kind: string;
+  inspection_date: string;
   driver_name: string;
+  sector: string | null;
+  unit: string | null;
   odometer_km: number;
+  odometer_initial_km: number | null;
+  odometer_final_km: number | null;
   fuel_level_pct: number | null;
+  itinerary_destination: string | null;
+  departure_time: string | null;
+  arrival_time: string | null;
+  inspector_name: string | null;
   items: ChecklistItemResult[];
+  damages: ChecklistDamage[];
   overall_status: string;
   notes: string | null;
 };
