@@ -30,15 +30,15 @@ const PALETTE = {
   successText: argbFromHex("#087A5B"),
   warningBg: argbFromHex("#FFF4D6"),
   warningText: argbFromHex("#8B5D00"),
-  correctiveBg: argbFromHex("#FFD966"),
-  correctiveText: argbFromHex("#000000"),
+  correctiveBg: argbFromHex("#DC2626"),
+  correctiveText: "FFFFFFFF",
   dangerBg: argbFromHex("#FFE8E8"),
   dangerText: argbFromHex("#C62828"),
 };
 
 const COLUMNS = [
   { key: "os", label: "OS", width: 16 },
-  { key: "nome", label: "Nome", width: 56.7109375 },
+  { key: "nome", label: "Nome", width: 72 },
   { key: "predio", label: "Prédio", width: 16 },
   { key: "andar", label: "Andar", width: 14 },
   { key: "espaco", label: "Espaço", width: 34 },
@@ -125,6 +125,27 @@ function taskValues(os: TriagedOS, ativoIndex: Map<string, AtivoIndexEntry>) {
   };
 }
 
+function wrappedLineEstimate(value: unknown, charsPerLine: number): number {
+  const text = String(value ?? "").replace(/\r/g, "").trim();
+  if (!text) return 1;
+  return text.split("\n").reduce(
+    (total, part) =>
+      total +
+      Math.max(1, Math.ceil(Math.max(1, part.replace(/\s+/g, " ").trim().length) / charsPerLine)),
+    0,
+  );
+}
+
+function taskRowHeight(values: ReturnType<typeof taskValues>): number {
+  const nameLines = wrappedLineEstimate(values.nome, 46);
+  const spaceLines = wrappedLineEstimate(values.espaco, 28);
+  const equipmentLines = wrappedLineEstimate(values.equipamento, 36);
+  return Math.min(
+    300,
+    Math.max(84, 44 + nameLines * 22, 42 + Math.max(spaceLines, equipmentLines) * 18),
+  );
+}
+
 function naturalText(value: unknown): string {
   return String(value ?? "")
     .normalize("NFD")
@@ -200,6 +221,11 @@ function compareFloors(a: unknown, b: unknown): number {
 
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
+    const backorderOrder =
+      Number(Boolean(b.raw?.programacaoBackorder)) -
+      Number(Boolean(a.raw?.programacaoBackorder));
+    if (backorderOrder !== 0) return backorderOrder;
+
     const correctiveOrder = Number(isCorrective(a)) - Number(isCorrective(b));
     if (correctiveOrder !== 0) return correctiveOrder;
     const buildingOrder = compareBuildings(a.predio, b.predio);
@@ -414,9 +440,9 @@ function styleProgramSheet(
             color: { argb: PALETTE.dangerText },
           };
         }
-        // Corretivas mantêm o estilo normal da linha; apenas a célula OS recebe amarelo.
+        // A coluna OS usa a cor da equipe; corretivas usam vermelho para destaque.
       });
-      row.height = 60;
+      row.height = taskRowHeight(values);
     });
   }
 
@@ -917,9 +943,9 @@ export function addTeamPrintSheets(
             color: { argb: PALETTE.dangerText },
           };
         }
-        // Corretivas mantêm o estilo normal da linha; apenas a célula OS recebe amarelo.
+        // A coluna OS usa a cor da equipe; corretivas usam vermelho para destaque.
       });
-      row.height = 52;
+      row.height = taskRowHeight(values);
     });
 
     const lastRow = rowIndex - 1;
