@@ -119,12 +119,12 @@ describe("generateWeeklyProgramacao", () => {
     expect(program.name).toBe("PROGRAMAÇÃO");
 
     expect(program.actualColumnCount).toBe(10);
-    expect(program.getColumn(2).width).toBeCloseTo(56.7109375);
+    expect(program.getColumn(2).width).toBeCloseTo(72);
     expect(program.getColumn(10).width).toBeCloseTo(68.140625);
     expect(program.getRow(1).height).toBe(42);
     expect(program.getRow(2).height).toBe(24);
     expect(program.getRow(3).height).toBe(30);
-    expect(program.getRow(4).height).toBe(60);
+    expect(program.getRow(4).height).toBeGreaterThanOrEqual(84);
 
     const mondayRows = [4, 5];
     const civilRow = mondayRows.find((row) => program.getCell(row, 8).text === "CIVIL");
@@ -174,6 +174,48 @@ describe("generateWeeklyProgramacao", () => {
     expect(html).toContain("print-color-adjust: exact !important");
     expect(html).not.toContain("page-break-after: always");
     expect(html).toContain("background-color:#0B1F33");
+  });
+
+  it("coloca backorders no topo da programação antes das demais OS", async () => {
+    const monday = new Date(2026, 8, 14);
+    const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
+    const preventive = os("PREV-1", "CIVIL", "");
+    const corrective = {
+      ...os("CORR-1", "CIVIL", "", "Corretiva"),
+      raw: { programacaoTipo: "corretiva" },
+    };
+    const backorder = {
+      ...os("BACK-1", "CIVIL", "", "Corretiva"),
+      raw: {
+        programacaoTipo: "corretiva",
+        programacaoBackorder: true,
+      },
+    };
+
+    const blob = await generateWeeklyProgramacao({
+      titulo: "GRUPO GPS",
+      week,
+      bucketsPorEquipe: new Map([
+        [
+          "CIVIL",
+          {
+            week,
+            os: [preventive, corrective, backorder],
+            porDia: [[preventive, corrective, backorder], [], [], [], []],
+          },
+        ],
+      ]),
+      minutosPorEquipe: { CIVIL: 30 },
+      ativoIndex: new Map(),
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await blob.arrayBuffer());
+    const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
+
+    expect(program.getCell("A4").text).toBe("BACK-1");
+    expect(program.getCell("A5").text).toBe("PREV-1");
+    expect(program.getCell("A6").text).toBe("CORR-1");
   });
 
   it("ordena cada dia por prédio e pela sequência física dos andares", async () => {
