@@ -218,6 +218,20 @@ export type ChecklistInput = {
 export async function createFleetChecklist(input: ChecklistInput): Promise<string> {
   const { data, error } = await db.from("fleet_checklists").insert(input).select("id").single();
   if (error) throw error;
+
+  if (input.odometer_km > 0) {
+    const { error: vehicleError } = await db
+      .from("vehicles")
+      .update({
+        current_odometer_km: input.odometer_km,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.vehicle_id);
+    if (vehicleError) {
+      console.warn("[FleetChecklist] Checklist salvo, mas o hodômetro do veículo não foi atualizado:", vehicleError);
+    }
+  }
+
   return data.id as string;
 }
 
