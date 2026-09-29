@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -404,7 +405,13 @@ function BaseAtivosPage() {
         {/* ---------- Versões ---------- */}
         <GlassCard className="space-y-3 p-4 sm:p-6">
           <h3 className="font-display text-lg font-semibold">Catálogos</h3>
-          {catalogs.isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+          {catalogs.isLoading && (
+            <BrandedLoadingState
+              label="Carregando catálogos"
+              detail="Sincronizando versões da base de ativos"
+              variant="compact"
+            />
+          )}
           <div className="space-y-2">
             {(catalogs.data ?? []).map((c) => (
               <div
