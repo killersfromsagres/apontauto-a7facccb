@@ -348,6 +348,7 @@ function ProgramacaoPage() {
       pruneCorrectiveProgramReservations(correctiveRows);
       const correctiveMap = mapCorrectives(correctiveRows, startDate);
       const output: GeneratedFile[] = [];
+      const allCorrectiveProgrammingEntries: CorrectiveProgrammingEntry[] = [];
       const allAlerts: FileAlert[] = [];
       const messages: string[] = [
         `Corretivas abertas: ${correctiveMap.items.length}; críticas: ${correctiveMap.critical}; backorders: ${correctiveMap.backorders}.`,
@@ -485,43 +486,23 @@ function ProgramacaoPage() {
           });
           const blob = await polishWeeklyProgramacao(rawBlob);
 
-          // Só considera a programação concluída depois de registrar as corretivas
-          // no banco. Assim Corretiva-Novo e Programação compartilham a mesma fonte
-          // de verdade, inclusive entre computadores diferentes.
-          try {
-            const persisted = await registerCorrectiveProgrammingBatch(
-              correctiveProgrammingEntries,
-            );
-            if (persisted !== correctiveProgrammingEntries.length) {
-              throw new Error(
-                `Foram reservadas ${correctiveProgrammingEntries.length} corretivas, mas somente ${persisted} foram registradas no controle de programação.`,
-              );
-            }
+          // Reserva apenas no snapshot/localStorage durante a montagem do lote.
+          // A persistência definitiva no banco acontece uma única vez ao final,
+          // de forma atômica, depois que todas as planilhas foram geradas.
+          allCorrectiveProgrammingEntries.push(...correctiveProgrammingEntries);
 
-            // Mantém o snapshot deste processamento coerente com o banco. É
-            // especialmente importante para OS que chegaram como
-            // "reprogramacao_pendente": depois de entrar na primeira semana elas
-            // não podem voltar a ser escolhidas nas semanas seguintes do mesmo lote.
-            const persistedById = new Map(
-              correctiveProgrammingEntries.map((entry) => [entry.osId, entry]),
-            );
-            correctiveRows.forEach((row) => {
-              const entry = persistedById.get(String(row.id ?? "").trim());
-              if (!entry) return;
-              row.programacao_status = "em_programacao";
-              row.programacao_periodo_inicio = entry.periodStart;
-              row.programacao_periodo_fim = entry.periodEnd;
-              row.programacao_dia_indice = entry.dayIndex;
-              row.programacao_equipe = entry.equipe;
-              row.programacao_tentativas =
-                Math.max(0, Number(row.programacao_tentativas) || 0) + 1;
-            });
-          } catch (programStateError) {
-            correctiveProgrammingEntries.forEach((entry) =>
-              releaseCorrectiveProgramReservation(entry.osId, entry.numeroOs),
-            );
-            throw programStateError;
-          }
+          const selectedById = new Map(
+            correctiveProgrammingEntries.map((entry) => [entry.osId, entry]),
+          );
+          correctiveRows.forEach((row) => {
+            const entry = selectedById.get(String(row.id ?? "").trim());
+            if (!entry) return;
+            row.programacao_status = "em_programacao";
+            row.programacao_periodo_inicio = entry.periodStart;
+            row.programacao_periodo_fim = entry.periodEnd;
+            row.programacao_dia_indice = entry.dayIndex;
+            row.programacao_equipe = entry.equipe;
+          });
 
           const filenameBase =
             slot.id === "CCH"
@@ -547,22 +528,53 @@ function ProgramacaoPage() {
             periodEnd,
           };
           output.push(item);
+        }
+      }
+
+      // Commit único da programação corretiva. A função no banco usa locks e
+      // aborta a transação inteira se alguma OS tiver sido programada por outra
+      // sessão, concluída ou cancelada enquanto as planilhas eram montadas.
+      try {
+        const persisted = await registerCorrectiveProgrammingBatch(
+          allCorrectiveProgrammingEntries,
+        );
+        if (persisted !== allCorrectiveProgrammingEntries.length) {
+          throw new Error(
+            `Foram selecionadas ${allCorrectiveProgrammingEntries.length} corretivas, mas somente ${persisted} foram registradas. Atualize e gere novamente.`,
+          );
+        }
+      } catch (programStateError) {
+        allCorrectiveProgrammingEntries.forEach((entry) =>
+          releaseCorrectiveProgramReservation(entry.osId, entry.numeroOs),
+        );
+        throw programStateError;
+      }
+
+      // O histórico local das planilhas é auxiliar. Depois que o banco confirmou
+      // o lote, uma falha ao salvar o arquivo no histórico não desfaz a programação.
+      for (const item of output) {
+        try {
           await saveHistorico({
-            id,
+            id: item.id,
             filename: item.filename,
             week: item.week,
             slot: item.slot,
             slotLabel: item.slotLabel,
-            totalOS,
+            totalOS: item.totalOS,
             titulo: TITULO_PADRAO,
             createdAt: Date.now(),
-            blob,
-            periodStart,
-            periodEnd,
-            preventiveCount,
-            correctiveCount,
-            remainingMinutes,
+            blob: item.blob,
+            periodStart: item.periodStart,
+            periodEnd: item.periodEnd,
+            preventiveCount: item.preventiveCount,
+            correctiveCount: item.correctiveCount,
+            remainingMinutes: item.remainingMinutes,
           });
+        } catch (historyError) {
+          console.warn(
+            `[Programacao] Não foi possível salvar ${item.filename} no histórico local:`,
+            historyError,
+          );
         }
       }
 
