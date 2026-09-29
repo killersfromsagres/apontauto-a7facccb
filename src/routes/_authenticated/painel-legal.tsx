@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -545,9 +546,11 @@ function PainelLegalPage() {
 
       {/* Corpo */}
       {isLoading ? (
-        <GlassCard>
-          <p className="text-sm text-muted-foreground">Carregando…</p>
-        </GlassCard>
+        <BrandedLoadingState
+          label="Carregando painel de itens legais"
+          detail="Sincronizando itens, execuções e evidências"
+          variant="page"
+        />
       ) : view === "lista" ? (
         <ListView
           items={filtered}
