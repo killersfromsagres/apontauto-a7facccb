@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -519,11 +520,11 @@ export function FleetFuelings() {
       </div>
 
       {fuelingsQ.isLoading ? (
-        <GlassCard className="border-slate-800/70 bg-slate-950/30 p-5">
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Carregando abastecimentos…
-          </div>
-        </GlassCard>
+        <BrandedLoadingState
+          label="Carregando abastecimentos"
+          detail="Sincronizando lançamentos, custos e comprovantes"
+          variant="panel"
+        />
       ) : visibleRows.length === 0 ? (
         <GlassCard className="border-slate-800/70 bg-slate-950/30">
           <p className="text-sm text-muted-foreground">
