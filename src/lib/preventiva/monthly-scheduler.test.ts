@@ -160,9 +160,9 @@ describe("scheduleTeamMonth", () => {
 
     const queue = buildPreventiveExecutionQueue(rows);
     expect(queue.map((item) => item.os)).toEqual([
+      "URG-A-T",
       "URG-B-1",
       "URG-B-2",
-      "URG-A-T",
       "PADRAO-A",
       "PADRAO-B",
     ]);
@@ -178,9 +178,9 @@ describe("scheduleTeamMonth", () => {
       minutosPorOS: 60,
     });
     expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual([
+      "URG-A-T",
       "URG-B-1",
       "URG-B-2",
-      "URG-A-T",
     ]);
     const scheduled = result.buckets[0].porDia.flat().map((item) => item.os);
     expect(scheduled).toEqual(queue.map((item) => item.os));
