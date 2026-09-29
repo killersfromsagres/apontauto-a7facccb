@@ -93,6 +93,15 @@ function findProgramReservation(
   os: any,
   reservations: CorrectiveProgramReservation[],
 ): CorrectiveProgramReservation | undefined {
+  const osStatus = String(os?.status ?? "").trim().toLowerCase();
+  if (
+    isCompletedStatus(osStatus) ||
+    osStatus === "cancelada" ||
+    osStatus === "cancelado"
+  ) {
+    return undefined;
+  }
+
   const persistedStatus = String(os?.programacao_status ?? "").trim();
 
   // O banco prevalece sobre qualquer reserva antiga do navegador. Isso evita
@@ -427,13 +436,36 @@ function CorretivaNovoPage() {
         );
       }
 
+      releaseCorrectiveProgramReservation(os.id, os.numero_os);
+      setProgramReservations(listCorrectiveProgramReservations());
+
       setOsList((current) =>
         current.map((item) =>
-          item.id === os.id ? { ...item, status: nextStatus } : item,
+          item.id === os.id
+            ? {
+                ...item,
+                status: nextStatus,
+                programacao_status: "disponivel",
+                programacao_periodo_inicio: null,
+                programacao_periodo_fim: null,
+                programacao_dia_indice: null,
+                programacao_equipe: null,
+              }
+            : item,
         ),
       );
       setSelectedOs((current: any) =>
-        current?.id === os.id ? { ...current, status: nextStatus } : current,
+        current?.id === os.id
+          ? {
+              ...current,
+              status: nextStatus,
+              programacao_status: "disponivel",
+              programacao_periodo_inicio: null,
+              programacao_periodo_fim: null,
+              programacao_dia_indice: null,
+              programacao_equipe: null,
+            }
+          : current,
       );
 
       toast.success(
