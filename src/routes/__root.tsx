@@ -16,6 +16,7 @@ import globalButtonInteractionsCss from "../global-button-interactions.css?url";
 import scrollbarCss from "../scrollbar-system.css?url";
 import interactionMotionResetCss from "../interaction-motion-reset.css?url";
 import institutionalPagesCss from "../institutional-pages.css?url";
+import loadingBrandCss from "../loading-brand.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -117,6 +118,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: scrollbarCss },
       { rel: "stylesheet", href: interactionMotionResetCss },
       { rel: "stylesheet", href: institutionalPagesCss },
+      { rel: "stylesheet", href: loadingBrandCss },
       { rel: "stylesheet", href: "/legal-panel-premium.css" },
       { rel: "stylesheet", href: "/corretiva-card-alignment.css" },
       { rel: "stylesheet", href: "/inteligencia-ativos-preencher-premium.css" },
