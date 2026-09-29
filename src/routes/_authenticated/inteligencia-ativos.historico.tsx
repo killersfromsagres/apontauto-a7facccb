@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,9 +46,10 @@ function Historico() {
       }
     >
       {isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
+        <BrandedLoadingState
+          label="Carregando histórico de processamentos"
+          detail="Consultando registros auditáveis da Inteligência de Ativos"
+        />
       ) : data.length === 0 ? (
         <GlassCard>
           <p className="py-10 text-center text-sm text-muted-foreground">
