@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -994,9 +995,11 @@ function FotosGrid({
 
   if (loading) {
     return (
-      <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-        <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" /> Carregando fotos…
-      </GlassCard>
+      <BrandedLoadingState
+        label="Carregando evidências fotográficas"
+        detail="Sincronizando imagens do chamado corretivo"
+        variant="compact"
+      />
     );
   }
   if (rows.length === 0) {
