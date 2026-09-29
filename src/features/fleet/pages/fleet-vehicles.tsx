@@ -4,6 +4,7 @@ import { Plus, Save } from "lucide-react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -282,7 +283,11 @@ export function FleetVehicles() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <BrandedLoadingState
+          label="Carregando veículos"
+          detail="Sincronizando cadastro e configurações da frota"
+          variant="panel"
+        />
       ) : filtered.length === 0 ? (
         <GlassCard>
           <p className="text-sm text-muted-foreground">Nenhum veículo encontrado.</p>
