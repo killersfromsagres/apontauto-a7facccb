@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Wind, Save, FileSpreadsheet, RefreshCw, Trash2, Search, Plus } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -498,7 +499,13 @@ function PreventivaAcPage() {
             />
           </div>
           <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-1">
-            {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+            {isLoading && (
+              <BrandedLoadingState
+                label="Carregando preventivas"
+                detail="Sincronizando registros de ar-condicionado"
+                variant="compact"
+              />
+            )}
             {!isLoading && filtered.length === 0 && (
               <p className="text-sm text-muted-foreground">Nenhum registro ainda.</p>
             )}
