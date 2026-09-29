@@ -4,6 +4,7 @@ import { Award, ChevronDown, ImageOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,7 +120,11 @@ export function FleetHistory() {
       </div>
 
       {checklistsQ.isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando histórico…</p>
+        <BrandedLoadingState
+          label="Carregando histórico da frota"
+          detail="Sincronizando checklists, fotos e certificados"
+          variant="panel"
+        />
       ) : filtered.length === 0 ? (
         <GlassCard>
           <p className="text-sm text-muted-foreground">Nenhum checklist registrado ainda.</p>
