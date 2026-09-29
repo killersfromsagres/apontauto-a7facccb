@@ -93,7 +93,13 @@ function findProgramReservation(
   os: any,
   reservations: CorrectiveProgramReservation[],
 ): CorrectiveProgramReservation | undefined {
-  if (String(os?.programacao_status ?? "").trim() === "em_programacao") {
+  const persistedStatus = String(os?.programacao_status ?? "").trim();
+
+  // O banco prevalece sobre qualquer reserva antiga do navegador. Isso evita
+  // que outra estação continue vendo "Em programação" depois de um não realizado.
+  if (persistedStatus === "reprogramacao_pendente") return undefined;
+
+  if (persistedStatus === "em_programacao") {
     const rawDay = Number(os?.programacao_dia_indice);
     return {
       id: String(os?.id ?? os?.numero_os ?? "").trim(),
