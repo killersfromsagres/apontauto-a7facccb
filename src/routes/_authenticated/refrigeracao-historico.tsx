@@ -13,6 +13,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -196,10 +197,11 @@ function HistoricoPage() {
           </div>
         )}
         {isLoading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando…
-          </div>
+          <BrandedLoadingState
+            label="Carregando histórico de refrigeração"
+            detail="Sincronizando ordens concluídas e evidências"
+            variant="panel"
+          />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             Nenhuma OS concluída encontrada.
@@ -360,9 +362,11 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
           </DialogTitle>
         </DialogHeader>
         {isLoading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-5 w-5 animate-spin" /> Carregando…
-          </div>
+          <BrandedLoadingState
+            label="Carregando detalhes do chamado"
+            detail="Buscando evidências e informações de execução"
+            variant="compact"
+          />
         ) : (
           <div className="min-w-0 space-y-4">
             <section className="min-w-0 overflow-hidden rounded-lg border bg-muted/30 p-3">
