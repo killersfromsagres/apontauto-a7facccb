@@ -23,7 +23,6 @@ import {
   Loader2,
   RotateCcw,
   CalendarCheck2,
-  Unlink,
   Archive,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
@@ -42,6 +41,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 import { PreventivaImportDialog } from "@/components/corretiva/preventiva-import-dialog";
 import { OsDetailsDialog } from "@/components/corretiva/os-details-dialog";
+import { CorrectiveReprogramDialog } from "@/components/corretiva/corrective-reprogram-dialog";
 import {
   equipeStyles,
   matchEquipe,
@@ -52,6 +52,10 @@ import { generateProgramacaoExcel } from "@/lib/corretiva/programacao-excel";
 import { generateProgramacaoPDF } from "@/lib/corretiva/programacao-pdf";
 import { cn } from "@/lib/utils";
 import { designateAllCorrectiveOrders } from "@/lib/corretiva/ai-reclassifier.functions";
+import {
+  correctiveNotPerformedReasonLabel,
+  isPendingReprogramming,
+} from "@/lib/corretiva/programacao-state";
 import {
   listCorrectiveProgramReservations,
   pruneCorrectiveProgramReservations,
@@ -89,6 +93,41 @@ function findProgramReservation(
   os: any,
   reservations: CorrectiveProgramReservation[],
 ): CorrectiveProgramReservation | undefined {
+  const osStatus = String(os?.status ?? "").trim().toLowerCase();
+  if (
+    isCompletedStatus(osStatus) ||
+    osStatus === "cancelada" ||
+    osStatus === "cancelado"
+  ) {
+    return undefined;
+  }
+
+  const persistedStatus = String(os?.programacao_status ?? "").trim();
+
+  // O banco prevalece sobre qualquer reserva antiga do navegador. Isso evita
+  // que outra estação continue vendo "Em programação" depois de um não realizado.
+  if (persistedStatus === "reprogramacao_pendente") return undefined;
+  if (
+    persistedStatus === "disponivel" &&
+    Number(os?.programacao_tentativas ?? 0) > 0
+  ) {
+    return undefined;
+  }
+
+  if (persistedStatus === "em_programacao") {
+    const rawDay = Number(os?.programacao_dia_indice);
+    return {
+      id: String(os?.id ?? os?.numero_os ?? "").trim(),
+      numeroOs: String(os?.numero_os ?? os?.id ?? "").trim(),
+      equipe: String(os?.programacao_equipe || os?.equipe || "CORRETIVA") as CorrectiveProgramReservation["equipe"],
+      periodStart: String(os?.programacao_periodo_inicio ?? ""),
+      periodEnd: String(os?.programacao_periodo_fim ?? ""),
+      reservedAt: String(os?.programacao_reservada_em ?? os?.updated_at ?? ""),
+      source: "programacao",
+      dayIndex: Number.isFinite(rawDay) && rawDay >= 0 ? rawDay : undefined,
+    };
+  }
+
   const keys = new Set(
     [String(os?.id ?? "").trim(), String(os?.numero_os ?? "").trim()]
       .filter(Boolean)
@@ -104,10 +143,16 @@ function findProgramReservation(
 
 function formatReservationPeriod(reservation: CorrectiveProgramReservation) {
   const formatDate = (value: string) => {
+    if (!value) return "";
     const [year, month, day] = value.split("-");
     return year && month && day ? `${day}/${month}/${year}` : value;
   };
-  return `${formatDate(reservation.periodStart)} a ${formatDate(reservation.periodEnd)}`;
+  const start = formatDate(reservation.periodStart);
+  const end = formatDate(reservation.periodEnd);
+  if (!start && !end) return "Período não informado";
+  if (!start) return end;
+  if (!end) return start;
+  return `${start} a ${end}`;
 }
 
 function CorretivaNovoPage() {
@@ -128,6 +173,11 @@ function CorretivaNovoPage() {
   >([]);
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
   const [onlyBackorder, setOnlyBackorder] = useState(false);
+  const [onlyReprogramming, setOnlyReprogramming] = useState(false);
+  const [reprogramTarget, setReprogramTarget] = useState<{
+    os: any;
+    reservation: CorrectiveProgramReservation;
+  } | null>(null);
 
   const applyLoadedList = async (list: any[], cache = false) => {
     setOsList(list);
@@ -251,10 +301,22 @@ function CorretivaNovoPage() {
           backorderMap.get(String(o.id ?? o.numero_os ?? "")) ?? getBackorderInfo(o);
         const matchesBackorder =
           !onlyBackorder || (backorder.isBackorder && !isCompletedStatus(o.status));
+        const matchesReprogramming =
+          !onlyReprogramming || isPendingReprogramming(o);
 
-        return matchesSearch && matchesEquipe && matchesProgram && matchesBackorder;
+        return (
+          matchesSearch &&
+          matchesEquipe &&
+          matchesProgram &&
+          matchesBackorder &&
+          matchesReprogramming
+        );
       })
       .sort((a, b) => {
+        const reprogramOrder =
+          Number(isPendingReprogramming(b)) - Number(isPendingReprogramming(a));
+        if (reprogramOrder !== 0) return reprogramOrder;
+
         const dateA = new Date(a.data_criacao || 0).getTime();
         const dateB = new Date(b.data_criacao || 0).getTime();
         return sortOrder === "recent" ? dateB - dateA : dateA - dateB;
@@ -266,11 +328,16 @@ function CorretivaNovoPage() {
     sortOrder,
     onlyProgrammed,
     onlyBackorder,
+    onlyReprogramming,
     programReservations,
     backorderMap,
   ]);
 
   const programmedVisibleCount = programmedExportRows.length;
+  const reprogrammingVisibleCount = useMemo(
+    () => exportBaseRows.filter((os) => isPendingReprogramming(os)).length,
+    [exportBaseRows],
+  );
 
   const backorderExportRows = useMemo(
     () =>
@@ -297,12 +364,32 @@ function CorretivaNovoPage() {
     setSelectedOs(filtered[nextIndex]);
   };
 
-  const handleReleaseFromProgram = (os: any) => {
-    releaseCorrectiveProgramReservation(os.id, os.numero_os);
+  const handleReprogrammed = (updated: Record<string, unknown>) => {
+    const original = reprogramTarget?.os;
+    if (!original) return;
+
+    const next = { ...original, ...updated };
+    releaseCorrectiveProgramReservation(original.id, original.numero_os);
     setProgramReservations(listCorrectiveProgramReservations());
-    toast.success(
-      `OS ${os.numero_os || "selecionada"} retirada da Programação. Ela voltou a ficar disponível para futuras programações e exportações.`,
+    setOsList((current) =>
+      current.map((item) => (item.id === original.id ? next : item)),
     );
+    setSelectedOs((current: any) =>
+      current?.id === original.id ? { ...current, ...next } : current,
+    );
+
+    void import("@/lib/corretiva/db")
+      .then(async ({ getCachedOsList, cacheOsList }) => {
+        const cached = await getCachedOsList();
+        await cacheOsList(
+          cached.map((item) => (item.id === original.id ? { ...item, ...next } : item)),
+        );
+      })
+      .catch((error) =>
+        console.warn("[CorretivaReprogram] Não foi possível atualizar o cache:", error),
+      );
+
+    setReprogramTarget(null);
   };
 
   const handleReopen = async (os: any) => {
@@ -355,13 +442,36 @@ function CorretivaNovoPage() {
         );
       }
 
+      releaseCorrectiveProgramReservation(os.id, os.numero_os);
+      setProgramReservations(listCorrectiveProgramReservations());
+
       setOsList((current) =>
         current.map((item) =>
-          item.id === os.id ? { ...item, status: nextStatus } : item,
+          item.id === os.id
+            ? {
+                ...item,
+                status: nextStatus,
+                programacao_status: "disponivel",
+                programacao_periodo_inicio: null,
+                programacao_periodo_fim: null,
+                programacao_dia_indice: null,
+                programacao_equipe: null,
+              }
+            : item,
         ),
       );
       setSelectedOs((current: any) =>
-        current?.id === os.id ? { ...current, status: nextStatus } : current,
+        current?.id === os.id
+          ? {
+              ...current,
+              status: nextStatus,
+              programacao_status: "disponivel",
+              programacao_periodo_inicio: null,
+              programacao_periodo_fim: null,
+              programacao_dia_indice: null,
+              programacao_equipe: null,
+            }
+          : current,
       );
 
       toast.success(
@@ -621,6 +731,25 @@ function CorretivaNovoPage() {
 
               <Button
                 type="button"
+                variant={onlyReprogramming ? "secondary" : "glass"}
+                className={cn(
+                  "h-11 gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.05] px-4 text-amber-100 transition-all hover:border-amber-300/35 hover:bg-amber-400/[0.10]",
+                  onlyReprogramming &&
+                    "border-amber-300/50 bg-amber-400/15 text-white shadow-[0_0_0_1px_rgba(251,191,36,0.10)]",
+                )}
+                onClick={() => setOnlyReprogramming((current) => !current)}
+                aria-pressed={onlyReprogramming}
+                title="Mostrar somente chamados que voltaram para a fila por não realização"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="font-semibold">Reprogramar</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-md bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
+                  {reprogrammingVisibleCount}
+                </span>
+              </Button>
+
+              <Button
+                type="button"
                 variant={onlyBackorder ? "secondary" : "glass"}
                 className={cn(
                   "h-11 gap-2 rounded-xl border border-red-500/20 bg-red-500/[0.055] px-4 text-red-100 shadow-[0_8px_28px_rgba(127,29,29,0.08)] transition-all hover:border-red-400/35 hover:bg-red-500/[0.10] hover:text-white",
@@ -813,6 +942,7 @@ function CorretivaNovoPage() {
                 programReservations,
               );
               const backorder = backorderFor(os);
+              const pendingReprogramming = isPendingReprogramming(os);
 
               return (
                 <GlassCard
@@ -821,6 +951,8 @@ function CorretivaNovoPage() {
                     "group cursor-pointer border-white/[0.08] bg-background/45 p-0 transition-all duration-300 hover:border-white/15 hover:bg-white/[0.05]",
                     programReservation &&
                       "border-sky-400/25 shadow-[0_0_0_1px_rgba(56,189,248,0.07)]",
+                    pendingReprogramming &&
+                      "border-amber-400/30 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_16px_42px_rgba(120,53,15,0.08)]",
                     backorder.isBackorder &&
                       "border-red-400/20 shadow-[0_0_0_1px_rgba(248,113,113,0.05),0_18px_44px_rgba(127,29,29,0.06)]",
                   )}
@@ -901,6 +1033,30 @@ function CorretivaNovoPage() {
                               {programReservation.equipe}
                             </span>
                           </div>
+                        </div>
+                      )}
+
+                      {pendingReprogramming && !programReservation && (
+                        <div className="mb-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.07] p-2.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="gap-1.5 border border-amber-300/30 bg-amber-500/15 text-[9px] font-extrabold uppercase text-amber-100">
+                              <RotateCcw className="h-3 w-3" />
+                              REPROGRAMAÇÃO PRIORITÁRIA
+                            </Badge>
+                            <span className="text-[9px] text-amber-100/75">
+                              Tentativa {Math.max(1, Number(os.programacao_tentativas) || 1)} ·{" "}
+                              {correctiveNotPerformedReasonLabel(
+                                os.programacao_nao_realizada_motivo,
+                              )}
+                            </span>
+                          </div>
+                          <p className="mt-1.5 text-[9px] leading-4 text-muted-foreground/80">
+                            Voltou para a fila e será priorizada automaticamente na próxima
+                            programação.
+                            {os.programacao_nao_realizada_observacao
+                              ? ` · ${os.programacao_nao_realizada_observacao}`
+                              : ""}
+                          </p>
                         </div>
                       )}
 
@@ -985,22 +1141,26 @@ function CorretivaNovoPage() {
                         </div>
                       )}
 
-                      {programReservation && isAdmin && (
+                      {programReservation && !completed && (
                         <div className="mt-4 border-t border-white/[0.06] pt-3">
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="w-full gap-2 border-sky-400/25 bg-sky-400/[0.05] text-sky-100 hover:border-sky-300/40 hover:bg-sky-400/10"
+                            className="w-full gap-2 border-amber-400/30 bg-amber-400/[0.06] text-amber-100 hover:border-amber-300/45 hover:bg-amber-400/12"
                             onPointerDown={(event) => event.stopPropagation()}
                             onClick={(event) => {
                               event.stopPropagation();
-                              handleReleaseFromProgram(os);
+                              setReprogramTarget({ os, reservation: programReservation });
                             }}
+                            title="Registrar que a atividade não foi realizada e devolver o chamado para a próxima programação"
                           >
-                            <Unlink className="h-4 w-4" />
-                            Retirar da programação
+                            <RotateCcw className="h-4 w-4" />
+                            Não realizado · Reprogramar
                           </Button>
+                          <p className="mt-2 text-center text-[9px] leading-4 text-muted-foreground/65">
+                            Registra o motivo, preserva a tentativa e devolve a OS para a fila.
+                          </p>
                         </div>
                       )}
 
@@ -1069,6 +1229,16 @@ function CorretivaNovoPage() {
           </div>
         </div>
       )}
+
+      <CorrectiveReprogramDialog
+        os={reprogramTarget?.os ?? null}
+        reservation={reprogramTarget?.reservation ?? null}
+        open={Boolean(reprogramTarget)}
+        onOpenChange={(open) => {
+          if (!open) setReprogramTarget(null);
+        }}
+        onReprogrammed={handleReprogrammed}
+      />
 
       {selectedOs && (
         <OsDetailsDialog

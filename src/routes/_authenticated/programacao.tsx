@@ -49,7 +49,12 @@ import {
   CORRECTIVES_PER_DAY,
   CORRECTIVES_PER_WEEK,
   pruneCorrectiveProgramReservations,
+  releaseCorrectiveProgramReservation,
 } from "@/lib/preventiva/corrective-program-reservations";
+import {
+  registerCorrectiveProgrammingBatch,
+  type CorrectiveProgrammingEntry,
+} from "@/lib/corretiva/programacao-state";
 import {
   clearHistorico,
   deleteHistorico,
@@ -343,6 +348,7 @@ function ProgramacaoPage() {
       pruneCorrectiveProgramReservations(correctiveRows);
       const correctiveMap = mapCorrectives(correctiveRows, startDate);
       const output: GeneratedFile[] = [];
+      const allCorrectiveProgrammingEntries: CorrectiveProgrammingEntry[] = [];
       const allAlerts: FileAlert[] = [];
       const messages: string[] = [
         `Corretivas abertas: ${correctiveMap.items.length}; críticas: ${correctiveMap.critical}; backorders: ${correctiveMap.backorders}.`,
@@ -403,6 +409,7 @@ function ProgramacaoPage() {
           const periodEnd = isoLocal(week.friday);
           const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
           const cargasPorEquipe = new Map<Equipe, DailyTeamLoad[]>();
+          const correctiveProgrammingEntries: CorrectiveProgrammingEntry[] = [];
 
           for (const equipe of slot.equipes) {
             const schedule = schedules.get(equipe);
@@ -416,6 +423,21 @@ function ProgramacaoPage() {
               referenceDate: week.monday,
               perDay: CORRECTIVES_PER_DAY,
               businessDays: 5,
+            });
+
+            allocation.byDay.forEach((dayRows, dayIndex) => {
+              dayRows.forEach((row) => {
+                const osId = String(row.id ?? "").trim();
+                if (!osId) return;
+                correctiveProgrammingEntries.push({
+                  osId,
+                  numeroOs: String(row.numero_os ?? osId),
+                  equipe,
+                  periodStart,
+                  periodEnd,
+                  dayIndex,
+                });
+              });
             });
 
             const mappedCorrectivesByDay = allocation.byDay.map((dayRows) =>
@@ -463,6 +485,25 @@ function ProgramacaoPage() {
             ativoIndex: read.ativoIndex,
           });
           const blob = await polishWeeklyProgramacao(rawBlob);
+
+          // Reserva apenas no snapshot/localStorage durante a montagem do lote.
+          // A persistência definitiva no banco acontece uma única vez ao final,
+          // de forma atômica, depois que todas as planilhas foram geradas.
+          allCorrectiveProgrammingEntries.push(...correctiveProgrammingEntries);
+
+          const selectedById = new Map(
+            correctiveProgrammingEntries.map((entry) => [entry.osId, entry]),
+          );
+          correctiveRows.forEach((row) => {
+            const entry = selectedById.get(String(row.id ?? "").trim());
+            if (!entry) return;
+            row.programacao_status = "em_programacao";
+            row.programacao_periodo_inicio = entry.periodStart;
+            row.programacao_periodo_fim = entry.periodEnd;
+            row.programacao_dia_indice = entry.dayIndex;
+            row.programacao_equipe = entry.equipe;
+          });
+
           const filenameBase =
             slot.id === "CCH"
               ? "Civil e Hidraulica"
@@ -487,22 +528,53 @@ function ProgramacaoPage() {
             periodEnd,
           };
           output.push(item);
+        }
+      }
+
+      // Commit único da programação corretiva. A função no banco usa locks e
+      // aborta a transação inteira se alguma OS tiver sido programada por outra
+      // sessão, concluída ou cancelada enquanto as planilhas eram montadas.
+      try {
+        const persisted = await registerCorrectiveProgrammingBatch(
+          allCorrectiveProgrammingEntries,
+        );
+        if (persisted !== allCorrectiveProgrammingEntries.length) {
+          throw new Error(
+            `Foram selecionadas ${allCorrectiveProgrammingEntries.length} corretivas, mas somente ${persisted} foram registradas. Atualize e gere novamente.`,
+          );
+        }
+      } catch (programStateError) {
+        allCorrectiveProgrammingEntries.forEach((entry) =>
+          releaseCorrectiveProgramReservation(entry.osId, entry.numeroOs),
+        );
+        throw programStateError;
+      }
+
+      // O histórico local das planilhas é auxiliar. Depois que o banco confirmou
+      // o lote, uma falha ao salvar o arquivo no histórico não desfaz a programação.
+      for (const item of output) {
+        try {
           await saveHistorico({
-            id,
+            id: item.id,
             filename: item.filename,
             week: item.week,
             slot: item.slot,
             slotLabel: item.slotLabel,
-            totalOS,
+            totalOS: item.totalOS,
             titulo: TITULO_PADRAO,
             createdAt: Date.now(),
-            blob,
-            periodStart,
-            periodEnd,
-            preventiveCount,
-            correctiveCount,
-            remainingMinutes,
+            blob: item.blob,
+            periodStart: item.periodStart,
+            periodEnd: item.periodEnd,
+            preventiveCount: item.preventiveCount,
+            correctiveCount: item.correctiveCount,
+            remainingMinutes: item.remainingMinutes,
           });
+        } catch (historyError) {
+          console.warn(
+            `[Programacao] Não foi possível salvar ${item.filename} no histórico local:`,
+            historyError,
+          );
         }
       }
 
@@ -511,12 +583,14 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade).`,
+        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade) e registradas como EM PROGRAMAÇÃO.`,
       );
     } catch (error) {
       console.error(error);
       toast.error(
-        "Não foi possível gerar a programação. Verifique a planilha e o acesso às corretivas.",
+        error instanceof Error && error.message
+          ? error.message
+          : "Não foi possível gerar a programação. Verifique a planilha e o acesso às corretivas.",
       );
     } finally {
       setProcessing(false);

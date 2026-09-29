@@ -55,6 +55,15 @@ export interface CorrectiveSourceRow {
   data_programada?: string | null;
   data_sla?: string | null;
   tipo_importacao?: string | null;
+  programacao_status?: "disponivel" | "em_programacao" | "reprogramacao_pendente" | string | null;
+  programacao_tentativas?: number | null;
+  programacao_periodo_inicio?: string | null;
+  programacao_periodo_fim?: string | null;
+  programacao_dia_indice?: number | null;
+  programacao_equipe?: string | null;
+  programacao_nao_realizada_motivo?: string | null;
+  programacao_nao_realizada_observacao?: string | null;
+  programacao_retorno_fila_em?: string | null;
   corretiva_problemas?: CorrectiveProblem[] | null;
 }
 

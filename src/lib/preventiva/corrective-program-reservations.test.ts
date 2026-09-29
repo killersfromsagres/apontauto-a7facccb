@@ -255,6 +255,54 @@ describe("corrective program reservations", () => {
     ).toBe(true);
   });
 
+  it("recoloca não realizado no topo da próxima programação mesmo com histórico anterior", () => {
+    const original = row("id-reprogram", "8801", "2026-09-18", "observacao");
+    allocateCorrectivesForWeekTeam({
+      rows: [original],
+      equipe: "CIVIL",
+      periodStart: "2026-09-14",
+      periodEnd: "2026-09-18",
+      referenceDate: new Date(2026, 8, 14),
+    });
+
+    const pending: CorrectiveSourceRow = {
+      ...original,
+      programacao_status: "reprogramacao_pendente",
+      programacao_tentativas: 1,
+    };
+    const newCritical = row("id-new", "9901", "2026-09-15", "critico");
+
+    const next = allocateCorrectivesForWeekTeam({
+      rows: [newCritical, pending],
+      equipe: "CIVIL",
+      periodStart: "2026-09-21",
+      periodEnd: "2026-09-25",
+      referenceDate: new Date(2026, 8, 21),
+      perDay: 1,
+      businessDays: 1,
+    });
+
+    expect(next.rows).toHaveLength(1);
+    expect(next.rows[0].numero_os).toBe("8801");
+  });
+
+  it("não agenda novamente uma OS marcada no servidor como em programação", () => {
+    const persisted: CorrectiveSourceRow = {
+      ...row("id-server", "7711", "2026-09-15", "critico"),
+      programacao_status: "em_programacao",
+    };
+
+    const allocation = allocateCorrectivesForWeekTeam({
+      rows: [persisted],
+      equipe: "CIVIL",
+      periodStart: "2026-09-21",
+      periodEnd: "2026-09-25",
+      referenceDate: new Date(2026, 8, 21),
+    });
+
+    expect(allocation.rows).toHaveLength(0);
+  });
+
   it("libera uma corretiva para voltar às programações e exportações", () => {
     const rows = [row("id-1", "901", "2026-09-18", "critico")];
     allocateCorrectivesForWeekTeam({
