@@ -315,6 +315,119 @@ function sortByLocation(items: TriagedOS[]): TriagedOS[] {
   });
 }
 
+const STANDARD_PREVENTIVE_SLA_DAY = 28;
+
+function preventiveSlaDate(item: TriagedOS): Date | null {
+  const parsed = validDate(item.terminoSLA);
+  if (parsed) return parsed;
+
+  const timestamp = Number(item.terminoSLATs);
+  if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp >= Number.MAX_SAFE_INTEGER) {
+    return null;
+  }
+
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Na planilha mensal, o ciclo preventivo padrão termina no dia 28.
+ * Datas válidas em qualquer outro dia representam uma janela excepcional
+ * e precisam entrar antes do ciclo padrão.
+ */
+export function isPreventiveSlaPriority(item: TriagedOS): boolean {
+  if (isCorrective(item)) return false;
+  const sla = preventiveSlaDate(item);
+  return Boolean(sla && sla.getDate() !== STANDARD_PREVENTIVE_SLA_DAY);
+}
+
+function preventiveSlaTimestamp(item: TriagedOS): number {
+  return preventiveSlaDate(item)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+}
+
+function buildingClusterKey(item: TriagedOS): string {
+  const normalized = canonicalLocationText(item.predio).replace(
+    /^(?:PREDIO|BLOCO|EDIFICIO)\s+/,
+    "",
+  );
+  return normalized || "__SEM_PREDIO__";
+}
+
+function sortPriorityBuildingItems(items: TriagedOS[]): TriagedOS[] {
+  return [...items].sort((a, b) => {
+    const floorOrder = compareFloors(a.andar, b.andar);
+    if (floorOrder !== 0) return floorOrder;
+
+    const slaOrder = preventiveSlaTimestamp(a) - preventiveSlaTimestamp(b);
+    if (slaOrder !== 0) return slaOrder;
+
+    return (
+      compareNatural(a.local, b.local) ||
+      compareNatural(a.os, b.os) ||
+      compareNatural(a.nomeOS, b.nomeOS)
+    );
+  });
+}
+
+/**
+ * Monta a fila preventiva com equilíbrio entre SLA e deslocamento:
+ * 1. SLAs fora do dia 28 vêm primeiro;
+ * 2. essas exceções são mantidas em blocos de prédio;
+ * 3. o prédio cuja exceção vence antes é atendido antes;
+ * 4. dentro do prédio, a execução segue a sequência física dos andares;
+ * 5. o ciclo padrão (dia 28) continua por prédio → andar.
+ */
+export function buildPreventiveExecutionQueue(items: TriagedOS[]): TriagedOS[] {
+  const priority = items.filter(isPreventiveSlaPriority);
+  const standard = items.filter((item) => !isPreventiveSlaPriority(item));
+
+  const grouped = new Map<string, TriagedOS[]>();
+  priority.forEach((item) => {
+    const key = buildingClusterKey(item);
+    const current = grouped.get(key) ?? [];
+    current.push(item);
+    grouped.set(key, current);
+  });
+
+  const priorityClusters = [...grouped.values()]
+    .map((cluster) => {
+      const sorted = sortPriorityBuildingItems(cluster);
+      return {
+        items: sorted,
+        earliestSla: Math.min(
+          ...sorted.map(preventiveSlaTimestamp),
+        ),
+        predio: sorted[0]?.predio ?? "",
+      };
+    })
+    .sort(
+      (a, b) =>
+        a.earliestSla - b.earliestSla ||
+        compareBuildings(a.predio, b.predio),
+    );
+
+  const orderedPriority = priorityClusters.flatMap((cluster) =>
+    cluster.items.map((item) => ({
+      ...item,
+      raw: {
+        ...item.raw,
+        programacaoSLAPrioritaria: true,
+        programacaoSLAMotivo: "Término SLA fora do ciclo padrão do dia 28",
+      },
+    })),
+  );
+
+  const orderedStandard = sortByLocation(standard).map((item) => ({
+    ...item,
+    raw: {
+      ...item.raw,
+      programacaoSLAPrioritaria: false,
+    },
+  }));
+
+  return [...orderedPriority, ...orderedStandard];
+}
+
 export function mapCorrectives(
   rows: CorrectiveSourceRow[],
   referenceDate: Date,
@@ -453,8 +566,10 @@ export function scheduleTeamMonth(options: {
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
 
-  // Preventivas seguem a ordem operacional geográfica.
-  const preventivas = sortByLocation(options.preventivas);
+  // Preventivas conciliam risco de SLA com rota operacional:
+  // exceções do ciclo (Término SLA fora do dia 28) entram primeiro, porém
+  // agrupadas por prédio e com andares em sequência física.
+  const preventivas = buildPreventiveExecutionQueue(options.preventivas);
   // Quando usadas diretamente por este scheduler, corretivas também permanecem determinísticas.
   // Na tela Programação, a seleção prioritária é feita pelo alocador externo antes de anexá-las.
   const corretivas = sortByLocation(options.corretivas);
