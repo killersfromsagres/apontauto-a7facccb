@@ -540,6 +540,56 @@ function balancedDailyQuota(
   return Math.min(dailyCapacity, base + (after > before ? 1 : 0));
 }
 
+function frontloadPriorityQuotas(
+  total: number,
+  dayCount: number,
+  dailyCapacity: number,
+): number[] {
+  const quotas = new Array(Math.max(0, dayCount)).fill(0) as number[];
+  let remaining = Math.max(0, Math.min(total, dayCount * dailyCapacity));
+
+  for (let day = 0; day < quotas.length && remaining > 0; day += 1) {
+    const take = Math.min(dailyCapacity, remaining);
+    quotas[day] = take;
+    remaining -= take;
+  }
+
+  return quotas;
+}
+
+function balancedStandardQuotas(
+  total: number,
+  priorityQuotas: number[],
+  dailyCapacity: number,
+): number[] {
+  const quotas = new Array(priorityQuotas.length).fill(0) as number[];
+  const available = priorityQuotas.reduce(
+    (sum, priority) => sum + Math.max(0, dailyCapacity - priority),
+    0,
+  );
+  const schedulable = Math.max(0, Math.min(total, available));
+
+  for (let assigned = 0; assigned < schedulable; assigned += 1) {
+    let bestDay = -1;
+    let bestLoad = Number.MAX_SAFE_INTEGER;
+
+    for (let day = 0; day < priorityQuotas.length; day += 1) {
+      const load = priorityQuotas[day] + quotas[day];
+      if (load >= dailyCapacity) continue;
+
+      if (load < bestLoad) {
+        bestLoad = load;
+        bestDay = day;
+      }
+    }
+
+    if (bestDay < 0) break;
+    quotas[bestDay] += 1;
+  }
+
+  return quotas;
+}
+
 export function scheduleTeamMonth(options: {
   equipe: Equipe;
   preventivas: TriagedOS[];
@@ -596,7 +646,38 @@ export function scheduleTeamMonth(options: {
     businessDays.length * internalCorrectiveCapacityPerDay,
   );
 
-  let preventivaIndex = 0;
+  const priorityPreventivas = preventivas.filter((item) =>
+    Boolean(item.raw?.programacaoSLAPrioritaria),
+  );
+  const standardPreventivas = preventivas.filter(
+    (item) => !Boolean(item.raw?.programacaoSLAPrioritaria),
+  );
+
+  const scheduledPriorityTarget = Math.min(
+    priorityPreventivas.length,
+    scheduledPreventiveTarget,
+  );
+  const scheduledStandardTarget = Math.max(
+    0,
+    scheduledPreventiveTarget - scheduledPriorityTarget,
+  );
+
+  // SLA excepcional ocupa as primeiras vagas úteis. O restante da carga
+  // preventiva é redistribuído de forma equilibrada nas capacidades livres,
+  // evitando sobrecarregar o começo do mês.
+  const priorityQuotaByDay = frontloadPriorityQuotas(
+    scheduledPriorityTarget,
+    businessDays.length,
+    preventiveCapacityPerDay,
+  );
+  const standardQuotaByDay = balancedStandardQuotas(
+    scheduledStandardTarget,
+    priorityQuotaByDay,
+    preventiveCapacityPerDay,
+  );
+
+  let priorityPreventivaIndex = 0;
+  let standardPreventivaIndex = 0;
   let corretivaIndex = 0;
 
   businessDays.forEach((date, dayPosition) => {
@@ -605,12 +686,8 @@ export function scheduleTeamMonth(options: {
     const dow = date.getDay() - 1;
     if (dow < 0 || dow > 4) return;
 
-    const preventiveCount = balancedDailyQuota(
-      scheduledPreventiveTarget,
-      dayPosition,
-      businessDays.length,
-      preventiveCapacityPerDay,
-    );
+    const priorityPreventiveCount = priorityQuotaByDay[dayPosition] ?? 0;
+    const standardPreventiveCount = standardQuotaByDay[dayPosition] ?? 0;
     const correctiveCount = balancedDailyQuota(
       scheduledCorrectiveTarget,
       dayPosition,
@@ -618,11 +695,22 @@ export function scheduleTeamMonth(options: {
       internalCorrectiveCapacityPerDay,
     );
 
-    const dayPreventivas = preventivas.slice(
-      preventivaIndex,
-      preventivaIndex + preventiveCount,
+    const dayPriorityPreventivas = priorityPreventivas.slice(
+      priorityPreventivaIndex,
+      priorityPreventivaIndex + priorityPreventiveCount,
     );
-    preventivaIndex += dayPreventivas.length;
+    priorityPreventivaIndex += dayPriorityPreventivas.length;
+
+    const dayStandardPreventivas = standardPreventivas.slice(
+      standardPreventivaIndex,
+      standardPreventivaIndex + standardPreventiveCount,
+    );
+    standardPreventivaIndex += dayStandardPreventivas.length;
+
+    const dayPreventivas = [
+      ...dayPriorityPreventivas,
+      ...dayStandardPreventivas,
+    ];
 
     const dayCorretivas = corretivas.slice(
       corretivaIndex,
@@ -655,9 +743,13 @@ export function scheduleTeamMonth(options: {
   return {
     buckets,
     loadsByWeek,
-    overflowPreventivas: preventivas.slice(preventivaIndex),
+    overflowPreventivas: [
+      ...priorityPreventivas.slice(priorityPreventivaIndex),
+      ...standardPreventivas.slice(standardPreventivaIndex),
+    ],
     overflowCorretivas: corretivas.slice(corretivaIndex),
-    scheduledPreventivas: preventivaIndex,
+    scheduledPreventivas:
+      priorityPreventivaIndex + standardPreventivaIndex,
     scheduledCorretivas: corretivaIndex,
   };
 }
