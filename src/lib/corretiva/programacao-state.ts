@@ -75,7 +75,9 @@ export async function markCorrectiveNotPerformed(options: {
   });
 
   if (error) throw error;
-  return data as Record<string, unknown>;
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("O chamado não foi atualizado.");
+  return row as Record<string, unknown>;
 }
 
 export function isPersistentlyProgrammed(row: {
