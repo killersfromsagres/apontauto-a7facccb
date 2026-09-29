@@ -4,6 +4,7 @@ import { Camera, Check, Loader2, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -249,7 +250,11 @@ export function FleetChecklist() {
       <GlassCard className="space-y-3">
         <SectionTitle step={1} title="Veículo e certificado" />
         {vehiclesQ.isLoading ? (
-          <p className="text-sm text-muted-foreground">Carregando veículos…</p>
+          <BrandedLoadingState
+            label="Carregando veículos"
+            detail="Sincronizando cadastro e certificado configurado"
+            variant="compact"
+          />
         ) : vehicles.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum veículo cadastrado. Cadastre na aba “Veículos”.</p>
         ) : (
