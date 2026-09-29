@@ -4,6 +4,7 @@ import { Database, Download, HardDrive, Image, Loader2, RefreshCw, ShieldCheck }
 import { toast } from "sonner";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -213,10 +214,11 @@ function RecuperacaoLocalPage() {
         </GlassCard>
 
         {loading ? (
-          <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin" />
-            Lendo cache offline…
-          </GlassCard>
+          <BrandedLoadingState
+            label="Lendo cache offline"
+            detail="Verificando dados locais disponíveis para recuperação"
+            variant="panel"
+          />
         ) : error ? (
           <GlassCard className="border-red-500/25 bg-red-500/[0.05] p-5 text-sm text-red-200">
             {error}
