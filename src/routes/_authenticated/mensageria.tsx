@@ -17,6 +17,7 @@ import {
 
 import { SignaturePad } from "@/components/mensageria/signature-pad";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -665,7 +666,15 @@ function MaloteStatusBadge({ status }: { status: MaloteStatus }) { const pending
 function ShipmentStatusBadge({ status }: { status: EnvioStatus }) { const labels: Record<EnvioStatus, string> = { preparando: "Preparando", enviado: "Enviado", finalizado: "Finalizado", devolvido: "Devolvido" }; const style = status === "finalizado" ? "border-emerald-500/30 text-emerald-600" : status === "devolvido" ? "border-rose-500/30 text-rose-600" : "border-sky-500/30 text-sky-600"; return <Badge variant="outline" className={style}>{labels[status]}</Badge>; }
 function Kpi({ label, value, detail, critical = false }: { label: string; value: number; detail: string; critical?: boolean }) { return <article className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm"><p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold ${critical ? "text-amber-500" : "text-foreground"}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></article>; }
 function ViewButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) { return <button type="button" onClick={onClick} className={`rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${active ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"}`}>{children}</button>; }
-function LoadingState() { return <div className="flex flex-col items-center gap-3 py-20"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /><p className="text-sm text-muted-foreground">Carregando protocolos locais...</p></div>; }
+function LoadingState() {
+  return (
+    <BrandedLoadingState
+      label="Carregando mensageria"
+      detail="Sincronizando protocolos, entregas e movimentações locais"
+      variant="page"
+    />
+  );
+}
 function EmptyState({ icon, title, description }: { icon: ReactNode; title: string; description: string }) { return <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-6 py-16 text-center"><span className="mx-auto flex w-fit text-muted-foreground">{icon}</span><p className="mt-3 font-semibold text-foreground">{title}</p><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>; }
 function ProtocolSection({ title, children }: { title: string; children: ReactNode }) { return <section className="rounded-2xl border border-border/70 bg-muted/15 p-4"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p><div className="mt-4 grid gap-4 sm:grid-cols-2">{children}</div></section>; }
 function Field({ label, required = false, children }: { label: string; required?: boolean; children: ReactNode }) { return <label className="space-y-1.5"><span className="text-xs font-medium text-muted-foreground">{label}{required && <span className="ml-1 text-destructive">*</span>}</span>{children}</label>; }
