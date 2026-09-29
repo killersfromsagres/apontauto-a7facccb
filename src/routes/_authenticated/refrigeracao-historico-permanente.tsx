@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Database, Loader2, Info, ArrowLeft, History, RefreshCw } from "lucide-react";
+import { Search, Database, Info, ArrowLeft, History, RefreshCw } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -101,10 +102,11 @@ function HistoricoPermanentePage() {
         </div>
 
         {isLoading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando base de conhecimento...
-          </div>
+          <BrandedLoadingState
+            label="Carregando base de conhecimento"
+            detail="Sincronizando histórico técnico permanente da refrigeração"
+            variant="panel"
+          />
         ) : filtered.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             <Database className="mx-auto mb-2 h-8 w-8 opacity-20" />
