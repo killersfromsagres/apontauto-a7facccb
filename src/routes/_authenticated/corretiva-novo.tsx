@@ -107,6 +107,12 @@ function findProgramReservation(
   // O banco prevalece sobre qualquer reserva antiga do navegador. Isso evita
   // que outra estação continue vendo "Em programação" depois de um não realizado.
   if (persistedStatus === "reprogramacao_pendente") return undefined;
+  if (
+    persistedStatus === "disponivel" &&
+    Number(os?.programacao_tentativas ?? 0) > 0
+  ) {
+    return undefined;
+  }
 
   if (persistedStatus === "em_programacao") {
     const rawDay = Number(os?.programacao_dia_indice);
