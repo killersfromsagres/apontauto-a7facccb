@@ -446,7 +446,15 @@ export function setReservationsForWeekTeam(
     };
   });
 
-  writeStorage([...next, ...additions]);
+  // Se a mesma OS voltou como reprogramação, substitui qualquer reserva local
+  // antiga dela (inclusive de outra semana). O histórico auditável definitivo
+  // fica no banco; aqui mantemos apenas a fotografia corrente do navegador.
+  const additionKeys = new Set(additions.flatMap(reservationKeys));
+  const currentWithoutReprogrammedDuplicates = next.filter(
+    (reservation) =>
+      !reservationKeys(reservation).some((key) => additionKeys.has(key)),
+  );
+  writeStorage([...currentWithoutReprogrammedDuplicates, ...additions]);
 
   const history = readHistory();
   const historyKeys = new Set(history.flatMap(reservationKeys));
