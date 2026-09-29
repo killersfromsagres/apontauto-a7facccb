@@ -49,7 +49,12 @@ import {
   CORRECTIVES_PER_DAY,
   CORRECTIVES_PER_WEEK,
   pruneCorrectiveProgramReservations,
+  releaseCorrectiveProgramReservation,
 } from "@/lib/preventiva/corrective-program-reservations";
+import {
+  registerCorrectiveProgrammingBatch,
+  type CorrectiveProgrammingEntry,
+} from "@/lib/corretiva/programacao-state";
 import {
   clearHistorico,
   deleteHistorico,
@@ -403,6 +408,7 @@ function ProgramacaoPage() {
           const periodEnd = isoLocal(week.friday);
           const bucketsPorEquipe = new Map<Equipe, WeekBucket>();
           const cargasPorEquipe = new Map<Equipe, DailyTeamLoad[]>();
+          const correctiveProgrammingEntries: CorrectiveProgrammingEntry[] = [];
 
           for (const equipe of slot.equipes) {
             const schedule = schedules.get(equipe);
@@ -416,6 +422,21 @@ function ProgramacaoPage() {
               referenceDate: week.monday,
               perDay: CORRECTIVES_PER_DAY,
               businessDays: 5,
+            });
+
+            allocation.byDay.forEach((dayRows, dayIndex) => {
+              dayRows.forEach((row) => {
+                const osId = String(row.id ?? "").trim();
+                if (!osId) return;
+                correctiveProgrammingEntries.push({
+                  osId,
+                  numeroOs: String(row.numero_os ?? osId),
+                  equipe,
+                  periodStart,
+                  periodEnd,
+                  dayIndex,
+                });
+              });
             });
 
             const mappedCorrectivesByDay = allocation.byDay.map((dayRows) =>
@@ -463,6 +484,26 @@ function ProgramacaoPage() {
             ativoIndex: read.ativoIndex,
           });
           const blob = await polishWeeklyProgramacao(rawBlob);
+
+          // Só considera a programação concluída depois de registrar as corretivas
+          // no banco. Assim Corretiva-Novo e Programação compartilham a mesma fonte
+          // de verdade, inclusive entre computadores diferentes.
+          try {
+            const persisted = await registerCorrectiveProgrammingBatch(
+              correctiveProgrammingEntries,
+            );
+            if (persisted !== correctiveProgrammingEntries.length) {
+              throw new Error(
+                `Foram reservadas ${correctiveProgrammingEntries.length} corretivas, mas somente ${persisted} foram registradas no controle de programação.`,
+              );
+            }
+          } catch (programStateError) {
+            correctiveProgrammingEntries.forEach((entry) =>
+              releaseCorrectiveProgramReservation(entry.osId, entry.numeroOs),
+            );
+            throw programStateError;
+          }
+
           const filenameBase =
             slot.id === "CCH"
               ? "Civil e Hidraulica"
@@ -511,7 +552,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade).`,
+        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade) e registradas como EM PROGRAMAÇÃO.`,
       );
     } catch (error) {
       console.error(error);
