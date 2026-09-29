@@ -6,9 +6,10 @@ import {
   redirect,
   useRouterState,
 } from "@tanstack/react-router";
-import { Loader2, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { useMyAccess } from "@/hooks/use-my-access";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -346,10 +347,11 @@ function AuthenticatedLayout() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[55vh] items-center justify-center gap-2 px-4 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Verificando permissões…
-      </div>
+      <BrandedLoadingState
+        label="Validando acesso"
+        detail="Carregando permissões e preparando seu ambiente operacional"
+        variant="page"
+      />
     );
   }
 

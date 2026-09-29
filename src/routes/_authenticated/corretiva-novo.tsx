@@ -26,6 +26,7 @@ import {
   Archive,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { BackorderSpreadsheetBuilder } from "@/components/backorder/spreadsheet-builder";
 import { Button } from "@/components/ui/button";
@@ -895,12 +896,11 @@ function CorretivaNovoPage() {
         </GlassCard>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-20">
-            <Wrench className="h-8 w-8 animate-spin text-primary" />
-            <p className="animate-pulse text-muted-foreground">
-              Consultando banco de dados...
-            </p>
-          </div>
+          <BrandedLoadingState
+            label="Carregando corretivas"
+            detail="Sincronizando ordens de serviço, programação e prioridades"
+            variant="page"
+          />
         ) : osList.length === 0 ? (
           <div className="space-y-4 rounded-3xl border-2 border-dashed border-white/5 bg-white/2 py-20 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white/5">

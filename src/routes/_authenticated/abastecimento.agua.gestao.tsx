@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { WaterAdminPanel } from "@/features/water-delivery/pages/water-admin-panel";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { useIsAdmin } from "@/hooks/use-is-admin";
 
 function GestaoAgua() {
@@ -8,9 +9,11 @@ function GestaoAgua() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">
-        Verificando permissões…
-      </div>
+      <BrandedLoadingState
+        label="Preparando gestão de abastecimento"
+        detail="Validando permissões administrativas"
+        variant="page"
+      />
     );
   }
 

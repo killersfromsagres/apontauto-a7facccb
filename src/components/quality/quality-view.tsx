@@ -5,6 +5,7 @@ import { CheckCircle2, RefreshCw, ShieldAlert, Wrench } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,9 +84,11 @@ export function QualityView() {
 
       <div className="space-y-3">
         {checksQ.isLoading && (
-          <GlassCard>
-            <p className="text-sm text-muted-foreground">Avaliando a base…</p>
-          </GlassCard>
+          <BrandedLoadingState
+            label="Avaliando qualidade dos dados"
+            detail="Executando verificações de consistência da base"
+            variant="compact"
+          />
         )}
         {checks.map((c) => (
           <GlassCard key={c.key} className="space-y-2">

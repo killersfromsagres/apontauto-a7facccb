@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { GlassCard } from "@/components/glass-card";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,10 +91,11 @@ export function WaterAdminPanel() {
 
   if (loading) {
     return (
-      <GlassCard className="p-10 text-center text-sm text-muted-foreground">
-        <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-        Verificando permissões…
-      </GlassCard>
+      <BrandedLoadingState
+        label="Preparando gestão de abastecimento"
+        detail="Validando permissões administrativas"
+        variant="panel"
+      />
     );
   }
 
@@ -179,10 +181,11 @@ export function WaterAdminPanel() {
         </div>
 
         {entregasQ.isLoading || pontosQ.isLoading ? (
-          <div className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando entregas…
-          </div>
+          <BrandedLoadingState
+            label="Carregando entregas"
+            detail="Sincronizando pontos atendidos e progresso do dia"
+            variant="compact"
+          />
         ) : entregues.length === 0 ? (
           <div className="p-8 text-center text-sm text-muted-foreground">
             Nenhuma entrega registrada neste dia.

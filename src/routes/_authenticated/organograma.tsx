@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import OrganizationalChart from '@/components/ui/organizational-chart';
 import { PageShell } from '@/components/page-shell';
+import { BrandedLoadingState } from '@/components/branded-loading-state';
 import { motion } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addOrganizationalMember } from '@/lib/users.functions';
@@ -69,10 +70,12 @@ function OrganogramaPage() {
 
   if (checkingAdmin) {
     return (
-      <PageShell title="Estrutura Organizacional" description="Carregando...">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-        </div>
+      <PageShell title="Estrutura Organizacional" description="Carregando permissões e estrutura da equipe.">
+        <BrandedLoadingState
+          label="Preparando estrutura organizacional"
+          detail="Validando permissões e sincronizando a hierarquia"
+          variant="page"
+        />
       </PageShell>
     );
   }

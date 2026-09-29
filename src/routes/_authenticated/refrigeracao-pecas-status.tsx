@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -318,10 +319,11 @@ function PecasStatusPage() {
 
       <div className="mt-4 space-y-3">
         {loading ? (
-          <GlassCard className="p-8 text-center text-sm text-muted-foreground">
-            <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-            Carregando solicitações…
-          </GlassCard>
+          <BrandedLoadingState
+            label="Carregando solicitações de peças"
+            detail="Sincronizando materiais e status da refrigeração"
+            variant="panel"
+          />
         ) : filtered.length === 0 ? (
           <GlassCard className="p-8 text-center text-sm text-muted-foreground">
             <Package className="mx-auto mb-2 h-6 w-6" />

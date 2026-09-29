@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, History, FileText, Loader2, Building2, CheckCircle2, Download } from "lucide-react";
+import { Search, History, FileText, Building2, CheckCircle2, Download } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { RondaCalha } from "@/lib/rondas/types";
@@ -83,10 +84,11 @@ function RondasHistoricoPage() {
         </GlassCard>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-muted-foreground animate-pulse">Carregando histórico...</p>
-          </div>
+          <BrandedLoadingState
+            label="Carregando histórico de rondas"
+            detail="Sincronizando inspeções concluídas e relatórios disponíveis"
+            variant="page"
+          />
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 border-2 border-dashed border-white/5 rounded-3xl bg-white/2 space-y-4">
             <div className="mx-auto w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">

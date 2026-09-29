@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -484,10 +485,11 @@ function RefrigeracaoPage() {
             </div>
           )}
           {loadingList ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
-              Carregando OS…
-            </div>
+            <BrandedLoadingState
+              label="Carregando refrigeração"
+              detail="Sincronizando ordens de serviço e dados da equipe"
+              variant="page"
+            />
           ) : filtered.length === 0 ? (
             <div className="p-8 text-center text-sm text-muted-foreground">
               {osList.length === 0

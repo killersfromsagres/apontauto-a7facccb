@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -666,7 +667,11 @@ function CorretivaPage() {
             </div>
           </div>
           {loadingList ? (
-            <div className="p-12 text-center text-muted-foreground"><Loader2 className="mx-auto mb-2 animate-spin" /> Carregando…</div>
+            <BrandedLoadingState
+              label="Carregando ordens corretivas"
+              detail="Sincronizando chamados e informações operacionais"
+              variant="page"
+            />
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-muted-foreground">Nenhuma OS encontrada.</div>
           ) : (

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -466,9 +467,11 @@ function SolicitacaoMateriaisPage() {
 
               <div className="max-h-[26rem] min-w-0 space-y-2 overflow-y-auto pr-1">
                 {loading && (
-                  <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Carregando catálogo…
-                  </div>
+                  <BrandedLoadingState
+                    label="Carregando catálogo de materiais"
+                    detail="Sincronizando itens disponíveis para solicitação"
+                    variant="compact"
+                  />
                 )}
                 {!loading && filtrados.length === 0 && (
                   <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
