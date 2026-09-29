@@ -497,6 +497,25 @@ function ProgramacaoPage() {
                 `Foram reservadas ${correctiveProgrammingEntries.length} corretivas, mas somente ${persisted} foram registradas no controle de programação.`,
               );
             }
+
+            // Mantém o snapshot deste processamento coerente com o banco. É
+            // especialmente importante para OS que chegaram como
+            // "reprogramacao_pendente": depois de entrar na primeira semana elas
+            // não podem voltar a ser escolhidas nas semanas seguintes do mesmo lote.
+            const persistedById = new Map(
+              correctiveProgrammingEntries.map((entry) => [entry.osId, entry]),
+            );
+            correctiveRows.forEach((row) => {
+              const entry = persistedById.get(String(row.id ?? "").trim());
+              if (!entry) return;
+              row.programacao_status = "em_programacao";
+              row.programacao_periodo_inicio = entry.periodStart;
+              row.programacao_periodo_fim = entry.periodEnd;
+              row.programacao_dia_indice = entry.dayIndex;
+              row.programacao_equipe = entry.equipe;
+              row.programacao_tentativas =
+                Math.max(0, Number(row.programacao_tentativas) || 0) + 1;
+            });
           } catch (programStateError) {
             correctiveProgrammingEntries.forEach((entry) =>
               releaseCorrectiveProgramReservation(entry.osId, entry.numeroOs),
