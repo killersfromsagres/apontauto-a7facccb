@@ -152,6 +152,7 @@ function CorretivaNovoPage() {
   >([]);
   const [onlyProgrammed, setOnlyProgrammed] = useState(false);
   const [onlyBackorder, setOnlyBackorder] = useState(false);
+  const [onlyReprogramming, setOnlyReprogramming] = useState(false);
   const [reprogramTarget, setReprogramTarget] = useState<{
     os: any;
     reservation: CorrectiveProgramReservation;
@@ -279,8 +280,16 @@ function CorretivaNovoPage() {
           backorderMap.get(String(o.id ?? o.numero_os ?? "")) ?? getBackorderInfo(o);
         const matchesBackorder =
           !onlyBackorder || (backorder.isBackorder && !isCompletedStatus(o.status));
+        const matchesReprogramming =
+          !onlyReprogramming || isPendingReprogramming(o);
 
-        return matchesSearch && matchesEquipe && matchesProgram && matchesBackorder;
+        return (
+          matchesSearch &&
+          matchesEquipe &&
+          matchesProgram &&
+          matchesBackorder &&
+          matchesReprogramming
+        );
       })
       .sort((a, b) => {
         const reprogramOrder =
@@ -298,11 +307,16 @@ function CorretivaNovoPage() {
     sortOrder,
     onlyProgrammed,
     onlyBackorder,
+    onlyReprogramming,
     programReservations,
     backorderMap,
   ]);
 
   const programmedVisibleCount = programmedExportRows.length;
+  const reprogrammingVisibleCount = useMemo(
+    () => exportBaseRows.filter((os) => isPendingReprogramming(os)).length,
+    [exportBaseRows],
+  );
 
   const backorderExportRows = useMemo(
     () =>
@@ -668,6 +682,25 @@ function CorretivaNovoPage() {
                 <span className="font-semibold">Em Programação</span>
                 <span className="inline-flex min-w-6 items-center justify-center rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-bold">
                   {programmedVisibleCount}
+                </span>
+              </Button>
+
+              <Button
+                type="button"
+                variant={onlyReprogramming ? "secondary" : "glass"}
+                className={cn(
+                  "h-11 gap-2 rounded-xl border border-amber-400/20 bg-amber-400/[0.05] px-4 text-amber-100 transition-all hover:border-amber-300/35 hover:bg-amber-400/[0.10]",
+                  onlyReprogramming &&
+                    "border-amber-300/50 bg-amber-400/15 text-white shadow-[0_0_0_1px_rgba(251,191,36,0.10)]",
+                )}
+                onClick={() => setOnlyReprogramming((current) => !current)}
+                aria-pressed={onlyReprogramming}
+                title="Mostrar somente chamados que voltaram para a fila por não realização"
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span className="font-semibold">Reprogramar</span>
+                <span className="inline-flex min-w-6 items-center justify-center rounded-md bg-black/20 px-1.5 py-0.5 text-[10px] font-bold">
+                  {reprogrammingVisibleCount}
                 </span>
               </Button>
 
