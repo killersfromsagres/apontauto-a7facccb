@@ -373,9 +373,10 @@ function sortPriorityBuildingItems(items: TriagedOS[]): TriagedOS[] {
  * Monta a fila preventiva com equilíbrio entre SLA e deslocamento:
  * 1. SLAs fora do dia 28 vêm primeiro;
  * 2. essas exceções são mantidas em blocos de prédio;
- * 3. o prédio cuja exceção vence antes é atendido antes;
+ * 3. dentro da faixa prioritária, os prédios seguem ordem operacional;
  * 4. dentro do prédio, a execução segue a sequência física dos andares;
- * 5. o ciclo padrão (dia 28) continua por prédio → andar.
+ * 5. o SLA mais próximo desempata OS equivalentes na mesma rota;
+ * 6. o ciclo padrão (dia 28) continua por prédio → andar.
  */
 export function buildPreventiveExecutionQueue(items: TriagedOS[]): TriagedOS[] {
   const priority = items.filter(isPreventiveSlaPriority);
@@ -394,16 +395,16 @@ export function buildPreventiveExecutionQueue(items: TriagedOS[]): TriagedOS[] {
       const sorted = sortPriorityBuildingItems(cluster);
       return {
         items: sorted,
-        earliestSla: Math.min(
-          ...sorted.map(preventiveSlaTimestamp),
-        ),
+        earliestSla: Math.min(...sorted.map(preventiveSlaTimestamp)),
         predio: sorted[0]?.predio ?? "",
       };
     })
     .sort(
       (a, b) =>
-        a.earliestSla - b.earliestSla ||
-        compareBuildings(a.predio, b.predio),
+        // Todas as exceções já estão na faixa prioritária. Dentro dessa faixa,
+        // a rota física prevalece para o time não ficar ziguezagueando entre prédios.
+        compareBuildings(a.predio, b.predio) ||
+        a.earliestSla - b.earliestSla,
     );
 
   const orderedPriority = priorityClusters.flatMap((cluster) =>
