@@ -588,7 +588,9 @@ function ProgramacaoPage() {
     } catch (error) {
       console.error(error);
       toast.error(
-        "Não foi possível gerar a programação. Verifique a planilha e o acesso às corretivas.",
+        error instanceof Error && error.message
+          ? error.message
+          : "Não foi possível gerar a programação. Verifique a planilha e o acesso às corretivas.",
       );
     } finally {
       setProcessing(false);
