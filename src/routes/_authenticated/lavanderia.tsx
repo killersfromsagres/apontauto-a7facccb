@@ -52,6 +52,7 @@ import {
 } from "recharts";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -817,7 +818,11 @@ function AbertasView({ loading, pecas }: { loading: boolean; pecas: LavExportPec
       {/* Mobile: lista de cards (sem rolagem horizontal). */}
       <div className="max-h-[65vh] space-y-2 overflow-auto md:hidden">
         {loading ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">Carregando…</p>
+          <BrandedLoadingState
+            label="Carregando lavanderia"
+            detail="Sincronizando peças em circulação e retornos previstos"
+            variant="compact"
+          />
         ) : filtered.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma peça em aberto.</p>
         ) : (
