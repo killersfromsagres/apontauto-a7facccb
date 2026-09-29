@@ -183,11 +183,12 @@ const DUE_ORDER = {
 
 /**
  * Ordem operacional da fila:
- * 1. Backorders;
- * 2. SLA/data programada mais urgente (vencido → vence logo → semana);
- * 3. criticidade e score;
- * 4. chamados mais antigos;
- * 5. número da OS como desempate estável.
+ * 1. Reprogramações pendentes ("não realizado");
+ * 2. Backorders;
+ * 3. SLA/data programada mais urgente (vencido → vence logo → semana);
+ * 4. criticidade e score;
+ * 5. chamados mais antigos;
+ * 6. número da OS como desempate estável.
  */
 function sortCandidates(
   rows: CorrectiveSourceRow[],
