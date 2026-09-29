@@ -2,9 +2,10 @@ import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Loader2, Search } from "lucide-react";
+import { ArrowLeft, Check, Search } from "lucide-react";
 
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,9 +83,11 @@ function NaoEncontrados() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <BrandedLoadingState
+            label="Carregando ativos pendentes"
+            detail="Sincronizando a fila de códigos que precisam de revisão"
+            variant="compact"
+          />
         ) : rows.length === 0 ? (
           <p className="py-10 text-center text-sm text-muted-foreground">
             Nenhum ativo pendente de revisão.
