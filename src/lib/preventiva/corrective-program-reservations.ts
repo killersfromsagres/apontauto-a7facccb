@@ -75,6 +75,22 @@ function normalizeText(value: unknown): string {
     .toUpperCase();
 }
 
+function programmingStatus(row: Pick<CorrectiveSourceRow, "programacao_status">): string {
+  return String(row.programacao_status ?? "").trim().toLowerCase();
+}
+
+function isPersistentlyProgrammed(
+  row: Pick<CorrectiveSourceRow, "programacao_status">,
+): boolean {
+  return programmingStatus(row) === "em_programacao";
+}
+
+function isPendingReprogramming(
+  row: Pick<CorrectiveSourceRow, "programacao_status">,
+): boolean {
+  return programmingStatus(row) === "reprogramacao_pendente";
+}
+
 function rowKeys(
   row: Pick<CorrectiveSourceRow, "id" | "numero_os">,
 ): string[] {
@@ -193,6 +209,12 @@ function sortCandidates(
   return [...rows].sort((a, b) => {
     const aPriority = priorityOf(a);
     const bPriority = priorityOf(b);
+
+    // OS devolvidas como "não realizado" voltam ao topo da próxima programação.
+    // Isso impede que uma tentativa frustrada fique esquecida atrás de chamados novos.
+    const reprogramOrder =
+      Number(isPendingReprogramming(b)) - Number(isPendingReprogramming(a));
+    if (reprogramOrder !== 0) return reprogramOrder;
 
     const backorderOrder =
       Number(bPriority.isBackorder) - Number(aPriority.isBackorder);
@@ -458,9 +480,9 @@ export function allocateCorrectivesForWeekTeam(options: {
   const limit = Math.max(0, perDay * businessDays);
 
   // Fonte de verdade: chamados que continuam abertos em Corretiva-Novo.
-  // Para uma NOVA programação, porém, não repetimos OS que já foram programadas
-  // anteriormente enquanto continuarem abertas. Isso faz a fila avançar e traz
-  // novas corretivas a cada geração. Backorders continuam no topo pelo sortCandidates.
+  // Programações atuais passam a ser persistidas no banco. O histórico local é
+  // mantido como compatibilidade, enquanto OS marcadas como "não realizado"
+  // recebem prioridade e ficam elegíveis novamente na próxima geração.
   const currentReservations = readStorage();
   const history = readHistory();
   const historyKeys = new Set(history.flatMap(reservationKeys));
@@ -475,11 +497,19 @@ export function allocateCorrectivesForWeekTeam(options: {
   );
   const eligible = sortCandidates(
     uniqueRows(
-      rows.filter(
-        (row) =>
-          resolveProgramCorrectiveTeam(row) === equipe &&
-          !rowKeys(row).some((key) => consumedKeys.has(key)),
-      ),
+      rows.filter((row) => {
+        if (resolveProgramCorrectiveTeam(row) !== equipe) return false;
+
+        // Fonte persistente do servidor: uma OS já "em programação" não pode
+        // entrar em outra programação, mesmo em outro navegador/computador.
+        if (isPersistentlyProgrammed(row)) return false;
+
+        // "Não realizado" é uma liberação explícita para reprogramar. Ela vence
+        // o histórico local antigo e volta imediatamente a ser elegível.
+        if (isPendingReprogramming(row)) return true;
+
+        return !rowKeys(row).some((key) => consumedKeys.has(key));
+      }),
     ),
     referenceDate,
   ).map((row) => ({ ...row, equipe }));
