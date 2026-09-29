@@ -219,6 +219,10 @@ function compareFloors(a: unknown, b: unknown): number {
   );
 }
 
+function isSlaPriorityPreventive(item: TriagedOS): boolean {
+  return !isCorrective(item) && Boolean(item.raw?.programacaoSLAPrioritaria);
+}
+
 function sortDayItems(items: TriagedOS[]): TriagedOS[] {
   return [...items].sort((a, b) => {
     const backorderOrder =
@@ -228,6 +232,12 @@ function sortDayItems(items: TriagedOS[]): TriagedOS[] {
 
     const correctiveOrder = Number(isCorrective(a)) - Number(isCorrective(b));
     if (correctiveOrder !== 0) return correctiveOrder;
+
+    const slaPriorityOrder =
+      Number(isSlaPriorityPreventive(b)) -
+      Number(isSlaPriorityPreventive(a));
+    if (slaPriorityOrder !== 0) return slaPriorityOrder;
+
     const buildingOrder = compareBuildings(a.predio, b.predio);
     if (buildingOrder !== 0) return buildingOrder;
     const floorOrder = compareFloors(a.andar, b.andar);
@@ -297,10 +307,14 @@ function styleProgramSheet(
       ),
     );
     const correctiveCount = items.filter(isCorrective).length;
+    const slaPriorityCount = items.filter(isSlaPriorityPreventive).length;
 
     ws.mergeCells(rowIndex, 1, rowIndex, 10);
     const dayCell = ws.getCell(rowIndex, 1);
-    dayCell.value = `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`;
+    dayCell.value = [
+      `${DAY_NAMES[dayIndex]} • ${formatDate(date)} • ${items.length} OS (${correctiveCount} CORRETIVAS)`,
+      slaPriorityCount > 0 ? `${slaPriorityCount} SLA PRIORITÁRIO${slaPriorityCount > 1 ? "S" : ""}` : "",
+    ].filter(Boolean).join(" • ");
     dayCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: PALETTE.teal } };
     dayCell.font = {
       name: APTOS_EXTRABOLD,
@@ -423,6 +437,18 @@ function styleProgramSheet(
             bold: true,
             size: 9,
             color: { argb: teamArgb },
+          };
+        } else if (column.key === "sla" && isSlaPriorityPreventive(os)) {
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: PALETTE.warningBg },
+          };
+          cell.font = {
+            name: APTOS_SEMIBOLD,
+            bold: true,
+            size: 10,
+            color: { argb: PALETTE.warningText },
           };
         } else if (
           column.key === "ativo" &&

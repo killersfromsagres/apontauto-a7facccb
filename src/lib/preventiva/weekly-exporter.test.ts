@@ -288,36 +288,50 @@ describe("generateWeeklyProgramacao", () => {
     ]);
   });
 
-  it("não usa SLA para ordenar a programação, mas usa SLA na aba de apontamento", async () => {
+  it("mantém SLA excepcional no topo do dia e organiza os prioritários por prédio e andar", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
-    const early = {
-      ...os("OS-200", "CIVIL", ""),
-      predio: "A160",
+
+    const priorityB2 = {
+      ...os("URG-B-2", "CIVIL", ""),
+      predio: "B200",
+      andar: "2º Andar",
+      local: "Sala B2",
+      terminoSLA: "2026-09-16",
+      terminoSLATs: new Date(2026, 8, 16).getTime(),
+      raw: { programacaoSLAPrioritaria: true },
+    };
+    const priorityB1 = {
+      ...os("URG-B-1", "CIVIL", ""),
+      predio: "B200",
       andar: "1º Andar",
-      local: "Sala Z",
+      local: "Sala B1",
       terminoSLA: "2026-09-15",
       terminoSLATs: new Date(2026, 8, 15).getTime(),
+      raw: { programacaoSLAPrioritaria: true },
     };
-    const later = {
-      ...os("OS-100", "CIVIL", ""),
+    const standardA = {
+      ...os("PADRAO-A", "CIVIL", ""),
       predio: "A160",
-      andar: "1º Andar",
+      andar: "Térreo",
       local: "Sala A",
-      terminoSLA: "2026-09-30",
-      terminoSLATs: new Date(2026, 8, 30).getTime(),
+      terminoSLA: "2026-09-28",
+      terminoSLATs: new Date(2026, 8, 28).getTime(),
+      raw: { programacaoSLAPrioritaria: false },
     };
+
     const load: DailyTeamLoad = {
       date: monday,
       dateKey: "2026-09-14",
       dayIndex: 0,
-      preventiveCount: 2,
+      preventiveCount: 3,
       correctiveCount: 0,
-      scheduledMinutes: 60,
-      remainingMinutes: 480,
+      scheduledMinutes: 90,
+      remainingMinutes: 450,
       targetMinutes: 540,
       correctiveDeficit: 2,
     };
+
     const blob = await generateWeeklyProgramacao({
       titulo: "GRUPO GPS",
       week,
@@ -326,8 +340,8 @@ describe("generateWeeklyProgramacao", () => {
           "CIVIL",
           {
             week,
-            os: [early, later],
-            porDia: [[early, later], [], [], [], []],
+            os: [standardA, priorityB2, priorityB1],
+            porDia: [[standardA, priorityB2, priorityB1], [], [], [], []],
           },
         ],
       ]),
@@ -335,20 +349,26 @@ describe("generateWeeklyProgramacao", () => {
       minutosPorEquipe: { CIVIL: 30 },
       ativoIndex: new Map(),
     });
+
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await blob.arrayBuffer());
     const program = workbook.getWorksheet("PROGRAMAÇÃO")!;
-    expect(program.getCell("E4").text).toBe("Sala A");
-    expect(program.getCell("A4").text).toBe("OS-100");
-    expect(program.getCell("E5").text).toBe("Sala Z");
-    expect(program.getCell("A5").text).toBe("OS-200");
+
+    expect([4, 5, 6].map((row) => program.getCell(row, 1).text)).toEqual([
+      "URG-B-1",
+      "URG-B-2",
+      "PADRAO-A",
+    ]);
+    expect([4, 5].map((row) => program.getCell(row, 4).text)).toEqual([
+      "1º Andar",
+      "2º Andar",
+    ]);
+    expect(program.getCell("A2").text).toContain("2 SLA PRIORITÁRIOS");
+    expect((program.getCell("G4").fill as any).fgColor.argb).toBe("FFFFF4D6");
 
     const slaSheet = workbook.getWorksheet("SLA APONTAMENTO")!;
-    expect(slaSheet.getCell("A5").text).toBe("OS-200");
+    expect(slaSheet.getCell("A5").text).toBe("URG-B-1");
     expect(slaSheet.getCell("B5").text).toBe("15/09/2026");
-    expect(slaSheet.getCell("C5").text).toBe("CIVIL");
-    expect(slaSheet.getCell("A6").text).toBe("OS-100");
-    expect(slaSheet.getCell("B6").text).toBe("30/09/2026");
   });
 });
 

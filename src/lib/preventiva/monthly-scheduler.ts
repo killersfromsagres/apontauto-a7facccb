@@ -315,6 +315,120 @@ function sortByLocation(items: TriagedOS[]): TriagedOS[] {
   });
 }
 
+const STANDARD_PREVENTIVE_SLA_DAY = 28;
+
+function preventiveSlaDate(item: TriagedOS): Date | null {
+  const parsed = validDate(item.terminoSLA);
+  if (parsed) return parsed;
+
+  const timestamp = Number(item.terminoSLATs);
+  if (!Number.isFinite(timestamp) || timestamp <= 0 || timestamp >= Number.MAX_SAFE_INTEGER) {
+    return null;
+  }
+
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Na planilha mensal, o ciclo preventivo padrão termina no dia 28.
+ * Datas válidas em qualquer outro dia representam uma janela excepcional
+ * e precisam entrar antes do ciclo padrão.
+ */
+export function isPreventiveSlaPriority(item: TriagedOS): boolean {
+  if (isCorrective(item)) return false;
+  const sla = preventiveSlaDate(item);
+  return Boolean(sla && sla.getDate() !== STANDARD_PREVENTIVE_SLA_DAY);
+}
+
+function preventiveSlaTimestamp(item: TriagedOS): number {
+  return preventiveSlaDate(item)?.getTime() ?? Number.MAX_SAFE_INTEGER;
+}
+
+function buildingClusterKey(item: TriagedOS): string {
+  const normalized = canonicalLocationText(item.predio).replace(
+    /^(?:PREDIO|BLOCO|EDIFICIO)\s+/,
+    "",
+  );
+  return normalized || "__SEM_PREDIO__";
+}
+
+function sortPriorityBuildingItems(items: TriagedOS[]): TriagedOS[] {
+  return [...items].sort((a, b) => {
+    const floorOrder = compareFloors(a.andar, b.andar);
+    if (floorOrder !== 0) return floorOrder;
+
+    const slaOrder = preventiveSlaTimestamp(a) - preventiveSlaTimestamp(b);
+    if (slaOrder !== 0) return slaOrder;
+
+    return (
+      compareNatural(a.local, b.local) ||
+      compareNatural(a.os, b.os) ||
+      compareNatural(a.nomeOS, b.nomeOS)
+    );
+  });
+}
+
+/**
+ * Monta a fila preventiva com equilíbrio entre SLA e deslocamento:
+ * 1. SLAs fora do dia 28 vêm primeiro;
+ * 2. essas exceções são mantidas em blocos de prédio;
+ * 3. dentro da faixa prioritária, os prédios seguem ordem operacional;
+ * 4. dentro do prédio, a execução segue a sequência física dos andares;
+ * 5. o SLA mais próximo desempata OS equivalentes na mesma rota;
+ * 6. o ciclo padrão (dia 28) continua por prédio → andar.
+ */
+export function buildPreventiveExecutionQueue(items: TriagedOS[]): TriagedOS[] {
+  const priority = items.filter(isPreventiveSlaPriority);
+  const standard = items.filter((item) => !isPreventiveSlaPriority(item));
+
+  const grouped = new Map<string, TriagedOS[]>();
+  priority.forEach((item) => {
+    const key = buildingClusterKey(item);
+    const current = grouped.get(key) ?? [];
+    current.push(item);
+    grouped.set(key, current);
+  });
+
+  const priorityClusters = [...grouped.values()]
+    .map((cluster) => {
+      const sorted = sortPriorityBuildingItems(cluster);
+      return {
+        items: sorted,
+        earliestSla: Math.min(...sorted.map(preventiveSlaTimestamp)),
+        predio: sorted[0]?.predio ?? "",
+      };
+    })
+    .sort(
+      (a, b) =>
+        // Todas as exceções já estão na faixa prioritária. Dentro dessa faixa,
+        // a rota física prevalece para o time não ficar ziguezagueando entre prédios.
+        compareBuildings(a.predio, b.predio) ||
+        a.earliestSla - b.earliestSla,
+    );
+
+  const orderedPriority = priorityClusters.flatMap((cluster) =>
+    cluster.items.map((item) => ({
+      ...item,
+      raw: {
+        ...item.raw,
+        programacaoSLAPrioritaria: true,
+        programacaoSLAMotivo: "Término SLA fora do ciclo padrão do dia 28",
+      },
+    })),
+  );
+
+  const orderedStandard = sortByLocation(standard).map((item) => ({
+    ...item,
+    raw: {
+      ...item.raw,
+      programacaoSLAPrioritaria: false,
+    },
+  }));
+
+  return [...orderedPriority, ...orderedStandard];
+}
+
 export function mapCorrectives(
   rows: CorrectiveSourceRow[],
   referenceDate: Date,
@@ -427,6 +541,56 @@ function balancedDailyQuota(
   return Math.min(dailyCapacity, base + (after > before ? 1 : 0));
 }
 
+function frontloadPriorityQuotas(
+  total: number,
+  dayCount: number,
+  dailyCapacity: number,
+): number[] {
+  const quotas = new Array(Math.max(0, dayCount)).fill(0) as number[];
+  let remaining = Math.max(0, Math.min(total, dayCount * dailyCapacity));
+
+  for (let day = 0; day < quotas.length && remaining > 0; day += 1) {
+    const take = Math.min(dailyCapacity, remaining);
+    quotas[day] = take;
+    remaining -= take;
+  }
+
+  return quotas;
+}
+
+function balancedStandardQuotas(
+  total: number,
+  priorityQuotas: number[],
+  dailyCapacity: number,
+): number[] {
+  const quotas = new Array(priorityQuotas.length).fill(0) as number[];
+  const available = priorityQuotas.reduce(
+    (sum, priority) => sum + Math.max(0, dailyCapacity - priority),
+    0,
+  );
+  const schedulable = Math.max(0, Math.min(total, available));
+
+  for (let assigned = 0; assigned < schedulable; assigned += 1) {
+    let bestDay = -1;
+    let bestLoad = Number.MAX_SAFE_INTEGER;
+
+    for (let day = 0; day < priorityQuotas.length; day += 1) {
+      const load = priorityQuotas[day] + quotas[day];
+      if (load >= dailyCapacity) continue;
+
+      if (load < bestLoad) {
+        bestLoad = load;
+        bestDay = day;
+      }
+    }
+
+    if (bestDay < 0) break;
+    quotas[bestDay] += 1;
+  }
+
+  return quotas;
+}
+
 export function scheduleTeamMonth(options: {
   equipe: Equipe;
   preventivas: TriagedOS[];
@@ -453,8 +617,10 @@ export function scheduleTeamMonth(options: {
   }));
   const loadsByWeek: DailyTeamLoad[][] = options.weeks.map(() => []);
 
-  // Preventivas seguem a ordem operacional geográfica.
-  const preventivas = sortByLocation(options.preventivas);
+  // Preventivas conciliam risco de SLA com rota operacional:
+  // exceções do ciclo (Término SLA fora do dia 28) entram primeiro, porém
+  // agrupadas por prédio e com andares em sequência física.
+  const preventivas = buildPreventiveExecutionQueue(options.preventivas);
   // Quando usadas diretamente por este scheduler, corretivas também permanecem determinísticas.
   // Na tela Programação, a seleção prioritária é feita pelo alocador externo antes de anexá-las.
   const corretivas = sortByLocation(options.corretivas);
@@ -481,7 +647,38 @@ export function scheduleTeamMonth(options: {
     businessDays.length * internalCorrectiveCapacityPerDay,
   );
 
-  let preventivaIndex = 0;
+  const priorityPreventivas = preventivas.filter((item) =>
+    Boolean(item.raw?.programacaoSLAPrioritaria),
+  );
+  const standardPreventivas = preventivas.filter(
+    (item) => !Boolean(item.raw?.programacaoSLAPrioritaria),
+  );
+
+  const scheduledPriorityTarget = Math.min(
+    priorityPreventivas.length,
+    scheduledPreventiveTarget,
+  );
+  const scheduledStandardTarget = Math.max(
+    0,
+    scheduledPreventiveTarget - scheduledPriorityTarget,
+  );
+
+  // SLA excepcional ocupa as primeiras vagas úteis. O restante da carga
+  // preventiva é redistribuído de forma equilibrada nas capacidades livres,
+  // evitando sobrecarregar o começo do mês.
+  const priorityQuotaByDay = frontloadPriorityQuotas(
+    scheduledPriorityTarget,
+    businessDays.length,
+    preventiveCapacityPerDay,
+  );
+  const standardQuotaByDay = balancedStandardQuotas(
+    scheduledStandardTarget,
+    priorityQuotaByDay,
+    preventiveCapacityPerDay,
+  );
+
+  let priorityPreventivaIndex = 0;
+  let standardPreventivaIndex = 0;
   let corretivaIndex = 0;
 
   businessDays.forEach((date, dayPosition) => {
@@ -490,12 +687,8 @@ export function scheduleTeamMonth(options: {
     const dow = date.getDay() - 1;
     if (dow < 0 || dow > 4) return;
 
-    const preventiveCount = balancedDailyQuota(
-      scheduledPreventiveTarget,
-      dayPosition,
-      businessDays.length,
-      preventiveCapacityPerDay,
-    );
+    const priorityPreventiveCount = priorityQuotaByDay[dayPosition] ?? 0;
+    const standardPreventiveCount = standardQuotaByDay[dayPosition] ?? 0;
     const correctiveCount = balancedDailyQuota(
       scheduledCorrectiveTarget,
       dayPosition,
@@ -503,11 +696,22 @@ export function scheduleTeamMonth(options: {
       internalCorrectiveCapacityPerDay,
     );
 
-    const dayPreventivas = preventivas.slice(
-      preventivaIndex,
-      preventivaIndex + preventiveCount,
+    const dayPriorityPreventivas = priorityPreventivas.slice(
+      priorityPreventivaIndex,
+      priorityPreventivaIndex + priorityPreventiveCount,
     );
-    preventivaIndex += dayPreventivas.length;
+    priorityPreventivaIndex += dayPriorityPreventivas.length;
+
+    const dayStandardPreventivas = standardPreventivas.slice(
+      standardPreventivaIndex,
+      standardPreventivaIndex + standardPreventiveCount,
+    );
+    standardPreventivaIndex += dayStandardPreventivas.length;
+
+    const dayPreventivas = [
+      ...dayPriorityPreventivas,
+      ...dayStandardPreventivas,
+    ];
 
     const dayCorretivas = corretivas.slice(
       corretivaIndex,
@@ -540,9 +744,13 @@ export function scheduleTeamMonth(options: {
   return {
     buckets,
     loadsByWeek,
-    overflowPreventivas: preventivas.slice(preventivaIndex),
+    overflowPreventivas: [
+      ...priorityPreventivas.slice(priorityPreventivaIndex),
+      ...standardPreventivas.slice(standardPreventivaIndex),
+    ],
     overflowCorretivas: corretivas.slice(corretivaIndex),
-    scheduledPreventivas: preventivaIndex,
+    scheduledPreventivas:
+      priorityPreventivaIndex + standardPreventivaIndex,
     scheduledCorretivas: corretivaIndex,
   };
 }

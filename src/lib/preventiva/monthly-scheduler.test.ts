@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { weeksBetween } from "./capacity";
 import {
+  buildPreventiveExecutionQueue,
   formatMinutes,
   isCorrectiveBackorder,
+  isPreventiveSlaPriority,
   scheduleTeamMonth,
   sortCorrectiveRows,
   type CorrectiveSourceRow,
@@ -123,29 +125,65 @@ describe("scheduleTeamMonth", () => {
     expect(result.loadsByWeek[0][0].remainingMinutes).toBe(510);
   });
 
-  it("ignora Término SLA na distribuição preventiva e prioriza a sequência de prédios", () => {
+  it("prioriza SLA fora do dia 28 em blocos de prédio e mantém a sequência física dos andares", () => {
     const equipe: Equipe = "ELÉTRICA";
-    const predioBComSlaMaisCedo = {
-      ...os("B-URGENTE", equipe, "Preventiva", "2026-09-14"),
-      predio: "B200",
-      andar: "Térreo",
-    };
-    const predioAComSlaMaisTarde = {
-      ...os("A-DEPOIS", equipe, "Preventiva", "2026-09-30"),
-      predio: "A100",
-      andar: "Térreo",
-    };
+    const rows = [
+      {
+        ...os("PADRAO-A", equipe, "Preventiva", "2026-09-28"),
+        predio: "A100",
+        andar: "1º Andar",
+      },
+      {
+        ...os("URG-B-2", equipe, "Preventiva", "2026-09-16"),
+        predio: "B200",
+        andar: "2º Andar",
+      },
+      {
+        ...os("URG-A-T", equipe, "Preventiva", "2026-09-20"),
+        predio: "A100",
+        andar: "Térreo",
+      },
+      {
+        ...os("URG-B-1", equipe, "Preventiva", "2026-09-15"),
+        predio: "B200",
+        andar: "1º Andar",
+      },
+      {
+        ...os("PADRAO-B", equipe, "Preventiva", "2026-09-28"),
+        predio: "B200",
+        andar: "Térreo",
+      },
+    ];
+
+    expect(isPreventiveSlaPriority(rows[0])).toBe(false);
+    expect(isPreventiveSlaPriority(rows[1])).toBe(true);
+
+    const queue = buildPreventiveExecutionQueue(rows);
+    expect(queue.map((item) => item.os)).toEqual([
+      "URG-A-T",
+      "URG-B-1",
+      "URG-B-2",
+      "PADRAO-A",
+      "PADRAO-B",
+    ]);
+    expect(queue.slice(0, 3).every((item) => item.raw.programacaoSLAPrioritaria === true)).toBe(true);
+
     const result = scheduleTeamMonth({
       equipe,
-      preventivas: [predioBComSlaMaisCedo, predioAComSlaMaisTarde],
+      preventivas: rows,
       corretivas: [],
       weeks,
       from: monday,
       until: friday,
       minutosPorOS: 60,
     });
-    expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual(["A-DEPOIS"]);
-    expect(result.buckets[0].porDia[1].map((item) => item.os)).toEqual(["B-URGENTE"]);
+    expect(result.buckets[0].porDia[0].map((item) => item.os)).toEqual([
+      "URG-A-T",
+      "URG-B-1",
+      "URG-B-2",
+    ]);
+    const scheduled = result.buckets[0].porDia.flat().map((item) => item.os);
+    expect(scheduled).toEqual(queue.map((item) => item.os));
   });
 });
 

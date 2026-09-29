@@ -64,6 +64,7 @@ import {
 } from "@/lib/preventiva/history";
 import {
   formatMinutes,
+  isPreventiveSlaPriority,
   mapCorrectives,
   MINUTOS_PADRAO_POR_EQUIPE,
   scheduleTeamMonth,
@@ -369,6 +370,15 @@ function ProgramacaoPage() {
           messages.push(
             `${slot.label}: nenhuma preventiva reconhecida; as semanas serão compostas pelas corretivas prioritárias disponíveis.`,
           );
+        } else {
+          const slaPriorityCount = preventiveItems.filter(
+            isPreventiveSlaPriority,
+          ).length;
+          if (slaPriorityCount > 0) {
+            messages.push(
+              `${slot.label}: ${slaPriorityCount} preventiva(s) com Término SLA fora do dia 28 foram antecipadas. O sistema mantém essas OS em blocos de prédio e ordena os andares antes de continuar o ciclo padrão.`,
+            );
+          }
         }
 
         const schedules = new Map<Equipe, TeamMonthlySchedule>();
@@ -583,7 +593,7 @@ function ProgramacaoPage() {
       setGenerated((current) => [...output, ...current]);
       await reloadHistorico();
       toast.success(
-        `${output.length} planilha(s) semanal(is) gerada(s). As corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil (${CORRECTIVES_PER_WEEK}/semana por equipe quando houver disponibilidade) e registradas como EM PROGRAMAÇÃO.`,
+        `${output.length} planilha(s) semanal(is) gerada(s). Preventivas com SLA fora do dia 28 foram antecipadas por rota de prédio/andar; corretivas foram distribuídas em até ${CORRECTIVES_PER_DAY} por dia útil e registradas como EM PROGRAMAÇÃO.`,
       );
     } catch (error) {
       console.error(error);
