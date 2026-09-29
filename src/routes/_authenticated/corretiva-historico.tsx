@@ -23,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { BrandedLoadingState } from "@/components/branded-loading-state";
 import { GlassCard } from "@/components/glass-card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -499,10 +500,11 @@ function HistoricoPage() {
 
         <div className="p-3 sm:p-5">
           {isLoading ? (
-            <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center text-sm text-muted-foreground">
-              <Loader2 className="mb-3 h-7 w-7 animate-spin text-primary" />
-              <span className="font-medium">Carregando histórico de execução…</span>
-            </div>
+            <BrandedLoadingState
+              label="Carregando histórico de execução"
+              detail="Sincronizando chamados concluídos e verificações"
+              variant="panel"
+            />
           ) : displayedRows.length === 0 ? (
             <div className="flex min-h-52 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center">
               <Search className="mb-3 h-6 w-6 text-muted-foreground/60" />
@@ -851,11 +853,11 @@ function OsDetail({ os, onClose }: { os: OsRow | null; onClose: () => void }) {
             )}
 
             {isLoading || loadingUrls ? (
-              <div className="flex min-h-60 flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-8 text-center">
-                <Loader2 className="mb-3 h-7 w-7 animate-spin text-primary" />
-                <p className="text-sm font-semibold text-foreground">Carregando evidências do chamado</p>
-                <p className="mt-1 text-xs text-muted-foreground">Organizando fotos, materiais e ocorrências…</p>
-              </div>
+              <BrandedLoadingState
+                label="Carregando evidências do chamado"
+                detail="Organizando fotos, materiais e ocorrências"
+                variant="panel"
+              />
             ) : (
               <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
                 <SectionCard title="Evidências fotográficas" icon={<Camera className="h-4 w-4" />} count={data?.fotos.length ?? 0}>
