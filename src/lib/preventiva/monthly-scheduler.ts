@@ -149,7 +149,15 @@ export function resolveCorrectiveTeam(row: CorrectiveSourceRow): Equipe | null {
   if (
     context.includes("HIDR") ||
     context.includes("TUBUL") ||
-    context.includes("VAZAMENTO")
+    context.includes("VAZAMENTO") ||
+    context.includes("ENTUP") ||
+    context.includes("BANHEIRO") ||
+    context.includes("SANITARIO") ||
+    context.includes("VASO") ||
+    context.includes("MICTORIO") ||
+    context.includes("ESGOTO") ||
+    context.includes("RALO") ||
+    (context.includes("COZINHA") && context.includes("C70"))
   ) {
     return "HIDRÁULICA";
   }
