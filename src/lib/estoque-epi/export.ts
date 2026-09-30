@@ -18,6 +18,7 @@ const TEXT = "FF172033";
 const MUTED = "FF64748B";
 const BORDER = "FFDCE4EC";
 const SOFT = "FFF7FAFC";
+const BRAND = "DEMARCHI • SHERWIN WILLIAMS";
 
 function fmtDate(value?: string | null): string {
   if (!value) return "—";
@@ -53,9 +54,9 @@ function statusColor(status: string): string {
 }
 
 function applyHeader(row: any, color = NAVY) {
-  row.height = 26;
+  row.height = 32;
   row.eachCell((cell: any) => {
-    cell.font = { name: "Aptos", size: 9, bold: true, color: { argb: WHITE } };
+    cell.font = { name: "Aptos", size: 10, bold: true, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: color } };
     cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
     cell.border = {
@@ -74,9 +75,12 @@ function addTitle(
   sheet.mergeCells(1, 1, 2, endColumn);
   const titleCell = sheet.getCell(1, 1);
   titleCell.value = title;
+  sheet.getRow(1).height = 24;
+  sheet.getRow(2).height = 24;
+  sheet.getRow(3).height = 22;
   titleCell.font = {
     name: "Aptos Display",
-    size: 19,
+    size: 20,
     bold: true,
     color: { argb: WHITE },
   };
@@ -86,8 +90,8 @@ function addTitle(
   sheet.mergeCells(3, 1, 3, endColumn);
   const subtitleCell = sheet.getCell(3, 1);
   subtitleCell.value = subtitle;
-  subtitleCell.font = { name: "Aptos", size: 9, color: { argb: MUTED } };
-  subtitleCell.alignment = { vertical: "middle" };
+  subtitleCell.font = { name: "Aptos", size: 10, color: { argb: MUTED } };
+  subtitleCell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
 
   sheet.getCell(1, endColumn).border = {
     right: { style: "thick", color: { argb: accent } },
@@ -95,10 +99,10 @@ function addTitle(
 }
 
 function styleBodyRow(row: any, index: number) {
-  row.height = 28;
+  row.height = 31;
   row.eachCell((cell: any) => {
-    cell.font = { name: "Aptos", size: 9, color: { argb: TEXT } };
-    cell.alignment = { vertical: "middle", wrapText: true };
+    cell.font = { name: "Aptos", size: 10, color: { argb: TEXT } };
+    cell.alignment = { vertical: "middle", horizontal: "left", wrapText: true };
     cell.border = {
       bottom: { style: "hair", color: { argb: BORDER } },
     };
@@ -108,13 +112,14 @@ function styleBodyRow(row: any, index: number) {
   });
 }
 
-function configureSheet(sheet: any) {
+function configureSheet(sheet: any, fitToWidth = 1) {
   sheet.views = [{ state: "frozen", ySplit: 5, showGridLines: false }];
+  sheet.properties.defaultRowHeight = 20;
   sheet.pageSetup = {
     orientation: "landscape",
     paperSize: 9,
     fitToPage: true,
-    fitToWidth: 1,
+    fitToWidth,
     fitToHeight: 0,
     margins: {
       left: 0.25,
@@ -125,8 +130,9 @@ function configureSheet(sheet: any) {
       footer: 0.2,
     },
   };
+  sheet.pageSetup.printTitlesRow = "1:5";
   sheet.headerFooter.oddFooter =
-    "&LApont Auto • Estoque EPI & Uniformes&C&P / &N&RAtualizado automaticamente";
+    "&LDemarchi Sherwin Williams • Estoque EPI & Uniformes&C&P / &N&RAtualizado automaticamente";
 }
 
 function addStockSheet(
@@ -140,7 +146,7 @@ function addStockSheet(
   addTitle(
     sheet,
     "ESTOQUE • EPI & UNIFORMES",
-    `Posição atual • ${items.length} itens ativos/inativos • Gerado em ${new Date().toLocaleString("pt-BR")}`,
+    `${BRAND} • Posição atual • ${items.length} itens • Gerado em ${new Date().toLocaleString("pt-BR")}`,
     18,
   );
   sheet.addRow([]);
@@ -235,6 +241,15 @@ function addStockSheet(
       bold: true,
       color: { argb: statusColor(status) },
     };
+    [15, 16, 17, 18].forEach((col) => {
+      row.getCell(col).alignment = {
+        horizontal: "right",
+        vertical: "middle",
+        wrapText: true,
+      };
+    });
+    row.getCell(2).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+    row.getCell(3).alignment = { horizontal: "left", vertical: "middle", wrapText: true };
     row.getCell(15).numFmt = 'R$ #,##0.00';
     row.getCell(16).numFmt = 'R$ #,##0.00';
     row.getCell(17).numFmt = 'R$ #,##0.00';
@@ -249,7 +264,7 @@ function addStockSheet(
     from: { row: 5, column: 1 },
     to: { row: Math.max(5, 5 + items.length), column: 18 },
   };
-  configureSheet(sheet);
+  configureSheet(sheet, 2);
 }
 
 function addMovementSheet(workbook: any, movimentos: EstoqueMovimento[]) {
@@ -259,7 +274,7 @@ function addMovementSheet(workbook: any, movimentos: EstoqueMovimento[]) {
   addTitle(
     sheet,
     "MOVIMENTAÇÕES DE ESTOQUE",
-    `Datas reais de entrada/retirada, colaboradores e ajustes • ${movimentos.length} registros`,
+    `${BRAND} • Datas reais de entrada/retirada • ${movimentos.length} registros`,
     14,
     CYAN,
   );
@@ -307,9 +322,16 @@ function addMovementSheet(workbook: any, movimentos: EstoqueMovimento[]) {
         wrapText: true,
       };
     });
+    [4, 5, 11, 12, 13, 14].forEach((col) => {
+      row.getCell(col).alignment = {
+        horizontal: "left",
+        vertical: "middle",
+        wrapText: true,
+      };
+    });
   });
 
-  const widths = [12, 14, 12, 38, 22, 10, 13, 9, 12, 12, 24, 24, 18, 36];
+  const widths = [14, 14, 12, 42, 24, 10, 13, 9, 12, 12, 28, 26, 20, 38];
   widths.forEach((width, index) => (sheet.getColumn(index + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
@@ -325,7 +347,7 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
   addTitle(
     sheet,
     "RETIRADAS POR COLABORADOR",
-    "Histórico auditável de EPI e uniformes entregues aos colaboradores",
+    `${BRAND} • Histórico auditável de EPI e uniformes por colaborador`,
     14,
     GREEN,
   );
@@ -371,18 +393,32 @@ function addDeliverySheet(workbook: any, entregas: EstoqueEntrega[]) {
         entrega.id,
       ]);
       styleBodyRow(row, index++);
+      [1, 3, 6, 9, 10].forEach((col) => {
+        row.getCell(col).alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+      });
+      [11, 12].forEach((col) => {
+        row.getCell(col).alignment = {
+          horizontal: "right",
+          vertical: "middle",
+          wrapText: true,
+        };
+      });
       row.getCell(11).numFmt = 'R$ #,##0.00';
       row.getCell(12).numFmt = 'R$ #,##0.00';
     });
   });
 
-  const widths = [12, 28, 14, 28, 38, 14, 22, 42, 14, 9, 14, 14, 34, 38];
+  const widths = [14, 30, 14, 28, 40, 15, 24, 44, 14, 9, 15, 15, 36, 24];
   widths.forEach((width, index2) => (sheet.getColumn(index2 + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: Math.max(5, 5 + index), column: 14 },
   };
-  configureSheet(sheet);
+  configureSheet(sheet, 2);
 }
 
 function addCollaboratorSheet(
@@ -408,7 +444,7 @@ function addCollaboratorSheet(
   addTitle(
     sheet,
     "COLABORADORES • SRA + ALMOXARIFADO",
-    "Dados operacionais do SRA vinculados às retiradas de EPI e uniformes",
+    `${BRAND} • Dados do SRA vinculados às retiradas de EPI e uniformes`,
     19,
     GREEN,
   );
@@ -460,15 +496,22 @@ function addCollaboratorSheet(
       colab.ativo ? "SIM" : "NÃO",
     ]);
     styleBodyRow(row, index);
+    [2, 6, 8, 9, 15, 16, 17, 18, 19].forEach((col) => {
+      row.getCell(col).alignment = {
+        horizontal: "center",
+        vertical: "middle",
+        wrapText: true,
+      };
+    });
   });
 
-  const widths = [30, 14, 28, 26, 38, 14, 22, 12, 16, 32, 18, 18, 26, 16, 10, 10, 14, 18, 9];
+  const widths = [32, 14, 30, 28, 42, 15, 24, 13, 17, 34, 19, 19, 28, 18, 10, 10, 14, 18, 9];
   widths.forEach((width, index) => (sheet.getColumn(index + 1).width = width));
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: Math.max(5, 5 + colaboradores.length), column: 19 },
   };
-  configureSheet(sheet);
+  configureSheet(sheet, 2);
 }
 
 function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
@@ -497,10 +540,10 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
   sheet.columns = Array.from({ length: 10 }, () => ({ width: 16 }));
   sheet.mergeCells("A1:J2");
   const title = sheet.getCell("A1");
-  title.value = "APONT AUTO • CONTROLE DE ESTOQUE";
+  title.value = BRAND;
   title.font = {
     name: "Aptos Display",
-    size: 22,
+    size: 24,
     bold: true,
     color: { argb: WHITE },
   };
@@ -510,8 +553,12 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
   sheet.mergeCells("A3:J3");
   const subtitle = sheet.getCell("A3");
   subtitle.value =
-    "Uniformes, EPIs, entradas, saídas e rastreabilidade por colaborador";
-  subtitle.font = { name: "Aptos", size: 10, color: { argb: MUTED } };
+    "CONTROLE DE ESTOQUE • EPI & UNIFORMES • entradas, saídas e rastreabilidade por colaborador";
+  subtitle.font = { name: "Aptos", size: 11, bold: true, color: { argb: MUTED } };
+  subtitle.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
+  sheet.getRow(1).height = 28;
+  sheet.getRow(2).height = 28;
+  sheet.getRow(3).height = 24;
 
   const cards = [
     ["A5:B7", "ITENS CADASTRADOS", items.length, BLUE],
@@ -608,14 +655,14 @@ function addSummarySheet(workbook: any, snapshot: EstoqueSnapshot) {
     fitToHeight: 0,
   };
   sheet.headerFooter.oddFooter =
-    "&LApont Auto • Gestão de Estoque&C&P / &N&RRelatório atualizado";
+    "&LDemarchi Sherwin Williams • Gestão de Estoque&C&P / &N&RRelatório atualizado";
 }
 
 export async function generateEstoqueWorkbook(snapshot: EstoqueSnapshot) {
   const { default: ExcelJS } = await import("exceljs");
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Apont Auto";
-  workbook.company = "In Haus Industrial";
+  workbook.creator = "Demarchi Sherwin Williams";
+  workbook.company = "Demarchi Sherwin Williams";
   workbook.title = "Controle de Estoque • Uniformes e EPIs";
   workbook.subject = "Estoque, movimentações, retiradas e colaboradores";
   workbook.created = new Date();
@@ -634,6 +681,6 @@ export async function generateEstoqueWorkbook(snapshot: EstoqueSnapshot) {
   const stamp = new Date().toISOString().slice(0, 10).split("-").reverse().join("-");
   return {
     blob,
-    filename: `CONTROLE DE ESTOQUE EPI E UNIFORMES - ${stamp}.xlsx`,
+    filename: `CONTROLE DE ESTOQUE - DEMARCHI SHERWIN WILLIAMS - ${stamp}.xlsx`,
   };
 }

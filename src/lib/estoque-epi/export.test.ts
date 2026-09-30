@@ -119,10 +119,14 @@ const snapshot: EstoqueSnapshot = {
 describe("generateEstoqueWorkbook", () => {
   it("gera planilha completa com estoque, movimentações, retiradas e colaboradores", async () => {
     const file = await generateEstoqueWorkbook(snapshot);
-    expect(file.filename).toContain("CONTROLE DE ESTOQUE EPI E UNIFORMES");
+    expect(file.filename).toContain("CONTROLE DE ESTOQUE - DEMARCHI SHERWIN WILLIAMS");
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await file.blob.arrayBuffer());
+
+    const summary = workbook.getWorksheet("RESUMO")!;
+    expect(summary.getCell("A1").text).toBe("DEMARCHI • SHERWIN WILLIAMS");
+    expect(summary.getCell("A3").text).toContain("CONTROLE DE ESTOQUE");
 
     expect(workbook.worksheets.map((sheet) => sheet.name)).toEqual([
       "RESUMO",
