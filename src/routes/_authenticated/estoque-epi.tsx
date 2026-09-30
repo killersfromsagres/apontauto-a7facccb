@@ -12,7 +12,10 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Boxes,
+  BriefcaseBusiness,
+  Building2,
   CalendarDays,
+  Check,
   ClipboardCheck,
   Edit3,
   FileSpreadsheet,
@@ -26,6 +29,7 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  UserRound,
   UserRoundPlus,
   Users,
   WalletCards,
@@ -1561,18 +1565,12 @@ function EntryDialog({
         <div className="rounded-xl border border-emerald-500/15 bg-emerald-500/[0.035] p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Item *" className="sm:col-span-2">
-              <Select value={itemId} onValueChange={setItemId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o item que entrou..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.descricao} · saldo {item.estoque_atual} {item.unidade}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ItemAutocomplete
+                items={items}
+                value={itemId}
+                onValueChange={setItemId}
+                placeholder="Digite nome, código, CA ou tamanho..."
+              />
             </Field>
 
             <Field label="Quantidade recebida *">
@@ -2030,9 +2028,21 @@ function DeliveryDialog({
     setObservacao("");
   }, [initialItemId, items, open]);
 
+  const collaborator = colaboradores.find((item) => item.id === colaboradorId) ?? null;
+  const itemToAdd = items.find((item) => item.id === selectedItem) ?? null;
+  const totalUnits = cart.reduce((sum, entry) => sum + entry.quantidade, 0);
+  const ready = Boolean(colaboradorId && dataEntrega && cart.length > 0);
+
   const addItem = () => {
     const amount = Number(qty.replace(",", "."));
-    if (!selectedItem || !Number.isFinite(amount) || amount <= 0) return;
+    if (!selectedItem) {
+      toast.warning("Pesquise e selecione um item para adicionar.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.warning("Informe uma quantidade válida.");
+      return;
+    }
     const item = items.find((entry) => entry.id === selectedItem);
     if (!item) return;
     const alreadySelected =
@@ -2058,52 +2068,252 @@ function DeliveryDialog({
     setQty("1");
   };
 
+  const submit = async () => {
+    if (!colaboradorId) {
+      toast.warning("Selecione o colaborador que está retirando o material.");
+      return;
+    }
+    if (!dataEntrega) {
+      toast.warning("Informe a data da retirada.");
+      return;
+    }
+    if (cart.length === 0) {
+      toast.warning("Adicione pelo menos um item à saída.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await registerEstoqueDelivery({
+        colaboradorId,
+        itens: cart,
+        observacao,
+        dataEntrega,
+      });
+      toast.success(
+        `Saída registrada para ${collaborator?.nome ?? "colaborador"} em ${fmtDate(dataEntrega)}.`,
+      );
+      await onSaved();
+    } catch (error: any) {
+      toast.error(error?.message ?? "Falha ao registrar retirada.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[92vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600">
-              <PackageMinus className="h-5 w-5" />
-            </span>
-            <div>
-              <DialogTitle>Registrar saída / retirada</DialogTitle>
-              <DialogDescription className="mt-1">
-                O nome do colaborador e a data da retirada são obrigatórios.
-              </DialogDescription>
+      <DialogContent className="max-h-[94vh] max-w-3xl overflow-y-auto p-0">
+        <div className="border-b border-border/45 bg-gradient-to-r from-sky-500/[0.07] via-transparent to-transparent px-5 py-4">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-sky-500/15 bg-sky-500/10 text-sky-600 shadow-sm">
+                <PackageMinus className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <DialogTitle>Registrar saída do estoque</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Pesquise o colaborador, adicione os itens e confirme. O saldo será baixado automaticamente.
+                </DialogDescription>
+              </div>
             </div>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
-        <div className="rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Nome do colaborador *" className="sm:col-span-2">
-              {colaboradores.length > 0 ? (
-                <Select value={colaboradorId} onValueChange={setColaboradorId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione quem está retirando..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colaboradores.map((colab) => (
-                      <SelectItem key={colab.id} value={colab.id}>
-                        {colab.nome}{colab.matricula ? ` · ${colab.matricula}` : ""}{colab.funcao ? ` · ${colab.funcao}` : ""}{colab.situacao_sra && colab.situacao_sra !== "NORMAL" ? ` · ${colab.situacao_sra}` : ""}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <FlowStep
+              number="1"
+              label="Colaborador"
+              complete={Boolean(colaboradorId)}
+            />
+            <FlowStep
+              number="2"
+              label="Itens"
+              complete={cart.length > 0}
+            />
+            <FlowStep
+              number="3"
+              label="Confirmar"
+              complete={ready}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3 px-5 py-4">
+          <section className="rounded-2xl border border-border/50 bg-background/35 p-3.5">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600">
+                <UserRound className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold">Quem está retirando?</p>
+                <p className="text-[9px] text-muted-foreground">
+                  Digite nome, matrícula, função ou equipe.
+                </p>
+              </div>
+            </div>
+
+            {colaboradores.length > 0 ? (
+              <CollaboratorAutocomplete
+                colaboradores={colaboradores}
+                value={colaboradorId}
+                onValueChange={setColaboradorId}
+              />
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-start border-amber-500/25 bg-amber-500/[0.05] text-amber-700 dark:text-amber-300"
+                onClick={onNewCollaborator}
+              >
+                <UserRoundPlus className="mr-2 h-4 w-4" />
+                Cadastre um colaborador antes da saída
+              </Button>
+            )}
+
+            {collaborator && (
+              <div className="mt-2.5 grid gap-2 rounded-xl border border-sky-500/15 bg-sky-500/[0.035] p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="truncate text-xs font-semibold">{collaborator.nome}</p>
+                    <Badge variant="outline" className="rounded-full px-1.5 text-[7px]">
+                      {collaborator.situacao_sra || "ATIVO"}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 truncate text-[9px] text-muted-foreground">
+                    Mat. {collaborator.matricula || "—"} · {collaborator.funcao || collaborator.cargo || "Função não informada"}
+                  </p>
+                  {collaborator.centro_resultado && (
+                    <p className="mt-0.5 truncate text-[8px] text-muted-foreground/80">
+                      {collaborator.centro_resultado}
+                    </p>
+                  )}
+                </div>
                 <Button
                   type="button"
-                  variant="outline"
-                  className="w-full justify-start border-amber-500/25 bg-amber-500/[0.05] text-amber-700 dark:text-amber-300"
-                  onClick={onNewCollaborator}
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-[9px] text-muted-foreground"
+                  onClick={() => setColaboradorId("")}
                 >
-                  <UserRoundPlus className="mr-2 h-4 w-4" />
-                  Cadastre um colaborador antes da saída
+                  Trocar
                 </Button>
-              )}
-            </Field>
+              </div>
+            )}
+          </section>
 
+          <section className="rounded-2xl border border-border/50 bg-background/35 p-3.5">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                <PackageOpen className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-xs font-semibold">O que será retirado?</p>
+                <p className="text-[9px] text-muted-foreground">
+                  Pesquise por nome, código, CA ou tamanho.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_90px_auto] sm:items-end">
+              <Field label="Item">
+                <ItemAutocomplete
+                  items={items}
+                  value={selectedItem}
+                  onValueChange={setSelectedItem}
+                  onlyInStock
+                  placeholder="Comece a digitar o item..."
+                />
+              </Field>
+
+              <Field label="Qtd.">
+                <Input
+                  inputMode="decimal"
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addItem();
+                    }
+                  }}
+                  placeholder="1"
+                />
+              </Field>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-xl px-3"
+                onClick={addItem}
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Adicionar
+              </Button>
+            </div>
+
+            {itemToAdd && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-muted/25 px-2.5 py-2 text-[8px] text-muted-foreground">
+                <span>Saldo disponível: <strong className="text-foreground">{itemToAdd.estoque_atual} {itemToAdd.unidade}</strong></span>
+                {itemToAdd.ca_numero && <span>CA {itemToAdd.ca_numero}</span>}
+                {itemToAdd.tamanho && <span>Tam. {itemToAdd.tamanho}</span>}
+              </div>
+            )}
+
+            <div className="mt-3 space-y-1.5">
+              {cart.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/60 py-5 text-center">
+                  <PackageOpen className="mx-auto h-5 w-5 text-muted-foreground/45" />
+                  <p className="mt-1.5 text-[10px] font-medium text-muted-foreground">
+                    Nenhum item adicionado
+                  </p>
+                  <p className="mt-0.5 text-[8px] text-muted-foreground/70">
+                    Pesquise um item acima e clique em Adicionar.
+                  </p>
+                </div>
+              ) : (
+                cart.map((entry) => {
+                  const item = items.find((candidate) => candidate.id === entry.itemId);
+                  return (
+                    <div
+                      key={entry.itemId}
+                      className="flex items-center gap-2 rounded-xl border border-border/45 bg-background/50 px-3 py-2.5"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500/[0.07] text-sky-600">
+                        <PackageCheck className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[10px] font-semibold">
+                          {item?.descricao}
+                        </p>
+                        <p className="mt-0.5 text-[8px] text-muted-foreground">
+                          {item?.codigo ? `Cód. ${item.codigo} · ` : ""}
+                          CA {item?.ca_numero || "—"} · saldo {item?.estoque_atual} {item?.unidade}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="rounded-full">
+                        {entry.quantidade} {item?.unidade}
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 rounded-lg text-muted-foreground hover:text-rose-500"
+                        title="Remover item"
+                        onClick={() =>
+                          setCart((current) =>
+                            current.filter((candidate) => candidate.itemId !== entry.itemId),
+                          )
+                        }
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          <section className="grid gap-3 rounded-2xl border border-border/50 bg-background/35 p-3.5 sm:grid-cols-2">
             <Field label="Data da retirada *">
               <div className="relative">
                 <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -2115,7 +2325,6 @@ function DeliveryDialog({
                 />
               </div>
             </Field>
-
             <Field label="Motivo / observação">
               <Input
                 value={observacao}
@@ -2123,110 +2332,342 @@ function DeliveryDialog({
                 placeholder="Ex.: admissão, troca, reposição..."
               />
             </Field>
-          </div>
+          </section>
         </div>
 
-        <div className="rounded-xl border border-border/50 bg-background/30 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold">Itens retirados</p>
-            <span className="text-[9px] text-muted-foreground">O saldo será baixado ao confirmar</span>
-          </div>
-          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_100px_auto]">
-            <Select value={selectedItem} onValueChange={setSelectedItem}>
-              <SelectTrigger><SelectValue placeholder="Selecionar item..." /></SelectTrigger>
-              <SelectContent>
-                {items
-                  .filter((item) => item.estoque_atual > 0)
-                  .map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.descricao} · {item.estoque_atual} {item.unidade}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <Input
-              inputMode="decimal"
-              value={qty}
-              onChange={(e) => setQty(e.target.value)}
-              placeholder="Qtd."
-            />
-            <Button type="button" variant="outline" onClick={addItem}>
-              <Plus className="h-4 w-4" />
-            </Button>
+        <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border/50 bg-background/95 px-5 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className={cn("text-[10px] font-semibold", ready ? "text-emerald-600" : "text-muted-foreground")}>
+              {ready
+                ? `Pronto para registrar · ${cart.length} item(ns) · ${totalUnits.toLocaleString("pt-BR")} unidade(s)`
+                : !colaboradorId
+                  ? "Selecione o colaborador para continuar"
+                  : cart.length === 0
+                    ? "Adicione pelo menos um item à saída"
+                    : "Confira os dados antes de confirmar"}
+            </p>
+            <p className="mt-0.5 text-[8px] text-muted-foreground/70">
+              O botão permanece disponível e informa o que falta preencher.
+            </p>
           </div>
 
-          <div className="mt-3 space-y-1.5">
-            {cart.length === 0 ? (
-              <p className="py-4 text-center text-[10px] text-muted-foreground">
-                Nenhum item adicionado.
-              </p>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button
+              disabled={saving}
+              className={cn(
+                "min-w-[150px]",
+                ready && "bg-sky-600 text-white hover:bg-sky-700",
+              )}
+              onClick={() => void submit()}
+            >
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : ready ? (
+                <Check className="mr-2 h-4 w-4" />
+              ) : (
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+              )}
+              Confirmar saída
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FlowStep({
+  number,
+  label,
+  complete,
+}: {
+  number: string;
+  label: string;
+  complete: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-xl border px-2.5 py-2 transition-colors",
+        complete
+          ? "border-emerald-500/20 bg-emerald-500/[0.05]"
+          : "border-border/45 bg-background/35",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold",
+          complete
+            ? "bg-emerald-500/12 text-emerald-600"
+            : "bg-muted/40 text-muted-foreground",
+        )}
+      >
+        {complete ? <Check className="h-3.5 w-3.5" /> : number}
+      </span>
+      <span className="truncate text-[9px] font-medium">{label}</span>
+    </div>
+  );
+}
+
+function CollaboratorAutocomplete({
+  colaboradores,
+  value,
+  onValueChange,
+}: {
+  colaboradores: EstoqueColaborador[];
+  value: string;
+  onValueChange: (value: string) => void;
+}) {
+  const selected = colaboradores.find((item) => item.id === value) ?? null;
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (selected && !focused) {
+      setQuery(selected.nome);
+    } else if (!value && !focused) {
+      setQuery("");
+    }
+  }, [focused, selected, value]);
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase("pt-BR");
+    const source = q
+      ? colaboradores.filter((colab) =>
+          [
+            colab.nome,
+            colab.matricula,
+            colab.funcao,
+            colab.cargo,
+            colab.centro_resultado,
+            colab.setor_negocio,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLocaleLowerCase("pt-BR")
+            .includes(q),
+        )
+      : colaboradores;
+
+    return source.slice(0, 8);
+  }, [colaboradores, query]);
+
+  return (
+    <div
+      className="relative"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false);
+        }
+      }}
+    >
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          className="h-10 rounded-xl pl-9 pr-10"
+          placeholder="Digite nome, matrícula, função ou equipe..."
+          onFocus={() => setFocused(true)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setFocused(true);
+            if (value) onValueChange("");
+          }}
+        />
+        {selected && (
+          <Check className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+        )}
+      </div>
+
+      {focused && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
+          <div className="max-h-64 overflow-y-auto p-1">
+            {suggestions.length > 0 ? (
+              suggestions.map((colab) => (
+                <button
+                  key={colab.id}
+                  type="button"
+                  className="flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onValueChange(colab.id);
+                    setQuery(colab.nome);
+                    setFocused(false);
+                  }}
+                >
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-500/[0.08] text-sky-600">
+                    <UserRound className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-[10px] font-semibold">{colab.nome}</span>
+                      {colab.situacao_sra && colab.situacao_sra !== "NORMAL" && (
+                        <Badge variant="outline" className="shrink-0 rounded-full px-1.5 text-[7px]">
+                          {colab.situacao_sra}
+                        </Badge>
+                      )}
+                    </span>
+                    <span className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] text-muted-foreground">
+                      {colab.matricula && <span>Mat. {colab.matricula}</span>}
+                      {(colab.funcao || colab.cargo) && (
+                        <span className="inline-flex items-center gap-1">
+                          <BriefcaseBusiness className="h-2.5 w-2.5" />
+                          {colab.funcao || colab.cargo}
+                        </span>
+                      )}
+                    </span>
+                    {colab.centro_resultado && (
+                      <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[7px] text-muted-foreground/75">
+                        <Building2 className="h-2.5 w-2.5 shrink-0" />
+                        <span className="truncate">{colab.centro_resultado}</span>
+                      </span>
+                    )}
+                  </span>
+                </button>
+              ))
             ) : (
-              cart.map((entry) => {
-                const item = items.find((candidate) => candidate.id === entry.itemId);
-                return (
-                  <div
-                    key={entry.itemId}
-                    className="flex items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2.5 py-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[10px] font-semibold">
-                        {item?.descricao}
-                      </p>
-                      <p className="text-[8px] text-muted-foreground">
-                        CA {item?.ca_numero || "—"} · saldo {item?.estoque_atual}
-                      </p>
-                    </div>
-                    <Badge variant="outline">{entry.quantidade} {item?.unidade}</Badge>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 text-muted-foreground"
-                      onClick={() =>
-                        setCart((current) =>
-                          current.filter((candidate) => candidate.itemId !== entry.itemId),
-                        )
-                      }
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                );
-              })
+              <div className="px-3 py-4 text-center">
+                <Search className="mx-auto h-4 w-4 text-muted-foreground/50" />
+                <p className="mt-1.5 text-[9px] font-medium">Nenhum colaborador encontrado</p>
+                <p className="mt-0.5 text-[8px] text-muted-foreground">
+                  Tente nome, matrícula ou função.
+                </p>
+              </div>
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button
-            disabled={saving || !colaboradorId || !dataEntrega || cart.length === 0}
-            onClick={async () => {
-              setSaving(true);
-              try {
-                await registerEstoqueDelivery({
-                  colaboradorId,
-                  itens: cart,
-                  observacao,
-                  dataEntrega,
-                });
-                const colaborador = colaboradores.find((item) => item.id === colaboradorId);
-                toast.success(
-                  `Saída registrada para ${colaborador?.nome ?? "colaborador"} em ${fmtDate(dataEntrega)}.`,
-                );
-                await onSaved();
-              } catch (error: any) {
-                toast.error(error?.message ?? "Falha ao registrar retirada.");
-              } finally {
-                setSaving(false);
-              }
-            }}
-          >
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Confirmar saída
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+function ItemAutocomplete({
+  items,
+  value,
+  onValueChange,
+  placeholder = "Digite para pesquisar...",
+  onlyInStock = false,
+}: {
+  items: EstoqueItem[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  onlyInStock?: boolean;
+}) {
+  const selected = items.find((item) => item.id === value) ?? null;
+  const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (selected && !focused) {
+      setQuery(selected.descricao);
+    } else if (!value && !focused) {
+      setQuery("");
+    }
+  }, [focused, selected, value]);
+
+  const suggestions = useMemo(() => {
+    const q = query.trim().toLocaleLowerCase("pt-BR");
+    return items
+      .filter((item) => !onlyInStock || item.estoque_atual > 0)
+      .filter((item) => {
+        if (!q) return true;
+        return [
+          item.descricao,
+          item.codigo,
+          item.ca_numero,
+          item.tamanho,
+          item.categoria,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLocaleLowerCase("pt-BR")
+          .includes(q);
+      })
+      .slice(0, 8);
+  }, [items, onlyInStock, query]);
+
+  return (
+    <div
+      className="relative"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          setFocused(false);
+        }
+      }}
+    >
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={query}
+          className="h-10 rounded-xl pl-9 pr-10"
+          placeholder={placeholder}
+          onFocus={() => setFocused(true)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setFocused(true);
+            if (value) onValueChange("");
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setFocused(false);
+          }}
+        />
+        {selected && (
+          <Check className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-500" />
+        )}
+      </div>
+
+      {focused && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[80] overflow-hidden rounded-xl border border-border/60 bg-popover shadow-xl">
+          <div className="max-h-64 overflow-y-auto p-1">
+            {suggestions.length > 0 ? (
+              suggestions.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left transition hover:bg-accent/70 focus:bg-accent/70 focus:outline-none"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    onValueChange(item.id);
+                    setQuery(item.descricao);
+                    setFocused(false);
+                  }}
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                    <PackageOpen className="h-3.5 w-3.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[10px] font-semibold">{item.descricao}</span>
+                    <span className="mt-0.5 flex flex-wrap gap-x-2 text-[8px] text-muted-foreground">
+                      {item.codigo && <span>Cód. {item.codigo}</span>}
+                      {item.ca_numero && <span>CA {item.ca_numero}</span>}
+                      {item.tamanho && <span>Tam. {item.tamanho}</span>}
+                    </span>
+                  </span>
+                  <span className={cn(
+                    "shrink-0 rounded-full border px-2 py-1 text-[8px] font-semibold",
+                    item.estoque_atual > 0
+                      ? "border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-600"
+                      : "border-rose-500/20 bg-rose-500/[0.04] text-rose-600",
+                  )}>
+                    {item.estoque_atual} {item.unidade}
+                  </span>
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-center">
+                <Search className="mx-auto h-4 w-4 text-muted-foreground/50" />
+                <p className="mt-1.5 text-[9px] font-medium">Nenhum item encontrado</p>
+                <p className="mt-0.5 text-[8px] text-muted-foreground">
+                  Tente descrição, código, CA ou tamanho.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
