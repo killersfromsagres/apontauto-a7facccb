@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Activity,
   AlertTriangle,
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -195,9 +194,29 @@ function EstoqueEpiPage() {
       totalValue,
       attention: attention.length,
       zeroed: zeroed.length,
-      collaborators: data.colaboradores.filter((c) => c.ativo).length,
     };
   }, [activeItems, data.colaboradores]);
+
+  const movementDatesByItem = useMemo(() => {
+    const result = new Map<string, { entrada?: string; saida?: string }>();
+    for (const movement of data.movimentos) {
+      const current = result.get(movement.item_id) ?? {};
+      if (
+        movement.tipo === "entrada" &&
+        !current.entrada
+      ) {
+        current.entrada = movement.data_movimento;
+      }
+      if (
+        movement.tipo === "saida" &&
+        !current.saida
+      ) {
+        current.saida = movement.data_movimento;
+      }
+      result.set(movement.item_id, current);
+    }
+    return result;
+  }, [data.movimentos]);
 
   const categories = useMemo(() => {
     const map = new Map<string, { items: number; qty: number; value: number }>();
@@ -451,6 +470,8 @@ function EstoqueEpiPage() {
                           key={item.id}
                           item={item}
                           compact
+                          lastEntryDate={movementDatesByItem.get(item.id)?.entrada}
+                          lastExitDate={movementDatesByItem.get(item.id)?.saida}
                           onEntry={() => {
                             setEntryItemId(item.id);
                             setEntryOpen(true);
@@ -597,6 +618,8 @@ function EstoqueEpiPage() {
                     <StockRow
                       key={item.id}
                       item={item}
+                      lastEntryDate={movementDatesByItem.get(item.id)?.entrada}
+                      lastExitDate={movementDatesByItem.get(item.id)?.saida}
                       onEntry={() => {
                         setEntryItemId(item.id);
                         setEntryOpen(true);
@@ -863,6 +886,8 @@ function EmptyState({ text }: { text: string }) {
 function StockRow({
   item,
   compact = false,
+  lastEntryDate,
+  lastExitDate,
   onEntry,
   onWithdraw,
   onAdjust,
@@ -870,6 +895,8 @@ function StockRow({
 }: {
   item: EstoqueItem;
   compact?: boolean;
+  lastEntryDate?: string;
+  lastExitDate?: string;
   onEntry: () => void;
   onWithdraw: () => void;
   onAdjust: (type: EstoqueMovementType) => void;
@@ -899,6 +926,22 @@ function StockRow({
             <span>{money(item.valor_unitario)}</span>
           )}
         </div>
+        {!compact && (lastEntryDate || lastExitDate) && (
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[8px] text-muted-foreground/80">
+            {lastEntryDate && (
+              <span className="inline-flex items-center gap-1">
+                <ArrowDownToLine className="h-2.5 w-2.5 text-emerald-500" />
+                Últ. entrada {fmtDate(lastEntryDate)}
+              </span>
+            )}
+            {lastExitDate && (
+              <span className="inline-flex items-center gap-1">
+                <ArrowUpFromLine className="h-2.5 w-2.5 text-sky-500" />
+                Últ. saída {fmtDate(lastExitDate)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 md:justify-end">
