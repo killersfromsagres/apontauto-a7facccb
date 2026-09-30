@@ -288,7 +288,7 @@ describe("generateWeeklyProgramacao", () => {
     ]);
   });
 
-  it("mantém SLA excepcional no topo do dia e organiza os prioritários por prédio e andar", async () => {
+  it("mantém SLA D-1 no topo do dia e organiza os prioritários por prédio e andar", async () => {
     const monday = new Date(2026, 8, 14);
     const week = weeksBetween(monday, new Date(2026, 8, 18))[0];
 
@@ -363,7 +363,7 @@ describe("generateWeeklyProgramacao", () => {
       "1º Andar",
       "2º Andar",
     ]);
-    expect(program.getCell("A2").text).toContain("2 SLA PRIORITÁRIOS");
+    expect(program.getCell("A2").text).toContain("2 SLA D-1");
     expect((program.getCell("G4").fill as any).fgColor.argb).toBe("FFFFF4D6");
 
     const slaSheet = workbook.getWorksheet("SLA APONTAMENTO")!;
