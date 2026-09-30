@@ -6,6 +6,7 @@ import {
   isCorrectiveBackorder,
   isPreventiveSlaPriority,
   preventiveExecutionDeadline,
+  resolveCorrectiveTeam,
   scheduleTeamMonth,
   sortCorrectiveRows,
   type CorrectiveSourceRow,
@@ -259,6 +260,27 @@ describe("scheduleTeamMonth", () => {
     expect(flat.indexOf("B200")).toBeGreaterThan(flat.lastIndexOf("A160"));
   });
 
+});
+
+describe("classificação hidráulica operacional", () => {
+  it("reconhece entupimento de banheiro e cozinha C70 como Hidráulica", () => {
+    expect(
+      resolveCorrectiveTeam({
+        numero_os: "H-1",
+        nome_os: "Entupimento no banheiro",
+        predio: "C70",
+        local: "Cozinha",
+      }),
+    ).toBe("HIDRÁULICA");
+
+    expect(
+      resolveCorrectiveTeam({
+        numero_os: "H-2",
+        nome_os: "Vaso sanitário sem escoamento",
+        predio: "A160",
+      }),
+    ).toBe("HIDRÁULICA");
+  });
 });
 
 describe("prioridade das corretivas", () => {
