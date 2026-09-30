@@ -895,47 +895,54 @@ function ProgramacaoPage() {
         </GlassCard>
 
         {(alerts.length > 0 || statusMessages.length > 0) && (
-          <GlassCard>
-            <div className="space-y-4">
-              <SectionHeading
-                step="03"
-                icon={Activity}
-                title="Relatório operacional"
-                description="Resumo da triagem, capacidade e distribuição calculada pelo sistema."
-              />
+          <GlassCard className="!p-3">
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl px-1 py-1 outline-none">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/[0.07] text-primary">
+                  <Activity className="h-4 w-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-semibold">Relatório da geração</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-muted-foreground">
+                    Sequência de prédios, capacidade e corretivas priorizadas
+                  </span>
+                </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {alerts.length > 0 && (
+                    <Badge variant="outline" className="rounded-full border-amber-500/25 px-2 text-[9px] text-amber-600 dark:text-amber-300">
+                      {alerts.length} alerta(s)
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="rounded-full px-2 text-[9px]">
+                    {statusMessages.length} informação(ões)
+                  </Badge>
+                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-90" />
+                </span>
+              </summary>
 
-              {alerts.length > 0 && (
-                <div className="grid gap-2 md:grid-cols-2">
-                  {alerts.map((alert) => (
-                    <div
-                      key={`${alert.arquivo}-${alert.real}`}
-                      className="flex gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] p-3 text-xs text-amber-700 dark:text-amber-300"
-                    >
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                      </span>
-                      <span className="leading-5">
-                        <strong>{alert.arquivo}</strong>: conteúdo identificado como {alert.real}.
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {statusMessages.length > 0 && (
-                <div className="grid gap-2 lg:grid-cols-2">
-                  {statusMessages.map((message, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/35 p-3 transition-colors duration-200 hover:bg-background/55"
-                    >
-                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      <p className="text-xs leading-5 text-muted-foreground">{message}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              <div className="mt-3 grid gap-2 border-t border-border/40 pt-3 md:grid-cols-2">
+                {alerts.map((alert) => (
+                  <div
+                    key={`${alert.arquivo}-${alert.real}`}
+                    className="flex items-start gap-2 rounded-lg border border-amber-500/15 bg-amber-500/[0.05] p-2.5"
+                  >
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
+                    <p className="text-[10px] leading-4 text-muted-foreground">
+                      <strong className="text-foreground">{alert.arquivo}</strong>: conteúdo identificado como {alert.real}.
+                    </p>
+                  </div>
+                ))}
+                {statusMessages.map((message, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-2 rounded-lg border border-border/40 bg-background/30 p-2.5"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <p className="text-[10px] leading-4 text-muted-foreground">{message}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
           </GlassCard>
         )}
 
@@ -1010,7 +1017,7 @@ function ProgramacaoPage() {
               <SectionHeading
                 icon={History}
                 title="Histórico semanal"
-                description="Programações salvas neste navegador, organizadas por semana e período."
+                description="Arquivos persistentes na sua conta. Atualize a página ou apague o download do computador e baixe novamente quando precisar."
               />
               {historico.length > 0 && (
                 <Button
@@ -1033,7 +1040,7 @@ function ProgramacaoPage() {
                 <History className="mb-3 h-6 w-6 text-muted-foreground/50" />
                 <p className="text-sm font-medium">Nenhuma programação no histórico</p>
                 <p className="mt-1 max-w-md text-xs leading-5 text-muted-foreground">
-                  Quando você gerar uma programação, os arquivos ficarão disponíveis aqui para baixar ou imprimir novamente.
+                  Quando você gerar uma programação, a planilha será salva na nuvem da sua conta para download e impressão futura.
                 </p>
               </div>
             ) : (
@@ -1054,6 +1061,10 @@ function ProgramacaoPage() {
                           {items[0].periodStart ?? "arquivo anterior"} a {items[0].periodEnd ?? "—"}
                         </span>
                       </span>
+                      <Badge variant="outline" className="hidden gap-1 rounded-full border-emerald-500/20 text-[9px] text-emerald-600 sm:inline-flex dark:text-emerald-300">
+                        <Cloud className="h-3 w-3" />
+                        Salvo
+                      </Badge>
                       <Badge variant="outline" className="rounded-full text-[9px]">
                         {items.length} arquivo(s)
                       </Badge>
@@ -1066,7 +1077,20 @@ function ProgramacaoPage() {
                           className="flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-3 transition-colors duration-200 hover:bg-background/70 sm:flex-row sm:items-center sm:justify-between"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <p className="truncate text-xs font-semibold">{item.slotLabel}</p>
+                              <span
+                                className={cn(
+                                  "inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wide",
+                                  item.persistent !== false
+                                    ? "border-emerald-500/20 bg-emerald-500/[0.05] text-emerald-600 dark:text-emerald-300"
+                                    : "border-amber-500/20 bg-amber-500/[0.05] text-amber-600 dark:text-amber-300",
+                                )}
+                              >
+                                <Cloud className="h-2.5 w-2.5" />
+                                {item.persistent !== false ? "Nuvem" : "Local"}
+                              </span>
+                            </div>
                             <div className="mt-1.5 flex flex-wrap gap-1.5">
                               <ResultChip label="Prev." value={item.preventiveCount ?? item.totalOS} compact />
                               <ResultChip label="Corr." value={item.correctiveCount ?? 0} compact emphasis />
@@ -1078,16 +1102,22 @@ function ProgramacaoPage() {
                               size="sm"
                               variant="secondary"
                               className="rounded-lg"
-                              onClick={() => downloadBlob(item.blob, item.filename)}
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryDownload(item)}
                               aria-label="Baixar"
                               title="Baixar arquivo"
                             >
-                              <Download className="h-3.5 w-3.5" />
+                              {historyBusyId === item.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Download className="h-3.5 w-3.5" />
+                              )}
                             </Button>
                             <Button
                               size="sm"
                               className="rounded-lg"
-                              onClick={() => void handlePrint(item.blob)}
+                              disabled={historyBusyId === item.id}
+                              onClick={() => void handleHistoryPrint(item)}
                               aria-label="Imprimir"
                               title="Imprimir programação"
                             >
@@ -1098,7 +1128,7 @@ function ProgramacaoPage() {
                               variant="ghost"
                               className="rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                               onClick={async () => {
-                                await deleteHistorico(item.id);
+                                await deleteHistorico(item);
                                 await reloadHistorico();
                               }}
                               aria-label="Excluir"
